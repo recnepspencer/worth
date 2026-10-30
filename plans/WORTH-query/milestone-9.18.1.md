@@ -1380,7 +1380,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.5 | Canonical field absence and mandatory currentness proof | Complete; qualified `70812eb0c3` | Stronger whole-aspect/scalar journeys belong to 9.6-9.7 |
 | 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
 | 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
-| 9.8 | Genuine equivalent-output suppression explanations | In progress; actual performed field evaluation and admitted public report qualified | Stable/restored and readiness-no-compute contrasts |
+| 9.8 | Genuine equivalent-output suppression explanations | Complete for qualified exact-u64 performed evaluation, Stable/restored contrasts and Native non-compute protection | 9.9 optional rich materialization |
 | 9.9 | Optional rich materialization | Open | Freshly admitted, demand-driven views from existing evidence owners |
 | 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
 | 9.11 | Integrated application qualification and consumer handoff | Open | Coherent public capability, executable guidance and phase acceptance |
@@ -1538,120 +1538,85 @@ correction authority.
 
 #### Phase 9.8: Genuine Equivalent-Output Suppression Explanations
 
-**Status: in progress; performed exact-u64 field evaluation and public report qualified. Depends on: 9.3-9.4 and the existing Signal evidence owner.**
-Expose a real producer/equivalence decision through existing inspection and
-Bridge contracts. A lawful changed source whose producer evaluates to equivalent
-output must be distinguished from zero-contact reuse, checkpoint restoration,
-invalidation and Changed/Unchanged query comparison. Require owner-issued
-evidence and independently expected source/output values; equal bytes or contact
-counts cannot manufacture suppression. This can advance on a qualified field
-shape without waiting for every 9.7 shape.
+**Status: complete for the qualified Required standard-u64 field on an exactly-one
+Preserve role. Depends on: 9.3-9.4 and the existing Signal evidence owner.**
+An installed producer can opt into `output_equivalence()` for its actual output
+field. The shared field owner seals its typed declaration, installed value binding,
+complete Native aspect/physical binding, role and producer edition. Required
+standard u64 is the bounded public constructor; missing or substituted field seals
+cannot issue an installed producer edition.
 
-The native handoff now moves the actual Signal `AppliedEffectReport` from
-computed application into private conditional decision evidence. Its original
-verdict, suppression reason and comparison survive finalization, together with
-the actual before/after output versions and existing recipe/dependency custody.
-Passive dependency reuse, pre-compute suppression and deferral carry no computed
-report. Bridge borrows the same immutable report under its original reservation;
-it does not reconstruct a verdict or retain another reader. The installed
-comparator court computes distinct candidates `3 -> 5 -> 6`, independently expects
-parity equivalence followed by change, and checks exact observation association,
-operational-evidence release and final reservation release. All 171 focused
-Signal/Bridge conditional-execution tests pass. This is a qualified substrate,
-not application suppression completion: installed producer scheduling/readiness
-still use attempt versions, so their reports cannot stand in for actual handler
-output evaluation. The remaining work must supply that declared output
-basis and the independently admitted application outcome.
+The completed handler's guarded before-field value and original branch basis join
+the actual postcommit Native field revision and readiness artifact at that same
+publication. The readiness dependency must bind the actual full-generation output,
+complete contract and physical field. A fixed same-shaped sibling, replacement
+generation, conflicting read, absent field or different publication cannot replace
+that evidence. Compact immutable field custody retains no additional Native reader.
+Original optional capture failure retains its exact cause separately from absent
+or ineligible Native evidence; no pre-field creation revision is invented.
 
-The exact-output comparison primitive now initializes a supplied present u64
-baseline and computes its candidate through one installed source-free OnDemand
-Exact contract in a fresh private Signal session. Its unique admission/partition
-never escapes, so equal reporting labels or another occurrence cannot replace the
-baseline. Each actual computed report must produce its supplied value, and the
-candidate's before version must equal the baseline's after version. Only this
-completed pair can issue the private read-only comparison. Admission, baseline
-and candidate failures preserve their original typed causes and release partial
-private state without returning a pair. No new Signal sequencing API, graph,
-reader, publication authority or retention registry is introduced.
-
-The courts qualify nonzero and zero initialization, changed/equal outcomes,
-equal-labeled occurrence isolation, clone/final release, a wrong-baseline trap,
-actual candidate failure/retry, foreign owner and cancellation. All 77 current
-Bridge conditional tests and 97 unchanged Signal owner tests pass. This remains
-substrate qualification: the pair itself proves no Native field/source association.
-The next integration must bind actual performed-before and owner-observed-after
-field artifacts, publish its declared producer-evaluation outcome before Ready,
-preserve committed receipt/checkpoint custody on late failure, and expose it only
-through independently admitted application inspection.
-
-The producer binding now has an opt-in typed `output_equivalence()` field
-contract. Its bounded constructor accepts a required standard u64 field on the
-binding's exactly-one Preserve role; another entity or optional field cannot
-acquire that contract. The shared Native-field owner validates the completed
-declaration, actual installed value binding and complete Native aspect/physical
-binding. Readiness retains its own projection/dependency policy and consumes
-that same field-sealing authority. Installation hashes the declared comparison
-semantics, role, field binding and actual Native canonical material into the
-producer edition; missing or substituted seals refuse edition minting. Generic
-sealing shells select actual catalogs and delegate validation/encoding to concrete
-cores. Installation qualification passed 26 focused field/registry/readiness/contract
-tests, the 195-test broader owner court, 50 public application correction tests,
-and three positive/negative construction examples. The following integration
-advances the runtime and independently admitted report boundary.
-
-Opt-in performed producers now retain compact completed output-field reads and
-actual postcommit Native field revisions under the original request. They join
-that before value to the exact declared role/full-generation output and the
-actual readiness field artifact at the same committed publication. The installed
-readiness dependency must match the full Native contract, physical binding and
-actual output record; fixed sibling records and replacement generations refuse.
-Missing, conflicting or absent artifacts remain typed ineligible; optional capture
-failure retains its original cause separately from Native absence. Only an
-eligible actual pair enters the installed Native comparator. The existing
-pre-effect Ready backing retains that completed comparison before Ready; no
-fallible step separates completion from the memo.
+One installed source-free OnDemand Exact comparison initializes the actual present
+baseline and computes its candidate in a fresh private Signal session. The actual
+`AppliedEffectReport`, computed class and before/after output versions must form
+one exact pair. Its unique admission cannot escape or be replaced by equal labels.
+Only the completed pair issues private comparison evidence. Admission, baseline
+and candidate failures preserve their typed owner/stage causes and release partial
+state. Result funding is reserved before compute; no fallible step separates the
+completed comparison from its memo in the existing pre-effect Ready backing.
+Original supplier custody borrows that pair through the same checkpoint/Ready
+lifecycle, without another graph, reader or retention registry.
 
 Fresh `.why_observed().evaluated_by::<SourceDisclosure>(&source).reference_only()`
-admits query/source metadata, READ and diagnostics independently through the
-existing session, terminal and funding path. The original performed input must
-join the source's exact canonical occurrence. The declared field must appear in
-the original query footprint and current diagnostic projection before any retained
-evaluation state is disclosed. An admitted report describes Changed or Equivalent
-from the actual Signal pair, the declared role/field and its observed Native
-revision; it exposes no before/after business values. Strict `.caused_by(...)`
-creation remains unchanged. A generic selector delegates the concrete join body;
-no second inspection orchestration or retention registry is introduced.
+uses the existing independent query/source READ, metadata, DiagnosticMask, session,
+consuming terminal and funding path. It first joins the source's actual canonical
+occurrence to the producer's completed input. The original query footprint and
+current diagnostic projection must admit the declared output field before retained
+evaluation state is disclosed. The report describes Changed or Equivalent from
+the actual Signal pair, its declared role/field and observed Native revision; it
+exposes no before/after business values. Strict `.caused_by(...)` still requires
+creation of the queried Native revision. Reference identities bind the distinct
+evaluation purpose and actual original evidence; identities grant no authority.
 
-The ordinary parity producer qualifies source `2 -> 4` with output `0`, actual
-Equivalent and unchanged Native field provenance, followed by `4 -> 5` with output
-`1` and Changed. Old source occurrences and equal-valued siblings refuse.
-Repeated performed Ready retains the same original comparison, with zero new
-handler contact; it does not assert a new evaluation. Independent source/query
-grant withdrawal, cancellation and insufficient request funding refuse without
-evaluation details; close and denial release the fresh payer and every extra
-reader. Early advancement resource refusal is borrowed through its actual owner
-wrapper. The field-association owner court covers exact/managed records, sibling,
-partition, generation and physical-binding substitution. Current qualification
-passes all 80 affected owner tests and 52 public correction tests, plus the
-boundary, agent-context, dirty Rust size and formatting/whitespace checks.
+The ordinary parity journey independently expects source `2 -> 4` to retain output
+`0`, reports actual Equivalent and preserves Native field provenance. Source
+`4 -> 5` yields output `1` and Changed. Old source occurrences and equal-valued
+same-kind siblings refuse. Repeated performed Ready retains the same comparison
+with zero new handler contact, rather than claiming another evaluation. Actual
+source/query grant withdrawal, request cancellation and insufficient funding refuse
+without evaluation details. Closing reports and denials releases the fresh payer;
+original custody and every extra reader return to their proper lifetime baseline.
 
-The real Delivered retry boundary is now qualified. A one-shot existing fault-port
-control cancels an actual request only after a newly computed comparison is
-memoized. Ordinary readiness consults that fresh execution again before Ready,
-so the cancellation preserves the committed checkpoint and original pair. A
-pending cancellation registration refuses replacement, and unrelated readiness
-cannot consume it. The public parity journey observes the original Cancelled
-cause and surviving output, then resumes under a fresh request without another
-handler, Native publication or comparison pair. The admitted report retains
-Equivalent and the original Native field revision; Ready reopening shares that
-same actual pair. Existing snapshot-pin observation proves no hidden Native
-reader. Qualification passes 17 focused owner tests and all 53 public correction
-tests, plus required boundary/context, size, formatting and whitespace checks.
+A one-shot existing fault-port control cancels a real request after a newly
+computed pair is memoized. Ordinary readiness consults the current execution again
+before Ready, preserving Delivered and the committed output on that late stop.
+Fresh-scope retry contacts no handler, allocates no new comparison pair and leaves
+the opaque committed product head unchanged. Its admitted Equivalent report keeps
+the original Native revision; Ready reopening shares that exact comparison. Pending
+control replacement refuses, and unrelated readiness cannot consume the control.
 
-**Remaining qualification:** actual Stable/restored suppliers and readiness that
-prevents compute must retain their own meanings and cannot claim a performed
-Equivalent evaluation. Qualify those contrasts before closing 9.8. Phase 9 and
-9.9-9.11 remain open.
+The same deterministic parity binding declares actual input-reuse eligibility.
+Changing queried `Secondary` from `7 -> 8` while canonical operation input remains
+unchanged produces real `StableReused`, no performed receipt and no Native commit.
+Fresh inspection returns `NotPerformed`. A real checkpoint restored with identical
+program/roster/build/limits and no seed callback produces `RecoveredPerformed`
+without an original live receipt or in-memory evaluation. A fresh same-runtime
+no-op source and independent admission also return `NotPerformed`. These outcomes
+retain their distinct supplier meanings instead of acquiring an Equivalent claim.
+
+Native owner qualification separately produces `SuppressedBeforeCompute` and
+`DependencyUnchanged` with no computed report. Bridge's real dependency-reuse court
+checks the Signal option and retained causal option remain absent. Query's computed
+pair requirement and readiness classification preserve that distinction. This is
+compositional Native precompute protection; the public contrasts exercise actual
+performed Ready, Stable and restored suppliers.
+
+Current qualification passes all 55 affected public correction tests and the two
+focused Signal/Bridge precompute/handoff courts. The unchanged contract/comparison
+substrates retain their qualified owner evidence, including the 80-test field,
+currentness and inspection court and 17-test readiness/checkpoint court from the
+preceding slices. Boundary/context checks, dirty Rust size and formatting/whitespace
+checks pass. Phases 9.9-9.11 and parent Phase 9 remain open.
+
 
 #### Phase 9.9: Optional Rich Materialization
 

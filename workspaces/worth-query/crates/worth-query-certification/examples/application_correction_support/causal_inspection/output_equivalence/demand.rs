@@ -24,6 +24,18 @@ pub(super) fn settle(
     WorthQueryApplicationReadObservation,
     usize,
 ) {
+    let (receipt, read, contacts, posture) = settle_observation(application);
+    assert_eq!(posture, WorthQueryOutputSettlementPosture::Performed);
+    (receipt.expect("performed parity receipt"), read, contacts)
+}
+pub(super) fn settle_observation(
+    application: &host::OutputHost,
+) -> (
+    Option<WorthQueryApplicationCommitReceipt>,
+    WorthQueryApplicationReadObservation,
+    usize,
+    WorthQueryOutputSettlementPosture,
+) {
     let scope = request_scope();
     let external = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&external, &scope);
@@ -36,14 +48,10 @@ pub(super) fn settle(
     else {
         panic!("the installed synchronous cross-entity producer must settle");
     };
-    let contacts = settled.producer_contacts_in_this_demand();
-    assert_eq!(
-        settled.posture(),
-        WorthQueryOutputSettlementPosture::Performed
-    );
     (
-        settled.application_commit_receipt().unwrap().clone(),
+        settled.application_commit_receipt().cloned(),
         settled.observation().retain(),
-        contacts,
+        settled.producer_contacts_in_this_demand(),
+        settled.posture(),
     )
 }

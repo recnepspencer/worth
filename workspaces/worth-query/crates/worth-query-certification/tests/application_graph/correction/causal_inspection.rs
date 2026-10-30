@@ -133,3 +133,12 @@ fn output_evaluation_rechecks_independent_authority_cancellation_and_memory_rele
 fn completed_output_comparison_survives_late_cancel_and_delivered_retry() {
     super::model::causal_inspection::output_equivalence::completed_comparison_survives_late_cancellation_and_checkpoint_retry();
 }
+
+#[test]
+fn stable_input_reuse_cannot_claim_a_performed_equivalent_evaluation() {
+    super::model::causal_inspection::output_equivalence::stable_input_reuse_has_no_performed_output_evaluation();
+}
+#[test]
+fn restored_output_cannot_recreate_its_original_in_memory_evaluation() {
+    super::model::causal_inspection::output_equivalence::restored_output_has_no_original_in_memory_evaluation();
+}

@@ -432,7 +432,13 @@ revision; its exact canonical publication requirement still applies.
 `same_evaluation_as` compares the retained owner-issued comparison occurrence.
 Reopening an existing performed Ready result can retain its original evaluation;
 this does not assert another handler execution or comparison. Stable/restored
-suppliers cannot issue a performed-evaluation report. A source receipt must still
+suppliers cannot issue a performed-evaluation report. The compiled
+[Stable input-cutoff journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/reuse.rs)
+checks actual `StableReused`, no live receipt and no Native publication. The
+[checkpoint-restoration journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/restoration.rs)
+checks actual `RecoveredPerformed` without recreating the original in-memory
+comparison. Both return `NotPerformed` after fresh independent admission; recovered
+historical performance supplies no new computed evidence. A source receipt must still
 join the producer's actual completed input: an old equal-output occurrence or a
 same-shaped sibling cannot substitute for it.
 

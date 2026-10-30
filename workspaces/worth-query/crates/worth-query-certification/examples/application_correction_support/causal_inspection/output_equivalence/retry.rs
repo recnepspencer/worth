@@ -11,7 +11,7 @@ use worth_query_host::facade::{
     primary_graph::*,
 };
 
-fn head(application: &host::OutputHost) -> impl Eq + std::fmt::Debug {
+pub(super) fn head(application: &host::OutputHost) -> impl Eq + std::fmt::Debug {
     application
         .with_host_advancement(|phase| {
             application

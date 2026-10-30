@@ -165,13 +165,7 @@ where
         NumericSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
-        WorthQueryInMemoryApplicationLimits::new(
-            world_resources::world_resources(256, 4 * 1024 * 1024, 256),
-            runtime::WorthQueryApplicationQueryResourceProfile::new(
-                std::num::NonZeroUsize::new(128).unwrap(),
-            ),
-            SignalConditionalEvaluationBudget::development(),
-        ),
+        installation_limits(),
         |_, graph, installed| {
             let binding = installed
                 .principal_binding(ActorBinding::reference())
@@ -306,4 +300,14 @@ pub fn read_on<P: ApplicationProgramDefinition<NumericSchema>>(
         .unwrap()
         .rows()
         .to_vec()
+}
+
+pub(super) fn installation_limits() -> WorthQueryInMemoryApplicationLimits {
+    WorthQueryInMemoryApplicationLimits::new(
+        world_resources::world_resources(256, 4 * 1024 * 1024, 256),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(128).unwrap(),
+        ),
+        SignalConditionalEvaluationBudget::development(),
+    )
 }

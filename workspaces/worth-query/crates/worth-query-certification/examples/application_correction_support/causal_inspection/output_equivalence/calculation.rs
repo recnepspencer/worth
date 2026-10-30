@@ -186,6 +186,10 @@ impl WorthQueryApplicationProducerBinding<NumericSchema> for Producer {
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const REUSE_POLICY: &'static str = "exact-source";
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
+        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+            WorthQueryDecisionContextDependencies::NONE,
+        ));
     fn output_equivalence(
     ) -> Option<WorthQueryProducerOutputEquivalence<NumericSchema, Self::OutputRole>> {
         Some(WorthQueryProducerOutputEquivalence::exact_u64(
