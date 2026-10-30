@@ -163,14 +163,8 @@ impl PreparedBranchPublicationPreflight {
             .record_performed_with_cutover(
                 self.publication_cell.clone(),
                 admission,
-                |positioned, roots| match &medium {
-                    Some(medium) => medium
-                        .publish(positioned, roots, durable_policy)
-                        .map(crate::durability::medium::RelationalCommitPublication::Durable),
-                    None => Ok(crate::durability::medium::RelationalCommitPublication::MemoryOnly(
-                        positioned,
-                    )),
-                },
+                medium.as_deref(),
+                durable_policy,
                 |position| {
                     symbol_meanings
                         .publish()

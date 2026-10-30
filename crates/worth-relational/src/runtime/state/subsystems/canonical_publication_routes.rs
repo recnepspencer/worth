@@ -286,13 +286,8 @@ impl PreparedCanonicalPublicationRoute {
         &self,
         publication_cell: crate::branch::RelationalBranchPublicationCell,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
-        durable: impl FnOnce(
-            Arc<PositionedCanonicalCommit>,
-            &crate::branch::RelationalBranchRootDescriptor,
-        ) -> Result<
-            crate::durability::medium::RelationalCommitPublication,
-            crate::durability::medium::RelationalDurableStepStop,
-        >,
+        medium: Option<&crate::durability::medium::RelationalDurableMediumBinding>,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
         self.route
@@ -306,7 +301,8 @@ impl PreparedCanonicalPublicationRoute {
             Arc::clone(&self.route),
             self.resident.clone(),
             admission,
-            durable,
+            medium,
+            policy,
             cutover,
         )
     }

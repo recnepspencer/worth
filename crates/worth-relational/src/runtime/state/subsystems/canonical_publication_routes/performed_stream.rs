@@ -12,7 +12,7 @@ use super::patch_position_reservation::{
     RelationalPatchPositionReservationCounters,
 };
 use super::{CanonicalPublicationRecordError, CanonicalPublicationRoute};
-use crate::durability::medium::RelationalDurableStepStop as DurableStepStop;
+use crate::durability::medium::{RelationalCommitPublication, RelationalDurableMediumBinding};
 
 #[derive(Default)]
 pub(super) struct PerformedPublicationStream {
@@ -104,13 +104,8 @@ impl PerformedPublicationStream {
         route: Arc<CanonicalPublicationRoute>,
         resident: Arc<CanonicalCommitEnvelope>,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
-        durable: impl FnOnce(
-            Arc<PositionedCanonicalCommit>,
-            &crate::branch::RelationalBranchRootDescriptor,
-        ) -> Result<
-            crate::durability::medium::RelationalCommitPublication,
-            DurableStepStop,
-        >,
+        medium: Option<&RelationalDurableMediumBinding>,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         cutover: impl FnOnce(PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
         let _reservation = self.reservation.enter(admission)?;
@@ -129,7 +124,8 @@ impl PerformedPublicationStream {
         // Durable before live: the position is assigned only once the medium
         // holds it, and the cutover below runs only after that.
         let publication =
-            durable(positioned, &route.roots).map_err(CanonicalPublicationRecordError::Durable)?;
+            RelationalCommitPublication::publish(positioned, &route.roots, medium, policy)
+                .map_err(CanonicalPublicationRecordError::Durable)?;
         Ok(publication.cutover(|positioned, journal| {
             route.envelope.bind_performed(&positioned, journal);
             let node = Arc::new(PerformedPublicationNode {

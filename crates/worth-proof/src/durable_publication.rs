@@ -31,9 +31,8 @@ use crate::AuthorityMarker;
 /// The valid counterpart carries the owner's actual subject into one cutover:
 ///
 /// ```
-/// use worth_proof::{AuthorityMarker, DurablyCommitted};
 /// mod owner {
-///     use super::*;
+///     use worth_proof::{AuthorityMarker, DurablyCommitted};
 ///     pub struct CommittedPublication { subject: String }
 ///     impl AuthorityMarker for CommittedPublication {}
 ///     pub fn completed() -> DurablyCommitted<CommittedPublication> {

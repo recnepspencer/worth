@@ -99,6 +99,9 @@ It does not introduce a directory Query host or claim Phase 3 completion.
    its original unresolved subject and blocks later publication as before.
 3. Thread the proof through canonical commit publication and consume it at
    the first live cutover. Bind journal readmission from that same subject.
+   The stream publishes its own positioned subject through the installed
+   medium and original allocation policy; it accepts no callback that could
+   substitute another committed subject for the prepared route.
 4. Thread positioned branch transitions through live publication and consume
    their proof at append/cutover. Keep explicit memory-only and replay paths,
    the existing reservation, canonical ordering and pre-effect checks.
