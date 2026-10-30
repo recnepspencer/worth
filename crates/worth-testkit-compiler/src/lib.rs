@@ -25,5 +25,8 @@ mod relocated_snapshot_tests;
 #[cfg(test)]
 mod tests;
 
+#[cfg(test)]
+mod codegen_tests;
+
 pub use denial::{denied, production_denial};
 pub use refusal::CompilerFixtureRefusal;

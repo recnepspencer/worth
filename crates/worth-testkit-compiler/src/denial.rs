@@ -107,6 +107,9 @@ pub(crate) fn check_outcome(
             source.to_path_buf(),
         ));
     }
+    if outcome["proof_stage"] == "codegen" {
+        attributed = diagnostics::codegen_attributed(messages, source);
+    }
     if !attributed {
         return Err(CompilerFixtureRefusal::UnattributedDiagnostics(
             source.to_path_buf(),

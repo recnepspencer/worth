@@ -102,3 +102,36 @@ unknown. Actual slot parallelism still requires CPU measurement; neither a
 serial source loop nor a matching reservation measures it. The original failed
 report remains byte-identical; the corrected verdict is a separately derived
 report under `target/test-cost/b3-corrections/known-cases.{json,md}`.
+
+## Incremental coordinator rulings after the initial handoff
+
+The existing `a990632506` evidence remains historical; corrections publish new
+bounded captures. No exhaustive sweep, ignored test, Query scale lane or UI
+workspace is needed to validate this infrastructure correction.
+
+- Compiler stages are declared before execution in `compiler_stages.json`.
+  NullableOptional retains its exact source, production audience and E0080
+  golden, using normal code generation. Codegen E0080 can carry its callsite
+  in rustc's separate instantiation note; the reader requires that exact source
+  for each error group and preserves every rendered error and note. Check-stage
+  output cannot use that codegen attribution route. Named proofs include
+  `test_nullable_optional_is_codegen_only_in_the_same_normal_production_audience`,
+  `every_codegen_error_requires_its_own_attributed_boundary`, and
+  `check_stage_cannot_use_a_codegen_instantiation_note_as_its_error_span`.
+- Cargo's preexecution unit graph declares required compiler units, including
+  physical platform, output, full profile and resolved dependency feature
+  graph. Artifact hashes cannot declare units. The unchanged maximum is one;
+  identical units in different directories still collide, and undeclared
+  command, flag, profile, feature or config drift refuses. Cold bounded real
+  production/certification evidence must accompany synthetic graph tests;
+  a warm zero cannot establish this claim.
+- Closed Root/Query/Bank testkits observe only complete named construction
+  recipes, using the optional non-gating transport documented in
+  `scripts/test_cost/setup_observation.md`. Opaque and uninstrumented recipes
+  stay unknown. No fixture sharing follows from a fingerprint alone.
+- The sweep threading finding remains open. The smallest proposed correction
+  reuses the physical Execution owner's existing leased pool through a narrow
+  owned control door, preserving exhaustive draining and canonical panic order.
+  Execution and checker changes are outside this round's allowed edit scope.
+  The queued combined-head integration and boundary gate remain mandatory;
+  this correction does not certify the complete landing.

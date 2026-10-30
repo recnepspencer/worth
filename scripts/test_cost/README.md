@@ -190,3 +190,10 @@ is evaluated during instantiation. A successful check cannot satisfy its
 denial; the existing reader still requires the exact attributed E0080 snapshot.
 The coordinator's proof-stage ruling authorizes this stage split. No product,
 fixture, expected diagnostic, court identity or test membership is changed.
+
+For codegen E0080 diagnostics rustc can emit the fixture callsite in a separate
+`the above error was encountered while instantiating` note. The reader binds
+that note to its immediately preceding error group, requires the exact fixture
+span for every group, and still compares all rendered diagnostics. An unrelated
+note, a note preceding an error, or a foreign callsite cannot supply attribution.
+Check-stage outcomes cannot use this codegen-specific route.
