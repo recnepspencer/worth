@@ -1930,7 +1930,6 @@ dependencies = [
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-security",
- "worth-store-test-support",
  "worth-store-testkit-executables",
  "worth-store-testkit-store",
  "worth-testkit-compiler",

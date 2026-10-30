@@ -24,7 +24,6 @@
 "worth-store-security" = { "path" = "../worth-store-security" }
 "worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
 "worth-store-testkit-store" = { "path" = "../worth-store-testkit-store" }
-"worth-store-test-support" = { "path" = "../worth-store-test-support" }
 
 [[test]]
 name = "worth_store_court_store_replication_physical_record_journeys_physical_work"

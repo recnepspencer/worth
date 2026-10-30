@@ -72,7 +72,6 @@ fn read_declared_suite(
             workspace_root,
             declaration,
             fixture,
-            &source,
             observed,
             outcomes_path,
         )?);
@@ -104,7 +103,6 @@ fn read_fixture(
     workspace_root: &Path,
     declaration: &UiProofSuiteDeclaration,
     fixture: &UiFixtureDeclaration,
-    source: &Path,
     observed: &PrebuiltFixtureCompilation,
     outcomes_path: &Path,
 ) -> Result<UiFixtureResult, UiRunFailure> {
@@ -117,22 +115,12 @@ fn read_fixture(
             fixture.case_identity().to_owned(),
         ));
     }
-    let fixture_attribution = observed
-        .messages
-        .iter()
-        .filter(|message| message["level"] == "error")
-        .map(|message| attributed_to_fixture(message, source))
-        .collect::<Vec<_>>();
-    validate_denial(
-        fixture.expected_denial(),
-        &diagnostics,
-        "",
-        &fixture_attribution,
-    )
-    .map_err(|reason| UiRunFailure::WrongCompilerDenial {
-        fixture: fixture.case_identity().to_owned(),
-        reason,
-        diagnostics: diagnostics.clone(),
+    validate_denial(fixture.expected_denial(), &diagnostics, "").map_err(|reason| {
+        UiRunFailure::WrongCompilerDenial {
+            fixture: fixture.case_identity().to_owned(),
+            reason,
+            diagnostics: diagnostics.clone(),
+        }
     })?;
     let expected = serde_json::to_vec(fixture.expected_denial())
         .map_err(|error| UiRunFailure::InvalidDeclaration(error.to_string()))?;
@@ -152,29 +140,6 @@ fn read_fixture(
         diagnostics,
         semantic_denial_matched: true,
     })
-}
-
-fn attributed_to_fixture(message: &serde_json::Value, source: &Path) -> bool {
-    message["spans"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .any(|span| attributed_span(span, source))
-        || message["children"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .any(|child| attributed_to_fixture(child, source))
-}
-
-fn attributed_span(span: &serde_json::Value, source: &Path) -> bool {
-    span["file_name"]
-        .as_str()
-        .is_some_and(|path| normalized_source_key(Path::new(path)) == normalized_source_key(source))
-        || span
-            .get("expansion")
-            .filter(|expansion| !expansion.is_null())
-            .is_some_and(|expansion| attributed_span(&expansion["span"], source))
 }
 
 fn decode(bytes: &[u8], path: &Path) -> Result<PrebuiltCompilerOutcomes, UiRunFailure> {

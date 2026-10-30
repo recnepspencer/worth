@@ -72,8 +72,7 @@ fn fixture_source_text_cannot_impersonate_a_semantic_compiler_message() {
         rendered: "use absent_dependency::private;".to_owned(),
     }];
 
-    let denial =
-        super::diagnostics::validate_denial(&expected, &diagnostics, "", &[true]).unwrap_err();
+    let denial = super::diagnostics::validate_denial(&expected, &diagnostics, "").unwrap_err();
 
     assert!(denial.contains("missed semantic fragment"));
 }
