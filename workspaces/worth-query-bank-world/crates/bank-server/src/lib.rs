@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Authoritative bank runtime composition.
 //!
 //! Transport and Authentik protocol details belong to downstream adapters.

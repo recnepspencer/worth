@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! # worth-relational
 //!
 //! Deterministic truth-state runtime infrastructure for high-consequence graph

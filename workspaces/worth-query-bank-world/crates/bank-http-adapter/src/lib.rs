@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Bank transport adaptation.
 //!
 //! Authentik tokens and protocol types terminate in this crate.

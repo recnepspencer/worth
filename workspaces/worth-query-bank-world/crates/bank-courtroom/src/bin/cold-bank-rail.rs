@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 use std::io::{BufRead, Write};
 
 use bank_external_rail::{

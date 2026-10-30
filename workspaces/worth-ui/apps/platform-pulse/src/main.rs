@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 mod application;
 mod launch_configuration;
 mod lifecycle_observation_publication;
