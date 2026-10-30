@@ -13,7 +13,8 @@ probes compare discovery with real `cargo metadata`; no compilation is needed.
 `source_documents.py` keeps selected test text and enclosing lexical context
 together. Imported command names and executable constants remain resolvable
 without counting unrelated production calls. Named helpers referenced by test
-code enter a conservative same-target source closure. Literal `include!`
+code, including associated and trait-default methods, enter a conservative
+same-target source closure. Literal `include!`
 sources retain their real paths; selected unresolved includes refuse the census.
 
 ```text

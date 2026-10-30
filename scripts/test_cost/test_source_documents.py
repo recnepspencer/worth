@@ -55,6 +55,20 @@ class TestSourceOwnershipTests(unittest.TestCase):
                              'expression.rs': 'Command::new("cargo")'})
         self.assertIn('Command::new', next(row.text for row in rows if row.path.name == 'expression.rs'))
 
+    def test_referenced_associated_methods_enter_the_same_test_closure(self):
+        rows = self.observe({'lib.rs': 'struct Compiler; impl Compiler {\n'
+                             'fn launch() { Command::new("cargo"); }\n'
+                             'fn unrelated() { loop {} } }\n'
+                             '#[cfg(test)] mod tests { #[test] fn proof() { Compiler::launch(); } }'})
+        self.assertIn('Command::new', rows[0].text)
+        self.assertNotIn('loop {}', rows[0].text)
+
+    def test_referenced_trait_default_methods_enter_the_test_closure(self):
+        rows = self.observe({'lib.rs': 'trait Compiler { fn launch() { Command::new("cargo"); } }\n'
+                             'struct Driver; impl Compiler for Driver {}\n'
+                             '#[cfg(test)] mod tests { #[test] fn proof() { Driver::launch(); } }'})
+        self.assertIn('Command::new', rows[0].text)
+
     def test_unresolved_test_include_refuses_instead_of_claiming_no_sites(self):
         with self.assertRaisesRegex(ValueError, 'unresolved include'):
             self.observe({'lib.rs': '#[cfg(test)] mod tests { include!(generated_path!()); }'})

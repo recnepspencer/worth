@@ -23,6 +23,14 @@ def identifiers(text):
     return {token.value for token in tokens(text) if token.kind == 'ident'}
 
 
+def definitions(text, offset=0):
+    for item in items(text):
+        yield item, text, offset
+        if item.keyword in ('impl', 'trait') and item.body:
+            start, end = item.body
+            yield from definitions(text[start:end], offset + start)
+
+
 class SourceSelection:
     def __init__(self, package):
         self.package = package
@@ -67,7 +75,7 @@ class SourceSelection:
         if testing:
             self.mark(source, node.offset, node.offset + len(node.text))
         try:
-            declarations = items(node.text)
+            declarations = list(definitions(node.text, node.offset))
         except ValueError:
             stream = tokens(node.text)
             item_words = {'pub', 'fn', 'mod', 'impl', 'trait', 'struct', 'enum', 'union', 'use',
@@ -76,9 +84,9 @@ class SourceSelection:
                 raise
             # Included expressions are selected through their owning span.
             declarations = []
-        for item in declarations:
-            start, end = node.offset + item.start, node.offset + item.end
-            header = node.text[item.start:item.body[0] if item.body else item.end]
+        for item, fragment, offset in declarations:
+            start, end = offset + item.start, offset + item.end
+            header = fragment[item.start:item.body[0] if item.body else item.end]
             if item.test or ('cfg' in header and 'test' in header):
                 self.mark(source, start, end)
             if item.keyword == 'fn':
