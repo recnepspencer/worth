@@ -1,4 +1,10 @@
-use {worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::durable_publication::root::publish_single, worth_store_testkit_store::physical_record_journeys::read_record, worth_store_testkit_store::physical_record_journeys::success};
+use {
+    worth_store_testkit_store::durable_publication::root::publish_single,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::read_record,
+    worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn cross_batch_page_reuse_is_cow_and_does_not_rebase_old_slots() {
@@ -6,7 +12,9 @@ fn cross_batch_page_reuse_is_cow_and_does_not_rebase_old_slots() {
     let root = parent.path().join("store");
     let (format, placement, access) = dense_configuration(4);
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let publish = |material, batch| {
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -20,7 +28,11 @@ fn cross_batch_page_reuse_is_cow_and_does_not_rebase_old_slots() {
     };
     let first = publish(
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([163; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"alpha".as_slice(), b"beta".as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+            b"alpha".as_slice(),
+            b"beta".as_slice(),
+        ])
+        .unwrap(),
     );
     let old_page = std::fs::read(
         root.join("families/records/segments/segment-0000000000000001-0000000000000001.pages"),
@@ -30,7 +42,11 @@ fn cross_batch_page_reuse_is_cow_and_does_not_rebase_old_slots() {
     let before_admission = serving.resident_admission_counters();
     let second = publish(
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([164; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"gamma".as_slice(), b"delta".as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+            b"gamma".as_slice(),
+            b"delta".as_slice(),
+        ])
+        .unwrap(),
     );
     let after_admission = serving.resident_admission_counters();
     // The second publication reads one source page and two blocks from each
@@ -63,7 +79,9 @@ fn cross_batch_page_reuse_is_cow_and_does_not_rebase_old_slots() {
         .expect("read protection admission")
         .open(
             first.settled_members()[0].record_id(0).unwrap(),
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(32).unwrap(),
+            ),
         )
         .unwrap();
     assert_eq!(read_record(old_record, 5).0, b"alpha");
@@ -72,7 +90,9 @@ fn cross_batch_page_reuse_is_cow_and_does_not_rebase_old_slots() {
         .expect("read protection admission")
         .open(
             second.settled_members()[0].record_id(0).unwrap(),
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(32).unwrap(),
+            ),
         )
         .unwrap();
     assert_eq!(read_record(appended, 5).0, b"gamma");

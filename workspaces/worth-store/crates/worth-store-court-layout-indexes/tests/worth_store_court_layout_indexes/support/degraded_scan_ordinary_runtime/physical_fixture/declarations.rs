@@ -1,6 +1,23 @@
-pub(crate) use {worth_store_contracts::AcceptedHandoffReadiness, worth_store_contracts::HandoffEvidenceDigestSet, worth_store_contracts::StableDigest, worth_store_contracts::ROADMAP_2_S1_SCOPE};
-pub(crate) use {worth_store_layout_indexes::bootstrap_catalog, worth_store_layout_indexes::BootstrapCatalogReadAdmission, worth_store_layout_indexes::BootstrapOnlyAccessPath};
-pub(crate) use {worth_store_physical_format::physical_bootstrap_catalog, worth_store_physical_format::InMemoryPhysicalFormatModel, worth_store_physical_format::InMemoryPhysicalFormatModelRequest, worth_store_physical_format::PhysicalExtentId, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalRecordSlot, worth_store_physical_format::PhysicalSegmentId, worth_store_physical_format::PlatformPhysicalAppendRequest};
+pub(crate) use {
+    worth_store_contracts::AcceptedHandoffReadiness,
+    worth_store_contracts::HandoffEvidenceDigestSet, worth_store_contracts::StableDigest,
+    worth_store_contracts::ROADMAP_2_S1_SCOPE,
+};
+pub(crate) use {
+    worth_store_layout_indexes::bootstrap_catalog,
+    worth_store_layout_indexes::BootstrapCatalogReadAdmission,
+    worth_store_layout_indexes::BootstrapOnlyAccessPath,
+};
+pub(crate) use {
+    worth_store_physical_format::physical_bootstrap_catalog,
+    worth_store_physical_format::InMemoryPhysicalFormatModel,
+    worth_store_physical_format::InMemoryPhysicalFormatModelRequest,
+    worth_store_physical_format::PhysicalExtentId, worth_store_physical_format::PhysicalGeneration,
+    worth_store_physical_format::PhysicalGenerationAuthority,
+    worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalRecordSlot,
+    worth_store_physical_format::PhysicalSegmentId,
+    worth_store_physical_format::PlatformPhysicalAppendRequest,
+};
 
 pub(crate) fn admitted_catalog() -> BootstrapCatalogReadAdmission {
     admitted_catalog_from_publication(published_layout(false))
@@ -21,7 +38,9 @@ pub(crate) fn open_runtime_for_store(
 ) -> InMemoryPhysicalFormatModel {
     worth_store_physical_format::InMemoryPhysicalFormatModel::start_empty_model(
         readiness(),
-        worth_store_physical_format::InMemoryPhysicalFormatModelRequest::physical_format_for_store(store_identity.clone()),
+        worth_store_physical_format::InMemoryPhysicalFormatModelRequest::physical_format_for_store(
+            store_identity.clone(),
+        ),
     )
     .expect("open degraded scan physical fixture")
 }
@@ -62,25 +81,34 @@ pub(crate) fn published_layout(
 ) -> worth_store_physical_format::PlatformPhysicalRootPublicationReport {
     let mut runtime = worth_store_physical_format::InMemoryPhysicalFormatModel::start_empty_model(
         readiness(),
-        worth_store_physical_format::InMemoryPhysicalFormatModelRequest::physical_format_canonical(),
+        worth_store_physical_format::InMemoryPhysicalFormatModelRequest::physical_format_canonical(
+        ),
     )
     .unwrap();
-    let generations = worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format();
+    let generations =
+        worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format();
     runtime
-        .append_physical_record(worth_store_physical_format::PlatformPhysicalAppendRequest::page_slot(
-            generations
-                .slot_cell(segment(7), page(3), slot(1))
-                .with_slot_generation(generation(2)),
-            b"small",
-        ))
+        .append_physical_record(
+            worth_store_physical_format::PlatformPhysicalAppendRequest::page_slot(
+                generations
+                    .slot_cell(segment(7), page(3), slot(1))
+                    .with_slot_generation(generation(2)),
+                b"small",
+            ),
+        )
         .unwrap();
     runtime
-        .append_physical_record(worth_store_physical_format::PlatformPhysicalAppendRequest::extent(
-            generations
-                .extent_cell(segment(7), worth_store_physical_format::PhysicalExtentId::from_raw(20).unwrap())
-                .with_extent_generation(generation(3)),
-            b"large",
-        ))
+        .append_physical_record(
+            worth_store_physical_format::PlatformPhysicalAppendRequest::extent(
+                generations
+                    .extent_cell(
+                        segment(7),
+                        worth_store_physical_format::PhysicalExtentId::from_raw(20).unwrap(),
+                    )
+                    .with_extent_generation(generation(3)),
+                b"large",
+            ),
+        )
         .unwrap();
     let published = runtime.publish_physical_root().unwrap();
     if advance_root {
@@ -91,7 +119,8 @@ pub(crate) fn published_layout(
 }
 
 pub(crate) fn readiness() -> AcceptedHandoffReadiness {
-    let digest = |value| worth_store_contracts::StableDigest::new(format!("sha256:{value}")).unwrap();
+    let digest =
+        |value| worth_store_contracts::StableDigest::new(format!("sha256:{value}")).unwrap();
     worth_store_contracts::AcceptedHandoffReadiness::from_foundational_handoff_artifacts(
         ROADMAP_2_S1_SCOPE,
         worth_store_contracts::HandoffEvidenceDigestSet::new(

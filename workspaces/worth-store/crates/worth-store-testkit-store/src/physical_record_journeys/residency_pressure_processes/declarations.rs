@@ -1,18 +1,36 @@
-pub use {std::io::Write};
-pub use {std::path::Path};
+pub use std::io::Write;
+pub use std::path::Path;
 
-pub use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy, worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::PhysicalSpeculativeWorkKind, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits};
-pub use {worth_store_physical_backend::MediaOperationRole};
+pub use worth_store_physical_backend::MediaOperationRole;
+pub use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::PhysicalResidencyDimension,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+};
 
-pub use {crate::allocation_probe::physical_record_journeys::peak_live_bytes_during, crate::physical_record_journeys::configuration, crate::durable_publication, crate::physical_record_journeys::media, crate::stream_fixture::RepeatedByteSource, crate::physical_record_journeys::success};
+pub use {
+    crate::allocation_probe::physical_record_journeys::peak_live_bytes_during,
+    crate::durable_publication, crate::physical_record_journeys::configuration,
+    crate::physical_record_journeys::media, crate::physical_record_journeys::success,
+    crate::stream_fixture::RepeatedByteSource,
+};
 
 pub const RESIDENT_BYTES: u64 = 64 * 1024;
 pub const RECORD_BYTES: usize = 3_000;
 pub const RECORDS: usize = 192;
 
 pub fn policy(format: AdmittedPhysicalRecordFormat) -> AdmittedPhysicalRecordResidencyPolicy {
-    use {worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope};
-    use {worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation};
+    use worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope;
+    use worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation;
 
     let operation_bytes = 16 * 1024 * 1024;
     worth_store::physical_runtime::PhysicalRecordResidencyPolicy::builder()
@@ -45,17 +63,28 @@ pub fn policy(format: AdmittedPhysicalRecordFormat) -> AdmittedPhysicalRecordRes
 pub fn pressure_writer(root: &Path, locator_path: &str) {
     let (format, placement, access) = configuration();
     let serving = success(initialize_record_store!(media(root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
-            .with_residency_policy(policy(format))
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
+        .with_residency_policy(policy(format))
     },));
-    let batch = (0..RECORDS).fold(worth_store::physical_runtime::RecordAppendBatch::builder(), |batch, ordinal| {
-        batch.push_source(crate::stream_fixture::RepeatedByteSource::new(RECORD_BYTES as u64, ordinal as u8))
-    });
+    let batch = (0..RECORDS).fold(
+        worth_store::physical_runtime::RecordAppendBatch::builder(),
+        |batch, ordinal| {
+            batch.push_source(crate::stream_fixture::RepeatedByteSource::new(
+                RECORD_BYTES as u64,
+                ordinal as u8,
+            ))
+        },
+    );
     let (published, peak_live_bytes) = peak_live_bytes_during(|| {
         crate::durable_publication::root::publish_single(
             &serving,
             placement,
-            crate::durable_publication::material::certification_material("residency-pressure-process", 1),
+            crate::durable_publication::material::certification_material(
+                "residency-pressure-process",
+                1,
+            ),
             batch.build().unwrap(),
         )
     });
@@ -101,7 +130,8 @@ pub fn pressure_writer(root: &Path, locator_path: &str) {
 pub fn pressure_reader(root: &Path, locator_path: &str) {
     let (format, _, access) = configuration();
     let serving = success(open_record_store!(media(root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability).with_residency_policy(policy(format))
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+            .with_residency_policy(policy(format))
     },));
     let locators = std::fs::read_to_string(locator_path)
         .unwrap()
@@ -150,7 +180,9 @@ pub fn open(
         .expect("read protection admission")
         .open_external(
             locator,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(RECORD_BYTES as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(RECORD_BYTES as u32).unwrap(),
+            ),
         )
 }
 

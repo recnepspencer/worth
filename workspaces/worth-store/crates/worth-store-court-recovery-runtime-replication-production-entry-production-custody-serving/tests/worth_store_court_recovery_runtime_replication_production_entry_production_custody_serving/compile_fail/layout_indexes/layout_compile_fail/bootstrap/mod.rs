@@ -1,5 +1,3 @@
-use {crate::compile_fail_support};
-
 #[test]
 fn raw_layout_bytes_cannot_reopen_the_bootstrap_lane() {
     crate::compile_fail_support::assert_compile_fails_in_ui_dir(

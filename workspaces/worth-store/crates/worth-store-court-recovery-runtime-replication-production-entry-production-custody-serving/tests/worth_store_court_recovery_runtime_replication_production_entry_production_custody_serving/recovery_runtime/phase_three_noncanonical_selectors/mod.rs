@@ -1,11 +1,5 @@
 #[allow(unused_imports)]
 use crate::phase_three_noncanonical_selectors::*;
-use worth_store_physical_format::RootSelectorRole;
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolArtifact,
-    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial,
-    worth_store_recovery_runtime::PhysicalRecoverySourceDenial,
-};
 use {
     worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
     worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,

@@ -1,9 +1,22 @@
 pub(crate) use {std::path::Path, std::process::Command, std::time::Duration};
 
-pub(crate) use {worth_store::integrity_observation::PhysicalIntegrityRuntimeReportContext, worth_store::integrity_observation::PhysicalIntegrityRuntimeReportDenial};
-pub(crate) use {worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest, worth_store::physical_runtime::PhysicalIntegrityScrubTarget, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_offline_integrity_observer::compare_selected_integrity_observations, worth_store_offline_integrity_observer::PhysicalIntegrityComparisonLimits};
-pub(crate) use {worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::RootPublicationCell};
+pub(crate) use {
+    worth_store::integrity_observation::PhysicalIntegrityRuntimeReportContext,
+    worth_store::integrity_observation::PhysicalIntegrityRuntimeReportDenial,
+};
+pub(crate) use {
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest,
+    worth_store::physical_runtime::PhysicalIntegrityScrubTarget,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_offline_integrity_observer::compare_selected_integrity_observations,
+    worth_store_offline_integrity_observer::PhysicalIntegrityComparisonLimits,
+};
+pub(crate) use {
+    worth_store_physical_format::PersistedRecordIdentity,
+    worth_store_physical_format::RootPublicationCell,
+};
 
 pub(crate) fn observe_selected(root: &Path) -> String {
     let binary = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();
@@ -83,7 +96,11 @@ pub(crate) fn assert_selected_join(
     let mut wire = Vec::new();
     let written = scrub
         .write_selected_record_observation_report(
-            worth_store::integrity_observation::PhysicalIntegrityRuntimeReportContext::new("c11-middle-chunk", "damaged").unwrap(),
+            worth_store::integrity_observation::PhysicalIntegrityRuntimeReportContext::new(
+                "c11-middle-chunk",
+                "damaged",
+            )
+            .unwrap(),
             16_384,
             &mut wire,
         )
@@ -126,7 +143,10 @@ pub(crate) fn assert_selected_join(
         .as_array()
         .unwrap()
         .iter()
-        .find(|row| row["record"] == crate::physical_blob_journeys::blob_corruption_localization::hex_record(record))
+        .find(|row| {
+            row["record"]
+                == crate::physical_blob_journeys::blob_corruption_localization::hex_record(record)
+        })
         .expect("independent selected observer must find the same record");
     assert_eq!(joined["runtime_family"], "blob_chunk_frame");
     assert_eq!(joined["offline_family"], "blob_chunk_frame");

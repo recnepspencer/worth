@@ -1,5 +1,12 @@
-use {worth_store_branch_deltas::admit_continuation_layout_support, worth_store_branch_deltas::admit_stable_basis_layout_support, worth_store_branch_deltas::reject_broadened_continuation_receipt, worth_store_branch_deltas::reject_stable_basis_layout_descriptor, worth_store_branch_deltas::BranchDeltaLayoutAccessDenialKind};
-use {worth_store_live_query::live_query_semantic_authority, worth_store_live_query::ContinuationRetentionStatus, worth_store_live_query::StableBasisId};
+use {
+    worth_store_branch_deltas::admit_continuation_layout_support,
+    worth_store_branch_deltas::admit_stable_basis_layout_support,
+    worth_store_branch_deltas::reject_broadened_continuation_receipt,
+    worth_store_branch_deltas::reject_stable_basis_layout_descriptor,
+};
+use {
+    worth_store_live_query::live_query_semantic_authority, worth_store_live_query::StableBasisId,
+};
 
 #[test]
 fn stable_basis_and_continuation_families_bind_support_to_admitted_windows() {

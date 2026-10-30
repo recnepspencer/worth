@@ -2,25 +2,48 @@
 
 pub(crate) use {std::fs, std::path::Path, std::path::PathBuf};
 
-pub(crate) use {worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalCheckpointSource, worth_store_physical_format::PhysicalRootRoutingBlock, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::CHECKPOINT_STREAM_HEADER_RECORD_BYTES};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial, worth_store_recovery_runtime::PhysicalRecoveryReleaseHeadControlDenial as Control, worth_store_recovery_runtime::PhysicalRecoveryReleaseHeadWalkDenial as Walk, worth_store_recovery_runtime::PhysicalRecoverySelectedReleaseHeadDenial as Denial, worth_store_recovery_runtime::WorthStoreRecovery};
+pub(crate) use {
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::PersistedRecordIdentity,
+    worth_store_physical_format::PhysicalCheckpointSource,
+    worth_store_physical_format::PhysicalRootRoutingBlock,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+    worth_store_recovery_runtime::PhysicalRecoveryReleaseHeadControlDenial as Control,
+    worth_store_recovery_runtime::PhysicalRecoveryReleaseHeadWalkDenial as Walk,
+    worth_store_recovery_runtime::PhysicalRecoverySelectedReleaseHeadDenial as Denial,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 pub(crate) use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::open_serving_with_seal, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery::recover, worth_store_testkit_recovery_runtime::production_entry::release_reopen, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request, worth_store_testkit_recovery_runtime::certified_release_serving::tamper};
 
 pub(crate) fn hostile_rereads(root: &Path) {
     let checkpoint = std::fs::read(root.join("families/checkpoint.current")).unwrap();
-    let source = worth_store_physical_format::PhysicalCheckpointSource::decode_stream_header_record(
-        &checkpoint[..CHECKPOINT_STREAM_HEADER_RECORD_BYTES],
-    )
-    .unwrap();
+    let source =
+        worth_store_physical_format::PhysicalCheckpointSource::decode_stream_header_record(
+            &checkpoint[..CHECKPOINT_STREAM_HEADER_RECORD_BYTES],
+        )
+        .unwrap();
     let root_artifact = worth_store_physical_format::RecordArtifactFile::RootManifest {
         generation: source.root().generation(),
     };
     let root_path = artifact(root, root_artifact);
     let root_bytes = std::fs::read(&root_path).unwrap();
-    let (manifest, _) = worth_store_physical_format::DurablePhysicalRootManifest::decode(&root_bytes, u16::MAX).unwrap();
+    let (manifest, _) =
+        worth_store_physical_format::DurablePhysicalRootManifest::decode(&root_bytes, u16::MAX)
+            .unwrap();
     let (_, accumulator) = worth_store_testkit_recovery_runtime::production_entry::release_reopen::selected_release_certificates_from_bytes(&checkpoint);
-    let heads = worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(root, accumulator);
+    let heads =
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            root,
+            accumulator,
+        );
     let [head] = heads.as_slice() else {
         panic!("one genuine keyed head")
     };
@@ -33,7 +56,8 @@ pub(crate) fn hostile_rereads(root: &Path) {
         },
     );
     let reservation = route(root, &manifest, head.reservation_record());
-    let worth_store_physical_format::CurrentPhysicalRecordPlacement::Extent(extent) = reservation else {
+    let worth_store_physical_format::CurrentPhysicalRecordPlacement::Extent(extent) = reservation
+    else {
         panic!("bounded reservation extent")
     };
     let arena_path = root.join("families/records/arenas").join(
@@ -151,8 +175,9 @@ pub(crate) fn assert_failure(
         blocked.evidence().artifact.as_deref(),
         Some("checkpoint-source-release-head-v2")
     );
-    let Some(worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::SelectedReleaseHead(denial)) =
-        &blocked.evidence().planning_denial
+    let Some(worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::SelectedReleaseHead(
+        denial,
+    )) = &blocked.evidence().planning_denial
     else {
         panic!("typed head admission denial: {:?}", blocked.evidence())
     };
@@ -206,8 +231,11 @@ pub(crate) fn route(
             },
         ))
         .unwrap();
-        let (block, _) =
-            worth_store_physical_format::PhysicalRootRoutingBlock::decode(&bytes, manifest.node_capacity()).unwrap();
+        let (block, _) = worth_store_physical_format::PhysicalRootRoutingBlock::decode(
+            &bytes,
+            manifest.node_capacity(),
+        )
+        .unwrap();
         if let Some(entries) = block.entries() {
             if let Some(route) = entries.iter().find(|route| route.record() == record) {
                 return *route;

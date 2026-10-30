@@ -1,10 +1,29 @@
 //! A checksum-valid Store record must still match its manifest's member digest.
-pub(crate) use {crate::durable_run, crate::residency_fixture::Fixture, crate::residency_media, crate::selected_checkpoint, crate::workload};
-pub(crate) use {std::path::Path};
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::identity::PartitionId, worth_relational::facade::mvcc::RelationalTransactionReadDenial, worth_relational::facade::storage::RelationalStorageSubject, worth_relational::facade::storage::RelationalStorageUnavailableCause};
-pub(crate) use {worth_store::physical_runtime::AnchoredRecordMemberDamage, worth_store::physical_runtime::AnchoredRecordMemberReadFailure, worth_store::physical_runtime::AnchoredRecordName, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits};
-pub(crate) use {worth_store_physical_format::decode_data_frame_page_lsn, worth_store_physical_format::durable_artifact_checksum, worth_store_physical_format::DurableFrameKind, worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES};
+pub(crate) use std::path::Path;
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use {
+    crate::durable_run, crate::residency_fixture::Fixture, crate::residency_media,
+    crate::selected_checkpoint, crate::workload,
+};
+pub(crate) use {
+    worth_relational::facade::identity::PartitionId,
+    worth_relational::facade::mvcc::RelationalTransactionReadDenial,
+    worth_relational::facade::storage::RelationalStorageSubject,
+    worth_relational::facade::storage::RelationalStorageUnavailableCause,
+};
+pub(crate) use {
+    worth_store::physical_runtime::AnchoredRecordMemberDamage,
+    worth_store::physical_runtime::AnchoredRecordMemberReadFailure,
+    worth_store::physical_runtime::AnchoredRecordName,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_data_frame_page_lsn,
+    worth_store_physical_format::durable_artifact_checksum,
+    worth_store_physical_format::DurableFrameKind,
+    worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES,
+};
 
 /// Offline fault construction, limited to data frames containing this member.
 /// Preserve every frame coordinate and reseal its checksum with Store's codec.

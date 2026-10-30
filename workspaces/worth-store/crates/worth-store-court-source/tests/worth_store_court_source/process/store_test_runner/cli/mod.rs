@@ -1,5 +1,3 @@
-use {std::process::Command};
-
 #[test]
 fn global_help_succeeds_on_stdout() {
     let output = std::process::Command::new(worth_store_testkit_executables::store_test_runner())

@@ -5,13 +5,19 @@
 //! before `finish` do reach cleanup; `denial_matrix.rs` and
 //! `cleanup_revalidates_exact_wal_bytes_before_deletion` pin them.
 
-#[allow(unused_imports)] use crate::phase_seven_faults::revalidation::lasting_changes::*;
-use {worth_store::physical_runtime::ArtifactTreeFailureKind, worth_store::physical_runtime::RecoveryCheckpointResidueDenial};
-use {worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryOutcome};
+#[allow(unused_imports)]
+use crate::phase_seven_faults::revalidation::lasting_changes::*;
 
-use {crate::phase_seven_faults::world::cleanup_world, crate::phase_seven_faults::world::empty_fault_schedule, crate::phase_seven_faults::world::reopen_with_schedule};
-use {crate::revalidation::checkpoint_replacement::replace_with_distinct_valid_checkpoint};
-use {crate::revalidation::window::append_byte, crate::revalidation::window::checkpoint_path, crate::revalidation::window::flip_first_byte};
+use crate::revalidation::checkpoint_replacement::replace_with_distinct_valid_checkpoint;
+use {
+    crate::phase_seven_faults::world::cleanup_world,
+    crate::phase_seven_faults::world::empty_fault_schedule,
+    crate::phase_seven_faults::world::reopen_with_schedule,
+};
+use {
+    crate::revalidation::window::append_byte, crate::revalidation::window::checkpoint_path,
+    crate::revalidation::window::flip_first_byte,
+};
 
 #[test]
 fn missing_checkpoint_blocks_at_the_store_residue_gate() {

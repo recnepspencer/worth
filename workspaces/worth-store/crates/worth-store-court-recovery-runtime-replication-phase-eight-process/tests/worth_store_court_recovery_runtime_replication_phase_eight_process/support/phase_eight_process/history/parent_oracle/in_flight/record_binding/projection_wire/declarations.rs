@@ -1,4 +1,4 @@
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity};
+pub(crate) use crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity;
 
 pub(crate) struct Cursor<'bytes> {
     pub(crate) bytes: &'bytes [u8],

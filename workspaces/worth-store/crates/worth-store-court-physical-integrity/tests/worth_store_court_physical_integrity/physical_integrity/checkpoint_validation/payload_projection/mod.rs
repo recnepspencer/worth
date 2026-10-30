@@ -1,10 +1,3 @@
-use std::num::NonZeroU64;
-
-use worth_store_physical_format::PhysicalCheckpointIdentity;
-use worth_store_physical_integrity::{
-    CheckpointBindingPayloadProjectionDenial, UntrustedPhysicalArtifact,
-};
-
 use crate::checkpoint_validation::support::{
     binding_scope, identity, other_store, validate_binding,
 };

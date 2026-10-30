@@ -1,12 +1,9 @@
 #[allow(unused_imports)] use crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::arena_retirement_crash::*;
-use {worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetiredKind, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetirementAction, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalRetirementDenial, crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::arena_retirement, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route, crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::evacuation, crate::durability_admission::managed_mutation::extent_record_rewrite::independent_arena_observer, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::request};
-use {std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
-use {worth_store::physical_runtime::ArenaEvacuationThreshold, worth_store::physical_runtime::ExtentArenaCapacity, worth_store::physical_runtime::PhysicalArenaEvacuationPreparationOutcome, worth_store::physical_runtime::PhysicalExtentCopyPhase, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordPlacementPolicy};
-use {worth_store_physical_format::RecordArtifactFile};
+use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::request};
 
 #[test]
 fn process_kills_converge_whole_arena_retirement() {
-    use {worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetiredKind, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetirementAction};
+    use worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads;
     for seam in [1_u8, 2, 3, 4] {
         let directory = tempfile::tempdir().unwrap();
         let root = directory.path().join("store");
@@ -68,20 +65,29 @@ fn arena_retirement_child() {
     let root = directory.join("store");
     let (format, _, access) = configuration();
     let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
-        .arena_capacity(worth_store::physical_runtime::ExtentArenaCapacity::bytes(64 << 20).unwrap())
-        .arena_evacuation(worth_store::physical_runtime::ArenaEvacuationThreshold::percent(99).unwrap())
+        .arena_capacity(
+            worth_store::physical_runtime::ExtentArenaCapacity::bytes(64 << 20).unwrap(),
+        )
+        .arena_evacuation(
+            worth_store::physical_runtime::ArenaEvacuationThreshold::percent(99).unwrap(),
+        )
         .admit(format)
         .unwrap();
     let media = worth_store_testkit_store::physical_record_journeys::media(&root);
     let durability = if std::env::var_os(SMALL_WAL).is_some() {
-        worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy(&media, small_wal_policy())
+        worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy(
+            &media,
+            small_wal_policy(),
+        )
     } else {
         crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::evacuation::fill_durability(&media)
     };
     let serving = worth_store_testkit_store::physical_record_journeys::success(
-        media.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
-            format, placement, access, durability,
-        )),
+        media.initialize_record_store(
+            worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                format, placement, access, durability,
+            ),
+        ),
     );
     let payload = vec![61; 40_000];
     let append = completed(prepare(&serving, placement, [31; 32], &payload).execute());
@@ -89,7 +95,9 @@ fn arena_retirement_child() {
     let _record = append.into_acknowledgment().record_ids().next().unwrap();
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([32; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([32; 32]),
+        )
         .unwrap();
     let Ok(mut progress) = submission
         .certification_begin_selected_extent_copy(placement, request(key), identity)
@@ -98,12 +106,17 @@ fn arena_retirement_child() {
         panic!("selected copy was not prepared");
     };
     for _ in 0..1000 {
-        if progress.phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption {
+        if progress.phase
+            == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+        {
             break;
         }
         progress = submission.advance_extent_copy().unwrap();
     }
-    assert_eq!(progress.phase, worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption);
+    assert_eq!(
+        progress.phase,
+        worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+    );
     completed(
         submission
             .prepare_completed_extent_copy()
@@ -116,7 +129,9 @@ fn arena_retirement_child() {
     }
     serving.retire_displaced_segment().unwrap();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([33; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([33; 32]),
+        )
         .unwrap();
     assert!(matches!(
         submission

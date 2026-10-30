@@ -1,7 +1,10 @@
-pub use {std::fs};
-pub use {std::path::Path};
+pub use std::fs;
+pub use std::path::Path;
 
-pub use {crate::durability_admission::independent_wal_oracle::BindingField, crate::durability_admission::independent_wal_oracle::BindingInspectionDenial};
+pub use {
+    crate::durability_admission::independent_wal_oracle::BindingField,
+    crate::durability_admission::independent_wal_oracle::BindingInspectionDenial,
+};
 
 pub const REWRITE_DOMAIN: &[u8] = b"store.physical.rewrite-redo.v2";
 pub const CANONICAL_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
@@ -172,7 +175,9 @@ pub fn take_u32(cursor: &mut &[u8]) -> Result<u32, BindingInspectionDenial> {
 
 pub fn take<'a>(cursor: &mut &'a [u8], length: usize) -> Result<&'a [u8], BindingInspectionDenial> {
     if cursor.len() < length {
-        return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated);
+        return Err(
+            crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated,
+        );
     }
     let (value, rest) = cursor.split_at(length);
     *cursor = rest;

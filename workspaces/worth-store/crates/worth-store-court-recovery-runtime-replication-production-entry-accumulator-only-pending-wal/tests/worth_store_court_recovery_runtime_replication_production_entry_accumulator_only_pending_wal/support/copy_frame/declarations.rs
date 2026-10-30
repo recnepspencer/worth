@@ -1,6 +1,14 @@
 //! Inspect genuine current-format copy and blob WAL members without rewriting media.
 pub(crate) use {std::fs, std::path::Path, std::path::PathBuf};
-pub(crate) use {worth_store_physical_format::PersistedPhysicalRecoveryOperation, worth_store_physical_format::PersistedPhysicalRecoveryPayload, worth_store_physical_format::PersistedPhysicalRecoveryProjection, worth_store_physical_format::PhysicalExtentCopyRecord, worth_store_physical_format::PhysicalExtentCopyResolutionKind, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::PhysicalRecoveryProjectionDecodeLimits};
+pub(crate) use {
+    worth_store_physical_format::PersistedPhysicalRecoveryOperation,
+    worth_store_physical_format::PersistedPhysicalRecoveryPayload,
+    worth_store_physical_format::PersistedPhysicalRecoveryProjection,
+    worth_store_physical_format::PhysicalExtentCopyRecord,
+    worth_store_physical_format::PhysicalExtentCopyResolutionKind,
+    worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    worth_store_physical_format::PhysicalRecoveryProjectionDecodeLimits,
+};
 
 pub(crate) const HEADER: usize = 116;
 pub(crate) const FOOTER: usize = 32;
@@ -10,7 +18,9 @@ pub(crate) const CANONICAL_REDO_DOMAIN: &[u8] = b"store.physical.wal.canonical-r
 pub(crate) fn current_copy_publication_lsn(root: &Path) -> u64 {
     let mut paths = Vec::new();
     collect(&root.join("families/wal"), &mut paths);
-    let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+        .admit()
+        .unwrap();
     let mut copy_lsn = None;
     for path in paths {
         let bytes = std::fs::read(path).unwrap();
@@ -35,8 +45,12 @@ pub(crate) fn current_copy_publication_lsn(root: &Path) -> u64 {
                 let encoded = field(&mut redo);
                 assert!(redo.is_empty());
                 let projection =
-                    worth_store_physical_format::PersistedPhysicalRecoveryProjection::decode(encoded, limits(encoded), format)
-                        .expect("current copy projection decodes");
+                    worth_store_physical_format::PersistedPhysicalRecoveryProjection::decode(
+                        encoded,
+                        limits(encoded),
+                        format,
+                    )
+                    .expect("current copy projection decodes");
                 if matches!(
                     projection.payload(),
                     worth_store_physical_format::PersistedPhysicalRecoveryPayload::SourceCopy(_)
@@ -84,7 +98,9 @@ pub(crate) fn current_blob_generation_lsn(root: &Path) -> u64 {
 pub(crate) fn assert_no_published_copy_resolution(root: &Path) {
     let mut paths = Vec::new();
     collect(&root.join("families/wal"), &mut paths);
-    let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+        .admit()
+        .unwrap();
     let mut published = 0;
     for path in paths {
         let bytes = std::fs::read(path).unwrap();
@@ -97,7 +113,10 @@ pub(crate) fn assert_no_published_copy_resolution(root: &Path) {
             let end = offset.checked_add(HEADER + length + FOOTER).unwrap();
             let frame = bytes.get(offset..end).expect("complete retained WAL frame");
             if let Ok(worth_store_physical_format::PhysicalExtentCopyRecord::Resolved(resolution)) =
-                worth_store_physical_format::PhysicalExtentCopyRecord::decode(&frame[HEADER..frame.len() - FOOTER], format)
+                worth_store_physical_format::PhysicalExtentCopyRecord::decode(
+                    &frame[HEADER..frame.len() - FOOTER],
+                    format,
+                )
             {
                 published += u64::from(matches!(
                     resolution.kind(),
@@ -136,9 +155,15 @@ pub(crate) fn frame_has_generation(frame: &[u8]) -> bool {
     }
     let encoded = field(&mut redo);
     assert!(redo.is_empty());
-    let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let projection = worth_store_physical_format::PersistedPhysicalRecoveryProjection::decode(encoded, limits(encoded), format)
-        .expect("current generation projection decodes");
+    let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+        .admit()
+        .unwrap();
+    let projection = worth_store_physical_format::PersistedPhysicalRecoveryProjection::decode(
+        encoded,
+        limits(encoded),
+        format,
+    )
+    .expect("current generation projection decodes");
     matches!(
         projection.operation(),
         worth_store_physical_format::PersistedPhysicalRecoveryOperation::GenerationPublished(_)

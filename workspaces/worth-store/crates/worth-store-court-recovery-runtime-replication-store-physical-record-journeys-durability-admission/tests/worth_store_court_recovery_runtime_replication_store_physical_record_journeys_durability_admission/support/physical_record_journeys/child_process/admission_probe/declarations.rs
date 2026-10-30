@@ -1,15 +1,32 @@
 pub(crate) use {std::io::Write, std::path::Path};
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PageFillPercent, worth_store::physical_runtime::PhysicalManifestCapacityTransition, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationDenial, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordAppendDenial, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::SegmentPageCount};
-pub(crate) use {worth_store_physical_backend::MediaOperationRole};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store_physical_backend::MediaOperationRole;
+pub(crate) use {
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PageFillPercent,
+    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationDenial,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordAppendDenial,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::SegmentPageCount,
+};
 
-pub(crate) use {worth_store_testkit_store::allocation_probe::physical_record_journeys::allocations_during, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+pub(crate) use {
+    worth_store_testkit_store::allocation_probe::physical_record_journeys::allocations_during,
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+};
 
 pub(crate) fn batch() {
-    let builder = (0..u16::MAX).fold(worth_store::physical_runtime::RecordAppendBatch::builder(), |builder, _| {
-        builder.push_owned(Vec::new())
-    });
+    let builder = (0..u16::MAX).fold(
+        worth_store::physical_runtime::RecordAppendBatch::builder(),
+        |builder, _| builder.push_owned(Vec::new()),
+    );
     let payload = vec![0x5a; 1024 * 1024];
     let (builder, allocations) = allocations_during(|| builder.push_bytes(&payload));
     let denied = matches!(
@@ -60,9 +77,11 @@ pub(crate) fn geometry(root: &Path) {
         writes_after - writes_before,
         matches!(
             result,
-            worth_proof::TransitionOutcome::Denied(worth_store::physical_runtime::PhysicalMutationPreparationDenial::RecordAppend(
-                worth_store::physical_runtime::RecordAppendDenial::InlinePageFull
-            ))
+            worth_proof::TransitionOutcome::Denied(
+                worth_store::physical_runtime::PhysicalMutationPreparationDenial::RecordAppend(
+                    worth_store::physical_runtime::RecordAppendDenial::InlinePageFull
+                )
+            )
         )
     );
     std::io::stdout().flush().unwrap();

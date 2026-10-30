@@ -1,6 +1,5 @@
 //! Selected recovery fixtures armed at named publication fault boundaries.
 
-#[cfg(all())]
 fn selected_with_atomic_replacement_fault(
     root: &std::path::Path,
     replacement: u64,
@@ -24,7 +23,6 @@ fn selected_with_atomic_replacement_fault(
     )
 }
 
-#[cfg(all())]
 pub(crate) fn selected_with_publication_fault(
     root: &std::path::Path,
     role: worth_store::physical_runtime::certification::MediaOperationRole,
@@ -74,7 +72,6 @@ pub(crate) fn selected_with_publication_fault(
     (admitted.discover().unwrap().select().unwrap(), activation)
 }
 
-#[cfg(all())]
 pub(crate) fn assert_partial_root_protocol(replacement: u64, expected_prefix: usize) {
     let retained_root = crate::phase_four_planning::prepare_ordinary_recovery_root(&format!(
         "c8-phase6-prefix-{replacement}"

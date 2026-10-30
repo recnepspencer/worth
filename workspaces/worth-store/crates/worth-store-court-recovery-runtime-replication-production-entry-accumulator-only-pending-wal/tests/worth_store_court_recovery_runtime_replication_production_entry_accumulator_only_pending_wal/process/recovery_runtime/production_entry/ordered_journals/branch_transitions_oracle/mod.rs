@@ -12,16 +12,8 @@
 //! durable state, never by the dead runtime's attempt; the suffix publishes;
 //! and a second recovery agrees.
 
-#[allow(unused_imports)] use crate::production_entry::ordered_journals::branch_transitions_oracle::*;
-use {std::num::NonZeroU64};
-use {std::path::Path};
-
-use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-use {worth_store::physical_runtime::OrderedJournalPublicationFailure, worth_store::physical_runtime::OrderedJournalPublished, worth_store::physical_runtime::OrderedJournalResolution, worth_store::physical_runtime::ServingPhysicalRuntime};
-
-use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::open_with_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
-use {crate::production_entry::ordered_journals::two_journals::assert_holds, crate::production_entry::ordered_journals::two_journals::digest, crate::production_entry::ordered_journals::two_journals::publish, crate::production_entry::ordered_journals::two_journals::Journal};
-use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+#[allow(unused_imports)]
+use crate::production_entry::ordered_journals::branch_transitions_oracle::*;
 
 #[test]
 fn every_media_operation_of_a_branch_transition_recovers_to_the_old_or_new_head() {

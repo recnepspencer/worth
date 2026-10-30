@@ -1,25 +1,6 @@
 //! A selected V3 result cannot lose its maintenance obligation
 //! while preserving a canonical, same-route root and free-space inventory.
 
-use {
-    std::fs, std::process::Command, std::process::Stdio, std::thread, std::time::Duration,
-    std::time::Instant,
-};
-
-use worth_store::physical_runtime::PhysicalRecoveryYieldpointStage;
-use {
-    worth_store_physical_format::DurablePhysicalRootManifest,
-    worth_store_physical_format::DurableRootSelector,
-    worth_store_physical_format::RecordArtifactFile,
-};
-use {
-    worth_store_recovery_runtime::HistoricalDropAdmissionStage,
-    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::PhysicalRecoveryPageAdmissionDenial,
-    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
-};
-
 #[test]
 fn selected_released_result_cannot_clear_maintenance() {
     let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();

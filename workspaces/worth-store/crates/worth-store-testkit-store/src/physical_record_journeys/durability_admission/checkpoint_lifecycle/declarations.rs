@@ -1,16 +1,45 @@
-pub use {std::path::Path};
+pub use std::path::Path;
 pub use {std::time::Duration, std::time::Instant};
 
+pub use worth_signal::facade::TemporalDuration;
 pub use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-pub use {worth_signal::facade::TemporalDuration};
-pub use {worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint, worth_store::physical_runtime::certification::CertificationPhysicalExecutionPauseGate, worth_store::physical_runtime::certification::MediaFaultDirective};
-pub use {worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalCheckpointCancellationOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointHandle, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointProgressPhase, worth_store::physical_runtime::PhysicalCheckpointProvenNoEffectCause, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalCheckpointStartDeferred, worth_store::physical_runtime::PhysicalCheckpointStartStale, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalStoreCloseOutcome, worth_store::physical_runtime::PhysicalWalGroupAppendOutcome, worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub use {worth_store_physical_backend::CertificationMediaFaultActivation, worth_store_physical_backend::FilesystemAccessPosture, worth_store_physical_backend::MediaOperationRole};
+pub use {
+    worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint,
+    worth_store::physical_runtime::certification::CertificationPhysicalExecutionPauseGate,
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+};
+pub use {
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalCheckpointCancellationOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointHandle,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointProgressPhase,
+    worth_store::physical_runtime::PhysicalCheckpointProvenNoEffectCause,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalCheckpointStartDeferred,
+    worth_store::physical_runtime::PhysicalCheckpointStartStale,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore,
+    worth_store::physical_runtime::PhysicalStoreCloseOutcome,
+    worth_store::physical_runtime::PhysicalWalGroupAppendOutcome,
+    worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub use {
+    worth_store_physical_backend::CertificationMediaFaultActivation,
+    worth_store_physical_backend::FilesystemAccessPosture,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-pub use {crate::physical_record_journeys::configuration, crate::physical_record_journeys::durability, crate::physical_record_journeys::serving_from_initialization, crate::physical_record_journeys::success};
-
-
-
+pub use {
+    crate::physical_record_journeys::configuration, crate::physical_record_journeys::durability,
+    crate::physical_record_journeys::serving_from_initialization,
+    crate::physical_record_journeys::success,
+};
 
 pub fn pause_checkpoint_at_phase(
     gate: &CertificationPhysicalExecutionPauseGate,
@@ -45,8 +74,12 @@ pub fn append_durable_wal(serving: &ServingPhysicalRuntime, material: u8) {
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([material; 32]),
         b"checkpoint-lifecycle-redo",
     );
-    let appended = match submission.append_prepared_wal_group(worth_proof::NonEmpty::new(prepared, Vec::new())) {
-        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::Appended(appended) => appended,
+    let appended = match submission
+        .append_prepared_wal_group(worth_proof::NonEmpty::new(prepared, Vec::new()))
+    {
+        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::Appended(appended) => {
+            appended
+        }
         _ => panic!("checkpoint lifecycle setup requires an appended WAL member"),
     };
     assert!(matches!(
@@ -58,8 +91,9 @@ pub fn append_durable_wal(serving: &ServingPhysicalRuntime, material: u8) {
 pub fn fault_scheduled_serving(
     root: &Path,
 ) -> (ServingPhysicalRuntime, CertificationMediaFaultActivation) {
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::certification(worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::certification(
+        worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let authority = admission.fault_schedule_authority();
     let activation = authority.one_shot_activation();
     let schedule = authority
@@ -73,7 +107,10 @@ pub fn fault_scheduled_serving(
                 activation.clone(),
             )])
         .unwrap();
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).unwrap()).unwrap();
+    let runtime = worth_store::physical_runtime::PhysicalStore::admit(
+        worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).unwrap(),
+    )
+    .unwrap();
     let media = match runtime
         .try_admit_filesystem_media(admission.with_fault_schedule(schedule))
         .into_raw()
@@ -83,11 +120,11 @@ pub fn fault_scheduled_serving(
     };
     let (format, placement, access) = configuration();
     let policy = durability(&media);
-    let serving = success(
-        media.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
+    let serving = success(media.initialize_record_store(
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
             format, placement, access, policy,
-        )),
-    );
+        ),
+    ));
     (serving, activation)
 }
 
@@ -95,7 +132,8 @@ pub fn checkpoint_request(key: u8) -> PhysicalCheckpointRequest {
     worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
         worth_store::physical_runtime::PhysicalCheckpointDeadline::at(
-            worth_signal::facade::TemporalDuration::temporal_duration(1_000).expect("deadline is positive"),
+            worth_signal::facade::TemporalDuration::temporal_duration(1_000)
+                .expect("deadline is positive"),
         ),
     )
 }
@@ -117,7 +155,9 @@ pub fn await_checkpoint_admission_stop(
     loop {
         if matches!(
             submission.start(checkpoint_request(32)).into_raw(),
-            worth_proof::TransitionOutcome::Stale(worth_store::physical_runtime::PhysicalCheckpointStartStale::RuntimeClosing)
+            worth_proof::TransitionOutcome::Stale(
+                worth_store::physical_runtime::PhysicalCheckpointStartStale::RuntimeClosing
+            )
         ) {
             return;
         }

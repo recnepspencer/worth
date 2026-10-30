@@ -1,12 +1,13 @@
-use {worth_store_certification::S6FlushDurabilityEvidenceRow};
-use {worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+use worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment;
 
 #[test]
 fn certification_consumes_canonical_physical_completion_evidence() {
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize("s6-canonical-flush-evidence").unwrap();
     let acknowledgment =
         canonical_physical_mutation_acknowledgment(&world, [63; 32], b"canonical-flush-evidence");
-    let row = worth_store_certification::S6FlushDurabilityEvidenceRow::from_physical_acknowledgment(&acknowledgment);
+    let row = worth_store_certification::S6FlushDurabilityEvidenceRow::from_physical_acknowledgment(
+        &acknowledgment,
+    );
 
     assert_eq!(
         row.executed_boundary().mutation_identity(),

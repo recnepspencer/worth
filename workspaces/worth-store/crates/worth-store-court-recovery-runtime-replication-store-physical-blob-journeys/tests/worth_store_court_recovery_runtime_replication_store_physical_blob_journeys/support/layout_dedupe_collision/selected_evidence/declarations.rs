@@ -1,8 +1,12 @@
-pub(crate) use {worth_store::physical_runtime::PhysicalRecordId};
-pub(crate) use {worth_store_physical_format::DecodedBlobChunkFrameV1, worth_store_physical_format::PersistedRecordIdentity};
+pub(crate) use worth_store::physical_runtime::PhysicalRecordId;
+pub(crate) use {
+    worth_store_physical_format::DecodedBlobChunkFrameV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
 
 pub(crate) fn persisted(id: PhysicalRecordId) -> PersistedRecordIdentity {
-    worth_store_physical_format::PersistedRecordIdentity::new(id.allocation_epoch(), id.ordinal()).unwrap()
+    worth_store_physical_format::PersistedRecordIdentity::new(id.allocation_epoch(), id.ordinal())
+        .unwrap()
 }
 
 pub(crate) fn selected_chunk<'a>(

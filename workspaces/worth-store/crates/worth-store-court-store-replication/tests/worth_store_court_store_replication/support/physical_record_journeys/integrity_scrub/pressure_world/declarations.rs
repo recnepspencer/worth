@@ -1,8 +1,25 @@
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
-pub(crate) use {std::collections::BTreeMap, std::num::NonZeroU32, std::num::NonZeroU64, std::path::Path, std::path::PathBuf};
-pub(crate) use {worth_store::physical_runtime::*};
-pub(crate) use {worth_store_physical_format::PhysicalArtifactReadTarget, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalSegmentId, worth_store_physical_format::RecordArtifactFile};
-pub(crate) use {worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalByteRange};
+pub(crate) use worth_store::physical_runtime::*;
+pub(crate) use {
+    std::collections::BTreeMap, std::num::NonZeroU32, std::num::NonZeroU64, std::path::Path,
+    std::path::PathBuf,
+};
+pub(crate) use {
+    worth_store_physical_format::PhysicalArtifactReadTarget,
+    worth_store_physical_format::PhysicalGeneration,
+    worth_store_physical_format::PhysicalGenerationAuthority,
+    worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalSegmentId,
+    worth_store_physical_format::RecordArtifactFile,
+};
+pub(crate) use {
+    worth_store_physical_integrity::PhysicalArtifactScope,
+    worth_store_physical_integrity::PhysicalByteRange,
+};
+pub(crate) use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 pub(crate) const RESIDENT_BYTES: u64 = 64 * 1024;
 pub(crate) const PAGE_BYTES: u32 = 16 * 1024;
@@ -143,7 +160,9 @@ pub(crate) fn snapshot(root: &Path) -> BTreeMap<PathBuf, Option<Vec<u8>>> {
     result
 }
 
-pub(crate) fn residency(format: AdmittedPhysicalRecordFormat) -> AdmittedPhysicalRecordResidencyPolicy {
+pub(crate) fn residency(
+    format: AdmittedPhysicalRecordFormat,
+) -> AdmittedPhysicalRecordResidencyPolicy {
     let bytes = |value| std::num::NonZeroU64::new(value).unwrap();
     let count = |value| std::num::NonZeroU32::new(value).unwrap();
     let operations = 16 * 1024 * 1024;

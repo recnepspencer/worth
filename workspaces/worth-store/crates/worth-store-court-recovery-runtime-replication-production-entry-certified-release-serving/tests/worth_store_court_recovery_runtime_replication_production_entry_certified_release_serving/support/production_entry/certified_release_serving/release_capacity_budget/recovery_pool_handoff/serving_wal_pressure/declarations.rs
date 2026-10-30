@@ -41,15 +41,15 @@ pub(crate) fn deny_changed_wal_shape(
         assert_eq!(runtime.media_counters().replacements(), 0);
         assert_eq!(runtime.media_counters().deletions(), 0);
         assert_eq!(
-            runtime
-                .media_counters()
-                .completed_operations_for(worth_store::physical_runtime::certification::MediaOperationRole::PositionedWrite),
+            runtime.media_counters().completed_operations_for(
+                worth_store::physical_runtime::certification::MediaOperationRole::PositionedWrite
+            ),
             0
         );
         assert_eq!(
-            runtime
-                .media_counters()
-                .completed_operations_for(worth_store::physical_runtime::certification::MediaOperationRole::Append),
+            runtime.media_counters().completed_operations_for(
+                worth_store::physical_runtime::certification::MediaOperationRole::Append
+            ),
             0
         );
         assert_eq!(
@@ -77,7 +77,9 @@ pub(crate) fn deny_changed_wal_shape(
 
 pub(crate) fn wal_payload_sizes(root: &Path) -> Vec<(std::ffi::OsString, u64)> {
     let mut payloads = Vec::new();
-    for entry in std::fs::read_dir(root.join("families/wal")).expect("actual retained WAL directory") {
+    for entry in
+        std::fs::read_dir(root.join("families/wal")).expect("actual retained WAL directory")
+    {
         let entry = entry.unwrap();
         assert!(
             entry.file_type().unwrap().is_file(),

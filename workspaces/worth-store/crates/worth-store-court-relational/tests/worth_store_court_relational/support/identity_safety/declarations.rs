@@ -4,14 +4,14 @@
 //! every recovered branch and requires each new identity to be outside the
 //! script's complete committed history.
 
-pub(crate) use {std::collections::BTreeSet};
+pub(crate) use std::collections::BTreeSet;
 
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_relational::facade::transactions::RecordRef};
-pub(crate) use {worth_store_relational::RelationalStoreHome};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use worth_relational::facade::transactions::RecordRef;
+pub(crate) use worth_store_relational::RelationalStoreHome;
 
-pub(crate) use {crate::batches};
+pub(crate) use crate::batches;
 pub(crate) use {crate::workload, crate::workload::Script};
 
 /// Labels for the check's own creates, outside the script's step numbers.
@@ -37,8 +37,9 @@ pub(crate) fn assert_creates_are_fresh(
         }
         let mut created = Vec::new();
         for _ in 0..2 {
-            let outcome = crate::workload::commit(runtime, execution, &branch, crate::batches::create(step))
-                .unwrap_or_else(|error| panic!("{case}: fresh create on {name}: {error:?}"));
+            let outcome =
+                crate::workload::commit(runtime, execution, &branch, crate::batches::create(step))
+                    .unwrap_or_else(|error| panic!("{case}: fresh create on {name}: {error:?}"));
             created.extend(outcome.changed_records.iter().cloned());
             step += 1;
         }

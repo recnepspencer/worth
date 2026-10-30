@@ -3,7 +3,7 @@ pub(crate) use worth_store_physical_format::integrity_declarations::{
     PhysicalIntegrityArtifactFamily, PhysicalIntegrityCoverageBoundary,
 };
 
-pub(crate) use crate::phase_4_literal_vectors::oracle::{
+pub(crate) use crate::oracle::support::literal_vectors::{
     assert_declaration, assert_literal_vector, decode_hex, DeclarationChecksumExpectation,
     LiteralChecksum, LiteralChecksumExpectation, LiteralVector,
 };
@@ -70,14 +70,16 @@ pub(crate) fn verify() {
     const FRAME_RANGES: &[(usize, usize)] = &[(0, PAYLOAD_END)];
     const CHECKSUMS: &[LiteralChecksumExpectation<'static>] = &[
         LiteralChecksumExpectation {
-            checksum: crate::phase_4_literal_vectors::oracle::LiteralChecksum::Sha256(
+            checksum: crate::oracle::support::literal_vectors::LiteralChecksum::Sha256(
                 PAYLOAD_SHA256,
             ),
             ranges: PAYLOAD_RANGES,
             field: (84, 116),
         },
         LiteralChecksumExpectation {
-            checksum: crate::phase_4_literal_vectors::oracle::LiteralChecksum::Sha256(FRAME_SHA256),
+            checksum: crate::oracle::support::literal_vectors::LiteralChecksum::Sha256(
+                FRAME_SHA256,
+            ),
             ranges: FRAME_RANGES,
             field: (PAYLOAD_END, 151),
         },

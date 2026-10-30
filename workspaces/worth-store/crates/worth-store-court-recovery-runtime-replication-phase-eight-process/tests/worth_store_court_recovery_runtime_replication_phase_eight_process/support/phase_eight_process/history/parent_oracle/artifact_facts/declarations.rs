@@ -1,7 +1,10 @@
 pub(crate) use {sha2::Digest, sha2::Sha256};
 
-pub(crate) use {crate::history::parent_oracle::evidence_digest::DigestObservation};
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::durable, crate::phase_eight_process::history::parent_oracle::wire};
+pub(crate) use crate::history::parent_oracle::evidence_digest::DigestObservation;
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::durable,
+    crate::phase_eight_process::history::parent_oracle::wire,
+};
 
 pub(crate) const DURABLE_MAGIC: &[u8; 8] = b"WRC5FRM\0";
 pub(crate) const WAL_MAGIC: &[u8; 8] = b"WORTHWAL";
@@ -78,7 +81,8 @@ pub(crate) fn observe_artifact(bytes: &[u8]) -> ArtifactFacts {
         return crate::phase_eight_process::history::parent_oracle::wire::observe_wal(bytes);
     }
     if bytes.get(..8) == Some(&CHECKPOINT_STREAM_MAGIC[..])
-        && let Some(facts) = crate::phase_eight_process::history::parent_oracle::wire::observe_checkpoint(bytes)
+        && let Some(facts) =
+            crate::phase_eight_process::history::parent_oracle::wire::observe_checkpoint(bytes)
     {
         return ArtifactFacts {
             generation: true,
@@ -109,7 +113,8 @@ pub(crate) fn observe_artifact_at_path(path: &str, bytes: &[u8]) -> ArtifactFact
 pub(crate) const fn empty_facts() -> ArtifactFacts {
     ArtifactFacts {
         generation: false,
-        generation_links: crate::history::parent_oracle::evidence_digest::DigestObservation::empty(),
+        generation_links: crate::history::parent_oracle::evidence_digest::DigestObservation::empty(
+        ),
         selector: None,
         checkpoint: None,
         wal: None,

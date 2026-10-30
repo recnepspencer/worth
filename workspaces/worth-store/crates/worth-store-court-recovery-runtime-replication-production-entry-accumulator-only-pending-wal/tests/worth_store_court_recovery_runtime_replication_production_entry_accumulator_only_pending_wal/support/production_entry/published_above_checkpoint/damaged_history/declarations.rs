@@ -6,27 +6,43 @@
 //! A limit comes from a budget the caller set. No artifact's own ceiling is
 //! one, and neither is a length read off media.
 
-pub(crate) use {std::path::Path, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, crate::production_entry::published_above_checkpoint};
-pub(crate) use {};
-pub(crate) use {std::fs};
-pub(crate) use {std::path::PathBuf};
-pub(crate) use {worth_store_physical_format::RecordArtifactFile};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryOpenRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPageAdmissionDenial, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial, worth_store_recovery_runtime::WorthStoreRecovery};
-
-
+pub(crate) use std::fs;
+pub(crate) use std::path::PathBuf;
+pub(crate) use worth_store_physical_format::RecordArtifactFile;
+pub(crate) use {
+    crate::production_entry::published_above_checkpoint, std::path::Path,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
+    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPageAdmissionDenial,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 /// More than one page: no root manifest or routing block is this large.
 pub(crate) const PAST_ONE_PAGE: usize = (1 << 16) + 1;
 
 pub(crate) fn root_manifest(roots: &Path, generation: u64) -> PathBuf {
-    roots.join(worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name())
+    roots.join(
+        worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name(),
+    )
 }
 
 /// The routing blocks written with the root of `generation`.
 pub(crate) fn routing_blocks(roots: &Path, generation: u64) -> Vec<PathBuf> {
     (1..=generation)
         .map(|block| {
-            roots.join(worth_store_physical_format::RecordArtifactFile::RootRoutingBlock { generation, block }.file_name())
+            roots.join(
+                worth_store_physical_format::RecordArtifactFile::RootRoutingBlock {
+                    generation,
+                    block,
+                }
+                .file_name(),
+            )
         })
         .filter(|path| path.exists())
         .collect()

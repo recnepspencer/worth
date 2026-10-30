@@ -4,7 +4,6 @@ pub(crate) use self::declarations::*;
 #[allow(dead_code, unused_imports)]
 #[path = "arena_io/mod.rs"]
 pub(crate) mod arena_io;
-#[allow(dead_code)]
 #[allow(dead_code, unused_imports)]
 #[path = "c10_crash_evidence/mod.rs"]
 pub(crate) mod c10_crash_evidence;

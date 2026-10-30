@@ -1,25 +1,21 @@
 //! A selected V2 source closure has one recovery-memory budget, not a fresh
 //! full-sized allowance for each roster and media observation owner.
 
-#[allow(unused_imports)] use crate::production_entry::certified_release_serving::memory_budget::*;
-use {std::fs, std::io::ErrorKind, std::path::Path};
-
-use {worth_store::physical_runtime::PhysicalRecoveryRejoinResidentDenial, worth_store::physical_runtime::RecoveryWalAllocationDenial};
-use {worth_store_physical_format::RecordArtifactFile};
-use {worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoverySourceDenial, worth_store_recovery_runtime::WorthStoreRecovery};
-
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::open_serving_with_seal, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery::recover, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request, worth_store_testkit_recovery_runtime::production_entry::release_reopen, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request_with_memory};
+#[allow(unused_imports)]
+use crate::production_entry::certified_release_serving::memory_budget::*;
 
 #[test]
 fn selected_release_source_memory_denies_before_effects_and_sufficient_twin_opens_serving() {
-    let (world, first, _) = worth_store_testkit_recovery_runtime::production_entry::release_reopen::released_world(1);
+    let (world, first, _) =
+        worth_store_testkit_recovery_runtime::production_entry::release_reopen::released_world(1);
     assert!(
         first.remaining_payload_records() > 0,
         "partial released head remains current"
     );
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0xe1; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()

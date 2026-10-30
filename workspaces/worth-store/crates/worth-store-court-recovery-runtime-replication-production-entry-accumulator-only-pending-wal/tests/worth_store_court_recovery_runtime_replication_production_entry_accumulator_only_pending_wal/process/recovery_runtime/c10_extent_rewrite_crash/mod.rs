@@ -2,60 +2,16 @@
 use crate::c10_extent_rewrite_crash::*;
 use {
     crate::c10_extent_rewrite_crash::arena_io::arena_path,
-    crate::c10_extent_rewrite_crash::arena_io::extent_payload,
     crate::c10_extent_rewrite_crash::arena_io::flip_arena_byte,
     crate::c10_extent_rewrite_crash::arena_io::payload,
 };
 
-use std::thread;
-use {std::io::Seek, std::io::SeekFrom, std::io::Write};
-use {std::path::Path, std::path::PathBuf};
-use {std::process::Command, std::process::Stdio};
-use {std::time::Duration, std::time::Instant};
-
-use worth_proof::TransitionOutcome;
-use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
+use worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment;
 use worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits;
 use {
     crate::c10_extent_rewrite_crash::c10_crash_evidence::directory_snapshot,
     crate::c10_extent_rewrite_crash::c10_crash_evidence::ordinary_limits,
     crate::c10_extent_rewrite_crash::c10_crash_evidence::wal_contains_rewrite,
-};
-use {
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
-    worth_store::physical_runtime::PhysicalMutationRequest,
-};
-use {
-    worth_store_physical_format::decode_data_frame_page_lsn,
-    worth_store_physical_format::decode_extent_chunk,
-    worth_store_physical_format::encode_data_frame_page_lsn,
-    worth_store_physical_format::prepare_extent_chunk,
-    worth_store_physical_format::CurrentPhysicalRecordPlacement,
-    worth_store_physical_format::DurableExtentManifest,
-    worth_store_physical_format::DurableExtentRecordPlacement,
-    worth_store_physical_format::DurableFrameKind,
-    worth_store_physical_format::ExtentArenaFrameLayout,
-    worth_store_physical_format::ExtentArenaRange,
-    worth_store_physical_format::ExtentChunkCoordinate,
-    worth_store_physical_format::PersistedRecordIdentity,
-    worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES,
-    worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES,
-    worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
-    worth_store_recovery_runtime::WorthStoreRecovery,
-};
-use {
-    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
-    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
 };
 
 #[test]

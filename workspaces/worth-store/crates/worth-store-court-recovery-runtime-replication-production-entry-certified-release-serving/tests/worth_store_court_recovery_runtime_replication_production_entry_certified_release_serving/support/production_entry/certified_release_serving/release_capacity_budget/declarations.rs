@@ -1,12 +1,34 @@
 //! The first V3 release reserves its complete recovery closure before any media effect.
 
-pub(crate) use {worth_proof::AdmittedBlobReleaseProof, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::Mutation, std::num::NonZeroU16, std::path::Path, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_testkit_recovery_runtime::production_entry::release_reopen, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run_world};
 pub(crate) use {std::fs, std::num::NonZeroU64, std::path::PathBuf};
-pub(crate) use {worth_store::physical_runtime::BlobReclaimFailure, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecoveryRejoinResidentDenial};
-pub(crate) use {worth_store_physical_format::ReleaseCustodyHeadEntryV1, worth_store_physical_format::ReleaseCustodyHeadKeyV1, worth_store_physical_format::BLOB_CONTROL_FRAME_MAX_BYTES, worth_store_physical_format::CHECKPOINT_CERTIFICATE_RECORD_OVERHEAD_BYTES, worth_store_physical_format::MAX_CHECKPOINT_BINDING_RECORD_BYTES};
+pub(crate) use {
+    std::num::NonZeroU16, std::path::Path, worth_proof::AdmittedBlobReleaseProof,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run_world,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::Mutation,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
+};
+pub(crate) use {
+    worth_store::physical_runtime::BlobReclaimFailure,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecoveryRejoinResidentDenial,
+};
+pub(crate) use {
+    worth_store_physical_format::ReleaseCustodyHeadEntryV1,
+    worth_store_physical_format::ReleaseCustodyHeadKeyV1,
+    worth_store_physical_format::BLOB_CONTROL_FRAME_MAX_BYTES,
+    worth_store_physical_format::CHECKPOINT_CERTIFICATE_RECORD_OVERHEAD_BYTES,
+    worth_store_physical_format::MAX_CHECKPOINT_BINDING_RECORD_BYTES,
+};
 
 pub(crate) fn numeric_one_head_closure() -> u64 {
-    let format = worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    let format = worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+        .admit()
+        .unwrap();
     let page = u64::from(format.page_size().bytes());
     let entry = std::mem::size_of::<ReleaseCustodyHeadEntryV1>() as u64;
     let pair = std::mem::size_of::<(ReleaseCustodyHeadKeyV1, ReleaseCustodyHeadEntryV1)>() as u64;
@@ -39,7 +61,8 @@ pub(crate) fn release_request(
     worth_store::physical_runtime::BlobReclaimRequest::released(
         proof,
         placement,
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(1024).unwrap(),
             std::num::NonZeroU64::new(64 << 20).unwrap(),

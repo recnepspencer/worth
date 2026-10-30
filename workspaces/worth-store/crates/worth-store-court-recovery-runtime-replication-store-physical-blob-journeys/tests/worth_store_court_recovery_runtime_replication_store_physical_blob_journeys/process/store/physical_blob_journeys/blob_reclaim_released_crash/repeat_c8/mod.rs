@@ -3,17 +3,9 @@
 
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_reclaim_released_crash::repeat_c8::*;
-use {std::fs, std::path::Path, std::process::Command, std::process::Output, std::time::Duration};
-
-use {sha2::Digest, sha2::Sha256};
-use {
-    worth_store_physical_format::BlobReclaimDescriptorV3,
-    worth_store_physical_format::BlobRecordKind,
-};
 
 use {
     crate::blob_crash::recovery::recover_closed_store,
-    crate::blob_reclaim_released_crash::retirement_witness,
     crate::physical_blob_journeys::blob_crash::kill_at,
     crate::physical_blob_journeys::blob_reclaim_released_crash::ROLE,
 };

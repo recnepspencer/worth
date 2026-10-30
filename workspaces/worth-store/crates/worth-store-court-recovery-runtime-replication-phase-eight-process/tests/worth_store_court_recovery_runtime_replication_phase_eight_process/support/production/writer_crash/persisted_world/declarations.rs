@@ -1,4 +1,4 @@
-pub(crate) use {std::collections::BTreeSet};
+pub(crate) use std::collections::BTreeSet;
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
 pub(crate) fn raw_media_snapshot(root: &Path) -> Vec<(PathBuf, Vec<u8>)> {

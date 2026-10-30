@@ -1,4 +1,4 @@
-pub use {worth_store::physical_runtime::ExternalPhysicalRecordLocator};
+pub use worth_store::physical_runtime::ExternalPhysicalRecordLocator;
 
 pub fn decode_locator(value: &str) -> ExternalPhysicalRecordLocator {
     worth_store::physical_runtime::ExternalPhysicalRecordLocator::decode(unhex(value)).unwrap()

@@ -1,4 +1,7 @@
-pub(crate) use {std::io::Write, std::num::NonZeroU32, std::path::Path, std::path::PathBuf, std::process::Child, std::process::Stdio, std::time::Duration, std::time::Instant};
+pub(crate) use {
+    std::io::Write, std::num::NonZeroU32, std::path::Path, std::path::PathBuf, std::process::Child,
+    std::process::Stdio, std::time::Duration, std::time::Instant,
+};
 
 pub(crate) const GATE_ENV: &str = "WORTH_STORE_C5_PHASE16_A_GATE";
 
@@ -66,7 +69,9 @@ pub(crate) fn reopener(root: &Path) {
         .acquisition_snapshot()
         .unwrap()
         .root_generation();
-    let records = worth_store_testkit_store::physical_record_journeys::scan_journeys::collect_scan(&serving, 8, 64_000);
+    let records = worth_store_testkit_store::physical_record_journeys::scan_journeys::collect_scan(
+        &serving, 8, 64_000,
+    );
     println!("C5_PHASE16_A_REOPEN {} {generation}", std::process::id());
     for (_, bytes) in records {
         println!(

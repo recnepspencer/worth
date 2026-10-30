@@ -3,11 +3,50 @@
 //! exported as Relational canonical commit artifacts, are the journal the
 //! durable Store must hold.
 
-pub use {std::collections::BTreeMap};
+pub use std::collections::BTreeMap;
 
-pub use {worth_execution::CancellationSource, worth_execution::ExecutionAllocationPolicy, worth_execution::ExecutionRequest, worth_execution::SerialMemoryBudget, worth_execution::SerialRequest};
-pub use {worth_foundational::facade::aspects, worth_foundational::facade::AspectFieldLocator, worth_foundational::facade::AspectIdentity, worth_foundational::facade::AspectKey, worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalFieldPath, worth_foundational::facade::FieldKey, worth_foundational::facade::LocatorAuthority, worth_foundational::facade::ScalarAspectType};
-pub use {worth_relational::facade::config::CascadeDeletePolicy, worth_relational::facade::config::CrossContextPolicy, worth_relational::facade::durability::RelationalCanonicalCommitArtifact, worth_relational::facade::identity::EntityId, worth_relational::facade::identity::KindId, worth_relational::facade::identity::PartitionId, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::schema::AspectBinding, worth_relational::facade::schema::DeclaredAspectContractBinding, worth_relational::facade::schema::EntityKindRegistration, worth_relational::facade::schema::KindAspectContractDeclarations, worth_relational::facade::schema::RelationIntegrityDeclarations, worth_relational::facade::schema::RelationKindRegistration, worth_relational::facade::schema::RelationalSchemaRegistry, worth_relational::facade::schema::SchemaId, worth_relational::facade::schema::SchemaVersionId, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::AspectFieldPatch, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::DeleteEntityIntent, worth_relational::facade::transactions::EntityMutationIntent, worth_relational::facade::transactions::EntityReference, worth_relational::facade::transactions::EntitySpec, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::transactions::RecordRef, worth_relational::facade::transactions::RelationSpec, worth_relational::facade::transactions::UpdateEntityFieldsIntent, worth_relational::facade::transactions::WorkerIntentBatch};
+pub use {
+    worth_execution::CancellationSource, worth_execution::ExecutionAllocationPolicy,
+    worth_execution::ExecutionRequest, worth_execution::SerialMemoryBudget,
+    worth_execution::SerialRequest,
+};
+pub use {
+    worth_foundational::facade::aspects, worth_foundational::facade::AspectFieldLocator,
+    worth_foundational::facade::AspectIdentity, worth_foundational::facade::AspectKey,
+    worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalFieldPath,
+    worth_foundational::facade::FieldKey, worth_foundational::facade::LocatorAuthority,
+    worth_foundational::facade::ScalarAspectType,
+};
+pub use {
+    worth_relational::facade::config::CascadeDeletePolicy,
+    worth_relational::facade::config::CrossContextPolicy,
+    worth_relational::facade::durability::RelationalCanonicalCommitArtifact,
+    worth_relational::facade::identity::EntityId, worth_relational::facade::identity::KindId,
+    worth_relational::facade::identity::PartitionId,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+    worth_relational::facade::runtime::RelationalRuntime,
+    worth_relational::facade::runtime::RelationalRuntimeApi,
+    worth_relational::facade::schema::AspectBinding,
+    worth_relational::facade::schema::DeclaredAspectContractBinding,
+    worth_relational::facade::schema::EntityKindRegistration,
+    worth_relational::facade::schema::KindAspectContractDeclarations,
+    worth_relational::facade::schema::RelationIntegrityDeclarations,
+    worth_relational::facade::schema::RelationKindRegistration,
+    worth_relational::facade::schema::RelationalSchemaRegistry,
+    worth_relational::facade::schema::SchemaId, worth_relational::facade::schema::SchemaVersionId,
+    worth_relational::facade::symbols::ClientKey,
+    worth_relational::facade::transactions::AspectFieldPatch,
+    worth_relational::facade::transactions::CreateIntent,
+    worth_relational::facade::transactions::DeleteEntityIntent,
+    worth_relational::facade::transactions::EntityMutationIntent,
+    worth_relational::facade::transactions::EntityReference,
+    worth_relational::facade::transactions::EntitySpec,
+    worth_relational::facade::transactions::MutationIntent,
+    worth_relational::facade::transactions::RecordRef,
+    worth_relational::facade::transactions::RelationSpec,
+    worth_relational::facade::transactions::UpdateEntityFieldsIntent,
+    worth_relational::facade::transactions::WorkerIntentBatch,
+};
 
 /// The reference run: the runtime that produced the commits stays alive so
 /// readmission is checked against real Relational authority.
@@ -38,7 +77,7 @@ impl RelationalReference {
                 let choice = if live.len() < 2 {
                     0
                 } else {
-                    generator.next() % 8
+                    generator.next_u64() % 8
                 };
                 let batch = match choice {
                     0..=2 => create(step),
@@ -56,7 +95,11 @@ impl RelationalReference {
                         .changed_records
                         .iter()
                         .filter_map(|record| match record {
-                            worth_relational::facade::transactions::RecordRef::Entity(entity) if choice <= 2 => Some(*entity),
+                            worth_relational::facade::transactions::RecordRef::Entity(entity)
+                                if choice <= 2 =>
+                            {
+                                Some(*entity)
+                            }
                             _ => None,
                         }),
                 );
@@ -64,7 +107,9 @@ impl RelationalReference {
         }
         let artifacts = runtime
             .durability()
-            .canonical_commit_artifacts(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            .canonical_commit_artifacts(
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map(|artifact| {
                 artifact
                     .expect("retained commits encode")
@@ -83,7 +128,10 @@ impl RelationalReference {
     /// Requires `bytes` to readmit as the Relational commit at `position`.
     pub fn assert_readmits(&self, position: u64, bytes: &[u8]) {
         let execution = worth_execution::ExecutionRequest::serial(&self.request);
-        let readmitted = worth_relational::facade::durability::RelationalCanonicalCommitArtifact::readmit(bytes, &execution)
+        let readmitted =
+            worth_relational::facade::durability::RelationalCanonicalCommitArtifact::readmit(
+                bytes, &execution,
+            )
             .unwrap_or_else(|refusal| panic!("journal entry {position} refused: {refusal:?}"));
         assert_eq!(
             readmitted.position().0,
@@ -103,10 +151,16 @@ pub fn commit(
         .observe_branch(&identity)
         .expect("the main branch is owner-observable");
     let mut transaction = runtime
-        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .expect("owner-admitted transaction");
     transaction
-        .push_batch(batch, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the batch stages");
     transaction
         .commit(execution, runtime)
@@ -115,43 +169,55 @@ pub fn commit(
 
 pub fn create(step: usize) -> WorkerIntentBatch {
     let name = format!("entity-{step}");
-    worth_relational::facade::transactions::WorkerIntentBatch::new(format!("create-{step}")).push(worth_relational::facade::transactions::MutationIntent::Create(
-        worth_relational::facade::transactions::CreateIntent::Entity(EntitySpec {
-            partition_id: worth_relational::facade::identity::PartitionId::main(),
-            kind_id: KindId(1),
-            client_key: worth_relational::facade::symbols::ClientKey::raw(&name),
-            fields: field_patch("name", &name),
-        }),
-    ))
+    worth_relational::facade::transactions::WorkerIntentBatch::new(format!("create-{step}")).push(
+        worth_relational::facade::transactions::MutationIntent::Create(
+            worth_relational::facade::transactions::CreateIntent::Entity(EntitySpec {
+                partition_id: worth_relational::facade::identity::PartitionId::main(),
+                kind_id: KindId(1),
+                client_key: worth_relational::facade::symbols::ClientKey::raw(&name),
+                fields: field_patch("name", &name),
+            }),
+        ),
+    )
 }
 
 pub fn update(entity_id: EntityId, step: usize) -> WorkerIntentBatch {
-    worth_relational::facade::transactions::WorkerIntentBatch::new(format!("update-{step}")).push(worth_relational::facade::transactions::MutationIntent::Entity(
-        worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-            entity_id,
-            fields: field_patch("name", &format!("renamed-{step}")),
-        }),
-    ))
+    worth_relational::facade::transactions::WorkerIntentBatch::new(format!("update-{step}")).push(
+        worth_relational::facade::transactions::MutationIntent::Entity(
+            worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(
+                UpdateEntityFieldsIntent {
+                    entity_id,
+                    fields: field_patch("name", &format!("renamed-{step}")),
+                },
+            ),
+        ),
+    )
 }
 
 pub fn relate(source: EntityId, target: EntityId, step: usize) -> WorkerIntentBatch {
     let label = format!("link-{step}");
-    worth_relational::facade::transactions::WorkerIntentBatch::new(format!("relate-{step}")).push(worth_relational::facade::transactions::MutationIntent::Create(
-        worth_relational::facade::transactions::CreateIntent::Relation(RelationSpec {
-            partition_id: worth_relational::facade::identity::PartitionId::main(),
-            kind_id: KindId(2),
-            client_key: worth_relational::facade::symbols::ClientKey::raw(&label),
-            source: worth_relational::facade::transactions::EntityReference::Existing(source),
-            target: worth_relational::facade::transactions::EntityReference::Existing(target),
-            fields: field_patch("label", &label),
-        }),
-    ))
+    worth_relational::facade::transactions::WorkerIntentBatch::new(format!("relate-{step}")).push(
+        worth_relational::facade::transactions::MutationIntent::Create(
+            worth_relational::facade::transactions::CreateIntent::Relation(RelationSpec {
+                partition_id: worth_relational::facade::identity::PartitionId::main(),
+                kind_id: KindId(2),
+                client_key: worth_relational::facade::symbols::ClientKey::raw(&label),
+                source: worth_relational::facade::transactions::EntityReference::Existing(source),
+                target: worth_relational::facade::transactions::EntityReference::Existing(target),
+                fields: field_patch("label", &label),
+            }),
+        ),
+    )
 }
 
 pub fn delete(entity_id: EntityId) -> WorkerIntentBatch {
-    worth_relational::facade::transactions::WorkerIntentBatch::new("delete").push(worth_relational::facade::transactions::MutationIntent::Entity(worth_relational::facade::transactions::EntityMutationIntent::Delete(
-        DeleteEntityIntent { entity_id },
-    )))
+    worth_relational::facade::transactions::WorkerIntentBatch::new("delete").push(
+        worth_relational::facade::transactions::MutationIntent::Entity(
+            worth_relational::facade::transactions::EntityMutationIntent::Delete(
+                DeleteEntityIntent { entity_id },
+            ),
+        ),
+    )
 }
 
 pub fn schema_registry() -> RelationalSchemaRegistry {
@@ -161,14 +227,15 @@ pub fn schema_registry() -> RelationalSchemaRegistry {
             kind_name: "oracle.entity".to_string(),
             schema_id: SchemaId("oracle".to_string()),
             schema_version_id: SchemaVersionId(1),
-            aspect_contract_declarations: worth_relational::facade::schema::KindAspectContractDeclarations::new(vec![
-                DeclaredAspectContractBinding {
-                    binding: worth_relational::facade::schema::AspectBinding::EntityField {
-                        field: field_key("name"),
+            aspect_contract_declarations:
+                worth_relational::facade::schema::KindAspectContractDeclarations::new(vec![
+                    DeclaredAspectContractBinding {
+                        binding: worth_relational::facade::schema::AspectBinding::EntityField {
+                            field: field_key("name"),
+                        },
+                        contract: string_contract("name"),
                     },
-                    contract: string_contract("name"),
-                },
-            ]),
+                ]),
         })
         .and_then(|registry| {
             registry.register_relation_kind(RelationKindRegistration {
@@ -176,17 +243,22 @@ pub fn schema_registry() -> RelationalSchemaRegistry {
                 kind_name: "oracle.relation".to_string(),
                 schema_id: SchemaId("oracle".to_string()),
                 schema_version_id: SchemaVersionId(1),
-                cross_context_policy: worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
-                cascade_delete_policy: worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
-                aspect_contract_declarations: worth_relational::facade::schema::KindAspectContractDeclarations::new(vec![
-                    DeclaredAspectContractBinding {
-                        binding: worth_relational::facade::schema::AspectBinding::RelationField {
-                            field: field_key("label"),
+                cross_context_policy:
+                    worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
+                cascade_delete_policy:
+                    worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
+                aspect_contract_declarations:
+                    worth_relational::facade::schema::KindAspectContractDeclarations::new(vec![
+                        DeclaredAspectContractBinding {
+                            binding:
+                                worth_relational::facade::schema::AspectBinding::RelationField {
+                                    field: field_key("label"),
+                                },
+                            contract: string_contract("label"),
                         },
-                        contract: string_contract("label"),
-                    },
-                ]),
-                relation_integrity: worth_relational::facade::schema::RelationIntegrityDeclarations::default(),
+                    ]),
+                relation_integrity:
+                    worth_relational::facade::schema::RelationIntegrityDeclarations::default(),
             })
         })
         .expect("oracle schema registry")
@@ -239,7 +311,7 @@ pub fn serial_request() -> SerialRequest {
 pub struct Xorshift(pub u64);
 
 impl Xorshift {
-    pub fn next(&mut self) -> u64 {
+    pub fn next_u64(&mut self) -> u64 {
         self.0 ^= self.0 << 13;
         self.0 ^= self.0 >> 7;
         self.0 ^= self.0 << 17;
@@ -247,6 +319,6 @@ impl Xorshift {
     }
 
     pub fn index(&mut self, length: usize) -> usize {
-        (self.next() % length as u64) as usize
+        (self.next_u64() % length as u64) as usize
     }
 }

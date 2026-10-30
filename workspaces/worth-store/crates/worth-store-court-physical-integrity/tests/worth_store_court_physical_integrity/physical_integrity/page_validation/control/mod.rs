@@ -1,9 +1,4 @@
-use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
-use worth_store_physical_integrity::{
-    validate_inline_page, InlinePageIntegrityValidation, PhysicalArtifactScope,
-    PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause, PhysicalIntegrityValidationDigest,
-    UntrustedPhysicalArtifact,
-};
+use worth_store_physical_integrity::validate_inline_page;
 
 use crate::support::page_validation::{
     assert_damage, clean_page, format, page, page_scope, reseal, store, PAGE_OFFSET, PAGE_SIZES,

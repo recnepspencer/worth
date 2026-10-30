@@ -1,7 +1,13 @@
 pub(crate) use {sha2::Digest, sha2::Sha256};
 
-pub(crate) use {crate::history::parent_oracle::evidence_digest::DigestBuilder};
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u16, crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64, crate::phase_eight_process::history::parent_oracle::artifact_facts::residue, crate::phase_eight_process::history::parent_oracle::artifact_facts::ArtifactFacts, crate::phase_eight_process::history::parent_oracle::artifact_facts::WalFacts};
+pub(crate) use crate::history::parent_oracle::evidence_digest::DigestBuilder;
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u16,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::residue,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::ArtifactFacts,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::WalFacts,
+};
 
 pub(crate) const WAL_HEADER_BYTES: usize = 116;
 pub(crate) const WAL_FOOTER_BYTES: usize = 32;
@@ -14,9 +20,12 @@ pub(crate) fn observe_wal(bytes: &[u8]) -> ArtifactFacts {
     let mut last = None;
     let mut segment = None;
     let mut generation = None;
-    let mut wal_digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.wal-prefix.v1");
-    let mut generation_digest =
-        crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.generation-link.v1");
+    let mut wal_digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.wal-prefix.v1",
+    );
+    let mut generation_digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.generation-link.v1",
+    );
     while let Some(header) = bytes.get(offset..offset.saturating_add(WAL_HEADER_BYTES)) {
         if header.len() != WAL_HEADER_BYTES || header.get(..8) != Some(b"WORTHWAL") {
             break;

@@ -1,5 +1,0 @@
-error[E0614]: type `PhysicalRecordChunkView<'_>` cannot be dereferenced
- --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_exposes_no_pool_authority.rs:4:60
-  |
-4 |     let _: &worth_store_buffer_pool::PhysicalFrameLease = &*view;
-  |                                                            ^^^^^ can't be dereferenced

@@ -1,7 +1,14 @@
 pub(crate) use {sha2::Digest, sha2::Sha256};
 
-pub(crate) use {crate::history::parent_oracle::evidence_digest::digest_bytes, crate::history::parent_oracle::evidence_digest::DigestBuilder};
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u32, crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64, crate::phase_eight_process::history::parent_oracle::artifact_facts::CheckpointFacts};
+pub(crate) use {
+    crate::history::parent_oracle::evidence_digest::digest_bytes,
+    crate::history::parent_oracle::evidence_digest::DigestBuilder,
+};
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u32,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::CheckpointFacts,
+};
 
 pub(crate) const CHECKPOINT_PREFIX_BYTES: usize = 16;
 pub(crate) const CHECKPOINT_HEADER_PAYLOAD_BYTES: usize = 144;
@@ -13,8 +20,6 @@ pub(crate) const CHECKPOINT_BINDING_MAX_PAYLOAD: usize = 4 * 1024;
 pub(crate) const CHECKPOINT_CERTIFICATE_MAX_PAYLOAD: usize = 65_536 - 20;
 pub(crate) const CHECKPOINT_CERTIFICATE_MAX_RECORDS: usize = 64;
 pub(crate) const CHECKPOINT_CERTIFICATE_MAX_BYTES: u64 = 65_536;
-
-
 
 pub(crate) fn observe_checkpoint(bytes: &[u8]) -> Option<CheckpointFacts> {
     inspect_checkpoint(bytes).map(|(facts, _)| facts)
@@ -124,7 +129,9 @@ pub(crate) fn inspect_checkpoint(bytes: &[u8]) -> Option<(CheckpointFacts, Vec<&
         return None;
     }
     let durable = read_u64(footer, 80)?;
-    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.generation-link.v1");
+    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.generation-link.v1",
+    );
     generation.record(&header[..16]);
     generation.record(&header[16..24]);
     generation.record(&header[40..48]);
@@ -136,8 +143,9 @@ pub(crate) fn inspect_checkpoint(bytes: &[u8]) -> Option<(CheckpointFacts, Vec<&
     coverage.extend_from_slice(&durable.to_le_bytes());
     coverage.extend_from_slice(&(dirty_count as u64).to_le_bytes());
     coverage.extend_from_slice(&(binding_count as u64).to_le_bytes());
-    let mut checkpoint =
-        crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.checkpoint-coverage.v1");
+    let mut checkpoint = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.checkpoint-coverage.v1",
+    );
     checkpoint.record(&coverage);
     checkpoint.record(&digest_bytes(bytes));
     (durable >= covered.0 && durable <= covered.1).then_some((

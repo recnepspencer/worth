@@ -1,10 +1,12 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::execution_capability::*;
-use {tempfile::tempdir};
-use {worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalStoreCloseOutcome, worth_store::physical_runtime::PhysicalStoreClosePhase, worth_store::physical_runtime::PhysicalWorkPreEffectDenial};
-use {worth_store_physical_backend::MediaOperationRole};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::execution_capability::*;
+use tempfile::tempdir;
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write};
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_mutation_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile};
+use worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write;
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_mutation_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+};
 
 #[test]
 fn stale_execution_capability_denies_every_batch_command_before_effects() {
@@ -33,7 +35,10 @@ fn stale_execution_capability_denies_every_batch_command_before_effects() {
             .collect::<Vec<_>>(),
         identities
             .into_iter()
-            .map(|identity| (identity, worth_store::physical_runtime::PhysicalWorkPreEffectDenial::StaleGeneration))
+            .map(|identity| (
+                identity,
+                worth_store::physical_runtime::PhysicalWorkPreEffectDenial::StaleGeneration
+            ))
             .collect::<Vec<_>>()
     );
     assert_eq!(serving.media_counters(), before);
@@ -46,17 +51,24 @@ fn stale_execution_capability_denies_every_batch_command_before_effects() {
     let closed = std::thread::scope(|scope| {
         let closing = scope.spawn(move || close.execute());
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
-        while !progress.reached(worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped)
+        while !progress
+            .reached(worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped)
             && std::time::Instant::now() < deadline
         {
             std::thread::yield_now();
         }
-        assert!(progress.reached(worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped));
-        assert!(!progress.reached(worth_store::physical_runtime::PhysicalStoreClosePhase::DispatchSettlementComplete));
+        assert!(progress
+            .reached(worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped));
+        assert!(!progress.reached(
+            worth_store::physical_runtime::PhysicalStoreClosePhase::DispatchSettlementComplete
+        ));
         signal_gate.release();
         closing.join().unwrap()
     });
-    assert!(matches!(closed, worth_store::physical_runtime::PhysicalStoreCloseOutcome::Closed { .. }));
+    assert!(matches!(
+        closed,
+        worth_store::physical_runtime::PhysicalStoreCloseOutcome::Closed { .. }
+    ));
     assert_eq!(
         closed.shutdown().work().drain().released_before_dispatch(),
         identities
@@ -79,7 +91,11 @@ fn stale_execution_capability_cannot_cross_the_real_effect_boundary() {
     let execution = serving.certification_stale_physical_work_execution();
     let admitted = admitted_write(&serving, request);
     let identity = admitted.intent().identity();
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"stale001".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"stale001".as_slice(),
+    )
+    .unwrap();
     let before = serving.media_counters();
 
     let outcome = execution.execute_physical_work_batch(vec![command].into_boxed_slice());
@@ -94,7 +110,10 @@ fn stale_execution_capability_cannot_cross_the_real_effect_boundary() {
             .iter()
             .map(|denial| (denial.identity(), denial.denial()))
             .collect::<Vec<_>>(),
-        vec![(identity, worth_store::physical_runtime::PhysicalWorkPreEffectDenial::StaleGeneration)]
+        vec![(
+            identity,
+            worth_store::physical_runtime::PhysicalWorkPreEffectDenial::StaleGeneration
+        )]
     );
     assert_eq!(serving.media_counters(), before);
     serving.close();
@@ -126,7 +145,10 @@ fn released_runtime_reports_every_batch_command_as_admission_stopped() {
             .collect::<Vec<_>>(),
         identities
             .into_iter()
-            .map(|identity| (identity, worth_store::physical_runtime::PhysicalWorkPreEffectDenial::AdmissionStopped))
+            .map(|identity| (
+                identity,
+                worth_store::physical_runtime::PhysicalWorkPreEffectDenial::AdmissionStopped
+            ))
             .collect::<Vec<_>>()
     );
     assert_eq!(media_observer.media_counters(), before);

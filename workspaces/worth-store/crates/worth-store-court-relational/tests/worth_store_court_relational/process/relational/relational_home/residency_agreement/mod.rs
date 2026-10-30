@@ -1,8 +1,9 @@
 //! A real Store home agrees with an independent memory runtime at every warmth.
-#[allow(unused_imports)] use crate::residency_agreement::*;
-use {crate::batches, crate::durable_run, crate::schema_transition, crate::workload};
-use {worth_execution::ExecutionRequest};
-use {worth_relational::facade::branch::RelationalBranchObservation, worth_relational::facade::history::BranchId, worth_relational::facade::identity::EntityId, worth_relational::facade::identity::PartitionId, worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::transactions::RecordRef};
+#[allow(unused_imports)]
+use crate::residency_agreement::*;
+use {
+    worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId,
+};
 
 #[test]
 fn cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory() {
@@ -19,14 +20,20 @@ fn cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory() {
     let mut history_commit = None;
     for partition in 1..=24 {
         let mut batch = crate::batches::create(partition as usize);
-        let worth_relational::facade::transactions::MutationIntent::Create(worth_relational::facade::transactions::CreateIntent::Entity(spec)) = &mut batch.intents[0] else {
+        let worth_relational::facade::transactions::MutationIntent::Create(
+            worth_relational::facade::transactions::CreateIntent::Entity(spec),
+        ) = &mut batch.intents[0]
+        else {
             panic!("entity fixture")
         };
         spec.partition_id = PartitionId(partition);
-        let expected = crate::workload::commit(&reference, &execution, &branch, batch.clone()).unwrap();
+        let expected =
+            crate::workload::commit(&reference, &execution, &branch, batch.clone()).unwrap();
         let actual = crate::workload::commit(home.runtime(), &execution, &branch, batch).unwrap();
         assert_eq!(actual.changed_records, expected.changed_records);
-        let worth_relational::facade::transactions::RecordRef::Entity(entity) = actual.changed_records[0] else {
+        let worth_relational::facade::transactions::RecordRef::Entity(entity) =
+            actual.changed_records[0]
+        else {
             panic!("created entity")
         };
         entities.push(entity);

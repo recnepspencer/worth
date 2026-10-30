@@ -1,9 +1,19 @@
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportBlockCause, worth_store_recovery_runtime::RecoveryReportDenialCause, worth_store_recovery_runtime::RecoveryReportOutcome};
+pub(crate) use {
+    worth_store_recovery_runtime::RecoveryReportBlockCause,
+    worth_store_recovery_runtime::RecoveryReportDenialCause,
+    worth_store_recovery_runtime::RecoveryReportOutcome,
+};
 
-pub(crate) use {crate::checkpoint_crash::evidence::snapshot::copy_directory};
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::process::observer_process::fresh_observer_raw, crate::phase_eight_process::checkpoint_crash::process::recovery_process::fresh_recovery_raw};
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::case::crash_frontier::CrashObservation};
-pub(crate) use {crate::checkpoint_crash::case::mutation::mutate_persisted_wal_frame, crate::checkpoint_crash::case::mutation::PERSISTED_WAL_FRAME_BYTE_FLIP};
+pub(crate) use crate::checkpoint_crash::evidence::snapshot::copy_directory;
+pub(crate) use crate::phase_eight_process::checkpoint_crash::case::crash_frontier::CrashObservation;
+pub(crate) use {
+    crate::checkpoint_crash::case::mutation::mutate_persisted_wal_frame,
+    crate::checkpoint_crash::case::mutation::PERSISTED_WAL_FRAME_BYTE_FLIP,
+};
+pub(crate) use {
+    crate::process::support::checkpoint_crash::observer_process::fresh_observer_raw,
+    crate::process::support::checkpoint_crash::recovery_process::fresh_recovery_raw,
+};
 
 pub(crate) fn prove(crash: &CrashObservation) {
     if crash.fixture.scenario_index != 0 {
@@ -41,12 +51,17 @@ pub(crate) fn prove(crash: &CrashObservation) {
         !recovery_output.status.success(),
         "{PERSISTED_WAL_FRAME_BYTE_FLIP} recovery must reject the mutated persisted root"
     );
-    assert_eq!(recovery_report.outcome(), worth_store_recovery_runtime::RecoveryReportOutcome::Blocked);
+    assert_eq!(
+        recovery_report.outcome(),
+        worth_store_recovery_runtime::RecoveryReportOutcome::Blocked
+    );
     assert_eq!(
         recovery_report.denial_cause(),
-        Some(worth_store_recovery_runtime::RecoveryReportDenialCause::Blocked(
-            worth_store_recovery_runtime::RecoveryReportBlockCause::WalInventory,
-        ))
+        Some(
+            worth_store_recovery_runtime::RecoveryReportDenialCause::Blocked(
+                worth_store_recovery_runtime::RecoveryReportBlockCause::WalInventory,
+            )
+        )
     );
     assert!(
         String::from_utf8_lossy(&recovery_output.stderr).contains("C8_RECOVERY_BLOCKED"),

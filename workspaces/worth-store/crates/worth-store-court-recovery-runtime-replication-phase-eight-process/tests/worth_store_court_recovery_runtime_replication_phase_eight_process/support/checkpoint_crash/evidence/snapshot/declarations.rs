@@ -1,5 +1,5 @@
+pub(crate) use std::path::Path;
 pub(crate) use {std::collections::BTreeMap, std::collections::BTreeSet};
-pub(crate) use {std::path::Path};
 
 pub(crate) use {sha2::Digest, sha2::Sha256};
 

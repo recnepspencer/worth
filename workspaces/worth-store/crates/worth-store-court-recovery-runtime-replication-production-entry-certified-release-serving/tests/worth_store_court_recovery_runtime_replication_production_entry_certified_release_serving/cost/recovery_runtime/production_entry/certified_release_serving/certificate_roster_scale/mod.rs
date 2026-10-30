@@ -1,10 +1,7 @@
 //! Maximum production certificate roster through checkpoint, C8 and Serving.
 
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_proof::TransitionOutcome, worth_store_recovery_runtime::WorthStoreRecovery, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::admit_serving_with_seal, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery::recover, worth_store_testkit_recovery_runtime::production_entry::release_reopen, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request_with_memory};
-use {worth_store::physical_runtime::PhysicalOperationAllocationScope};
+use worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request_with_memory;
 use {worth_store_physical_format::MAX_CHECKPOINT_CERTIFICATE_RECORDS};
-
-
 
 #[test]
 #[ignore = "scheduled certificate-roster scale lane"]

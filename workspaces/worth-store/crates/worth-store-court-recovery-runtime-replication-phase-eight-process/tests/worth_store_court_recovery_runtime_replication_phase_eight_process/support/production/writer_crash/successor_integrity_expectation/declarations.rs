@@ -1,24 +1,43 @@
 //! Earlier C9 rejection is checked by named cause, not flattened to legacy invalidity.
-pub(crate) use {worth_store_physical_integrity::PhysicalBlastRadius, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause as Cause, worth_store_physical_integrity::PhysicalFormatField as Field, worth_store_physical_integrity::PhysicalIntegrityRejection};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial as Planning, worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial as Root, worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial as Candidate};
+pub(crate) use {
+    worth_store_physical_integrity::PhysicalBlastRadius,
+    worth_store_physical_integrity::PhysicalByteRange,
+    worth_store_physical_integrity::PhysicalDamageCause as Cause,
+    worth_store_physical_integrity::PhysicalFormatField as Field,
+    worth_store_physical_integrity::PhysicalIntegrityRejection,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial as Planning,
+    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial as Root,
+    worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial as Candidate,
+};
 
 pub(crate) fn require(actual: Option<Planning>, expected: Planning, hostile: &str) {
     if matches!(hostile, "inflated" | "selected-routing-root") {
         assert_eq!(actual, Some(expected), "{hostile}");
         return;
     }
-    let worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::SuccessorCandidate(worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial::InvalidArtifact {
-        artifact: expected_artifact,
-        generation: expected_generation,
-    }) = expected
+    let worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::SuccessorCandidate(
+        worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial::InvalidArtifact {
+            artifact: expected_artifact,
+            generation: expected_generation,
+        },
+    ) = expected
     else {
         panic!("named expected successor artifact")
     };
-    let Some(worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::SuccessorCandidate(worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial::RootProtocol {
-        artifact,
-        generation,
-        denial: worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial::Integrity(worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(localization)),
-    })) = actual
+    let Some(worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::SuccessorCandidate(
+        worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial::RootProtocol {
+            artifact,
+            generation,
+            denial:
+                worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial::Integrity(
+                    worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(
+                        localization,
+                    ),
+                ),
+        },
+    )) = actual
     else {
         panic!("expected early C9 successor rejection for {hostile}: {actual:?}")
     };

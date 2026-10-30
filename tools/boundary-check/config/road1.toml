@@ -231,8 +231,20 @@ guidance = "only the worth-store composition owner may bind physical mechanisms 
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
 governed_source_prefixes = ["worth-store"]
 target = "worth-signal"
-allowed_sources = ["worth-store"]
-guidance = "ordinary and recovery physical Signal composition remain behind Store-owned construction ports"
+# Relocated Store courts retain clock, duration, aspect and subscription vocabulary.
+# Leaf courts and testkits cannot become production construction callers.
+allowed_sources = [
+  "worth-store",
+  "worth-store-court-recovery-runtime-replication-store-physical-blob-journeys",
+  "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-durability-admission",
+  "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views",
+  "worth-store-court-store-replication-physical-blob-journeys",
+  "worth-store-court-store-replication-physical-record-journeys-durability-admission",
+  "worth-store-court-store-replication-physical-record-journeys-physical-work",
+  "worth-store-court-store-replication",
+  "worth-store-testkit-store",
+]
+guidance = "ordinary and recovery physical Signal composition remain behind Store-owned construction ports; the closed relocated test audience consumes only their clock, duration, aspect and subscription vocabulary"
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
@@ -1866,3 +1878,107 @@ count = 1
 category = "certification-harness"
 reason = "Fixture-owned actors retain exact Application and World populations while native cutovers advance one at a time; computation remains under installed runtime authority."
 
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-recovery-runtime/src/child_lifecycle/output_capture/declarations.rs"
+item = "start"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "Drains a child process output pipe while the fixture observes its lifecycle."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-recovery-runtime/src/pending_wal_world/descriptor_park/declarations.rs"
+item = "park_at_descriptor_wal"
+kind = "thread-scope"
+count = 1
+category = "certification-harness"
+reason = "Parks a recovery writer at the descriptor WAL seam for the crash fixture."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-recovery-runtime/src/production_entry/certified_release_serving/declarations.rs"
+item = "run_world"
+kind = "thread-builder"
+count = 1
+category = "certification-harness"
+reason = "Provides the fixture stack for a real production recovery and release journey."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-recovery-runtime/src/production_entry/certified_release_serving/empty_no_release/declarations.rs"
+item = "run_empty_no_release"
+kind = "thread-builder"
+count = 1
+category = "certification-harness"
+reason = "Provides the fixture stack for a real empty-home recovery and release journey."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-recovery-runtime/src/production_entry/ordered_journals/canonical_journal/declarations.rs"
+item = "child"
+kind = "thread-scope"
+count = 1
+category = "certification-harness"
+reason = "Runs independent journal publication actors at the controlled crash boundary."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-recovery-runtime/src/production_entry/release_reopen/candidate_crash/child_dispatch.rs"
+item = "dispatch_candidate_certificate_serving_child"
+kind = "thread-builder"
+count = 1
+category = "certification-harness"
+reason = "Provides the child fixture stack for candidate certification and serving admission."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-recovery-runtime/src/production_entry/release_reopen/two_batch/declarations.rs"
+item = "recover"
+kind = "thread-builder"
+count = 1
+category = "certification-harness"
+reason = "Provides the fixture stack for production recovery of the two-batch world."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-recovery-runtime/src/production_entry/tier_release_pending_wal/declarations.rs"
+item = "park_at_descriptor_wal"
+kind = "thread-scope"
+count = 1
+category = "certification-harness"
+reason = "Parks a recovery writer at the descriptor WAL seam for the crash fixture."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-store/src/allocation_probe/physical_record_journeys/declarations.rs"
+item = "peak_live_bytes_during"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "Observes allocator peaks while a separately driven fixture performs physical work."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-store/src/physical_record_journeys/close_phase_crash/declarations.rs"
+item = "writer"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "Retains a writer actor at the close-phase interruption seam."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-store/src/physical_record_journeys/durability_admission/checkpoint_retained_wal_tail/declarations.rs"
+item = "publish_after_foreground_rotations"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "Drives bounded foreground rotations while the fixture probes retained-WAL checkpoint races."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-store/src/physical_record_journeys/durability_admission/checkpoint_retained_wal_tail/declarations.rs"
+item = "start_cutover_foreground"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "Drives the foreground writer while the fixture controls the checkpoint cutover seam."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-testkit-store/src/physical_record_journeys/maintenance_interference/interleave/declarations.rs"
+item = "run_cold_extent"
+kind = "thread-scope"
+count = 1
+category = "certification-harness"
+reason = "Coordinates an independent cold reader with a controlled maintenance actor."

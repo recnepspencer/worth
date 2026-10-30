@@ -1,18 +1,39 @@
 //! Real process kill after the released V3 drop descriptor WAL is durable,
 //! before its root is published. C8 must roll the exact release forward.
 
-pub(crate) use {std::num::NonZeroU16, std::num::NonZeroU64, std::path::Path, std::thread, std::time::Duration, std::time::Instant};
+pub(crate) use {
+    std::num::NonZeroU16, std::num::NonZeroU64, std::path::Path, std::thread, std::time::Duration,
+    std::time::Instant,
+};
 
-pub(crate) use {worth_proof::AdmittedBlobReleaseProof};
-pub(crate) use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::PhysicalMutationDeadline};
-pub(crate) use {worth_store_blob_chunks::BlobChunkSize};
-pub(crate) use {worth_store_physical_format::BlobRecordKind, worth_store_physical_format::SelectedRecordContentClass};
+pub(crate) use worth_proof::AdmittedBlobReleaseProof;
+pub(crate) use worth_store_blob_chunks::BlobChunkSize;
+pub(crate) use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
+pub(crate) use {
+    worth_store_physical_format::BlobRecordKind,
+    worth_store_physical_format::SelectedRecordContentClass,
+};
 
-pub(crate) use {crate::physical_blob_journeys::blob_crash::establish_recovery_frontier, crate::physical_blob_journeys::blob_crash::kill_at, crate::physical_blob_journeys::blob_crash::marker_path, crate::blob_crash::recovery::recover_closed_store, crate::physical_blob_journeys::blob_crash::write_marker, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::assert_released_open_requires_recovered_custody, worth_store_testkit_store::fixture::configuration, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
-
-
-
-
+pub(crate) use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
+    crate::physical_blob_journeys::blob_crash::kill_at,
+    crate::physical_blob_journeys::blob_crash::marker_path,
+    crate::physical_blob_journeys::blob_crash::write_marker,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::assert_released_open_requires_recovered_custody,
+    worth_store_testkit_store::fixture::configuration,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+};
 
 pub(crate) const ROLE: &str = "crash-released-first-wal";
 /// The same seam after a tier epoch is certified by the selected checkpoint.
@@ -29,7 +50,8 @@ pub(crate) fn child(root: &Path, role: &str) {
     }
     let scope = admitted_blob_scope(SCOPE);
     let blobs = serving.blobs().unwrap();
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let object = blobs.issue_object_id(limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         object,
@@ -37,7 +59,8 @@ pub(crate) fn child(root: &Path, role: &str) {
         (2 * CHUNK) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -67,7 +90,8 @@ pub(crate) fn child(root: &Path, role: &str) {
         worth_store::physical_runtime::BlobReclaimRequest::released(
             proof,
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
             worth_store::physical_runtime::BlobReclaimLimits::new(
                 std::num::NonZeroU64::new(128).unwrap(),
                 std::num::NonZeroU64::new(32 << 20).unwrap(),
@@ -92,7 +116,9 @@ pub(crate) fn park_at_descriptor_wal(
     session: [u8; 16],
     request: BlobReclaimRequest,
 ) {
-    let first = serving.pause_physical_mutation_at(worth_store::physical_runtime::production::PhysicalMutationCheckpoint::AfterWalDurability);
+    let first = serving.pause_physical_mutation_at(
+        worth_store::physical_runtime::production::PhysicalMutationCheckpoint::AfterWalDurability,
+    );
     let ready = marker_path(root);
     std::thread::scope(|workers| {
         workers.spawn(|| {

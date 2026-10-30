@@ -1,12 +1,23 @@
-pub(crate) use {std::collections::BTreeSet};
-pub(crate) use {std::path::Path};
+pub(crate) use std::collections::BTreeSet;
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportEnvelope};
+pub(crate) use worth_store_recovery_runtime::RecoveryReportEnvelope;
 
-pub(crate) use {crate::history};
-pub(crate) use {crate::production::fate_markers::indexed_fate_tags, crate::production::fate_markers::parse_indexed_recovery_fates};
-pub(crate) use {crate::production::harness::markers::parse_recovery_fate_marker, crate::production::harness::markers::parse_recovery_runtime_marker};
-pub(crate) use {crate::phase_eight_process::production::harness::process::assert_child_succeeded, crate::phase_eight_process::production::harness::process::run_recovery_with_profile, crate::phase_eight_process::production::harness::ProcessWorld, crate::phase_eight_process::production::harness::RuntimeProcess};
+pub(crate) use crate::history;
+pub(crate) use {
+    crate::phase_eight_process::production::harness::ProcessWorld,
+    crate::phase_eight_process::production::harness::RuntimeProcess,
+    crate::process::support::production_harness::assert_child_succeeded,
+    crate::process::support::production_harness::run_recovery_with_profile,
+};
+pub(crate) use {
+    crate::production::fate_markers::indexed_fate_tags,
+    crate::production::fate_markers::parse_indexed_recovery_fates,
+};
+pub(crate) use {
+    crate::production::harness::markers::parse_recovery_fate_marker,
+    crate::production::harness::markers::parse_recovery_runtime_marker,
+};
 
 pub(crate) fn recover_root_with_profile(
     world: &ProcessWorld,
@@ -18,7 +29,11 @@ pub(crate) fn recover_root_with_profile(
         .parent
         .path()
         .join(format!("{name}-runtime-report.bin"));
-    let persisted_fates = crate::phase_eight_process::history::persisted_fates::classify_persisted_fates(&world.writer.expected, root)
+    let persisted_fates =
+        crate::phase_eight_process::history::persisted_fates::classify_persisted_fates(
+            &world.writer.expected,
+            root,
+        )
         .unwrap_or_else(|error| panic!("persisted fate oracle failed: {error}"));
     let (process_id, output) =
         run_recovery_with_profile(root, &report_path, world.parent.path(), profile);
@@ -55,7 +70,8 @@ pub(crate) fn recover_root_with_profile(
     assert_eq!(indexed_counts[2], fates.proven_no_effect);
     assert_eq!(indexed_counts[3], fates.indeterminate);
     let encoded = std::fs::read(&report_path).expect("runtime report bytes");
-    let report = worth_store_recovery_runtime::RecoveryReportEnvelope::decode(&encoded).expect("runtime report decode");
+    let report = worth_store_recovery_runtime::RecoveryReportEnvelope::decode(&encoded)
+        .expect("runtime report decode");
     RuntimeProcess {
         process_id,
         marker,

@@ -1,18 +1,48 @@
-pub(crate) use {worth_store::physical_runtime::ArtifactDamage, worth_store::physical_runtime::FilesystemObservationBound, worth_store::physical_runtime::RecoveryDiscoveryArtifact, worth_store::physical_runtime::RecoveryDiscoveryFailure};
-pub(crate) use {worth_store_physical_format::RecordArtifactFile};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial, worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial, worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateMismatch};
+pub(crate) use worth_store_physical_format::RecordArtifactFile;
+pub(crate) use {
+    worth_store::physical_runtime::ArtifactDamage,
+    worth_store::physical_runtime::FilesystemObservationBound,
+    worth_store::physical_runtime::RecoveryDiscoveryArtifact,
+    worth_store::physical_runtime::RecoveryDiscoveryFailure,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+    worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial,
+    worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateMismatch,
+};
 
-pub(crate) use {crate::history::schedule::in_flight_mutation::MutationCrashWorkload, crate::phase_eight_process::production::harness::ProcessWorld};
-pub(crate) use {crate::production::writer_crash::manifest_entry_cost};
-pub(crate) use {crate::production::writer_crash::persisted_world::copy_directory, crate::production::writer_crash::persisted_world::raw_media_snapshot};
-pub(crate) use {crate::production::writer_crash::recovery_planning::plan_with_limits, crate::production::writer_crash::recovery_planning::plan_with_memory, crate::production::writer_crash::recovery_planning::successor_limits, crate::production::writer_crash::recovery_planning::successor_limits_with_manifest_entries, crate::production::writer_crash::recovery_planning::successor_limits_with_observation};
-pub(crate) use {crate::production::writer_crash::successor_candidate_cost::candidate_cost};
-pub(crate) use {crate::production::writer_crash::successor_candidate_media::candidate_root_path, crate::production::writer_crash::successor_candidate_media::mutate_candidate, crate::production::writer_crash::successor_candidate_media::remove_candidate_topology};
+pub(crate) use crate::production::writer_crash::manifest_entry_cost;
+pub(crate) use crate::production::writer_crash::successor_candidate_cost::candidate_cost;
+pub(crate) use {
+    crate::history::schedule::in_flight_mutation::MutationCrashWorkload,
+    crate::phase_eight_process::production::harness::ProcessWorld,
+};
+pub(crate) use {
+    crate::production::writer_crash::persisted_world::copy_directory,
+    crate::production::writer_crash::persisted_world::raw_media_snapshot,
+};
+pub(crate) use {
+    crate::production::writer_crash::recovery_planning::plan_with_limits,
+    crate::production::writer_crash::recovery_planning::plan_with_memory,
+    crate::production::writer_crash::recovery_planning::successor_limits,
+    crate::production::writer_crash::recovery_planning::successor_limits_with_manifest_entries,
+    crate::production::writer_crash::recovery_planning::successor_limits_with_observation,
+};
+pub(crate) use {
+    crate::production::writer_crash::successor_candidate_media::candidate_root_path,
+    crate::production::writer_crash::successor_candidate_media::mutate_candidate,
+    crate::production::writer_crash::successor_candidate_media::remove_candidate_topology,
+};
 
 /// A candidate root is at most one page. One as long as all the memory
 /// recovery admits is damage, not that memory running out: no limit is named,
 /// and it is refused on its length, before a byte of it is read or held.
-pub(crate) fn assert_oversized_candidate_is_damage_before_its_read(world: &ProcessWorld, generation: u64) {
+pub(crate) fn assert_oversized_candidate_is_damage_before_its_read(
+    world: &ProcessWorld,
+    generation: u64,
+) {
     const RESIDENT_LIMIT: u64 = 64 << 20;
     let root = world.parent_path().join("candidate-read-oversized");
     copy_directory(&world.writer.root, &root);
@@ -59,7 +89,10 @@ pub(crate) fn assert_oversized_candidate_is_damage_before_its_read(world: &Proce
     };
     assert_eq!(
         (*artifact, *denial_generation),
-        (worth_store_physical_format::RecordArtifactFile::RootManifest { generation }, generation)
+        (
+            worth_store_physical_format::RecordArtifactFile::RootManifest { generation },
+            generation
+        )
     );
     // The length is the file's and the ceiling the root's own, under every
     // budget of this recovery.

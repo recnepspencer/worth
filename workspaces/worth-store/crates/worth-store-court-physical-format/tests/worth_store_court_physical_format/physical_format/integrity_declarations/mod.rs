@@ -4,7 +4,6 @@ use worth_store_physical_format::integrity_declarations::{
     families::NAMESPACE_IDENTITY_INTEGRITY_DECLARATION, families::PAGE_FRAME_INTEGRITY_DECLARATION,
     families::PHYSICAL_WORK_OBLIGATION_INTEGRITY_DECLARATION,
     families::SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION, families::WAL_FRAME_INTEGRITY_DECLARATION,
-    PhysicalIntegrityAlgorithm, PhysicalIntegrityArtifactFamily, PhysicalIntegrityCoverageBoundary,
 };
 
 #[test]

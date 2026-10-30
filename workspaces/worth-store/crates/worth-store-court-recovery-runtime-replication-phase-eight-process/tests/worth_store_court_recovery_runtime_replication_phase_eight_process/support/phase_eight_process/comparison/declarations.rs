@@ -1,8 +1,14 @@
-pub(crate) use {worth_store_offline_verifier::RecoveryObserverReport};
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportDenialCause, worth_store_recovery_runtime::RecoveryReportEnvelope, worth_store_recovery_runtime::RecoveryReportOutcome};
+pub(crate) use worth_store_offline_verifier::RecoveryObserverReport;
+pub(crate) use {
+    worth_store_recovery_runtime::RecoveryReportDenialCause,
+    worth_store_recovery_runtime::RecoveryReportEnvelope,
+    worth_store_recovery_runtime::RecoveryReportOutcome,
+};
 
-pub(crate) use {crate::phase_eight_process::history::physical_history::ParentHistoryMismatch, crate::phase_eight_process::history::physical_history::ParentPhysicalHistory};
-
+pub(crate) use {
+    crate::phase_eight_process::history::physical_history::ParentHistoryMismatch,
+    crate::phase_eight_process::history::physical_history::ParentPhysicalHistory,
+};
 
 pub(crate) const C8_RECOVERY_MEMORY_BUDGET_BYTES: u64 = 512 * 1024;
 
@@ -36,9 +42,9 @@ pub(crate) fn compare_runtime_and_observer_with_budget(
     expected_history: &ParentPhysicalHistory,
     admitted_memory_budget: u64,
 ) -> Result<(), RecoveryObserverDisagreement> {
-    expected_history
-        .compare_report(observer)
-        .map_err(crate::phase_eight_process::comparison::RecoveryObserverDisagreement::ParentHistoryMismatch)?;
+    expected_history.compare_report(observer).map_err(
+        crate::phase_eight_process::comparison::RecoveryObserverDisagreement::ParentHistoryMismatch,
+    )?;
     if runtime.outcome() == worth_store_recovery_runtime::RecoveryReportOutcome::Recovered
         && observer.selector_store_identity() != runtime.store_identity()
     {

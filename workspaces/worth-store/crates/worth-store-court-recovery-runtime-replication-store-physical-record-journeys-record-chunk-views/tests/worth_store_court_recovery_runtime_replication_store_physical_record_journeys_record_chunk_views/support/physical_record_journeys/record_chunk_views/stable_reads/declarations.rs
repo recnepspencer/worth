@@ -1,9 +1,22 @@
-pub(crate) use {std::num::NonZeroU32};
+pub(crate) use std::num::NonZeroU32;
 
-pub(crate) use {worth_store::physical_runtime::PhysicalReadProtectionDenial, worth_store::physical_runtime::PhysicalReadProtectionDisposition, worth_store::physical_runtime::PhysicalReadProtectionPolicy, worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::PhysicalRecordScanSession, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest, worth_store::physical_runtime::RecordStreamFailureKind};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalReadProtectionDenial,
+    worth_store::physical_runtime::PhysicalReadProtectionDisposition,
+    worth_store::physical_runtime::PhysicalReadProtectionPolicy,
+    worth_store::physical_runtime::PhysicalRecordId,
+    worth_store::physical_runtime::PhysicalRecordScanSession,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordCountLimit,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanRequest,
+    worth_store::physical_runtime::RecordStreamFailureKind,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture};
-pub(crate) use {crate::record_chunk_views::managed_append::append};
+pub(crate) use crate::record_chunk_views::managed_append::append;
+pub(crate) use worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture;
 
 pub(crate) fn borrowed_shutdown(abort: bool) {
     let parent = tempfile::tempdir().unwrap();
@@ -40,11 +53,14 @@ pub(crate) fn borrowed_shutdown(abort: bool) {
 }
 
 pub(crate) fn limits(bytes: usize) -> RecordReadLimits {
-    worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(bytes as u32).unwrap())
+    worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(bytes as u32).unwrap(),
+    )
 }
 
 pub(crate) fn scan_request() -> RecordScanRequest {
-    worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(1).unwrap())
+    worth_store::physical_runtime::RecordScanRequest::from_start()
+        .with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(1).unwrap())
 }
 
 pub(crate) fn collect_ids(scan: &mut PhysicalRecordScanSession) -> Vec<PhysicalRecordId> {

@@ -2,9 +2,15 @@
 
 pub(crate) use {std::fs, std::io::ErrorKind, std::path::Path};
 
-pub(crate) use {worth_store_physical_format::RecordArtifactFile};
-pub(crate) use {worth_store_recovery_physics::RecoveryPlanCostDenial};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial, worth_store_recovery_runtime::WorthStoreRecovery};
+pub(crate) use worth_store_physical_format::RecordArtifactFile;
+pub(crate) use worth_store_recovery_physics::RecoveryPlanCostDenial;
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 pub(crate) fn selector(root: &Path, artifact: RecordArtifactFile) -> Option<Vec<u8>> {
     let path = root.join("families/records").join(artifact.file_name());
@@ -22,11 +28,17 @@ pub(crate) fn assert_unchanged(
     checkpoint: &[u8],
 ) {
     assert_eq!(
-        &selector(root, worth_store_physical_format::RecordArtifactFile::CurrentRootSelector),
+        &selector(
+            root,
+            worth_store_physical_format::RecordArtifactFile::CurrentRootSelector
+        ),
         current,
     );
     assert_eq!(
-        &selector(root, worth_store_physical_format::RecordArtifactFile::PreviousRootSelector),
+        &selector(
+            root,
+            worth_store_physical_format::RecordArtifactFile::PreviousRootSelector
+        ),
         previous,
     );
     assert_eq!(

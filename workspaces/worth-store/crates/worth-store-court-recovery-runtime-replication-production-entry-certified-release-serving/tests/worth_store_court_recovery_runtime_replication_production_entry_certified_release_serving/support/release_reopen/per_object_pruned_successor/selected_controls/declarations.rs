@@ -1,8 +1,23 @@
 //! Compare the selected A successor's real controls with the checkpoint fold.
 
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobReclaimSourceBasisV1, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::ReleaseCheckpointAccumulatorV2, worth_store_physical_format::ReleaseCheckpointBatchV1, worth_store_physical_format::ReleaseCustodyHeadEntryV1, worth_store_physical_format::ReleasedDropCumulativeEvidenceV1};
+pub(crate) use {
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordCountLimit,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanRequest,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record,
+    worth_store_physical_format::BlobReclaimSourceBasisV1,
+    worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+    worth_store_physical_format::ReleaseCheckpointAccumulatorV2,
+    worth_store_physical_format::ReleaseCheckpointBatchV1,
+    worth_store_physical_format::ReleaseCustodyHeadEntryV1,
+    worth_store_physical_format::ReleasedDropCumulativeEvidenceV1,
+};
 
 pub(crate) fn assert_selected_successor_controls(
     serving: &ServingPhysicalRuntime,
@@ -35,7 +50,8 @@ pub(crate) fn assert_selected_successor_controls(
         descriptor.base().manifest_frame_sha256(),
     );
     let manifest_bytes = selected_blob_control(serving, descriptor.base().manifest_record());
-    let worth_store_physical_format::BlobRecordV1::DropSetManifestV3(manifest) = decode_blob_record(&manifest_bytes).unwrap()
+    let worth_store_physical_format::BlobRecordV1::DropSetManifestV3(manifest) =
+        decode_blob_record(&manifest_bytes).unwrap()
     else {
         panic!("A's selected manifest must be V3")
     };
@@ -69,7 +85,9 @@ pub(crate) fn assert_selected_successor_controls(
         reservation.source_basis_digest(),
         head.source_basis_digest()
     );
-    let worth_store_physical_format::BlobReclaimSourceBasisV1::ReleasedGeneration(source) = manifest.source_basis() else {
+    let worth_store_physical_format::BlobReclaimSourceBasisV1::ReleasedGeneration(source) =
+        manifest.source_basis()
+    else {
         panic!("A's manifest must name the released source")
     };
     assert_eq!(
@@ -112,11 +130,15 @@ pub(crate) fn selected_blob_control(
         .scan(
             worth_store::physical_runtime::RecordScanRequest::from_start()
                 .with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(8).unwrap())
-                .with_payload_limit(worth_store::physical_runtime::RecordByteLimit::new(512 << 10).unwrap()),
+                .with_payload_limit(
+                    worth_store::physical_runtime::RecordByteLimit::new(512 << 10).unwrap(),
+                ),
         )
         .unwrap();
     let mut scratch = vec![0_u8; 512 << 10];
-    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) = scan.read_next_into(&mut scratch).unwrap() {
+    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) =
+        scan.read_next_into(&mut scratch).unwrap()
+    {
         for index in 0..batch.records().len() {
             let record = batch.records()[index].record_id();
             if record.allocation_epoch() == target.allocation_epoch()

@@ -4,7 +4,8 @@ pub(crate) const CHECKPOINT_PAGE_BYTES: usize = 16 * 1024;
 pub(crate) const EXTENT_OVERHEAD_BYTES: usize = 112;
 pub(crate) const ORDINARY_PAYLOAD_BYTES: usize = 8 * 1024;
 pub(crate) const INLINE_RECORD_PAYLOAD_BYTES: usize = 128;
-pub(crate) const CHECKPOINT_PAYLOAD_BYTES: usize = 2 * (CHECKPOINT_PAGE_BYTES - EXTENT_OVERHEAD_BYTES) + 1;
+pub(crate) const CHECKPOINT_PAYLOAD_BYTES: usize =
+    2 * (CHECKPOINT_PAGE_BYTES - EXTENT_OVERHEAD_BYTES) + 1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ExpectedInFlightMutation {

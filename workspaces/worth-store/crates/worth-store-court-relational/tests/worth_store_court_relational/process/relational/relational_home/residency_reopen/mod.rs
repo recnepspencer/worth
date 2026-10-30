@@ -1,7 +1,8 @@
 //! The production home must serve an untouched cold directory after reopen.
-use {crate::batches, crate::durable_run, crate::residency_capture::members, crate::workload};
-use {worth_execution::ExecutionAllocationPolicy, worth_execution::ExecutionRequest};
-use {worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::MutationIntent};
+use crate::residency_capture::members;
+use {
+    worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId,
+};
 
 #[test]
 fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_partition() {
@@ -15,11 +16,15 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
     for round in 0..3 {
         for partition in 1..=48_u32 {
             let mut batch = crate::batches::create(round * 48 + partition as usize);
-            let worth_relational::facade::transactions::MutationIntent::Create(worth_relational::facade::transactions::CreateIntent::Entity(spec)) = &mut batch.intents[0] else {
+            let worth_relational::facade::transactions::MutationIntent::Create(
+                worth_relational::facade::transactions::CreateIntent::Entity(spec),
+            ) = &mut batch.intents[0]
+            else {
                 panic!("entity create")
             };
             spec.partition_id = PartitionId(partition);
-            let commit = crate::workload::commit(home.runtime(), &execution, &branch, batch).unwrap();
+            let commit =
+                crate::workload::commit(home.runtime(), &execution, &branch, batch).unwrap();
             if observed.is_none() {
                 observed = commit.changed_records.first().cloned();
             }
@@ -64,7 +69,10 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
 
     let before = members(&home);
     let mut batch = crate::batches::create(1000);
-    let worth_relational::facade::transactions::MutationIntent::Create(worth_relational::facade::transactions::CreateIntent::Entity(spec)) = &mut batch.intents[0] else {
+    let worth_relational::facade::transactions::MutationIntent::Create(
+        worth_relational::facade::transactions::CreateIntent::Entity(spec),
+    ) = &mut batch.intents[0]
+    else {
         panic!("entity create")
     };
     spec.partition_id = PartitionId(1);
@@ -100,7 +108,10 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
     let embedded = home
         .runtime()
         .durability_authority()
-        .native_checkpoint(&execution, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            &execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut receiving = crate::workload::runtime_builder(crate::schema_transition::SOURCE)
         .build()
@@ -134,24 +145,38 @@ fn a_cold_schema_transition_replays_and_reframes_all_carriers_before_load_free_c
     let mut records = Vec::new();
     for partition in 1..=8_u32 {
         let mut batch = crate::batches::create(partition as usize);
-        let worth_relational::facade::transactions::MutationIntent::Create(worth_relational::facade::transactions::CreateIntent::Entity(spec)) = &mut batch.intents[0] else {
+        let worth_relational::facade::transactions::MutationIntent::Create(
+            worth_relational::facade::transactions::CreateIntent::Entity(spec),
+        ) = &mut batch.intents[0]
+        else {
             panic!("entity create")
         };
         spec.partition_id = PartitionId(partition);
         crate::workload::commit(&reference, &execution, &branch, batch.clone()).unwrap();
-        let committed = crate::workload::commit(home.runtime(), &execution, &branch, batch).unwrap();
+        let committed =
+            crate::workload::commit(home.runtime(), &execution, &branch, batch).unwrap();
         records.extend(committed.changed_records.iter().cloned());
     }
-    crate::schema_transition::commit(&reference, &execution, &branch, crate::batches::create(2000))
-        .unwrap();
+    crate::schema_transition::commit(
+        &reference,
+        &execution,
+        &branch,
+        crate::batches::create(2000),
+    )
+    .unwrap();
     let expected = crate::workload::states_of(&reference, &records);
     home.checkpoint(&execution).unwrap();
     home.close();
 
     let home = crate::durable_run::open(&location, &execution).unwrap();
     assert_eq!(home.cold_storage_reads().member_reads, 0);
-    crate::schema_transition::commit(home.runtime(), &execution, &branch, crate::batches::create(2000))
-        .unwrap();
+    crate::schema_transition::commit(
+        home.runtime(),
+        &execution,
+        &branch,
+        crate::batches::create(2000),
+    )
+    .unwrap();
     home.close();
     // The schema transition is in the tail above the original cold manifest.
     let home = crate::durable_run::open(&location, &execution).unwrap();
@@ -166,7 +191,10 @@ fn a_cold_schema_transition_replays_and_reframes_all_carriers_before_load_free_c
 
     let home = crate::durable_run::open(&location, &execution).unwrap();
     assert_eq!(home.cold_storage_reads().member_reads, 0);
-    assert_eq!(crate::workload::states_of(home.runtime(), &records), expected);
+    assert_eq!(
+        crate::workload::states_of(home.runtime(), &records),
+        expected
+    );
     home.close();
 }
 

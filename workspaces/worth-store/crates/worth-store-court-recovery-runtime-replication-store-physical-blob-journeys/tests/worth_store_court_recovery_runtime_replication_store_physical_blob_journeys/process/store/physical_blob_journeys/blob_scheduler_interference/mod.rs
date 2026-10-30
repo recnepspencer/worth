@@ -1,15 +1,18 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_scheduler_interference::*;
-use {std::fs, std::num::NonZeroU64, std::path::Path};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_scheduler_interference::*;
 
-use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobAppendFailure, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimFailure, worth_store::physical_runtime::BlobReclaimPublicationStage, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIndeterminateStage, worth_store::physical_runtime::PhysicalWorkCounterSnapshot, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkPressureClass, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration, worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope, worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget, worth_store_io_scheduler::foreground_reservation::QueueSlot, worth_store_io_scheduler::foreground_reservation::WorkerPermit};
-use {worth_store_physical_backend::MediaCounterSnapshot};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordKind, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::PersistedRecordIdentity};
+use worth_store_physical_format::decode_blob_record;
 
-use {crate::physical_blob_journeys::blob_expiry::wal_oracle};
-
-use {crate::physical_blob_journeys::blob_crash::establish_recovery_frontier, crate::blob_crash::recovery::recover_closed_store, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_reclaim::abandoned_prefix, crate::physical_blob_journeys::blob_reclaim::request, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
+    crate::physical_blob_journeys::blob_reclaim::abandoned_prefix,
+    crate::physical_blob_journeys::blob_reclaim::request,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn real_ingest_frame_denial_preserves_foreground_floor_and_later_spends_ingest_class() {
@@ -18,13 +21,19 @@ fn real_ingest_frame_denial_preserves_foreground_floor_and_later_spends_ingest_c
     establish_recovery_frontier(&serving);
     let scope = admitted_blob_scope("c11.blob.scheduler.ingest.scope");
     let light_foreground = hold_one_foreground_slot(&serving);
-    let before_ingest = terminal_count(&serving, worth_store::physical_runtime::PhysicalWorkPressureClass::BackgroundBlobIngest);
+    let before_ingest = terminal_count(
+        &serving,
+        worth_store::physical_runtime::PhysicalWorkPressureClass::BackgroundBlobIngest,
+    );
     let mut admitted = begin_one_chunk(&serving, &scope);
     admitted.push(&[0x7b; CHUNK / 2]).unwrap();
     admitted.push(&[0x7b; CHUNK / 2]).unwrap();
     admitted.finish().unwrap();
     assert!(
-        terminal_count(&serving, worth_store::physical_runtime::PhysicalWorkPressureClass::BackgroundBlobIngest) > before_ingest
+        terminal_count(
+            &serving,
+            worth_store::physical_runtime::PhysicalWorkPressureClass::BackgroundBlobIngest
+        ) > before_ingest
     );
     drop(light_foreground);
 
@@ -83,7 +92,9 @@ fn real_ingest_frame_denial_preserves_foreground_floor_and_later_spends_ingest_c
     let [(_, bytes)] = added.as_slice() else {
         panic!("C.8 must replay exactly one WAL-bound chunk: {added:?}");
     };
-    let worth_store_physical_format::BlobRecordV1::Chunk(chunk) = decode_blob_record(bytes).unwrap() else {
+    let worth_store_physical_format::BlobRecordV1::Chunk(chunk) =
+        decode_blob_record(bytes).unwrap()
+    else {
         panic!("C.8 must replay the denied ingest chunk");
     };
     assert_eq!(chunk.bytes(), &[0x5a; CHUNK]);
@@ -98,7 +109,10 @@ fn real_reclaim_frame_denial_preserves_foreground_floor_and_later_spends_reclaim
     let scope = admitted_blob_scope("c11.blob.scheduler.reclaim.scope");
     let token = abandoned_prefix(&serving, &scope);
     let light_foreground = hold_one_foreground_slot(&serving);
-    let before_reclaim = terminal_count(&serving, worth_store::physical_runtime::PhysicalWorkPressureClass::BackgroundBlobReclaim);
+    let before_reclaim = terminal_count(
+        &serving,
+        worth_store::physical_runtime::PhysicalWorkPressureClass::BackgroundBlobReclaim,
+    );
     let receipt = serving
         .blobs()
         .unwrap()
@@ -106,9 +120,15 @@ fn real_reclaim_frame_denial_preserves_foreground_floor_and_later_spends_reclaim
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert!(
-        terminal_count(&serving, worth_store::physical_runtime::PhysicalWorkPressureClass::BackgroundBlobReclaim) > before_reclaim
+        terminal_count(
+            &serving,
+            worth_store::physical_runtime::PhysicalWorkPressureClass::BackgroundBlobReclaim
+        ) > before_reclaim
     );
     drop(light_foreground);
 
@@ -171,7 +191,9 @@ fn real_reclaim_frame_denial_preserves_foreground_floor_and_later_spends_reclaim
     let [(_, bytes)] = added.as_slice() else {
         panic!("C.8 must replay exactly one WAL-bound manifest: {added:?}");
     };
-    let worth_store_physical_format::BlobRecordV1::DropSetManifestV2(manifest) = decode_blob_record(bytes).unwrap() else {
+    let worth_store_physical_format::BlobRecordV1::DropSetManifestV2(manifest) =
+        decode_blob_record(bytes).unwrap()
+    else {
         panic!("the manifest stage WAL cannot authorize a drop descriptor");
     };
     assert_eq!(manifest.count(), 1);
@@ -181,8 +203,10 @@ fn real_reclaim_frame_denial_preserves_foreground_floor_and_later_spends_reclaim
     let (_, candidate_bytes) = recovered
         .iter()
         .find(|(record, _)| {
-            worth_store_physical_format::PersistedRecordIdentity::new(record.allocation_epoch(), record.ordinal())
-                == Some(*candidate)
+            worth_store_physical_format::PersistedRecordIdentity::new(
+                record.allocation_epoch(),
+                record.ordinal(),
+            ) == Some(*candidate)
         })
         .expect("manifest-only replay must leave its candidate selected");
     assert!(matches!(

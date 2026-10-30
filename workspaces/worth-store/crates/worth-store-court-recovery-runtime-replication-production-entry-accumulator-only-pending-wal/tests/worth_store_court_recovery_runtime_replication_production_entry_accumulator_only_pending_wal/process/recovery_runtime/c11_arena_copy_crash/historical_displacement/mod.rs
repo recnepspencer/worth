@@ -1,9 +1,15 @@
-#[allow(unused_imports)] use crate::c11_arena_copy_crash::historical_displacement::*;
-use {worth_store_physical_format::DurableExtentRecordPlacement, worth_store_testkit_recovery_runtime::support::EXTENT_BYTES, std::path::Path, std::path::PathBuf, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_proof::TransitionOutcome, worth_store_recovery_runtime::WorthStoreRecovery, worth_store_testkit_recovery_runtime::support::append, worth_store_testkit_recovery_runtime::support::configuration, crate::copy_frame, worth_store_testkit_recovery_runtime::support::generation, crate::c11_arena_copy_crash::kill_after_final_wal, crate::c11_arena_copy_crash::load_identity, worth_store_testkit_recovery_runtime::support::open, crate::c11_arena_copy_crash::pre_final, crate::c11_arena_copy_crash::recover, worth_store_testkit_recovery_runtime::support::recovery_request, worth_store_testkit_recovery_runtime::support::scan, crate::c11_arena_copy_crash::selected_extent};
-use {std::fs};
-use {worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalRetirementDenial};
-use {worth_store_physical_format::decode_data_frame_page_lsn, worth_store_physical_format::DurableExtentManifest, worth_store_physical_format::DurableFrameKind, worth_store_physical_format::ExtentArenaFrameLayout, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES};
-use {worth_store_recovery_runtime::PhysicalRecoveryBlockKind};
+#[allow(unused_imports)]
+use crate::c11_arena_copy_crash::historical_displacement::*;
+use {
+    crate::c11_arena_copy_crash::kill_after_final_wal, crate::c11_arena_copy_crash::load_identity,
+    crate::c11_arena_copy_crash::recover, crate::c11_arena_copy_crash::selected_extent,
+    worth_store_testkit_recovery_runtime::support::append,
+    worth_store_testkit_recovery_runtime::support::configuration,
+    worth_store_testkit_recovery_runtime::support::generation,
+    worth_store_testkit_recovery_runtime::support::open,
+    worth_store_testkit_recovery_runtime::support::scan,
+    worth_store_testkit_recovery_runtime::support::EXTENT_BYTES,
+};
 
 #[test]
 fn historical_copy_destination_is_retained_and_checked_after_later_rewrite() {
@@ -60,16 +66,20 @@ fn historical_copy_destination_is_retained_and_checked_after_later_rewrite() {
     assert_eq!(selected.len(), 1, "copy must be selected exactly once");
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([221; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([221; 32]),
+        )
         .unwrap();
     let request = worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
         key,
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(rewrite)) =
-        submission
-            .rewrite_selected_extent_record(placement, request, selected[0].0)
-            .into_raw()
+    let worth_proof::TransitionOutcome::Success(
+        worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(rewrite),
+    ) = submission
+        .rewrite_selected_extent_record(placement, request, selected[0].0)
+        .into_raw()
     else {
         panic!("selected copied extent must admit an ordinary rewrite")
     };

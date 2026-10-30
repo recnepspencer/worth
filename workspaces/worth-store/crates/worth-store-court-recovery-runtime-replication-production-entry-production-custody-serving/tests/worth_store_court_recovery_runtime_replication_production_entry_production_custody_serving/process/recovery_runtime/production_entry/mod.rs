@@ -1,94 +1,31 @@
-use std::path::Path;
-use std::process::Command;
 #[allow(unused_imports)]
 use worth_store_testkit_recovery_runtime::production_entry::*;
-use {std::num::NonZeroU16, std::num::NonZeroU64};
 
-use worth_store_authority::require_current_store_authority;
-use worth_store_blob_chunks::BlobChunkSize;
-use {
-    worth_foundational::aspects, worth_foundational::AspectValue,
-    worth_foundational::ContractValidationInput, worth_foundational::InternedString,
-    worth_foundational::ScalarAspectType,
-};
-use {worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome};
-use {
-    worth_store::aspect_native::StoreAspectAuthorityInput,
-    worth_store::aspect_native::StoreAspectBoundaryFact,
-    worth_store::aspect_native::StoreAspectIdentity,
-    worth_store::aspect_native::StorePhysicalAuthorityWitness,
-    worth_store::aspect_native::StorePhysicalBoundaryWitness,
-    worth_store::aspect_native::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
-};
-use {
-    worth_store::physical_runtime::AdmittedBlobScope,
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobIngestFailure,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::BlobReclaimDisposition,
-    worth_store::physical_runtime::BlobReclaimLimits,
-    worth_store::physical_runtime::BlobReclaimRequest,
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-};
-use {
-    worth_store_security::admit_store_security_scope,
-    worth_store_security::StoreAuthenticityRequirement,
-    worth_store_security::StoreAuthenticityRequirementClass,
-    worth_store_security::StoreCustodyPosture, worth_store_security::StoreKeyScope,
-    worth_store_security::StoreKeyVersionPosture,
-    worth_store_security::StoreSecurityScopeAdmissionExpectation,
-    worth_store_security::StoreSecurityScopeAdmissionRequest,
-    worth_store_security::StoreTenantScope,
-};
-use {
-    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
-    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
-};
-
-use worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope;
-
-#[cfg(all())]
-use {
-    worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal,
-    worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle,
-};
-
-#[cfg(all())]
 #[test]
 fn selected_custody_rejects_checkpoint_substitution_after_seal_before_serving_open() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::Mutation::AfterSealCheckpoint);
 }
 
-#[cfg(all())]
 #[test]
 fn selected_custody_rejects_control_substitution_after_seal_before_serving_open() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::Mutation::AfterSealControl);
 }
 
-#[cfg(all())]
 #[test]
 fn selected_custody_rejects_wal_substitution_after_seal_before_serving_open() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::Mutation::AfterSealWal);
 }
 
-#[cfg(all())]
 #[test]
 fn selected_custody_rejects_route_substitution_after_seal_before_serving_open() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::Mutation::AfterSealRoute);
 }
 
-#[cfg(all())]
 #[test]
 fn selected_tier_and_released_custody_open_serving_from_one_composite_seal() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run_tier_and_release();
 }
 
-#[cfg(all())]
 #[test]
 fn selected_empty_no_release_custody_opens_serving_and_checkpoints() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::empty_no_release::run_empty_no_release();
@@ -223,25 +160,21 @@ fn release_candidate_certificate_crash_keeps_prior_selected_custody() {
     worth_store_testkit_recovery_runtime::production_entry::release_reopen::candidate_crash::run();
 }
 
-#[cfg(all())]
 #[test]
 fn release_candidate_crash_recovery_allows_successor_checkpoint() {
     worth_store_testkit_recovery_runtime::production_entry::release_reopen::candidate_crash::run_inner(true);
 }
 
-#[cfg(all())]
 #[test]
 fn genuine_release_custody_rejoins_store_media_before_serving() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::Mutation::None);
 }
 
-#[cfg(all())]
 #[test]
 fn changed_selected_checkpoint_after_recovery_claim_denies_store_rejoin() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::Mutation::AfterClaimCheckpoint);
 }
 
-#[cfg(all())]
 #[test]
 fn changed_selected_checkpoint_before_final_store_reread_denies_seal() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run(
@@ -249,7 +182,6 @@ fn changed_selected_checkpoint_before_final_store_reread_denies_seal() {
     );
 }
 
-#[cfg(all())]
 #[test]
 fn changed_selected_control_before_final_store_reread_denies_seal() {
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::Mutation::BeforeFinalRejoinControl);
@@ -282,52 +214,36 @@ fn production_entry_rejects_a_report_path_inside_the_store_root() {
         .collect::<Vec<_>>();
     assert_eq!(after, before);
 }
-#[cfg(all())]
 #[path = "anchored_records/mod.rs"]
 pub(crate) mod anchored_records;
-#[cfg(all())]
 #[path = "before_first_checkpoint/mod.rs"]
 pub(crate) mod before_first_checkpoint;
-#[cfg(all())]
 #[path = "maintenance_result/mod.rs"]
 pub(crate) mod maintenance_result;
-#[cfg(all())]
 #[path = "mixed_retained_control/mod.rs"]
 pub(crate) mod mixed_retained_control;
-#[cfg(all())]
 #[path = "no_release_failed_ingest/mod.rs"]
 pub(crate) mod no_release_failed_ingest;
-#[cfg(all())]
 #[path = "pending_successor_above_history/mod.rs"]
 pub(crate) mod pending_successor_above_history;
-#[cfg(all())]
 #[path = "pending_wal_fold/mod.rs"]
 pub(crate) mod pending_wal_fold;
-#[cfg(all())]
 #[path = "physical_checkpoint_oracle/mod.rs"]
 pub(crate) mod physical_checkpoint_oracle;
-#[cfg(all())]
 #[path = "production_custody_serving/mod.rs"]
 pub(crate) mod production_custody_serving;
-#[cfg(all())]
 #[path = "retired_tail_append/mod.rs"]
 pub(crate) mod retired_tail_append;
-#[cfg(all())]
 #[path = "selected_batch_multi_pending/mod.rs"]
 pub(crate) mod selected_batch_multi_pending;
-#[cfg(all())]
 #[path = "selected_tag7_pruned_wal/mod.rs"]
 pub(crate) mod selected_tag7_pruned_wal;
-#[cfg(all())]
 #[path = "staging_residue_recovery/mod.rs"]
 pub(crate) mod staging_residue_recovery;
-#[cfg(all())]
 #[path = "three_batch_fold/mod.rs"]
 pub(crate) mod three_batch_fold;
-#[cfg(all())]
 #[path = "tier_epoch_reopen/mod.rs"]
 pub(crate) mod tier_epoch_reopen;
-#[cfg(all())]
 #[path = "tier_release_pending_wal/mod.rs"]
 pub(crate) mod tier_release_pending_wal;
 

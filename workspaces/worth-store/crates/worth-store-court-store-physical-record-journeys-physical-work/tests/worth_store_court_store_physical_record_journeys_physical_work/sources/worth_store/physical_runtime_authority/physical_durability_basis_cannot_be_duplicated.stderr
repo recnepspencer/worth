@@ -1,9 +1,0 @@
-error[E0382]: use of moved value: `basis`
- --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_durability_basis_cannot_be_duplicated.rs:5:14
-  |
-3 | fn duplicate(basis: PhysicalDurabilityAdmissionBasis) {
-  |              ----- move occurs because `basis` has type `PhysicalDurabilityAdmissionBasis`, which does not implement the `Copy` trait
-4 |     let duplicate = basis;
-  |                     ----- value moved here
-5 |     let _ = (basis, duplicate);
-  |              ^^^^^ value used here after move

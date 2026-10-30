@@ -1,7 +1,7 @@
 //! Genuine pending release effect backing survives Core and seal transfer,
 //! then Serving consumes it through the same native Recovery pool.
 
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::PhysicalResidencyDimension as Dimension, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope, worth_proof::TransitionOutcome, worth_store_recovery_runtime::WorthStoreRecovery, crate::certified_release_serving::release_capacity_budget::recovery_pool_handoff::backing_census, crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::checkpoint, crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::open_with_policy, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery::recover, crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::recover_core, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request};
+use {crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::checkpoint, crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::open_with_policy, crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::recover_core};
 
 #[test]
 fn genuine_pending_effect_backing_moves_through_serving_and_checkpoint() {

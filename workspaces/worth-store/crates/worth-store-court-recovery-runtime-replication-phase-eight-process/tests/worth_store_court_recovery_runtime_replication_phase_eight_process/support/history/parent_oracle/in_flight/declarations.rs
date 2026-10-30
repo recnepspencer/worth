@@ -1,9 +1,11 @@
 pub(crate) use {sha2::Digest, sha2::Sha256};
 
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::in_flight::record_binding::require_bound_record,
+    crate::phase_eight_process::history::parent_oracle::in_flight::record_binding::require_bound_records,
+};
 
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::in_flight::record_binding::require_bound_record, crate::phase_eight_process::history::parent_oracle::in_flight::record_binding::require_bound_records};
-
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::in_flight::checkpoint_binding::scan_checkpoint_binding};
+pub(crate) use crate::phase_eight_process::history::parent_oracle::in_flight::checkpoint_binding::scan_checkpoint_binding;
 
 pub(crate) const WAL_HEADER_BYTES: usize = 116;
 pub(crate) const WAL_FOOTER_BYTES: usize = 32;
@@ -34,7 +36,11 @@ pub(crate) fn classify(
     Ok((identity_present, payload_present))
 }
 
-pub(crate) fn scan_wal(bytes: &[u8], identity: &[u8], payload: &[u8]) -> Result<(bool, bool), String> {
+pub(crate) fn scan_wal(
+    bytes: &[u8],
+    identity: &[u8],
+    payload: &[u8],
+) -> Result<(bool, bool), String> {
     let mut offset = 0;
     let mut found_identity = false;
     let mut found_payload = false;
@@ -129,7 +135,11 @@ pub(crate) fn binding_matches(bytes: &[u8], identity: &[u8], redo: Option<&[u8]>
     binding_redo_digest(bytes, identity, redo).is_some()
 }
 
-pub(crate) fn binding_redo_digest(bytes: &[u8], identity: &[u8], redo: Option<&[u8]>) -> Option<[u8; 32]> {
+pub(crate) fn binding_redo_digest(
+    bytes: &[u8],
+    identity: &[u8],
+    redo: Option<&[u8]>,
+) -> Option<[u8; 32]> {
     let mut cursor = crate::history::parent_oracle::in_flight::Cursor::new(bytes);
     if cursor.field() != Some(ATTEMPT_DOMAIN) || cursor.field() != Some(identity) {
         return None;

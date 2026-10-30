@@ -1,19 +1,25 @@
-pub use {std::num::NonZeroU64, std::path::Path, worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration, worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryOpenRequest, worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority, worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration, crate::production_entry::certified_release_serving::serving_durability};
-pub use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat};
+pub use worth_store::physical_runtime::AdmittedPhysicalRecordFormat;
+pub use {
+    crate::production_entry::certified_release_serving::serving_durability, std::num::NonZeroU64,
+    std::path::Path, worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration,
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
+    worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority,
+    worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration,
+};
 
 pub fn request(root: &Path) -> PhysicalRecoveryOpenRequest {
     request_with_memory(root, 16 << 20)
 }
 
-pub fn request_with_memory(
-    root: &Path,
-    recovery_memory_bytes: u64,
-) -> PhysicalRecoveryOpenRequest {
+pub fn request_with_memory(root: &Path, recovery_memory_bytes: u64) -> PhysicalRecoveryOpenRequest {
     request_with_configuration(
         root,
         recovery_memory_bytes,
         worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current()
-            .with_durability_declaration(serving_durability(std::num::NonZeroU64::new(16 << 20).unwrap())),
+            .with_durability_declaration(serving_durability(
+                std::num::NonZeroU64::new(16 << 20).unwrap(),
+            )),
     )
 }
 
@@ -25,7 +31,9 @@ pub fn request_with_memory_and_format(
     request_with_configuration(
         root,
         recovery_memory_bytes,
-        worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::for_record_format(format.declaration()),
+        worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::for_record_format(
+            format.declaration(),
+        ),
     )
 }
 
@@ -63,7 +71,11 @@ pub fn request_for_long_ingest_with_manifest_entries(
         .observation_bytes
         .checked_add(limits.staging_bytes)
         .expect("finite observation and planning headroom");
-    open(root, limits, worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current())
+    open(
+        root,
+        limits,
+        worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current(),
+    )
 }
 
 /// The limits of the two-chunk worlds with exactly this many manifest entries.
@@ -139,10 +151,20 @@ pub fn open(
     declaration: PhysicalRecoveryLimitDeclaration,
     configuration: PhysicalRecoveryStaticConfiguration,
 ) -> PhysicalRecoveryOpenRequest {
-    let limits = worth_store_recovery_runtime::PhysicalRecoveryLimits::admit(declaration).expect("bounded certification limits");
-    let authority =
-        worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority::acquire(root.to_owned(), configuration.clone(), limits)
-            .expect("fresh recovery platform authority");
+    let limits = worth_store_recovery_runtime::PhysicalRecoveryLimits::admit(declaration)
+        .expect("bounded certification limits");
+    let authority = worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority::acquire(
+        root.to_owned(),
+        configuration.clone(),
+        limits,
+    )
+    .expect("fresh recovery platform authority");
     let backend = authority.qualified_backend_profile().clone();
-    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest::declare(root.to_owned(), configuration, backend, limits, authority)
+    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest::declare(
+        root.to_owned(),
+        configuration,
+        backend,
+        limits,
+        authority,
+    )
 }

@@ -1,11 +1,10 @@
-use {std::num::NonZeroU64};
-
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::PageFillPercent, worth_store::physical_runtime::PhysicalIndexPointKey, worth_store::physical_runtime::PhysicalIndexPrefix, worth_store::physical_runtime::PhysicalIndexRange, worth_store::physical_runtime::PhysicalIndexScanBudget, worth_store::physical_runtime::PhysicalLayoutDenial, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalRecordPlacementPolicy};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_contracts::DurableArtifactFamilyId};
-
-use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named};
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::configuration, worth_store_testkit_store::fixture::serving_from_initialization_with_placement, worth_store_testkit_store::fixture::serving_from_open};
+use crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named;
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::configuration,
+    worth_store_testkit_store::fixture::serving_from_initialization_with_placement,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
 fn production_catalog_split_answers_point_range_prefix_from_selected_pages() {
@@ -19,7 +18,9 @@ fn production_catalog_split_answers_point_range_prefix_from_selected_pages() {
         .unwrap();
     let serving = serving_from_initialization_with_placement(root.path(), placement);
     let scope = admitted_blob_scope("c11.layout.production-split");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(4096).unwrap());
+    let limits = worth_store::physical_runtime::BlobReadLimits::new(
+        std::num::NonZeroU64::new(4096).unwrap(),
+    );
     let mut model = Vec::new();
     for ordinal in 0..30_u8 {
         let blobs = serving.blobs().unwrap();
@@ -30,7 +31,8 @@ fn production_catalog_split_answers_point_range_prefix_from_selected_pages() {
             2,
             &scope,
             worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         )
         .unwrap();
         let mut ingest = blobs
@@ -44,7 +46,11 @@ fn production_catalog_split_answers_point_range_prefix_from_selected_pages() {
             .unwrap()
             .unwrap();
         model.push((
-            worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence()).unwrap(),
+            worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+                object,
+                published.generation().sequence(),
+            )
+            .unwrap(),
             object,
             marker.record(),
         ));
@@ -54,7 +60,9 @@ fn production_catalog_split_answers_point_range_prefix_from_selected_pages() {
 
     let reopened = serving_from_open(root.path());
     let layouts = reopened.layouts().unwrap();
-    let catalog = layouts.btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog).unwrap();
+    let catalog = layouts
+        .btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog)
+        .unwrap();
     let ordinary = catalog.point(model[0].0).unwrap();
     for (key, _, record) in &model {
         let point = catalog.point(*key).unwrap();
@@ -86,9 +94,10 @@ fn production_catalog_split_answers_point_range_prefix_from_selected_pages() {
             worth_store::physical_runtime::PhysicalIndexScanBudget::pages(2).unwrap(),
         )
         .unwrap();
-    assert!(short
-        .by_ref()
-        .any(|entry| matches!(entry, Err(worth_store::physical_runtime::PhysicalLayoutDenial::ScanBudgetExhausted))));
+    assert!(short.by_ref().any(|entry| matches!(
+        entry,
+        Err(worth_store::physical_runtime::PhysicalLayoutDenial::ScanBudgetExhausted)
+    )));
     let full = catalog
         .range(
             worth_store::physical_runtime::PhysicalIndexRange::from(model[0].0),

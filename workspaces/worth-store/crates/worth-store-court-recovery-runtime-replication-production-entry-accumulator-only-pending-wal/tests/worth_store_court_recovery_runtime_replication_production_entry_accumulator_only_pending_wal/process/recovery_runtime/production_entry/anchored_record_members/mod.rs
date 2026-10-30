@@ -3,13 +3,15 @@
 //! without rewriting them, membership is checked against the current value
 //! on every read and carry, and every refusal precedes any effect.
 
-#[allow(unused_imports)] use crate::production_entry::anchored_record_members::*;
-use {sha2::Digest, sha2::Sha256};
-use {worth_store::physical_runtime::certification::MediaOperationRole};
-use {worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::AnchoredRecordMember, worth_store::physical_runtime::AnchoredRecordMemberLocator, worth_store::physical_runtime::AnchoredRecordMemberReadFailure, worth_store::physical_runtime::AnchoredRecordName, worth_store::physical_runtime::AnchoredRecordPublication, worth_store::physical_runtime::AnchoredRecordPublicationFailure, worth_store::physical_runtime::AnchoredRecordPublished, worth_store::physical_runtime::ServingPhysicalRuntime};
+#[allow(unused_imports)]
+use crate::production_entry::anchored_record_members::*;
+use worth_store::physical_runtime::AnchoredRecordMember;
 
-use {worth_store_testkit_recovery_runtime::production_entry::anchored_records::name, worth_store_testkit_recovery_runtime::production_entry::anchored_records::value, worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT};
-use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_store_testkit_recovery_runtime::production_entry::anchored_records};
+use {
+    worth_store_testkit_recovery_runtime::production_entry::anchored_records::name,
+    worth_store_testkit_recovery_runtime::production_entry::anchored_records::value,
+    worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT,
+};
 
 #[test]
 fn two_hundred_members_publish_read_back_and_carry_forward_without_rewriting() {
@@ -28,7 +30,10 @@ fn two_hundred_members_publish_read_back_and_carry_forward_without_rewriting() {
         first_contents.iter().cloned().map(new_member).collect(),
     )
     .expect("the first value publishes");
-    assert!(matches!(first, worth_store::physical_runtime::AnchoredRecordPublished::Published(_)));
+    assert!(matches!(
+        first,
+        worth_store::physical_runtime::AnchoredRecordPublished::Published(_)
+    ));
     assert!(
         written_bytes(serving) - before >= total,
         "the first value's members were written"
@@ -128,7 +133,9 @@ fn two_hundred_members_publish_read_back_and_carry_forward_without_rewriting() {
     .expect("an identical retry");
     assert_eq!(
         retry,
-        worth_store::physical_runtime::AnchoredRecordPublished::AlreadyPublished(second.membership().clone())
+        worth_store::physical_runtime::AnchoredRecordPublished::AlreadyPublished(
+            second.membership().clone()
+        )
     );
     assert_eq!(
         serving.physical_mutation_observation(),
@@ -190,12 +197,20 @@ fn members_are_admitted_against_the_current_value_before_any_effect() {
     };
     assert!(matches!(
         refuse(2, vec![forged]),
-        Err(worth_store::physical_runtime::AnchoredRecordPublicationFailure::MemberKeyMismatch { index: 0 })
+        Err(
+            worth_store::physical_runtime::AnchoredRecordPublicationFailure::MemberKeyMismatch {
+                index: 0
+            }
+        )
     ));
     // A stale generation, even with valid members.
     assert!(matches!(
         refuse(1, vec![carried(old[0])]),
-        Err(worth_store::physical_runtime::AnchoredRecordPublicationFailure::GenerationConflict { current: 2 })
+        Err(
+            worth_store::physical_runtime::AnchoredRecordPublicationFailure::GenerationConflict {
+                current: 2
+            }
+        )
     ));
     // A carried member under a name that has no value.
     assert!(matches!(
@@ -229,9 +244,6 @@ fn members_are_admitted_against_the_current_value_before_any_effect() {
     );
     let _ = world.close();
 }
-#[cfg(all())]
-#[path = "oracle/mod.rs"]
-pub(crate) mod oracle;
-#[cfg(all())]
+
 #[path = "recovery/mod.rs"]
 pub(crate) mod recovery;

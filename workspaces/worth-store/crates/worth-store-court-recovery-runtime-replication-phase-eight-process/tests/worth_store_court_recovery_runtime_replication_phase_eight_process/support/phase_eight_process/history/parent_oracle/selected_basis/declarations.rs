@@ -1,6 +1,4 @@
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::observe_artifact_at_path};
-
-
+pub(crate) use crate::phase_eight_process::history::parent_oracle::artifact_facts::observe_artifact_at_path;
 
 pub(crate) const CHECKPOINT_PATH: &str = "families/checkpoint.current";
 pub(crate) const WAL_PREFIX: &str = "families/wal/";

@@ -1,5 +1,5 @@
-pub use {std::path::Path, crate::production_entry::certified_release_serving::open_serving_inner};
-pub use {worth_store::physical_runtime::RecordBootstrapDenial};
+pub use worth_store::physical_runtime::RecordBootstrapDenial;
+pub use {crate::production_entry::certified_release_serving::open_serving_inner, std::path::Path};
 
 pub fn assert_plain_serving_denied(root: &Path) {
     let checkpoint_path = root.join("families/checkpoint.current");

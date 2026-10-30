@@ -1,10 +1,9 @@
-
-
-
-#[allow(unused_imports)] use crate::manifest_scale::*;
+#[allow(unused_imports)]
+use crate::manifest_scale::*;
 #[test]
 fn bounded_scale_identity_format_and_policy_courtroom() {
-    let observations = [1_u16, 9, 65].map(crate::physical_record_journeys::manifest_scale::world::observe_scale_world);
+    let observations = [1_u16, 9, 65]
+        .map(crate::physical_record_journeys::manifest_scale::world::observe_scale_world);
     let page_bytes = u64::from(
         worth_store_testkit_store::scale_support::format()
             .declaration()
@@ -38,7 +37,8 @@ fn bounded_scale_identity_format_and_policy_courtroom() {
                 9 => 1,
                 65 => 2,
                 _ => unreachable!(),
-            }] + value.point_blocks * worth_store_testkit_store::durable_frame_oracle::HEADER_BYTES as u64
+            }] + value.point_blocks
+                * worth_store_testkit_store::durable_frame_oracle::HEADER_BYTES as u64
         })
     );
     assert_eq!(observations.map(|value| value.scan_media_reads), [0, 0, 1]);
@@ -54,7 +54,8 @@ fn bounded_scale_identity_format_and_policy_courtroom() {
                 9 => 1,
                 65 => 2,
                 _ => unreachable!(),
-            }] + value.scan_blocks * worth_store_testkit_store::durable_frame_oracle::HEADER_BYTES as u64
+            }] + value.scan_blocks
+                * worth_store_testkit_store::durable_frame_oracle::HEADER_BYTES as u64
         })
     );
     assert!(observations.iter().all(|value| {

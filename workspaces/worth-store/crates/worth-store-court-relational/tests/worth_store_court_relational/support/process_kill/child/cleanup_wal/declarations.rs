@@ -1,8 +1,15 @@
 //! A bounded real WAL prefix for the recovery cleanup interruption fixture.
-pub(crate) use {std::num::NonZeroU64};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendBatch};
-pub(crate) use {worth_store_relational::RelationalStoreHome};
+pub(crate) use std::num::NonZeroU64;
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store_relational::RelationalStoreHome;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::RecordAppendBatch,
+};
 
 pub(crate) fn cover_segments_at_next_checkpoint(home: &RelationalStoreHome, limit: NonZeroU64) {
     // All four anchors belong to the home. Append unanchored records through
@@ -15,20 +22,31 @@ pub(crate) fn cover_segments_at_next_checkpoint(home: &RelationalStoreHome, limi
         .certification_record_submission();
     for generation in 0_u8..16 {
         let key = submission
-            .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([generation; 32]))
+            .issue_idempotency_key(
+                worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(
+                    [generation; 32],
+                ),
+            )
             .unwrap();
         let prepared = submission
             .prepare_durable_append(
-                worth_store::physical_runtime::RecordAppendBatch::try_from_iter([vec![generation; payload_bytes]]).unwrap(),
+                worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+                    vec![generation; payload_bytes],
+                ])
+                .unwrap(),
                 crate::open_refusals::home_placement(),
                 worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                     key,
-                    worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                    worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(
+                        30_000,
+                    )
+                    .unwrap(),
                 ),
             )
             .into_raw();
-        let worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) =
-            prepared
+        let worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) = prepared
         else {
             panic!("the cleanup fixture's distinct append prepares");
         };

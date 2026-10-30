@@ -35,12 +35,14 @@ pub(crate) fn run() {
     let policy = serving.residency_observation().admitted_policy();
     assert_eq!(policy.operation_bytes(), 32 << 20);
     assert_eq!(
-        policy.scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery),
+        policy
+            .scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery),
         limit
     );
     let active = serving.residency_observation().counters();
-    let recovery_before =
-        active.active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery);
+    let recovery_before = active.active_operation_bytes_for(
+        worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery,
+    );
     let held_bytes = limit - recovery_before - 1;
     assert!(
         policy.operation_bytes() - active.active_operation_bytes() - held_bytes > limit,
@@ -71,10 +73,15 @@ pub(crate) fn run() {
         pressure.store_generation(),
         serving.residency_observation().store_generation()
     );
-    assert_eq!(pressure.scope(), worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery);
+    assert_eq!(
+        pressure.scope(),
+        worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery
+    );
     assert_eq!(
         pressure.dimension(),
-        worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery)
+        worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery
+        )
     );
     assert!(
         pressure.requested() >= numeric_one_head_closure() - recovery_before,
@@ -110,7 +117,9 @@ pub(crate) fn run() {
         serving
             .residency_observation()
             .counters()
-            .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob),
+            .active_operation_bytes_for(
+                worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob
+            ),
         0
     );
     assert_eq!(recovery_bytes(serving), limit - 1);
@@ -125,7 +134,10 @@ pub(crate) fn run() {
         .expect("released collision permits the same lawful request")
         .wait()
         .expect("real partial drop completes");
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert_eq!(receipt.dropped_records().len(), 1);
     assert!(receipt.remaining_payload_records() > 0);
     assert!(
@@ -134,9 +146,12 @@ pub(crate) fn run() {
     );
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x7b; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("partial release checkpoint must admit");
     };
     assert!(matches!(
@@ -165,7 +180,8 @@ pub(crate) fn partial_request(
     worth_store::physical_runtime::BlobReclaimRequest::released(
         proof,
         placement,
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(1024).unwrap(),
             std::num::NonZeroU64::new(64 << 20).unwrap(),
@@ -178,7 +194,8 @@ pub(crate) fn partial_request(
 pub(crate) fn assert_source_readable(serving: &ServingPhysicalRuntime, source: ([u8; 16], u64)) {
     let scope = admitted_blob_scope("c11.recovery.release.scope");
     let blobs = serving.blobs().unwrap();
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
     let published = blobs
         .resolve_publication(source.0, source.1, &scope, limits)
         .expect("genuine selected publication is ordinarily resolvable");
@@ -201,7 +218,9 @@ pub(crate) fn recovery_bytes(serving: &ServingPhysicalRuntime) -> u64 {
     serving
         .residency_observation()
         .counters()
-        .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery)
+        .active_operation_bytes_for(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery,
+        )
 }
 
 pub(crate) fn root_generation(serving: &ServingPhysicalRuntime) -> u64 {

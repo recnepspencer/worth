@@ -1,4 +1,4 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
 pub(crate) fn run(root: &Path) -> String {
     let binary = worth_store_test_support::OFFLINE_RECOVERY_OBSERVER.path();

@@ -1,10 +1,16 @@
-use {std::num::NonZeroU16, std::num::NonZeroU64, std::thread, std::time::Duration, std::time::Instant};
+use worth_store_physical_format::decode_blob_record;
 
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::BlobAppendFailure, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimFailure, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendBatch};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::PersistedRecordIdentity};
-
-use {crate::physical_blob_journeys::blob_abort::deadline, crate::blob_crash::recovery::recover_closed_store, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_reclaim::abandoned_prefix, crate::physical_blob_journeys::blob_reclaim::request, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_abort::deadline,
+    crate::physical_blob_journeys::blob_reclaim::abandoned_prefix,
+    crate::physical_blob_journeys::blob_reclaim::request,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn ordinary_contender_cannot_write_wal_or_data_through_held_reclaim_fence() {
@@ -19,16 +25,25 @@ fn ordinary_contender_cannot_write_wal_or_data_through_held_reclaim_fence() {
         .unwrap();
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x93; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x93; 32]),
+        )
         .unwrap();
-    let worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) =
-        submission
-            .prepare_durable_append(
-                worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"ordinary-contender".as_slice()]).unwrap(),
-                placement(),
-                worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(key, deadline()),
-            )
-            .into_raw()
+    let worth_proof::TransitionOutcome::Success(
+        worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+    ) = submission
+        .prepare_durable_append(
+            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+                b"ordinary-contender".as_slice(),
+            ])
+            .unwrap(),
+            placement(),
+            worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
+                key,
+                deadline(),
+            ),
+        )
+        .into_raw()
     else {
         panic!("contender should reach actual managed pending admission");
     };
@@ -58,7 +73,6 @@ fn ordinary_contender_cannot_write_wal_or_data_through_held_reclaim_fence() {
     serving.close();
 }
 
-#[cfg(all())]
 #[test]
 fn descriptor_pre_effect_denial_retains_manifest_and_releases_fence() {
     let directory = tempfile::tempdir().unwrap();
@@ -94,7 +108,9 @@ fn descriptor_pre_effect_denial_retains_manifest_and_releases_fence() {
     let retained = match result {
         Err(worth_store::physical_runtime::BlobReclaimFailure::ManifestRetained {
             manifest_record,
-            cause: worth_store::physical_runtime::BlobAppendFailure::Preparation(_) | worth_store::physical_runtime::BlobAppendFailure::ProvenNoEffect(_),
+            cause:
+                worth_store::physical_runtime::BlobAppendFailure::Preparation(_)
+                | worth_store::physical_runtime::BlobAppendFailure::ProvenNoEffect(_),
         }) => manifest_record,
         other => panic!("expected known manifest-only partial outcome: {other:?}"),
     };
@@ -140,7 +156,6 @@ fn descriptor_pre_effect_denial_retains_manifest_and_releases_fence() {
     serving.close();
 }
 
-#[cfg(all())]
 #[test]
 fn sealed_original_drop_no_effect_is_cleaned_through_ordinary_reclaim() {
     let directory = tempfile::tempdir().unwrap();
@@ -150,18 +165,21 @@ fn sealed_original_drop_no_effect_is_cleaned_through_ordinary_reclaim() {
     let first = serving
         .blobs()
         .unwrap()
-        .reclaim(worth_store::physical_runtime::BlobReclaimRequest::abandoned(
-            token,
-            &scope,
-            placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(5_000).unwrap(),
-            worth_store::physical_runtime::BlobReclaimLimits::new(
-                std::num::NonZeroU64::new(128).unwrap(),
-                std::num::NonZeroU64::new(8 << 20).unwrap(),
-                std::num::NonZeroU16::new(1).unwrap(),
-            )
-            .unwrap(),
-        ))
+        .reclaim(
+            worth_store::physical_runtime::BlobReclaimRequest::abandoned(
+                token,
+                &scope,
+                placement(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(5_000)
+                    .unwrap(),
+                worth_store::physical_runtime::BlobReclaimLimits::new(
+                    std::num::NonZeroU64::new(128).unwrap(),
+                    std::num::NonZeroU64::new(8 << 20).unwrap(),
+                    std::num::NonZeroU16::new(1).unwrap(),
+                )
+                .unwrap(),
+            ),
+        )
         .unwrap();
     let manifest_gate =
         serving.pause_physical_mutation_at(worth_store::physical_runtime::production::PhysicalMutationCheckpoint::BeforeTerminalFinalization);
@@ -215,7 +233,10 @@ fn sealed_original_drop_no_effect_is_cleaned_through_ordinary_reclaim() {
             Ok(worth_store_physical_format::BlobRecordV1::OriginalDropReserved(value))
                 if value.manifest_record() == retained =>
             {
-                worth_store_physical_format::PersistedRecordIdentity::new(record.allocation_epoch(), record.ordinal())
+                worth_store_physical_format::PersistedRecordIdentity::new(
+                    record.allocation_epoch(),
+                    record.ordinal(),
+                )
             }
             _ => None,
         })
@@ -228,14 +249,19 @@ fn sealed_original_drop_no_effect_is_cleaned_through_ordinary_reclaim() {
         key[..8].copy_from_slice(&ordinal.to_le_bytes());
         let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
             worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new(key),
-            worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(120_000)
+                .unwrap(),
         );
-        let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw()
+        let worth_proof::TransitionOutcome::Success(handle) =
+            serving.checkpoints().start(request).into_raw()
         else {
             panic!("V2 pin checkpoint {ordinal} was not admitted");
         };
         assert!(
-            matches!(handle.wait(), worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+            matches!(
+                handle.wait(),
+                worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+            ),
             "V2 pin checkpoint {ordinal} did not complete"
         );
     }
@@ -260,7 +286,10 @@ fn sealed_original_drop_no_effect_is_cleaned_through_ordinary_reclaim() {
             .unwrap()
             .wait()
             .unwrap();
-        assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+        assert_eq!(
+            receipt.disposition(),
+            worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+        );
         assert_eq!(receipt.remaining_payload_records(), remaining);
         assert_ne!(receipt.dropped_records(), &[retained]);
     }
@@ -271,12 +300,18 @@ fn sealed_original_drop_no_effect_is_cleaned_through_ordinary_reclaim() {
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(cleanup.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        cleanup.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert_eq!(cleanup.dropped_records().len(), 2);
     assert!(cleanup.dropped_records().contains(&retained));
     assert!(cleanup.dropped_records().contains(&reserved));
     assert_eq!(cleanup.remaining_payload_records(), 0);
-    assert_eq!(cleanup.retirement(), worth_store::physical_runtime::BlobReclaimRetirement::Completed);
+    assert_eq!(
+        cleanup.retirement(),
+        worth_store::physical_runtime::BlobReclaimRetirement::Completed
+    );
     assert!(cleanup.bytes_released() > 0);
     assert!(!selected_blob_records(&serving).iter().any(|(record, _)| {
         [retained, reserved].iter().any(|removed| {
@@ -301,7 +336,6 @@ fn sealed_original_drop_no_effect_is_cleaned_through_ordinary_reclaim() {
 /// Arrival is a scheduling guard, not a five-second product latency claim.
 /// Match the neighboring orphan court's bounded arrival envelope, and release
 /// before failing so a late worker cannot strand the scope in `first.wait()`.
-#[cfg(all())]
 fn require_pause_arrival(
     gate: &worth_store::physical_runtime::production::PhysicalMutationPauseGate,
     message: &str,

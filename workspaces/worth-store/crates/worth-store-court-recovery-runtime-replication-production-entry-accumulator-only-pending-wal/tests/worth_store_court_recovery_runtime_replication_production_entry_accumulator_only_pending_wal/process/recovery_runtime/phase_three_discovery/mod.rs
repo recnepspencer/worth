@@ -1,11 +1,20 @@
-
-
-
-
-#[allow(unused_imports)] use crate::phase_three_discovery::*;
-use {crate::phase_three_discovery::phase_three_support::synthetic_topology::publish_synthetic_branched_genesis, crate::phase_three_discovery::phase_three_support::synthetic_topology::publish_synthetic_nonempty_genesis};
-use {std::path::Path, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits, worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked, worth_store_testkit_recovery_runtime::phase_three_support::initialize_store, worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration, worth_store_testkit_recovery_runtime::phase_three_support::limits_for, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_checkpoint, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_wal_tail};
-use {worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority, worth_store_recovery_runtime::PhysicalRecoverySourceDenial, worth_store_recovery_runtime::PhysicalRecoveryWalIntegrityObservationOutcome};
+#[allow(unused_imports)]
+use crate::phase_three_discovery::*;
+use {
+    crate::phase_three_discovery::phase_three_support::synthetic_topology::publish_synthetic_branched_genesis,
+    crate::phase_three_discovery::phase_three_support::synthetic_topology::publish_synthetic_nonempty_genesis,
+};
+use {
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits,
+    worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,
+    worth_store_testkit_recovery_runtime::phase_three_support::initialize_store,
+    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
+    worth_store_testkit_recovery_runtime::phase_three_support::limits_for,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_checkpoint,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_wal_tail,
+};
 
 #[test]
 fn bounded_genesis_discovery_selects_only_the_fixed_current_root() {
@@ -184,8 +193,18 @@ fn each_discovery_bound_refuses_before_recovery_effects() {
             8 * 1024,
             worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::SelectorCandidates,
         ),
-        (2, 8, 1, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ManifestBytes),
-        (2, 1, 8 * 1024, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::WalSegments),
+        (
+            2,
+            8,
+            1,
+            worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ManifestBytes,
+        ),
+        (
+            2,
+            1,
+            8 * 1024,
+            worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::WalSegments,
+        ),
     ] {
         let parent = tempfile::tempdir().unwrap();
         let root = parent.path().join("store");
@@ -232,7 +251,8 @@ fn absent_and_rejected_checkpoints_have_distinct_terminal_evidence() {
         b"corrupt checkpoint",
     )
     .unwrap();
-    let before = worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority::process_counters();
+    let before =
+        worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority::process_counters();
     let discovered = admitted_recovery(&rejected_root).discover().unwrap();
     assert_eq!(discovered.counters().checkpoints_absent, 0);
     assert_eq!(discovered.counters().checkpoints_rejected, 1);
@@ -295,7 +315,10 @@ fn cumulative_wal_bytes_stop_before_the_crossing_artifact() {
             .expect("cumulative WAL crossing must block"),
         );
         let limit = blocked.cause().limit().unwrap();
-        assert_eq!(limit.dimension(), worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::WalBytes);
+        assert_eq!(
+            limit.dimension(),
+            worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::WalBytes
+        );
         assert_eq!((limit.observed(), limit.admitted()), (16, wal_bytes));
         assert_eq!(blocked.evidence().counters.wal_bytes, 8);
         assert_eq!(blocked.recovery_effects(), 0);

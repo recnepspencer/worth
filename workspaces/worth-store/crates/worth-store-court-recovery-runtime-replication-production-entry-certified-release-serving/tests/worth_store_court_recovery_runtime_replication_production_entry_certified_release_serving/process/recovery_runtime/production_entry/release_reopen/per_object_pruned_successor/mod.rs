@@ -2,47 +2,11 @@
 
 #[allow(unused_imports)]
 use crate::production_entry::release_reopen::per_object_pruned_successor::*;
+use worth_store_physical_format::release_checkpoint_batch_records_digest_v1;
 use {
     crate::production_entry::release_reopen::per_object_pruned_successor::released_world_with_wal_segment_bytes,
-    std::num::NonZeroU16, std::num::NonZeroU64, worth_proof::AdmittedBlobReleaseProof,
-    worth_proof::TransitionOutcome, worth_store::physical_runtime::BlobReclaimDisposition,
-    worth_store::physical_runtime::BlobReclaimLimits,
-    worth_store::physical_runtime::BlobReclaimRequest,
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
     worth_store_testkit_recovery_runtime::production_entry::release_reopen::selected_release_certificates,
     worth_store_testkit_recovery_runtime::production_entry::release_reopen::selected_release_certificates_from_bytes,
-    worth_store_testkit_recovery_runtime::production_entry::release_reopen::two_generations,
-    worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle,
-    worth_store_testkit_recovery_runtime::selected_tag7_pruned_wal,
-};
-use {std::fmt::Write, std::fs, std::path::Path, std::process::Command};
-use {
-    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
-    worth_store::physical_runtime::ManifestEntryCapacity,
-    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
-    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
-    worth_store::physical_runtime::RecordByteLimit,
-    worth_store::physical_runtime::RecordCountLimit,
-    worth_store::physical_runtime::RecordScanOutcome,
-    worth_store::physical_runtime::RecordScanRequest,
-};
-use {
-    worth_store_physical_format::decode_blob_record,
-    worth_store_physical_format::release_checkpoint_batch_records_digest_v1,
-    worth_store_physical_format::BlobReclaimSourceBasisV1,
-    worth_store_physical_format::BlobRecordV1,
-    worth_store_physical_format::ReleaseCustodyHeadKeyV1,
-    worth_store_physical_format::ReleasedGenerationReclaimBasisV1,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::WorthStoreRecovery,
 };
 
 #[test]

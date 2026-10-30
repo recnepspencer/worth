@@ -1,9 +1,13 @@
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::path::Path};
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use std::path::Path;
 
 pub(crate) use {sha2::Digest, sha2::Sha256};
 
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::observe_artifact_at_path, crate::phase_eight_process::history::parent_oracle::wal_topology, crate::phase_eight_process::history::parent_oracle::artifact_facts::WalFacts};
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::observe_artifact_at_path,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::WalFacts,
+    crate::phase_eight_process::history::parent_oracle::wal_topology,
+};
 
 pub(crate) const CHECKPOINT_PATH: &str = "families/checkpoint.current";
 pub(crate) const WAL_PREFIX: &str = "families/wal/";
@@ -165,7 +169,9 @@ pub(crate) fn collect_root_files(root: &Path) -> Result<Vec<(String, Vec<u8>)>, 
     Ok(files)
 }
 
-pub(crate) fn wal_identities(files: &[(String, Vec<u8>)]) -> Result<Vec<CleanupWalIdentity>, String> {
+pub(crate) fn wal_identities(
+    files: &[(String, Vec<u8>)],
+) -> Result<Vec<CleanupWalIdentity>, String> {
     let mut facts = Vec::<WalFacts>::new();
     let mut identities = Vec::new();
     for (path, bytes) in files

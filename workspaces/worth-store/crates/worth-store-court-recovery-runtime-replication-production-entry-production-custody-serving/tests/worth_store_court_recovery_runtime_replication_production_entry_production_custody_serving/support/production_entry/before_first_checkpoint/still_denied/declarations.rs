@@ -2,11 +2,33 @@
 //! shows something only a checkpoint could have made, or whose checkpoint is
 //! present but unreadable.
 
-pub(crate) use {worth_store::physical_runtime::RecordBootstrapDenial};
-pub(crate) use {worth_store_physical_format::durable_artifact_checksum, worth_store_physical_format::DurableFreeSpaceManifestHeader, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::DurableRootSelector, worth_store_physical_format::RecordArtifactFile};
-pub(crate) use {worth_store_recovery_runtime::HistoricalDropAdmissionStage, worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryPageAdmissionDenial, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial};
+pub(crate) use worth_store::physical_runtime::RecordBootstrapDenial;
+pub(crate) use {
+    worth_store_physical_format::durable_artifact_checksum,
+    worth_store_physical_format::DurableFreeSpaceManifestHeader,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::DurableRootSelector,
+    worth_store_physical_format::RecordArtifactFile,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::HistoricalDropAdmissionStage,
+    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
+    worth_store_recovery_runtime::PhysicalRecoveryPageAdmissionDenial,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+};
 
-pub(crate) use {crate::production_entry::before_first_checkpoint::FirstWrite, crate::production_entry::before_first_checkpoint::KilledWorld, std::path::Path, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_proof::TransitionOutcome, worth_store_recovery_runtime::WorthStoreRecovery, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, std::fs, worth_store_testkit_recovery_runtime::production_entry::release_reopen};
+pub(crate) use {
+    crate::production_entry::before_first_checkpoint::FirstWrite,
+    crate::production_entry::before_first_checkpoint::KilledWorld, std::fs, std::path::Path,
+    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
+};
 
 /// Recovery must block in `phase`, with the planning denial `denial` admits,
 /// never open the generation-zero basis.
@@ -33,22 +55,32 @@ pub(crate) fn assert_blocked(
 /// rebinds the root to the rewritten header so only the epoch is wrong.
 pub(crate) fn start_a_tier_epoch_in_the_free_space_header(root: &Path) {
     let records = root.join("families/records");
-    let selector = std::fs::read(records.join(worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name()))
-        .expect("current root selector");
+    let selector = std::fs::read(
+        records
+            .join(worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name()),
+    )
+    .expect("current root selector");
     let generation = worth_store_physical_format::DurableRootSelector::decode(&selector)
         .unwrap()
         .root_generation();
-    let root_path = records
-        .join("roots")
-        .join(worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name());
-    let (manifest, format) =
-        worth_store_physical_format::DurablePhysicalRootManifest::decode(&std::fs::read(&root_path).unwrap(), u16::MAX).unwrap();
+    let root_path = records.join("roots").join(
+        worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name(),
+    );
+    let (manifest, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(
+        &std::fs::read(&root_path).unwrap(),
+        u16::MAX,
+    )
+    .unwrap();
     assert!(manifest.tier_epoch_anchor().is_none());
-    let header_path = records
-        .join("free-space")
-        .join(worth_store_physical_format::RecordArtifactFile::FreeSpaceManifest { generation }.file_name());
-    let (header, _) =
-        worth_store_physical_format::DurableFreeSpaceManifestHeader::decode(&std::fs::read(&header_path).unwrap(), u16::MAX).unwrap();
+    let header_path = records.join("free-space").join(
+        worth_store_physical_format::RecordArtifactFile::FreeSpaceManifest { generation }
+            .file_name(),
+    );
+    let (header, _) = worth_store_physical_format::DurableFreeSpaceManifestHeader::decode(
+        &std::fs::read(&header_path).unwrap(),
+        u16::MAX,
+    )
+    .unwrap();
     assert!(header.tier_epoch_start().is_none());
     let started = worth_store_physical_format::DurableFreeSpaceManifestHeader::new_with_tier_epoch(
         header.generation(),

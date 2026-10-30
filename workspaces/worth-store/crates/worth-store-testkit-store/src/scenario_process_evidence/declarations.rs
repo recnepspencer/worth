@@ -1,6 +1,6 @@
+pub use worth_store::physical_runtime::ServingPhysicalRuntime;
 pub use {serde::Deserialize, serde::Serialize};
 pub use {sha2::Digest, sha2::Sha256};
-pub use {worth_store::physical_runtime::ServingPhysicalRuntime};
 
 pub const PROCESS_PREFIX: &str = "C5_PROCESS_EVIDENCE ";
 
@@ -63,14 +63,17 @@ impl ScenarioProcessEvidence {
 }
 
 pub fn emit_process(role: &str, runtime: &ServingPhysicalRuntime) {
-    let evidence = crate::scenario_process_evidence::ScenarioProcessEvidence::current_runtime(role, runtime);
+    let evidence =
+        crate::scenario_process_evidence::ScenarioProcessEvidence::current_runtime(role, runtime);
     println!(
         "{PROCESS_PREFIX}{}",
         serde_json::to_string(&evidence).unwrap()
     );
 }
 
-pub fn profile_identity(profile: &worth_store_physical_backend::FilesystemBackendProfile) -> String {
+pub fn profile_identity(
+    profile: &worth_store_physical_backend::FilesystemBackendProfile,
+) -> String {
     let mut digest = sha2::Sha256::new();
     digest.update(profile.root_identity());
     digest.update(profile.volume_identity());

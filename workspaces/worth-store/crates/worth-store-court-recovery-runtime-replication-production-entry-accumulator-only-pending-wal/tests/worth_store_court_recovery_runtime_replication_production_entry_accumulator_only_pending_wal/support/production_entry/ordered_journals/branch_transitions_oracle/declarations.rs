@@ -12,11 +12,19 @@
 //! durable state, never by the dead runtime's attempt; the suffix publishes;
 //! and a second recovery agrees.
 
-pub(crate) use {std::num::NonZeroU64};
-pub(crate) use {std::path::Path};
+pub(crate) use std::num::NonZeroU64;
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-pub(crate) use {worth_store::physical_runtime::OrderedJournalPublicationFailure, worth_store::physical_runtime::OrderedJournalPublished, worth_store::physical_runtime::OrderedJournalResolution, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub(crate) use {
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+};
+pub(crate) use {
+    worth_store::physical_runtime::OrderedJournalPublicationFailure,
+    worth_store::physical_runtime::OrderedJournalPublished,
+    worth_store::physical_runtime::OrderedJournalResolution,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
 pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::open_with_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
 pub(crate) use {crate::production_entry::ordered_journals::two_journals::assert_holds, crate::production_entry::ordered_journals::two_journals::digest, crate::production_entry::ordered_journals::two_journals::publish, crate::production_entry::ordered_journals::two_journals::Journal};
@@ -77,8 +85,13 @@ pub(crate) fn measure(root: &Path, target: u64) -> Vec<(MediaOperationRole, u64)
     for activation in &activations {
         activation.arm().unwrap();
     }
-    publish(&serving, placement(), crate::production_entry::ordered_journals::two_journals::Journal::Transitions, target)
-        .expect("the measured publication completes");
+    publish(
+        &serving,
+        placement(),
+        crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+        target,
+    )
+    .expect("the measured publication completes");
     let counts = worth_store::physical_runtime::certification::MediaOperationRole::ALL
         .iter()
         .zip(&activations)
@@ -122,7 +135,12 @@ pub(crate) fn run_case(
         return crate::production_entry::ordered_journals::branch_transitions_oracle::Exercised::default();
     };
     activations[0].arm().unwrap();
-    let outcome = publish(&serving, placement(), crate::production_entry::ordered_journals::two_journals::Journal::Transitions, target);
+    let outcome = publish(
+        &serving,
+        placement(),
+        crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+        target,
+    );
     assert!(activations[0].is_consumed(), "{role:?}#{nth} did not fire");
     let case = format!("target {target} {role:?}#{nth} {directive:?}");
     let unresolved_refusal = unresolved_journal_refuses(&serving, &outcome, target, &case);
@@ -141,27 +159,64 @@ pub(crate) fn run_case(
         }
         Err(_) => assert!(head == target - 1 || head == target, "{case}: head {head}"),
     }
-    assert_holds(&recovered, crate::production_entry::ordered_journals::two_journals::Journal::Transitions, head);
-    assert_holds(&recovered, crate::production_entry::ordered_journals::two_journals::Journal::Commits, COMMITS);
+    assert_holds(
+        &recovered,
+        crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+        head,
+    );
+    assert_holds(
+        &recovered,
+        crate::production_entry::ordered_journals::two_journals::Journal::Commits,
+        COMMITS,
+    );
     // The same publication again: durable state answers it.
-    let retry = publish(&recovered, placement(), crate::production_entry::ordered_journals::two_journals::Journal::Transitions, target)
-        .unwrap_or_else(|failure| panic!("{case}: retry: {failure:?}"));
+    let retry = publish(
+        &recovered,
+        placement(),
+        crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+        target,
+    )
+    .unwrap_or_else(|failure| panic!("{case}: retry: {failure:?}"));
     assert_eq!(
-        matches!(retry, worth_store::physical_runtime::OrderedJournalPublished::AlreadyCommitted(_)),
+        matches!(
+            retry,
+            worth_store::physical_runtime::OrderedJournalPublished::AlreadyCommitted(_)
+        ),
         head == target,
         "{case}: retry answer"
     );
     for position in target + 1..=TRANSITIONS {
-        publish(&recovered, placement(), crate::production_entry::ordered_journals::two_journals::Journal::Transitions, position)
-            .unwrap_or_else(|failure| panic!("{case}: suffix {position}: {failure:?}"));
+        publish(
+            &recovered,
+            placement(),
+            crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+            position,
+        )
+        .unwrap_or_else(|failure| panic!("{case}: suffix {position}: {failure:?}"));
     }
-    assert_holds(&recovered, crate::production_entry::ordered_journals::two_journals::Journal::Transitions, TRANSITIONS);
-    assert_holds(&recovered, crate::production_entry::ordered_journals::two_journals::Journal::Commits, COMMITS);
+    assert_holds(
+        &recovered,
+        crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+        TRANSITIONS,
+    );
+    assert_holds(
+        &recovered,
+        crate::production_entry::ordered_journals::two_journals::Journal::Commits,
+        COMMITS,
+    );
     let _ = recovered.close();
 
     let again = serve(store.path(), &format!("{case} second recovery"));
-    assert_holds(&again, crate::production_entry::ordered_journals::two_journals::Journal::Transitions, TRANSITIONS);
-    assert_holds(&again, crate::production_entry::ordered_journals::two_journals::Journal::Commits, COMMITS);
+    assert_holds(
+        &again,
+        crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+        TRANSITIONS,
+    );
+    assert_holds(
+        &again,
+        crate::production_entry::ordered_journals::two_journals::Journal::Commits,
+        COMMITS,
+    );
     let _ = again.close();
     Exercised {
         unresolved_refusal,

@@ -1,5 +1,17 @@
-pub(crate) use {crate::history::parent_oracle::evidence_digest::digest_bytes};
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::empty_facts, crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u16, crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u32, crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64, crate::phase_eight_process::history::parent_oracle::artifact_facts::residue, crate::phase_eight_process::history::parent_oracle::artifact_facts::ArtifactFacts, crate::history::parent_oracle::evidence_digest::DigestBuilder, crate::history::parent_oracle::evidence_digest::DigestObservation, crate::phase_eight_process::history::parent_oracle::artifact_facts::ManifestFacts, crate::phase_eight_process::history::parent_oracle::artifact_facts::PageFacts, crate::phase_eight_process::history::parent_oracle::artifact_facts::SelectorFacts};
+pub(crate) use crate::history::parent_oracle::evidence_digest::digest_bytes;
+pub(crate) use {
+    crate::history::parent_oracle::evidence_digest::DigestBuilder,
+    crate::history::parent_oracle::evidence_digest::DigestObservation,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::empty_facts,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u16,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u32,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::residue,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::ArtifactFacts,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::ManifestFacts,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::PageFacts,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::SelectorFacts,
+};
 
 pub(crate) const DURABLE_HEADER_BYTES: usize = 48;
 pub(crate) const ROOT_MANIFEST_KIND: u8 = 2;
@@ -95,7 +107,9 @@ pub(crate) struct Semantic {
 }
 
 pub(crate) fn page_digest(frame: &RawFrame<'_>) -> DigestObservation {
-    let mut digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.page-lsn.v1");
+    let mut digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.page-lsn.v1",
+    );
     let mut record = Vec::with_capacity(17);
     record.push(frame.kind);
     record.extend_from_slice(&frame.identity.to_le_bytes());
@@ -135,7 +149,9 @@ pub(crate) fn selector(frame: &RawFrame<'_>) -> Option<Semantic> {
     if (linked == 0) != (linked_generation == 0) {
         return None;
     }
-    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.generation-link.v1");
+    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.generation-link.v1",
+    );
     let mut record = Vec::with_capacity(33);
     record.extend_from_slice(&frame.identity.to_le_bytes());
     record.extend_from_slice(&read_u64(payload, 17)?.to_le_bytes());
@@ -178,15 +194,18 @@ pub(crate) fn root_manifest(frame: &RawFrame<'_>) -> Option<Semantic> {
         .into_iter()
         .filter(|offset| payload[*offset] == 1)
         .count() as u64;
-    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.generation-link.v1");
+    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.generation-link.v1",
+    );
     generation.record(&payload[..40]);
     for offset in [40, 120, 160, 232, 312] {
         if payload[offset] == 1 {
             generation.record(&payload[offset..reference_end(offset)]);
         }
     }
-    let mut membership =
-        crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.manifest-membership.v1");
+    let mut membership = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.manifest-membership.v1",
+    );
     membership.record(payload);
     Some(Semantic {
         generation: true,
@@ -200,7 +219,11 @@ pub(crate) fn root_manifest(frame: &RawFrame<'_>) -> Option<Semantic> {
     })
 }
 
-pub(crate) fn counted_manifest(frame: &RawFrame<'_>, header: usize, member_width: usize) -> Option<Semantic> {
+pub(crate) fn counted_manifest(
+    frame: &RawFrame<'_>,
+    header: usize,
+    member_width: usize,
+) -> Option<Semantic> {
     let count = usize::try_from(read_u32(frame.payload, 12)?).ok()?;
     if frame.payload.len() < header
         || count == 0
@@ -208,10 +231,13 @@ pub(crate) fn counted_manifest(frame: &RawFrame<'_>, header: usize, member_width
     {
         return None;
     }
-    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.generation-link.v1");
+    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.generation-link.v1",
+    );
     generation.record(&frame.payload[..16]);
-    let mut membership =
-        crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.manifest-membership.v1");
+    let mut membership = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.manifest-membership.v1",
+    );
     membership.record(frame.payload);
     Some(Semantic {
         generation: true,
@@ -230,7 +256,9 @@ pub(crate) fn extent_manifest(frame: &RawFrame<'_>) -> Option<Semantic> {
     if frame.payload.len() != 56 || !alignment.is_power_of_two() || frame.identity == 0 {
         return None;
     }
-    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.generation-link.v1");
+    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.generation-link.v1",
+    );
     generation.record(&frame.payload[..48]);
     Some(Semantic {
         generation: true,
@@ -259,10 +287,13 @@ pub(crate) fn free_space_manifest(frame: &RawFrame<'_>) -> Option<Semantic> {
     {
         return None;
     }
-    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.generation-link.v1");
+    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.generation-link.v1",
+    );
     generation.record(&payload[..64]);
-    let mut membership =
-        crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.manifest-membership.v1");
+    let mut membership = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.manifest-membership.v1",
+    );
     membership.record(payload);
     Some(Semantic {
         generation: true,
@@ -301,10 +332,13 @@ pub(crate) fn routing_manifest(
     if count == 0 || payload.len() != 40usize.checked_add(count.checked_mul(width)?)? {
         return None;
     }
-    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.generation-link.v1");
+    let mut generation = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.generation-link.v1",
+    );
     generation.record(&payload[..32]);
-    let mut membership =
-        crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.manifest-membership.v1");
+    let mut membership = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.manifest-membership.v1",
+    );
     membership.record(payload);
     Some(Semantic {
         generation: true,

@@ -1,18 +1,7 @@
 //! A killed high-index anchor advance must replay from WAL, not its old root.
 #[allow(unused_imports)]
 use crate::incarnation::anchor_replay::*;
-use crate::killed_child;
-use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
-use {
-    crate::durable_run::open, crate::incarnation::assert_contended, crate::workload,
-    std::path::Path, worth_execution::ExecutionRequest,
-};
-use {std::path::PathBuf, std::thread, std::time::Instant};
-use {
-    worth_store::physical_runtime::AnchoredRecordName,
-    worth_store::physical_runtime::AnchoredRecordPublication,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-};
+use {crate::durable_run::open, crate::incarnation::assert_contended};
 
 #[test]
 fn wal_replays_the_thirty_second_anchor_advance_after_process_death() {

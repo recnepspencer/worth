@@ -1,32 +1,12 @@
 #[allow(unused_imports)]
 use crate::phase_three_root_protocol_denials::*;
+use worth_store_physical_format::ROOT_SELECTOR_BYTES;
 use {
     crate::phase_three_support::admitted_recovery,
     crate::phase_three_support::admitted_recovery_for_format,
     crate::phase_three_support::expect_blocked, crate::phase_three_support::initialize_store,
     crate::phase_three_support::publish_synthetic_genesis,
-    crate::phase_three_support::publish_synthetic_genesis_for_format, std::path::Path,
-};
-use {
-    worth_store_physical_format::DurableRootSelector,
-    worth_store_physical_format::PhysicalPageSizeClass,
-    worth_store_physical_format::PhysicalRecordFormatDeclaration,
-    worth_store_physical_format::RootSelectorRole,
-    worth_store_physical_format::ROOT_SELECTOR_BYTES,
-};
-use {
-    worth_store_physical_integrity::PhysicalDamageCause,
-    worth_store_physical_integrity::PhysicalIntegrityRejection,
-};
-use {
-    worth_store_recovery_physics::PhysicalRootCandidateDenial,
-    worth_store_recovery_physics::PhysicalRootSelectionDenial,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryBlock,
-    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolArtifact,
-    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial,
-    worth_store_recovery_runtime::PhysicalRecoverySourceDenial,
+    crate::phase_three_support::publish_synthetic_genesis_for_format,
 };
 
 #[test]

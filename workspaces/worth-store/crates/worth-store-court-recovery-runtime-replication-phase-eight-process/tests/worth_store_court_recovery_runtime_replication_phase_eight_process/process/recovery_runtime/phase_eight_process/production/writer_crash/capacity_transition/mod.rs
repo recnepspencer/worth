@@ -1,8 +1,10 @@
-use {worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::CHECKPOINT_CERTIFIED_SCHEMA};
+use worth_store_physical_format::CHECKPOINT_CERTIFIED_SCHEMA;
 
-use {crate::phase_eight_process::production::harness::compare_runtime_and_observer_with_budget};
-use {crate::phase_eight_process::production::harness::ProcessWorld};
-use {crate::production::writer_crash::successor_candidate_media::candidate_root_path, crate::production::writer_crash::successor_candidate_media::candidate_topology};
+use crate::phase_eight_process::production::harness::compare_runtime_and_observer_with_budget;
+use {
+    crate::production::writer_crash::successor_candidate_media::candidate_root_path,
+    crate::production::writer_crash::successor_candidate_media::candidate_topology,
+};
 
 #[test]
 fn killed_writer_adopts_exact_multi_level_capacity_transition_candidate() {
@@ -35,10 +37,14 @@ fn killed_writer_adopts_exact_multi_level_capacity_transition_candidate() {
         candidate_generation,
     ))
     .expect("read capacity-transition candidate root");
-    let (selected, _) = worth_store_physical_format::DurablePhysicalRootManifest::decode(&selected_bytes, u16::MAX)
-        .expect("decode selected root");
-    let (candidate, _) = worth_store_physical_format::DurablePhysicalRootManifest::decode(&candidate_bytes, u16::MAX)
-        .expect("decode candidate root");
+    let (selected, _) =
+        worth_store_physical_format::DurablePhysicalRootManifest::decode(&selected_bytes, u16::MAX)
+            .expect("decode selected root");
+    let (candidate, _) = worth_store_physical_format::DurablePhysicalRootManifest::decode(
+        &candidate_bytes,
+        u16::MAX,
+    )
+    .expect("decode candidate root");
     assert_eq!(selected.node_capacity(), 64);
     assert_eq!(candidate.node_capacity(), 4);
     assert!(

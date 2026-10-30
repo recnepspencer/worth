@@ -1,21 +1,48 @@
 //! Two completed releases rejoin without an ordinary tail or new checkpoint,
 //! then retain exact per-object progress across checkpoint and fresh recovery.
 
-pub(crate) use {std::path::Path, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_physical_format::RecordArtifactFile, worth_proof::TransitionOutcome, worth_store_recovery_runtime::WorthStoreRecovery, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, std::fs, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, worth_store_testkit_recovery_runtime::production_entry::release_reopen, crate::production_entry::historical_release_only::selected_generation};
-pub(crate) use {worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::ReleaseCustodyHeadEntryV1};
-pub(crate) use {worth_store_physical_integrity::walk_release_custody_head, worth_store_physical_integrity::ReleaseCustodyHeadWalkLimitsV1};
+pub(crate) use {
+    crate::production_entry::historical_release_only::selected_generation, std::fs,
+    std::path::Path, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
+};
+pub(crate) use {
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::ReleaseCustodyHeadEntryV1,
+};
+pub(crate) use {
+    worth_store_physical_integrity::walk_release_custody_head,
+    worth_store_physical_integrity::ReleaseCustodyHeadWalkLimitsV1,
+};
 
-pub(crate) fn checkpoint_completed_history(serving: &worth_store::physical_runtime::ServingPhysicalRuntime) {
+pub(crate) fn checkpoint_completed_history(
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0xc9; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("completed-history Serving checkpoint must admit")
     };
     let outcome = handle.wait();
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "completed-history checkpoint must complete: {outcome:?}"
     );
 }
@@ -31,7 +58,8 @@ pub(crate) fn selected_root_heads(root: &Path) -> Vec<ReleaseCustodyHeadEntryV1>
         ),
     )
     .unwrap();
-    let (manifest, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(&bytes, u16::MAX).unwrap();
+    let (manifest, format) =
+        worth_store_physical_format::DurablePhysicalRootManifest::decode(&bytes, u16::MAX).unwrap();
     let limits = worth_store_physical_integrity::ReleaseCustodyHeadWalkLimitsV1::new(
         32,
         2,

@@ -1,9 +1,6 @@
 pub use {std::process::Child, std::process::ExitStatus};
 pub use {std::time::Duration, std::time::Instant};
 
-
-
-
 pub struct ProcessChildGuard {
     pub child: Option<Child>,
     pub terminated: bool,

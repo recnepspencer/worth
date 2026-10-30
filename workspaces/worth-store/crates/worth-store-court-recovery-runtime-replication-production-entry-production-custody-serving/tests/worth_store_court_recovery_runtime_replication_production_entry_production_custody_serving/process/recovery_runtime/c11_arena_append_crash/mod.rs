@@ -1,12 +1,18 @@
-#[allow(unused_imports)] use crate::c11_arena_append_crash::*;
-use {std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+#[allow(unused_imports)]
+use crate::c11_arena_append_crash::*;
 
-use {worth_store_testkit_recovery_runtime::support::EXTENT_BYTES, worth_store_testkit_recovery_runtime::support::append, worth_store_testkit_recovery_runtime::support::configuration, worth_store_testkit_recovery_runtime::support::generation, worth_store_testkit_recovery_runtime::support::initialize, worth_store_testkit_recovery_runtime::support::open, worth_store_testkit_recovery_runtime::support::recovery_request, worth_store_testkit_recovery_runtime::support::scan};
+use {
+    worth_store_testkit_recovery_runtime::support::append,
+    worth_store_testkit_recovery_runtime::support::configuration,
+    worth_store_testkit_recovery_runtime::support::generation,
+    worth_store_testkit_recovery_runtime::support::initialize,
+    worth_store_testkit_recovery_runtime::support::open,
+    worth_store_testkit_recovery_runtime::support::recovery_request,
+    worth_store_testkit_recovery_runtime::support::scan,
+    worth_store_testkit_recovery_runtime::support::EXTENT_BYTES,
+};
 
-use {crate::c11_arena_append_crash::observation::observe_arena};
+use crate::c11_arena_append_crash::observation::observe_arena;
 
 #[test]
 fn killed_after_arena_data_settlement_replays_one_routed_extent() {
@@ -84,9 +90,11 @@ fn arena_append_after_data_child() {
     append(&serving, placement, [175; 32], b"seed");
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([176; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(checkpoint) = serving.checkpoints().start(request).into_raw()
+    let worth_proof::TransitionOutcome::Success(checkpoint) =
+        serving.checkpoints().start(request).into_raw()
     else {
         panic!("genesis checkpoint must admit");
     };

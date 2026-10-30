@@ -1,11 +1,47 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::FramePortCounterSnapshot, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PageFillPercent, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PhysicalWorkCounterSnapshot, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkSignalFamily, worth_store::physical_runtime::PhysicalWritebackCounterSnapshot, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RootPublicationPhysicalMutationMember, worth_store::physical_runtime::SegmentPageCount, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_offline_verifier::OfflineAllocationClass, worth_store_offline_verifier::OfflineRecordPlacement};
-pub(crate) use {worth_store_physical_backend::MediaCounterSnapshot, worth_store_physical_backend::MediaOperationRole};
-pub(crate) use {worth_store_physical_format::store_namespace::StableStoreIdentity, worth_store_physical_format::PhysicalRecordFormatDeclaration};
+pub(crate) use {
+    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
+    worth_store::physical_runtime::FramePortCounterSnapshot,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PageFillPercent,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::PhysicalWorkCounterSnapshot,
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkSignalFamily,
+    worth_store::physical_runtime::PhysicalWritebackCounterSnapshot,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RootPublicationPhysicalMutationMember,
+    worth_store::physical_runtime::SegmentPageCount,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_offline_verifier::OfflineAllocationClass,
+    worth_store_offline_verifier::OfflineRecordPlacement,
+};
+pub(crate) use {
+    worth_store_physical_backend::MediaCounterSnapshot,
+    worth_store_physical_backend::MediaOperationRole,
+};
+pub(crate) use {
+    worth_store_physical_format::store_namespace::StableStoreIdentity,
+    worth_store_physical_format::PhysicalRecordFormatDeclaration,
+};
 
-pub(crate) use {worth_store_testkit_store::durable_publication::root::publish_single, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::read_record, worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration, worth_store_testkit_store::stream_fixture::hex, worth_store_testkit_store::physical_record_journeys::success};
+pub(crate) use {
+    worth_store_testkit_store::durable_publication::root::publish_single,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::read_record,
+    worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration,
+    worth_store_testkit_store::physical_record_journeys::success,
+    worth_store_testkit_store::stream_fixture::hex,
+};
 
 pub(crate) struct SegmentWritebackBaseline {
     pub(crate) media: MediaCounterSnapshot,
@@ -116,7 +152,10 @@ pub(crate) fn assert_segment_work_and_signal_evidence(
     let causal = serving.physical_work_observer().causal().records();
     let writebacks = causal[before.causal_records..]
         .iter()
-        .filter(|record| record.operation() == worth_store::physical_runtime::PhysicalWorkOperationFamily::ArtifactRangeWrite)
+        .filter(|record| {
+            record.operation()
+                == worth_store::physical_runtime::PhysicalWorkOperationFamily::ArtifactRangeWrite
+        })
         .collect::<Vec<_>>();
     assert_eq!(writebacks.len(), 4);
     let signal_bindings = serving.physical_signal_aspect_binding_observations();
@@ -128,9 +167,9 @@ pub(crate) fn assert_segment_work_and_signal_evidence(
         assert!(writeback.backend_operation().is_some());
         assert!(signal_bindings.iter().any(|binding| {
             binding.digest() == writeback.signal_binding()
-                && binding
-                    .families()
-                    .contains(worth_store::physical_runtime::PhysicalWorkSignalFamily::ExactWriteback)
+                && binding.families().contains(
+                    worth_store::physical_runtime::PhysicalWorkSignalFamily::ExactWriteback,
+                )
         }));
     }
 }
@@ -145,7 +184,10 @@ pub(crate) fn assert_segment_artifact_lengths(root: &Path) {
 }
 
 pub(crate) fn assert_inline_placement_truth(root: &Path, format: PhysicalRecordFormatDeclaration) {
-    let root_manifest = worth_store_testkit_store::physical_record_journeys::manifest_fixture::decode_routing_tree(root, 2, format, 128);
+    let root_manifest =
+        worth_store_testkit_store::physical_record_journeys::manifest_fixture::decode_routing_tree(
+            root, 2, format, 128,
+        );
     for (index, entry) in root_manifest.placements().iter().enumerate() {
         let worth_store_offline_verifier::OfflineRecordPlacement::Inline {
             segment,
@@ -182,7 +224,12 @@ pub(crate) fn segment_reader_request(
 
 pub(crate) fn assert_fresh_process_records(root: &Path, request: &str) {
     let order = [14_usize, 0, 7, 3, 12, 1, 9, 5, 13, 2, 11, 6, 4, 10, 8];
-    let output = worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child("segment_reader", root, Some(request));
+    let output =
+        worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child(
+            "segment_reader",
+            root,
+            Some(request),
+        );
     for index in order {
         assert!(
             output
