@@ -36,6 +36,15 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryPrimaryGraphFau
     #[cfg(test)]
     fn aftermath_ready_for_sealing(&self) {}
 
+    fn output_comparison_completed(&self) {}
+
+    fn cancel_after_next_output_comparison_for_test(
+        &self,
+        _source: worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> bool {
+        false
+    }
+
     fn schedule_for_test(&self, _fault: WorthQueryPrimaryGraphFault) -> bool {
         false
     }
@@ -51,9 +60,39 @@ pub(in crate::domain_computation::primary_graph) fn production_fault_port(
 #[derive(Default)]
 struct WorthQueryScriptedPrimaryGraphFaults {
     scheduled: std::sync::atomic::AtomicU16,
+    output_comparison_cancellation: std::sync::Mutex<
+        Option<
+            worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+        >,
+    >,
 }
 
 impl WorthQueryPrimaryGraphFaultPort for WorthQueryScriptedPrimaryGraphFaults {
+    fn output_comparison_completed(&self) {
+        let source = self
+            .output_comparison_cancellation
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .take();
+        if let Some(source) = source {
+            source.cancel();
+        }
+    }
+    fn cancel_after_next_output_comparison_for_test(
+        &self,
+        source: worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> bool {
+        let mut pending = self
+            .output_comparison_cancellation
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        if pending.is_some() {
+            return false;
+        }
+        *pending = Some(source);
+        true
+    }
+
     fn take(&self, fault: WorthQueryPrimaryGraphFault) -> bool {
         let mask = fault_mask(fault);
         let mut scheduled = self.scheduled.load(std::sync::atomic::Ordering::Acquire);
@@ -154,5 +193,26 @@ impl super::WorthQueryPrimaryGraphProvider {
         fault: WorthQueryPrimaryGraphFault,
     ) -> bool {
         self.publication_fault_control.take(fault) || self.fault_port.take(fault)
+    }
+}
+
+#[cfg(test)]
+mod output_comparison_cancellation_tests {
+    use super::*;
+    use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
+    #[test]
+    fn comparison_cancellation_is_one_shot_and_refuses_pending_replacement() {
+        let port = WorthQueryScriptedPrimaryGraphFaults::default();
+        let first = WorthQueryCancellationSource::new();
+        let second = WorthQueryCancellationSource::new();
+        assert!(port.cancel_after_next_output_comparison_for_test(first.clone()));
+        assert!(!port.cancel_after_next_output_comparison_for_test(second.clone()));
+        port.output_comparison_completed();
+        assert!(first.token().is_cancelled());
+        assert!(!second.token().is_cancelled());
+        assert!(port.cancel_after_next_output_comparison_for_test(second.clone()));
+        port.output_comparison_completed();
+        assert!(second.token().is_cancelled());
+        port.output_comparison_completed();
     }
 }

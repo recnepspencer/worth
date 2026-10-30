@@ -445,6 +445,12 @@ closing it releases its request funding without retaining another Native reader.
 `producer_evaluation_refusal()` exposes a typed refusal only after the required
 fresh admission. It exposes no before/after business values.
 
+A late interruption after comparison preserves its original pair in the Delivered
+checkpoint. Fresh request admission can resume readiness without another handler,
+comparison or Native publication. The [public cancellation/retry journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/retry.rs)
+qualifies this behavior; reopening the completed Ready result retains that same
+evaluation occurrence. A retained comparison supplies no permission to inspect it.
+
 ### Native Bridge Assembly Boundary
 
 Use Host's fresh issuer for application receipt inspection. Native backing,

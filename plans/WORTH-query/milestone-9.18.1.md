@@ -1380,7 +1380,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.5 | Canonical field absence and mandatory currentness proof | Complete; qualified `70812eb0c3` | Stronger whole-aspect/scalar journeys belong to 9.6-9.7 |
 | 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
 | 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
-| 9.8 | Genuine equivalent-output suppression explanations | In progress; actual performed field evaluation and admitted public report qualified | Late checkpoint retry and Stable/restored/no-compute contrasts |
+| 9.8 | Genuine equivalent-output suppression explanations | In progress; actual performed field evaluation and admitted public report qualified | Stable/restored and readiness-no-compute contrasts |
 | 9.9 | Optional rich materialization | Open | Freshly admitted, demand-driven views from existing evidence owners |
 | 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
 | 9.11 | Integrated application qualification and consumer handoff | Open | Coherent public capability, executable guidance and phase acceptance |
@@ -1635,11 +1635,23 @@ partition, generation and physical-binding substitution. Current qualification
 passes all 80 affected owner tests and 52 public correction tests, plus the
 boundary, agent-context, dirty Rust size and formatting/whitespace checks.
 
-**Remaining qualification:** repeated performed Ready is not a Stable/restored
-or readiness-prevented-compute contrast. Exercise those actual meanings, and the
-Delivered late-stop/retry boundary after a completed comparison, before closing
-9.8. Its retained checkpoint path is implemented but not qualified by the new
-Ready reuse assertion. Phase 9 and 9.9-9.11 remain open.
+The real Delivered retry boundary is now qualified. A one-shot existing fault-port
+control cancels an actual request only after a newly computed comparison is
+memoized. Ordinary readiness consults that fresh execution again before Ready,
+so the cancellation preserves the committed checkpoint and original pair. A
+pending cancellation registration refuses replacement, and unrelated readiness
+cannot consume it. The public parity journey observes the original Cancelled
+cause and surviving output, then resumes under a fresh request without another
+handler, Native publication or comparison pair. The admitted report retains
+Equivalent and the original Native field revision; Ready reopening shares that
+same actual pair. Existing snapshot-pin observation proves no hidden Native
+reader. Qualification passes 17 focused owner tests and all 53 public correction
+tests, plus required boundary/context, size, formatting and whitespace checks.
+
+**Remaining qualification:** actual Stable/restored suppliers and readiness that
+prevents compute must retain their own meanings and cannot claim a performed
+Equivalent evaluation. Qualify those contrasts before closing 9.8. Phase 9 and
+9.9-9.11 remain open.
 
 #### Phase 9.9: Optional Rich Materialization
 

@@ -196,8 +196,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             .and_then(|route| route.output_comparison.as_ref())
         {
             None => None,
-            Some(comparison) => Some(
-                comparison.evaluate(
+            Some(comparison) => {
+                let visit = comparison.evaluate(
                     phase
                         .request_for_owner(truth.owner_identity())
                         .expect("output evaluation uses its admitted runtime"),
@@ -212,9 +212,20 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                     },
                     ready,
                     &self.next_output_producer_attempt,
-                )?,
-            ),
+                )?;
+                if visit.compared_now {
+                    self.primary_provider.output_comparison_completed();
+                }
+                Some(visit.evaluation)
+            }
         };
+        // A newly completed comparison is already memoized. Any late request
+        // interruption must return its Delivered checkpoint, including ordinary demand.
+        super::super::output_evaluation::consult(
+            &phase
+                .request_for_owner(truth.owner_identity())
+                .expect("readiness completion uses its admitted runtime"),
+        )?;
         if let Some(request) = admitted.as_ref() {
             check_readiness_request(request)?;
         }

@@ -99,6 +99,12 @@ pub(super) struct NativeOutputBasis<'a> {
     pub(super) ordinal: usize,
     pub(super) layout: &'a WorthQueryPrimaryGraphLayout,
 }
+/// Visit metadata is used only to target the certification interruption seam.
+/// The original comparison remains the sole owner of evaluation evidence.
+pub(super) struct OutputEvaluationVisit {
+    pub(super) evaluation: Arc<ProducerOutputEvaluation>,
+    pub(super) compared_now: bool,
+}
 impl InstalledOutputComparison {
     pub(super) fn evaluate(
         &self,
@@ -108,10 +114,13 @@ impl InstalledOutputComparison {
         basis: NativeOutputBasis<'_>,
         ready: &PreparedReadyBacking,
         attempts: &std::sync::atomic::AtomicU64,
-    ) -> Result<Arc<ProducerOutputEvaluation>, WorthQueryOutputDemandDenial> {
+    ) -> Result<OutputEvaluationVisit, WorthQueryOutputDemandDenial> {
         consult(&execution)?;
         if let Some(existing) = ready.output_evaluation() {
-            return Ok(Arc::clone(existing));
+            return Ok(OutputEvaluationVisit {
+                evaluation: Arc::clone(existing),
+                compared_now: false,
+            });
         }
         let header = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
             .extend(std::alloc::Layout::new::<ProducerOutputEvaluation>())
@@ -195,7 +204,11 @@ impl InstalledOutputComparison {
             _memory: memory,
         });
         ready.retain_output_evaluation(Arc::clone(&completed));
-        Ok(completed)
+        let compared_now = matches!(completed.state, ProducerOutputEvaluationState::Compared(_));
+        Ok(OutputEvaluationVisit {
+            evaluation: completed,
+            compared_now,
+        })
     }
 }
 pub(super) fn consult(

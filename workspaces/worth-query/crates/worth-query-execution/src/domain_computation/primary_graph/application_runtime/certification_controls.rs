@@ -85,6 +85,17 @@ where
             .press_next_readiness_with_world_snapshots_for_test();
     }
 
+    /// Cancels an actual request after the next newly computed output pair is memoized.
+    /// A pending registration cannot be replaced; no verdict or evidence is supplied.
+    #[doc(hidden)]
+    pub fn cancel_after_next_output_comparison_for_test(
+        &self,
+        source: worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> bool {
+        self.primary_provider
+            .cancel_after_next_output_comparison_for_test(source)
+    }
+
     /// Counts readiness decisions actually attempted by this application runtime.
     #[doc(hidden)]
     pub fn output_readiness_attempt_count_for_test(&self) -> u64 {

@@ -34,7 +34,7 @@ pub(super) fn install() -> host::OutputHost {
     );
     application
 }
-fn inspect<'o>(
+pub(super) fn inspect<'o>(
     application: &host::OutputHost,
     principal: &WorthQueryAuthenticatedExternalPrincipal<
         super::super::super::schema::NumericSchema,

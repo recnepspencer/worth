@@ -128,3 +128,8 @@ fn actual_parity_producer_exposes_its_exact_equivalent_and_changed_field_evaluat
 fn output_evaluation_rechecks_independent_authority_cancellation_and_memory_release() {
     super::model::causal_inspection::output_equivalence::evaluation_rechecks_each_subject_and_releases_request_funding();
 }
+
+#[test]
+fn completed_output_comparison_survives_late_cancel_and_delivered_retry() {
+    super::model::causal_inspection::output_equivalence::completed_comparison_survives_late_cancellation_and_checkpoint_retry();
+}
