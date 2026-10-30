@@ -1,7 +1,16 @@
-pub use {std::io::Write};
-pub use {std::path::Path};
+pub use std::io::Write;
+pub use std::path::Path;
 
-pub use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::PhysicalReadProtectionPolicy, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
+pub use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::PhysicalReadProtectionPolicy,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalWalPolicy,
+    worth_store::physical_runtime::WalSegmentByteLimit,
+    worth_store::physical_runtime::WalSegmentInventoryLimit,
+};
 
 pub const BASELINE: &[u8] = b"phase6-baseline";
 
@@ -29,26 +38,39 @@ pub fn serving_child(root: &Path) {
     serving.close();
 }
 
-pub fn open_interference(
-    root: &Path,
-) -> worth_store::physical_runtime::ServingPhysicalRuntime {
+pub fn open_interference(root: &Path) -> worth_store::physical_runtime::ServingPhysicalRuntime {
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
-    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .admit(format)
+        .unwrap();
     let media = crate::physical_record_journeys::media(root);
     let durability = crate::physical_record_journeys::durability_with_wal_policy(
         &media,
         worth_store::physical_runtime::PhysicalWalPolicy::segmented(
-            worth_store::physical_runtime::WalSegmentByteLimit::new(std::num::NonZeroU64::new(512 * 1024).unwrap()),
-            worth_store::physical_runtime::WalSegmentInventoryLimit::new(std::num::NonZeroU32::new(64).unwrap()),
+            worth_store::physical_runtime::WalSegmentByteLimit::new(
+                std::num::NonZeroU64::new(512 * 1024).unwrap(),
+            ),
+            worth_store::physical_runtime::WalSegmentInventoryLimit::new(
+                std::num::NonZeroU32::new(64).unwrap(),
+            ),
         ),
     );
     crate::physical_record_journeys::success(
         media.open_record_store(
             worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
-                .with_residency_policy(crate::physical_record_journeys::maintenance_interference::residency(format, crate::physical_record_journeys::maintenance_interference::RESIDENT_BYTES))
-                .with_read_protection_policy(worth_store::physical_runtime::PhysicalReadProtectionPolicy::default()),
+                .with_residency_policy(
+                    crate::physical_record_journeys::maintenance_interference::residency(
+                        format,
+                        crate::physical_record_journeys::maintenance_interference::RESIDENT_BYTES,
+                    ),
+                )
+                .with_read_protection_policy(
+                    worth_store::physical_runtime::PhysicalReadProtectionPolicy::default(),
+                ),
         ),
     )
 }

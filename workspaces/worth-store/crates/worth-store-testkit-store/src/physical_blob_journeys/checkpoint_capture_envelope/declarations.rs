@@ -4,15 +4,39 @@
 //! dirty-frame slices, media and signal work it includes are separately owned
 //! and outside this envelope.
 
-pub use {std::fs, std::num::NonZeroU16, std::num::NonZeroU64, std::path::Path, std::process::Command};
+pub use {
+    std::fs, std::num::NonZeroU16, std::num::NonZeroU64, std::path::Path, std::process::Command,
+};
 
+pub use worth_store::physical_runtime::production::PhysicalCheckpointStep;
+pub use worth_store_blob_chunks::BlobChunkSize;
 pub use {worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome};
-pub use {worth_store::physical_runtime::production::PhysicalCheckpointStep};
-pub use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimReceipt, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub use {worth_store_blob_chunks::BlobChunkSize};
+pub use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimReceipt,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub use {crate::allocation_probe::physical_blob_journeys::attribute_allocations, crate::allocation_probe::physical_blob_journeys::attributed_live_bytes, crate::allocation_probe::physical_blob_journeys::peak_live_bytes_during};
-pub use {crate::fixture::admitted_blob_scope, crate::fixture::placement, crate::fixture::serving_from_initialization};
+pub use {
+    crate::allocation_probe::physical_blob_journeys::attribute_allocations,
+    crate::allocation_probe::physical_blob_journeys::attributed_live_bytes,
+    crate::allocation_probe::physical_blob_journeys::peak_live_bytes_during,
+};
+pub use {
+    crate::fixture::admitted_blob_scope, crate::fixture::placement,
+    crate::fixture::serving_from_initialization,
+};
 
 pub const CHUNK: usize = 64 << 10;
 /// Distinct partially released objects, one keyed head each. Every drop but
@@ -44,7 +68,10 @@ pub fn child(root: &Path) {
         (handle.wait(), during, attributed)
     });
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "the capture must complete on its standing reservation"
     );
     println!(
@@ -68,7 +95,8 @@ pub fn release_one_batch(
     keep_pending: bool,
 ) -> BlobReclaimReceipt {
     let scope = admitted_blob_scope("c11.blob.checkpoint.envelope.scope");
-    let read_limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let read_limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let blobs = serving.blobs().unwrap();
     let object = blobs.issue_object_id(read_limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
@@ -77,7 +105,8 @@ pub fn release_one_batch(
         (2 * CHUNK) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -109,7 +138,8 @@ pub fn release_one_batch(
         .reclaim(worth_store::physical_runtime::BlobReclaimRequest::released(
             proof,
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
             worth_store::physical_runtime::BlobReclaimLimits::new(
                 std::num::NonZeroU64::new(256).unwrap(),
                 std::num::NonZeroU64::new(64 << 20).unwrap(),
@@ -120,7 +150,10 @@ pub fn release_one_batch(
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     receipt
 }
 
@@ -128,13 +161,16 @@ pub fn recovery_bytes(serving: &ServingPhysicalRuntime) -> u64 {
     serving
         .residency_observation()
         .counters()
-        .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery)
+        .active_operation_bytes_for(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery,
+        )
 }
 
 pub fn request(key: u8) -> PhysicalCheckpointRequest {
     worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
 }
 
@@ -142,7 +178,8 @@ pub fn start(
     serving: &ServingPhysicalRuntime,
     key: u8,
 ) -> worth_store::physical_runtime::PhysicalCheckpointHandle {
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request(key)).into_raw()
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request(key)).into_raw()
     else {
         panic!("the capture envelope must admit within the Recovery budget")
     };

@@ -1,7 +1,23 @@
+pub use worth_signal::facade::TemporalDuration;
+pub use worth_store::physical_runtime::certification::CertificationPhysicalRecordSubmission;
 pub use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-pub use {worth_signal::facade::TemporalDuration};
-pub use {worth_store::physical_runtime::certification::CertificationPhysicalRecordSubmission};
-pub use {worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::DataSettledPhysicalMutation, worth_store::physical_runtime::PhysicalDataDispatchOutcome, worth_store::physical_runtime::PhysicalDataSettlementOutcome, worth_store::physical_runtime::PhysicalDurabilityGroupBasis, worth_store::physical_runtime::PhysicalManifestCapacityTransition, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRecordSubmission, worth_store::physical_runtime::PhysicalWalGroupAppendOutcome, worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome, worth_store::physical_runtime::RecordAppendBatch};
+pub use {
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::DataSettledPhysicalMutation,
+    worth_store::physical_runtime::PhysicalDataDispatchOutcome,
+    worth_store::physical_runtime::PhysicalDataSettlementOutcome,
+    worth_store::physical_runtime::PhysicalDurabilityGroupBasis,
+    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRecordSubmission,
+    worth_store::physical_runtime::PhysicalWalGroupAppendOutcome,
+    worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome,
+    worth_store::physical_runtime::RecordAppendBatch,
+};
 
 pub struct SettledSingleton {
     pub basis: PhysicalDurabilityGroupBasis,
@@ -63,13 +79,17 @@ pub fn settle_single_with_manifest_capacity_transition(
     )
     .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
         _ => panic!("the canonical durable preparation must succeed"),
     };
-    let appended = match submission.append_prepared_wal_group(worth_proof::NonEmpty::new(prepared, Vec::new())) {
-        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::Appended(appended) => appended,
+    let appended = match submission
+        .append_prepared_wal_group(worth_proof::NonEmpty::new(prepared, Vec::new()))
+    {
+        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::Appended(appended) => {
+            appended
+        }
         _ => panic!("the canonical WAL append must succeed"),
     };
     let basis = appended.basis();
@@ -82,12 +102,17 @@ pub fn settle_single_with_manifest_capacity_transition(
         _ => panic!("the canonical WAL barrier must succeed"),
     };
     let dispatched = match submission.dispatch_wal_durable_data(durable) {
-        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Dispatched(dispatched) => dispatched,
+        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Dispatched(dispatched) => {
+            dispatched
+        }
         _ => panic!("the exact WAL-durable member must dispatch"),
     };
     let member = match dispatched.settle_exact_effects() {
         worth_store::physical_runtime::PhysicalDataSettlementOutcome::Settled(settled) => settled,
-        worth_store::physical_runtime::PhysicalDataSettlementOutcome::InspectionRequired { cause, .. } => {
+        worth_store::physical_runtime::PhysicalDataSettlementOutcome::InspectionRequired {
+            cause,
+            ..
+        } => {
             panic!("the exact data effects must settle: {cause:?}")
         }
     };

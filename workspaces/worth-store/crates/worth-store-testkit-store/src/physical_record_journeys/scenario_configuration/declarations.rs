@@ -1,6 +1,14 @@
-pub use {worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PageFillPercent, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::SegmentPageCount};
+pub use {
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PageFillPercent,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordCountLimit,
+    worth_store::physical_runtime::SegmentPageCount,
+};
 
-pub use {crate::physical_record_journeys::configuration};
+pub use crate::physical_record_journeys::configuration;
 
 pub fn dense_configuration(
     segment_pages: u32,

@@ -11,21 +11,25 @@ pub fn prepare_rewrite(
 ) -> PreparedPhysicalMutation {
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material),
+        )
         .unwrap();
     match submission
         .rewrite_selected_inline_segment(
             placement,
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::at(worth_signal::facade::TemporalDuration::temporal_duration(1_000).unwrap()),
+                worth_store::physical_runtime::PhysicalMutationDeadline::at(
+                    worth_signal::facade::TemporalDuration::temporal_duration(1_000).unwrap(),
+                ),
             ),
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(
-            prepared,
-        )) => prepared,
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
         worth_proof::TransitionOutcome::Success(_) => {
             panic!("selected segment rewrite preparation must return a prepared mutation")
         }

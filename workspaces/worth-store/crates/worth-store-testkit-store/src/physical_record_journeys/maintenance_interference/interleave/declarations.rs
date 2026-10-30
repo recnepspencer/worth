@@ -1,16 +1,42 @@
+pub use std::thread;
 pub use {std::sync::atomic::AtomicBool, std::sync::atomic::Ordering};
-pub use {std::thread};
 pub use {std::time::Duration, std::time::Instant};
 
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest, worth_store::physical_runtime::PhysicalIntegrityScrubTarget, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRetirementDenial, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits};
-pub use {worth_store_physical_backend::MediaOperationRole};
-pub use {worth_store_physical_format::PhysicalArtifactReadTarget, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::RecordArtifactFile};
-pub use {worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalByteRange};
+pub use worth_proof::TransitionOutcome;
+pub use worth_store_physical_backend::MediaOperationRole;
+pub use {
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest,
+    worth_store::physical_runtime::PhysicalIntegrityScrubTarget,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRetirementDenial,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordReadLimits,
+};
+pub use {
+    worth_store_physical_format::PhysicalArtifactReadTarget,
+    worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    worth_store_physical_format::RecordArtifactFile,
+};
+pub use {
+    worth_store_physical_integrity::PhysicalArtifactScope,
+    worth_store_physical_integrity::PhysicalByteRange,
+};
 
-pub use {worth_store::physical_runtime::PhysicalWorkCapacity};
+pub use worth_store::physical_runtime::PhysicalWorkCapacity;
 
-pub use {crate::physical_record_journeys::maintenance_interference::append, crate::physical_record_journeys::maintenance_interference::checkpoint, crate::physical_record_journeys::maintenance_interference::limits, crate::physical_record_journeys::maintenance_interference::placement, crate::physical_record_journeys::maintenance_interference::segment_files};
+pub use {
+    crate::physical_record_journeys::maintenance_interference::append,
+    crate::physical_record_journeys::maintenance_interference::checkpoint,
+    crate::physical_record_journeys::maintenance_interference::limits,
+    crate::physical_record_journeys::maintenance_interference::placement,
+    crate::physical_record_journeys::maintenance_interference::segment_files,
+};
 
 pub fn run_cold_extent(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
@@ -40,7 +66,9 @@ pub fn run_cold_extent(
         let mut cold = old
             .open(
                 extent_id,
-                worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(20_000).unwrap()),
+                worth_store::physical_runtime::RecordReadLimits::new(
+                    worth_store::physical_runtime::RecordByteLimit::new(20_000).unwrap(),
+                ),
             )
             .unwrap();
         let pause = cold.certification_pause_next_read_call();
@@ -74,7 +102,9 @@ pub fn run_cold_extent(
         let mut session = current
             .open(
                 newest,
-                worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(20_000).unwrap()),
+                worth_store::physical_runtime::RecordReadLimits::new(
+                    worth_store::physical_runtime::RecordByteLimit::new(20_000).unwrap(),
+                ),
             )
             .unwrap();
         while let Some(chunk) = session.next_chunk().unwrap() {
@@ -108,13 +138,16 @@ pub fn run_cold_extent(
         let reached = gate
             .reached_context()
             .expect("checkpoint must reach a real file-state sync");
-        assert_eq!(reached.role(), worth_store_physical_backend::MediaOperationRole::SynchronizeFileState);
+        assert_eq!(
+            reached.role(),
+            worth_store_physical_backend::MediaOperationRole::SynchronizeFileState
+        );
         assert!(reached.role_ordinal() > syncs_before_checkpoint);
         assert_eq!(
             reached.role_ordinal(),
-            serving
-                .media_counters()
-                .attempts_for(worth_store_physical_backend::MediaOperationRole::SynchronizeFileState)
+            serving.media_counters().attempts_for(
+                worth_store_physical_backend::MediaOperationRole::SynchronizeFileState
+            )
         );
         assert!(
             !checkpoint_finished.load(std::sync::atomic::Ordering::Acquire),
@@ -124,11 +157,16 @@ pub fn run_cold_extent(
         // Fill every ready slot and both background dispatch permits while
         // the checkpoint sync is still held, then prove the protected floor.
         // The held sync occupies one command slot and one background permit.
-        let paused_slots = crate::physical_record_journeys::maintenance_interference::scheduler::hold_ready_slots(serving, request.clone(), 1);
+        let paused_slots =
+            crate::physical_record_journeys::maintenance_interference::scheduler::hold_ready_slots(
+                serving,
+                request.clone(),
+                1,
+            );
         let mut background = Vec::new();
-        while let Ok(permit) =
-            serving.reserve_physical_scheduler_background(crate::physical_record_journeys::maintenance_interference::scheduler::dispatch_lane())
-        {
+        while let Ok(permit) = serving.reserve_physical_scheduler_background(
+            crate::physical_record_journeys::maintenance_interference::scheduler::dispatch_lane(),
+        ) {
             background.push(permit);
             assert!(background.len() <= 4);
         }
@@ -150,7 +188,9 @@ pub fn run_cold_extent(
             drop(held);
         });
         let floor_deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
-        while !floor_finished.load(std::sync::atomic::Ordering::Acquire) && std::time::Instant::now() < floor_deadline {
+        while !floor_finished.load(std::sync::atomic::Ordering::Acquire)
+            && std::time::Instant::now() < floor_deadline
+        {
             std::thread::yield_now();
         }
         assert!(
@@ -179,23 +219,29 @@ pub fn run_cold_extent(
         // proves the foreground did not queue behind the paused sync. The
         // bound only turns a hang into a failure.
         let hang_guard = std::time::Instant::now() + std::time::Duration::from_secs(120);
-        while !foreground_finished.load(std::sync::atomic::Ordering::Acquire) && std::time::Instant::now() < hang_guard {
+        while !foreground_finished.load(std::sync::atomic::Ordering::Acquire)
+            && std::time::Instant::now() < hang_guard
+        {
             std::thread::yield_now();
         }
-        let foreground_during_pause = foreground_finished.load(std::sync::atomic::Ordering::Acquire);
+        let foreground_during_pause =
+            foreground_finished.load(std::sync::atomic::Ordering::Acquire);
         let still_paused = !checkpoint_finished.load(std::sync::atomic::Ordering::Acquire);
         let attempts = serving
             .media_counters()
             .attempts_for(worth_store_physical_backend::MediaOperationRole::SynchronizeFileState);
-        let completed = serving
-            .media_counters()
-            .completed_operations_for(worth_store_physical_backend::MediaOperationRole::SynchronizeFileState);
+        let completed = serving.media_counters().completed_operations_for(
+            worth_store_physical_backend::MediaOperationRole::SynchronizeFileState,
+        );
         gate.release();
         foreground.join().unwrap();
         checkpoint_thread.join().unwrap();
         drop(background);
         // The finished checkpoint returned its command slot: all eight admit.
-        let mut held_slots = crate::physical_record_journeys::maintenance_interference::scheduler::hold_ready_slots(serving, request, 0);
+        let mut held_slots =
+            crate::physical_record_journeys::maintenance_interference::scheduler::hold_ready_slots(
+                serving, request, 0,
+            );
         assert!(
             foreground_during_pause,
             "foreground read and append did not finish while the checkpoint sync was paused"
@@ -218,17 +264,16 @@ pub fn run_cold_extent(
         );
         assert_eq!(serving.media_counters().deletions(), deletions);
         drop(held_slots);
-        let reads_before_resume = serving
-            .media_counters()
-            .completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedRead);
+        let reads_before_resume = serving.media_counters().completed_operations_for(
+            worth_store_physical_backend::MediaOperationRole::PositionedRead,
+        );
         pause.release();
         let payload = reader.join().unwrap();
         assert_eq!(payload, expected);
         assert!(
-            serving
-                .media_counters()
-                .completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-                > reads_before_resume
+            serving.media_counters().completed_operations_for(
+                worth_store_physical_backend::MediaOperationRole::PositionedRead
+            ) > reads_before_resume
         );
         drop(current);
     });
@@ -262,27 +307,42 @@ pub fn rewrite(
     material[..8].copy_from_slice(&ordinal.to_le_bytes());
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material),
+        )
         .unwrap();
     match submission
         .rewrite_selected_inline_segment(
             policy,
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
             ),
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
+        worth_proof::TransitionOutcome::Success(_) => {
+            panic!("rewrite {ordinal} did not stay prepared")
         }
-        worth_proof::TransitionOutcome::Success(_) => panic!("rewrite {ordinal} did not stay prepared"),
-        worth_proof::TransitionOutcome::Denied(denial) => panic!("rewrite {ordinal} denied: {denial:?}"),
-        worth_proof::TransitionOutcome::Deferred(deferred) => panic!("rewrite {ordinal} deferred: {deferred:?}"),
-        worth_proof::TransitionOutcome::Stale(stale) => panic!("rewrite {ordinal} stale: {stale:?}"),
-        worth_proof::TransitionOutcome::RebindRequired(rebind) => panic!("rewrite {ordinal} rebind: {rebind:?}"),
-        worth_proof::TransitionOutcome::Failed(failure) => panic!("rewrite {ordinal} failed: {failure:?}"),
+        worth_proof::TransitionOutcome::Denied(denial) => {
+            panic!("rewrite {ordinal} denied: {denial:?}")
+        }
+        worth_proof::TransitionOutcome::Deferred(deferred) => {
+            panic!("rewrite {ordinal} deferred: {deferred:?}")
+        }
+        worth_proof::TransitionOutcome::Stale(stale) => {
+            panic!("rewrite {ordinal} stale: {stale:?}")
+        }
+        worth_proof::TransitionOutcome::RebindRequired(rebind) => {
+            panic!("rewrite {ordinal} rebind: {rebind:?}")
+        }
+        worth_proof::TransitionOutcome::Failed(failure) => {
+            panic!("rewrite {ordinal} failed: {failure:?}")
+        }
     }
 }
 
@@ -294,10 +354,14 @@ pub fn inspect_selector(
         .unwrap()
         .len();
     let target = worth_store::physical_runtime::PhysicalIntegrityScrubTarget::new(
-        worth_store_physical_format::PhysicalArtifactReadTarget::Record(worth_store_physical_format::RecordArtifactFile::CurrentRootSelector),
+        worth_store_physical_format::PhysicalArtifactReadTarget::Record(
+            worth_store_physical_format::RecordArtifactFile::CurrentRootSelector,
+        ),
         worth_store_physical_integrity::PhysicalArtifactScope::current_root_selector(
             serving.store_identity(),
-            worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+            worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+                .admit()
+                .unwrap(),
             worth_store_physical_integrity::PhysicalByteRange::new(0, length).unwrap(),
         ),
     )
@@ -312,7 +376,9 @@ pub fn inspect_selector(
     .unwrap();
     let mut handle = serving.start_physical_integrity_scrub(request).unwrap();
     match handle.next_window() {
-        worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(observation) => {
+        worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(
+            observation,
+        ) => {
             assert!(observation.counters.acquired_bytes > 0);
         }
         other => panic!("scrub window did not inspect the selector: {other:?}"),

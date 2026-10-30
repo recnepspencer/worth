@@ -1,18 +1,10 @@
-pub(crate) use {std::io::Write, std::path::Path};
+//! Fresh-process reads preserve every requested segment identity and payload.
+use std::{io::Write, path::Path};
 
-pub(crate) use {
-    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
-    worth_store::physical_runtime::RecordByteLimit,
-    worth_store::physical_runtime::RecordReadLimits,
-};
+use crate::child_process::{locator_codec::unhex, LOCATOR_ENV};
+use crate::physical_record_journeys::serving_from_open;
 
-pub(crate) use worth_store_testkit_store::child_process::locator_codec::unhex;
-pub(crate) use {
-    worth_store_testkit_store::child_process::LOCATOR_ENV,
-    worth_store_testkit_store::physical_record_journeys::serving_from_open,
-};
-
-pub(crate) fn run(root: &Path) {
+pub fn segment_reader(root: &Path) {
     let serving = serving_from_open(root);
     for requested in std::env::var(LOCATOR_ENV).unwrap().split(';') {
         let (index, encoded) = requested.split_once(':').unwrap();
@@ -47,7 +39,7 @@ pub(crate) fn run(root: &Path) {
             bytes[0],
             completed,
             observation.touched_segments(),
-            observation.touched_pages(),
+            observation.touched_pages()
         );
     }
     std::io::stdout().flush().unwrap();

@@ -1,3 +1,5 @@
+mod attempt_binding;
+
 #[path = "declarations.rs"]
 mod declarations;
 pub use self::declarations::*;

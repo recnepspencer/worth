@@ -1,5 +1,9 @@
-pub use {worth_store::physical_runtime::PhysicalDataFrameIdentity, worth_store::physical_runtime::PhysicalDataFrameSubject, worth_store::physical_runtime::PhysicalRedoTargetClaim};
-pub use {worth_store_physical_format::RecordArtifactFile};
+pub use worth_store_physical_format::RecordArtifactFile;
+pub use {
+    worth_store::physical_runtime::PhysicalDataFrameIdentity,
+    worth_store::physical_runtime::PhysicalDataFrameSubject,
+    worth_store::physical_runtime::PhysicalRedoTargetClaim,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IndependentRedoTargetClaim {
@@ -7,9 +11,7 @@ pub struct IndependentRedoTargetClaim {
     pub digest: [u8; 32],
 }
 
-pub fn independent_target_claim(
-    claim: PhysicalRedoTargetClaim,
-) -> IndependentRedoTargetClaim {
+pub fn independent_target_claim(claim: PhysicalRedoTargetClaim) -> IndependentRedoTargetClaim {
     IndependentRedoTargetClaim {
         target: independent_target_identity(claim.target()),
         digest: claim.resulting_payload_digest(),

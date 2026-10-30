@@ -1,15 +1,13 @@
-pub use {std::ops::Range};
+pub use super::attempt_binding::{
+    require_expected_fields, BindingField, BindingInspectionDenial, ExpectedAttemptBinding,
+    InspectedAttemptBinding,
+};
+
+pub use std::ops::Range;
 
 pub const FRAME_HEADER_BYTES: usize = 116;
 pub const FRAME_FOOTER_BYTES: usize = 32;
 pub const BINDING_DOMAIN: &[u8] = b"store.physical.mutation-attempt-binding.v1";
-
-
-
-
-
-
-
 
 pub use {crate::durability_admission::independent_wal_oracle::copy_intent::produced_copy_intents};
 pub use {crate::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::file_retirement_payloads, crate::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads, crate::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetiredKind, crate::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetirementAction};
@@ -39,80 +37,6 @@ impl crate::physical_record_journeys::durability_admission::independent_wal_orac
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExpectedAttemptBinding {
-    pub key: [u8; 32],
-    pub lease_store: [u8; 16],
-    pub policy: [u8; 32],
-    pub issuance: u64,
-    pub expiry: u64,
-    pub material: [u8; 32],
-    pub fingerprint: [u8; 32],
-    pub store: [u8; 16],
-    pub runtime: u64,
-    pub lifecycle_generation: u64,
-    pub operation: u64,
-    pub group: [u8; 32],
-    pub ordinal: u32,
-    pub member_count: u32,
-    pub membership: [u8; 32],
-    pub member: [u8; 32],
-    pub lsn_start: u64,
-    pub lsn_end: u64,
-    pub redo_digest: [u8; 32],
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BindingField {
-    Domain,
-    Key,
-    LeaseStore,
-    Policy,
-    Issuance,
-    Expiry,
-    Material,
-    Fingerprint,
-    Store,
-    Runtime,
-    LifecycleGeneration,
-    Operation,
-    Group,
-    Ordinal,
-    MemberCount,
-    Membership,
-    Member,
-    LsnStart,
-    LsnEnd,
-    RedoDigest,
-    RedoPayload,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum BindingInspectionDenial {
-    InvalidFrame,
-    Truncated,
-    InvalidFieldLength(BindingField),
-    DomainMismatch,
-    FieldMismatch(BindingField),
-    TrailingBytes,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct InspectedAttemptBinding {
-    pub value: ExpectedAttemptBinding,
-    pub spans: Vec<(BindingField, Range<usize>)>,
-}
-
-impl InspectedAttemptBinding {
-    pub fn span(&self, field: BindingField) -> Range<usize> {
-        self.spans
-            .iter()
-            .find(|(candidate, _)| *candidate == field)
-            .map(|(_, span)| span.clone())
-            .expect("every binding field has one span")
-    }
-}
-
 pub fn independent_frame_payload(bytes: &[u8]) -> Result<&[u8], BindingInspectionDenial> {
     if bytes.len() < FRAME_HEADER_BYTES + FRAME_FOOTER_BYTES
         || bytes.get(..8) != Some(b"WORTHWAL".as_slice())
@@ -121,11 +45,12 @@ pub fn independent_frame_payload(bytes: &[u8]) -> Result<&[u8], BindingInspectio
     {
         return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame);
     }
-    let payload_bytes = usize::try_from(read_u64_at(bytes, 44)?)
-        .map_err(|_| crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame)?;
-    let payload_end = FRAME_HEADER_BYTES
-        .checked_add(payload_bytes)
-        .ok_or(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame)?;
+    let payload_bytes = usize::try_from(read_u64_at(bytes, 44)?).map_err(|_| {
+        crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame
+    })?;
+    let payload_end = FRAME_HEADER_BYTES.checked_add(payload_bytes).ok_or(
+        crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame,
+    )?;
     if payload_end
         .checked_add(FRAME_FOOTER_BYTES)
         .filter(|end| *end == bytes.len())
@@ -151,12 +76,12 @@ pub fn independent_recovery_projection(
     crate::physical_record_journeys::durability_admission::independent_wal_oracle::canonical_redo::independent_recovery_projection(canonical_redo)
 }
 
-pub fn split_member_payload(
-    payload: &[u8],
-) -> Result<(&[u8], &[u8]), BindingInspectionDenial> {
+pub fn split_member_payload(payload: &[u8]) -> Result<(&[u8], &[u8]), BindingInspectionDenial> {
     let mut cursor = crate::durability_admission::independent_wal_oracle::ByteCursor::new(payload);
-    let binding = cursor.field(crate::durability_admission::independent_wal_oracle::BindingField::Domain)?;
-    let redo = cursor.field(crate::durability_admission::independent_wal_oracle::BindingField::RedoDigest)?;
+    let binding =
+        cursor.field(crate::durability_admission::independent_wal_oracle::BindingField::Domain)?;
+    let redo = cursor
+        .field(crate::durability_admission::independent_wal_oracle::BindingField::RedoDigest)?;
     cursor.finish()?;
     Ok((binding, redo))
 }
@@ -180,29 +105,72 @@ pub fn inspect_attempt_binding(
     expected: &ExpectedAttemptBinding,
 ) -> Result<InspectedAttemptBinding, BindingInspectionDenial> {
     let mut cursor = crate::durability_admission::independent_wal_oracle::ByteCursor::new(bytes);
-    let domain = cursor.fixed_field(crate::durability_admission::independent_wal_oracle::BindingField::Domain, BINDING_DOMAIN.len())?;
+    let domain = cursor.fixed_field(
+        crate::durability_admission::independent_wal_oracle::BindingField::Domain,
+        BINDING_DOMAIN.len(),
+    )?;
     if domain != BINDING_DOMAIN {
         return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::DomainMismatch);
     }
-    let key = array(cursor.fixed_field(crate::durability_admission::independent_wal_oracle::BindingField::Key, 32)?);
-    let lease_store = array(cursor.fixed_field(crate::durability_admission::independent_wal_oracle::BindingField::LeaseStore, 16)?);
-    let policy = array(cursor.fixed_field(crate::durability_admission::independent_wal_oracle::BindingField::Policy, 32)?);
-    let issuance = cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::Issuance)?;
-    let expiry = cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::Expiry)?;
-    let material = array(cursor.fixed_field(crate::durability_admission::independent_wal_oracle::BindingField::Material, 32)?);
-    let fingerprint = array(cursor.fixed_field(crate::durability_admission::independent_wal_oracle::BindingField::Fingerprint, 32)?);
-    let store = array(cursor.fixed_field(crate::durability_admission::independent_wal_oracle::BindingField::Store, 16)?);
-    let runtime = cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::Runtime)?;
-    let lifecycle_generation = cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::LifecycleGeneration)?;
-    let operation = cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::Operation)?;
-    let group = array(cursor.fixed_field(crate::durability_admission::independent_wal_oracle::BindingField::Group, 32)?);
-    let ordinal = cursor.u32(crate::durability_admission::independent_wal_oracle::BindingField::Ordinal)?;
-    let member_count = cursor.u32(crate::durability_admission::independent_wal_oracle::BindingField::MemberCount)?;
-    let membership = array(cursor.fixed_field(crate::durability_admission::independent_wal_oracle::BindingField::Membership, 32)?);
-    let member = array(cursor.fixed_field(crate::durability_admission::independent_wal_oracle::BindingField::Member, 32)?);
-    let lsn_start = cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::LsnStart)?;
-    let lsn_end = cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::LsnEnd)?;
-    let redo_digest = array(cursor.fixed_field(crate::durability_admission::independent_wal_oracle::BindingField::RedoDigest, 32)?);
+    let key = array(cursor.fixed_field(
+        crate::durability_admission::independent_wal_oracle::BindingField::Key,
+        32,
+    )?);
+    let lease_store = array(cursor.fixed_field(
+        crate::durability_admission::independent_wal_oracle::BindingField::LeaseStore,
+        16,
+    )?);
+    let policy = array(cursor.fixed_field(
+        crate::durability_admission::independent_wal_oracle::BindingField::Policy,
+        32,
+    )?);
+    let issuance =
+        cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::Issuance)?;
+    let expiry =
+        cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::Expiry)?;
+    let material = array(cursor.fixed_field(
+        crate::durability_admission::independent_wal_oracle::BindingField::Material,
+        32,
+    )?);
+    let fingerprint = array(cursor.fixed_field(
+        crate::durability_admission::independent_wal_oracle::BindingField::Fingerprint,
+        32,
+    )?);
+    let store = array(cursor.fixed_field(
+        crate::durability_admission::independent_wal_oracle::BindingField::Store,
+        16,
+    )?);
+    let runtime =
+        cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::Runtime)?;
+    let lifecycle_generation = cursor.u64(
+        crate::durability_admission::independent_wal_oracle::BindingField::LifecycleGeneration,
+    )?;
+    let operation =
+        cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::Operation)?;
+    let group = array(cursor.fixed_field(
+        crate::durability_admission::independent_wal_oracle::BindingField::Group,
+        32,
+    )?);
+    let ordinal =
+        cursor.u32(crate::durability_admission::independent_wal_oracle::BindingField::Ordinal)?;
+    let member_count = cursor
+        .u32(crate::durability_admission::independent_wal_oracle::BindingField::MemberCount)?;
+    let membership = array(cursor.fixed_field(
+        crate::durability_admission::independent_wal_oracle::BindingField::Membership,
+        32,
+    )?);
+    let member = array(cursor.fixed_field(
+        crate::durability_admission::independent_wal_oracle::BindingField::Member,
+        32,
+    )?);
+    let lsn_start =
+        cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::LsnStart)?;
+    let lsn_end =
+        cursor.u64(crate::durability_admission::independent_wal_oracle::BindingField::LsnEnd)?;
+    let redo_digest = array(cursor.fixed_field(
+        crate::durability_admission::independent_wal_oracle::BindingField::RedoDigest,
+        32,
+    )?);
     cursor.finish()?;
     let value = ExpectedAttemptBinding {
         key,
@@ -230,62 +198,6 @@ pub fn inspect_attempt_binding(
         value,
         spans: cursor.spans,
     })
-}
-
-pub fn require_expected_fields(
-    value: &ExpectedAttemptBinding,
-    expected: &ExpectedAttemptBinding,
-) -> Result<(), BindingInspectionDenial> {
-    for (field, equal) in [
-        (crate::durability_admission::independent_wal_oracle::BindingField::Key, value.key == expected.key),
-        (
-            crate::durability_admission::independent_wal_oracle::BindingField::LeaseStore,
-            value.lease_store == expected.lease_store,
-        ),
-        (crate::durability_admission::independent_wal_oracle::BindingField::Policy, value.policy == expected.policy),
-        (crate::durability_admission::independent_wal_oracle::BindingField::Issuance, value.issuance == expected.issuance),
-        (crate::durability_admission::independent_wal_oracle::BindingField::Expiry, value.expiry == expected.expiry),
-        (crate::durability_admission::independent_wal_oracle::BindingField::Material, value.material == expected.material),
-        (
-            crate::durability_admission::independent_wal_oracle::BindingField::Fingerprint,
-            value.fingerprint == expected.fingerprint,
-        ),
-        (crate::durability_admission::independent_wal_oracle::BindingField::Store, value.store == expected.store),
-        (crate::durability_admission::independent_wal_oracle::BindingField::Runtime, value.runtime == expected.runtime),
-        (
-            crate::durability_admission::independent_wal_oracle::BindingField::LifecycleGeneration,
-            value.lifecycle_generation == expected.lifecycle_generation,
-        ),
-        (
-            crate::durability_admission::independent_wal_oracle::BindingField::Operation,
-            value.operation == expected.operation,
-        ),
-        (crate::durability_admission::independent_wal_oracle::BindingField::Group, value.group == expected.group),
-        (crate::durability_admission::independent_wal_oracle::BindingField::Ordinal, value.ordinal == expected.ordinal),
-        (
-            crate::durability_admission::independent_wal_oracle::BindingField::MemberCount,
-            value.member_count == expected.member_count,
-        ),
-        (
-            crate::durability_admission::independent_wal_oracle::BindingField::Membership,
-            value.membership == expected.membership,
-        ),
-        (crate::durability_admission::independent_wal_oracle::BindingField::Member, value.member == expected.member),
-        (
-            crate::durability_admission::independent_wal_oracle::BindingField::LsnStart,
-            value.lsn_start == expected.lsn_start,
-        ),
-        (crate::durability_admission::independent_wal_oracle::BindingField::LsnEnd, value.lsn_end == expected.lsn_end),
-        (
-            crate::durability_admission::independent_wal_oracle::BindingField::RedoDigest,
-            value.redo_digest == expected.redo_digest,
-        ),
-    ] {
-        if !equal {
-            return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::FieldMismatch(field));
-        }
-    }
-    Ok(())
 }
 
 pub struct ByteCursor<'a> {
@@ -333,10 +245,9 @@ impl<'a> ByteCursor<'a> {
     }
 
     pub fn read_u64(&mut self) -> Result<u64, BindingInspectionDenial> {
-        let bytes = self
-            .bytes
-            .get(self.offset..self.offset + 8)
-            .ok_or(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated)?;
+        let bytes = self.bytes.get(self.offset..self.offset + 8).ok_or(
+            crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated,
+        )?;
         self.offset += 8;
         Ok(u64::from_le_bytes(bytes.try_into().expect("fixed u64")))
     }
@@ -346,14 +257,12 @@ impl<'a> ByteCursor<'a> {
         field: BindingField,
         length: usize,
     ) -> Result<&'a [u8], BindingInspectionDenial> {
-        let end = self
-            .offset
-            .checked_add(length)
-            .ok_or(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated)?;
-        let value = self
-            .bytes
-            .get(self.offset..end)
-            .ok_or(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated)?;
+        let end = self.offset.checked_add(length).ok_or(
+            crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated,
+        )?;
+        let value = self.bytes.get(self.offset..end).ok_or(
+            crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated,
+        )?;
         self.spans.push((field, self.offset..end));
         self.offset = end;
         Ok(value)
@@ -367,16 +276,16 @@ impl<'a> ByteCursor<'a> {
 }
 
 pub fn read_u16_at(bytes: &[u8], offset: usize) -> Result<u16, BindingInspectionDenial> {
-    let value = bytes
-        .get(offset..offset + 2)
-        .ok_or(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated)?;
+    let value = bytes.get(offset..offset + 2).ok_or(
+        crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated,
+    )?;
     Ok(u16::from_le_bytes(value.try_into().expect("fixed u16")))
 }
 
 pub fn read_u64_at(bytes: &[u8], offset: usize) -> Result<u64, BindingInspectionDenial> {
-    let value = bytes
-        .get(offset..offset + 8)
-        .ok_or(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated)?;
+    let value = bytes.get(offset..offset + 8).ok_or(
+        crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated,
+    )?;
     Ok(u64::from_le_bytes(value.try_into().expect("fixed u64")))
 }
 

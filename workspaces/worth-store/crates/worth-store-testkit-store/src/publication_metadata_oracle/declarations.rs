@@ -1,7 +1,21 @@
-pub use {std::collections::BTreeSet};
-pub use {std::path::Path};
+pub use std::collections::BTreeSet;
+pub use std::path::Path;
 
-pub use {worth_store_physical_format::durable_artifact_checksum, worth_store_physical_format::DurableFreeSpaceManifestHeader, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::FreeSpaceBlockReference, worth_store_physical_format::ManifestBlockReference, worth_store_physical_format::PhysicalFreeSpaceMembershipBlock, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::PhysicalRootRoutingBlock, worth_store_physical_format::PhysicalSegmentMembershipBlock, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::SegmentManifestBlockReference, worth_store_physical_format::BOOTSTRAP_CATALOG_BYTES, worth_store_physical_format::ROOT_SELECTOR_BYTES};
+pub use {
+    worth_store_physical_format::durable_artifact_checksum,
+    worth_store_physical_format::DurableFreeSpaceManifestHeader,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::FreeSpaceBlockReference,
+    worth_store_physical_format::ManifestBlockReference,
+    worth_store_physical_format::PhysicalFreeSpaceMembershipBlock,
+    worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    worth_store_physical_format::PhysicalRootRoutingBlock,
+    worth_store_physical_format::PhysicalSegmentMembershipBlock,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::SegmentManifestBlockReference,
+    worth_store_physical_format::BOOTSTRAP_CATALOG_BYTES,
+    worth_store_physical_format::ROOT_SELECTOR_BYTES,
+};
 
 #[derive(Clone, Copy)]
 pub enum Reference {
@@ -56,30 +70,48 @@ pub fn actual_publication_metadata_checked(
     let roots = store.join("families/records/roots");
     let segments = store.join("families/records/segment-manifests");
     let free = store.join("families/records/free-space");
-    let root_bytes =
-        std::fs::read(roots.join(worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name()))
-            .unwrap();
-    let (root, found_format) =
-        worth_store_physical_format::DurablePhysicalRootManifest::decode(&root_bytes, expected_capacity.unwrap_or(u16::MAX))
-            .unwrap();
+    let root_bytes = std::fs::read(roots.join(
+        worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name(),
+    ))
+    .unwrap();
+    let (root, found_format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(
+        &root_bytes,
+        expected_capacity.unwrap_or(u16::MAX),
+    )
+    .unwrap();
     assert_eq!(found_format, format);
     assert_eq!(root.generation(), generation);
     if let Some(expected) = expected_capacity {
         assert_eq!(root.node_capacity(), expected);
     }
     let capacity = root.node_capacity();
-    let free_bytes =
-        std::fs::read(free.join(worth_store_physical_format::RecordArtifactFile::FreeSpaceManifest { generation }.file_name()))
-            .unwrap();
+    let free_bytes = std::fs::read(
+        free.join(
+            worth_store_physical_format::RecordArtifactFile::FreeSpaceManifest { generation }
+                .file_name(),
+        ),
+    )
+    .unwrap();
     let (header, found_format) =
-        worth_store_physical_format::DurableFreeSpaceManifestHeader::decode(&free_bytes, capacity).unwrap();
+        worth_store_physical_format::DurableFreeSpaceManifestHeader::decode(&free_bytes, capacity)
+            .unwrap();
     assert_eq!(found_format, format);
     assert_eq!(header.generation(), generation);
     assert_eq!(header.root(), root.free_space_root());
     let mut pending = Vec::new();
-    pending.extend(root.routing_root().map(crate::publication_metadata_oracle::Reference::Record));
-    pending.extend(root.segment_root().map(crate::publication_metadata_oracle::Reference::Segment));
-    pending.extend(header.root().map(crate::publication_metadata_oracle::Reference::Free));
+    pending.extend(
+        root.routing_root()
+            .map(crate::publication_metadata_oracle::Reference::Record),
+    );
+    pending.extend(
+        root.segment_root()
+            .map(crate::publication_metadata_oracle::Reference::Segment),
+    );
+    pending.extend(
+        header
+            .root()
+            .map(crate::publication_metadata_oracle::Reference::Free),
+    );
     let mut reached = std::collections::BTreeSet::new();
     let mut total = (root_bytes.len() + free_bytes.len()) as u64
         + (2 * ROOT_SELECTOR_BYTES + BOOTSTRAP_CATALOG_BYTES) as u64;
@@ -100,7 +132,8 @@ pub fn actual_publication_metadata_checked(
                 );
                 let bytes = std::fs::read(&path).unwrap();
                 let (block, found_format) =
-                    worth_store_physical_format::PhysicalRootRoutingBlock::decode(&bytes, capacity).unwrap();
+                    worth_store_physical_format::PhysicalRootRoutingBlock::decode(&bytes, capacity)
+                        .unwrap();
                 assert_eq!(found_format, format);
                 assert_eq!(block.reference(durable_artifact_checksum(&bytes)), value);
                 pending.extend(
@@ -123,7 +156,10 @@ pub fn actual_publication_metadata_checked(
                 );
                 let bytes = std::fs::read(&path).unwrap();
                 let (block, found_format) =
-                    worth_store_physical_format::PhysicalSegmentMembershipBlock::decode(&bytes, capacity).unwrap();
+                    worth_store_physical_format::PhysicalSegmentMembershipBlock::decode(
+                        &bytes, capacity,
+                    )
+                    .unwrap();
                 assert_eq!(found_format, format);
                 assert_eq!(block.reference(durable_artifact_checksum(&bytes)), value);
                 pending.extend(
@@ -146,7 +182,10 @@ pub fn actual_publication_metadata_checked(
                 );
                 let bytes = std::fs::read(&path).unwrap();
                 let (block, found_format) =
-                    worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::decode(&bytes, capacity).unwrap();
+                    worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::decode(
+                        &bytes, capacity,
+                    )
+                    .unwrap();
                 assert_eq!(found_format, format);
                 assert_eq!(block.reference(durable_artifact_checksum(&bytes)), value);
                 pending.extend(
