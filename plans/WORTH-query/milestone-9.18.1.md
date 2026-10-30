@@ -1380,7 +1380,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.5 | Canonical field absence and mandatory currentness proof | Complete; qualified `70812eb0c3` | Stronger whole-aspect/scalar journeys belong to 9.6-9.7 |
 | 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
 | 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
-| 9.8 | Genuine equivalent-output suppression explanations | In progress; lossless native computed-effect handoff qualified | Actual producer output evaluation and application explanation |
+| 9.8 | Genuine equivalent-output suppression explanations | In progress; native comparison and typed output-field installation qualified | Actual producer output evaluation and application explanation |
 | 9.9 | Optional rich materialization | Open | Freshly admitted, demand-driven views from existing evidence owners |
 | 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
 | 9.11 | Integrated application qualification and consumer handoff | Open | Coherent public capability, executable guidance and phase acceptance |
@@ -1583,6 +1583,22 @@ The next integration must bind actual performed-before and owner-observed-after
 field artifacts, publish its declared producer-evaluation outcome before Ready,
 preserve committed receipt/checkpoint custody on late failure, and expose it only
 through independently admitted application inspection.
+
+The producer binding now has an opt-in typed `output_equivalence()` field
+contract. Its bounded constructor accepts a required standard u64 field on the
+binding's exactly-one Preserve role; another entity or optional field cannot
+acquire that contract. The shared Native-field owner validates the completed
+declaration, actual installed value binding and complete Native aspect/physical
+binding. Readiness retains its own projection/dependency policy and consumes
+that same field-sealing authority. Installation hashes the declared comparison
+semantics, role, field binding and actual Native canonical material into the
+producer edition; missing or substituted seals refuse edition minting. Generic
+sealing shells select actual catalogs and delegate validation/encoding to concrete
+cores. This qualifies installation meaning only: performed-before/observed-after
+comparison, pre-Ready custody and independently admitted application evaluation
+reports remain unfinished. Qualification passes 26 final focused field/registry/readiness/contract
+tests, the 195-test broader owner court, 50 public application correction tests,
+and three positive/negative construction examples.
 
 #### Phase 9.9: Optional Rich Materialization
 

@@ -55,6 +55,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
     pub(in crate::domain_computation::primary_graph::application_contribution) required_invariants:
         Vec<WorthQueryProducerInvariantRequirement>,
     pub(in crate::domain_computation::primary_graph::application_contribution) reuse_policy: String,
+    pub(in crate::domain_computation::primary_graph::application_contribution) output_equivalence:
+        Option<super::super::native_field_contract::NativeFieldBindingExpectation>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) installed_output_equivalence:
+        Option<super::output_equivalence_contract::InstalledProducerOutputEquivalence>,
     pub(in crate::domain_computation::primary_graph::application_contribution) input_reuse:
         Option<super::WorthQueryProducerInputReuseContract>,
     pub(in crate::domain_computation::primary_graph::application_contribution) binding_type: TypeId,

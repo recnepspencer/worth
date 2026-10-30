@@ -190,6 +190,12 @@ impl WorthQueryApplicationProducerBinding<NumericSchema> for Producer {
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const REUSE_POLICY: &'static str = "exact-source";
+    fn output_equivalence(
+    ) -> Option<WorthQueryProducerOutputEquivalence<NumericSchema, Self::OutputRole>> {
+        Some(WorthQueryProducerOutputEquivalence::exact_u64(
+            Calculated::reference(),
+        ))
+    }
 }
 impl WorthQueryApplicationProducerProvider<NumericSchema, Producer> for Provider {
     type DenialValue = WorthQueryUndeclaredProducerDenial;

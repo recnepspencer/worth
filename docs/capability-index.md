@@ -136,6 +136,14 @@ application output-equivalence association. See [read-only Native observation cu
 `compare_exact_output` supplies a fixed baseline/candidate computation in a fresh
 private Signal partition; its paired observations do not independently establish
 Native field provenance or application permission.
+Producer bindings can declare the bounded field scope with
+`output_equivalence()` returning
+`WorthQueryProducerOutputEquivalence::exact_u64(Field::reference())`.
+The required standard u64 field belongs to the binding's exactly-one Preserve
+role. Declaration and installed Native/value contracts seal its meaning into the
+producer edition. This currently establishes installation meaning; actual output
+evaluation and the independently admitted application explanation remain open in
+[Phase 9.8](../plans/WORTH-query/milestone-9.18.1.md#phase-98-genuine-equivalent-output-suppression-explanations).
 
 Native generation payload inspection uses request-aware `read_latest_generation`,
 `read_published_generation_for_commit`, `read_published_generation_for_observation`
