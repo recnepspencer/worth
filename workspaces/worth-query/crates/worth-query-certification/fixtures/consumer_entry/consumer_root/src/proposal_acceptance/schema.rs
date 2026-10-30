@@ -11,7 +11,7 @@ worth_query_application! { pub Schema {
 worth_query_application_contribution! { pub contribution Contribution in Schema {
     identity: "proposal-application.contribution.v1",
     members: |schema| {
-        super::revision::declare(super::attempts::declare(super::mutation_access::declare(super::retention::declare(super::access::declare(super::storage_query::declare(super::model_query::declare(super::recording::declare(
+        super::target_replacement::declare(super::revision::declare(super::attempts::declare(super::mutation_access::declare(super::retention::declare(super::access::declare(super::storage_query::declare(super::model_query::declare(super::recording::declare(
             super::creation::declare(schema
                 .entity(ExternalMapping::reference()).entity(Principal::reference())
                 .entity(Registry::reference()).entity(Model::reference())
@@ -36,7 +36,7 @@ worth_query_application_contribution! { pub contribution Contribution in Schema 
                 .relation(ModelProposal::reference(), Model::reference(), Proposal::reference())
                 .principal_binding(PrincipalBinding::reference())
             )
-        ))))))))
+        )))))))))
     }
 }}
 

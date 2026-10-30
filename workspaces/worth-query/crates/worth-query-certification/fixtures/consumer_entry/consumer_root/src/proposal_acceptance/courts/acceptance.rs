@@ -17,6 +17,7 @@ use worth_query_host::facade::{
 mod arbitration;
 mod disclosure;
 mod disposal;
+mod identities;
 mod previous;
 mod revisions;
 mod versions;
@@ -24,7 +25,7 @@ mod versions;
 fn progress(event: Result<Event, Failure>) {
     assert!(matches!(event.unwrap(), Event::Progress));
 }
-fn reach_adoption<'host>(
+pub(super) fn reach_adoption<'host>(
     model: &mut Model<'host>,
     storage: &Storage<'host>,
     caller: &Caller<'_>,
@@ -44,7 +45,7 @@ fn reach_adoption<'host>(
         Event::Adopted
     ));
 }
-fn finish<'host>(
+pub(super) fn finish<'host>(
     model: &mut Model<'host>,
     storage: &Storage<'host>,
     caller: &Caller<'_>,

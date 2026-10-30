@@ -2596,6 +2596,15 @@ under that same attempt key receives native drift. An unregistered stale load
 cannot register against the revised record. Renew the recorded basis explicitly
 when starting from a moved model.
 
+A target's display name does not preserve its occurrence after retirement.
+The [compiled target replacement](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/target_replacement.rs)
+requires a separate management ability through actual grantor ownership, then
+unlinks, deletes, creates and links through observed native targets in one
+candidate. Retention-edit authority alone cannot perform that replacement.
+Read the replacement's actual target reference and record its fresh basis before
+accepting a new proposal. Old target references and another model incarnation's
+proposal storage refuse even when their display names are identical.
+
 If native resolution returns `ProviderUnavailable` after that same fresh
 admission, the compiled ingress can advance only the matching retained Claim
 recovery owner. Changed meaning under the same key still receives native intent

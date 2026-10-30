@@ -13,6 +13,7 @@ mod retention;
 mod revision;
 mod schema;
 mod storage_query;
+mod target_replacement;
 
 mod application {
     pub(super) mod acceptance;

@@ -82,6 +82,8 @@ fn ordinary_proposal_record_and_typed_reload_leave_both_model_bases_current() {
 
 #[test]
 fn new_model_with_reused_local_name_receives_a_distinct_owner_issued_incarnation() {
+    use super::acceptance::{finish, reach_adoption};
+    use crate::proposal_acceptance::application::{acceptance, storage::AdmissionFailure};
     let host = host::install();
     let scope = authentication::request_scope();
     let author =
@@ -90,12 +92,69 @@ fn new_model_with_reused_local_name_receives_a_distinct_owner_issued_incarnation
         authentication::authenticate(host.installed_schema(), Actor::Reviewer, &scope).unwrap();
     let first = Model::create(&host, &author, "model-1", 301, 7).unwrap();
     let identity = first.identity.clone();
+    let old_storage = Storage::create(&first, &author).unwrap();
+    let old = old_storage
+        .record(
+            &first,
+            &author,
+            "proposal-1",
+            303,
+            vec![AuthoredIntent::Retention(RetentionEdit {
+                model: first.identity.clone(),
+                target: first.target.clone(),
+                days: 3,
+            })],
+        )
+        .unwrap();
+    let old = old_storage.load_frozen(&reviewer, &old).unwrap();
     first.close(&author).unwrap();
-    let replacement = Model::create(&host, &reviewer, "model-1", 302, 5).unwrap();
+    let mut replacement = Model::create(&host, &reviewer, "model-1", 302, 5).unwrap();
     assert_eq!(identity.label, replacement.identity.label);
     assert_eq!(identity.runtime, replacement.identity.runtime);
     assert_ne!(identity.occurrence, replacement.identity.occurrence);
     assert_eq!(replacement.read(&author).unwrap().days, 5);
+    let head = replacement.branch();
+    let before = replacement.describe(&reviewer).unwrap();
+    let old_storage_basis = || {
+        host.with_application_advancement(reviewer.scope, |phase| {
+            host.on_branch(old_storage.branch())
+                .select(&phase)
+                .unwrap()
+                .describe_basis()
+        })
+        .unwrap()
+    };
+    let storage_before = old_storage_basis();
+    assert!(matches!(
+        replacement.accept(&old_storage, &reviewer, &old, 304),
+        Err(acceptance::Failure::Admission(
+            AdmissionFailure::StorageModelMismatch
+        ))
+    ));
+    assert_eq!(replacement.branch(), head);
+    assert_eq!(replacement.describe(&reviewer).unwrap(), before);
+    assert_eq!(old_storage_basis(), storage_before);
+    assert_eq!(replacement.read(&reviewer).unwrap().days, 5);
+    let storage = Storage::create(&replacement, &author).unwrap();
+    let reference = storage
+        .record(
+            &replacement,
+            &author,
+            "proposal-1",
+            305,
+            vec![AuthoredIntent::Retention(RetentionEdit {
+                model: replacement.identity.clone(),
+                target: replacement.target.clone(),
+                days: 3,
+            })],
+        )
+        .unwrap();
+    let loaded = storage.load_frozen(&reviewer, &reference).unwrap();
+    reach_adoption(&mut replacement, &storage, &reviewer, &loaded, 306);
+    assert_eq!(replacement.read(&reviewer).unwrap().days, 3);
+    drop(finish(&mut replacement, &storage, &reviewer, &loaded, 306));
+    old_storage.close(&author).unwrap();
+    storage.close(&author).unwrap();
     replacement.close(&reviewer).unwrap();
     assert!(host.branches().pending_cleanup().is_empty());
 }

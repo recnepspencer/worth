@@ -1,7 +1,7 @@
 //! A single declared schema/program installs every ordinary application handler.
 use super::{
     access, attempts, authentication::Actor, creation, mutation_access, recording, resources,
-    retention, revision, schema::*,
+    retention, revision, schema::*, target_replacement,
 };
 use worth_query_decl::facade::application_schema::ApplicationInvariantMarkerIdentity;
 use worth_query_decl::facade::{application_program::*, authentication::*};
@@ -71,6 +71,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .finish_action()
             .native_action::<revision::Binding>()
             .finish_action()
+            .native_action::<target_replacement::Binding>()
+            .finish_action()
             .action::<attempts::claim::Binding, ClaimDelivery>()
             .finish_action()
             .action::<attempts::recording::Binding, ResultDelivery>()
@@ -94,6 +96,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<creation::Binding, _>(creation::Handler)?;
         setup.handler::<recording::Binding, _>(recording::Handler)?;
         setup.handler::<revision::Binding, _>(revision::Handler)?;
+        setup.handler::<target_replacement::Binding, _>(target_replacement::Handler)?;
         setup.handler::<attempts::claim::Binding, _>(attempts::claim::Handler)?;
         setup.handler::<attempts::recording::Binding, _>(attempts::recording::Handler)?;
         setup.handler::<access::status::Binding, _>(access::status::Handler)?;
