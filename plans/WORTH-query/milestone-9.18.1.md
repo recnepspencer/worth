@@ -1942,6 +1942,8 @@ workspaces/worth-query/crates/worth-query-certification/tests/
     edit.rs                                    # ordinary observed cell mutation
     lifecycle.rs                               # observed replacement and retirement
     lifecycle_cases.rs                         # complete old/current lifecycle answers
+    checkpoint.rs                              # opaque capture and complete readmission
+    checkpoint_cases.rs                        # source disposal and durable retry behavior
     query.rs                                   # selected-basis live-cell projection
     host.rs                                    # real installation and seed truth
     live_at.rs                                 # fresh requests and original custody

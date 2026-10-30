@@ -1,5 +1,9 @@
 //! Public cell-bearing publications and genuine Native historical reads.
 //! Functional qualification only; scale and total retained bytes are separate evidence.
+#[path = "cell_history/checkpoint.rs"]
+mod checkpoint;
+#[path = "cell_history/checkpoint_cases.rs"]
+mod checkpoint_cases;
 #[path = "cell_history/cost.rs"]
 mod cost;
 #[path = "cell_history/edit.rs"]
