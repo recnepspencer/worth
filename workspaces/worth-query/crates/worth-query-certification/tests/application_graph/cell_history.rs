@@ -6,6 +6,10 @@ mod cost;
 mod edit;
 #[path = "cell_history/host.rs"]
 mod host;
+#[path = "cell_history/lifecycle.rs"]
+mod lifecycle;
+#[path = "cell_history/lifecycle_cases.rs"]
+mod lifecycle_cases;
 #[path = "cell_history/live_at.rs"]
 mod live_at;
 #[path = "cell_history/query.rs"]

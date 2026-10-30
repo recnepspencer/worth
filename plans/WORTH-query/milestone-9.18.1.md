@@ -1940,6 +1940,8 @@ workspaces/worth-query/crates/worth-query-certification/tests/
   application_graph/cell_history/
     schema.rs                                  # cell/feature meaning
     edit.rs                                    # ordinary observed cell mutation
+    lifecycle.rs                               # observed replacement and retirement
+    lifecycle_cases.rs                         # complete old/current lifecycle answers
     query.rs                                   # selected-basis live-cell projection
     host.rs                                    # real installation and seed truth
     live_at.rs                                 # fresh requests and original custody

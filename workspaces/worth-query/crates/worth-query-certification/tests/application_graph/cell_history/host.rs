@@ -1,5 +1,5 @@
 //! The cell model uses the ordinary program, bootstrap and authentication owners.
-use super::{edit, schema::*};
+use super::{edit, lifecycle, schema::*};
 use crate::{document_world_resources::world_resources, operator_identity::operator_identity};
 use worth_query_decl::facade::{application_program::*, authentication::*};
 use worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile;
@@ -23,6 +23,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
         vec![ApplicationFeatureSpec::root::<Schema, CellAuthoring>()
             .native_action::<edit::Binding>()
             .finish_action()
+            .native_action::<lifecycle::Binding>()
+            .finish_action()
             .finish()]
     }
 }
@@ -32,7 +34,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         _: (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<edit::Binding, _>(edit::Handler)
+        setup.handler::<edit::Binding, _>(edit::Handler)?;
+        setup.handler::<lifecycle::Binding, _>(lifecycle::Handler)
     }
 }
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;

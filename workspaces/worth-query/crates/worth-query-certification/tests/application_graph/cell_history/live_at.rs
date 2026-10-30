@@ -99,3 +99,23 @@ fn ordered(mut rows: Vec<CellRow>) -> Vec<CellRow> {
     rows.sort_by_key(|row| row.key);
     rows
 }
+
+pub fn change(
+    host: &Host,
+    input: super::lifecycle::ChangeCell,
+    key: u64,
+) -> WorthQueryApplicationMutationOutcome<super::lifecycle::Denied, super::lifecycle::Changed> {
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    host.runtime()
+        .request(&principal, &scope)
+        .advanced()
+        .mutate(input)
+        .without_source()
+        .idempotency(&key)
+        .execute_in_program(
+            host,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("the structural cell change reaches the installed program")
+}

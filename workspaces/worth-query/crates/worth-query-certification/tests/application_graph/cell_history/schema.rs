@@ -7,7 +7,7 @@ worth_query_application! { pub Schema {
 worth_query_application_contribution! { pub contribution Contribution in Schema {
     identity: "cell-history.contribution.v1",
     members: |schema| {
-        super::query::declare(super::edit::declare(schema
+        super::query::declare(super::lifecycle::declare(super::edit::declare(schema
             .entity(ExternalMapping::reference()).entity(Principal::reference())
             .entity(Feature::reference()).entity(Cell::reference())
             .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
@@ -23,7 +23,7 @@ worth_query_application_contribution! { pub contribution Contribution in Schema 
             .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
             .relation(OwnsCell::reference(), Feature::reference(), Cell::reference())
             .principal_binding(PrincipalBinding::reference())
-        ))
+        )))
     }
 }}
 worth_query_entity!(pub ExternalMapping for Schema);
