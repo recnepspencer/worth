@@ -1,5 +1,5 @@
 //! Source identity comes from the fixture's complete structural owner path.
-use std::path::Path;
+use std::path::{Component, Path, PathBuf};
 
 use crate::paths::source_key;
 
@@ -103,6 +103,11 @@ impl SourceContext {
             }
         }
         let key = source_key(Path::new(path));
+        if key.split('/').any(|part| matches!(part, "." | "..")) {
+            if let Some(resolved) = self.resolve_module_path(&key) {
+                return self.path(&resolved);
+            }
+        }
         if let Some(relative) = self
             .relative_fixtures
             .as_ref()
@@ -140,6 +145,39 @@ impl SourceContext {
             }
         }
         key
+    }
+
+    fn resolve_module_path(&self, key: &str) -> Option<String> {
+        let path = if Path::new(key).is_absolute() {
+            PathBuf::from(key)
+        } else if self
+            .relative_fixtures
+            .as_ref()
+            .is_some_and(|prefix| key.starts_with(prefix))
+        {
+            let court = self
+                .fixtures
+                .as_ref()?
+                .strip_suffix(self.relative_fixtures.as_ref()?)?;
+            Path::new(court).join(key)
+        } else if key.starts_with("tests/") || key.starts_with("src/") {
+            Path::new(self.owner.as_ref()?).join(key)
+        } else {
+            return None;
+        };
+        let mut resolved = PathBuf::new();
+        for component in path.components() {
+            match component {
+                Component::CurDir => (),
+                Component::ParentDir => {
+                    resolved.pop();
+                }
+                Component::Prefix(_) | Component::RootDir | Component::Normal(_) => {
+                    resolved.push(component.as_os_str());
+                }
+            }
+        }
+        Some(source_key(&resolved))
     }
 }
 

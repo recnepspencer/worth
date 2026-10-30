@@ -115,3 +115,57 @@ fn private_multiline_secondary_definitions_preserve_all_text_after_the_gutter() 
         assert_ne!(expected, observed);
     }
 }
+
+fn recovery_source() -> PathBuf {
+    workspace().join("crates/worth-store-court-recovery-runtime/tests/worth_store_court_recovery_runtime/sources/worth_store_recovery_runtime/ui/fixture.rs")
+}
+
+const BUDGET_MODULE: &str =
+    "src/orchestration/planning/page_observation/walk_entry/manifest_entry_budget.rs";
+
+fn moved_budget_module() -> PathBuf {
+    recovery_source().parent().unwrap().join(format!(
+        "manifest_entry/../../../../../../../worth-store-recovery-runtime/{BUDGET_MODULE}"
+    ))
+}
+
+#[test]
+fn parent_module_locations_resolve_the_complete_current_and_original_owner_roots() {
+    let original = format!(" ::: tests/ui/manifest_entry/../../../{BUDGET_MODULE}");
+    let moved = format!(" ::: {}", moved_budget_module().display());
+    let current_relative = format!(" ::: tests/worth_store_court_recovery_runtime/sources/worth_store_recovery_runtime/ui/manifest_entry/../../../../../../../worth-store-recovery-runtime/{BUDGET_MODULE}");
+    let canonical = format!(" ::: {BUDGET_MODULE}");
+    assert_eq!(normalize(&original, &recovery_source()), canonical);
+    assert_eq!(normalize(&moved, &recovery_source()), canonical);
+    assert_eq!(normalize(&current_relative, &recovery_source()), canonical);
+    for changed in [
+        moved.replace(
+            "worth-store-recovery-runtime",
+            "worth-store-physical-format",
+        ),
+        moved.replace("manifest_entry_budget.rs", "another_budget.rs"),
+        original.replace("page_observation/", "another_module/"),
+    ] {
+        assert_ne!(normalize(&changed, &recovery_source()), canonical);
+    }
+}
+
+#[test]
+fn parent_module_definitions_are_external_and_fixture_coordinates_stay_asserted() {
+    let expected = format!("error[E0624]: private function\n  --> tests/ui/fixture.rs:10:34\n   |\n10 |     budget();\n   |     ^^^^^^ private function\n   |\n  ::: tests/ui/manifest_entry/../../../{BUDGET_MODULE}\n   |\n   | pub(super) fn budget() {{}}\n   | ------------------------- private function defined here");
+    let actual = format!("error[E0624]: private function\n   --> {}:10:34\n    |\n 10 |     budget();\n    |     ^^^^^^ private function\n    |\n   ::: {}:134:5\n    |\n134 | pub(super) fn budget() {{}}\n    | ------------------------- private function defined here", recovery_source().display(), moved_budget_module().display());
+    let (normalized, observed) = compared(&expected, &actual, &recovery_source()).unwrap();
+    assert_eq!(normalized, observed);
+    for changed in [
+        actual.replace(":10:34", ":11:34"),
+        actual.replace("|     budget", "|    budget"),
+        actual.replace("private function defined here", "different label"),
+        actual.replace("manifest_entry_budget.rs", "another_budget.rs"),
+    ] {
+        let (expected, observed) = compared(&expected, &changed, &recovery_source()).unwrap();
+        assert_ne!(expected, observed);
+    }
+    let asserted = expected.replace(BUDGET_MODULE, &format!("{BUDGET_MODULE}:133:5"));
+    let (expected, observed) = compared(&asserted, &actual, &recovery_source()).unwrap();
+    assert_ne!(expected, observed);
+}

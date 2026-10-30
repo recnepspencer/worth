@@ -6,6 +6,25 @@ from fixture_graph import dependency_surface, merge_dependencies, snapshot_input
 
 
 class FixtureGraphTests(unittest.TestCase):
+    def test_relocated_fixture_keeps_the_producer_dependency_without_borrowing_unused_testkits(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            (root / 'Cargo.toml').write_text('[workspace]\nmembers=["owner","court"]\n')
+            owner, court = root / 'owner', root / 'court'
+            owner.mkdir(); court.mkdir()
+            (owner / 'Cargo.toml').write_text('[package]\nname="worth-owner"\nversion="0.1.0"\n'
+                                              '[dev-dependencies]\nserde_json="1"\nunused-testkit="2"\n')
+            (court / 'Cargo.toml').write_text('[package]\nname="worth-court-owner"\nversion="0.1.0"\n'
+                                              '[dependencies]\nowner={package="worth-owner",path="../owner",features=["audience"]}\n')
+            source = court / 'tests/owner_court/sources/worth_owner/ui/denied.rs'
+            source.parent.mkdir(parents=True)
+            source.write_text('fn denied(value: serde_json::Value) { owner::accept(value); } fn main() {}')
+            source.with_suffix('.stderr').write_text('error[E0308]: mismatched types')
+            row = snapshot_inputs(root / 'Cargo.toml')[0]
+            self.assertEqual(set(row['dependencies']), {'serde_json', 'owner'})
+            self.assertEqual(row['dependencies']['owner']['features'], ['audience'])
+            self.assertEqual(row['dependencies']['serde_json']['version'], '1')
+
     def test_orphan_snapshot_is_reported_without_inventing_a_compiler_input(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()

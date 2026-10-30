@@ -58,9 +58,12 @@ def merge_dependencies(destination, incoming):
 def snapshot_inputs(workspace_manifest, orphaned=None):
     """Find real snapshots, then follow each program's actual module imports."""
     rows = []
-    for package in members(workspace_manifest):
+    packages = members(workspace_manifest)
+    surfaces = {package['name'].replace('-', '_'): dependency_surface(package['manifest'], workspace_manifest)
+                for package in packages}
+    for package in packages:
         root = package['manifest'].parent
-        surface = dependency_surface(package['manifest'], workspace_manifest)
+        surface = surfaces[package['name'].replace('-', '_')]
         for family in ('tests', 'assets'):
             directory = filesystem_path(root / family)
             for snapshot in sorted(directory.rglob('*.stderr')):
@@ -70,10 +73,16 @@ def snapshot_inputs(workspace_manifest, orphaned=None):
                         orphaned.append(str(snapshot))
                     continue
                 source = root / family / io_source.relative_to(directory)
+                relative = source.relative_to(root).parts
+                # A moved fixture retains its producer's declared dependencies.
+                # The court's explicit audience configuration takes precedence.
+                fixture_surface = surface
+                if len(relative) >= 4 and relative[0] == 'tests' and relative[2] == 'sources':
+                    fixture_surface = dict(surfaces.get(relative[3], {}), **surface)
                 tree = read_tree(source)
                 text = '\n'.join(node.own_text() for node in tree.walk())
-                names = crate_uses(text, {alias.replace('-', '_') for alias in surface})
-                needed = {alias: spec for alias, spec in surface.items() if alias.replace('-', '_') in names}
+                names = crate_uses(text, {alias.replace('-', '_') for alias in fixture_surface})
+                needed = {alias: spec for alias, spec in fixture_surface.items() if alias.replace('-', '_') in names}
                 rows.append({'source': source.resolve(), 'package': package['name'], 'dependencies': needed})
     return rows
 
