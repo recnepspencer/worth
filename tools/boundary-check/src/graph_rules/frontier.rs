@@ -171,7 +171,7 @@ pub(super) fn frontiers(graph: &Metadata) -> BTreeMap<String, Vec<String>> {
             graph.workspace_members.contains(&p.id)
                 && !p.name.contains("-court-")
                 && !p.name.contains("-testkit")
-                && !p.manifest_path.contains("/fixtures/")
+                && !p.manifest_path.split('/').any(|s| s == "fixtures")
         })
         .collect();
     // Keep the combined court convention: traverse infrastructure, and retain
