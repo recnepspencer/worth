@@ -37,9 +37,10 @@ class SourceCostTests(unittest.TestCase):
 
     def test_absolute_and_case_variant_cargo_executables_cannot_bypass_the_rule(self):
         for executable in ['r"C:\\Rust\\bin\\cargo.exe"', '"/opt/rust/bin/cargo"',
-                           '"cargo.EXE"', 'r"\\\\server\\tools\\Cargo.Exe"']:
+                           '"cargo.EXE"', 'r"\\\\server\\tools\\Cargo.Exe"', '"CARGO"']:
             for expression in [f'Command::new({executable});',
-                               f'let executable={executable}; Command::new(executable);']:
+                               f'let executable={executable}; Command::new(executable);',
+                               f'use std::process::Command as Process; Process::new({executable});']:
                 with self.subTest(expression=expression):
                     self.assertIn('cargo-command', [site['kind'] for site in scan_text(expression)])
         self.assertEqual(scan_text('Command::new("/opt/bin/cargo-harness");'), [])

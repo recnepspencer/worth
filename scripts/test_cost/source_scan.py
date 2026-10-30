@@ -51,13 +51,13 @@ def scan_text(text):
             result.append({'kind': kind, 'line': preceding.count('\n') + 1,
                            'function': functions[-1] if functions else None,
                            'expression': normalized[match.start():match.end()][:200]})
-    bindings = set(re.findall(r'\blet\s+(\w+)\s*=\s*"cargo"', normalized))
-    bindings.update(re.findall(r'\b(?:const|static)\s+(\w+):[^;=]{1,200}="cargo"', normalized))
+    bindings = set(re.findall(r'\blet\s+(\w+)\s*=\s*"(?:cargo|CARGO)"', normalized))
+    bindings.update(re.findall(r'\b(?:const|static)\s+(\w+):[^;=]{1,200}="(?:cargo|CARGO)"', normalized))
     aliases = {'Command'} | set(re.findall(r'\bCommand\s+as\s+(\w+)', normalized))
     for alias in aliases:
         pattern = re.compile(r'\b' + re.escape(alias) + r'::new\(([^;)]+)\)')
         for match in pattern.finditer(normalized):
-            if match[1] != '"cargo"' and match[1] not in bindings:
+            if match[1] not in ('"cargo"', '"CARGO"') and match[1] not in bindings:
                 continue
             position = offsets[match.start()]
             line = text[:position].count('\n') + 1
