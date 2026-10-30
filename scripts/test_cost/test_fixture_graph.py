@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 
-from fixture_graph import configured_inputs, dependency_manifest, dependency_surface, dependency_targets, merge_dependencies, snapshot_audiences, snapshot_inputs
+from fixture_graph import configured_inputs, dependency_manifest, dependency_records, dependency_surface, dependency_targets, merge_dependencies, snapshot_audiences, snapshot_inputs
 
 
 class FixtureGraphTests(unittest.TestCase):
@@ -122,6 +122,35 @@ class FixtureGraphTests(unittest.TestCase):
             row = snapshot_audiences(root, path)[root / 'denied.rs']
             self.assertEqual(row['environment'], 'production')
             self.assertEqual(row['dependencies'], {'owner': {'path': (root / 'owner').as_posix()}})
+
+    def test_explicit_dependencies_preserve_versions_and_require_one_source(self):
+        root = Path.cwd()
+        row = dict(name='external', version='0.4', features=['bounded'], default_features=False)
+        self.assertEqual(dependency_records(root, [row]), {
+            'external': {'version': '0.4', 'features': ['bounded'], 'default-features': False}})
+        for invalid in [dict(row, path='external'), {key: value for key, value in row.items() if key != 'version'}]:
+            with self.subTest(row=invalid), self.assertRaisesRegex(ValueError, 'exactly one path or version'):
+                dependency_records(root, [invalid])
+
+    def test_semantic_chunk_view_input_keeps_its_complete_check_audience_once(self):
+        from compiler_prebuild import environments
+        root = Path(__file__).resolve().parents[2]
+        workspace = root / 'workspaces/worth-store/Cargo.toml'
+        producer = root / 'workspaces/worth-store/crates/worth-store'
+        source = (root / 'workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_exposes_no_pool_authority.rs').resolve()
+        rows, _ = environments(root, 'store')
+        observed = [(row, package) for row in rows.values() for package in row['packages']
+                    for fixture in package['sources'] if fixture == source]
+        self.assertEqual(len(observed), 1)
+        row, package = observed[0]
+        self.assertEqual(row['identity'], 'certification')
+        self.assertEqual(row['profile'], 'diagnostic-test')
+        self.assertEqual(row['proof_stage'], 'check')
+        expected = dependency_surface(producer / 'Cargo.toml', workspace)
+        expected['worth-store'] = {'path': producer.as_posix(), 'features': ['certification-test-authority']}
+        self.assertEqual(package['dependencies'], expected)
+        self.assertEqual(package['target_dependencies'], dependency_targets(producer / 'Cargo.toml', workspace))
+        self.assertFalse(source.with_suffix('.stderr').exists())
 
 
 if __name__ == '__main__':

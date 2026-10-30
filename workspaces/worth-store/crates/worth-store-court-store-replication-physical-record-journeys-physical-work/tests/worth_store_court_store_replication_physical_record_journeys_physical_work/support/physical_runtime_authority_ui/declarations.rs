@@ -15,6 +15,11 @@ pub(crate) fn record_chunk_view_cases() {
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_blocks_session_drop.rs")).expect("prebuilt compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_bytes_retain_session_borrow.rs")).expect("prebuilt compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_construction_is_sealed.rs")).expect("prebuilt compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_exposes_no_pool_authority.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_exposes_no_pool_authority.rs"),
+        "E0614",
+        &["PhysicalRecordChunkView"],
+    )
+        .expect("prebuilt semantic compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/opened_physical_record_alias_is_absent.rs")).expect("prebuilt compiler denial");
 }

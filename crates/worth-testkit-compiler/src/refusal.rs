@@ -30,6 +30,10 @@ pub enum CompilerFixtureRefusal {
         expected: String,
         observed: String,
     },
+    WrongSemanticDenial {
+        path: PathBuf,
+        reason: String,
+    },
     EmptyPattern(PathBuf),
     InvalidPattern {
         path: PathBuf,
@@ -51,6 +55,7 @@ impl std::fmt::Display for CompilerFixtureRefusal {
             Self::UnattributedDiagnostics(path) => write!(formatter, "raw compiler errors contain no span or expansion callsite for {}", path.display()),
             Self::MissingRenderedDiagnostic { path, index } => write!(formatter, "{} error {index} omits its rendered diagnostic", path.display()),
             Self::WrongDiagnostics { path, expected, observed } => write!(formatter, "{} differs from its compiler snapshot\nexpected:\n{expected}\nobserved:\n{observed}", path.display()),
+            Self::WrongSemanticDenial { path, reason } => write!(formatter, "{} did not establish its semantic compiler denial: {reason}", path.display()),
             Self::EmptyPattern(path) => write!(formatter, "compiler fixture pattern {} selects no source", path.display()),
             Self::InvalidPattern { path, reason } => write!(formatter, "invalid compiler fixture pattern {}: {reason}", path.display()),
         }
