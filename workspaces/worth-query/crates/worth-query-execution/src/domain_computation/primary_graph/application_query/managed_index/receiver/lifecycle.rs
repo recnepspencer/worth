@@ -65,11 +65,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     .map_err(|cause| {
                         ReceiverCause::Provider(ProviderExecutionDenial::NativeSource(cause))
                     })?;
-                state
-                    .attach_maintained(&execution, observation)
-                    .map_err(|cause| {
-                        ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))
-                    })?;
+                state.attach_maintained(observation).map_err(|cause| {
+                    ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))
+                })?;
             }
             Ok(WorthQueryManagedIndex {
                 state,
@@ -82,8 +80,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
 
     /// Explicitly rebuilds from the currently admitted complete Source.
     /// Providers execute outside Native and registry locks under this request.
-    /// Invariant-maintained indexes refuse this competing update with
-    /// `InvariantOwned`; their roots are prepared by the actual Native candidate.
+    /// Maintained indexes refill the same selected Native cache used by invariants.
     pub fn rebuild_application_managed_index<
         B: ApplicationQueryBinding<S>,
         I: ApplicationManagedIndexBinding<S>,
@@ -117,15 +114,6 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             if !index.state.same_association(&candidate) {
                 return Err(ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(
                     WorthQueryManagedIndexLifecycleDenial::ForeignAssociation,
-                )));
-            }
-            if self
-                .runtime
-                .primary_graph()
-                .is_some_and(|graph| graph.layout.managed_source(I::NAME).is_some())
-            {
-                return Err(ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(
-                    WorthQueryManagedIndexLifecycleDenial::InvariantOwned,
                 )));
             }
             execution::rebuild(

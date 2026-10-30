@@ -127,3 +127,74 @@ fn managed_cache_retirement_defers_last_opaque_drop_beyond_native_guards() {
     assert_eq!(drops.load(Ordering::SeqCst), 1);
     drop((registration, owner, cell, runtime));
 }
+
+#[test]
+fn managed_cache_rebuild_stale_entry_refuses_without_dropping_candidate_under_guards() {
+    let (schema, program) = managed_cache_schema();
+    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
+        .schema_registry(schema)
+        .build()
+        .unwrap();
+    let startup = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    );
+    let execution = ExecutionRequest::serial(&startup);
+    let scope = create_entity(&execution, &runtime, "cache-scope");
+    let port = runtime.publication_companion_port();
+    let core = Arc::new(Mutex::new(Weak::new()));
+    let old_drops = Arc::new(AtomicUsize::new(0));
+    let owner = Arc::new(Owner {
+        source: program.clone(),
+        scope,
+        core: core.clone(),
+        port: port.clone(),
+        drops: old_drops.clone(),
+        slots: Mutex::new(Vec::new()),
+    });
+    let registration = port
+        .begin_required_registration()
+        .unwrap()
+        .activate(owner.clone())
+        .unwrap();
+    create_entity(&execution, &runtime, "real-publication");
+    let cell = owner.slots.lock().unwrap()[0].admitted().unwrap();
+    *core.lock().unwrap() = Arc::downgrade(&cell.core);
+    let snapshot = snapshot_for_owner_identity(&runtime, &runtime.main_branch_identity());
+    let loan = runtime
+        .read_truth()
+        .prepare_managed_index_rebuild(&execution, &snapshot, &program, scope)
+        .unwrap();
+    let retirement = runtime
+        .read_truth()
+        .evict_managed_index_source(&execution, &snapshot, &program, scope)
+        .unwrap();
+    let drops = Arc::new(AtomicUsize::new(0));
+    let candidate: Arc<dyn Any + Send + Sync> = Arc::new(Probe {
+        core: core.clone(),
+        port: port.clone(),
+        drops: drops.clone(),
+    });
+    assert!(matches!(
+        runtime
+            .read_truth()
+            .finish_managed_index_rebuild(&execution, &snapshot, &loan, &candidate),
+        Err(Denial::Publication(
+            CompanionPreflightStop::ManagedSourceChanged
+        ))
+    ));
+    assert_eq!(drops.load(Ordering::SeqCst), 0);
+    assert!(matches!(
+        runtime
+            .read_truth()
+            .observe_managed_index_source(&execution, &snapshot, &program, scope),
+        Err(Denial::RootUnavailable)
+    ));
+    // Its last Drop probes both actual current-image mutex and registration.
+    drop(candidate);
+    assert_eq!(drops.load(Ordering::SeqCst), 1);
+    drop((loan, retirement));
+    assert_eq!(old_drops.load(Ordering::SeqCst), 1);
+    drop((registration, owner, cell, runtime));
+}

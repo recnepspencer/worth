@@ -13,29 +13,12 @@ use crate::validation::data::{StructuralAspectStateView, StructuralRelationView}
 /// concrete audience witness is consumed with Native views, never in isolation.
 pub struct ManagedIndexSourceProjection<'source> {
     pub(crate) program: &'source ManagedIndexSourceProgram,
-    pub(crate) relations: &'source StructuralRelationView<'source>,
-    pub(crate) aspects: &'source StructuralAspectStateView<'source>,
-    pub(crate) audience: AdmittedManagedIndexSourceAudience,
+    pub(crate) backing: SourceProjectionBacking<'source>,
 }
 
 impl<'source> ManagedIndexSourceProjection<'source> {
     pub fn program(&self) -> &ManagedIndexSourceProgram {
         self.program
-    }
-
-    /// Full generation is checked by the actual Native view before any field
-    /// access. Missing entities are not an empty projection.
-    pub(crate) fn field(
-        &self,
-        row: EntityId,
-        column: usize,
-    ) -> Result<Option<&AspectValue>, Denial> {
-        let field = self
-            .program
-            .fields()
-            .get(column)
-            .ok_or(Definition::InvalidExpression)?;
-        self.field_at(row, self.program.row_kind(), field)
     }
 
     pub(super) fn field_at(
@@ -44,37 +27,51 @@ impl<'source> ManagedIndexSourceProjection<'source> {
         kind: crate::identity::data::KindId,
         field: &super::ManagedIndexSourceField,
     ) -> Result<Option<&AspectValue>, Denial> {
-        if !self.program.0.authority.admits(&self.audience) {
-            return Err(Definition::OutsideDeclaredAccess.into());
+        match &self.backing {
+            SourceProjectionBacking::Invariant {
+                relations,
+                aspects,
+                audience,
+            } => {
+                if !self.program.0.authority.admits(audience) {
+                    return Err(Definition::OutsideDeclaredAccess.into());
+                }
+                self.checkpoint(1)?;
+                if relations
+                    .entity_kind(row)
+                    .map_err(|cause| Denial::Structural(relations.read_budget().refusal(cause)))?
+                    != kind
+                {
+                    return Err(Definition::InvalidMemberDomain.into());
+                }
+                let state = aspects
+                    .entity_aspect_state(row)
+                    .map_err(|cause| Denial::Structural(relations.read_budget().refusal(cause)))?;
+                field_value(state.get(field.locator.aspect().aspect_key()), field)
+            }
+            SourceProjectionBacking::Selected { .. } => Err(Definition::ForeignObservation.into()),
         }
-        self.relations
-            .read_budget()
-            .checkpoint(1)
-            .map_err(Denial::Structural)?;
-        if self
-            .relations
-            .entity_kind(row)
-            .map_err(|cause| Denial::Structural(self.relations.read_budget().refusal(cause)))?
-            != kind
-        {
-            return Err(Definition::InvalidMemberDomain.into());
-        }
-        let state = self
-            .aspects
-            .entity_aspect_state(row)
-            .map_err(|cause| Denial::Structural(self.relations.read_budget().refusal(cause)))?;
-        let Some(aspect) = state.get(field.locator.aspect().aspect_key()) else {
-            return Ok(None);
-        };
-        let ContractValidatedAspectValueView::Struct(fields) = aspect.view() else {
-            return Err(Definition::InvalidExpression.into());
-        };
-        let key = field
-            .locator
-            .field_path()
-            .fields()
-            .first()
-            .ok_or(Definition::InvalidExpression)?;
-        Ok(fields.get(key))
     }
 }
+
+fn field_value<'a>(
+    aspect: Option<&'a worth_foundational::facade::ContractValidatedAspectValue>,
+    field: &super::ManagedIndexSourceField,
+) -> Result<Option<&'a AspectValue>, Denial> {
+    let Some(aspect) = aspect else {
+        return Ok(None);
+    };
+    let ContractValidatedAspectValueView::Struct(fields) = aspect.view() else {
+        return Err(Definition::InvalidExpression.into());
+    };
+    let key = field
+        .locator
+        .field_path()
+        .fields()
+        .first()
+        .ok_or(Definition::InvalidExpression)?;
+    Ok(fields.get(key))
+}
+mod access;
+pub use access::PreparedManagedIndexRelationRead;
+pub(crate) use access::SourceProjectionBacking;

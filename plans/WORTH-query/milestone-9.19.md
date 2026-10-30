@@ -558,9 +558,27 @@ maintained courts pass; the prefix and three geometry allocation courts retain
 exact all-owner balance. Native owner probes verify final opaque destruction
 beyond directory/registration guards, and request-owner controls prove completed
 cleanup survives the actual outer final poll while pre-effect cancellation refuses.
-Public maintained rebuild and its honest Refuse bootstrap twin, remaining
-lifecycle/affinity hostile controls, materialization/recovery composition and the
-required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
+Explicit public maintained rebuild is now qualified through that same selected
+Native cache. Fresh independent Source READ captures exact selected custody;
+reconstruction reuses the Native relation evaluator and shared Query materializer,
+then provider purpose admission gates installation outside runtime locks. Original
+post-node cancellation preserves the prior cache; retry refills cold material
+without a Source publication. The retained Source condition still commits, and
+later invariant maintenance updates that same resource without another cold build.
+A fresh ReuseExact rebuild returns its selected old geometry while newer main and
+fork material remain isolated. All eight maintained courts and all 24 public
+managed-index controls pass; the prefix and four geometry allocation courts keep
+exact all-owner balance. Native stale-entry refusal retains the candidate beyond
+registration/runtime guards. The allocation court also exposed an empty Execution
+ledger whose deleted buckets reported zero logical capacity while still owning a
+table; emptiness now unconditionally retires it, with a deterministic red/green
+owner regression and all 18 lease owner controls. This explicit reconstruction
+walks Source twice (ordinary admitted query and Native occurrence projection);
+both traversals and their combined cold peak use the original request. It is not
+warm-growth evidence.
+The honest Refuse initialization/bootstrap twin, remaining lifecycle/affinity
+hostile controls, materialization/recovery composition and the required
+1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication
 and final-owner release across that path.
 

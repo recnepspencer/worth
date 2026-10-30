@@ -3,6 +3,7 @@ use super::*;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_execution::facade::primary_graph::WorthQueryManagedIndex;
 
+mod completion;
 mod eviction;
 mod governed;
 
@@ -12,8 +13,9 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationQueryIntent<Schema>,
 {
-    /// Opens the installed index's shared registration in Created state.
-    /// This does not read Source or build a root. Repeated opens share status;
+    /// Opens the installed index's shared registration without building it.
+    /// Maintained material attaches Ready; standalone registration starts Created.
+    /// This does not read Source. Repeated opens share status;
     /// closing any sibling disposes that registration for all siblings.
     /// This entrance uses ordinary Parent admission. Use `open_index_governed`
     /// or `open_index_approved` when disclosure requires a capability.
@@ -41,8 +43,9 @@ where
     }
 
     /// Reads the complete current Source and builds its index under this request.
-    /// Created or Evicted queries return NotReady until this explicit call succeeds.
-    /// Every publication on the same branch makes the image cold again.
+    /// Standalone Created/Evicted queries return NotReady until construction.
+    /// Maintained rebuild refills the genuine selected Native cache; ordinary
+    /// mutations continue to maintain that canonical resource.
     pub fn rebuild_index<I: ApplicationManagedIndexBinding<Schema>>(
         self,
         index: &WorthQueryManagedIndex<Schema, I>,
@@ -56,14 +59,21 @@ where
     {
         let application = self.application;
         let request = self.scope;
-        application
+        let mut completed = None;
+        let advancement = application
             .with_application_advancement(request, |phase| {
-                self.with_admitted_query(&phase, |application, binding, external, plan| {
-                    application
-                        .rebuild_application_managed_index(&phase, binding, external, plan, index)
-                        .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)
-                })
+                completed = Some(self.with_admitted_query(
+                    &phase,
+                    |application, binding, external, plan| {
+                        application
+                            .rebuild_application_managed_index(
+                                &phase, binding, external, plan, index,
+                            )
+                            .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)
+                    },
+                ));
             })
-            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
+        completion::completed_effect(advancement, completed)
     }
 }

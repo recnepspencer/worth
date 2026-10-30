@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use crate::derived_relation::{DerivedRelationDenial as Definition, DerivedRelationReadDenial};
 use crate::identity::data::EntityId;
-use crate::validation::data::{StructuralAspectStateView, StructuralRelationView};
+use crate::validation::data::StructuralRelationView;
 use crate::validation::engine::InvariantSourceAffinity;
 
 use super::preparation::{RootPayload, SourceViews};
@@ -87,17 +87,19 @@ impl ManagedIndexSourceRead<'_> {
             scope: self.prepared.scope,
             projection: ManagedIndexSourceProjection {
                 program: &self.prepared.program,
-                relations: if before {
-                    &self.views.before
-                } else {
-                    &self.views.after
+                backing: super::projection::SourceProjectionBacking::Invariant {
+                    relations: if before {
+                        &self.views.before
+                    } else {
+                        &self.views.after
+                    },
+                    aspects: if before {
+                        &self.views.before_fields
+                    } else {
+                        &self.views.after_fields
+                    },
+                    audience: self.prepared.program.0.issuer.admit(),
                 },
-                aspects: if before {
-                    &self.views.before_fields
-                } else {
-                    &self.views.after_fields
-                },
-                audience: self.prepared.program.0.issuer.admit(),
             },
         }
     }

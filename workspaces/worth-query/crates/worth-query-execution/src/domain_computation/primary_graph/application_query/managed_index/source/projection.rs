@@ -200,19 +200,23 @@ impl Projector<'_, '_, '_> {
                 .ok_or(DerivedRelationReadDenial::Definition(
                     DerivedRelationDenial::InvalidExpression,
                 ))?;
-            let value = match source {
-                FieldSource::Root(occurrence) => self.rows.field(occurrence, column)?,
-                FieldSource::Endpoint(read, occurrence) => {
-                    self.rows.projected_field(read, occurrence, column)?
+            let retain = |value: Option<&worth_foundational::facade::AspectValue>| -> Result<_, MaterialDenial> {
+                match value {
+                    Some(value) => {
+                        self.allocation.claim(self.execution, value.owned_allocation_capacity_bytes() as u64)?;
+                        Ok(value.clone())
+                    }
+                    None if projection.presence() == worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional => Ok(worth_foundational::facade::AspectValue::Null),
+                    None => Err(DerivedRelationReadDenial::Definition(DerivedRelationDenial::RecordUnavailable).into()),
                 }
             };
-            let value = match value {
-                Some(value) => {
-                    self.allocation.claim(self.execution, value.owned_allocation_capacity_bytes() as u64)?;
-                    value.clone()
+            let value = match source {
+                FieldSource::Root(occurrence) => {
+                    self.rows.with_field(occurrence, column, retain)??
                 }
-                None if projection.presence() == worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional => worth_foundational::facade::AspectValue::Null,
-                None => return Err(DerivedRelationReadDenial::Definition(DerivedRelationDenial::RecordUnavailable).into()),
+                FieldSource::Endpoint(read, occurrence) => self
+                    .rows
+                    .with_projected_field(read, occurrence, column, retain)??,
             };
             self.dependency(ViewDependency::Field(entity, field.locator.clone()))?;
             fields.push(Field::new(projection, value));

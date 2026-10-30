@@ -10,6 +10,7 @@ use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkCapacity
 use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 
 mod build;
+mod maintained_build;
 pub(super) mod purpose;
 mod select;
 pub(super) use build::rebuild;

@@ -74,7 +74,9 @@ struct Retained<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
 }
 enum RetainedIndexImage<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
     Completed(Arc<ReadyIndex<S, I>>),
-    Maintained(Arc<worth_relational::facade::runtime::ManagedIndexSourceObservation>),
+    // Status owns one observation directly. The funded registration header
+    // includes this slot; replacing it creates no accumulating header charge.
+    Maintained(worth_relational::facade::runtime::ManagedIndexSourceObservation),
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) struct ManagedIndexState<

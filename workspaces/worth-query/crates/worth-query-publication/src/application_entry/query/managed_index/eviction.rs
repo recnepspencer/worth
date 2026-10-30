@@ -1,4 +1,5 @@
 //! Original-request current-cache eviction uses ordinary Parent admission.
+use super::completion::completed_effect;
 use super::governed::Scope;
 use super::*;
 use worth_query_declaration::facade::{
@@ -41,7 +42,7 @@ where
                 ));
             })
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
-        completed_eviction(advancement, completed)
+        completed_effect(advancement, completed)
     }
 }
 
@@ -126,22 +127,6 @@ where
                 ));
             })
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
-        completed_eviction(advancement, completed)
+        completed_effect(advancement, completed)
     }
 }
-
-/// Preserve a completed effect across the execution owner's final liveness poll.
-/// An absent or refused body never converts a pre-effect interruption to success.
-fn completed_eviction<E>(
-    advancement: Result<(), E>,
-    completed: Option<Result<(), E>>,
-) -> Result<(), E> {
-    match (advancement, completed) {
-        (_, Some(Ok(()))) => Ok(()),
-        (Err(cause), _) | (Ok(()), Some(Err(cause))) => Err(cause),
-        (Ok(()), None) => unreachable!("completed advancement ran the eviction body"),
-    }
-}
-
-#[cfg(test)]
-mod tests;

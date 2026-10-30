@@ -7,7 +7,7 @@ use worth_execution::ExecutionRequest;
 /// caller releases its runtime/registry guards. This grants no Source READ.
 #[must_use = "release retired backing after leaving runtime guards"]
 pub struct ManagedIndexSourceCacheRetirement {
-    _directory: Directory,
+    pub(super) _directory: Directory,
 }
 impl ManagedIndexBranchImage {
     pub(crate) fn evict_source(

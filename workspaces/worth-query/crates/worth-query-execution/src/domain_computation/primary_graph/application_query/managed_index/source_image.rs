@@ -33,6 +33,7 @@ pub(super) type SourcePlan<'a, S, I> = WorthQueryAdmittedApplicationQueryPlan<
 >;
 
 pub(super) struct SourceImage<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
+    pub(super) rebuild_loan: Option<worth_relational::facade::runtime::ManagedIndexSourceRebuild>,
     pub(super) installed: WorthQueryInstalledManagedIndex<S, I>,
     pub(super) tree: WorthQueryApplicationDisclosedProjectionTree,
     pub(super) order: worth_execution::ExecutionArray<usize>,

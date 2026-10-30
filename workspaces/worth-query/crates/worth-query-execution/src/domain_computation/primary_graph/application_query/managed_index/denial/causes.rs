@@ -82,10 +82,7 @@ use WorthQueryManagedIndexRefusal as Refusal;
 
 pub(super) fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
     match cause {
-        ProviderExecutionDenial::NativeSource(
-            worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial::RootUnavailable,
-        ) => Cause::Refused(Refusal::RootUnavailable),
-        ProviderExecutionDenial::NativeSource(cause) => Cause::NativeSource(cause),
+        ProviderExecutionDenial::NativeSource(cause) => native_source(cause),
         ProviderExecutionDenial::NativeAdmission(cause) => Cause::NativeAdmission(cause),
         ProviderExecutionDenial::Product(cause) => Cause::Product(cause),
         ProviderExecutionDenial::GraphRead(cause) => graph_read(cause),
@@ -159,8 +156,19 @@ pub(super) fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
         ProviderExecutionDenial::ForeignAssociation => Cause::Refused(Refusal::ForeignAssociation),
     }
 }
+fn native_source(
+    cause: &worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial,
+) -> Cause<'_> {
+    match cause {
+        worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial::RootUnavailable => {
+            Cause::Refused(Refusal::RootUnavailable)
+        }
+        cause => Cause::NativeSource(cause),
+    }
+}
 fn source(cause: &SourceDenial) -> Cause<'_> {
     match cause {
+        SourceDenial::Native(cause) => native_source(cause),
         SourceDenial::Read(cause) => Cause::QueryRead(cause),
         SourceDenial::Work(cause) => Cause::Work(cause),
         SourceDenial::Source(cause) => Cause::Source(cause),

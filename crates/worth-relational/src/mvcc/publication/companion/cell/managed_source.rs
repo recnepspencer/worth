@@ -235,3 +235,6 @@ impl ManagedSourceReadConditions {
 
 #[cfg(test)]
 mod cache_retirement;
+
+mod rebuild;
+pub use rebuild::ManagedIndexSourceRebuild;

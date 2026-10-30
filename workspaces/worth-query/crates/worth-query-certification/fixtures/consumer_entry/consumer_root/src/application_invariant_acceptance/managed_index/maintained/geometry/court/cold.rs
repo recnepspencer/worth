@@ -22,7 +22,7 @@ fn run() {
         "all relevant Native/World images, observations and request owners close"
     );
 }
-fn cold_read(
+pub(super) fn cold_read(
     world: &host::Host,
     principal: &Principal,
     scope: &WorthQueryRequestScope,

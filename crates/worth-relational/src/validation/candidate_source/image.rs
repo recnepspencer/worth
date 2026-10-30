@@ -12,6 +12,7 @@ mod eviction;
 pub use eviction::ManagedIndexSourceCacheRetirement;
 mod key;
 mod publication;
+mod refill;
 pub(crate) use entry::ManagedIndexSourceAssociation;
 use key::SourceKey;
 type Payload = Arc<dyn Any + Send + Sync>;

@@ -219,6 +219,28 @@ fn journey() {
         builds,
         "eviction and warm sibling reads reconstruct nothing"
     );
+    reused_request
+        .query(all("A"))
+        .rebuild_index(&reused_index)
+        .unwrap();
+    assert_eq!(
+        calls.builds.load(Ordering::SeqCst),
+        builds + 1,
+        "only the selected older Native component reconstructs"
+    );
+    assert_eq!(
+        values(reused_request.query(all("A")).execute().unwrap().rows()),
+        expected("A", 10, all("A").probe)
+    );
+    assert_eq!(
+        values(request.query(all("A")).execute().unwrap().rows()),
+        expected("A", 20, all("A").probe)
+    );
+    assert_eq!(
+        values(sibling.query(all("A")).execute().unwrap().rows()),
+        expected("A", 30, all("A").probe)
+    );
+    assert_eq!(calls.builds.load(Ordering::SeqCst), builds + 1);
     index.close();
     sibling_index.close();
     reused_index.close();

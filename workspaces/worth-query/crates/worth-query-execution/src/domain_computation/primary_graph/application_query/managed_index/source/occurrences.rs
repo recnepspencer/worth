@@ -71,7 +71,6 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
 impl PersistentSourceRows {
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn acquire(
         execution: &ExecutionRequest<'_, '_>,
-        scope: &ManagedIndexSourceScope<'_>,
         rows: &ManagedIndexSourceRows<'_>,
         owner: WorthQueryGraphWorkSessionIdentity,
         graph: &WorthQueryInstalledGraphReadContract,
@@ -89,7 +88,7 @@ impl PersistentSourceRows {
         let mut dependencies = OccurrencePostings::default();
         for occurrence in occurrences {
             let entity = occurrence.entity();
-            let entry = project(execution, scope.program(), rows, occurrence, graph)?;
+            let entry = project(execution, rows.program(), rows, occurrence, graph)?;
             if entries.contains_key(&entity) {
                 return Err(ManagedIndexSourcePreparationDenial::ForeignSource.into());
             }
@@ -100,8 +99,8 @@ impl PersistentSourceRows {
         }
         Ok(Self {
             owner,
-            program: scope.program().clone(),
-            scope: scope.scope(),
+            program: rows.program().clone(),
+            scope: rows.scope(),
             entries,
             dependencies,
         })

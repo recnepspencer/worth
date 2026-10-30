@@ -140,9 +140,10 @@ where
     {
         let application = self.application;
         let request = self.scope;
-        application
+        let mut completed = None;
+        let advancement = application
             .with_application_advancement(request, |phase| {
-                self.with_admitted_governed_query(
+                completed = Some(self.with_admitted_governed_query(
                     &phase,
                     approved,
                     capability,
@@ -155,8 +156,9 @@ where
                             )
                             .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)
                     },
-                )
+                ));
             })
-            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
+        super::completion::completed_effect(advancement, completed)
     }
 }

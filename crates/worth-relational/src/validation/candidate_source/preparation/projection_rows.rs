@@ -1,15 +1,13 @@
 //! Current-loan child reads preserve actual full-generation relation occurrences.
 use super::*;
-use crate::derived_relation::{
-    DerivedRelationData, DerivedRelationReadShape, PreparedDerivedRelationRead,
-};
+use crate::derived_relation::{DerivedRelationData, DerivedRelationReadShape};
 use crate::validation::data::StructuralRelationRecord;
 
 /// Actual endpoint preparation tied to its originating Source row and route.
 pub struct PreparedManagedIndexProjectionRead {
     root: ManagedIndexSourceOccurrence,
     route: usize,
-    prepared: PreparedDerivedRelationRead,
+    prepared: super::super::projection::PreparedManagedIndexRelationRead,
 }
 
 /// One admitted direct relation occurrence; an entity ID alone cannot issue it.
@@ -42,7 +40,7 @@ impl ManagedIndexSourceRows<'_> {
             .get(route)
             .ok_or(Definition::InvalidExpression)?
             .path;
-        let prepared = self.projection.relations.prepare_derived_source(
+        let prepared = self.projection.prepare(
             path,
             root.row,
             DerivedRelationReadShape::Adjacency { reverse: false },
@@ -68,18 +66,8 @@ impl ManagedIndexSourceRows<'_> {
             .get(read.route)
             .ok_or(Definition::InvalidExpression)?;
         let shape = DerivedRelationReadShape::Adjacency { reverse: false };
-        if read.prepared.identity()
-            != &self.projection.relations.derived_source_identity(
-                &route.path,
-                read.root.row,
-                shape,
-            )?
-        {
-            return Err(Definition::ForeignObservation.into());
-        }
         self.projection
-            .relations
-            .read_prepared_derived_source(&read.prepared, shape)
+            .read(&read.prepared, &route.path, read.root.row, shape)
     }
 
     pub fn projection_occurrences(
@@ -89,16 +77,14 @@ impl ManagedIndexSourceRows<'_> {
         let support = self.projection_support(read)?;
         let route = &self.projection.program.projection_routes()[read.route];
         let (kind, outgoing) = route.physical_relation();
-        let budget = self.projection.relations.read_budget();
+
         let bytes = support
             .physical_relations()
             .len()
             .checked_mul(size_of::<ManagedIndexSourceProjectionOccurrence>())
             .and_then(|bytes| u64::try_from(bytes).ok())
             .ok_or(Definition::WorkBudgetExceeded)?;
-        budget
-            .claim_retained(bytes)
-            .map_err(ReadDenial::Structural)?;
+        self.projection.claim_retained(bytes)?;
         let mut occurrences = Vec::new();
         occurrences
             .try_reserve_exact(support.physical_relations().len())
@@ -108,7 +94,7 @@ impl ManagedIndexSourceRows<'_> {
                 )
             })?;
         for &relation in support.physical_relations() {
-            budget.checkpoint(1).map_err(ReadDenial::Structural)?;
+            self.projection.checkpoint(1)?;
             let (parent, entity) = if outgoing {
                 (relation.source, relation.target)
             } else {
@@ -131,12 +117,13 @@ impl ManagedIndexSourceRows<'_> {
         Ok(occurrences)
     }
 
-    pub fn projected_field(
+    pub fn with_projected_field<T>(
         &self,
         read: &PreparedManagedIndexProjectionRead,
         occurrence: &ManagedIndexSourceProjectionOccurrence,
         column: usize,
-    ) -> Result<Option<&worth_foundational::facade::AspectValue>, ReadDenial> {
+        project: impl FnOnce(Option<&worth_foundational::facade::AspectValue>) -> T,
+    ) -> Result<T, ReadDenial> {
         if occurrence.root != read.root || occurrence.route != read.route {
             return Err(Definition::ForeignObservation.into());
         }
@@ -162,6 +149,6 @@ impl ManagedIndexSourceRows<'_> {
             .get(column)
             .ok_or(Definition::InvalidExpression)?;
         self.projection
-            .field_at(occurrence.entity, route.endpoint_kind(), field)
+            .with_field_at(occurrence.entity, route.endpoint_kind(), field, project)
     }
 }

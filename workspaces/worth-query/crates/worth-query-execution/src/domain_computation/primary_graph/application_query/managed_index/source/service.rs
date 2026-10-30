@@ -167,7 +167,6 @@ where
         let graph = self.provider.installed.source_read().query().read_graph();
         let rows = PersistentSourceRows::acquire(
             execution,
-            scope,
             loan,
             owner,
             graph,
@@ -266,7 +265,10 @@ where
     }
 }
 
-fn retain_root<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
+pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn retain_root<
+    S: ApplicationSchema,
+    I: ApplicationManagedIndexBinding<S>,
+>(
     execution: &ExecutionRequest<'_, '_>,
     adapter: Arc<dyn InstalledIndexProvider<S, I>>,
     bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,

@@ -429,7 +429,12 @@ Use the freshly admitted Parent's `evict_index(&handle)` (or its governed/approv
 variant) for selected maintained cache cleanup. Cold content returns typed
 `RootUnavailable`; admitted candidate reconstruction preserves unchanged Source
 conditions. Retained historical images remain valid shares. The request-free
-handle eviction and explicit maintained public rebuild retain `InvariantOwned`.
+handle eviction retains `InvariantOwned`; fresh `rebuild_index(&handle)` refills
+the selected maintained Native cache after independent Source READ and provider
+purpose admission. Cancellation before install preserves the previous cache; an intervening
+cache edit refuses the stale build. `ReuseExact` rebuilds its selected older
+component while newer main and fork material remain unchanged. The explicit cold
+lane pays for the ordinary Source query plus Native occurrence projection.
 A retained logical Source during
 generated-output suspension does not make a current public physical read Ready.
 See the

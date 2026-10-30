@@ -28,7 +28,7 @@ pub use crate::validation::data::{
 };
 pub use crate::validation::engine::InvariantExecutionResult;
 
-pub use crate::mvcc::ManagedIndexSourceObservation;
+pub use crate::mvcc::{ManagedIndexSourceObservation, ManagedIndexSourceRebuild};
 pub use crate::validation::candidate_source::{
     ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot, ManagedIndexSourceAvailability,
     ManagedIndexSourceCacheRetirement, ManagedIndexSourceField, ManagedIndexSourceOccurrence,
@@ -37,7 +37,8 @@ pub use crate::validation::candidate_source::{
     ManagedIndexSourceProjectionRoute, ManagedIndexSourceProviderFailure,
     ManagedIndexSourcePublication, ManagedIndexSourcePublicationRoot, ManagedIndexSourceRead,
     ManagedIndexSourceRows, ManagedIndexSourceScope, PreparedManagedIndexProjectionRead,
-    PreparedManagedIndexSourceRead, PreparedManagedIndexSourceRoot,
+    PreparedManagedIndexRelationRead, PreparedManagedIndexSourceRead,
+    PreparedManagedIndexSourceRoot,
 };
 pub use crate::validation::DuplicateCustomInvariantRegistration;
 

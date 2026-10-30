@@ -5516,8 +5516,8 @@ call the provider's cold build. A current read still performs fresh Source READ.
 The standalone explicit-rebuild registration described above retains its own
 Created/Ready lifecycle. Closing a public attachment does not remove material
 still owned by an installed invariant or a retained Native/World basis.
-The handle's request-free `evict` and explicit public `rebuild_index` return
-`InvariantOwned` for such an attachment. To make its selected material cold, use
+The handle's request-free `evict` returns `InvariantOwned` for such an
+attachment. To make its selected material cold, use
 `request.query(parent).evict_index(&index)`. This entrance freshly admits the
 Parent, validates the handle's runtime, installation, principal, scope and branch
 incarnation, and funds copied cache paths through that request. Governed and
@@ -5530,13 +5530,22 @@ A fresh content read of that cold image returns the typed
 `WorthQueryManagedIndexRefusal::RootUnavailable` before provider query callbacks.
 The installed invariant's `AdmitRebuild` policy permits the next affected candidate
 to reconstruct from its actual Native committed Source before validation; it
-still has to satisfy the original request and every rule. Public explicit
-reconstruction of maintained material remains unavailable through `rebuild_index`.
+still has to satisfy the original request and every rule. Explicit
+`request.query(parent).rebuild_index(&index)` freshly admits the Parent and the
+Source's independent Public READ, then rebuilds provider nodes outside Native
+locks and refills that same selected Native cache. Governed and approved Parents
+use `rebuild_index_governed` and `rebuild_index_approved`. An intervening eviction
+or refill rejects the stale reconstruction before install; cancellation before
+install preserves the previous canonical cache (a cold cache stays cold). A
+completed install survives the outer request's final cancellation poll. This cold lane performs the ordinary Source query and
+a second Native occurrence projection; both use the original request, and their
+combined peak memory is reconstructive cost. It does not initialize a nonexistent
+scope or resolve the remaining initial bootstrap gap for `Cold::Refuse`.
 Eviction and reconstruction do not change a complete Source condition when its
 actual support stays unchanged.
 
 Cleanup follows the current World product's genuine selected Native component.
-A `ReuseExact` product can therefore evict its selected older image while newer
+A `ReuseExact` product can therefore evict and rebuild its selected older image while newer
 main and fork images remain warm. Earlier Native/World images and observations
 may retain their immutable temporal shares; eviction does not erase historical
 material. Physical backing releases after its last relevant owner closes.

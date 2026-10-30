@@ -32,7 +32,7 @@ pub use preparation::{
 pub use program::{
     ManagedIndexSourceField, ManagedIndexSourceProgram, ManagedIndexSourceProjectionRoute,
 };
-pub use projection::ManagedIndexSourceProjection;
+pub use projection::{ManagedIndexSourceProjection, PreparedManagedIndexRelationRead};
 
 pub(crate) use interpretation::{
     NativeManagedSourceInterpretation, NativeMaterializationSource,

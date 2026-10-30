@@ -126,7 +126,10 @@ impl Ledger {
     /// An idle authority owns no usage backing. Retire the table after the
     /// complete transition and destroy it after releasing the ledger lock.
     fn take_unused_nodes(&mut self) -> Option<HashMap<u64, NodeUsage>> {
-        (self.nodes.is_empty() && self.nodes.capacity() != 0)
+        // Logical insertion capacity may be zero while deleted buckets still
+        // own a table. Only emptiness decides when the owner can hand it off.
+        self.nodes
+            .is_empty()
             .then(|| std::mem::take(&mut self.nodes))
     }
 }

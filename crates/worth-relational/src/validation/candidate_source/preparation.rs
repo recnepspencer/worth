@@ -128,17 +128,19 @@ impl<'a> ManagedIndexSourceScope<'a> {
             scope: self.scope,
             projection: ManagedIndexSourceProjection {
                 program: self.program,
-                relations: if before {
-                    &self.views.before
-                } else {
-                    &self.views.after
+                backing: super::projection::SourceProjectionBacking::Invariant {
+                    relations: if before {
+                        &self.views.before
+                    } else {
+                        &self.views.after
+                    },
+                    aspects: if before {
+                        &self.views.before_fields
+                    } else {
+                        &self.views.after_fields
+                    },
+                    audience: self.program.0.issuer.admit(),
                 },
-                aspects: if before {
-                    &self.views.before_fields
-                } else {
-                    &self.views.after_fields
-                },
-                audience: self.program.0.issuer.admit(),
             },
         }
     }

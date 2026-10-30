@@ -66,6 +66,20 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
             allocation,
         )?;
         let build_identity = session.identity();
+        if let Some(loan) = &source.rebuild_loan {
+            return super::maintained_build::rebuild(
+                execution,
+                application,
+                state,
+                parent,
+                selected,
+                request,
+                epoch,
+                &source,
+                loan,
+                session,
+            );
+        }
         let (nodes, callback) = session
             .call(|actual| {
                 state.adapter.build(

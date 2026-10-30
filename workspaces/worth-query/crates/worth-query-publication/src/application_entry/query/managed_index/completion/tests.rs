@@ -1,12 +1,12 @@
 //! The real execution owner's final poll cannot erase completed cleanup.
 //! Native cache/guard effects are convicted separately in their owner court.
-use super::completed_eviction;
+use super::completed_effect;
 use worth_execution::{
     CancellationSource, ExecutionRequest, MapKernelStop, SerialMemoryBudget, SerialRequest,
     WorkCeilingDenial,
 };
 #[test]
-fn managed_eviction_completed_cleanup_survives_the_actual_final_request_poll() {
+fn managed_lifecycle_completed_cleanup_survives_the_actual_final_request_poll() {
     let cancellation = CancellationSource::new();
     let request =
         SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
@@ -27,10 +27,10 @@ fn managed_eviction_completed_cleanup_survives_the_actual_final_request_poll() {
         advanced,
         Err(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled))
     ));
-    assert_eq!(completed_eviction(advanced, completed), Ok(()));
+    assert_eq!(completed_effect(advanced, completed), Ok(()));
 }
 #[test]
-fn managed_eviction_pre_effect_interruption_never_becomes_completed_success() {
+fn managed_lifecycle_pre_effect_interruption_never_becomes_completed_success() {
     let cancellation = CancellationSource::new();
     cancellation.cancel();
     let request =
@@ -43,7 +43,7 @@ fn managed_eviction_pre_effect_interruption_never_becomes_completed_success() {
         .map(|_| ());
     assert!(completed.is_none());
     assert!(matches!(
-        completed_eviction(advanced, completed),
+        completed_effect(advanced, completed),
         Err(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled))
     ));
 }

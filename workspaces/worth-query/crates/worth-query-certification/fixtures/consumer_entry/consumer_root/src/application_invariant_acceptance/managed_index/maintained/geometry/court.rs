@@ -19,6 +19,7 @@ use worth_query_host::facade::{
 mod affinity;
 mod cancellation;
 mod cold;
+mod rebuild;
 mod rewiring;
 type Principal = WorthQueryAuthenticatedExternalPrincipal<Catalog>;
 fn find(directory: &str, x: i64) -> query::FindBoxes {

@@ -12,8 +12,8 @@ pub use cell::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
     CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped,
-    ManagedIndexSourceObservation, PreparedCompanionBranchCell, PreparedCompanionDerivedRoot,
-    ReservedCompanionBranchCell,
+    ManagedIndexSourceObservation, ManagedIndexSourceRebuild, PreparedCompanionBranchCell,
+    PreparedCompanionDerivedRoot, ReservedCompanionBranchCell,
 };
 pub(crate) use preflight::CandidateCompanionBinding;
 pub use preflight::{
