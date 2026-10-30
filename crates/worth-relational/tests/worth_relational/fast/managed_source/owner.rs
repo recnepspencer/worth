@@ -70,6 +70,7 @@ impl RelationalPublicationCompanion for SourceOwner {
 }
 
 pub(super) struct Reader {
+    pub maximum_work: Option<std::num::NonZeroU64>,
     pub program: ManagedIndexSourceProgram,
     pub court: Arc<Court>,
 }
@@ -85,7 +86,7 @@ impl CustomInvariantRule for Reader {
             },
             display_name: "Complete Native Source scope court".into(),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: None,
+                maximum_work_units: self.maximum_work,
                 access: CustomInvariantAccessContract {
                     read_entity_kinds: vec![KindId(1), KindId(4)],
                     read_relation_kinds: vec![KindId(2)],

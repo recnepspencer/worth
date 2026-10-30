@@ -6,7 +6,7 @@ mod execution_context;
 mod interruption;
 pub use interruption::CustomInvariantInterruption;
 mod read_budget;
-pub use read_budget::CustomInvariantReadBudget;
+pub use read_budget::{CustomInvariantNativeCheckpointDenial, CustomInvariantReadBudget};
 mod managed_source;
 #[cfg(test)]
 mod provenance_decode_tests;

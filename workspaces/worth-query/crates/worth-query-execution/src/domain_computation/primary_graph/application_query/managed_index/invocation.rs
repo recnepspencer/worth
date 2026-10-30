@@ -41,12 +41,22 @@ pub(super) fn controlled<R>(
     let outcome = execution.run_native_with_checkpoint(|context| {
         let accounted = context.has_accounting();
         let context = RefCell::new(context);
-        let checkpoint = |work| {
-            if accounted {
+        let checkpoint = |work, source: Option<&worth_relational::facade::runtime::CustomInvariantReadBudget<'_>>| {
+            if let Some(source) = source {
+                return source.checkpoint_native(&mut context.borrow_mut(), work).map_err(|cause| {
+                    use worth_relational::facade::runtime::CustomInvariantNativeCheckpointDenial as Denial;
+                    match cause {
+                        Denial::Source(cause) => Stop::NativeSource(cause),
+                        Denial::Request(cause) => Stop::Request(WorkCeilingDenial::Stopped(cause)),
+                    }
+                });
+            }
+            let result = if accounted {
                 context.borrow_mut().checkpoint(work)
             } else {
                 context.borrow_mut().poll()
-            }
+            };
+            result.map_err(|cause| Stop::Request(WorkCeilingDenial::Stopped(cause)))
         };
         let poll = || context.borrow_mut().poll();
         let control = Control::new(&checkpoint, &poll, &first);

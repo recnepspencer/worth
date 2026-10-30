@@ -22,6 +22,8 @@ use worth_relational::facade::{
 
 #[path = "managed_source/owner.rs"]
 mod owner;
+#[path = "managed_source/work_account.rs"]
+mod work_account;
 
 fn registry() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
     let mut registry = RelationalSchemaRegistry::new();
@@ -126,6 +128,7 @@ fn native_managed_source_stages_all_scopes_before_validation_and_reborrows_each_
     let (registry, program) = registry();
     let court = Arc::new(owner::Court::default());
     let rule = CustomInvariantRegistration::new(owner::Reader {
+        maximum_work: None,
         program: program.clone(),
         court: court.clone(),
     })

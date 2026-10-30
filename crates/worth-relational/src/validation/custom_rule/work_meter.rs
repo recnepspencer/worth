@@ -2,8 +2,11 @@ use std::num::NonZeroU64;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_execution::ExecutionLeaseStatus;
+mod control;
 mod memory;
 mod native_allowance;
+mod source_stage;
+use control::PreparationControl;
 use memory::PreparationMemory;
 
 // Fixed-size ID, BTree node, and wrapper retention for materializing
@@ -19,10 +22,12 @@ pub(crate) enum CustomPreparationStop {
     MemoryExhausted,
     MemoryAdmission(worth_execution::MemoryLimitDenial),
     UncheckedCustomKernel,
+    Request(worth_execution::MapKernelStop),
 }
 
 struct LeasedCustomMeter {
-    status: ExecutionLeaseStatus,
+    status: PreparationControl,
+    request_stop: std::sync::Mutex<Option<worth_execution::MapKernelStop>>,
     work_ceiling: Option<u64>,
     consumed_work: AtomicU64,
     memory_ceiling: Option<u64>,
@@ -48,8 +53,20 @@ impl CustomPreparationBudget {
         work_ceiling: Option<u64>,
         memory_ceiling: Option<u64>,
     ) -> Self {
+        Self::with_control(
+            PreparationControl::Lease(status),
+            work_ceiling,
+            memory_ceiling,
+        )
+    }
+    fn with_control(
+        status: PreparationControl,
+        work_ceiling: Option<u64>,
+        memory_ceiling: Option<u64>,
+    ) -> Self {
         Self(Arc::new(LeasedCustomMeter {
             status,
+            request_stop: std::sync::Mutex::new(None),
             work_ceiling,
             consumed_work: AtomicU64::new(0),
             memory_ceiling,
@@ -200,6 +217,13 @@ impl CustomInvariantWorkMeter {
         let Some(leased) = &self.leased else {
             return true;
         };
+        if let PreparationControl::Stage(loan) = &leased.status {
+            if let Err(cause) = loan.poll() {
+                self.loan_failed(cause);
+                return false;
+            }
+            return self.leased_stop().is_none();
+        }
         if leased.status.is_cancelled() {
             self.stop(CustomPreparationStop::Cancelled);
             return false;
@@ -227,6 +251,20 @@ impl CustomInvariantWorkMeter {
     // Read-only planning visits have work but no allocation. Every retained
     // plan payload is claimed explicitly by try_plan_item's byte declaration.
     pub(super) fn try_charge_work(&self, units: u64) -> bool {
+        if let Some(leased) = &self.leased
+            && let PreparationControl::Stage(loan) = &leased.status
+        {
+            if !self.try_debit_native_work(units) {
+                return false;
+            }
+            return match loan.checkpoint(units) {
+                Ok(()) => true,
+                Err(cause) => {
+                    self.loan_failed(cause);
+                    false
+                }
+            };
+        }
         if self.exceeded() || !self.safe_point() {
             return false;
         }

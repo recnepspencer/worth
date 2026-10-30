@@ -711,6 +711,16 @@ original 10. The observer's opaque captures close outside its slot lock, and an
 old registration guard cannot disarm its replacement. Both focused controls,
 all 32 public managed-index controls and warmed exact final-owner balance pass.
 See [the late-cancellation slice](milestone-9.19-phase2-late-cancellation-plan.md).
+Source preparation now uses one live original SDK work account in serial,
+leased and inherited execution. Custom Source visits and SDK-funded provider
+steps consume the installed rule allowance while charging that account exactly
+once. Real registered Source courts compare baseline and additional custom,
+provider and mixed work on success and provider refusal, preserve exact request
+work exhaustion and inherited cancellation, and leave the Native head unchanged
+on refusal. Closed or foreign SDK scopes cannot reuse the loan; genuine worker
+report joins bill once, and retained affinity backing remains charged until final
+release. All 259 SDK tests, three registered Source controls and 32 public managed
+controls pass. See [the work-account slice](milestone-9.19-phase2-source-work-account-plan.md).
 This does not retime World's frozen cancellation sampling or prove cancellation
 inside the atomic swap. Remaining hostile controls and whole-path growth remain
 open. These process-local courts do not qualify crash/network persistence.

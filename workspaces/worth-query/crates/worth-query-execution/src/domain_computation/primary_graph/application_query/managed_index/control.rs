@@ -5,7 +5,10 @@ use worth_execution::{MapKernelStop, WorkCeilingDenial};
 
 /// The original request controls borrowed by a pure provider invocation.
 pub struct WorthQueryManagedIndexControl<'a> {
-    checkpoint: &'a dyn Fn(u64) -> Result<(), MapKernelStop>,
+    checkpoint: &'a dyn Fn(
+        u64,
+        Option<&worth_relational::facade::runtime::CustomInvariantReadBudget<'_>>,
+    ) -> Result<(), Stop>,
     poll: &'a dyn Fn() -> Result<(), MapKernelStop>,
     first: &'a RefCell<Option<Stop>>,
     source: Option<&'a worth_relational::facade::runtime::CustomInvariantReadBudget<'a>>,
@@ -13,7 +16,10 @@ pub struct WorthQueryManagedIndexControl<'a> {
 
 impl<'a> WorthQueryManagedIndexControl<'a> {
     pub(super) fn new(
-        checkpoint: &'a dyn Fn(u64) -> Result<(), MapKernelStop>,
+        checkpoint: &'a dyn Fn(
+            u64,
+            Option<&worth_relational::facade::runtime::CustomInvariantReadBudget<'_>>,
+        ) -> Result<(), Stop>,
         poll: &'a dyn Fn() -> Result<(), MapKernelStop>,
         first: &'a RefCell<Option<Stop>>,
     ) -> Self {
@@ -27,13 +33,7 @@ impl<'a> WorthQueryManagedIndexControl<'a> {
 
     pub fn checkpoint(&self, work: u64) -> Result<(), Stop> {
         self.check()?;
-        if let Some(source) = self.source {
-            source
-                .checkpoint(work)
-                .map_err(|cause| self.refuse(Stop::NativeSource(cause)))?;
-        }
-        (self.checkpoint)(work)
-            .map_err(|cause| self.refuse(Stop::Request(WorkCeilingDenial::Stopped(cause))))
+        (self.checkpoint)(work, self.source).map_err(|cause| self.refuse(cause))
     }
 
     pub fn poll(&self) -> Result<(), Stop> {
