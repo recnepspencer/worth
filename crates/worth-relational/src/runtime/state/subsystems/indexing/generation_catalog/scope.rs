@@ -79,6 +79,13 @@ impl GenerationScope {
     pub(super) fn latest(&self) -> Option<DerivedIndexGenerationId> {
         self.ids.last().copied()
     }
+
+    pub(super) fn predecessor(
+        &self,
+        id: DerivedIndexGenerationId,
+    ) -> Option<DerivedIndexGenerationId> {
+        self.ids.range(..id).next_back().copied()
+    }
     #[cfg(test)]
     pub(super) fn has_published(&self) -> bool {
         self.has_status(true)

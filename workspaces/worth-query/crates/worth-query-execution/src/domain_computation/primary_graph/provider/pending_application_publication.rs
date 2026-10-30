@@ -184,16 +184,16 @@ impl WorthQueryPrimaryGraphProvider {
                 if result.is_err() {
                     pending.release_before(runtime);
                 }
-                result
+                result.map(|world| (world, Arc::clone(&pending.committed)))
             })
             .map_err(failure)?;
-        result?;
+        let (_, committed) = result?;
         slot.complete();
         self.pending_application_publications
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .remove_exact(occurrence, &slot);
-        self.retire_changed_history(runtime);
+        self.retire_changed_history(runtime, &committed);
         Ok(())
     }
 }

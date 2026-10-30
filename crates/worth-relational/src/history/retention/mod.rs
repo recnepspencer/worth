@@ -2,11 +2,14 @@ mod cost_counters;
 mod head_cell;
 mod head_obligation;
 mod head_retirement;
+mod index_liveness;
 mod lane;
 mod lease;
 mod obligation;
 mod owner;
+mod publication_reclamation;
 mod reclamation;
+mod root_locators;
 mod terminal_accounting;
 
 pub use cost_counters::RelationalRetentionCostCounters;

@@ -54,6 +54,7 @@ pub struct RelationalMvccCostObservation {
 /// not yet catalog-visible.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationalMvccCounterObservation {
+    retention_reclaim_batch_size: usize,
     branch_population_scans: u64,
     branch_cell_contacts: u64,
     sharing_cost_delta: crate::runtime::RelationalBranchSharingCostCounters,
@@ -63,6 +64,10 @@ pub struct RelationalMvccCounterObservation {
 }
 
 impl RelationalMvccCostObservation {
+    /// The configured retention granule; publication-delta work is additional.
+    pub const fn retention_reclaim_batch_size(&self) -> usize {
+        self.counters.retention_reclaim_batch_size()
+    }
     pub fn sharing(&self) -> &RelationalBranchSharingObservation {
         &self.sharing
     }
@@ -97,6 +102,11 @@ impl RelationalMvccCostObservation {
 }
 
 impl RelationalMvccCounterObservation {
+    /// The actual configured retention batch at observation. This bounds older
+    /// generation visits, not delta candidates or physical-root/branch degree.
+    pub const fn retention_reclaim_batch_size(&self) -> usize {
+        self.retention_reclaim_batch_size
+    }
     pub const fn branch_population_scans(&self) -> u64 {
         self.branch_population_scans
     }
@@ -179,6 +189,7 @@ impl RelationalRuntime {
             .sum::<u64>()
             .saturating_sub(scope.baseline_coordination_contacts);
         Ok(RelationalMvccCounterObservation {
+            retention_reclaim_batch_size: self.config.storage.retention.reclaim_batch_size,
             // Population traversal is a deliberately separate runtime-global
             // reconstruction lane. The selected branch counters below remain
             // owner-scoped; this field reports the explicit global delta.

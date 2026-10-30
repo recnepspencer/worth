@@ -7,7 +7,7 @@ use proptest::prelude::*;
 mod selected_scope_admission;
 
 // These are catalog ordering inputs, not forged runtime admission or storage truth.
-fn generation(
+pub(super) fn generation(
     id: u64,
     index: u64,
     branch: u8,

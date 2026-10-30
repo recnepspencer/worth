@@ -31,7 +31,11 @@ impl WorthQueryPrimaryGraphProvider {
     /// publication's identities, so replay still answers. Relational then
     /// reclaims the roots the retired history no longer pins. A World that
     /// cannot retire keeps its history; nothing is lost but capacity.
-    pub(super) fn retire_changed_history(&self, runtime: &mut RelationalRuntime) {
+    pub(super) fn retire_changed_history(
+        &self,
+        runtime: &mut RelationalRuntime,
+        committed: &worth_relational::facade::transactions::CommitResult,
+    ) {
         let retired = self
             .world_history
             .get()
@@ -52,7 +56,7 @@ impl WorthQueryPrimaryGraphProvider {
             }
         }
         runtime.run_branch_root_reclamation_pass();
-        runtime.run_index_generation_reclamation_pass();
+        let _ = runtime.run_index_generation_reclamation_after_publication(committed);
     }
 }
 

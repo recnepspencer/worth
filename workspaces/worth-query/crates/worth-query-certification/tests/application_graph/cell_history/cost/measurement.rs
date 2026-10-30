@@ -22,6 +22,8 @@ pub struct WarmPublication {
     pub new_authoritative_bytes: u64,
     pub decision_facts: usize,
     pub world_reachability_lookups: u64,
+    pub native_index_retention_roots_examined: u64,
+    pub native_retention_sweep_granule: u64,
 }
 
 pub fn capture(host: &Host) -> WorthQueryCertificationCostScope {
@@ -72,13 +74,19 @@ pub fn report_warm(
         "ordinary publication shares original commit envelopes"
     );
     let sharing = observation.relational().sharing();
+    let native_index_retention_roots_examined = observation
+        .relational()
+        .maintenance_cost_delta()
+        .index_retention_roots_examined;
+    let native_retention_sweep_granule = (micros.len() as u64)
+        .saturating_mul(observation.relational().retention_reclaim_batch_size() as u64);
     let world_reachability_lookups = observation.world_history_after().reachability_lookups()
         - observation.world_history_before().reachability_lookups();
     assert!(
         decision_facts > 0,
         "real decision observations reach the committing owner"
     );
-    println!("cell warm decision_facts={decision_facts} world_reachability_lookups={world_reachability_lookups}");
+    println!("cell warm decision_facts={decision_facts} world_reachability_lookups={world_reachability_lookups} native_index_retention_roots_examined={native_index_retention_roots_examined} native_retention_sweep_granule={native_retention_sweep_granule}");
     println!("cell warm live={live} retained_steps={history} samples={} p50_us={} p95_us={} min_us={} max_us={} copied_bytes={} new_authoritative_bytes={} hashed_values={} index_path_nodes={} touched_regions={} head_payload_bytes={} head_canonical_bytes={} head_optional_cache_bytes={} held_world_commits={}",
         micros.len(), micros[micros.len()/2], micros[(micros.len()*95/100).min(micros.len()-1)],
         micros[0], micros[micros.len()-1],
@@ -94,6 +102,8 @@ pub fn report_warm(
         new_authoritative_bytes: delta.publication_new_authoritative_bytes,
         decision_facts,
         world_reachability_lookups,
+        native_index_retention_roots_examined,
+        native_retention_sweep_granule,
     }
 }
 

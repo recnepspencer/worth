@@ -57,9 +57,9 @@ impl super::RelationalBranchRetentionOwner {
                 .map(|(_, retired)| retired);
             if let Some(retired) = reclaimable {
                 let root = retired.root;
-                if let Some(commit_id) = root.commit_id() {
-                    remove_commit_root(&self.inner, commit_id, root_key, generation);
-                }
+                self.inner
+                    .retired_root_locators
+                    .remove(&root, root_key, generation);
                 super::owner::release_retirement_slot(&self.inner);
                 self.inner
                     .retired_root_count
@@ -95,17 +95,6 @@ impl super::RelationalBranchRetentionOwner {
             unique_bytes,
         )
     }
-}
-
-fn remove_commit_root(
-    owner: &super::owner::RelationalBranchRetentionOwnerInner,
-    commit_id: crate::history::data::CommitId,
-    root_key: usize,
-    generation: u64,
-) {
-    owner
-        .retired_roots_by_commit
-        .remove_if(&commit_id, |_, indexed| *indexed == (root_key, generation));
 }
 
 impl crate::runtime::RelationalRuntime {

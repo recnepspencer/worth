@@ -152,7 +152,7 @@ impl RelationalForkOwnerBinding {
                 .fork_materialized_authoritative_bytes
                 .saturating_add(cost.authoritative_bytes);
         });
-        self.head_versions.move_head(None, head_version);
+        self.head_versions.move_head(None, cell.root().as_deref());
         if let (Some(visibility), Some(version_id)) = (&self.visibility, head_version)
             && visibility.protect_branch_heads
         {

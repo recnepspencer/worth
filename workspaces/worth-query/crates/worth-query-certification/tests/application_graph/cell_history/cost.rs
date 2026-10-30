@@ -58,6 +58,16 @@ fn assert_sublinear_publication(samples: &[measurement::WarmPublication]) {
             pair[1].world_reachability_lookups <= pair[0].world_reachability_lookups * 8,
             "ordinary World retirement revisited the protected history: {pair:?}"
         );
+        // This fixture has one physical root per version and no alias/fork fanout.
+        // Ordinary work includes actual delta candidates plus the configured older
+        // sweep. Below that granule, H=100 cannot distinguish a full scan from one
+        // lawful bounded sweep; the required 10k case supplies that distinction.
+        let granule = pair[0]
+            .native_retention_sweep_granule
+            .max(pair[1].native_retention_sweep_granule);
+        assert!(pair[1].native_index_retention_roots_examined
+            <= pair[0].native_index_retention_roots_examined.max(granule).saturating_mul(8),
+            "ordinary Native index cleanup scanned retained history beyond its delta/sweep granule: {pair:?}");
     }
 }
 

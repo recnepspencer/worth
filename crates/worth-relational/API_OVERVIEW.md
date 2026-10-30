@@ -215,6 +215,7 @@ These are real public capabilities, but not the default first-contact story:
 - `runtime.retention()`
 - `runtime.index_access()`
 - `runtime.index_authority()`
+
 - `runtime.durability()` (including `recovery_plan_from_source(...)` for
   reopening from a durable medium)
 - `runtime.durability_authority()`
@@ -222,6 +223,17 @@ These are real public capabilities, but not the default first-contact story:
 - `runtime.commit_strategies_authority()`
 - `runtime.merge()`
 - `runtime.replay_authority()`
+
+After settling an ordinary publication and releasing its temporary before-basis
+snapshots, call
+`runtime.run_index_generation_reclamation_after_publication(&committed)` with
+that runtime's original `CommitResult`. It examines the publication's actual
+previous bases and affected index generations, plus a bounded pass over older
+generations. `Ok(None)` leaves cleanup for a later quiescent opportunity; a
+foreign runtime's result is refused. Intentional readers and retained receipts
+keep their exact generations, including global generations selected by another
+branch. `run_index_generation_reclamation_pass()` performs an explicit cold
+inventory pass when that broader maintenance work is appropriate.
 
 ## Published runtime lanes
 

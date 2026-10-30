@@ -1866,6 +1866,30 @@ for custody. Preserve held gaps, fork points, delivery claims and accumulated
 generation spans. Existing World reachability counters expose this work;
 Native copy/hash counters alone cannot qualify it.
 
+Native index-generation cleanup belongs in that same ordinary interval. Its
+eligibility authority remains actual live heads and registered branch or
+historical root obligations, with exact version and schema identity. A commit
+locator must preserve every registered physical root for that commit; one
+allocation or the last inserted locator cannot stand for all reader custody.
+Global generations honor holds from any branch, while scoped generations honor
+their actual branch and historical holds. Preserve the existing exact,
+published-for-commit, failed-candidate and live-publisher latest selectors.
+Every artifact readmission path must validate source/applicability affinity
+before the generation enters those selectors.
+
+Ordinary settled publication consumes its actual generation/basis delta plus a
+fair bounded pass over older retained candidates. A fixed sweep alone cannot
+keep pace with a publication affecting more indexes than one maintenance batch.
+Retained candidates count as visits, and a finite cycle boundary prevents new
+publications from postponing a wrap indefinitely. Original settlement and
+temporary before-basis holds must be released before evaluating that delta;
+intentional receipt and reader custody remains effective. Full owner inventories
+remain explicit cold work. Test first-versus-last reader release, shared-root
+branch deletion, cross-branch global retention, exact schema/affinity refusal,
+more-than-batch affected indexes and held-prefix release across cursor wraps.
+No new application version table, retention authority or publisher resource
+invoice may replace these owner lookups.
+
 Separate setup, warm local publication, historical read/materialization, cold
 checkpoint reconstruction and diagnostic allocation inspection. Report their
 elapsed distributions, repetitions, workload, compiler, runtime policy and
