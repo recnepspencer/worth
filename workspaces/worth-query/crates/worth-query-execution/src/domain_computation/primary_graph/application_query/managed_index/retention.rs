@@ -19,7 +19,9 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::{identity::EntityId, transactions::RelationalExecutionDenialCause};
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchIncarnation};
 
+mod association;
 mod eviction;
+pub(in crate::domain_computation::primary_graph::application_query) use association::ManagedIndexRegistrationKey;
 mod maintained;
 mod transitions;
 
@@ -192,6 +194,16 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         } else {
             status
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn is_disposed(
+        &self,
+    ) -> bool {
+        self.retained
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .status
+            == WorthQueryManagedIndexLifecycle::Disposed
     }
 }
 

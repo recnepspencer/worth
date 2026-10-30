@@ -105,9 +105,10 @@ unbilled work or whole-population traversal at their responsible owners.
 2. Public-only late updater: removed by
    [the conservative Native cache slice](milestone-9.19-phase2-public-cache-owner-plan.md).
    Its selected-image custody preserves Phase 1 Source shapes and cold behavior.
-3. Replace managed-view registry scans in ordinary index lookup with indexed
-   routing. Managed indexes no longer participate in late publication scans;
-   unrelated derived views retain their existing owner.
+3. Indexed registration lookup: qualified by
+   [the registration slice](milestone-9.19-phase2-index-registration-plan.md).
+   Managed indexes no longer participate in late publication scans or mixed-owner
+   lookup scans; unrelated derived views retain their existing owner.
 4. Qualify the actual 1,000/2,000 chain, 50,000 unrelated geometry and independently
    retained-query axes through the real public path and original SDK invoice.
 5. Audit the Phase 2 required receiver/failure/lifecycle twins against concrete

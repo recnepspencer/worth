@@ -5335,8 +5335,14 @@ admits the Parent capability and READ policy before cache or provider access;
 its normal final disclosure still applies. A valid Public Source or a Ready
 cache does not authorize the Parent.
 
-Repeated opens share one registration. `index.lifecycle()` reports retained cache
-status, not fresh authorization. Public-only status observes the Native head and
+Repeated opens share one registration for the actual installed Index/Parent
+binding, principal, full-generation scope and World incarnation. Two bindings to
+the same Query have independent
+registrations. Ordinary lookup and repeated open use indexed routing; unrelated
+retained registrations do not add a full scan. Both routing directions retain
+their original memory grants, and close removes only its issued registration id.
+`index.lifecycle()` reports retained cache status, not fresh authorization.
+Public-only status observes the Native head and
 can report Evicted while an unchanged World still selects a retained predecessor.
 `evict()` releases its image; explicit rebuild
 is required before another indexed read. `close()` disposes and unregisters it

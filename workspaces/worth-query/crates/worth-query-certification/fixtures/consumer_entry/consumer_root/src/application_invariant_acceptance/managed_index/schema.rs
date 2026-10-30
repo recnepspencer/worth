@@ -29,6 +29,7 @@ worth_query_application_contribution! { pub contribution CatalogContribution in 
             .application_query_binding::<query::SourceBinding>()
             .application_query(query::prefix_definition())
             .application_query_binding::<query::PrefixBinding>()
+            .application_query_binding::<query::PrefixAliasBinding>()
             .managed_index(ApplicationManagedIndexDefinition::<Catalog, prefix::PrefixIndex>::new()))))
     }
 }}

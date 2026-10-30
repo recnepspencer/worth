@@ -732,6 +732,16 @@ successor without replaying the provider. Exact-slot eviction and close allocate
 nothing and carry opaque cleanup beyond owner guards. Three Native owner controls,
 six existing managed-cache controls and all 33 public managed-index controls pass.
 See [the public cache owner slice](milestone-9.19-phase2-public-cache-owner-plan.md).
+Managed registration lookup and repeated open now use paired ordered routes
+under one owner, with the compiled managed-index purpose plus actual runtime,
+World incarnation, principal and full-generation scope. Typed and actual-owner
+checks still gate every hit. A second binding to the same Query has its own cold
+registration. Both maps retain original grants; failed memory/capacity admission
+preserves existing entries, stale close ids cannot remove reopened routes, and
+empty backing releases before its grants. With World/Native data fixed, actual
+SDK invoices beside 8/16/32 registrations have equal doubling increments under
+declared headroom. The focused memory control, 39 derived-view owner controls and
+all 35 public managed-index controls pass. See [the registration slice](milestone-9.19-phase2-index-registration-plan.md).
 This does not retime World's frozen cancellation sampling or prove cancellation
 inside the atomic swap. Remaining hostile controls and whole-path growth remain
 open. These process-local courts do not qualify crash/network persistence.

@@ -3,12 +3,10 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
 const MAXIMUM_REGISTERED_VIEWS: usize = 64;
+mod index_directory;
 mod managed_index;
 mod managed_source;
-mod material;
 mod native_count;
-
-use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 
 pub(in crate::domain_computation::primary_graph::application_query) trait RegisteredManagedIndex:
     Send + Sync
@@ -59,20 +57,12 @@ impl PreparedManagedViewPublication {
     }
 }
 
-enum OwnedDerivedView {
-    NativeCount(
-        Arc<
-            super::retention::ManagedDerivedViewState<
-                worth_relational::facade::identity::EntityId,
-                native_count::ClosedCount,
-            >,
-        >,
-    ),
-    ManagedIndex {
-        state: Arc<dyn Any + Send + Sync>,
-        cleanup: Arc<dyn RegisteredManagedIndex>,
-    },
-}
+type NativeCountState = Arc<
+    super::retention::ManagedDerivedViewState<
+        worth_relational::facade::identity::EntityId,
+        native_count::ClosedCount,
+    >,
+>;
 
 #[derive(Default)]
 struct RegistryState {
@@ -80,18 +70,13 @@ struct RegistryState {
         BTreeMap<worth_relational::facade::history::BranchId, managed_source::SourceBranchSlot>,
     next_id: u64,
     views: BTreeMap<u64, Weak<dyn RegisteredDerivedView>>,
-    owned: Vec<(u64, OwnedDerivedView)>,
-    material_allocations: Vec<Arc<SourceFactsAllocation>>,
+    native_counts: Vec<(u64, NativeCountState)>,
+    indexes: index_directory::ManagedIndexDirectory,
 }
 
 impl RegistryState {
     fn registration_count(&self) -> usize {
-        self.views.len()
-            + self
-                .owned
-                .iter()
-                .filter(|(_, entry)| matches!(entry, OwnedDerivedView::ManagedIndex { .. }))
-                .count()
+        self.views.len() + self.indexes.len()
     }
 }
 
@@ -178,7 +163,10 @@ impl ManagedDerivedViewRegistry {
             state.views.insert(id, Arc::downgrade(view));
             Some(id)
         })();
-        let empty = state.take_empty_material_storage();
+        let empty = state
+            .views
+            .is_empty()
+            .then(|| std::mem::take(&mut state.views));
         drop(state);
         drop(empty);
         result
@@ -193,27 +181,36 @@ impl ManagedDerivedViewRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.views.remove(&id);
-        let removed = state
-            .owned
-            .iter()
-            .position(|(actual, _)| *actual == id)
-            .map(|position| state.owned.remove(position));
-        let empty = state.take_empty_material_storage();
+        let removed_index = state.indexes.remove(id);
+        let removed_count = if removed_index.is_none() {
+            state
+                .native_counts
+                .iter()
+                .position(|(actual, _)| *actual == id)
+                .map(|position| state.native_counts.remove(position))
+        } else {
+            None
+        };
+        let empty = state
+            .views
+            .is_empty()
+            .then(|| std::mem::take(&mut state.views));
         drop(state);
-        drop(removed);
+        drop(removed_index);
+        drop(removed_count);
         drop(empty);
     }
 
     pub(in crate::domain_computation::primary_graph) fn dispose(&self) {
-        let (views, owned, allocations, source_branches) = {
+        let (views, native_counts, indexes, source_branches) = {
             let mut state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             (
                 std::mem::take(&mut state.views),
-                std::mem::take(&mut state.owned),
-                std::mem::take(&mut state.material_allocations),
+                std::mem::take(&mut state.native_counts),
+                std::mem::take(&mut state.indexes),
                 std::mem::take(&mut state.source_branches),
             )
         };
@@ -224,12 +221,8 @@ impl ManagedDerivedViewRegistry {
                 view.dispose();
             }
         }
-        for (_, entry) in owned {
-            if let OwnedDerivedView::ManagedIndex { cleanup, .. } = entry {
-                cleanup.dispose();
-            }
-        }
-        drop(allocations);
+        indexes.dispose();
+        drop(native_counts);
         drop(source_branches);
     }
 }

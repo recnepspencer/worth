@@ -181,12 +181,21 @@ pub struct FindPrefix {
     pub directory: String,
     pub prefix: String,
 }
+#[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
+pub struct FindPrefixAlias {
+    pub directory: String,
+    pub prefix: String,
+}
+worth_query_structured_value_binding!(pub PrefixAliasInputBinding for FindPrefixAlias { identity: "managed-catalog.prefix-alias-input.v1" });
 worth_query_structured_value_binding!(pub SourceInputBinding for ReadSource { identity: "managed-catalog.source-input.v1" });
 worth_query_structured_value_binding!(pub PrefixInputBinding for FindPrefix { identity: "managed-catalog.prefix-input.v1" });
 fn source_scope(input: ReadSource) -> String {
     input.directory
 }
 fn prefix_scope(input: FindPrefix) -> String {
+    input.directory
+}
+fn prefix_alias_scope(input: FindPrefixAlias) -> String {
     input.directory
 }
 worth_query_query_binding!(pub SourceBinding for ReadSource, schema Catalog,
@@ -207,4 +216,16 @@ worth_query_query_binding!(pub PrefixBinding for FindPrefix, schema Catalog,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
     field DirectoryIdentity::reference(), value prefix_scope, limits results 16
+);
+// A genuine second nominal binding to the same compiled Parent Query.
+worth_query_query_binding!(pub PrefixAliasBinding for FindPrefixAlias, schema Catalog,
+    identity "managed-catalog.prefix-alias-binding.v1", input PrefixAliasInputBinding,
+    query PrefixQuery, parameters ParametersBinding => |input: &FindPrefixAlias| {
+        ApplicationQueryParameterSet::new().bind(probe(), Probe { prefix: input.prefix.clone() }).unwrap()
+            .bind(enabled_parameter(), true).unwrap()
+    },
+    result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
+    principal_identity u64, identity_binding U64ApplicationValueBinding,
+    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
+    field DirectoryIdentity::reference(), value prefix_alias_scope, limits results 16
 );
