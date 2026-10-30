@@ -4,6 +4,7 @@ pub struct Token<'a> {
     pub text: &'a str,
     pub start: usize,
     pub end: usize,
+    matching: usize,
 }
 pub fn tokens(source: &str) -> Vec<Token<'_>> {
     let b = source.as_bytes();
@@ -88,30 +89,33 @@ pub fn tokens(source: &str) -> Vec<Token<'_>> {
             text: &source[start + if raw_identifier { 2 } else { 0 }..i],
             start,
             end: i,
+            matching: result.len(),
         });
+    }
+    let mut openings = Vec::new();
+    for at in 0..result.len() {
+        match result[at].text {
+            "(" | "[" | "{" => {
+                result[at].matching = result.len() - 1;
+                openings.push(at);
+            }
+            ")" | "]" | "}" => {
+                if let Some(open) = openings.pop() {
+                    if matches!(
+                        (result[open].text, result[at].text),
+                        ("(", ")") | ("[", "]") | ("{", "}")
+                    ) {
+                        result[open].matching = at;
+                    }
+                }
+            }
+            _ => {}
+        }
     }
     result
 }
 pub fn close(tokens: &[Token<'_>], start: usize) -> usize {
-    let (open, shut) = match tokens[start].text {
-        "{" => ("{", "}"),
-        "[" => ("[", "]"),
-        "(" => ("(", ")"),
-        _ => return start,
-    };
-    let mut depth = 0;
-    for (i, t) in tokens.iter().enumerate().skip(start) {
-        if t.text == open {
-            depth += 1;
-        }
-        if t.text == shut {
-            depth -= 1;
-            if depth == 0 {
-                return i;
-            }
-        }
-    }
-    tokens.len() - 1
+    tokens[start].matching
 }
 /// Test regions include inline module bodies and file-mounted test modules.
 pub fn test_modules<'a>(tokens: &'a [Token<'a>]) -> Vec<(&'a str, usize, usize)> {

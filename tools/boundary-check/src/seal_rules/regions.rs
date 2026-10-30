@@ -64,6 +64,13 @@ pub fn declared(t: &[Token<'_>], test_ranges: &[(String, usize, usize)]) -> BTre
     let mut names = BTreeSet::new();
     let bodies = function_bodies(t);
     for i in 0..t.len().saturating_sub(1) {
+        if ![
+            "pub", "fn", "struct", "enum", "trait", "type", "mod", "const", "static", "use",
+        ]
+        .contains(&t[i].text)
+        {
+            continue;
+        }
         if bodies.iter().any(|(a, b)| i > *a && i < *b) {
             continue;
         }
