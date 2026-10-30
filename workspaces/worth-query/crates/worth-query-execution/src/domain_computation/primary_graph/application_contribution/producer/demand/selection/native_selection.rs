@@ -294,6 +294,29 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                             return Ok((delivery, delivery_entry));
                         }
                     }
+                    // A performed source has already executed this exact required
+                    // publication. Deliver its original Ready and receipt without
+                    // authorizing fresh work or manufacturing an input reuse key.
+                    // select_exact retains the existing read-only guard: if Ready
+                    // disappears, this Initial-only producer cannot run over live output.
+                    if may_rejoin_ready
+                        && selected.reuses_live_output_only
+                        && let Some(epoch) = source.output_source_epoch()
+                    {
+                        let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
+                            Family::IDENTITY, selected.identity.clone(), selected.applicability, epoch,
+                        );
+                        if let Some(_ready) = self.output_demands.committed_required_ready(
+                            &key,
+                            scope,
+                            observation.lifecycle_incarnation(),
+                            candidate.correspondence.as_ref(),
+                            &candidate.idempotency_key_identity,
+                        ) {
+                            selected.exact_retained_output = false;
+                            return Ok((selected, entry));
+                        }
+                    }
                 }
                 retained_output = true;
             }
