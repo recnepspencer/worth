@@ -26,7 +26,7 @@ pub(crate) use {
     worth_store::physical_runtime::ServingPhysicalRuntime,
 };
 
-pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::open_with_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
+pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::open_with_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::prepare_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
 pub(crate) use {crate::production_entry::ordered_journals::two_journals::assert_holds, crate::production_entry::ordered_journals::two_journals::digest, crate::production_entry::ordered_journals::two_journals::publish, crate::production_entry::ordered_journals::two_journals::Journal};
 pub(crate) use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
 
@@ -189,12 +189,11 @@ pub(crate) fn run_case(
     nth: NonZeroU64,
     directive: MediaFaultDirective,
 ) -> Exercised {
-    let store = prepared_store(target);
-    let Some((serving, activations)) =
-        open_with_faults(store.path(), &[(role, nth, directive.clone())])
-    else {
+    let Some(prepared) = prepare_faults(&[(role, nth, directive.clone())]) else {
         return crate::production_entry::ordered_journals::branch_transitions_oracle::Exercised::default();
     };
+    let store = prepared_store(target);
+    let (serving, activations) = prepared.open(store.path());
     activations[0].arm().unwrap();
     let outcome = publish(
         &serving,
@@ -282,6 +281,35 @@ pub(crate) fn run_case(
     Exercised {
         unresolved_refusal,
         retry_after_unresolved: leaves_fate_unresolved(&outcome) && head == target - 1,
+    }
+}
+
+#[test]
+fn refused_create_directives_preserve_transition_case_outcomes() {
+    for target in TARGETS {
+        let exercised = run_case(
+            target,
+            MediaOperationRole::CreateNew,
+            NonZeroU64::MIN,
+            MediaFaultDirective::IndeterminateAfterEffect,
+        );
+        assert!(!exercised.unresolved_refusal);
+        assert!(!exercised.retry_after_unresolved);
+    }
+}
+
+#[test]
+fn admitted_create_directives_exercise_transition_recovery() {
+    for target in TARGETS {
+        run_case(
+            target,
+            MediaOperationRole::CreateNew,
+            NonZeroU64::MIN,
+            MediaFaultDirective::FailBefore {
+                kind: std::io::ErrorKind::Other,
+                raw_os_error: None,
+            },
+        );
     }
 }
 

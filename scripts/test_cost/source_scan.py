@@ -110,9 +110,9 @@ def scan_text(text, context=''):
     return sorted(result, key=lambda r: (r['line'], r['kind']))
 
 
-def scan_workspace(manifest, repository):
+def scan_workspace(manifest, repository, packages=None):
     rows = []
-    for source in sources(manifest):
+    for source in sources(manifest, packages):
         for row in scan_text(source.text, source.context):
             rows.append(dict(row, package=source.package['name'],
                              path=source.path.relative_to(repository).as_posix()))

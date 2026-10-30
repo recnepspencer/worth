@@ -1635,6 +1635,7 @@ dependencies = [
  "worth-store-test-support",
  "worth-store-testkit-executables",
  "worth-store-testkit-recovery-runtime",
+ "worth-store-testkit-sweep",
 ]
 
 [[package]]

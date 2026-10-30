@@ -41,9 +41,9 @@ def includes_scheduled_selection(command):
     return False
 
 
-def collect(manifest, repository, lane_logs=(), discovered=None, selections=None, llvm=()):
+def collect(manifest, repository, lane_logs=(), discovered=None, selections=None, llvm=(), source_packages=None):
     repository, manifest = repository.resolve(), manifest.resolve()
-    sites = scan_workspace(manifest, repository)
+    sites = scan_workspace(manifest, repository, source_packages)
     lanes = {}
     for name, path in lane_logs:
         if name in lanes:

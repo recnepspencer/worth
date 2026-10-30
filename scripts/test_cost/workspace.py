@@ -49,12 +49,14 @@ def members(manifest):
     return result
 
 
-def sources(manifest):
+def sources(manifest, packages=None):
     result = []
     declaration = tomllib.loads(Path(manifest).read_text(encoding='utf-8'))
     inherited_edition = declaration.get('workspace', {}).get('package', {}).get('edition')
     for package in members(manifest):
         name = package['name']
+        if packages is not None and name not in packages:
+            continue
         root = package['manifest'].parent
         support = any(s in name for s in ('-court-', '-testkit', '-test-support', '-certification'))
         declaration = tomllib.loads(package['manifest'].read_text(encoding='utf-8'))

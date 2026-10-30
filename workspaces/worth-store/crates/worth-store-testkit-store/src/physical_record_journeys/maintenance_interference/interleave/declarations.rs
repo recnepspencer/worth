@@ -64,6 +64,8 @@ pub fn run_cold_extent(
     let checkpoint_finished = std::sync::atomic::AtomicBool::new(false);
     let foreground_finished = std::sync::atomic::AtomicBool::new(false);
     let floor_finished = std::sync::atomic::AtomicBool::new(false);
+    let (floor_completed, floor_completion) = std::sync::mpsc::sync_channel(1);
+    let (foreground_completed, foreground_completion) = std::sync::mpsc::sync_channel(1);
     std::thread::scope(|scope| {
         // Release before the scope joins workers if any observation panics.
         let _release_sync = crate::physical_record_journeys::maintenance_interference::sync::FileSyncPauseRelease::new(&gate);
@@ -189,14 +191,12 @@ pub fn run_cold_extent(
                 );
             }
             floor_finished.store(true, std::sync::atomic::Ordering::Release);
+            let _ = floor_completed.send(());
             drop(held);
         });
         let floor_deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
-        while !floor_finished.load(std::sync::atomic::Ordering::Acquire)
-            && std::time::Instant::now() < floor_deadline
-        {
-            std::thread::yield_now();
-        }
+        let _ = floor_completion
+            .recv_timeout(floor_deadline.saturating_duration_since(std::time::Instant::now()));
         assert!(
             floor_finished.load(std::sync::atomic::Ordering::Acquire),
             "the foreground floor did not admit while the checkpoint sync was paused"
@@ -218,16 +218,14 @@ pub fn run_cold_extent(
             );
             append(serving, policy, ordinal_base + 40, b"during-sync");
             foreground_finished.store(true, std::sync::atomic::Ordering::Release);
+            let _ = foreground_completed.send(());
         });
         // The gate stays closed until this wait ends, so completion here
         // proves the foreground did not queue behind the paused sync. The
         // bound only turns a hang into a failure.
         let hang_guard = std::time::Instant::now() + std::time::Duration::from_secs(120);
-        while !foreground_finished.load(std::sync::atomic::Ordering::Acquire)
-            && std::time::Instant::now() < hang_guard
-        {
-            std::thread::yield_now();
-        }
+        let _ = foreground_completion
+            .recv_timeout(hang_guard.saturating_duration_since(std::time::Instant::now()));
         let foreground_during_pause =
             foreground_finished.load(std::sync::atomic::Ordering::Acquire);
         let still_paused = !checkpoint_finished.load(std::sync::atomic::Ordering::Acquire);
