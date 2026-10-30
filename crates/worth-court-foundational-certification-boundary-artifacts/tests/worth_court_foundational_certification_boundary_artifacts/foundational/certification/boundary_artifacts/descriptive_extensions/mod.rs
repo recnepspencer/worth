@@ -1,6 +1,5 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::boundary_artifacts::descriptive_extensions::*;
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::admit_planned_work_boundary_artifact,
     worth_foundational::admit_same_family_boundary_artifact,
@@ -9,23 +8,7 @@ use {
     worth_foundational::derive_same_family_boundary_identity,
     worth_foundational::evaluate_planned_work_reserved_authority_transition_legality,
     worth_foundational::evaluate_same_family_reserved_authority_transition_legality,
-    worth_foundational::materialize_admitted_foundational_profile,
     worth_foundational::materialize_descriptive_boundary_surface,
-    worth_foundational::request_foundational_profile_set,
-    worth_foundational::AdmissionReadinessProfile, worth_foundational::CanonicalizationRuleVersion,
-    worth_foundational::CertificationPostureProfile,
-    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
-    worth_foundational::FoundationalBoundaryArtifactSurface,
-    worth_foundational::FoundationalBoundaryMaterializationSeam,
-    worth_foundational::FoundationalBoundaryMaterializationSource,
-    worth_foundational::FoundationalPlannedWorkBoundaryArtifactDenial,
-    worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput,
-    worth_foundational::FoundationalReservedAuthorityTransitionDenial,
-    worth_foundational::FoundationalReservedAuthorityTransitionKind,
-    worth_foundational::FoundationalSameFamilyBoundaryArtifactDenial,
-    worth_foundational::FoundationalSameFamilyBoundaryFamily,
-    worth_foundational::FoundationalSameFamilyBoundaryFamilyDenial,
-    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
 };
 
 #[test]

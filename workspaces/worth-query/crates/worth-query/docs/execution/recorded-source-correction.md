@@ -108,6 +108,20 @@ derives and captures the inverse input, resolves its scope, admits the current
 caller and runs the installed handler to build a candidate. State changes when
 `publish()` succeeds. Dropping the candidate releases its preparation.
 
+Correction eligibility consumes the selected receipt's retained observed source
+facts. Ordinary field reads and observed field queries retain field-precise
+support. A native output witness separately protects output custody; declaring
+created outputs does not automatically add all their fields to correction source
+support. Output fields named by `source_output_fields()` supply inverse derivation
+material separately from those observed source dependencies.
+
+The internal preparation consumes the compatibility owner's checked source,
+target ancestry and program interpretation together. Its retained evidence is
+specific to that occurrence and action. Publication still checks the actual
+target: even a later equal-value write makes an older prepared target stale.
+Compensation keeps its fresh ordinary reads, and reapplication keeps its
+separate declared source-action and active-reversal checks.
+
 ## Select a source after closing its operation
 
 Capture the completed receipt's `correction_source()` locator, then close
@@ -717,9 +731,134 @@ and the complete failure owner for another attempt.
 
 Recorded-inverse eligibility compares the original operation's complete semantic dependencies
 against the target. Own writes are compared with their committed after-state.
-A later primary edit conflicts with restoring primary; a secondary edit is
-preserved. A changed decision dependency also matters: changing a ceiling read
-by the source handler can refuse correction while primary still equals `11`.
+A live later primary edit conflicts with restoring primary; a secondary edit
+is preserved. A changed decision dependency also matters: changing a ceiling
+read by the source handler can refuse correction while primary still equals `11`.
+
+### Reverse consecutive original sources
+
+For supported dependencies on a canonical single-parent ancestry, a later
+write stops blocking an older source only after that exact performed occurrence
+has its own performed reversal on the selected ancestry. For example, start at
+`3`, perform A to `7`, perform B to `8`, reverse original B to `7`, then freshly
+select and reverse original A to `3`. Three sources use the same sequence in
+reverse order. Keep each original receipt; reversing a reapplication selects
+that new performed receipt. Reapplication itself does not undo the older source.
+
+For source and reversal endpoints needed across later publications, call
+`request.retain_current_read()` immediately after that endpoint lands and keep
+the returned read observation alive through the later correction. It retains
+that actual optional Product history; receipts alone do not extend its lifetime.
+Correction still performs fresh disclosure and current inverse admission.
+
+Query checks canonical authored writes, including equal-value writes that do
+not change the native field revision. It validates each source/reversal pair
+against genuine performed World and Native evidence, then compares actual
+field presence, value, kind and installed contract against the retained original
+source root. Matching values alone are insufficient. A live equal-value write,
+an unreversed reapplication, a changed independent decision dependency, or a
+reversal performed only on a sibling branch still blocks the older source.
+
+This restoration path supports complete entity/field dependency facts,
+whole-aspect revision facts, exact aspect-presence facts, and bounded installed
+equality selections over authoritative stored fields. For a whole aspect, Native
+resolves the complete installed scalar or struct field roster at both exact
+full-generation roots under compatible entity kind, binding and contract. Query
+selects Lifecycle, WholeAspect and every corresponding Field coordinate, including
+authored field no-ops. Original revision verification remains strict; target
+comparison requires complete aspect presence and content. Equal revisions or
+matching values alone never cancel a live authored occurrence. Unsupported
+shapes and Native request/storage failures retain typed `RestoredSupport`
+causes. Native
+resolves presence support from the original and target full-generation entity,
+kind and compatible installed aspect binding. Lifecycle and whole-aspect writes
+overlap presence; scalar `UpdateFields` also overlaps at its actual installed
+field because lowering can initialize the aspect. Struct field patches preserve
+the aspect container. Both the original and target presence booleans must still
+match the captured fact; canonical cancellation remains required even when the
+boolean never changed. A changed binding refuses before correction effects.
+The receiving path also selects a sealed retired output's exact
+full-generation entity Lifecycle. Original and target reads must both prove
+its actual kind, creation version and deletion version through Native's
+request-taking retirement reader. Missing or live records and different
+generations cannot supply that tuple. A replacement's live fields never supply
+the retired entity's former payload; the declared recorded inverse still owns
+the authored fields used for a fresh physical restoration. Canonical overlap
+and cancellation remain required before this comparison.
+
+Historical authored-write cursors now share the original and target's already
+admitted immutable basis custody. Closing either live branch does not require
+reopening it to read that selected history. Runtime affinity, exact selected
+commit/prefix, full-generation coverage, request and canonical-storage checks
+remain in force, and the last cursor releases its custody. Fresh live-branch
+admission still refuses a closed branch.
+
+Native resolves the actual single-field Authoritative or Planned index descriptor;
+Query preserves that descriptor rather than relabeling it as permission.
+The latter include exact positive and empty index support: authored equal-key
+writes and competing membership changes cannot disappear behind unchanged values.
+Rebased source-adjacency facts retain complete live membership at both exact
+roots: relation identity, cardinality, both full-generation endpoints and the
+ordinary deterministic order must agree under compatible installed relation and
+endpoint meaning. Canonical selection uses anchor, kind and direction, so it
+finds later entrants even when the original list was empty. Old and new endpoints
+in both directions contribute, including authored endpoint no-ops and a move
+whose other anchor is unchanged. A disjoint relation-field edit does not author
+membership. Separate fields read through a relationship remain dependencies;
+restoring the list does not restore a changed model resolution field.
+
+Strict original fact verification and genuine canonical cancellation still
+precede target support comparison. Advancing structural revisions during a real
+reverse is allowed; equal final lists never substitute for that reverse.
+Cascade retirement contributes membership occurrences. Audit retention carries
+its actual unchanged full-generation endpoints with the canonical lifecycle,
+even though it does not physically change adjacency. That history can be
+complete while audit-visible support comparison still returns
+`UnsupportedVisibility`. Genuinely missing membership evidence returns
+`IncompleteAdjacencyHistory` with the offending canonical ordinal/commit and
+known relation/kind/reason; unknown touch graphs refuse the whole interval.
+Previously committed lifecycle-only records remain incomplete; reconstruction
+cannot invent their missing endpoints from dense patch detail. Neither refusal
+asserts an empty list. Native storage, request and allocation refusals
+remain typed through `RestoredSupport::Adjacency` or its canonical-history cause.
+
+Unprojected aggregate, raw adjacency/relation/walk, other index kinds, workflow
+or publication facts and unproven merge intervals return typed
+`RestoredSupport` refusals. Missing canonical material or a discarded Native
+write generation also refuses; ordinary preparation does not scan history to
+rebuild it. Explicit Native reconstruction is a separate funded maintenance
+operation. Relevant write paging visits selected postings; World ancestry
+validation and explicit reconstruction retain their own history traversal cost.
+Neither derived postings nor serialized receipts extend canonical retention.
+A live generation can be discarded and rebuilt from its still-verified retained
+canonical owners. A checkpoint's decoded index-write descriptions do not carry
+that live verification; decoded-only intervals return incomplete-history refusal
+until a genuine preparation/replay owner reissues the live verification.
+
+See the [compiled correction example](../../../worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs)
+for selecting original receipts, retaining endpoint observations and publishing
+reversals through the ordinary request API.
+
+Complete authored retirement records the actual prior full-generation publication
+members, deletions, unlinks and endpoints at the selected ancestry and before-image.
+Native issues exact retirement succession custody for reissue; ordinary deletion
+and a producer Retire action do not reopen Birth. A later required-output failure
+does not roll back an already committed source edit: retain its performed owner
+and continue through the returned recovery/custody path.
+
+Current output reads select the latest actual publication within one installed
+producer family, exact partition and selected ancestry, then verify the selected
+role's live full-generation identity and correspondence. Missing or dead selected
+members remain typed failures. A stale prior-output denial does not mean absence.
+Ordinary Ready settlement still certifies currentness; a current committed output
+can be reused without another producer contact only through that owner.
+
+Query's observed-source commitment includes actual Native versions and the
+complete source footprint. Completed dependencies, current lineage heads and
+successors, settlement custody and exact output correspondence own publication
+freshness. Returning to earlier parameters, even with equivalent derived values,
+does not revive an older receipt. An unchanged retry reuses the exact current
+settlement; stale receipts remain superseded.
 
 The caller needs current disclosure and current admission for the inverse.
 Another authorized actor can correct the source after the original actor's

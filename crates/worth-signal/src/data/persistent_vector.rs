@@ -291,6 +291,10 @@ impl<T: Clone, const PAGE_LEN: usize> PersistentVector<T, PAGE_LEN> {
     }
 
     #[cfg(test)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn page_identities(&self) -> Vec<usize> {
         match &self.storage {
             PersistentVectorStorage::Exclusive(values) => values

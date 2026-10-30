@@ -138,7 +138,7 @@ pub(crate) fn read_free_space_membership(
         Field::ManifestPointer,
     )?;
     let mut previous = None;
-    for (index, entry) in frame.body.chunks_exact(40).enumerate() {
+    for (index, entry) in frame.body.as_chunks::<40>().0.iter().enumerate() {
         let start = 88 + index * 40;
         scope(
             matches!(entry[0], 1 | 2)

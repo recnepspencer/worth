@@ -2,8 +2,8 @@ pub(crate) use worth_store_offline_verifier::RecoveryObserverReport;
 pub(crate) use worth_store_recovery_runtime::RecoveryReportOutcome;
 
 pub(crate) use crate::history;
+pub(crate) use crate::oracle::support::checkpoint_recovery::independently_classify_in_flight;
 pub(crate) use crate::phase_eight_process::checkpoint_crash::case::fixture_setup::CheckpointFixture;
-pub(crate) use crate::phase_eight_process::checkpoint_crash::case::oracle::independently_classify_in_flight;
 pub(crate) use {
     crate::checkpoint_crash::evidence::snapshot::assert_snapshot_preserved,
     crate::checkpoint_crash::evidence::snapshot::snapshot_directory,
@@ -11,8 +11,8 @@ pub(crate) use {
     crate::phase_eight_process::checkpoint_crash::evidence::frontier::derive_expected_frontier,
 };
 pub(crate) use {
-    crate::phase_eight_process::checkpoint_crash::process::observer_report::fresh_observer,
-    crate::phase_eight_process::checkpoint_crash::process::writer_process::wait_for_marker,
+    crate::process::support::checkpoint_crash::observer_report::fresh_observer,
+    crate::process::support::checkpoint_crash::writer_process::wait_for_marker,
 };
 
 pub(crate) struct CrashObservation {

@@ -1,5 +1,5 @@
 error[E0451]: fields `root_node`, `affected_nodes`, `propagated_hierarchy_width`, `replay_digest` and `cancellation` of struct `AsyncNodeHierarchyCancellationReport` are private
-  --> tests/ui/async_node_hierarchy_cancellation_report_fields_are_private.rs:9:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_hierarchy_cancellation_report_fields_are_private.rs:9:9
    |
  8 |     let _report = AsyncNodeHierarchyCancellationReport {
    |                   ------------------------------------ in this type

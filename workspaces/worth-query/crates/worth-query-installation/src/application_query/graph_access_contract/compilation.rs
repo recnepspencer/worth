@@ -83,6 +83,9 @@ impl WorthQueryInstalledGraphReadContract {
             component_selection: definition
                 .component_selection()
                 .map(|selection| Arc::new(selection.clone())),
+            managed_index: definition
+                .managed_index()
+                .map(|selection| Arc::new(selection.clone())),
             predicates,
             ordering,
             maximum_traversal_depth,

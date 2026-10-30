@@ -3,22 +3,6 @@ use {
     worth_foundational::materialize_diagnostic_support_report,
     worth_foundational::plan_diagnostic_explanation_bundle,
     worth_foundational::plan_diagnostic_support_report,
-    worth_foundational::DiagnosticRichnessProfile,
-    worth_foundational::FoundationalDiagnosticAssemblyDebt,
-    worth_foundational::FoundationalDiagnosticAssemblyDebtClass,
-    worth_foundational::FoundationalDiagnosticDeliveryClass,
-    worth_foundational::FoundationalDiagnosticExplanationInput,
-    worth_foundational::FoundationalDiagnosticGapClass,
-    worth_foundational::FoundationalDiagnosticGapClosurePosture,
-    worth_foundational::FoundationalDiagnosticGapTarget,
-    worth_foundational::FoundationalDiagnosticMaterializationDenial,
-    worth_foundational::FoundationalDiagnosticNamedGap,
-    worth_foundational::FoundationalDiagnosticOutcomeKind,
-    worth_foundational::FoundationalDiagnosticPartiality,
-    worth_foundational::FoundationalDiagnosticSupportClaimStrength,
-    worth_foundational::FoundationalDiagnosticSupportInput,
-    worth_foundational::FoundationalDiagnosticSurfaceAvailability,
-    worth_foundational::SupportPostureProfile,
 };
 
 use {

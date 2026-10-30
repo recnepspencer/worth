@@ -4,9 +4,10 @@ mod readiness;
 
 pub use construction::{
     prepare_canonical_basis_sequence, prepare_owned_canonical_basis_sequence_admitted,
-    CanonicalBasisConstructionDenial, CanonicalBasisEntry, CanonicalBasisPreparationPhase,
-    CanonicalBasisPreparationQuote, CanonicalBasisPreparationStop, CanonicalBasisReadyArtifact,
-    CanonicalBasisSequence,
+    with_refused_canonical_sort_qualification_for_test, CanonicalBasisConstructionDenial,
+    CanonicalBasisEntry, CanonicalBasisPreparationPhase, CanonicalBasisPreparationQuote,
+    CanonicalBasisPreparationStop, CanonicalBasisReadyArtifact, CanonicalBasisSequence,
+    CanonicalSortImplementationDenial,
 };
 pub use grammar::{
     CanonicalBasisDomain, CanonicalBasisEntryId, CanonicalBasisEntryKind, CanonicalBasisLocus,

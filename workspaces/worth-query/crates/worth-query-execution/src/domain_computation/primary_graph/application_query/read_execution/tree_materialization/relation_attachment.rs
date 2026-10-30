@@ -46,6 +46,11 @@ pub(super) fn attach_relation(
                 && graph.entity_kind(relation.to()) == Some(layout.to)
         })
         .ok_or_else(|| traversal_denial(relation.result_path()))?;
+    if work.materialized() {
+        for before in 0..parents.len() {
+            work.material_tree::<EntityId>(before)?;
+        }
+    }
     let frontier = parents
         .iter()
         .map(WorthQueryApplicationProjectionNode::entity_id)
@@ -105,33 +110,44 @@ pub(super) fn attach_relation(
             ApplicationQueryResultTraversalDirection::Forward => (record.source, record.target),
             ApplicationQueryResultTraversalDirection::Reverse => (record.target, record.source),
         };
-        targets
-            .entry(parent)
-            .or_default()
-            .push(RelationProjectionTarget {
-                entity: child,
-                relation: record.relation_id,
-            });
+        if work.materialized() && !targets.contains_key(&parent) {
+            work.material_tree::<(EntityId, Vec<RelationProjectionTarget>)>(targets.len())?;
+        }
+        let selected = targets.entry(parent).or_default();
+        work.material_next(selected)?;
+        selected.push(RelationProjectionTarget {
+            entity: child,
+            relation: record.relation_id,
+        });
     }
-    let predicate_counts = if relation.predicate().is_some() {
-        parents
-            .iter()
-            .map(|parent| targets.get(&parent.entity_id()).map_or(0, Vec::len))
-            .collect::<Vec<_>>()
+    let target_count = if work.materialized() {
+        targets.values().try_fold(0usize, |count, values| count.checked_add(values.len())).ok_or_else(|| super::super::denial::relational_read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow, relation.result_path()))?
     } else {
-        vec![0; parents.len()]
+        0
     };
+    let predicate_counts = work.collect_material(
+        parents.len(),
+        parents.iter().map(|parent| {
+            if relation.predicate().is_some() {
+                targets.get(&parent.entity_id()).map_or(0, Vec::len)
+            } else {
+                0
+            }
+        }),
+        relation.result_path(),
+    )?;
     let predicate_sources = if relation.predicate().is_some() {
-        parents
-            .iter()
-            .flat_map(|parent| {
+        work.collect_material(
+            target_count,
+            parents.iter().flat_map(|parent| {
                 targets
                     .get(&parent.entity_id())
                     .into_iter()
                     .flatten()
                     .map(|target| target.entity)
-            })
-            .collect::<Vec<_>>()
+            }),
+            relation.result_path(),
+        )?
     } else {
         Vec::new()
     };
@@ -148,27 +164,45 @@ pub(super) fn attach_relation(
             work,
         )?;
     }
-    let counts = parents
-        .iter()
-        .map(|parent| {
+    let counts = if work.materialized() {
+        work.material_slots::<usize>(parents.len())?;
+        let mut counts = super::allocate_result_vector(parents.len(), relation.result_path())?;
+        for parent in parents.iter() {
             let count = targets.get(&parent.entity_id()).map_or(0, Vec::len);
             validate_relation_cardinality(relation, count)?;
-            Ok(count)
-        })
-        .collect::<Result<Vec<_>, WorthQueryApplicationReadExecutionDenial>>()?;
-    let selected_targets = parents
-        .iter()
-        .flat_map(|parent| {
+            counts.push(count);
+        }
+        counts
+    } else {
+        parents
+            .iter()
+            .map(|parent| {
+                let count = targets.get(&parent.entity_id()).map_or(0, Vec::len);
+                validate_relation_cardinality(relation, count)?;
+                Ok(count)
+            })
+            .collect::<Result<Vec<_>, WorthQueryApplicationReadExecutionDenial>>()?
+    };
+    let selected_count = if work.materialized() {
+        targets.values().try_fold(0usize, |count, values| count.checked_add(values.len())).ok_or_else(|| super::super::denial::relational_read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow, relation.result_path()))?
+    } else {
+        0
+    };
+    let selected_targets = work.collect_material(
+        selected_count,
+        parents.iter().flat_map(|parent| {
             targets
                 .get(&parent.entity_id())
                 .into_iter()
                 .flat_map(|ids| ids.iter().copied())
-        })
-        .collect::<Vec<_>>();
-    let child_ids = selected_targets
-        .iter()
-        .map(|target| target.entity)
-        .collect::<Vec<_>>();
+        }),
+        relation.result_path(),
+    )?;
+    let child_ids = work.collect_material(
+        selected_count,
+        selected_targets.iter().map(|target| target.entity),
+        relation.result_path(),
+    )?;
     let mut children = project_nodes(
         execution,
         runtime,

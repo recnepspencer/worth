@@ -1,6 +1,5 @@
 #[allow(unused_imports)]
 use crate::terminal_projection_quarantine_ui::*;
-use std::path::Path;
 use worth_store_test_support::compiler_boundary::UiCompilerEnvironment;
 
 use worth_store_test_support::compiler_boundary::read_ui_fixture_suite;

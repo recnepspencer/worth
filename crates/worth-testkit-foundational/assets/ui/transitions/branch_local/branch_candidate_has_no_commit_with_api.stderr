@@ -1,5 +1,5 @@
 error[E0599]: no method named `commit_with` found for struct `FoundationalBranchCandidateArtifact<T>` in the current scope
-  --> tests/ui/transitions/branch_local/branch_candidate_has_no_commit_with_api.rs:22:23
-   |
-22 |     let _ = candidate.commit_with(());
-   |                       ^^^^^^^^^^^ method not found in `FoundationalBranchCandidateArtifact<&str>`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/branch_local/branch_candidate_has_no_commit_with_api.rs
+  |
+  |     let _ = candidate.commit_with(());
+  |                       ^^^^^^^^^^^ method not found in `FoundationalBranchCandidateArtifact<&str>`

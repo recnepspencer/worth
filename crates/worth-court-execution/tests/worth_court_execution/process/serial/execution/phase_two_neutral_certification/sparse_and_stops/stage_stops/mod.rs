@@ -9,13 +9,9 @@ use {
     crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::interior,
     crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::Subdomain,
     crate::phase_two_neutral_certification::isolated_context::EDITIONS,
-    crate::phase_two_neutral_certification::isolated_context::TEST_LOCK, std::time::Instant,
-    worth_execution::CancellationSource, worth_execution::CancellationToken,
-    worth_execution::DecomposeFailure, worth_execution::ExecutionMap,
-    worth_execution::InterfaceSolution, worth_execution::MapKernelFailure,
-    worth_execution::MapKernelStop, worth_execution::MapOutcome, worth_execution::MapStop,
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionPosture,
-    worth_foundational::PartitionIdentity,
+    crate::phase_two_neutral_certification::isolated_context::TEST_LOCK,
+    worth_execution::ExecutionMap, worth_execution::InterfaceSolution,
+    worth_execution::MapKernelFailure,
 };
 
 #[test]

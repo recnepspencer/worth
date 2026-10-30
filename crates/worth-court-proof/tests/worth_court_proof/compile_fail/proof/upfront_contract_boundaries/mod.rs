@@ -1,9 +1,7 @@
 #[allow(unused_imports)]
 use crate::shared_support as support;
 
-use crate::shared_support::compile_fail::run_compile_fail_bundle;
-
-use crate::shared_support::contracts;
+use crate::compile_fail::harness::run_compile_fail_bundle;
 
 #[test]
 fn every_upfront_contract_door_is_compiler_enforced() {

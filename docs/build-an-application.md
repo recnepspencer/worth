@@ -18,7 +18,7 @@ this guide explain the underlying contracts and support specialized composition.
 
 | Your next task | Start here | What you supply |
 |---|---|---|
-| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md) | A source receipt, current principal, target branch and client key; the contribution declares the inverse and disclosure query. |
+| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
@@ -599,6 +599,15 @@ with value 11. Run it from the repository root:
 ```text
 cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-topology-entry --example required_feature
 ```
+
+`DecisionReader::prior_output_preserved_or_created` selects the latest publication
+of its declared Create/Preserve bindings in one installed output family, exact
+source partition and selected ancestry. The selected typed role must still be
+a live full-generation entity. A stale or missing member is a denial; it never
+falls back to an older binding. Ordinary `prior_output` keeps its exact-binding
+historical meaning. Query owns source-native-version commitment, completed
+dependencies and current publication custody; a separate application command
+nonce is not a replacement for that contract.
 
 ### 3.2 Attach actions to features
 
@@ -1832,7 +1841,33 @@ continue to refuse publication.
 `WorthQueryProgramApplicationRuntime` dereferences to the primary-graph
 application runtime, so `request(..)`, `discovery()`, `current_world()`,
 `installed_schema()`, `branches()`, and `conditional::<T>()` are all available
-on it. Its own methods:
+on it.
+
+For an isolated branch from a selection already admitted in a host advancement,
+consume that selection with `runtime.branches().fork_expected(selected)` and
+create it with the same runtime's phase. The returned candidate retains its
+source; use `candidate.branch()` for ordinary requests and `candidate.close(&phase)`
+to discard it. After the requests succeed, `candidate.adopt(&mut model.head, &phase)`
+replaces the actual model-owned branch slot only while the original source is
+still current. It returns the previous branch for ordinary close. A refused
+adoption leaves the slot unchanged and returns the candidate with its typed
+denial; a later refused close of the previous branch does not undo adoption.
+Source movement also refuses creation, and a refused candidate close retains
+the candidate with its original denial. See
+[fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection).
+
+To store the selected basis as application data, serialize
+`selected.describe_basis()` before releasing the selection. After loading that
+record through an ordinary READ request, deserialize it as
+`WorthQueryExpectedProductBasisDescription` and call
+`runtime.branches().select_expected(&description, &phase)`. This asks the original
+installed World and Native owners to admit that exact basis; stale, retired,
+foreign and unsupported descriptions refuse. The description retains no live
+selection and supplies no READ or mutation permission. Pass the returned
+selection to `fork_expected`, then use the same candidate/adoption lifecycle.
+See [store an expected basis](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#store-an-expected-basis-and-select-it-again).
+
+Its own methods:
 
 | Method | Returns |
 |---|---|
@@ -1849,7 +1884,7 @@ Features, connections, and rules come from `installed_program()`, not from
 discovery.
 
 Managed asynchronous resource requests are available through Decl/Host following
-[9.18.1 Phase 8 acceptance](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
+[Managed async resource contract](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
 [Application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md)
 documents the concrete `request.resources()` start/advance/inspection/close path,
 installed provider, finite ingress, exact selector reclaim and recovery handoff.
@@ -1881,6 +1916,19 @@ activation to name a supported program. For an app-owned predecessor mapping,
 `WorthQueryCheckpointProgramPredecessor` rendering and admits the current target
 through the ordinary program/roster installation path. The predecessor rendering
 never becomes a program revision or a roster member.
+
+For fresh installation with a separately funded setup request, borrow that original
+request with `host::application_contribution::with_bootstrap_advancement_from_request`.
+Call `host::application_installation::in_memory_rostered_program_in_advancement` with
+the phase first, followed by the validated program, roster, declaration,
+configuration, build identity, World limits and ordinary seed callback. It uses the
+same construction and roster core as default installation. The phase's original
+work, memory, cancellation and deadline govern all setup; the installed World's
+request policy remains the one declared in its limits. A larger seed grant therefore
+cannot make a zero-work runtime query succeed. Default `in_memory_program` and
+`in_memory_rostered_program` still open their bootstrap from the World policy.
+The public-entry funding, cancellation and memory regressions live in
+`topology_entry/src/checkpoint_recovery/support/bootstrap_funding.rs`.
 
 When installation belongs to an already admitted execution attempt, borrow its
 `ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
@@ -2151,8 +2199,36 @@ let cancellation = WorthQueryCancellationSource::new();
 let scope = WorthQueryRequestScope::new(Some(Instant::now() + Duration::from_secs(60)), cancellation.token());
 ```
 
-The entity an operation acts on is a different thing: the intent's *scope
-binding*, shown next.
+#### Read governed data at one observation
+
+Retain a read observation when the data and a later basis description must name
+the same committed state. A governed query at that observation uses its original
+data and freshly checks the current principal, capability and READ policy on the
+requested branch. Revoking current READ therefore also refuses an older read.
+
+This sequence uses the query and capability names from the compiled
+[model reader](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/model.rs):
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let request = runtime.request(&principal, &scope).on_branch(model_branch);
+let observation = request.retain_current_read()?;
+let rows = request.at(&observation)
+    .query(ReadModel { model: label.clone() })
+    .execute_governed(
+        ReadDomain::reference(), InspectDomain::reference(), ReadAccess { model: label },
+    )?;
+```
+
+Keep the observation private until admission succeeds. To describe that same
+basis, use `observation.select_on(&phase, runtime)?.describe_basis()` inside the
+request's `with_application_advancement` call. The description grants no further
+permission and may already be stale for `select_expected` if the head moved.
+Drop the observation when its reads are finished. Managed-index open and rebuild
+require a current request and refuse retained mode with `RequestMode`.
+
+The entity a mutation acts on is its intent's *scope binding*, shown next.
 
 ### 5.2 Mutations: intent, binding, handler
 
@@ -2218,6 +2294,15 @@ entities; required roles and cardinalities remain checked before publication. Ty
 validation, checked sizes, request cancellation and fallible effect-buffer growth
 remain with their original owners. Invariant validation and atomic commit still
 precede successful publication.
+
+When a stored reference includes the process-local Native runtime identity, compare
+it with `reader.reader().runtime_instance_id()` before using its entity coordinates.
+This readonly value describes the projection's owning runtime; it grants no access.
+The ordinary opaque `reader()` access keeps the decision's existing restriction on
+completed-decision reuse. Compare the admitted scope's full entity identity and
+observe its declared relation to the target before requesting a mutation target.
+The [compiled retention handler](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/retention/handler.rs)
+shows these checks against a stored typed edit.
 
 For an authored deletion, declare the entity read with
 `operation_read_entity(Operation::reference(), Entity::reference())` alongside
@@ -2410,6 +2495,212 @@ declared demand or assessment; it cannot replace required-output settlement.
 The runnable `ordinary_product_workflow` declares a real source-only action,
 advances its owner, observes native fresh receipt/result evidence, closes cleanup,
 and reads both current and retained product truth through the public facade.
+
+#### Execute a stored typed edit
+
+Decode the stored input through its declared field codec, then pass the typed
+value to the ordinary installed action. Register a delivery whose mode is
+`ApplicationSourceCompletion` and construct the owning operation with
+`request.mutate(input).without_source().idempotency_owned(key)` followed by
+`retain_operation::<Program, Action>(runtime)`. Supply a fresh authenticated
+request to `advance` and retain the returned owner until lawful close.
+
+READ admission for the record and mutation admission for the edit use their own
+declared policies. An operation's `assess_current_authorization(&request)` observes
+current mutation authorization without executing it. Its successful assessment
+does not authorize a later `advance`: execution checks the current grant again.
+The [compiled grant transition](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/mutation_authorization.rs)
+revokes the mutation grant while both model and proposal reads remain lawful,
+then restores it and advances the same retained operation.
+
+Enforce value limits with an installed commit-boundary invariant. The
+[compiled retention action](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/mutation.rs)
+publishes ten days and refuses eleven through the installed maximum rule. The
+invariant violation returns `Terminal` with its exact commit denial and close
+custody. A domain refusal also retains its original native outcome in `Terminal`.
+Only outcomes classified by the native owner as retryable return `Progress` with
+`RetryableNoEffect` custody. An admission refusal returns `Refused` with the
+operation and typed denial. Match these variants before deciding what can be
+retried or closed.
+
+To evaluate ordered edits before selecting them as a model's state, create an
+exact-source candidate with `select_expected` and `fork_expected`. Check that
+the admitted product branch equals the model owner's actual head before
+construction: copied branches can contain the same entity occurrences. Assess
+current mutation authority on the source, then construct each ordinary execution
+owner on the candidate branch. A captured source-bound operation cannot be
+retargeted to the candidate.
+
+For that source assessment, use
+`request.advanced().mutate(input).without_source().assess_current_capability_authorization()`
+when the binding requires a capability. The raw request's
+`assess_current_authorization()` checks conventional policy. Both return an
+observation without claiming a key or running a handler; retain no execution
+permission from the result. An already retained operation's
+`assess_current_authorization(&fresh_request)` selects its binding's declared
+authorization mode itself.
+
+The [compiled staging example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/candidate.rs)
+loads a recorded three-day edit under a fresh caller, reads three on the staged
+candidate while the model still reads seven, and uses `candidate.adopt` to replace
+the model's actual mutable head. Prebuild metadata before this commit point and
+move it into the model while holding exclusive access to that model. Keep the
+returned previous branch and actual ordinary completion evidence; close the
+previous branch separately. In its two-edit case, the second request for eleven
+days receives the installed invariant refusal. The first staged edit remains
+readable as three, the model remains seven, and explicit close disposes of the
+retained candidate and operation.
+
+Handle a close refusal according to its owning posture. A refusal before
+retirement retains the candidate for a later close. `OwnerCleanupPending` means
+the candidate is already retired and carries the original cleanup owner. To
+dispose of that staged work, release its terminal evidence and retained readers,
+then retry that cleanup owner. A held reader can keep returning
+`WorldHistoryStillRetained`; keep the cleanup it returns until the reader is
+released and cleanup completes.
+
+#### Register attempts on a stable product
+
+Use an ordinary action on a separately owned, stable storage product to bind an
+attempt key to the complete selected input: proposal occurrence and revision,
+model, expected basis, and ordered typed edits. Reusing that native key resolves
+its original registration before another basis comparison. Changed parameters,
+targets, order or vector length receive ordinary `IdempotencyIntentDrift`.
+The native key includes its declared namespace and serialized caller key;
+the resolved principal and scope also bind the recorded intent. Reusing the same
+key from another principal therefore receives intent drift. A registration
+receipt proves registration; it supplies no model-adoption authority.
+
+The [compiled registration and result example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts.rs)
+uses a `LoadedProposal` to retain the originally selected domain data and its
+issuing storage product. It retains no read lease or permission. On each request,
+freshly admit proposal READ on that actual storage, current model READ, mutation
+authorization for the exact frozen edits, and result READ before filtering cached
+results. A different readable storage product cannot substitute for the issuer.
+The [storage-affinity and revocation cases](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts/disclosure.rs)
+show these checks with real grant transitions and cached results.
+
+Declare registration and result recording as `ApplicationSourceCompletion`
+actions and construct their owning operations with `retain_operation`. Advance
+with a fresh request on the original storage branch. Keep the returned owner on
+progress or refusal, and close completed or terminal custody through its native
+close method. If a write succeeds but result readback or close refuses, retain
+that completed operation alongside the original input and actual cause. A normal
+equivalent retry returns recovered evidence; it need not pass through a pending
+delivery state.
+
+Keep one pending acceptance inside the model that owns the mutable head. The
+[compiled ingress](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/ingress.rs)
+freshly admits reads and the incoming frozen edits, then attempts to resolve the native
+registration key before inspecting that slot or a cached result. Only an unseen
+key with an empty slot may start a new acceptance. A registered key with no result
+and no live continuation refuses; missing delivery is not permission to fork.
+An occupied slot retains its original input until registration has established
+a native intent binding. A different incoming input cannot replace it.
+
+Revise stored proposal intent through an ordinary observed field write. The
+[compiled revision operation](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/revision.rs)
+checks the actual proposal occurrence, membership and expected domain revision,
+then increments that revision while preserving format, model and recorded basis.
+Read the proposals collection for its current revision reference; loading the
+old reference refuses.
+An already registered attempt keeps its original frozen intent. Revised intent
+under that same attempt key receives native drift. An unregistered stale load
+cannot register against the revised record. Renew the recorded basis explicitly
+when starting from a moved model.
+
+A target's display name does not preserve its occurrence after retirement.
+The [compiled target replacement](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/target_replacement.rs)
+requires a separate management ability through actual grantor ownership, then
+unlinks, deletes, creates and links through observed native targets in one
+candidate. Retention-edit authority alone cannot perform that replacement.
+Read the replacement's actual target reference and record its fresh basis before
+accepting a new proposal. Old target references and another model incarnation's
+proposal storage refuse even when their display names are identical.
+
+If native resolution returns `ProviderUnavailable` after that same fresh
+admission, the compiled ingress can advance only the matching retained Claim
+recovery owner. Changed meaning under the same key still receives native intent
+drift. Missing or initial operation custody cannot use this recovery path or
+start a replacement attempt.
+
+Advance the retained acceptance with fresh requests. After adoption, retain the
+actual adoption owner while recording and reading back the result, then close
+the previous owned head. A result-READ refusal leaves that same adoption pending;
+restore the ordinary grant and resume it. Successful retries read the recorded
+result without adopting again. Closing the model while an acceptance is pending
+returns the whole model so its operation and branch custody remain owned.
+
+To abandon a pre-adoption attempt, use the model owner's `dispose_pending` with
+a live request scope. It closes the actual metadata or candidate owner; it does
+not execute an unexecuted edit. This owner-local cleanup works even after the
+storage object has retired, without reading business data or disclosing inputs,
+results or identifiers. The response is opaque; detailed native refusal evidence
+stays inside the attempt and requires ordinary admission to inspect.
+
+If candidate close returns `OwnerCleanupPending`, retry the retained cleanup
+owner rather than closing the retired branch again. Release external readers
+and disposed evidence receipts before expecting their retained history to clear.
+Disposing a registered attempt leaves its real Claim row committed; the same key
+with no result or continuation still refuses. After adoption, disposal retains
+the committed continuation. Use acceptance for result recording and normal
+previous-head close. Inspect retained close failures through the admitted
+`inspect_attempt` entrance.
+
+A failed preparation that created no candidate can also be disposed. This
+releases its pending slot while leaving its committed Claim intact; retrying
+that old key without a result still refuses. Record a fresh basis and use a new
+attempt key to proceed. Unpublished creation recovery, existing candidate
+custody and unresolved panicked handoffs remain retained rather than being
+discarded as owner-free refusals.
+
+For a preparation's `ProductUnpublished` creation failure, `dispose_pending`
+uses the actual creation recovery's `release_obligations`. A recovery refusal
+retains that owner. Once release transfers work to owner cleanup, further
+disposal retries that cleanup instead of releasing creation again. The
+[compiled creation cleanup](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/disposal/preparation.rs)
+preserves the native failure for admitted inspection and completes with the real
+creation-release or cleanup receipt. A late request stop preserves the completed
+disposal and reports its handoff; it does not recreate a candidate.
+
+If previous-head close returns `OwnerCleanupPending`, the head has already
+retired. Keep the performed adoption evidence and stored result while transferring
+that exact failure into its cleanup owner. The
+[compiled recovery](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/candidate/adoption/retired.rs)
+retries the original cleanup with a fresh scope, retaining its actual refusal
+while readers still hold history. Release those readers and retry the same owner.
+The selected new head stays in place throughout.
+
+The example's `FinishedAdoption` distinguishes an ordinary previous-head close
+receipt from a settled retired-head cleanup receipt. Inspect the corresponding
+variant; cleanup settlement supplies its actual cleanup receipt. Keep adoption,
+retirement and cleanup handoff denials with their respective outcomes. If cleanup
+succeeds before a late handoff refusal, retain that settled outcome and deliver
+the recorded result on retry.
+
+#### Record an actual adoption result
+
+Keep canonical result data separate from the command that records it. In the
+example, the adoption owner has private construction and retains the original
+ordinary completion evidence. `RecordResult::from_adopted` checks that owner
+against the supplied claim reference and its full frozen proposal. Its command
+supports serialization for ordinary mutation identity, with no deserialization
+or construction from a stored result row. Fresh results retain their actual
+returned values; recovered completions remain explicitly recovered.
+
+If a request stops after a source write completes, keep the refused owning
+operation. Advance that same owner with a fresh request: native authorization
+and key resolution run again, and its retained Fresh result remains Fresh. The
+[compiled late-stop example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts/handoff.rs)
+preserves the original returned value and input while the committed basis stays
+unchanged on retry. Close the completed owner after consuming its evidence.
+
+The [ordinary result handler](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/attempts/recording/handler.rs)
+readmits actual claim membership and full-generation identity, observes caller correspondence
+and complete result absence before creating the record. This lets publication
+validate those facts, including competing writes. Its recording receipt proves
+that write. Read the result through its declared canonical codec and current
+governed result policy; a cached row grants no permission to execute or adopt.
 
 #### Capture complete original meaning
 
@@ -5284,6 +5575,122 @@ Set optional published-snapshot, active-snapshot and prepared-candidate policies
 in `PublicationConfig`; `Some(amount)` selects a finite policy. Retain snapshots
 and candidates through their owning runtime and generation. Handle stale or
 foreign-runtime refusals and release each original holder when finished.
+
+### Construct committed provider indexes
+
+Declare an `ApplicationManagedIndexBinding` with its complete Source query,
+candidate entity, admitted Probe codec and versioned provider identity. Add its
+`ApplicationManagedIndexDefinition` to the schema and select it on the Parent
+query with `.managed_index(Index::reference(), probe_parameter)`. The contribution
+installs the matching pure provider with `setup.managed_index::<Index, _>(provider)`.
+Providers borrow disclosed, query-bound Source rows and finite node/candidate
+writers; they receive no mutation handle or reusable read permission.
+
+Source queries have no parameters and must have Public authorization and Public
+disclosure without capability or rule governance. Parent queries may use Public
+or Governed disclosure, with their own installed READ ability and capability
+admission. Opaque `InstalledPolicyRequired` disclosure is unsupported. Run index
+requests as current committed one-shot reads with the same admitted principal
+and full-generation scope.
+Parent admission and current READ/security checks precede cache/provider access;
+ordinary Parent predicates, final ordering, result limits and disclosure still
+apply after candidate selection.
+
+Call `request.query(intent).open_index::<Index>()` to obtain a Created registration,
+then `request.query(intent).rebuild_index(&index)` for explicit cold construction.
+Ordinary `execute()` returns typed `NotReady` while Created or Evicted; it does
+not silently rebuild or fall back to a scope-root query. Probe values share the
+same complete Source image. Source authored ordering remains intact; the provider
+receives a separate canonical full-generation source-slot order. Every publication
+on the owning branch makes the image cold again.
+
+For a governed Parent, use `open_index_governed` and `rebuild_index_governed`
+with the actual capability, operation and request input, then `execute_governed`
+for each read. Approved elevation has corresponding `open_index_approved`,
+`rebuild_index_approved` and `execute_approved` entrances. Each call freshly
+admits the Parent capability and READ policy before cache or provider access;
+its normal final disclosure still applies. A valid Public Source or a Ready
+cache does not authorize the Parent.
+
+Repeated opens share one registration. `index.lifecycle()` reports retained cache
+status, not fresh authorization. `evict()` releases its image; explicit rebuild
+is required before another indexed read. `close()` disposes and unregisters it
+for every sibling handle; later open creates a fresh registration. Dropping a
+handle leaves the runtime-owned cache alive; explicit close or final runtime
+disposal releases the registration's image. Outstanding results, Source
+observations or in-flight selections can retain their own backing. Final
+release requires those owners and all runtime keepalives to close or drop.
+A stopped cold rebuild may leave Failed status; it publishes no Ready image.
+Use a fresh lawful request for another explicit rebuild. Historical/pinned
+managed-index reads and rebuilds remain unsupported; ordinary historical Source
+reads retain their existing contract.
+
+Indexed results retain complete positive, empty and ordering dependencies from
+the original Source, including nonmatching rows. The ordinary `expect_source`
+and `expect_result_set` mutation entrances consume these observations under the
+current request. Keep the observation until the mutation consumes it. The
+mutation rechecks the complete Source: a previously nonmatching record entering
+an empty prefix invalidates the expectation. If the Source has changed, reread
+and reassess the operation instead of substituting only the returned rows.
+Reuse the operation's idempotency identity for a recorded retry; it does not
+repeat the completed mutation.
+
+Use the request-bearing mutation entrances for indexed observations. A lower-level
+conversion without an Execution request returns `ManagedSourceExpansionUnsupported`;
+supplying an allocation policy alone does not make that conversion available.
+
+An index belongs to its installed provider version, runtime, branch and
+full-generation scope. Open a new registration when any of those changes;
+a handle from another branch, installation or generation cannot be reused.
+Keep result owners only as long as needed, and close the shared registration
+when the application no longer needs the index.
+
+The
+[public prefix consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs)
+shows explicit construction, UTF-8 prefix reads, an ordinary scan oracle and
+shared-handle cleanup; its
+[provider adapter](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs)
+uses the same finite storage contract as other providers. Prefix v1 uses
+unnormalized, case-sensitive UTF-8 prefix matching. Construction consumes
+canonical full-generation Source order; the Parent returns final rows in
+identity order.
+
+The prefix and closed-box adapters declare the same source/probe/provider
+contract. Their probe codecs retain their complete canonical meaning:
+
+<!-- compiled: managed_prefix_index.rs -->
+```rust
+impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
+    type SourceBinding = query::SourceBinding;
+    type ProbeBinding = query::ProbeBinding;
+    type Entity = super::schema::Item;
+    const NAME: &'static str = "catalog_prefix_index";
+    const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
+    const PROVIDER_VERSION: u32 = 1;
+}
+```
+
+<!-- compiled: managed_box_index.rs -->
+```rust
+impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
+    type SourceBinding = query::SourceBinding;
+    type ProbeBinding = super::coordinates::Binding;
+    type Entity = Item;
+    const NAME: &'static str = "catalog_box_index";
+    const PROVIDER: &'static str = "managed-catalog.closed-box2.v1";
+    const PROVIDER_VERSION: u32 = 1;
+}
+```
+
+The box probe carries the numerical owner's explicit integer-length unit and XY
+frame. Its admitted codec reconstructs coordinates; `Box2::new` rejects reversed
+intervals before BVH navigation, preserving `BoxIndexDenial::Bounds` as the typed
+provider cause. Overlap is inclusive, so a shared boundary is a match, and
+distinct Source occurrences with equal bounds remain distinct rows. The
+[box scan comparison](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/geometry.rs)
+and [governed grant lifecycle](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/authority.rs)
+show ordinary final ordering, explicit rebuild and separate capability/READ
+revocation handling.
 
 ### Ordinary Query resource policies
 

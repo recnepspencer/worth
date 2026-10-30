@@ -26,6 +26,12 @@ pub struct DeltaFootprint {
     pub fields: BTreeSet<SemanticPath>,
 }
 
+impl Default for DeltaFootprint {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DeltaFootprint {
     pub fn new() -> Self {
         Self {

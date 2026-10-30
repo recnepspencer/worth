@@ -1,17 +1,11 @@
 // Payload admission, replacement, and transfer retain one ledger charge.
 #[allow(unused_imports)]
 use crate::memory_reservation::isolated_context::payload_custody::*;
-pub(crate) use std::cell::Cell;
 pub(crate) use {
     crate::memory_reservation::ordinary_context::authority,
     crate::memory_reservation::ordinary_context::request,
     crate::memory_reservation::ordinary_context::PROCESS_BYTES,
-    crate::memory_reservation::ordinary_context::SERIAL, worth_execution::MemoryLimitDenial,
-    worth_execution::MemoryLimitLevel,
-};
-pub(crate) use {
-    worth_execution::ExecutionMemoryReservation, worth_execution::ExecutionResourceLease,
-    worth_execution::LeaseDenial,
+    crate::memory_reservation::ordinary_context::SERIAL,
 };
 
 #[test]

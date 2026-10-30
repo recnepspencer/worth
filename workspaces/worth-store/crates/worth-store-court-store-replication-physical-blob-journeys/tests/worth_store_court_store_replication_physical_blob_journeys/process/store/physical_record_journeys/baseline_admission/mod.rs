@@ -1,0 +1,257 @@
+use {
+    worth_store::physical_runtime::RecordStoreInitializationOutcome,
+    worth_store::physical_runtime::RecordStoreOpenOutcome,
+};
+
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::durability,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+    worth_store_testkit_store::physical_record_journeys::serving_from_open,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
+
+#[test]
+fn foreign_durability_policy_rebinds_before_any_target_media_effect() {
+    let parent = tempfile::tempdir().unwrap();
+    let source = media(&parent.path().join("source"));
+    let target = media(&parent.path().join("target"));
+    let policy = durability(&source);
+    let (format, _, access) = configuration();
+    let before = target.media_counters();
+
+    let outcome = target
+        .open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(
+            format, access, policy,
+        ))
+        .into_raw();
+    let worth_proof::TransitionOutcome::RebindRequired(rebind) = outcome else {
+        panic!("a durability policy from another Store must require rebinding");
+    };
+    assert_eq!(
+        rebind.reason(),
+        worth_store::physical_runtime::RecordServingRebindReason::PhysicalDurabilityStoreMismatch,
+    );
+    let target = rebind.into_runtime();
+    assert_eq!(target.media_counters(), before);
+    target.close();
+    source.close();
+}
+
+#[test]
+fn empty_bootstrap_create_and_reopen_converge() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("store");
+    let serving = serving_from_initialization(&root);
+    let store = serving.store_identity();
+    let initialization = serving.root_protocol_counters();
+    assert_eq!(
+        initialization
+            .root_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::Initialization),
+        1,
+        "initialization must enter its root only after resident admission",
+    );
+    assert_eq!(
+        initialization.selector_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::Initialization
+        ),
+        0,
+        "initialization publishes its selector without reading it",
+    );
+    assert!(root.join("families/records/bootstrap.catalog").is_file());
+    assert!(root
+        .join("families/records/roots/root-0000000000000001.manifest")
+        .is_file());
+    let expected_reopen_bytes = worth_store_testkit_store::durable_frame_oracle::artifact_bytes(
+        &root,
+        &[
+            "families/records/bootstrap.catalog",
+            "families/records/roots/root-0000000000000001.manifest",
+            "families/records/free-space/free-space-0000000000000001.manifest",
+        ],
+    );
+    serving.close();
+
+    let (format, _, access) = configuration();
+    let open_media = media(&root);
+    let before = open_media.media_counters();
+    let reopened = success(open_record_store!(open_media, |durability| {
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+    }));
+    let after = reopened.media_counters();
+    assert_eq!(reopened.store_identity(), store);
+    assert_eq!(
+        reopened
+            .root_protocol_counters()
+            .root_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::OrdinaryOpen),
+        1,
+        "ordinary open must enter root interpretation exactly once after admission",
+    );
+    assert_eq!(
+        reopened.root_protocol_counters().selector_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::OrdinaryOpen
+        ),
+        0,
+        "ordinary open has no Store-private selector decode route",
+    );
+    assert!(!reopened.observed_staging_residue());
+    assert_eq!(
+        after.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
+            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
+        3
+    );
+    assert_eq!(
+        after.completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
+            - before.completed_bytes_for(
+                worth_store_physical_backend::MediaOperationRole::PositionedRead
+            ),
+        expected_reopen_bytes
+    );
+    assert_eq!(after.replacements(), before.replacements());
+    reopened.close();
+}
+
+#[test]
+fn initialize_and_open_never_substitute_for_each_other() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("store");
+    let (format, placement, access) = configuration();
+    let absent = media(&root);
+    let open_outcome: RecordStoreOpenOutcome = open_record_store!(absent, |durability| {
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+    });
+    let absent = match open_outcome.into_raw() {
+        worth_proof::TransitionOutcome::Denied(denial) => denial.into_runtime(),
+        _ => panic!("C5_PREDICATE:lifecycle open must not initialize an absent record family"),
+    };
+    success(initialize_record_store!(absent, |durability| {
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
+    }))
+    .close();
+
+    let existing = media(&root);
+    let existing: RecordStoreInitializationOutcome =
+        initialize_record_store!(existing, |durability| {
+            worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                format, placement, access, durability,
+            )
+        });
+    assert!(matches!(
+        existing.into_raw(),
+        worth_proof::TransitionOutcome::Denied(_)
+    ));
+}
+
+#[test]
+fn operational_policy_drift_reopens_but_format_drift_does_not() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("store");
+    serving_from_initialization(&root).close();
+
+    let (format, _, _) = configuration();
+    let wider_access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .transfer_limit(worth_store::physical_runtime::RecordByteLimit::new(32_768).unwrap())
+        .scratch_limit(worth_store::physical_runtime::RecordByteLimit::new(32_768).unwrap())
+        .admit(format)
+        .unwrap();
+    let reopened = success(open_record_store!(media(&root), |durability| {
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, wider_access, durability)
+    }));
+    let changed_placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
+        .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(128).unwrap())
+        .admit(format)
+        .unwrap();
+    let completed = worth_store_testkit_store::durable_publication::root::publish_single_with_manifest_capacity_transition(
+        &reopened,
+        changed_placement,
+        worth_store::physical_runtime::PhysicalManifestCapacityTransition::ReconstructToRequested,
+        worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([165; 32]),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"policy drift".as_slice()]).unwrap(),
+    );
+    assert_eq!(completed.current_root().generation(), 2);
+    assert_eq!(completed.current_root().node_capacity(), 128);
+    reopened.close();
+
+    let changed_format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .page_size(worth_store::physical_runtime::PhysicalPageSizeClass::KiB32)
+            .admit()
+            .unwrap(),
+    );
+    let changed_access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .admit(changed_format)
+        .unwrap();
+    let wrong_media = media(&root);
+    let replacements = wrong_media.media_counters().replacements();
+    let rejected = open_record_store!(wrong_media, |durability| {
+        worth_store::physical_runtime::PhysicalRecordOpen::new(
+            changed_format,
+            changed_access,
+            durability,
+        )
+    })
+    .into_raw();
+    let worth_proof::TransitionOutcome::Denied(denial) = rejected else {
+        panic!("persisted format drift must be denied");
+    };
+    let worth_store::physical_runtime::RecordBootstrapDenial::PhysicalRecordFormatMismatch(
+        mismatch,
+    ) = denial.reason()
+    else {
+        panic!("format mismatch must retain both exact declarations")
+    };
+    assert_eq!(mismatch.expected(), changed_format.declaration());
+    assert_eq!(mismatch.persisted(), format.declaration());
+    let returned = denial.into_runtime();
+    assert_eq!(returned.media_counters().replacements(), replacements);
+    returned.close();
+}
+
+#[test]
+fn namespace_residue_cannot_elect_current_truth() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("store");
+    serving_from_initialization(&root).close();
+    let catalog = root.join("families/records/bootstrap.catalog");
+    std::fs::copy(
+        &catalog,
+        root.join("staging/records/bootstrap-0000000000000002.candidate"),
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("staging/records/duplicate.candidate"),
+        b"duplicate",
+    )
+    .unwrap();
+    let selected = root.join("families/records/roots/root-0000000000000001.manifest");
+    std::fs::copy(
+        &selected,
+        root.join("families/records/roots/root-0000000000000000.manifest"),
+    )
+    .unwrap();
+    std::fs::copy(
+        &selected,
+        root.join("families/records/roots/root-0000000000000002.manifest"),
+    )
+    .unwrap();
+    let foreign_root = parent.path().join("foreign-store");
+    serving_from_initialization(&foreign_root).close();
+    std::fs::copy(
+        foreign_root.join("families/records/roots/root-0000000000000001.manifest"),
+        root.join("families/records/roots/root-ffffffffffffffff.manifest"),
+    )
+    .unwrap();
+    let reopened = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        serving_from_open(&root)
+    }))
+    .unwrap_or_else(|_| {
+        panic!(
+            "C5_PREDICATE:independent-decision-path: unselected root artifacts cannot elect current truth"
+        )
+    });
+    assert!(reopened.observed_non_authoritative_residue());
+    reopened.close();
+}

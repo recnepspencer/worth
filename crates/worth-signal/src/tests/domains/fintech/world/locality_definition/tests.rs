@@ -98,7 +98,7 @@ fn churn_and_restore_cases_freeze_every_lifecycle_action_in_order() {
     churn.validate_generator_invariants();
     let churn_actions = churn.action_traces()[0].actions();
     assert_eq!(churn_actions.len(), 64);
-    for (round, actions) in churn_actions.chunks_exact(8).enumerate() {
+    for (round, actions) in churn_actions.as_chunks::<8>().0.iter().enumerate() {
         assert!(matches!(
             actions,
             [

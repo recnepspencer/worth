@@ -1,13 +1,10 @@
 // Actual array aliases, platform indices and named enum payloads share one wire grammar.
 #[allow(unused_imports)]
 use crate::value_shape::ordinary_context::boolean_grammar::*;
-pub(crate) use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
 pub(crate) use {
     worth_foundational::facade::decode_canonical_value,
     worth_foundational::facade::decode_canonical_value_with_admission,
     worth_foundational::facade::encode_canonical_value, worth_foundational::facade::CanonicalValue,
-    worth_foundational::facade::ValueCodecDenial as D,
-    worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::WorthValue,
 };
 
 #[test]

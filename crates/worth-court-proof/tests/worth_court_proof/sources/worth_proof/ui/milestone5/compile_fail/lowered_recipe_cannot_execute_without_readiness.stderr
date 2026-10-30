@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/milestone5/compile_fail/lowered_recipe_cannot_execute_without_readiness.rs:27:53
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone5/compile_fail/lowered_recipe_cannot_execute_without_readiness.rs:27:53
    |
 27 |     let _ = ExecuteReadyRecipeTransition.transition(lowered);
    |                                          ---------- ^^^^^^^ expected `ExecutionReadyRecipe<_, _>`, found `Recipe<Lowered, &str, ...>`
@@ -9,14 +9,14 @@ error[E0308]: mismatched types
    = note: expected struct `ExecutionReadyRecipe<_, _>`
               found struct `Recipe<worth_proof::Lowered, &str, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<u8>>>`
 help: the return type of this call is `Recipe<worth_proof::Lowered, &str, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<u8>>>` due to the type of the argument passed
-  --> tests/ui/milestone5/compile_fail/lowered_recipe_cannot_execute_without_readiness.rs:27:13
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone5/compile_fail/lowered_recipe_cannot_execute_without_readiness.rs:27:13
    |
 27 |     let _ = ExecuteReadyRecipeTransition.transition(lowered);
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-------^
    |                                                     |
    |                                                     this argument influences the return type of `transition`
 note: method defined here
-  --> src/transition/contract.rs
+  --> $WORKSPACE/crates/worth-proof/src/transition/contract.rs
    |
    |     fn transition(&self, input: Input) -> Self::Output;
    |        ^^^^^^^^^^

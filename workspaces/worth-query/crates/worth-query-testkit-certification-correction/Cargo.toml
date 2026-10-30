@@ -16,6 +16,7 @@ serde = { version = "1", features = ["derive", "rc"] }
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-decl = { workspace = true }
+worth-query-execution = { path = "../worth-query-execution" }
 worth-query-host = { workspace = true }
 worth-query-installation = { path = "../worth-query-installation" }
 worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }

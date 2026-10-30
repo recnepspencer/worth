@@ -61,9 +61,12 @@ where
                         expected_query_identity,
                         &graph.layout,
                         Some(self.admitted.read_set().admission.publication_request()),
-                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                        execution,
                     )
-                    .map_err(|_| denial(&node_path))?,
+                    .map_err(|cause| match cause.retention_denial() {
+                        Some(stop) => stop.clone().into_attempt_denial(&node_path),
+                        None => denial(&node_path),
+                    })?,
             );
             declared.push((operand.name, operand.expression_type));
             values.push(value);

@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/subscription_resume_readiness_not_executable.rs:15:60
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_resume_readiness_not_executable.rs:15:60
    |
 15 |         runtime.plan_subscription_delivery_replay(&active, readiness, vec![]);
    |                 ---------------------------------          ^^^^^^^^^ expected `BridgeSubscriptionResumeAdmission`, found `BridgeSubscriptionReplayReadiness`
@@ -7,7 +7,7 @@ error[E0308]: mismatched types
    |                 arguments to this method are incorrect
    |
 note: method defined here
-  --> src/facade/runtime/subscription.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription.rs
    |
    |     pub fn plan_subscription_delivery_replay(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

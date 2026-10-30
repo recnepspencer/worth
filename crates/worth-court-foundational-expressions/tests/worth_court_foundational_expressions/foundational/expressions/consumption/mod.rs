@@ -3,18 +3,11 @@
 // checks every value before evaluation can read it.
 #[allow(unused_imports)]
 use crate::expressions::ordinary_context::consumption::*;
-pub(crate) use {
-    worth_foundational::expression_api::ExpressionDenialFamily as Family,
-    worth_foundational::expression_api::ExpressionInputs,
-    worth_foundational::expression_api::ExpressionPathStep as Step,
-    worth_foundational::expression_api::ExpressionProfile,
-    worth_foundational::expression_api::ExpressionReadKind as Kind,
-    worth_foundational::expression_api::ExpressionValue,
-};
+pub(crate) use worth_foundational::expression_api::ExpressionValue;
 
 pub(crate) use {
-    crate::expressions::ordinary_context::admit, crate::expressions::ordinary_context::evaluate,
-    crate::expressions::ordinary_context::frame, crate::expressions::ordinary_context::schema,
+    crate::expressions::ordinary_context::admit, crate::expressions::ordinary_context::frame,
+    crate::expressions::ordinary_context::schema,
 };
 
 #[test]

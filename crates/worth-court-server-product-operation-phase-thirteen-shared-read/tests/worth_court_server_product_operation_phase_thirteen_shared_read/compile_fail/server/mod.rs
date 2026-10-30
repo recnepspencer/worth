@@ -1,2 +1,2 @@
-#[path = "compile_fail/mod.rs"]
-pub(crate) mod compile_fail;
+#[path = "sealed_artifacts/mod.rs"]
+pub(crate) mod sealed_artifacts;

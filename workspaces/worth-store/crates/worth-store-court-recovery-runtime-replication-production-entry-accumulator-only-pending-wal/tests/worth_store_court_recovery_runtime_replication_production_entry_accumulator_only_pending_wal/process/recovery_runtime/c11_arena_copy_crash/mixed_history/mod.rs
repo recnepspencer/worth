@@ -1,40 +1,15 @@
 #[allow(unused_imports)]
 use crate::c11_arena_copy_crash::mixed_history::*;
-use std::num::NonZeroU64;
-use worth_store_blob_chunks::BlobChunkSize;
-use worth_store_contracts::DurableArtifactFamilyId;
 use {
     crate::c11_arena_copy_crash::kill_after_final_wal, crate::c11_arena_copy_crash::load_identity,
     crate::c11_arena_copy_crash::observation::observe_copy_media,
     crate::c11_arena_copy_crash::recover, crate::c11_arena_copy_crash::selected_extent,
-    std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread,
-    std::time::Duration, std::time::Instant,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-    worth_store_physical_format::PersistedRecordIdentity,
-    worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
     worth_store_testkit_recovery_runtime::support::configuration,
     worth_store_testkit_recovery_runtime::support::generation,
     worth_store_testkit_recovery_runtime::support::observe_arena_in_separate_process,
     worth_store_testkit_recovery_runtime::support::open,
-    worth_store_testkit_recovery_runtime::support::read_record,
-    worth_store_testkit_recovery_runtime::support::scan,
     worth_store_testkit_recovery_runtime::support::EXTENT_BYTES,
 };
-use {
-    worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint,
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::BlobReadOpenFailure,
-    worth_store::physical_runtime::LayoutRebuildLimits,
-    worth_store::physical_runtime::PhysicalLayoutDenial,
-    worth_store::physical_runtime::RecordCountLimit,
-    worth_store::physical_runtime::RecordScanOutcome,
-    worth_store::physical_runtime::RecordScanRequest,
-};
-
-use crate::copy_frame;
 
 #[test]
 fn selected_current_source_copy_and_blob_generation_recover_together() {

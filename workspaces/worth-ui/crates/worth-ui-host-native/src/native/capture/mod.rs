@@ -74,12 +74,11 @@ pub(crate) fn close(state: &mut crate::native::UiNativeHostState) -> bool {
         .map(crate::native::UiNativePresentationOwners::access);
     captures.close(access.as_ref(), resources);
     let settled = captures.is_settled();
-    if settled {
-        if let Some(crate::native::UiNativePresentationOwners { device, .. }) =
+    if settled
+        && let Some(crate::native::UiNativePresentationOwners { device, .. }) =
             presentation_owners.as_mut()
-        {
-            let _ = crate::native::lifecycle::collect_settled_device_generations(device, resources);
-        }
+    {
+        let _ = crate::native::lifecycle::collect_settled_device_generations(device, resources);
     }
     settled
 }

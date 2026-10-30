@@ -52,7 +52,7 @@ impl WorthQueryPrimaryGraphResourceSupport {
     pub(in crate::domain_computation::primary_graph) fn snapshot_ref(
         &self,
     ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
-    {
+{
         &self.snapshot
     }
 }

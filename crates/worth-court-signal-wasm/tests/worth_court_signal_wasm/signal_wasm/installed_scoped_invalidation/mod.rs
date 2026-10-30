@@ -1,10 +1,4 @@
-use worth_proof::TransitionOutcome;
-use {
-    worth_signal::facade::apply_installed_scoped_changes, worth_signal::facade::Aspect,
-    worth_signal::facade::ChangedRegion, worth_signal::facade::InstalledSignalScopedChange,
-    worth_signal::facade::ScopeCoverage, worth_signal::facade::ScopePath,
-    worth_signal::facade::SignalGraph,
-};
+use worth_signal::facade::apply_installed_scoped_changes;
 
 #[test]
 fn wasm_supported_facade_retains_full_depth_opaque_locality() {

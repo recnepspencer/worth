@@ -1,13 +1,36 @@
-pub(crate) use {std::num::NonZeroU64};
+pub(crate) use std::num::NonZeroU64;
 pub(crate) use {std::path::Path, std::path::PathBuf};
-pub(crate) use {std::process::Child, std::process::Command, std::process::Output, std::process::Stdio};
+pub(crate) use {
+    std::process::Child, std::process::Command, std::process::Output, std::process::Stdio,
+};
 
-pub(crate) use {crate::phase_three_support::limit_declaration};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaFaultSchedule, worth_store::physical_runtime::certification::MediaOperationRole, worth_store::physical_runtime::certification::MediaPauseGate};
-pub(crate) use {worth_store::physical_runtime::FilesystemAccessPosture, worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryOpenRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority, worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration};
-pub(crate) use {worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use crate::phase_three_support::limit_declaration;
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaFaultSchedule,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+    worth_store::physical_runtime::certification::MediaPauseGate,
+};
+pub(crate) use {
+    worth_store::physical_runtime::FilesystemAccessPosture,
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority,
+    worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration,
+};
+pub(crate) use {
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
 pub(crate) const CHILD_ROOT: &str = "WORTH_C8_PHASE7_FAULT_CHILD_ROOT";
 pub(crate) const CRASH_MARKER: &str = "WORTH_C8_PHASE7_CLEANUP_CRASH_MARKER";
@@ -54,7 +77,9 @@ pub(crate) fn recover_with_schedule(
     schedule: MediaFaultSchedule,
 ) -> worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff {
     let reopened = reopen_with_schedule(root, schedule);
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
+        reopened.finish()
+    else {
         panic!("cleanup failure cannot invalidate recovered publication")
     };
     *handoff
@@ -65,14 +90,16 @@ pub(crate) fn reopen_with_schedule(
     schedule: MediaFaultSchedule,
 ) -> worth_store_recovery_runtime::ReopenedPhysicalRecovery {
     let limits = cleanup_limits();
-    let configuration = worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current();
-    let authority = worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority::acquire_for_certification(
-        root.to_path_buf(),
-        configuration.clone(),
-        limits,
-        schedule,
-    )
-    .unwrap();
+    let configuration =
+        worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current();
+    let authority =
+        worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority::acquire_for_certification(
+            root.to_path_buf(),
+            configuration.clone(),
+            limits,
+            schedule,
+        )
+        .unwrap();
     let profile = authority.qualified_backend_profile().clone();
     let request = worth_store_recovery_runtime::PhysicalRecoveryOpenRequest::declare(
         root.to_path_buf(),
@@ -101,7 +128,8 @@ pub(crate) fn reopen_with_schedule(
 pub(crate) fn publish_checkpoint(world: &PhysicalResidencyStoreWorld) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x77; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -115,8 +143,9 @@ pub(crate) fn publish_checkpoint(world: &PhysicalResidencyStoreWorld) {
 }
 
 pub(crate) fn cleanup_fault(directive: MediaFaultDirective) -> MediaFaultSchedule {
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::certification(worth_store::physical_runtime::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::certification(
+        worth_store::physical_runtime::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let authority = admission.fault_schedule_authority();
     authority
         .schedule(vec![authority.rule(
@@ -128,8 +157,9 @@ pub(crate) fn cleanup_fault(directive: MediaFaultDirective) -> MediaFaultSchedul
 }
 
 pub(crate) fn empty_fault_schedule() -> MediaFaultSchedule {
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::certification(worth_store::physical_runtime::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::certification(
+        worth_store::physical_runtime::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     admission
         .fault_schedule_authority()
         .schedule(Vec::new())
@@ -137,15 +167,18 @@ pub(crate) fn empty_fault_schedule() -> MediaFaultSchedule {
 }
 
 pub(crate) fn paused_cleanup_schedule() -> (MediaFaultSchedule, MediaPauseGate) {
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::certification(worth_store::physical_runtime::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::certification(
+        worth_store::physical_runtime::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let authority = admission.fault_schedule_authority();
     let gate = authority.pause_gate();
     let schedule = authority
         .schedule(vec![authority.rule(
             worth_store::physical_runtime::certification::MediaOperationRole::Delete,
             1,
-            worth_store::physical_runtime::certification::MediaFaultDirective::PauseAfter(gate.clone()),
+            worth_store::physical_runtime::certification::MediaFaultDirective::PauseAfter(
+                gate.clone(),
+            ),
         )])
         .unwrap();
     (schedule, gate)
@@ -201,11 +234,15 @@ pub(crate) fn spawn_crashing_child(test: &str, root: &Path, marker: &Path) -> Ch
 }
 
 pub(crate) fn required_child_root() -> PathBuf {
-    std::env::var_os(CHILD_ROOT).map(std::path::PathBuf::from).unwrap()
+    std::env::var_os(CHILD_ROOT)
+        .map(std::path::PathBuf::from)
+        .unwrap()
 }
 
 pub(crate) fn required_crash_marker() -> PathBuf {
-    std::env::var_os(CRASH_MARKER).map(std::path::PathBuf::from).unwrap()
+    std::env::var_os(CRASH_MARKER)
+        .map(std::path::PathBuf::from)
+        .unwrap()
 }
 
 pub(crate) fn assert_child_succeeded(name: &str, output: &Output) {

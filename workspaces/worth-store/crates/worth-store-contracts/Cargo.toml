@@ -17,4 +17,3 @@ serde = { version = "1", features = ["derive"] }
 
 [lib]
 "test" = false
-

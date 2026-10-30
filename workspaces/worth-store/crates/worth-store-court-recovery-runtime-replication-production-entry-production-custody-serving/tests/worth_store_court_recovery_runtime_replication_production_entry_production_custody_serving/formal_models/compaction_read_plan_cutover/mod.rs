@@ -1,8 +1,4 @@
-use worth_store_physical_isolation::CompactionReadPlanCompletion;
-use {
-    worth_store_formal_models::map_compaction_observation,
-    worth_store_formal_models::CompactionVisibilityAction,
-};
+use worth_store_formal_models::map_compaction_observation;
 use {
     worth_store_test_support::harness::physical_isolation::compaction::admitted_compaction_plan,
     worth_store_test_support::harness::physical_isolation::compaction::published_compaction,

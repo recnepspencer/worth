@@ -1,5 +1,5 @@
 //! Actual Query capture, native-region custody and ordinary fresh readmission.
-use worth_execution::{ExecutionAllocationDenialKind, LeaseDenial};
+use worth_execution::{ExecutionAllocationDenialClass, LeaseDenial};
 use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
 
 use super::{
@@ -42,13 +42,13 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
         panic!("genuine lease refusal must preserve its exact typed cause");
     };
     assert_eq!(
-        refusal.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial::Capacity {
+        refusal.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
                 requested: refusal.requested_payload_bytes().unwrap(),
                 admitted: 0,
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+            })
         ))
     );
     assert!(refusal.requested_payload_bytes().unwrap() > 0);

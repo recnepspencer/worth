@@ -1,17 +1,17 @@
 error[E0308]: mismatched types
-  --> tests/ui/performance/layouts/plain_claim_cannot_satisfy_layout_annotated_claim_api.rs:31:30
-   |
-31 |     require_layout_annotated(&claim);
-   |     ------------------------ ^^^^^^ expected `&FoundationalLayoutAnnotatedClaim<...>`, found `&...`
-   |     |
-   |     arguments to this function are incorrect
-   |
-   = note: expected reference `&FoundationalLayoutAnnotatedClaim<FoundationalAuthoritativePerformanceClaim>`
-              found reference `&FoundationalAuthoritativePerformanceClaim`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/layouts/plain_claim_cannot_satisfy_layout_annotated_claim_api.rs
+  |
+  |     require_layout_annotated(&claim);
+  |     ------------------------ ^^^^^^ expected `&FoundationalLayoutAnnotatedClaim<...>`, found `&...`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected reference `&FoundationalLayoutAnnotatedClaim<FoundationalAuthoritativePerformanceClaim>`
+             found reference `&FoundationalAuthoritativePerformanceClaim`
 note: function defined here
-  --> tests/ui/performance/layouts/plain_claim_cannot_satisfy_layout_annotated_claim_api.rs:10:4
-   |
-10 | fn require_layout_annotated(
-   |    ^^^^^^^^^^^^^^^^^^^^^^^^
-11 |     _claim: &FoundationalLayoutAnnotatedClaim<worth_foundational::FoundationalAuthoritativePerformanceClaim>,
-   |     --------------------------------------------------------------------------------------------------------
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/layouts/plain_claim_cannot_satisfy_layout_annotated_claim_api.rs
+  |
+  | fn require_layout_annotated(
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^
+  |     _claim: &FoundationalLayoutAnnotatedClaim<worth_foundational::FoundationalAuthoritativePerformanceClaim>,
+  |     --------------------------------------------------------------------------------------------------------

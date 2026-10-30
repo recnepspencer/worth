@@ -1,5 +1,9 @@
 #[allow(unused_imports)]
-pub(crate) use {std::collections::BTreeSet, worth_relational::facade::history::BranchId, worth_relational::facade::branch::RelationalBranchDeletionOutcome, worth_relational::facade::mvcc::RelationalTransactionIntent};
+pub(crate) use {
+    std::collections::BTreeSet, worth_relational::facade::branch::RelationalBranchDeletionOutcome,
+    worth_relational::facade::history::BranchId,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+};
 
 #[test]
 fn discarded_candidate_leaves_truth_unchanged_and_releases_its_obligation() {
@@ -38,7 +42,10 @@ fn discarded_candidate_leaves_truth_unchanged_and_releases_its_obligation() {
     .expect("the real storm branch admits its semantic reroute delta");
     let mut transaction = world
         .runtime
-        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .expect("the exact storm predecessor opens a transaction");
     transaction
         .push_batch(

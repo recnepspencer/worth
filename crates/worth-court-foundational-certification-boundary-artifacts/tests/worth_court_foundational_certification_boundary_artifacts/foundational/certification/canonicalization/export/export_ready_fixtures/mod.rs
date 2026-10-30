@@ -1,21 +1,9 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::canonicalization::export::export_ready_fixtures::*;
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::bridge_canonical_export_trust_boundary,
     worth_foundational::compare_canonical_exports,
-    worth_foundational::prepare_canonical_basis_bundle,
-    worth_foundational::prepare_canonical_basis_sequence,
-    worth_foundational::prepare_canonical_export_bundle, worth_foundational::CanonicalBasisDomain,
-    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
-    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact,
-    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalBundleReadyArtifact,
-    worth_foundational::CanonicalEquivalenceBasis,
-    worth_foundational::CanonicalExportComparisonOutcome, worth_foundational::CanonicalExportDebt,
-    worth_foundational::CanonicalExportManifestMismatchKind,
-    worth_foundational::CanonicalExportReadinessProofs, worth_foundational::CanonicalIntegerWidth,
-    worth_foundational::CanonicalMismatchKind, worth_foundational::CanonicalProducerShape,
-    worth_foundational::CanonicalizationRuleVersion,
+    worth_foundational::prepare_canonical_export_bundle,
 };
 
 #[test]

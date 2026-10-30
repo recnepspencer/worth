@@ -140,5 +140,6 @@ def rewrite(text):
     result.text = replace_spans(text, edits)
     result.text = re.sub(r'(?:\w+::)*run_compile_pass_bundle\s*,?\s*(?=[};])', '', result.text)
     result.text = re.sub(r'(?:#\[allow\(unused_imports\)\]\s*)?(?:pub\(crate\)\s+)?use\s*\{?\s*trybuild::TestCases\s*\}?\s*;', '', result.text)
+    result.text = re.sub(r'(?:#\[allow\(unused_imports\)\]\s*)?(?:pub(?:\([^)]*\))?\s+)?use\s*(?:\{\s*\})?\s*;', '', result.text)
     result.text += '\n' + '\n'.join(extra_tests) if extra_tests else ''
     return result

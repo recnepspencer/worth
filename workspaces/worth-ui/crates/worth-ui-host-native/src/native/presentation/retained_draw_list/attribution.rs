@@ -103,10 +103,10 @@ impl UiNativeRetainedDrawList {
     }
 
     pub(super) fn retain_current_paint_attribution(&mut self) {
-        if let Some((ordinal, item)) = self.current_render_top() {
-            if let Some(value) = self.attribution_for_item(item) {
-                self.last_paint_attribution = Some((ordinal, value));
-            }
+        if let Some((ordinal, item)) = self.current_render_top()
+            && let Some(value) = self.attribution_for_item(item)
+        {
+            self.last_paint_attribution = Some((ordinal, value));
         }
     }
 }

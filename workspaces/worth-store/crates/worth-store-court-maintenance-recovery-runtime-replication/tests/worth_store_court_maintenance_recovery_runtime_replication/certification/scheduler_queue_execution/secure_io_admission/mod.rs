@@ -1,18 +1,10 @@
 #[allow(unused_imports)]
 use crate::scheduler_queue_execution::secure_io_admission::*;
-use worth_store_contracts::QueueProducerResourceShape;
-use worth_store_test_support::harness::scheduling::scheduler_foreground_read_work;
 use {
     worth_store_io_scheduler::admit_backend_capability_for_scheduler_claim,
     worth_store_io_scheduler::admit_queue_execution_plan,
     worth_store_io_scheduler::admit_secure_io_scope_for_scheduler,
     worth_store_io_scheduler::reject_lower_authority_secure_io_scope_source,
-    worth_store_io_scheduler::IoSchedulerBackendCapabilityRequirement,
-    worth_store_io_scheduler::QueueExecutionAdmissionRequest,
-    worth_store_io_scheduler::QueueWorkDeclaration, worth_store_io_scheduler::SecureIoOperation,
-    worth_store_io_scheduler::SecureIoPostureRequirement,
-    worth_store_io_scheduler::SecureIoPreservationDenial,
-    worth_store_io_scheduler::SecureIoPreservationRequest,
 };
 use {
     worth_store_security::classify_iam_role_as_security_scope_source,

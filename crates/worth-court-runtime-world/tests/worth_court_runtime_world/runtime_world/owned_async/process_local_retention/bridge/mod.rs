@@ -1,13 +1,7 @@
-use worth_signal::facade::ResourceLifecycleClass;
 use {
     crate::owned_async::ordinary_context::fixture::admit_managed,
     crate::owned_async::ordinary_context::fixture::completion,
     crate::owned_async::ordinary_context::fixture::selected_fork,
-    crate::owned_async::ordinary_context::fixture::AsyncSourceCourt,
-};
-use {
-    worth_signal::facade::branch::SignalOwnedAsyncManagedReport as Report,
-    worth_signal::facade::branch::SignalOwnedAsyncQueueDenial as Denial,
 };
 
 #[test]

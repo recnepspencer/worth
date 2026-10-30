@@ -8,7 +8,7 @@ pub(crate) use {
 };
 pub(crate) use {
     worth_execution::CancellationSource, worth_execution::CancellationToken,
-    worth_execution::ExecutionAllocationDenialKind as Kind,
+    worth_execution::ExecutionAllocationDenialClass as Kind,
     worth_execution::ExecutionAllocationPolicy as Policy, worth_execution::ExecutionAuthority,
     worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionByteBuffer,
     worth_execution::ExecutionImmutableBytes, worth_execution::LeaseRequest,

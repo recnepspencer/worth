@@ -64,15 +64,29 @@ impl WorthQueryGraphProviderMemoryArena {
     }
 
     fn reserve(&self, byte_count: u64) -> Result<(), WorthQueryGraphProviderStepDenial> {
-        self.state
-            .retained_bytes
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-                current
+        {
+            let update_counter = &self.state.retained_bytes;
+            let mut current = update_counter.load(Ordering::Acquire);
+            loop {
+                let Some(updated_value) = current
                     .checked_add(byte_count)
                     .filter(|total| *total <= self.state.retained_bytes_ceiling)
-            })
-            .map(|_| ())
-            .map_err(|_| retained_budget_denial())
+                else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .map(|_| ())
+        .map_err(|_| retained_budget_denial())
     }
 }
 

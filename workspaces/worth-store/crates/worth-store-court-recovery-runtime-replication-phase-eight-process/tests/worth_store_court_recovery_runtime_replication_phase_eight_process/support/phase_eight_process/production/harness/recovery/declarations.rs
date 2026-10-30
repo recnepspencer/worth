@@ -5,10 +5,10 @@ pub(crate) use worth_store_recovery_runtime::RecoveryReportEnvelope;
 
 pub(crate) use crate::history;
 pub(crate) use {
-    crate::phase_eight_process::production::harness::process::assert_child_succeeded,
-    crate::phase_eight_process::production::harness::process::run_recovery_with_profile,
     crate::phase_eight_process::production::harness::ProcessWorld,
     crate::phase_eight_process::production::harness::RuntimeProcess,
+    crate::process::support::production_harness::assert_child_succeeded,
+    crate::process::support::production_harness::run_recovery_with_profile,
 };
 pub(crate) use {
     crate::production::fate_markers::indexed_fate_tags,

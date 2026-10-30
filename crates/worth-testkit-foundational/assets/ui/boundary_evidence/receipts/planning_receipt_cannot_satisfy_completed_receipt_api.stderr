@@ -1,7 +1,7 @@
 error[E0599]: no method named `completed_boundary` found for struct `FoundationalBoundaryEvidencePlanningReceiptArtifact` in the current scope
-  --> tests/ui/boundary_evidence/receipts/planning_receipt_cannot_satisfy_completed_receipt_api.rs:27:22
+  --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/receipts/planning_receipt_cannot_satisfy_completed_receipt_api.rs
    |
-27 |     let _ = planning.completed_boundary();
+   |     let _ = planning.completed_boundary();
    |                      ^^^^^^^^^^^^^^^^^^
    |
 help: there is a method `planned_boundary` with a similar name

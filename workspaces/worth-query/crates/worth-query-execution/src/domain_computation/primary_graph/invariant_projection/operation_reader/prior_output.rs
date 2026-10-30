@@ -17,6 +17,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod prior_member;
+mod succession;
 
 /// The read of a prior fixed role: the identity for an exactly-one role, an
 /// `Option` of it for an at-most-one role.

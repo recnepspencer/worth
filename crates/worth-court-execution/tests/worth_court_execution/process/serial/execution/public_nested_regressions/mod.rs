@@ -1,22 +1,7 @@
 #[allow(unused_imports)]
 use crate::public_nested_regressions::isolated_context::*;
-use {
-    std::num::NonZeroUsize, std::sync::atomic::AtomicU64, std::sync::atomic::AtomicUsize,
-    std::sync::atomic::Ordering, std::sync::Mutex, std::sync::OnceLock,
-};
 
-use {
-    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
-    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
-    worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
-    worth_execution::MapKernelStop, worth_execution::MapOutcome, worth_execution::MapPartition,
-    worth_execution::MapStop,
-};
-use {
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
-    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
-    worth_foundational::PartitionIdentity,
-};
+use worth_execution::MapKernelFailure;
 
 #[test]
 fn ignored_checkpoint_rejection_still_stops_public_map() {

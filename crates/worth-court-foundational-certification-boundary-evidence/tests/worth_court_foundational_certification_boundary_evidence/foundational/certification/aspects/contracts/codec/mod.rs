@@ -1,11 +1,16 @@
 // A codec is native contract meaning even when its physical scalar is unchanged.
-#[allow(unused_imports)] use crate::certification::ordinary_context::aspects::contracts::codec::*;
-use {worth_foundational::facade::aspects, worth_foundational::facade::canonical_basis_sequence_material, worth_foundational::facade::prepare_aspect_contract_for_canonical_basis, worth_foundational::facade::AspectContract, worth_foundational::facade::AspectContractRevision, worth_foundational::facade::AspectEvolutionKind, worth_foundational::facade::AspectIdentity, worth_foundational::facade::AspectKey, worth_foundational::facade::CanonicalDigestId, worth_foundational::facade::CanonicalizationRuleVersion, worth_foundational::facade::PortableAspectContract, worth_foundational::facade::ScalarAspectType, worth_foundational::facade::StructAspectShape};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::aspects::contracts::codec::*;
+use worth_foundational::facade::PortableAspectContract;
 
 #[test]
 fn codec_contract_is_in_the_native_basis_and_portable_roundtrip() {
-    let first = contract(Some(worth_foundational::facade::CanonicalDigestId::new([1; 32])));
-    let second = contract(Some(worth_foundational::facade::CanonicalDigestId::new([2; 32])));
+    let first = contract(Some(worth_foundational::facade::CanonicalDigestId::new(
+        [1; 32],
+    )));
+    let second = contract(Some(worth_foundational::facade::CanonicalDigestId::new(
+        [2; 32],
+    )));
     assert_ne!(material(first.clone()), material(second.clone()));
     assert_ne!(material(first.clone()), material(contract(None)));
     for original in [first, second, contract(None)] {
@@ -18,14 +23,18 @@ fn codec_contract_is_in_the_native_basis_and_portable_roundtrip() {
 
 #[test]
 fn codec_contract_change_is_not_ordinary_scalar_compatibility() {
-    let first = contract(Some(worth_foundational::facade::CanonicalDigestId::new([1; 32])));
+    let first = contract(Some(worth_foundational::facade::CanonicalDigestId::new(
+        [1; 32],
+    )));
     assert_eq!(
         first.classify_evolution_to(&first).kind(),
         worth_foundational::facade::AspectEvolutionKind::Unchanged
     );
     for next in [
         contract(None),
-        contract(Some(worth_foundational::facade::CanonicalDigestId::new([2; 32]))),
+        contract(Some(worth_foundational::facade::CanonicalDigestId::new(
+            [2; 32],
+        ))),
     ] {
         assert_eq!(
             first.classify_evolution_to(&next).kind(),

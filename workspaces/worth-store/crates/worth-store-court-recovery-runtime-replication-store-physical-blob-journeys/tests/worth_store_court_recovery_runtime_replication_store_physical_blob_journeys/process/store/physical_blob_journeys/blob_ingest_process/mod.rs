@@ -1,26 +1,8 @@
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_ingest_process::*;
-use {std::num::NonZeroU64, std::path::Path, std::process::Command};
 
-use worth_store_blob_chunks::BlobChunkSize;
 #[cfg(not(all()))]
 use {sha2::Digest, sha2::Sha256};
-use {
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-};
-
-use worth_store_testkit_store::allocation_probe::physical_blob_journeys::peak_live_bytes_during;
-use {
-    worth_store_testkit_store::fixture::admitted_blob_scope,
-    worth_store_testkit_store::fixture::placement,
-    worth_store_testkit_store::fixture::serving_from_initialization,
-    worth_store_testkit_store::fixture::serving_from_open,
-};
-
-pub(super) use crate::physical_blob_journeys::blob_ingest_process::range_read::reader;
 
 // The heap ceiling measures the production feature graph. Certification's
 // retained allocation trace is separately exercised by the crash/trace lane.

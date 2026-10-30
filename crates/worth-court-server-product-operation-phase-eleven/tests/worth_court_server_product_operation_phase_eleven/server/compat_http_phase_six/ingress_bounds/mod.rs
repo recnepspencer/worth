@@ -1,14 +1,12 @@
-#[allow(unused_imports)] use crate::compat_http_phase_six::ordinary_context::ingress_bounds::*;
-use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
+#[allow(unused_imports)]
+use crate::compat_http_phase_six::ordinary_context::ingress_bounds::*;
 
-use {flate2::write::GzEncoder, flate2::Compression};
-use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerUploadChunk, worth_server::WorthServerUploadContentEncoding, worth_server::WorthServerUploadManifest, worth_server::WorthServerUploadPart, worth_server::WorthServerUploadTransferMode};
-
-use {crate::compat_http_phase_six::ordinary_context::compat_http_phase_six_assertions::assert_upload_denial};
-use {worth_testkit_server::shared_support_compat_http_phase_six_runtime::build_phase_six_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_six_runtime::compat_upload_denied, worth_testkit_server::shared_support_compat_http_phase_six_runtime::compat_upload_execution_input};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledCountingTestWorkspaceProvider};
-use {crate::compat_http_phase_six::ordinary_context::upload_fixtures::single_insert_body};
+use crate::compat_http_phase_six::ordinary_context::compat_http_phase_six_assertions::assert_upload_denial;
+use {
+    worth_testkit_server::shared_support_compat_http_phase_six_runtime::build_phase_six_server_with_workspace_provider,
+    worth_testkit_server::shared_support_compat_http_phase_six_runtime::compat_upload_denied,
+    worth_testkit_server::shared_support_compat_http_phase_six_runtime::compat_upload_execution_input,
+};
 
 #[test]
 fn compat_http_chunked_and_compressed_ingress_enforces_exact_bounds() {

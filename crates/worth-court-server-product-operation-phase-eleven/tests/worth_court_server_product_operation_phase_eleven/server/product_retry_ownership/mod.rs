@@ -1,14 +1,12 @@
 // Response replay ownership at the real Server boundary, not native Query custody proof.
-#[allow(unused_imports)] use crate::product_retry_ownership::ordinary_context::*;
-use {serde::Serialize};
-use {serde_json::json};
-use {std::sync::Arc, std::sync::Mutex};
-use {worth_proof::TransitionOutcome};
-use {worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompletedProductOperation, worth_server::WorthServerConfig, worth_server::WorthServerDurableProductMutationContract, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationRegistration, worth_server::WorthServerProductAdapterCertificationCode, worth_server::WorthServerProductAdapterExecutionError, worth_server::WorthServerProductAdapterRegistry, worth_server::WorthServerProductApplicationAdapter, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerProductAuthorityScope, worth_server::WorthServerProductIdempotencyKey, worth_server::WorthServerProductIdempotencyRetention, worth_server::WorthServerProductOperationBaseDigest, worth_server::WorthServerProductOperationBasisKind, worth_server::WorthServerProductOperationDeclaration, worth_server::WorthServerProductOperationDenial, worth_server::WorthServerProductOperationErrorMaps, worth_server::WorthServerProductOperationOutcome, worth_server::WorthServerProductOperationPayload, worth_server::WorthServerProductOperationSuccess, worth_server::WorthServerProductOperationSupportSnapshot, worth_server::WorthServerProductResultContract, worth_server::WorthServerProductResultValue, worth_server::WorthServerProductRetryOwner, worth_server::WorthServerProductSessionCreationRequest, worth_server::WorthServerScheduledProductOperation, worth_server::WorthServerWorthNativeProductMutationCommand, worth_server::WorthServerWorthNativeSessionInput};
+#[allow(unused_imports)]
+use crate::product_retry_ownership::ordinary_context::*;
+use serde_json::json;
 
 #[test]
 fn application_custody_reenters_fresh_admission_instead_of_freezing_pending_or_denied_responses() {
-    let application = crate::product_retry_ownership::ordinary_context::ControlledApplication::new();
+    let application =
+        crate::product_retry_ownership::ordinary_context::ControlledApplication::new();
     let server = server(&application);
     let session = session(&server);
     for operation in ["controlled.native", "controlled.cached"] {
@@ -34,9 +32,13 @@ fn application_custody_reenters_fresh_admission_instead_of_freezing_pending_or_d
                     )
                     .within(&mutation)
                     .against_base_digest(
-                        worth_server::WorthServerProductOperationBaseDigest::new("basis:original").unwrap(),
+                        worth_server::WorthServerProductOperationBaseDigest::new("basis:original")
+                            .unwrap(),
                     )
-                    .idempotent(worth_server::WorthServerProductIdempotencyKey::new("original-command").unwrap()),
+                    .idempotent(
+                        worth_server::WorthServerProductIdempotencyKey::new("original-command")
+                            .unwrap(),
+                    ),
                 )
                 .unwrap()
         };
@@ -77,15 +79,18 @@ fn application_custody_reenters_fresh_admission_instead_of_freezing_pending_or_d
 
 #[test]
 fn product_reads_ignore_write_retry_keys_and_reenter_application_authorization() {
-    let application = crate::product_retry_ownership::ordinary_context::ControlledApplication::new();
+    let application =
+        crate::product_retry_ownership::ordinary_context::ControlledApplication::new();
     let server = server(&application);
     let session = session(&server);
     let preview = session
         .product_sessions()
         .open_preview(
-            worth_server::WorthServerProductSessionCreationRequest::for_operation("controlled.read")
-                .with_basis_digest("basis:original")
-                .with_expiry_seconds(300),
+            worth_server::WorthServerProductSessionCreationRequest::for_operation(
+                "controlled.read",
+            )
+            .with_basis_digest("basis:original")
+            .with_expiry_seconds(300),
         )
         .unwrap();
     let read = || {
@@ -101,7 +106,9 @@ fn product_reads_ignore_write_retry_keys_and_reenter_application_authorization()
                 )
                 .with_product_session_identity(preview.identity().as_str())
                 .with_basis_digest("basis:original")
-                .with_idempotency_key(worth_server::WorthServerProductIdempotencyKey::new("read-key").unwrap()),
+                .with_idempotency_key(
+                    worth_server::WorthServerProductIdempotencyKey::new("read-key").unwrap(),
+                ),
             )
             .unwrap()
     };
@@ -136,9 +143,12 @@ fn retry_owner_changes_declaration_identity_without_changing_the_default_contrac
         .clone()
         .with_retry_owner(worth_server::WorthServerProductRetryOwner::ApplicationCustody);
     let digest = |declaration| {
-        worth_server::WorthServerProductAdapterRegistry::build(vec![registration(&app, declaration)])
-            .unwrap()
-            .receipts()[0]
+        worth_server::WorthServerProductAdapterRegistry::build(vec![registration(
+            &app,
+            declaration,
+        )])
+        .unwrap()
+        .receipts()[0]
             .canonical_digest()
             .to_owned()
     };
@@ -150,7 +160,9 @@ fn retry_owner_changes_declaration_identity_without_changing_the_default_contrac
 fn application_retry_custody_rejects_reads_coordination_and_durable_executor_contracts() {
     let app = crate::product_retry_ownership::ordinary_context::ControlledApplication::new();
     let support = || {
-        worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("controlled-application")
+        worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+            "controlled-application",
+        )
     };
     let declarations = [
         worth_server::WorthServerProductOperationDeclaration::product_read(
@@ -174,7 +186,8 @@ fn application_retry_custody_rejects_reads_coordination_and_durable_executor_con
             result_contract(),
             support(),
             worth_server::WorthServerDurableProductMutationContract::atomic(
-                worth_server::WorthServerProductAuthorityScope::new("controlled-authority").unwrap(),
+                worth_server::WorthServerProductAuthorityScope::new("controlled-authority")
+                    .unwrap(),
                 worth_server::WorthServerProductIdempotencyRetention::Indefinite,
             ),
         ),

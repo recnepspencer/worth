@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/compile_fail/worth_proof_progression/unresolved_recipe_is_not_resolved.rs:8:30
+ --> tests/worth_court_signal_wasm/sources/worth_signal_wasm/compile_fail/worth_proof_progression/unresolved_recipe_is_not_resolved.rs:8:30
   |
 8 |     requires_resolved_recipe(raw_declaration);
   |     ------------------------ ^^^^^^^^^^^^^^^ expected `Recipe<Resolved, &str>`, found `Recipe<Unresolved, &str>`
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected struct `Recipe<worth_proof::Resolved, &'static str>`
              found struct `Recipe<worth_proof::Unresolved, &str>`
 note: function defined here
- --> tests/compile_fail/worth_proof_progression/unresolved_recipe_is_not_resolved.rs:3:4
+ --> tests/worth_court_signal_wasm/sources/worth_signal_wasm/compile_fail/worth_proof_progression/unresolved_recipe_is_not_resolved.rs:3:4
   |
 3 | fn requires_resolved_recipe(_: Recipe<Resolved, &'static str>) {}
   |    ^^^^^^^^^^^^^^^^^^^^^^^^ ---------------------------------

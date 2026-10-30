@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/bridge_truth_identity/wrong_kind_cannot_satisfy_truth_family.rs:6:58
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/wrong_kind_cannot_satisfy_truth_family.rs:6:58
   |
 6 |     let _selector = BridgeTruthViewSelector::branch_head(commit);
   |                     ------------------------------------ ^^^^^^ expected `BridgeIdentity<TruthBranchTag>`, found `BridgeIdentity<TruthCommitTag>`
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected struct `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthBranchTag>`
              found struct `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthCommitTag>`
 note: associated function defined here
- --> src/snapshot/declaration.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/snapshot/declaration.rs
   |
   |     pub fn branch_head(branch_identity: TruthBranchIdentity) -> Self {
   |            ^^^^^^^^^^^

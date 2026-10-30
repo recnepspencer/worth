@@ -1,24 +1,4 @@
 // The checked door refuses before any callback or graph publication.
-pub(crate) use {
-    crate::request_differential::ordinary_context::authority,
-    crate::request_differential::ordinary_context::graph,
-};
-pub(crate) use {
-    std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
-};
-pub(crate) use {
-    worth_execution::CancellationToken, worth_execution::ExecutionRequest,
-    worth_execution::LeaseRequest, worth_execution::MemoryLimitLevel,
-};
-pub(crate) use {
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
-    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
-};
-pub(crate) use {
-    worth_signal::facade::AspectVersion, worth_signal::facade::RunMode,
-    worth_signal::facade::SignalError, worth_signal::facade::SignalExecutionStopReason,
-    worth_signal::facade::SignalLeaseDenial,
-};
 
 #[test]
 fn declared_result_refusal_never_runs_the_callback() {

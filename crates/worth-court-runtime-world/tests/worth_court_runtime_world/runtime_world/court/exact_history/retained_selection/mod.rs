@@ -1,8 +1,7 @@
 // Retained ancestry is explicit; exact ancestry and pages keep refusing gaps.
-pub(crate) use std::num::NonZeroUsize;
 pub(crate) use {
     crate::court::ordinary_context::exact_history::signal_fork_child,
-    crate::court::ordinary_context::CompositeSupplyChainCourt, worth_runtime_world::facade::*,
+    worth_runtime_world::facade::*,
 };
 
 #[test]

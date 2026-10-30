@@ -1,6 +1,10 @@
 //! Shared subprocess roles, mounted by each consuming court.
 use super::*;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Provides the child fixture stack for candidate certification and serving admission."
+)]
 pub fn dispatch_candidate_certificate_serving_child() {
     let Some(root) = std::env::var_os(RECOVERY_CHILD_ROOT) else {
         return;

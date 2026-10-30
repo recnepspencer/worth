@@ -3,11 +3,7 @@ use crate::{
     phase_4_literal_vectors::wal_range, store_offline_integrity_observer_support::request,
     support::fixtures::clean_store,
 };
-use worth_foundational::PhysicalArtifactFamily as Family;
-use worth_store_offline_integrity_observer::{
-    observe_store, OfflineArtifactDuplicateEvidence, OfflineIntegrityOutcome as Outcome,
-    OfflinePhysicalDamageCause as Cause, OfflineUnknownPhysicalReason as Unknown,
-};
+use worth_store_offline_integrity_observer::observe_store;
 
 #[test]
 fn canonical_journal_alias_storm_does_not_repeat_reads_checksums_or_stream_vectors() {

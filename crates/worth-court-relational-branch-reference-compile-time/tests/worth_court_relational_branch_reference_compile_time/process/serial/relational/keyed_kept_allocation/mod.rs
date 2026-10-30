@@ -1,12 +1,7 @@
 // A Native consumer measures backend admission with its permitted allocator probe.
 #[allow(unused_imports)]
 use crate::keyed_kept_allocation::isolated_context::*;
-use worth_foundational::PartitionIdentity;
-use {stats_alloc::Region, stats_alloc::StatsAlloc, stats_alloc::INSTRUMENTED_SYSTEM};
-use {
-    worth_execution::KeyedEditDenial, worth_execution::KeyedItem,
-    worth_execution::KeyedPartitioner, worth_execution::PartitionItemId,
-};
+use {worth_execution::KeyedItem, worth_execution::PartitionItemId};
 
 #[test]
 fn a_refused_keyed_subset_allocates_nothing_before_admission() {

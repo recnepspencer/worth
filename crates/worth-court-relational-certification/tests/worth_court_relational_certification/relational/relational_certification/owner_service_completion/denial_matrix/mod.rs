@@ -1,6 +1,8 @@
-pub(crate) use {crate::relational_certification::ordinary_context::owner_service_completion::world::commit_direct, crate::relational_certification::ordinary_context::owner_service_completion::world::committed_fork, crate::relational_certification::ordinary_context::owner_service_completion::world::empty_runtime};
-pub(crate) use {worth_relational::facade::branch::RelationalBranchArchiveDenial, worth_relational::facade::branch::RelationalBranchBasisDenial, worth_relational::facade::branch::RelationalBranchDeleteDenial, worth_relational::facade::branch::RelationalBranchDeletionOutcome, worth_relational::facade::branch::RelationalBranchRetentionTerminalOutcome, worth_relational::facade::branch::RelationalBranchTransitionStop};
-pub(crate) use {worth_relational::facade::mvcc::RelationalTransactionIntent};
+pub(crate) use {
+    crate::relational_certification::ordinary_context::owner_service_completion::world::commit_direct,
+    crate::relational_certification::ordinary_context::owner_service_completion::world::committed_fork,
+    crate::relational_certification::ordinary_context::owner_service_completion::world::empty_runtime,
+};
 
 #[test]
 fn foreign_owner_values_keep_exact_canonical_denials() {
@@ -60,17 +62,21 @@ fn foreign_owner_values_keep_exact_canonical_denials() {
         services
             .lifecycle_port()
             .archive_branch(execution, &first_identity),
-        Err(worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
-            worth_relational::facade::branch::RelationalBranchArchiveDenial::ForeignRuntime
-        ))
+        Err(
+            worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
+                worth_relational::facade::branch::RelationalBranchArchiveDenial::ForeignRuntime
+            )
+        )
     ));
     assert!(matches!(
         services
             .lifecycle_port()
             .delete_branch(execution, &first_identity),
-        Err(worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
-            worth_relational::facade::branch::RelationalBranchDeleteDenial::ForeignRuntime
-        ))
+        Err(
+            worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
+                worth_relational::facade::branch::RelationalBranchDeleteDenial::ForeignRuntime
+            )
+        )
     ));
 }
 
@@ -184,7 +190,10 @@ fn deleting_branch_reports_pending_then_deletes_after_active_operation_releases(
         .expect("live target admits a transaction basis");
     let deleting_descriptor = basis.descriptor().clone();
     let transaction = runtime
-        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .expect("transaction owns the active branch operation");
 
     let pending = services

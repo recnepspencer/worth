@@ -1,16 +1,23 @@
-#[allow(unused_imports)] use crate::product_adapter_phase_nine::ordinary_context::*;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use crate::product_adapter_phase_nine::ordinary_context::*;
+#[allow(unused_imports)]
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
-
-use {serde_json::json};
-use {worth_server::WorthServerOperationReadinessDenialCode, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerProductOperationBasisKind, worth_server::WorthServerProductOperationDeclaration, worth_server::WorthServerProductOperationDenialCode, worth_server::WorthServerProductOperationErrorMaps, worth_server::WorthServerProductOperationInput, worth_server::WorthServerProductOperationOutcome, worth_server::WorthServerProductOperationPayload, worth_server::WorthServerProductOperationSupportSnapshot, worth_server::WorthServerProductOperationSurfaceDenialCode};
+use serde_json::json;
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_product_adapter_phase_nine_fixture as fixture};
+use worth_testkit_server::shared_support_product_adapter_phase_nine_fixture as fixture;
 
-use {worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::build_server, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::completed, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::direct_session, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::editor_registration, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::open_mutation_product_session, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::prepared_mutation_request, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::prepared_read_request, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::result_contract, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::EditorAdapter, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::RequireTitleValidator};
+use {
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::build_server,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::completed,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::direct_session,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::editor_registration,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::open_mutation_product_session,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::prepared_mutation_request,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::prepared_read_request,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::RequireTitleValidator,
+};
 
 #[test]
 fn product_adapter_operation_parity_across_direct_and_http_surfaces() {
@@ -22,8 +29,11 @@ fn product_adapter_operation_parity_across_direct_and_http_surfaces() {
 
     let direct = completed(
         direct_session(&server).product_operations().execute(
-            worth_server::WorthServerProductOperationInput::new("product_editor.render", payload.clone())
-                .with_basis_digest("basis-7"),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.render",
+                payload.clone(),
+            )
+            .with_basis_digest("basis-7"),
         ),
     );
     let compat = completed(server.compat_http().product_operations().execute(
@@ -147,9 +157,12 @@ fn product_payload_schema_validation_is_adapter_declared_not_route_owned() {
 
     let direct = completed(
         direct.product_operations().execute(
-            worth_server::WorthServerProductOperationInput::new("product_editor.apply", payload.clone())
-                .with_basis_digest("basis-7")
-                .with_product_session_identity(product_session.identity().as_str()),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.apply",
+                payload.clone(),
+            )
+            .with_basis_digest("basis-7")
+            .with_product_session_identity(product_session.identity().as_str()),
         ),
     );
     let compat = completed(
@@ -253,8 +266,9 @@ fn product_editor_shaped_operations_register_without_server_semantics() {
         .any(|name| name == "product_editor.finalize"));
 
     for (operation_name, payload) in editor_execution_cases() {
-        let mut input = worth_server::WorthServerProductOperationInput::new(operation_name, payload)
-            .with_basis_digest("basis-9");
+        let mut input =
+            worth_server::WorthServerProductOperationInput::new(operation_name, payload)
+                .with_basis_digest("basis-9");
         if operation_name.contains("apply") || operation_name.contains("finalize") {
             input = input.with_product_session_identity(product_session.identity().as_str());
         }

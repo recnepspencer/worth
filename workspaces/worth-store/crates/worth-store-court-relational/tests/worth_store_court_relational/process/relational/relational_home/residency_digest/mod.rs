@@ -1,31 +1,7 @@
 //! A checksum-valid Store record must still match its manifest's member digest.
 #[allow(unused_imports)]
 use crate::residency_digest::*;
-use std::path::Path;
-use worth_execution::ExecutionRequest;
-use {
-    crate::durable_run, crate::residency_fixture::Fixture, crate::residency_media,
-    crate::selected_checkpoint, crate::workload,
-};
-use {
-    worth_relational::facade::identity::PartitionId,
-    worth_relational::facade::mvcc::RelationalTransactionReadDenial,
-    worth_relational::facade::storage::RelationalStorageSubject,
-    worth_relational::facade::storage::RelationalStorageUnavailableCause,
-};
-use {
-    worth_store::physical_runtime::AnchoredRecordMemberDamage,
-    worth_store::physical_runtime::AnchoredRecordMemberReadFailure,
-    worth_store::physical_runtime::AnchoredRecordName,
-    worth_store::physical_runtime::RecordByteLimit,
-    worth_store::physical_runtime::RecordReadLimits,
-};
-use {
-    worth_store_physical_format::decode_data_frame_page_lsn,
-    worth_store_physical_format::durable_artifact_checksum,
-    worth_store_physical_format::DurableFrameKind,
-    worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES,
-};
+use worth_relational::facade::identity::PartitionId;
 
 #[test]
 fn a_checksum_valid_substituted_member_refuses_its_digest_and_keeps_subject_damage_sticky() {

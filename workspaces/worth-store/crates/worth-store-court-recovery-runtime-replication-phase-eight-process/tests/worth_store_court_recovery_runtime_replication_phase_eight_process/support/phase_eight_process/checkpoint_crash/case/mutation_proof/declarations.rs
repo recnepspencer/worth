@@ -11,8 +11,8 @@ pub(crate) use {
     crate::checkpoint_crash::case::mutation::PERSISTED_WAL_FRAME_BYTE_FLIP,
 };
 pub(crate) use {
-    crate::phase_eight_process::checkpoint_crash::process::observer_process::fresh_observer_raw,
-    crate::phase_eight_process::checkpoint_crash::process::recovery_process::fresh_recovery_raw,
+    crate::process::support::checkpoint_crash::observer_process::fresh_observer_raw,
+    crate::process::support::checkpoint_crash::recovery_process::fresh_recovery_raw,
 };
 
 pub(crate) fn prove(crash: &CrashObservation) {

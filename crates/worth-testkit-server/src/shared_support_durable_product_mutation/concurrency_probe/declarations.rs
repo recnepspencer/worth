@@ -39,7 +39,9 @@ impl TestConcurrencyProbe {
             changed.notify_all();
         }
         let (mut state, timeout) = changed
-            .wait_timeout_while(state, std::time::Duration::from_secs(2), |state| !state.released)
+            .wait_timeout_while(state, std::time::Duration::from_secs(2), |state| {
+                !state.released
+            })
             .expect("concurrency probe wait");
         let admitted = !timeout.timed_out();
         state.active_entries -= 1;

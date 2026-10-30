@@ -1,8 +1,12 @@
-use {crate::degraded_scan_ordinary_runtime::physical_fixture::admitted_catalog, crate::degraded_scan_ordinary_runtime::physical_fixture::advanced_catalog, crate::degraded_scan_ordinary_runtime::physical_fixture::foreign_store_identity, crate::degraded_scan_ordinary_runtime::physical_fixture::open_runtime, crate::degraded_scan_ordinary_runtime::physical_fixture::open_runtime_for_store};
-use {worth_store_budgets::PreExecutionBudgetEnvelope};
-use {worth_store_layout_indexes::layout_degraded_scan_runtime, worth_store_layout_indexes::DegradedExactScanExecutionRequest, worth_store_layout_indexes::DegradedScanReadinessView, worth_store_layout_indexes::PlannedCounterObservation};
-use {worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalSegmentId};
-use {worth_store_security::admitted_tenant_page_security_scope_for_layout_partition_test};
+use worth_store_layout_indexes::layout_degraded_scan_runtime;
+use worth_store_security::admitted_tenant_page_security_scope_for_layout_partition_test;
+use {
+    crate::degraded_scan_ordinary_runtime::physical_fixture::admitted_catalog,
+    crate::degraded_scan_ordinary_runtime::physical_fixture::advanced_catalog,
+    crate::degraded_scan_ordinary_runtime::physical_fixture::foreign_store_identity,
+    crate::degraded_scan_ordinary_runtime::physical_fixture::open_runtime,
+    crate::degraded_scan_ordinary_runtime::physical_fixture::open_runtime_for_store,
+};
 
 #[test]
 fn ordinary_degraded_scan_facade_admits_selects_and_executes() {
@@ -75,7 +79,10 @@ fn ordinary_degraded_scan_rebinds_to_the_observed_catalog_frontier() {
     let stale = runtime
         .prepare(request(&catalog).against_current_catalog(&advanced))
         .expect("ordinary planning must classify execution-time freshness");
-    assert!(matches!(stale.view(), worth_store_layout_indexes::DegradedScanReadinessView::Stale(_)));
+    assert!(matches!(
+        stale.view(),
+        worth_store_layout_indexes::DegradedScanReadinessView::Stale(_)
+    ));
     let stale = stale
         .into_stale()
         .expect("advanced catalog must displace the original plan");
@@ -160,4 +167,3 @@ fn broad_scan_is_budget_denied_before_physical_execution() {
         "budget rejection must precede physical scan work"
     );
 }
-

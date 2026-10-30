@@ -1,5 +1,5 @@
 error[E0451]: fields `classification` and `resource_admission` of struct `AsyncNodeRequestAdmissionReport` are private
-  --> tests/ui/async_node_request_admission_report_fields_are_private.rs:9:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_request_admission_report_fields_are_private.rs:9:9
    |
  8 |     let _report = AsyncNodeRequestAdmissionReport {
    |                   ------------------------------- in this type

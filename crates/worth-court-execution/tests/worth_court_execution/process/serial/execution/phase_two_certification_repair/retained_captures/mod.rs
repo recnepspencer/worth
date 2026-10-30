@@ -4,13 +4,8 @@ use {
     crate::phase_two_certification_repair::isolated_context::lease,
     crate::phase_two_certification_repair::isolated_context::map,
     crate::phase_two_certification_repair::isolated_context::TEST_LOCK,
-    std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
-    worth_execution::DecomposeCertificationFailure, worth_execution::DecomposeKernelEditions,
-    worth_execution::ExecutionDecompose, worth_execution::ExecutionMap,
-    worth_execution::InterfaceSolution, worth_execution::InteriorResult,
-    worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition,
-    worth_execution::OracleMismatch, worth_foundational::DeterminismContract,
-    worth_foundational::PartitionIdentity,
+    worth_execution::DecomposeKernelEditions, worth_execution::ExecutionMap,
+    worth_execution::MapKernelFailure, worth_execution::MapPartition,
 };
 
 #[test]

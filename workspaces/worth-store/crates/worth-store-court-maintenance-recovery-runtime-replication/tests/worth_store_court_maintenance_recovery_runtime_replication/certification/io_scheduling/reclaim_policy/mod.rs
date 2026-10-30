@@ -1,29 +1,3 @@
-use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
-
-use worth_store_tiering::ColdTierIoPosture;
-use {
-    worth_store_physical_format::PhysicalReclaimRegion,
-    worth_store_physical_format::ReclaimedByteInterpretation,
-};
-use {
-    worth_store_physical_isolation::BackupReachabilityLeaseIndexSnapshot,
-    worth_store_physical_isolation::HazardLeaseTable,
-    worth_store_physical_isolation::HazardLeaseTableCapacity,
-    worth_store_physical_isolation::ReclaimDenial,
-    worth_store_physical_isolation::ReclaimEligibilityProof,
-};
-use {
-    worth_store_reclaim_policy::ReclaimLaterHandoffPolicy,
-    worth_store_reclaim_policy::ReclaimPermit, worth_store_reclaim_policy::ReclaimPolicyAdmission,
-    worth_store_reclaim_policy::ReclaimPolicyDenialKind,
-    worth_store_reclaim_policy::ReclaimPolicyExecutionObservation,
-    worth_store_reclaim_policy::ReclaimPolicyProofAuthority,
-    worth_store_reclaim_policy::ReclaimPolicyReachabilityDenial,
-    worth_store_reclaim_policy::ReclaimPolicyRequest,
-    worth_store_reclaim_policy::ReclaimPolicySecurityScope,
-    worth_store_reclaim_policy::ReclaimPolicyViolationKind,
-};
-
 use {
     crate::io_scheduling::reclaim_policy::reclaim_support::admitted_backend,
     crate::io_scheduling::reclaim_policy::reclaim_support::admitted_policy_for_region,
@@ -34,7 +8,6 @@ use {
     crate::io_scheduling::reclaim_policy::reclaim_support::reachability_from_physical_isolation_removal,
     crate::io_scheduling::reclaim_policy::reclaim_support::real_reachability_for_region,
     crate::io_scheduling::reclaim_policy::reclaim_support::region_for_generation,
-    crate::io_scheduling::reclaim_policy::reclaim_support::S6ReclaimFixture,
 };
 
 #[test]

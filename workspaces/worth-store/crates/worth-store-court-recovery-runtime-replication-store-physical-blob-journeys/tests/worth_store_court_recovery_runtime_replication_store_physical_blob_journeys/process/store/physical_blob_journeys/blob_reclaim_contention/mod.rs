@@ -1,33 +1,4 @@
-use {
-    std::num::NonZeroU16, std::num::NonZeroU64, std::thread, std::time::Duration,
-    std::time::Instant,
-};
-
-use worth_proof::TransitionOutcome;
-use {
-    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
-    worth_store::physical_runtime::BlobAppendFailure,
-    worth_store::physical_runtime::BlobReclaimDisposition,
-    worth_store::physical_runtime::BlobReclaimFailure,
-    worth_store::physical_runtime::BlobReclaimLimits,
-    worth_store::physical_runtime::BlobReclaimRequest,
-    worth_store::physical_runtime::BlobReclaimRetirement,
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationOutcome,
-    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
-    worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause,
-    worth_store::physical_runtime::PhysicalMutationRequest,
-    worth_store::physical_runtime::RecordAppendBatch,
-};
-use {
-    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
-    worth_store_physical_format::PersistedRecordIdentity,
-};
+use worth_store_physical_format::decode_blob_record;
 
 use {
     crate::blob_crash::recovery::recover_closed_store,
@@ -102,7 +73,6 @@ fn ordinary_contender_cannot_write_wal_or_data_through_held_reclaim_fence() {
     serving.close();
 }
 
-#[cfg(all())]
 #[test]
 fn descriptor_pre_effect_denial_retains_manifest_and_releases_fence() {
     let directory = tempfile::tempdir().unwrap();
@@ -186,7 +156,6 @@ fn descriptor_pre_effect_denial_retains_manifest_and_releases_fence() {
     serving.close();
 }
 
-#[cfg(all())]
 #[test]
 fn sealed_original_drop_no_effect_is_cleaned_through_ordinary_reclaim() {
     let directory = tempfile::tempdir().unwrap();
@@ -367,7 +336,6 @@ fn sealed_original_drop_no_effect_is_cleaned_through_ordinary_reclaim() {
 /// Arrival is a scheduling guard, not a five-second product latency claim.
 /// Match the neighboring orphan court's bounded arrival envelope, and release
 /// before failing so a late worker cannot strand the scope in `first.wait()`.
-#[cfg(all())]
 fn require_pause_arrival(
     gate: &worth_store::physical_runtime::production::PhysicalMutationPauseGate,
     message: &str,

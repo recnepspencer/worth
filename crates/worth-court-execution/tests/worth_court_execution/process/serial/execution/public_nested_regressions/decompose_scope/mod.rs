@@ -2,19 +2,13 @@
 use {
     crate::public_nested_regressions::isolated_context::authority,
     crate::public_nested_regressions::isolated_context::map,
-    crate::public_nested_regressions::isolated_context::TEST_LOCK, std::num::NonZeroUsize,
-    worth_execution::CancellationToken, worth_execution::ExecutionMap,
+    crate::public_nested_regressions::isolated_context::TEST_LOCK, worth_execution::ExecutionMap,
     worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
-    worth_execution::MapKernelStop, worth_execution::MapOutcome, worth_execution::MapStop,
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
-    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
-    worth_foundational::PartitionIdentity,
 };
 use {
-    worth_execution::CancellationSource, worth_execution::DecomposeFailure,
     worth_execution::DecomposeKernelEditions, worth_execution::ExecutionDecompose,
     worth_execution::InteriorResult, worth_execution::KeylessPartition,
-    worth_execution::ReductionRunFailure, worth_execution::ReductionRunStop,
+    worth_execution::ReductionRunFailure,
 };
 
 #[test]

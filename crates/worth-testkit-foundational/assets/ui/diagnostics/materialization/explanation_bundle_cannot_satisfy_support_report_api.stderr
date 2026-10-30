@@ -1,13 +1,13 @@
 error[E0308]: mismatched types
-  --> tests/ui/diagnostics/materialization/explanation_bundle_cannot_satisfy_support_report_api.rs:68:26
-   |
-68 |     needs_support_report(report);
-   |     -------------------- ^^^^^^ expected `FoundationalDiagnosticSupportReport`, found `FoundationalDiagnosticExplanationBundle`
-   |     |
-   |     arguments to this function are incorrect
-   |
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/materialization/explanation_bundle_cannot_satisfy_support_report_api.rs
+  |
+  |     needs_support_report(report);
+  |     -------------------- ^^^^^^ expected `FoundationalDiagnosticSupportReport`, found `FoundationalDiagnosticExplanationBundle`
+  |     |
+  |     arguments to this function are incorrect
+  |
 note: function defined here
-  --> tests/ui/diagnostics/materialization/explanation_bundle_cannot_satisfy_support_report_api.rs:17:4
-   |
-17 | fn needs_support_report(_report: worth_foundational::FoundationalDiagnosticSupportReport) {}
-   |    ^^^^^^^^^^^^^^^^^^^^ ----------------------------------------------------------------
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/materialization/explanation_bundle_cannot_satisfy_support_report_api.rs
+  |
+  | fn needs_support_report(_report: worth_foundational::FoundationalDiagnosticSupportReport) {}
+  |    ^^^^^^^^^^^^^^^^^^^^ ----------------------------------------------------------------

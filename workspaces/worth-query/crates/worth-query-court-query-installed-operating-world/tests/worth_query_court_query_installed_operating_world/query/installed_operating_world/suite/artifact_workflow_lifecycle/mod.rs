@@ -58,7 +58,7 @@ fn distinct_retained_leases_borrow_and_release_the_same_owner_generation_safely(
     assert_eq!(probe.disposals(), 1);
     let snapshots = probe.lifecycle_snapshots();
     assert_eq!(snapshots.len(), 6);
-    for window in snapshots.chunks_exact(3) {
+    for window in snapshots.as_chunks::<3>().0.iter() {
         assert_owner_counts(window[0], 1, 0, 1);
         assert_owner_counts(window[1], 1, 1, 1);
         assert_owner_counts(window[2], 1, 0, 1);

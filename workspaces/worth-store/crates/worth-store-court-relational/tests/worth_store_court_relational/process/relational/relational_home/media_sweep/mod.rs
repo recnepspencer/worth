@@ -16,20 +16,8 @@
 
 #[allow(unused_imports)]
 use crate::media_sweep::*;
-use std::num::NonZeroU64;
-use std::sync::Mutex;
-use {std::panic, std::panic::AssertUnwindSafe};
-use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
 
-use worth_execution::ExecutionRequest;
-use worth_store::physical_runtime::certification::MediaOperationRole;
-
-use crate::media_faults;
-use {crate::durable_run::apply, crate::durable_run::served_schema};
-use {crate::media_case::run_case, crate::media_case::Ended, crate::media_case::Target};
-use {crate::workload, crate::workload::Script, crate::workload::Step};
-
-use crate::media_sweep::prepared_sweep_home::PreparedSweepHome;
+use crate::workload::Step;
 
 #[test]
 fn every_media_operation_of_the_first_commit_recovers() {

@@ -6,8 +6,6 @@ pub(crate) use {};
 pub(crate) use {
     worth_foundational::facade::decode_canonical_value,
     worth_foundational::facade::encode_canonical_value, worth_foundational::facade::CanonicalValue,
-    worth_foundational::facade::ValueCodecDenial, worth_foundational::facade::ValueDecodeBounds,
-    worth_foundational::facade::WorthValue,
 };
 
 #[test]

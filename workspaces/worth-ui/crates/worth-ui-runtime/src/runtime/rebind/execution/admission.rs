@@ -102,10 +102,10 @@ pub(crate) fn admit_plan(
     if classification.predecessor_generation() != basis.predecessor_generation {
         return Err(UiRebindPreparationDenial::StalePredecessorGeneration);
     }
-    if let Some(candidate) = plan.semantic_candidate_generation() {
-        if candidate != plan.basis().candidate_generation() {
-            return Err(UiRebindPreparationDenial::CandidateGenerationMismatch);
-        }
+    if let Some(candidate) = plan.semantic_candidate_generation()
+        && candidate != plan.basis().candidate_generation()
+    {
+        return Err(UiRebindPreparationDenial::CandidateGenerationMismatch);
     }
     if matches!(
         plan.execution_policy().deadline(),

@@ -36,8 +36,8 @@ pub use array_backing::{
 };
 pub use byte_backing::{ExecutionByteBuffer, ExecutionImmutableBytes};
 pub use fixed_backing::{
-    ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationDenialKind,
-    ExecutionAllocationPolicy, ExecutionPhysicalAllocationDenialKind,
+    ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationPolicy,
+    ExecutionPhysicalAllocationDenialKind,
 };
 pub(in crate::authority) use memory::LeaseMemory;
 pub(crate) use reservation::SlotRefusal;
@@ -187,6 +187,10 @@ impl<'a> ExecutionResourceLease<'a> {
         self.reserve_entry_with(None)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     fn reserve_entry_with(
         &self,
         memory_bytes: Option<u64>,
@@ -332,3 +336,6 @@ impl AuthorityInner {
         ledger.next_id
     }
 }
+
+#[cfg(test)]
+pub(crate) use fixed_backing::ExecutionAllocationDenialKind;

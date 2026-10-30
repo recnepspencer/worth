@@ -3,9 +3,9 @@ pub(crate) use worth_query_testkit_certification_canonical::facade::certificatio
 #[test]
 fn late_swallowed_pair_decode_refusal_keeps_the_view_cold_and_fresh_retry_reconstructs() {
     let host = host::install(super::FUNDED_WORK);
-    let runtime = host.runtime();
+    let runtime = host.program.runtime();
     let scope = request_scope();
-    let external = authenticate_operator(host.installed_schema(), &scope);
+    let external = authenticate_operator(host.program.installed_schema(), &scope);
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
@@ -15,7 +15,7 @@ fn late_swallowed_pair_decode_refusal_keeps_the_view_cold_and_fresh_retry_recons
                 .on_branch(runtime.current_world())
                 .select(&phase)
                 .unwrap();
-            let schema = host.installed_schema();
+            let schema = host.program.installed_schema();
             let members_binding = schema
                 .installed_query_binding::<membership::MembershipBinding>()
                 .unwrap();

@@ -1,5 +1,3 @@
-mod owner_release;
-
 use {
     worth_store_testkit_store::durable_publication::root::publish_single,
     worth_store_testkit_store::physical_record_journeys::configuration,
@@ -184,7 +182,27 @@ fn record_owner_propagates_through_every_lifecycle_boundary() {
     assert!(observer.acquisition_snapshot().is_err());
     drop((observer, clone));
 
-    owner_release::assert_abort_drop_and_unwind_release_owner(parent.path());
+    let abort_root = parent.path().join("abort-store");
+    let aborting = serving_from_initialization(&abort_root);
+    let abort_observer = aborting.observer();
+    aborting.abort();
+    assert_eq!(abort_observer.record_counters().owner_live(), 0);
+
+    let drop_root = parent.path().join("drop-store");
+    let dropped = serving_from_initialization(&drop_root);
+    let drop_observer = dropped.observer();
+    drop(dropped);
+    assert_eq!(drop_observer.record_counters().owner_live(), 0);
+
+    let panic_root = parent.path().join("panic-store");
+    let panicking = serving_from_initialization(&panic_root);
+    let panic_observer = panicking.observer();
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _owned = panicking;
+        panic!("controlled lifecycle panic");
+    }));
+    assert!(result.is_err());
+    assert_eq!(panic_observer.record_counters().owner_live(), 0);
 }
 
 #[test]
@@ -299,84 +317,5 @@ fn serving_concurrency_contract_is_enforced_at_runtime_boundaries() {
     serving.close();
 }
 
-#[test]
-fn physical_residency_serves_real_reads_and_candidate_writes() {
-    let parent = tempfile::tempdir().unwrap();
-    let root = parent.path().join("store");
-    let (_, placement, _) = configuration();
-    let serving = serving_from_initialization(&root);
-    let first_publication = publish_single(
-        &serving,
-        placement,
-        worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([150; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"direct".as_slice()])
-            .unwrap(),
-    );
-    let first = first_publication.settled_members()[0].record_id(0).unwrap();
-
-    let counters = serving.certification_frame_port_observer();
-    let mut read = serving
-        .records()
-        .expect("read protection admission")
-        .open(
-            first,
-            worth_store::physical_runtime::RecordReadLimits::new(
-                worth_store::physical_runtime::RecordByteLimit::new(64).unwrap(),
-            ),
-        )
-        .unwrap();
-    let mut bytes = [0_u8; 6];
-    assert_eq!(read.read_next(&mut bytes).unwrap(), bytes.len());
-    assert_eq!(&bytes, b"direct");
-    drop(read);
-    let second = publish_single(
-        &serving,
-        placement,
-        worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([151; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"wrapped".as_slice()])
-            .unwrap(),
-    );
-    assert_eq!(second.current_root().generation(), 3);
-    let mut retained_read = serving
-        .records()
-        .expect("read protection admission")
-        .open(
-            second.settled_members()[0].record_id(0).unwrap(),
-            worth_store::physical_runtime::RecordReadLimits::new(
-                worth_store::physical_runtime::RecordByteLimit::new(64).unwrap(),
-            ),
-        )
-        .unwrap();
-    let mut retained_bytes = [0_u8; 7];
-    assert_eq!(
-        retained_read.read_next(&mut retained_bytes).unwrap(),
-        retained_bytes.len()
-    );
-    assert_eq!(&retained_bytes, b"wrapped");
-    drop(retained_read);
-    let snapshot = counters.snapshot();
-    assert!(snapshot.loads() > 0);
-    assert!(snapshot.residency_faults() > 0);
-    assert!(snapshot.residency_hits() > 0);
-    assert_eq!(snapshot.writebacks(), 0);
-    assert_eq!(
-        snapshot.candidate_publications(),
-        snapshot.candidate_frames()
-    );
-    assert!(snapshot.loads() > 0);
-    assert!(snapshot.candidate_submissions() >= 1);
-    assert!(snapshot.candidate_frames() >= 5);
-    assert!(snapshot.candidate_bytes() > b"wrapped".len() as u64);
-    assert_eq!(
-        snapshot.declared_candidate_frames(),
-        snapshot.candidate_frames()
-    );
-    assert_eq!(
-        snapshot.declared_candidate_bytes(),
-        snapshot.candidate_bytes()
-    );
-    assert_eq!(snapshot.wrapper_frames(), 0);
-    assert!(snapshot.peak_retained_candidate_frames() >= 1);
-    let shutdown = serving.close();
-    assert!(!shutdown.residency().requires_inspection());
-}
+#[path = "physical_residency.rs"]
+mod physical_residency;

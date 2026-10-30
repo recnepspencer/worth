@@ -30,4 +30,3 @@ workspace = true
 "tempfile" = "3"
 "worth-store-contracts" = { "workspace" = true }
 "worth-store-test-support" = { "workspace" = true, "features" = ["layout-fixtures", "physical-compaction-fixtures"] }
-

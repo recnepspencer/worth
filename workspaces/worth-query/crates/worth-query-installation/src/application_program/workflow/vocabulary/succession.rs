@@ -11,6 +11,10 @@ impl<Schema: ApplicationSchema, Spec: ApplicationWorkflowSpec<Schema = Schema>>
     WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>
 {
     #[doc(hidden)]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub fn succession_capability_identity_bytes<Binding, Role>(&self) -> Option<&[u8; 32]>
     where
         Binding: ApplicationMutationBinding<Schema>,

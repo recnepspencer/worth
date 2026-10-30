@@ -1,13 +1,6 @@
 #[allow(unused_imports)]
 use crate::decompose_pattern::ordinary_context::*;
-pub(crate) use worth_foundational::PartitionIdentity;
-pub(crate) use {
-    worth_execution::BackInput, worth_execution::DecomposeFailure,
-    worth_execution::DecomposeInputDenial, worth_execution::DecomposeKernelEditions,
-    worth_execution::ExecutionDecompose, worth_execution::ExecutionMap,
-    worth_execution::InterfaceSolution, worth_execution::InteriorResult,
-    worth_execution::MapKernelFailure, worth_execution::MapPartition,
-};
+pub(crate) use {worth_execution::InteriorResult, worth_execution::MapKernelFailure};
 
 #[test]
 fn sparse_interface_solve_reuses_unchanged_contribution_and_local_slice() {

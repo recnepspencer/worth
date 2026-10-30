@@ -1,9 +1,6 @@
-use crate::owned_async::ordinary_context::native_service::NativeServiceCourt;
-use worth_signal::facade::branch::SignalOwnedAsyncManagedReport as Report;
 use {
     crate::owned_async::ordinary_context::fixture::completion,
     crate::owned_async::ordinary_context::fixture::selected_fork,
-    crate::owned_async::ordinary_context::fixture::AsyncSourceCourt,
 };
 
 #[test]

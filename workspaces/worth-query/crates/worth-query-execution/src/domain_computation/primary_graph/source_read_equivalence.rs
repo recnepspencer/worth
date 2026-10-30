@@ -32,6 +32,10 @@ pub(in crate::domain_computation::primary_graph) struct SourceReadEquivalence {
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl SourceReadEquivalence {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph) fn equal_walk(
         &mut self,
         left: &Arc<StructuralWalkObservation>,
@@ -82,6 +86,10 @@ impl SourceReadEquivalence {
         control()?;
         Ok(equal)
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph) fn equal_aggregate(
         &mut self,
         left: &Arc<AggregateObservation>,

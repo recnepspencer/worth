@@ -5,8 +5,7 @@ pub(crate) use {
     crate::decompose_pattern::ordinary_context::interface,
     crate::decompose_pattern::ordinary_context::interior,
     crate::decompose_pattern::ordinary_context::subdomain_map,
-    crate::decompose_pattern::ordinary_context::EDITIONS, worth_execution::DecomposeFailure,
-    worth_execution::DecomposeInputDenial, worth_execution::DecomposeKernelEditions,
+    crate::decompose_pattern::ordinary_context::EDITIONS, worth_execution::DecomposeKernelEditions,
     worth_execution::InterfaceSolution, worth_execution::MapKernelFailure,
 };
 

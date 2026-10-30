@@ -17,6 +17,13 @@ class CompilerSessionCutoverTests(unittest.TestCase):
     def test_retired_compiler_session_import_is_removed(self):
         self.assertNotIn('trybuild', rewrite('pub(crate) use {trybuild::TestCases};').text)
 
+    def test_removing_the_only_pass_runner_import_leaves_no_empty_use_item(self):
+        for declaration in ('use owner::run_compile_pass_bundle;',
+                            'pub(crate) use {owner::run_compile_pass_bundle};',
+                            '#[allow(unused_imports)]\npub use owner::run_compile_pass_bundle;'):
+            with self.subTest(declaration=declaration):
+                self.assertEqual(rewrite(declaration).text.strip(), '')
+
     def test_pass_only_test_is_moved_instead_of_becoming_an_empty_green(self):
         result = rewrite('#[test] fn supported() { let c = trybuild::TestCases::new(); c.pass("yes.rs"); }')
         self.assertEqual(result.moved_tests, ['supported'])

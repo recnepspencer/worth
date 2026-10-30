@@ -186,7 +186,7 @@ impl DurableSegmentManifest {
         let segment_cell = authority
             .segment_cell(segment)
             .with_segment_generation(generation);
-        for chunk in frame.payload[24..].chunks_exact(40) {
+        for chunk in frame.payload[24..].as_chunks::<40>().0.iter() {
             if chunk[32..40] != [0; 8] {
                 return Err(MembershipManifestDenial::Reserved);
             }

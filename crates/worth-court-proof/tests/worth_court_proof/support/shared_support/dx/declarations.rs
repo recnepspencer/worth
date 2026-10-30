@@ -6,7 +6,7 @@ pub(crate) fn compile_pass_bundle() -> CompilePassBundle {
     crate::shared_support::dx::compile::compile_pass_bundle()
 }
 
-pub(crate) use crate::shared_support::compile_fail::bundle::CompileFailBundle;
+pub(crate) use crate::compile_fail::harness::bundle::CompileFailBundle;
 pub(crate) use crate::shared_support::compile_pass::bundle::CompilePassBundle;
 pub(crate) use {
     crate::shared_support::proof_shapes::digest::FailureDigest,

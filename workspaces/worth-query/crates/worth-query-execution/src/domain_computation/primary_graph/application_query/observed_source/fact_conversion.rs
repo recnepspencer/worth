@@ -3,23 +3,48 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationObservedFact as Fact, WorthQueryPrimaryGraphLayout,
 };
 
+mod control;
 mod field_preparation;
+mod materialization;
+pub(in crate::domain_computation::primary_graph) use control::SourceFactExpansionControl;
 mod retention_validation;
 mod source_fact_locator;
 use source_fact_locator::SourceFactLocator;
 
 pub(in crate::domain_computation::primary_graph::application_query) struct PreparedSourceFactMaterialization<
     'source,
+    'request,
+    'authority,
     Query,
 > {
     source: &'source WorthQueryObservedSource<Query>,
     fields: Vec<ValidatedSourceField<'source>>,
     fact_count: usize,
+    control: SourceFactExpansionControl<'request, 'authority>,
 }
 
 struct ValidatedSourceField<'source>(&'source WorthQueryObservedFieldRevision);
 
 impl<Query> WorthQueryObservedSource<Query> {
+    pub(super) fn require_supported_fact_expansion(
+        &self,
+        subject: &str,
+    ) -> Result<(), WorthQuerySourceExpectationDenial> {
+        if self
+            .source_meaning
+            .footprint()
+            .root_selection
+            .as_ref()
+            .is_some_and(|selection| selection.managed_index.is_some())
+        {
+            return Err(WorthQuerySourceExpectationDenial::new(
+                WorthQuerySourceExpectationDenialKind::ManagedSourceExpansionUnsupported,
+                subject,
+            ));
+        }
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(in crate::domain_computation::primary_graph) fn validate_and_into_facts(
         self,
@@ -34,7 +59,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         request: Option<
             &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         >,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
         self.validate_affinity(
             runtime_authority,
@@ -48,8 +73,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         self.validated_facts(
             layout,
             expected_query_identifier,
-            request,
-            allocation_policy,
+            SourceFactExpansionControl::in_request(*execution, request),
         )
     }
 
@@ -62,47 +86,19 @@ impl<Query> WorthQueryObservedSource<Query> {
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<std::sync::Arc<[Fact]>, WorthQuerySourceExpectationDenial> {
         Ok(self
-            .validated_facts(layout, &self.query_identifier, request, allocation_policy)?
+            .validated_facts(layout, &self.query_identifier, SourceFactExpansionControl::legacy(
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, request)))?
             .into())
     }
 
     pub(super) fn validated_facts(
         &self,
         layout: &WorthQueryPrimaryGraphLayout,
-        expected_query_identifier: &str,
-        request: Option<
-            &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-        >,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        subject: &str,
+        control: SourceFactExpansionControl<'_, '_>,
     ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
-        self.validate_completeness(expected_query_identifier)?;
-        let footprint = self.source_meaning.footprint();
-        if let Some(selection) = &footprint.root_selection {
-            selection.validate_walks(layout, request)?;
-        }
-        let fields = footprint
-            .aspects
-            .iter()
-            .chain(
-                footprint
-                    .root_selection
-                    .iter()
-                    .flat_map(|selection| &selection.aspects),
-            )
-            .map(|aspect| {
-                let contract = layout
-                    .aspect_contract(&aspect.entity_name, &aspect.aspect)
-                    .ok_or_else(|| source_contract_denial(aspect))?;
-                ValidatedSourceField::resolve(aspect, contract)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        let fact_count = source_fact_count(self, expected_query_identifier)?;
-        PreparedSourceFactMaterialization {
-            source: self,
-            fields,
-            fact_count,
-        }
-        .into_facts(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, request))
+        self.admit_fact_materialization(layout, subject, control)?
+            .into_facts()
     }
 }
 
@@ -111,144 +107,12 @@ fn source_fact_count<Query>(
     subject: &str,
 ) -> Result<usize, WorthQuerySourceExpectationDenial> {
     let footprint = source.source_meaning.footprint();
-    let selected_count = footprint
-        .root_selection
-        .as_ref()
-        .map(|selection| {
-            selection
-                .entities
-                .len()
-                .checked_add(selection.aspects.len())
-                .and_then(|n| n.checked_add(selection.adjacencies.len()))
-                .and_then(|n| {
-                    n.checked_add(usize::from(selection.orbit.is_some()))
-                        .and_then(|n| n.checked_add(usize::from(selection.components.is_some())))
-                })
-                .and_then(|n| {
-                    n.checked_add(
-                        selection
-                            .walks
-                            .as_ref()
-                            .map_or(0, |walks| walks.values().len()),
-                    )
-                })
-        })
-        .unwrap_or(Some(0));
-    footprint
-        .entities
-        .len()
-        .checked_add(footprint.aspects.len())
-        .and_then(|n| n.checked_add(footprint.adjacencies.len()))
-        .and_then(|n| n.checked_add(selected_count?))
-        .ok_or_else(|| {
-            WorthQuerySourceExpectationDenial::new(
-                WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded,
-                subject,
-            )
-        })
-}
-
-impl<Query> PreparedSourceFactMaterialization<'_, Query> {
-    pub(in crate::domain_computation::primary_graph::application_query) fn into_facts(
-        self,
-        control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
-    ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
-        let source = self.source;
-        let WorthQueryObservedSourceFootprint {
-            entities,
-            aspects,
-            adjacencies,
-            root_selection,
-            ..
-        } = source.source_meaning.footprint();
-        let selection = root_selection.as_deref();
-        let mut facts = Vec::with_capacity(self.fact_count);
-        facts.extend(
-            entities
-                .iter()
-                .copied()
-                .map(|entity_id| Fact::SourceEntity { entity_id }),
-        );
-        for field in &self.fields[..aspects.len()] {
-            field.append(&mut facts);
-        }
-        for adjacency in adjacencies {
-            facts.push(adjacency_fact(adjacency, control).map_err(|denial| {
-                WorthQuerySourceExpectationDenial::source_retention_denied(
-                    &source.query_identifier,
-                    denial,
-                )
-            })?);
-        }
-        if let Some(selection) = selection {
-            if let Some(orbit) = &selection.orbit {
-                facts.push(Fact::Aggregate {
-                    observation: std::sync::Arc::clone(&orbit.aggregate),
-                });
-            }
-            if let Some(components) = &selection.components {
-                facts.push(Fact::ComponentSelection {
-                    observation: std::sync::Arc::clone(&components.body),
-                });
-            }
-            facts.extend(
-                selection
-                    .walks
-                    .iter()
-                    .flat_map(|walks| walks.values())
-                    .map(|body| Fact::StructuralWalk {
-                        observation: std::sync::Arc::clone(body),
-                    }),
-            );
-            facts.extend(
-                selection
-                    .entities
-                    .iter()
-                    .copied()
-                    .map(|entity_id| Fact::SourceEntity { entity_id }),
-            );
-            for field in &self.fields[aspects.len()..] {
-                field.append(&mut facts);
-            }
-            for adjacency in &selection.adjacencies {
-                facts.push(adjacency_fact(adjacency, control).map_err(|denial| {
-                    WorthQuerySourceExpectationDenial::source_retention_denied(
-                        &source.query_identifier,
-                        denial,
-                    )
-                })?);
-            }
-        }
-        let mut seen = std::collections::BTreeMap::new();
-        let mut unique = Vec::with_capacity(facts.len());
-        for fact in facts {
-            let identity = SourceFactLocator::from_fact(&fact);
-            match seen.entry(identity) {
-                std::collections::btree_map::Entry::Vacant(entry) => {
-                    entry.insert(unique.len());
-                    unique.push(fact);
-                }
-                std::collections::btree_map::Entry::Occupied(entry) => {
-                    let existing = &mut unique[*entry.get()];
-                    if !existing
-                        .merge_same_source_fact(fact, control.policy(), control.request())
-                        .map_err(|denial| {
-                            WorthQuerySourceExpectationDenial::source_retention_denied(
-                                &source.query_identifier,
-                                denial,
-                            )
-                        })?
-                    {
-                        return Err(WorthQuerySourceExpectationDenial::new(
-                            WorthQuerySourceExpectationDenialKind::SourceChanged,
-                            source.query_identifier.as_str(),
-                        ));
-                    }
-                }
-            }
-        }
-        Ok(unique)
-    }
+    footprint.fact_count().ok_or_else(|| {
+        WorthQuerySourceExpectationDenial::new(
+            WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded,
+            subject,
+        )
+    })
 }
 
 impl<Query> WorthQueryObservedSource<Query> {

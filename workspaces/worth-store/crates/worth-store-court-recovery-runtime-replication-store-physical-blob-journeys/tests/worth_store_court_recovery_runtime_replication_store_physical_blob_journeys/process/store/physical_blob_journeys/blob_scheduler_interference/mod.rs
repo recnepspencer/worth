@@ -1,41 +1,7 @@
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_scheduler_interference::*;
-use {std::fs, std::num::NonZeroU64, std::path::Path};
 
-use worth_store_blob_chunks::BlobChunkSize;
-use worth_store_physical_backend::MediaCounterSnapshot;
-use {
-    worth_store::physical_runtime::AdmittedBlobScope,
-    worth_store::physical_runtime::BlobAppendFailure,
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobIngestFailure,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::BlobReclaimDisposition,
-    worth_store::physical_runtime::BlobReclaimFailure,
-    worth_store::physical_runtime::BlobReclaimPublicationStage,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalMutationIndeterminateStage,
-    worth_store::physical_runtime::PhysicalWorkCounterSnapshot,
-    worth_store::physical_runtime::PhysicalWorkCounterStage,
-    worth_store::physical_runtime::PhysicalWorkOperationFamily,
-    worth_store::physical_runtime::PhysicalWorkPressureClass,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-};
-use {
-    worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration,
-    worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope,
-    worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget,
-    worth_store_io_scheduler::foreground_reservation::QueueSlot,
-    worth_store_io_scheduler::foreground_reservation::WorkerPermit,
-};
-use {
-    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordKind,
-    worth_store_physical_format::BlobRecordV1,
-    worth_store_physical_format::PersistedRecordIdentity,
-};
-
-use crate::physical_blob_journeys::blob_expiry::wal_oracle;
+use worth_store_physical_format::decode_blob_record;
 
 use {
     crate::blob_crash::recovery::recover_closed_store,
@@ -43,7 +9,6 @@ use {
     crate::physical_blob_journeys::blob_reclaim::abandoned_prefix,
     crate::physical_blob_journeys::blob_reclaim::request,
     worth_store_testkit_store::fixture::admitted_blob_scope,
-    worth_store_testkit_store::fixture::placement,
     worth_store_testkit_store::fixture::serving_from_initialization,
     worth_store_testkit_store::fixture::serving_from_open,
     worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,

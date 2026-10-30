@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #![doc = include_str!("test_support_compile_fail_proofs.md")]
 #![forbid(unsafe_code)]
 

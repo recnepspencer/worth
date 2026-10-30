@@ -1,52 +1,5 @@
 #[allow(unused_imports)]
 use crate::stable_read_execution::execution_security_scope::*;
-use worth_proof::TransitionOutcome;
-use worth_store_physical_isolation::StablePhysicalReadHandle;
-use {
-    worth_foundational::aspects, worth_foundational::AspectContract, worth_foundational::AspectKey,
-    worth_foundational::AspectValue, worth_foundational::InternedString,
-    worth_foundational::ScalarAspectType,
-};
-use {
-    worth_store::physical_runtime::stability::LogicalDecodeSecurityScopeEntry,
-    worth_store::physical_runtime::stability::PhysicalByteGuardScope,
-    worth_store::physical_runtime::stability::StableReadSecurityScopePropagation,
-    worth_store::physical_runtime::stability::StableReadSecurityScopePropagationInput,
-};
-use {
-    worth_store_aspect_native::StoreAspectAuthorityInput,
-    worth_store_aspect_native::StoreAspectBoundaryFact,
-    worth_store_aspect_native::StoreAspectIdentity,
-    worth_store_aspect_native::StorePhysicalBoundaryWitness,
-};
-use {
-    worth_store_authority::require_current_store_authority,
-    worth_store_authority::StoreCurrentAuthorityWitness,
-};
-use {
-    worth_store_contracts::StorePhysicalAuthorityWitness,
-    worth_store_contracts::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
-};
-use {
-    worth_store_physical_format::PhysicalBinaryEncodingWitness,
-    worth_store_physical_format::PhysicalDecodedHeader,
-    worth_store_physical_format::PhysicalGeneration,
-    worth_store_physical_format::PhysicalGenerationAuthority,
-    worth_store_physical_format::PhysicalGenerationOwner,
-    worth_store_physical_format::PhysicalHeaderAuthority,
-    worth_store_physical_format::PhysicalHeaderDecodeWitness,
-    worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalPageKind,
-    worth_store_physical_format::PhysicalRecordSlot,
-    worth_store_physical_format::PhysicalSecurityMetadataEnvelope,
-    worth_store_physical_format::PhysicalSegmentId,
-    worth_store_physical_format::SegmentPageManifestEntry,
-};
-use {
-    worth_store_security::admit_store_security_scope, worth_store_security::StoreCustodyPosture,
-    worth_store_security::StoreKeyVersionPosture, worth_store_security::StoreLegacySecurityPosture,
-    worth_store_security::StoreSecurityMetadata,
-    worth_store_security::StoreSecurityScopeAdmissionRequest,
-};
 
 #[test]
 fn logical_decode_rejects_matching_guard_with_mismatched_carrier_basis_before_bytes() {

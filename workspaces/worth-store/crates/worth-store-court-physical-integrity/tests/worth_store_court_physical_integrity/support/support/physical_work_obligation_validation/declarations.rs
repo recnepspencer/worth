@@ -155,7 +155,7 @@ pub(crate) fn independent_sha256(input: &[u8]) -> [u8; 32] {
     padded.extend_from_slice(&bit_len.to_be_bytes());
 
     let mut state = INITIAL;
-    for block in padded.chunks_exact(64) {
+    for block in padded.as_chunks::<64>().0.iter() {
         let mut words = [0_u32; 64];
         for (index, word) in words[..16].iter_mut().enumerate() {
             *word = u32::from_be_bytes(block[index * 4..index * 4 + 4].try_into().unwrap());
@@ -175,7 +175,7 @@ pub(crate) fn independent_sha256(input: &[u8]) -> [u8; 32] {
         compress(&mut state, &words, &K);
     }
     let mut output = [0; 32];
-    for (chunk, value) in output.chunks_exact_mut(4).zip(state) {
+    for (chunk, value) in output.as_chunks_mut::<4>().0.iter_mut().zip(state) {
         chunk.copy_from_slice(&value.to_be_bytes());
     }
     output

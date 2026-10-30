@@ -204,13 +204,13 @@ fn collect_public_module_declarations(
         let path = source.absolute_path();
         let parsed = parse_rust_file(inventory, path);
         for item in parsed.items {
-            if let Item::Mod(item_mod) = item {
-                if matches!(item_mod.vis, Visibility::Public(_)) {
-                    declarations.push(PublicModuleDeclaration {
-                        declaring_file: path.to_path_buf(),
-                        module_name: item_mod.ident.to_string(),
-                    });
-                }
+            if let Item::Mod(item_mod) = item
+                && matches!(item_mod.vis, Visibility::Public(_))
+            {
+                declarations.push(PublicModuleDeclaration {
+                    declaring_file: path.to_path_buf(),
+                    module_name: item_mod.ident.to_string(),
+                });
             }
         }
     }

@@ -85,6 +85,10 @@ pub enum PlatformPulseIntentInputWatchDenial {
 }
 
 impl PlatformPulseIntentInputInstallation {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "stream-reader thread-builder=1: Pulse reads product input while the UI event loop remains responsive."
+    )]
     pub fn open(root: &Path) -> Result<Self, PlatformPulseIntentInputWatchDenial> {
         let metadata = std::fs::metadata(root)
             .map_err(|_| PlatformPulseIntentInputWatchDenial::RootMetadata)?;

@@ -1,28 +1,7 @@
 #[allow(unused_imports)] use crate::physical_record_journeys::durability_admission::managed_mutation::candidate_verification::*;
-use {std::collections::BTreeSet};
-use {std::path::Path, std::path::PathBuf};
-
-use worth_proof::TransitionOutcome;
-use {
-    worth_store::physical_runtime::FilesystemMediaAdmission,
-    worth_store::physical_runtime::PhysicalMutationIndeterminateStage,
-    worth_store::physical_runtime::PhysicalMutationOutcome,
-    worth_store::physical_runtime::PhysicalRecordId,
-    worth_store::physical_runtime::PhysicalRecordOpen,
-    worth_store::physical_runtime::PhysicalRuntimeAdmission,
-    worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::RecordByteLimit,
-    worth_store::physical_runtime::RecordReadDenial,
-    worth_store::physical_runtime::RecordReadLimits,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-};
-use {
-    worth_store_physical_backend::FilesystemAccessPosture,
-    worth_store_physical_backend::MediaFaultDirective,
-    worth_store_physical_backend::MediaOperationRole, worth_store_physical_backend::MediaPauseGate,
-};
 
 use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::selected_segment_rewrite::prepare_rewrite};
-use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use worth_store_testkit_store::physical_record_journeys::configuration;
 
 #[test]
 fn a_candidate_corrupted_before_publication_is_never_published() {

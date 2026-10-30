@@ -1,12 +1,5 @@
 use {
-    worth_store_recovery_runtime::RecoveryReportDenialCause,
-    worth_store_recovery_runtime::RecoveryReportEnvelope,
-    worth_store_recovery_runtime::RecoveryReportOutcome,
-    worth_store_recovery_runtime::RecoveryReportRefusalCause,
-};
-
-use {
-    crate::phase_eight_process::production::harness::process::run_recovery_with_profile,
+    crate::process::support::production_harness::run_recovery_with_profile,
     crate::production::terminal_fixture::certification_persisted_root,
 };
 

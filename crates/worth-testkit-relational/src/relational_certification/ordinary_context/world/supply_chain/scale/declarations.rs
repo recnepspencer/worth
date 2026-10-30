@@ -1,6 +1,9 @@
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::scenarios::BaselineName};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::Anchor, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::scenarios::BaselineName;
+pub use crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::Anchor,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey,
+};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ScaleName {

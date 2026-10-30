@@ -1,26 +1,7 @@
 #[allow(unused_imports)]
 use crate::phase_two_neutral_certification::isolated_context::*;
-use {std::num::NonZeroUsize, std::sync::Mutex, std::sync::OnceLock, std::time::Instant};
 
-use {
-    worth_execution::compare_canonical_values, worth_execution::BackInput,
-    worth_execution::CancellationSource, worth_execution::CancellationToken,
-    worth_execution::CanonicalBits, worth_execution::ChargedBytes,
-    worth_execution::DecomposeFailure, worth_execution::DecomposeKernelEditions,
-    worth_execution::EquivalencePredicate, worth_execution::ExecutionAuthority,
-    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionDecompose,
-    worth_execution::ExecutionForkJoin, worth_execution::ExecutionMap,
-    worth_execution::ExecutionRounds, worth_execution::ExecutionScan, worth_execution::ForkChild,
-    worth_execution::InterfaceSolution, worth_execution::InteriorResult,
-    worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
-    worth_execution::MapKernelStop, worth_execution::MapOutcome, worth_execution::MapPartition,
-    worth_execution::MapStop, worth_execution::RoundsOutcome, worth_execution::ScanOutcome,
-};
-use {
-    worth_foundational::DeterminismContract, worth_foundational::EquivalenceContractId,
-    worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture,
-    worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity,
-};
+use {worth_execution::ForkChild, worth_execution::MapKernelFailure};
 
 #[test]
 fn map_and_fork_match_independent_values_under_widths_and_perturbed_schedules() {

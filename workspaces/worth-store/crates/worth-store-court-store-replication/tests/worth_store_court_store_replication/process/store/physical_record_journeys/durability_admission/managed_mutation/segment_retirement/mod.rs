@@ -1,16 +1,7 @@
-use worth_store_physical_backend::MediaOperationRole;
-use {
-    worth_store::physical_runtime::ManifestEntryCapacity,
-    worth_store::physical_runtime::PhysicalMutationOutcome,
-    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
-    worth_store::physical_runtime::PhysicalRetirementDenial,
-    worth_store::physical_runtime::SegmentPageCount,
-};
-
-use {worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetirementAction};
+use worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads;
 use {worth_store_testkit_store::durability_admission::managed_mutation::published_segments::segment_identity, worth_store_testkit_store::durability_admission::managed_mutation::published_segments::segment_names};
 use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::selected_segment_rewrite::prepare_rewrite};
-use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendBatch, worth_signal::facade::TemporalDuration, worth_proof::TransitionOutcome, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare_records, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare_records, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
 use {worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route};
 
 #[test]

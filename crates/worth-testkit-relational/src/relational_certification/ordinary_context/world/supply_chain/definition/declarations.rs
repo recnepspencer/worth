@@ -1,10 +1,21 @@
-pub use {std::collections::BTreeMap};
+pub use std::collections::BTreeMap;
 
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::definition_entities};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::definition_relations};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::RelationEdge, crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaError, crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion, crate::relational_certification::ordinary_context::world::supply_chain::schema::SupplyChainSchema};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::Anchor, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::definition_entities;
+pub use crate::relational_certification::ordinary_context::world::supply_chain::definition_relations;
+pub use crate::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::RelationEdge,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaError,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::SupplyChainSchema,
+};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::Anchor,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DefinitionError {

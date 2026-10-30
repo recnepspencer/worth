@@ -1,0 +1,19 @@
+error[E0451]: fields `owner`, `store`, `coordinate`, `payload_digest`, `completed_bytes`, `operation` and `durability` of struct `CompletedArtifactRangeWrite` are private
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_receipt_construction_is_sealed.rs:7:9
+   |
+ 6 |     let _ = CompletedArtifactRangeWrite {
+   |             --------------------------- in this type
+ 7 |         owner: unsafe { core::mem::zeroed() },
+   |         ^^^^^ private field
+ 8 |         store: unsafe { core::mem::zeroed() },
+   |         ^^^^^ private field
+ 9 |         coordinate: unsafe { core::mem::zeroed() },
+   |         ^^^^^^^^^^ private field
+10 |         payload_digest: [0; 32],
+   |         ^^^^^^^^^^^^^^ private field
+11 |         completed_bytes: 0,
+   |         ^^^^^^^^^^^^^^^ private field
+12 |         operation: unsafe { core::mem::zeroed() },
+   |         ^^^^^^^^^ private field
+13 |         durability: ArtifactRangeWriteDurability::BufferedWriteCompleted,
+   |         ^^^^^^^^^^ private field

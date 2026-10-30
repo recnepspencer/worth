@@ -1,7 +1,4 @@
 use {
-    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress as Progress,
-    worth_store_physical_integrity::PhysicalIntegrityObservationOutcome,
-    worth_store_physical_integrity::PhysicalIntegrityRejection,
     worth_store_testkit_store::integrity_scrub::assert_released,
     worth_store_testkit_store::integrity_scrub::request,
     worth_store_testkit_store::integrity_scrub::target,

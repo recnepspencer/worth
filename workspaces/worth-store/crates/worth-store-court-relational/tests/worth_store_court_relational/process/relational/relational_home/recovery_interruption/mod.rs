@@ -6,37 +6,6 @@
 
 #[allow(unused_imports)]
 use crate::recovery_interruption::*;
-use std::fs;
-use {std::ffi::OsString, std::num::NonZeroU64, std::path::PathBuf};
-
-use worth_execution::ExecutionRequest;
-use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
-use worth_store::physical_runtime::production::PhysicalCheckpointStep;
-use {
-    worth_store::physical_runtime::certification::MediaFaultDirective,
-    worth_store::physical_runtime::certification::MediaOperationRole,
-};
-use {
-    worth_store::physical_runtime::PhysicalRecoveryProcessYieldpoint,
-    worth_store::physical_runtime::PhysicalRecoveryYieldpointStage as Stage,
-};
-use {
-    worth_store_relational::RelationalStoreCertificationProfile,
-    worth_store_relational::RelationalStoreHome,
-    worth_store_relational::RelationalStoreHomeRequest,
-};
-
-use crate::schema_transition;
-use crate::workload;
-use {
-    crate::crash_oracle::assert_continues, crate::crash_oracle::assert_recovered,
-    crate::crash_oracle::InFlight,
-};
-use {
-    crate::durable_run::assert_holds, crate::durable_run::open, crate::durable_run::recorded_schema,
-};
-use {crate::killed_child, crate::killed_child::ChildEnd};
-use {crate::process_kill, crate::process_kill::Stop, crate::process_kill::SEED};
 
 #[test]
 fn a_recovery_killed_at_each_of_its_stages_recovers_the_same_home_three_times() {

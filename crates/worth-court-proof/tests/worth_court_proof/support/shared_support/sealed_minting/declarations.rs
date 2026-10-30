@@ -17,8 +17,7 @@ pub(crate) fn assert_fixture_completeness() {
     crate::shared_support::sealed_minting::cases::assert_fixture_completeness();
 }
 
-pub(crate) fn compile_fail_bundle() -> crate::shared_support::compile_fail::bundle::CompileFailBundle
-{
+pub(crate) fn compile_fail_bundle() -> crate::compile_fail::harness::bundle::CompileFailBundle {
     crate::shared_support::sealed_minting::cases::compile_fail_bundle()
 }
 

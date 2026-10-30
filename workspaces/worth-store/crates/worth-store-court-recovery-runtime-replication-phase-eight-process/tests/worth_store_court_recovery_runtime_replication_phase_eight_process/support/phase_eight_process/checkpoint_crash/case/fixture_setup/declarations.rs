@@ -7,8 +7,8 @@ pub(crate) use crate::checkpoint_crash::evidence::snapshot::snapshot_directory;
 pub(crate) use crate::checkpoint_crash::CheckpointCrashScenario;
 pub(crate) use {crate::history, worth_store_testkit_recovery_runtime::child_lifecycle};
 pub(crate) use {
-    crate::phase_eight_process::checkpoint_crash::process::writer_process::spawn_writer,
-    crate::phase_eight_process::checkpoint_crash::process::writer_process::wait_for_writer_ready,
+    crate::process::support::checkpoint_crash::writer_process::spawn_writer,
+    crate::process::support::checkpoint_crash::writer_process::wait_for_writer_ready,
 };
 
 pub(crate) struct CheckpointFixture {
@@ -65,7 +65,7 @@ pub(crate) fn prepare(
         .expect("bind submitted operations from persisted authority");
     let baseline_snapshot = snapshot_directory(&root);
     let baseline_observer =
-        crate::phase_eight_process::checkpoint_crash::process::observer_report::fresh_observer(
+        crate::process::support::checkpoint_crash::observer_report::fresh_observer(
             &parent,
             &root,
             "baseline-observer",

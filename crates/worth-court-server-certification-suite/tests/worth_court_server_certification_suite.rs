@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_server_certification_suite/support/certification_suite/mod.rs"]
 pub(crate) mod certification_suite;

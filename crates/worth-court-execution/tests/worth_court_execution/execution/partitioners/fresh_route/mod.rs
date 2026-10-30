@@ -1,8 +1,6 @@
 // A fresh keyed route declares one reroute and one membership visit.
-pub(crate) use worth_foundational::PartitionIdentity;
 pub(crate) use {
-    worth_execution::KeyedItem, worth_execution::KeyedPartitioner,
-    worth_execution::PartitionItemId, worth_execution::PartitionWork,
+    worth_execution::KeyedItem, worth_execution::PartitionItemId, worth_execution::PartitionWork,
 };
 #[test]
 fn fresh_keyed_route_charges_one_reroute_and_one_membership() {

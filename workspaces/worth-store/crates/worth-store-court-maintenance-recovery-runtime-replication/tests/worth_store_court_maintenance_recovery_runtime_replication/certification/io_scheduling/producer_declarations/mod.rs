@@ -1,10 +1,6 @@
 use {
     worth_store_io_scheduler::execute_background_pressure_for_certification_test,
     worth_store_io_scheduler::mismatched_background_pressure_denial_for_certification_test,
-    worth_store_io_scheduler::BackgroundIoPressureClass,
-    worth_store_io_scheduler::BackgroundIoPressureShape,
-    worth_store_io_scheduler::BackgroundPacingDenial,
-    worth_store_io_scheduler::BackgroundPacingOutcome,
 };
 
 // store-proof-identity[producer_pressure_declarations_lower_into_scheduler_shapes]: worth-store-io-scheduler::src/background_pacing/tests/producer_declarations/producer_pressure_declarations_lower_into_scheduler_shapes::producer_declarations::producer_pressure_declarations_lower_into_scheduler_shapes

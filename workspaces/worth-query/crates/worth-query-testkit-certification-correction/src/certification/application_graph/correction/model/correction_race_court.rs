@@ -4,6 +4,10 @@ use std::{num::NonZeroUsize, sync::mpsc, time::Duration};
 use worth_query_host::facade::product::WorthQueryApplicationNoEffectCause;
 use worth_query_host::facade::{application_entry::*, primary_graph::*, runtime};
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1: Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+)]
 pub fn run() {
     let application = host::install();
     let source = host::edit(&application, Value::Primary(11), "race-source");
@@ -180,6 +184,10 @@ pub fn run() {
 
 /// Each racing request gets the court thread's stack: an ordinary correction
 /// runs deeper than a default thread allows in an unoptimized build.
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-builder=1; certification-harness thread-spawn=1: Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+)]
 pub fn spawn<'scope, T: Send + 'scope>(
     threads: &'scope std::thread::Scope<'scope, '_>,
     run: impl FnOnce() -> T + Send + 'scope,

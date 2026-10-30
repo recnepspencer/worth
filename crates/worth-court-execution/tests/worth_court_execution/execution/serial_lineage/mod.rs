@@ -1,16 +1,5 @@
 #[allow(unused_imports)]
 use crate::serial_lineage::ordinary_context::*;
-use std::num::NonZeroUsize;
-use {
-    worth_execution::CancellationToken, worth_execution::ExecutionMemoryReservation,
-    worth_execution::ExecutionRequest, worth_execution::LeaseDenial,
-    worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel,
-    worth_execution::SerialRequest,
-};
-use {
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
-    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
-};
 
 #[test]
 fn nested_serial_scope_cannot_replace_parent_memory() {

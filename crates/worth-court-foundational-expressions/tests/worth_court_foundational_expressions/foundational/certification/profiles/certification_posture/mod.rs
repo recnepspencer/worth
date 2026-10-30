@@ -1,9 +1,6 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::profiles::certification_posture::*;
-use worth_proof::TransitionOutcome;
 use {
-    worth_foundational::admit_requested_foundational_profile,
-    worth_foundational::attach_proof_bearing_profiled_artifact,
     worth_foundational::bridge_evidence_backed_proof_bearing_artifact_trust_boundary,
     worth_foundational::bridge_production_certified_proof_bearing_artifact_trust_boundary,
     worth_foundational::certify_evidence_backed_proof_bearing_artifact,
@@ -11,16 +8,8 @@ use {
     worth_foundational::foundational_profile_certification_authority,
     worth_foundational::foundational_profile_certification_proof_lane,
     worth_foundational::foundational_profile_certification_readmission_authority,
-    worth_foundational::foundational_profile_progression_authority,
     worth_foundational::readmit_evidence_backed_proof_bearing_artifact_after_boundary,
     worth_foundational::readmit_production_certified_proof_bearing_artifact_after_boundary,
-    worth_foundational::request_foundational_profile_set,
-    worth_foundational::AdmissionReadinessProfile, worth_foundational::CertificationPostureProfile,
-    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
-    worth_foundational::FoundationalProfileCertificationDenial,
-    worth_foundational::FoundationalProfileCertificationProofLane,
-    worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput,
-    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
 };
 
 #[test]

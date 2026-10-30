@@ -1,5 +1,3 @@
-use worth_proof::TransitionOutcome;
-
 use {
     crate::certification::ordinary_context::transitions::fixtures::branch::authority_first_candidate,
     crate::certification::ordinary_context::transitions::fixtures::branch::projection_shaped_candidate,

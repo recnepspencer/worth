@@ -4,10 +4,6 @@
 // unknown in bitwise operations, and a mux keeps the symbols its arms share.
 #[allow(unused_imports)]
 use crate::expressions::reference_context::digital::*;
-pub(crate) use {
-    worth_foundational::expression_api::ExpressionDenialFamily as Family,
-    worth_foundational::expression_api::ExpressionValue,
-};
 
 pub(crate) use crate::expressions::ordinary_context::evaluate;
 

@@ -33,4 +33,4 @@ pub(crate) use result_assembly::CommitResultSeal;
 mod request_checkpoints;
 #[cfg(test)]
 pub(crate) use request_checkpoints::observation as stage_observation;
-pub(crate) use request_checkpoints::{consult_stage, consult_stage_control, CommitStage};
+pub(crate) use request_checkpoints::{consult_stage, CommitStage};

@@ -1,4 +1,7 @@
-pub(crate) use {worth_store_recovery_runtime::PlannedPhysicalRecovery, worth_store_recovery_runtime::RecoveryPublicationAction};
+pub(crate) use {
+    worth_store_recovery_runtime::PlannedPhysicalRecovery,
+    worth_store_recovery_runtime::RecoveryPublicationAction,
+};
 
 pub(crate) fn assert_exact_publication_plan(planned: &PlannedPhysicalRecovery) {
     let publication = planned.publication_plan();
@@ -10,10 +13,10 @@ pub(crate) fn assert_exact_publication_plan(planned: &PlannedPhysicalRecovery) {
     for (candidate, actions) in publication
         .candidates()
         .iter()
-        .zip(publication.actions().chunks_exact(2))
+        .zip(publication.actions().as_chunks::<2>().0.iter())
     {
         assert_eq!(
-            actions,
+            actions.as_slice(),
             [
                 worth_store_recovery_runtime::RecoveryPublicationAction::MaterializeRootCandidate {
                     artifact: candidate.artifact(),

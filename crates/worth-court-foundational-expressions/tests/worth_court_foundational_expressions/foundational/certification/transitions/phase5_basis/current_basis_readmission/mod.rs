@@ -1,4 +1,3 @@
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::admit_current_basis_commit_receipt,
     worth_foundational::admit_current_basis_committed_authority,

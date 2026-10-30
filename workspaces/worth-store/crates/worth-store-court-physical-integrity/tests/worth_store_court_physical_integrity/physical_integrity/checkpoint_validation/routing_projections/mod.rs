@@ -1,7 +1,6 @@
 use worth_store_physical_format::CHECKPOINT_BINDING_RECORD_PREFIX_BYTES;
 use worth_store_physical_integrity::{
     project_checkpoint_binding_frame_length, validate_checkpoint_footer_envelope,
-    CheckpointFooterEnvelopeIntegrityValidation, UntrustedPhysicalArtifact,
 };
 
 use crate::checkpoint_validation::support::{binding_scope, footer_scope, identity};

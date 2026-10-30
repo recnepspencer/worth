@@ -1,7 +1,21 @@
 pub use {std::collections::BTreeMap, std::collections::BTreeSet};
 
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::HazardClass, crate::relational_certification::ordinary_context::world::supply_chain::schema::HazardSchema, crate::relational_certification::ordinary_context::world::supply_chain::schema::RelationContract, crate::relational_certification::ordinary_context::world::supply_chain::schema::RelationEdge, crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaError, crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion, crate::relational_certification::ordinary_context::world::supply_chain::schema::SupplyChainSchema};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::HazardClass,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::HazardSchema,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::RelationContract,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::RelationEdge,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaError,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::SupplyChainSchema,
+};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind,
+};
 
 impl SupplyChainSchema {
     pub fn validate_edge(
@@ -166,10 +180,7 @@ impl SupplyChainSchema {
         Ok(())
     }
 
-    pub fn validate_route_acyclicity(
-        &self,
-        edges: &[RelationEdge],
-    ) -> Result<(), SchemaError> {
+    pub fn validate_route_acyclicity(&self, edges: &[RelationEdge]) -> Result<(), SchemaError> {
         let mut graph = BTreeMap::<EntityKey, Vec<EntityKey>>::new();
         for edge in edges
             .iter()

@@ -1,22 +1,6 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::performance::claims::*;
-use {
-    worth_foundational::foundational_responsibilities,
-    worth_foundational::performance_api::common_path as performance_common,
-    worth_foundational::FoundationalAuthoritativePerformanceClaim,
-    worth_foundational::FoundationalPerformanceBoundary,
-    worth_foundational::FoundationalPerformanceBreadthLocalityPosture,
-    worth_foundational::FoundationalPerformanceClaimConstructionDenial,
-    worth_foundational::FoundationalPerformanceEvidenceStrength,
-    worth_foundational::FoundationalPerformanceExecutionTemperature,
-    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
-    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
-    worth_foundational::FoundationalPerformancePrimitiveLegalityDenial,
-    worth_foundational::FoundationalPerformanceWorkClass,
-    worth_foundational::FoundationalPolicyAdmissionPerformanceClaim,
-    worth_foundational::FoundationalReplayMaterializationPerformanceClaim,
-    worth_foundational::FoundationalSupportDerivedPerformanceClaim,
-};
+use worth_foundational::foundational_responsibilities;
 
 #[test]
 fn common_path_claim_authoring_surfaces_live_under_the_performance_responsibility_home() {

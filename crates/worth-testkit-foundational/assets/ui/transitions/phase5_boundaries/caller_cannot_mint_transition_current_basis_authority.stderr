@@ -1,17 +1,17 @@
 error[E0423]: cannot initialize a tuple struct which contains private fields
- --> tests/ui/transitions/phase5_boundaries/caller_cannot_mint_transition_current_basis_authority.rs:2:13
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/phase5_boundaries/caller_cannot_mint_transition_current_basis_authority.rs
   |
-2 |       let _ = worth_foundational::FoundationalTransitionCurrentBasisAuthority(());
+  |       let _ = worth_foundational::FoundationalTransitionCurrentBasisAuthority(());
   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
- ::: src/transitions/basis/current_basis.rs
+ ::: $WORKSPACE/crates/worth-foundational/src/transitions/basis/current_basis.rs
   |
   | / pub fn foundational_transition_current_basis_authority(
   | | ) -> AuthorityWitness<FoundationalTransitionCurrentBasisAuthority> {
   | |__________________________________________________________________- similarly named function `foundational_transition_current_basis_authority` defined here
   |
 note: constructor is not visible here due to private fields
- --> src/transitions/basis/current_basis.rs
+ --> $WORKSPACE/crates/worth-foundational/src/transitions/basis/current_basis.rs
   |
   | pub struct FoundationalTransitionCurrentBasisAuthority(());
   |                                                        ^^ private field

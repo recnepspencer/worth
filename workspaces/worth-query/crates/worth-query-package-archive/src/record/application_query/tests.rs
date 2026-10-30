@@ -58,7 +58,7 @@ fn aggregate_slot_none_and_orbit_keep_exact_original_wire_bytes() {
     for has_orbit in [false, true] {
         original.orbit = has_orbit.then(orbit);
         let mut out = crate::binary_output::BinaryOutput::with_capacity(256);
-        aggregate_selection::write(&mut out, &original).unwrap();
+        root_selection::choice::write(&mut out, &original).unwrap();
         let mut expected = crate::binary_output::BinaryOutput::with_capacity(256);
         expected.u16(u16::from(has_orbit));
         if has_orbit {
@@ -126,4 +126,56 @@ fn ambiguous_aggregate_refuses_preflight_and_write_before_bytes() {
     let mut out = crate::binary_output::BinaryOutput::with_capacity(256);
     assert!(write(&mut out, &query).is_err());
     assert!(out.into_bytes().is_empty());
+}
+
+#[test]
+fn committed_index_choice_v1_round_trips_and_keeps_legacy_component_bytes() {
+    let mut source = parts();
+    source.component_selection = Some(
+        component(ApplicationQueryComponentSelection::Census)
+            .meaning()
+            .clone(),
+    );
+    let mut output = crate::binary_output::BinaryOutput::with_capacity(256);
+    root_selection::choice::write(&mut output, &source).unwrap();
+    let mut expected = crate::binary_output::BinaryOutput::with_capacity(256);
+    expected.u16(2);
+    for text in [
+        "worth.tests.archive.component-query.v1",
+        "worth.tests.archive.component-slot.v1",
+        "Shells",
+        "Node",
+        "shells",
+    ] {
+        expected.text(text);
+    }
+    expected.u16(2);
+    assert_eq!(output.into_bytes(), expected.into_bytes());
+    source.component_selection = None;
+    source.managed_index = Some(ApplicationQueryManagedIndexMeaning::from_untrusted_parts(
+        WorthQueryPortableQueryManagedIndexParts {
+            semantic_version: 1,
+            index: "Prefix".into(),
+            probe_parameter: "prefix".into(),
+        },
+    ));
+    let mut output = crate::binary_output::BinaryOutput::with_capacity(256);
+    root_selection::choice::write(&mut output, &source).unwrap();
+    let bytes = output.into_bytes();
+    assert_eq!(&bytes[..4], &[0, 3, 0, 1]);
+    let mut input = BinaryInput::new(&bytes);
+    let (decoded_orbit, component, index) = root_selection::choice::decode(&mut input).unwrap();
+    assert!(decoded_orbit.is_none() && component.is_none() && input.is_finished());
+    assert_eq!(index, source.managed_index);
+    let mut input = BinaryInput::new(&[0, 3, 0, 2]);
+    assert_eq!(
+        root_selection::choice::decode(&mut input)
+            .unwrap_err()
+            .kind(),
+        Kind::UnsupportedRecordVariant
+    );
+    source.orbit = Some(orbit());
+    let mut output = crate::binary_output::BinaryOutput::with_capacity(256);
+    assert!(root_selection::choice::write(&mut output, &source).is_err());
+    assert!(output.into_bytes().is_empty());
 }

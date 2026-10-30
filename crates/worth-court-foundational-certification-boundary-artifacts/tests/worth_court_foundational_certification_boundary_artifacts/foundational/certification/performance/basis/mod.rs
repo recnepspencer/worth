@@ -1,12 +1,3 @@
-use {
-    worth_foundational::performance_api,
-    worth_foundational::FoundationalPerformanceAttachmentConstructionDenial,
-    worth_foundational::FoundationalPerformanceBundleConstructionDenial,
-    worth_foundational::FoundationalPerformanceCounterRow,
-    worth_foundational::FoundationalPerformanceMismatch,
-    worth_foundational::FoundationalPerformanceWorkClass,
-};
-
 use crate::certification::ordinary_context::performance::basis_support::authoritative_claim;
 
 #[test]

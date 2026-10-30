@@ -10,17 +10,8 @@
 
 #[allow(unused_imports)]
 use crate::process_kill::*;
-use std::fs;
-use std::num::NonZeroU64;
-use std::path::PathBuf;
-use std::time::Instant;
 
-use worth_execution::ExecutionRequest;
-use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
-
-use {crate::durable_run::apply, crate::durable_run::open, crate::durable_run::steps_before};
-use {crate::killed_child, crate::killed_child::ChildEnd};
-use {crate::workload, crate::workload::Script, crate::workload::Step};
+use {crate::durable_run::apply, crate::durable_run::open};
 
 use crate::process_kill::recovery_court::assert_killed_home_recovers;
 
@@ -93,8 +84,6 @@ fn a_late_mutation_seam_is_not_mistaken_for_a_finished_child() {
         result.unwrap();
     });
 }
-
-use worth_store::physical_runtime::production::PhysicalCheckpointStep;
 
 #[test]
 fn carried_members_survive_a_kill_at_each_manifest_mutation_seam() {

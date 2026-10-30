@@ -53,10 +53,10 @@ pub(crate) fn normalize_demands(
             by_key.insert(demand.key(), representative);
         }
     }
-    if let Some(identity) = by_key.values().next().map(|demand| demand.identity()) {
-        if by_key.values().any(|demand| demand.identity() != identity) {
-            return Err(UiNativeTextAtlasDenial::RasterBatchMismatch);
-        }
+    if let Some(identity) = by_key.values().next().map(|demand| demand.identity())
+        && by_key.values().any(|demand| demand.identity() != identity)
+    {
+        return Err(UiNativeTextAtlasDenial::RasterBatchMismatch);
     }
     let mut normalized = by_key.into_values().collect::<Vec<_>>();
     normalized.sort_by_cached_key(|demand| canonical_raster_key_bytes(demand.key()));

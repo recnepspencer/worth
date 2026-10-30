@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 def package_roles(metadata):
-    path = Path(__file__).resolve().parents[2] / 'tools/boundary-check/src/test_topology/product_roles.py'
+    path = Path(__file__).with_name('product_roles.py')
     spec = importlib.util.spec_from_file_location('_a2_product_roles', path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -55,7 +55,7 @@ def frontiers(metadata, selections):
 
 
 def surface(stem, frontier):
-    """A2 product_frontier.rs::surface, with the same sorted-name input contract.
+    """boundary-check graph_rules/frontier.rs::surface, with sorted-name input.
 
     This is the Python spelling of that naming function, not a frontier algorithm.
     The Rust function remains the authority; its examples are exercised by fixtures.

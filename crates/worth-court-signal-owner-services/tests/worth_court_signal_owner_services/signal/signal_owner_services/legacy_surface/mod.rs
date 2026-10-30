@@ -1,12 +1,5 @@
 #[allow(unused_imports)]
 use crate::signal_owner_services::ordinary_context::legacy_surface::*;
-pub(crate) use {std::panic::catch_unwind, std::panic::AssertUnwindSafe};
-
-pub(crate) use worth_signal::facade::branch::SignalBranchSnapshotReconstructionDenial;
-pub(crate) use {
-    worth_signal::facade::SignalError, worth_signal::facade::SignalGraph,
-    worth_signal::facade::SignalRuntime,
-};
 
 #[test]
 fn sealed_non_main_selection_and_catalog_are_canonical_through_root_and_observer() {

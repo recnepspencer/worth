@@ -8,10 +8,10 @@ pub(crate) use crate::phase_eight_process::comparison;
 pub(crate) use crate::phase_eight_process::history::physical_history::ParentPhysicalHistory;
 pub(crate) use worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard;
 pub(crate) use {
-    crate::phase_eight_process::production::harness::process::spawn_recovery_at_yieldpoint,
     crate::phase_eight_process::production::harness::ObserverProcess,
     crate::phase_eight_process::production::harness::ProcessWorld,
     crate::phase_eight_process::production::harness::RuntimeProcess,
+    crate::process::support::production_harness::spawn_recovery_at_yieldpoint,
 };
 
 pub(crate) const RECOVERY_SEAM_PROFILE: &str = "c8-phase8-fate-coverage-v1";

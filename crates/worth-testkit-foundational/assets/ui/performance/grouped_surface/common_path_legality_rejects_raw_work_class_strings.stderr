@@ -1,11 +1,11 @@
 error[E0308]: mismatched types
-  --> tests/ui/performance/grouped_surface/common_path_legality_rejects_raw_work_class_strings.rs:15:11
-   |
-15 |         &["authoritative_mutation"],
-   |           ^^^^^^^^^^^^^^^^^^^^^^^^ expected `FoundationalPerformanceWorkClass`, found `&str`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/grouped_surface/common_path_legality_rejects_raw_work_class_strings.rs
+  |
+  |         &["authoritative_mutation"],
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^ expected `FoundationalPerformanceWorkClass`, found `&str`
 
 error[E0308]: mismatched types
-  --> tests/ui/performance/grouped_surface/common_path_legality_rejects_raw_work_class_strings.rs:16:11
-   |
-16 |         &["replay_reconstruction"],
-   |           ^^^^^^^^^^^^^^^^^^^^^^^ expected `FoundationalPerformanceWorkClass`, found `&str`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/grouped_surface/common_path_legality_rejects_raw_work_class_strings.rs
+  |
+  |         &["replay_reconstruction"],
+  |           ^^^^^^^^^^^^^^^^^^^^^^^ expected `FoundationalPerformanceWorkClass`, found `&str`

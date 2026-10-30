@@ -4,15 +4,6 @@ use {
     worth_foundational::foundational_performance_execution_temperature_definitions,
     worth_foundational::foundational_performance_layout_intent_definitions,
     worth_foundational::foundational_responsibilities,
-    worth_foundational::performance_api::common_path as performance_common,
-    worth_foundational::FoundationalPerformanceBoundary,
-    worth_foundational::FoundationalPerformanceEvidenceStrength,
-    worth_foundational::FoundationalPerformanceExecutionTemperature,
-    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
-    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
-    worth_foundational::FoundationalPerformanceLayoutIntent,
-    worth_foundational::FoundationalPerformancePrimitiveLegalityDenial,
-    worth_foundational::FoundationalPerformanceWorkClass,
 };
 
 #[test]

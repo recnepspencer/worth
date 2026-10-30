@@ -1,26 +1,6 @@
 //! Ordinary home reads distinguish unavailable members from absent records.
 #[allow(unused_imports)]
 use crate::residency_media::*;
-use worth_execution::ExecutionRequest;
-use worth_store_relational::RelationalStoreHome;
-use {
-    crate::durable_run, crate::open_refusals, crate::residency_fixture::Fixture,
-    crate::selected_checkpoint, crate::workload,
-};
-use {
-    worth_relational::facade::mvcc::RelationalTransactionIntent,
-    worth_relational::facade::mvcc::RelationalTransactionReadDenial,
-    worth_relational::facade::storage::RelationalStorageSubject,
-    worth_relational::facade::storage::RelationalStorageUnavailableCause,
-    worth_relational::facade::transactions::RecordRef,
-};
-use {
-    worth_store::physical_runtime::AnchoredRecordMember,
-    worth_store::physical_runtime::AnchoredRecordName,
-    worth_store::physical_runtime::AnchoredRecordPublication,
-    worth_store::physical_runtime::AnchoredRecordsDenial,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-};
 
 #[test]
 fn missing_and_stale_member_locators_damage_only_their_region_and_never_answer_empty() {

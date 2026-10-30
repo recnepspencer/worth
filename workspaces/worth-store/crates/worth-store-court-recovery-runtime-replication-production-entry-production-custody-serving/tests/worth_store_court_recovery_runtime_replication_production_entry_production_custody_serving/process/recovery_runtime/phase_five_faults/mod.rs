@@ -1,36 +1,5 @@
-#![cfg(all())]
-
 #[allow(unused_imports)]
 use crate::phase_five_faults::*;
-use {std::path::Path, std::path::PathBuf};
-
-use worth_proof::TransitionOutcome;
-use {
-    worth_store::physical_runtime::certification::MediaFaultDirective,
-    worth_store::physical_runtime::certification::MediaFaultSchedule,
-    worth_store::physical_runtime::certification::MediaOperationRole,
-};
-use {
-    worth_store::physical_runtime::FilesystemAccessPosture,
-    worth_store::physical_runtime::FilesystemMediaAdmission,
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::RecoveryStagingIndeterminatePhysical,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration,
-    worth_store_recovery_runtime::PhysicalRecoveryLimits,
-    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
-    worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority,
-    worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration,
-};
-use {
-    worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution,
-    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
-    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
-};
 
 #[test]
 fn partial_materialization_retains_the_exact_indeterminate_receipt() {

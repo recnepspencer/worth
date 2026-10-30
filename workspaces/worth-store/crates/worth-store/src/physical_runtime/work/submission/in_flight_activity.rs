@@ -38,12 +38,26 @@ impl PhysicalSubmissionState {
             .active_wait
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let previous = self
-            .active_submissions
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| {
-                value.checked_sub(1)
-            })
-            .expect("submission activity is released exactly once");
+        let previous = {
+            let update_counter = &self.active_submissions;
+            let mut value = update_counter.load(Ordering::Acquire);
+            loop {
+                let next_value = value.checked_sub(1);
+                let Some(updated_value) = next_value else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        }
+        .expect("submission activity is released exactly once");
         if previous == 1 {
             self.active_changed.notify_all();
         }
@@ -105,12 +119,26 @@ impl PhysicalSubmissionState {
             .active_wait
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let previous = self
-            .active_effects
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| {
-                value.checked_sub(1)
-            })
-            .expect("physical effect enrollment is released exactly once");
+        let previous = {
+            let update_counter = &self.active_effects;
+            let mut value = update_counter.load(Ordering::Acquire);
+            loop {
+                let next_value = value.checked_sub(1);
+                let Some(updated_value) = next_value else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        }
+        .expect("physical effect enrollment is released exactly once");
         if previous == 1 {
             self.active_changed.notify_all();
         }

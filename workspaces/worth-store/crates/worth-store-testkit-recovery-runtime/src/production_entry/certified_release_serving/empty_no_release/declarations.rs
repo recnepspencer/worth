@@ -13,6 +13,10 @@ pub use {
     worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
 };
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Provides the fixture stack for a real empty-home recovery and release journey."
+)]
 pub fn run_empty_no_release() {
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery(
         "empty-no-release-serving",

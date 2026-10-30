@@ -2,18 +2,10 @@
 // drafts agree; meaning changes identity and spelling does not.
 #[allow(unused_imports)]
 use crate::expressions::ordinary_context::canonical::*;
-pub(crate) use {
-    worth_foundational::expression_api::expressions,
-    worth_foundational::expression_api::ExpressionBuilder,
-    worth_foundational::expression_api::ExpressionDenialDetail,
-    worth_foundational::expression_api::ExpressionDenialFamily as Family,
-    worth_foundational::expression_api::ExpressionFunctionCatalog,
-    worth_foundational::expression_api::ExpressionProfile,
-    worth_foundational::expression_api::ExpressionType,
-};
+pub(crate) use worth_foundational::expression_api::expressions;
 
 pub(crate) use {
-    crate::expressions::ordinary_context::admit, crate::expressions::ordinary_context::draft,
+    crate::expressions::ordinary_context::draft,
     crate::expressions::ordinary_context::empty_catalog,
     crate::expressions::ordinary_context::function, crate::expressions::ordinary_context::schema,
 };

@@ -1,5 +1,3 @@
-use crate::phase_eight_process::production::harness::ProcessWorld;
-
 #[test]
 fn runtime_and_observer_protocol_families_reject_cross_decoding() {
     let world = crate::phase_eight_process::production::harness::ProcessWorld::start(

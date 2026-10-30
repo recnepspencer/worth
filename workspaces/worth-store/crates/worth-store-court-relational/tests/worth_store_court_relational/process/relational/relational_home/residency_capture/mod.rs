@@ -1,19 +1,9 @@
 //! Physical membership, rather than encoded-byte estimates, proves reuse.
 #[allow(unused_imports)]
 use crate::residency_capture::*;
-use worth_execution::ExecutionRequest;
-use worth_store_relational::RelationalStoreHome;
 use {
     worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId,
-    worth_relational::facade::transactions::CreateIntent,
-    worth_relational::facade::transactions::MutationIntent,
 };
-use {
-    worth_store::physical_runtime::AnchoredRecordMemberLocator,
-    worth_store::physical_runtime::AnchoredRecordName,
-};
-
-use {crate::batches, crate::durable_run, crate::workload};
 
 #[test]
 fn a_one_partition_commit_publishes_constant_new_members_and_capture_reads_nothing() {

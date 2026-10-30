@@ -12,7 +12,7 @@ from cargo_capture import CargoRunner, instrument
 from compiler_units import CompilerUnitRefusal
 from evidence import run
 from logs import llvm_lines, read_lane
-from lane_environment import LaneEnvironmentRefusal, validate as validate_environment
+from lane_environment import LaneEnvironmentRefusal, validate_command, validate as validate_environment
 from ratchet import source_violations
 from source_scan import scan_workspace
 from telemetry import setup_counts, slot_use, timing_summary
@@ -143,6 +143,7 @@ def capture_command(command, path, capture_index, repository, environment):
     logs, actual, refusal = [], None, None
     try:
         validate_environment(environment)
+        validate_command(command)
     except LaneEnvironmentRefusal as error:
         return 1, [], str(error)
     if command[0] == 'cargo':

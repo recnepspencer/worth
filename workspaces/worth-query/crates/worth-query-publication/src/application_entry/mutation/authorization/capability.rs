@@ -49,7 +49,7 @@ where
         selected,
         request.workflow_actor_context.as_ref(),
     )?;
-    prepare_authorized(request, identities, staged.source, authorized)
+    prepare_authorized(phase, request, identities, staged.source, authorized)
 }
 
 pub(in crate::application_entry::mutation) fn admit_capability_for_assessment<

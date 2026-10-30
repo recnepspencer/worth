@@ -43,8 +43,10 @@ pub(super) fn resolve(
     );
     let (_, routing_bytes, _) = descend(root, routing, RouteKey::Record(record), walk)?;
     let route = routing_bytes[88..]
-        .chunks_exact(88)
-        .find(|entry| record_key(entry) == Some(record))
+        .as_chunks::<88>()
+        .0
+        .iter()
+        .find(|entry| record_key(*entry) == Some(record))
         .ok_or_else(pointer)?;
     match route[24] {
         1 => resolve_inline(root, manifest, record, route, walk),

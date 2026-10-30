@@ -3,7 +3,7 @@ use super::control;
 use super::custody::{authority, request, SERIAL};
 use std::alloc::Layout;
 use worth_execution::{
-    ExecutionAllocationDenialKind as Kind, ExecutionAllocationPolicy as Policy, LeaseDenial,
+    ExecutionAllocationDenialClass as Kind, ExecutionAllocationPolicy as Policy, LeaseDenial,
 };
 use worth_relational::facade::identity::{EntityId, PartitionId};
 fn id(slot: u64) -> EntityId {
@@ -58,14 +58,14 @@ fn retained_endpoint_capture_and_union_keep_full_exact_ids_and_charge_coexistenc
         _ => panic!("old endpoint backing must remain charged during replacement"),
     };
     assert_eq!(
-        denied.kind(),
-        Kind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial::Capacity {
+        denied.classify(),
+        Kind::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
                 requested: quote,
                 admitted: quote
                     - u64::try_from(Layout::array::<EntityId>(1).unwrap().size()).unwrap(),
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+            })
         ))
     );
     assert_eq!(denied.requested_payload_bytes(), Some(quote));

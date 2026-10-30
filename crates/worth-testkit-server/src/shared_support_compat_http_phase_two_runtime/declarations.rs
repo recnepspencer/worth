@@ -1,9 +1,17 @@
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompatibilityExecutionInput, worth_server::WorthServerCompatibilityPreparedRequest, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig};
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerCompatibilityExecutionInput,
+    worth_server::WorthServerCompatibilityPreparedRequest,
+    worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig,
+    worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryWorkspaceProvider,
+    worth_server::WorthServerRequestContextConfig,
+};
 
-pub use {crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider};
-pub use {crate::shared_support_worth_native_assertions::worth_native_session};
-pub use {crate::shared_support_worth_native_runtime::worth_native_session_input_builder};
+pub use crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider;
+pub use crate::shared_support_worth_native_assertions::worth_native_session;
+pub use crate::shared_support_worth_native_runtime::worth_native_session_input_builder;
 
 pub fn build_phase_two_server() -> WorthServer {
     build_phase_two_server_with_workspace_provider(TestWorkspaceProvider)
@@ -19,7 +27,9 @@ pub fn build_phase_two_server_with_workspace_provider(
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
                         .with_preview_targeting_enabled(true)
-                        .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("request context config should validate"),
                 )

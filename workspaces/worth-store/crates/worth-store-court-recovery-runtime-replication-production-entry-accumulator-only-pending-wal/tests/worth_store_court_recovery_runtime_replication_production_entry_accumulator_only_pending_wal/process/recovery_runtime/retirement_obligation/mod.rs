@@ -1,29 +1,7 @@
 #[allow(unused_imports)]
 use crate::retirement_obligation::*;
-use worth_proof::TransitionOutcome;
-use {
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationOutcome,
-    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
-    worth_store::physical_runtime::PhysicalMutationRequest,
-    worth_store::physical_runtime::PhysicalRetirementDenial,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryLimits,
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::RecoveryCleanupDispositionKind,
-    worth_store_recovery_runtime::RecoveryCleanupTarget,
-    worth_store_recovery_runtime::WorthStoreRecovery,
-};
-use {
-    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
-    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
-};
-use {
-    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
-    worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits,
-};
+use worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment;
+use worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits;
 
 #[test]
 fn recovery_reconstructs_an_unresolved_retirement_intent() {

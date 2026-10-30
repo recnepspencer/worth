@@ -1,30 +1,11 @@
-mod free_reuse_ordering;
-
-use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
-use worth_store_test_support::harness::physical_isolation::reclaim as reclaim_support;
-
 use {
     worth_store_physical_isolation::reject_backend_residue_as_reclaim_authority,
     worth_store_physical_isolation::reject_copied_read_plan_fields_as_reclaim_authority,
     worth_store_physical_isolation::reject_current_root_absence_as_reclaim_authority,
     worth_store_physical_isolation::reject_raw_reader_handle_scan_as_reclaim_authority,
-    worth_store_physical_isolation::AllocatorPublicationReceipt,
-    worth_store_physical_isolation::BackupReachabilityLeaseIndexSnapshot,
-    worth_store_physical_isolation::CrashStableReclaimReuseFence,
-    worth_store_physical_isolation::ExecutedReachabilityEvidence,
-    worth_store_physical_isolation::FreeReuseFenceDenial,
-    worth_store_physical_isolation::GenerationAdvanceReceipt,
-    worth_store_physical_isolation::HazardLeaseDenial,
-    worth_store_physical_isolation::HazardLeaseKind,
-    worth_store_physical_isolation::HazardLeaseTable,
-    worth_store_physical_isolation::HazardLeaseTableCapacity,
-    worth_store_physical_isolation::LeaseExpiryPosture,
-    worth_store_physical_isolation::PhysicalOrderingContract,
-    worth_store_physical_isolation::PhysicalOrderingSite,
-    worth_store_physical_isolation::ReclaimDenial,
-    worth_store_physical_isolation::ReclaimEligibilityProof,
 };
 use {
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,
     worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority,
     worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_operation_digest_closeout,
 };
@@ -32,7 +13,6 @@ use {
     worth_store_test_support::harness::physical_isolation::reclaim::assert_reclaim_blocked_by_live_hazard,
     worth_store_test_support::harness::physical_isolation::reclaim::assert_reclaim_eligible_from_live_table,
     worth_store_test_support::harness::physical_isolation::reclaim::eligibility_after_releases,
-    worth_store_test_support::harness::physical_isolation::reclaim::ReclaimFixture,
 };
 
 #[test]
@@ -332,7 +312,5 @@ fn release_order_does_not_change_reclaim_eligibility() {
     assert_eq!(forward, reverse);
 }
 
-#[test]
-fn free_reuse_requires_eligible_reclaim_generation_advance_and_allocator_publication() {
-    free_reuse_ordering::generation_and_allocator_publication_precede_reuse();
-}
+#[path = "free_reuse.rs"]
+mod free_reuse;

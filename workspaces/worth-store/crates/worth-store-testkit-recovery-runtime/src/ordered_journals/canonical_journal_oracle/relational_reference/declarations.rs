@@ -80,7 +80,7 @@ impl RelationalReference {
                 let choice = if live.len() < 2 {
                     0
                 } else {
-                    generator.next() % 8
+                    generator.next_u64() % 8
                 };
                 let batch = match choice {
                     0..=2 => create(step),
@@ -298,7 +298,7 @@ pub fn serial_request() -> SerialRequest {
 pub struct Xorshift(pub u64);
 
 impl Xorshift {
-    pub fn next(&mut self) -> u64 {
+    pub fn next_u64(&mut self) -> u64 {
         self.0 ^= self.0 << 13;
         self.0 ^= self.0 >> 7;
         self.0 ^= self.0 << 17;
@@ -306,6 +306,6 @@ impl Xorshift {
     }
 
     pub fn index(&mut self, length: usize) -> usize {
-        (self.next() % length as u64) as usize
+        (self.next_u64() % length as u64) as usize
     }
 }

@@ -1,26 +1,5 @@
 #[allow(unused_imports)]
 use crate::phase_eight_process::production::writer_crash::*;
-use std::collections::BTreeSet;
-
-use worth_store_physical_integrity::PhysicalDamageCause;
-use {
-    worth_store_physical_format::DurablePhysicalRootManifest,
-    worth_store_physical_format::RecordArtifactFile,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
-    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial,
-    worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial,
-    worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateMismatch,
-    worth_store_recovery_runtime::RecoveryReportEnvelope,
-    worth_store_recovery_runtime::RecoveryReportOutcome,
-};
-
-use {
-    crate::history::schedule::in_flight_mutation::MutationCrashWorkload,
-    crate::phase_eight_process::production::harness::ProcessWorld,
-};
 
 use {
     crate::production::writer_crash::persisted_world::changed_paths,
@@ -36,7 +15,6 @@ use {
 use {
     crate::production::writer_crash::successor_candidate_media::candidate_root_path,
     crate::production::writer_crash::successor_candidate_media::candidate_topology,
-    crate::production::writer_crash::successor_candidate_media::hostile_artifact,
     crate::production::writer_crash::successor_candidate_media::mutate_candidate,
     crate::production::writer_crash::successor_candidate_media::selected_root_bytes,
 };
@@ -203,13 +181,12 @@ fn hostile_successor_candidates_block_before_recovery_effects() {
         let report_path = world
             .parent_path()
             .join(format!("hostile-{hostile}.report"));
-        let (_, output) =
-            crate::phase_eight_process::production::harness::process::run_recovery_with_profile(
-                &root,
-                &report_path,
-                world.parent_path(),
-                "c8-phase8-fate-coverage-v1",
-            );
+        let (_, output) = crate::process::support::production_harness::run_recovery_with_profile(
+            &root,
+            &report_path,
+            world.parent_path(),
+            "c8-phase8-fate-coverage-v1",
+        );
         assert!(
             !output.status.success(),
             "blocked recovery must not report success"

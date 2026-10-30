@@ -1,4 +1,3 @@
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::bridge_certified_diagnostic_bundle_trust_boundary,
     worth_foundational::certify_current_basis_diagnostic_bundle,
@@ -6,11 +5,6 @@ use {
     worth_foundational::foundational_diagnostic_certified_readmission_authority,
     worth_foundational::prepare_diagnostic_support_report_for_canonical_basis,
     worth_foundational::readmit_certified_diagnostic_bundle_after_boundary,
-    worth_foundational::FoundationalDiagnosticCertifiedAttachmentDenial,
-    worth_foundational::FoundationalDiagnosticCertifiedCoverageClass,
-    worth_foundational::FoundationalDiagnosticCoverageFamilyStatus,
-    worth_foundational::FoundationalDiagnosticCoverageMatrix,
-    worth_foundational::FoundationalDiagnosticNamedGap,
 };
 
 use {

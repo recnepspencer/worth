@@ -1,5 +1,3 @@
-mod retained_graph_charges;
-
 #[allow(unused_imports)]
 use crate::partitioner_checked::isolated_context::merge::*;
 use {
@@ -8,14 +6,8 @@ use {
     crate::partitioner_checked::isolated_context::item,
     crate::partitioner_checked::isolated_context::lease,
     crate::partitioner_checked::isolated_context::map,
-    crate::partitioner_checked::isolated_context::weighted_root, std::num::NonZeroUsize,
-    std::sync::Arc, std::sync::Mutex, worth_execution::CancellationSource,
-    worth_execution::CancellationToken, worth_execution::ComponentPartitioner,
-    worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome,
-    worth_execution::MapStop, worth_execution::PartitionUpdateDenial,
-    worth_execution::WeightedEdge, worth_foundational::DeterminismContract,
-    worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture,
-    worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity,
+    crate::partitioner_checked::isolated_context::weighted_root, worth_execution::LeaseRequest,
+    worth_execution::MapKernelFailure, worth_execution::WeightedEdge,
 };
 
 #[test]
@@ -274,16 +266,66 @@ fn persistent_graph_charge_stops_growth_and_shrinks_after_removal() {
         return;
     }
 
-    retained_graph_charges::growth_stops_then_removal_admits_insertions();
-}
+    let _serial = checked_test_guard();
+    let authority = authority();
+    let tight = lease(
+        authority,
+        4_096,
+        100_000,
+        worth_execution::CancellationToken::new(),
+    );
+    let components = std::sync::Arc::new(std::sync::Mutex::new(
+        worth_execution::ComponentPartitioner::new(),
+    ));
+    let outcome = map().run(Some(&tight), |_, context| {
+        let mut count = 0_u64;
+        for id in 1..=1_000 {
+            match components
+                .lock()
+                .unwrap()
+                .upsert_item_checked(&tight, context, item(id))
+            {
+                Ok(_) => count += 1,
+                Err(worth_execution::PartitionUpdateDenial::Admission(
+                    worth_execution::LeaseDenial::MemoryExhausted(_),
+                )) => break,
+                Err(other) => panic!("unexpected checked denial: {other:?}"),
+            }
+        }
+        assert!(count > 0 && count < 1_000);
+        assert!(components.lock().unwrap().route(item(1_000)).is_none());
+        Ok::<_, MapKernelFailure<()>>(count)
+    });
+    assert!(matches!(
+        outcome,
+        worth_execution::MapOutcome::Stopped { .. }
+    ));
 
-#[test]
-fn report_peak_includes_two_simultaneously_retained_graphs() {
-    if crate::test_process::reexecute_isolated_test() {
-        return;
-    }
-
-    retained_graph_charges::peak_includes_simultaneously_retained_graphs();
+    let roomy = lease(
+        authority,
+        100_000,
+        100_000,
+        worth_execution::CancellationToken::new(),
+    );
+    let outcome = map().run(Some(&roomy), |_, context| {
+        let mut components = components.lock().unwrap();
+        for id in 1..=6 {
+            components
+                .remove_item_checked(&roomy, context, item(id))
+                .unwrap();
+        }
+        for id in 20..=30 {
+            components
+                .upsert_item_checked(&roomy, context, item(id))
+                .unwrap();
+        }
+        Ok::<_, MapKernelFailure<()>>(0_u64)
+    });
+    assert!(matches!(
+        outcome,
+        worth_execution::MapOutcome::Complete { .. }
+    ));
+    assert!(components.lock().unwrap().route(item(30)).is_some());
 }
 
 #[test]
@@ -326,3 +368,6 @@ fn pure_component_mutation_cannot_bypass_a_live_kernel_or_owned_charge() {
     assert!(bypass.is_err());
     assert!(graph.route(item(2)).is_none());
 }
+
+#[path = "retained_graph_peak.rs"]
+mod retained_graph_peak;

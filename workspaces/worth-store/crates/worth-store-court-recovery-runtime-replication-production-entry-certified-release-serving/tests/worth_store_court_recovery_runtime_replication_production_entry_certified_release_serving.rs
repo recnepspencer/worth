@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_recovery_runtime_replication_production_entry_certified_release_serving/support/c10_phase_five_rewrite_crash/mod.rs"]
 pub(crate) mod c10_phase_five_rewrite_crash;

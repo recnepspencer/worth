@@ -59,6 +59,10 @@ where
         self.failure.borrow_mut().take()
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     fn read(
         &self,
         field: &ApplicationCorrectionOutputField<S>,

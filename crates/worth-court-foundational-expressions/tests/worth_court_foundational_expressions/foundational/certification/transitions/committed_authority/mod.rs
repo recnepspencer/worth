@@ -1,12 +1,4 @@
 use {
-    worth_foundational::FoundationalAuthorityTransitionClass,
-    worth_foundational::FoundationalAuthorityTransitionDenial,
-    worth_foundational::FoundationalAuthorityTransitionOutcomeKind,
-    worth_foundational::FoundationalCommittedAuthorityConstructionDenial,
-    worth_foundational::FoundationalNoOpCause,
-};
-
-use {
     crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict,
     crate::certification::ordinary_context::transitions::fixtures::committed::advisory_verdict,
     crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority,

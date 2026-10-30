@@ -20,13 +20,13 @@ pub use storage::{ExecutionOrderedMap, ExecutionOrderedMapDenial};
 
 pub use authority::{
     CancellationSource, CancellationToken, ConstructionDenial, EquivalencePredicate,
-    ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationDenialKind,
-    ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter,
-    ExecutionAuthority, ExecutionAuthorityConfig, ExecutionByteBuffer, ExecutionImmutableBytes,
-    ExecutionLeaseStatus, ExecutionMemoryReservation, ExecutionPhysicalAllocationDenialKind,
-    ExecutionPolicyDenial, ExecutionRequest, ExecutionRequestArrayBuilder,
-    ExecutionRequestArrayDenial, ExecutionResourceLease, ExecutionResultMemory, LeaseDenial,
-    LeaseRequest, MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget, SerialRequest,
+    ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationPolicy,
+    ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter, ExecutionAuthority,
+    ExecutionAuthorityConfig, ExecutionByteBuffer, ExecutionImmutableBytes, ExecutionLeaseStatus,
+    ExecutionMemoryReservation, ExecutionPhysicalAllocationDenialKind, ExecutionPolicyDenial,
+    ExecutionRequest, ExecutionRequestArrayBuilder, ExecutionRequestArrayDenial,
+    ExecutionResourceLease, ExecutionResultMemory, LeaseDenial, LeaseRequest, MemoryLimitDenial,
+    MemoryLimitLevel, SerialMemoryBudget, SerialRequest,
 };
 pub use oracle::{compare_canonical_values, CanonicalBits};
 
@@ -67,3 +67,6 @@ pub use authority::consult_observation::{
 };
 #[doc(hidden)]
 pub use backend::ExecutionCheckpointObservationForTest;
+
+#[cfg(test)]
+pub(crate) use authority::ExecutionAllocationDenialKind;

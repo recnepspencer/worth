@@ -1,5 +1,5 @@
 warning: unreachable statement
- --> tests/ui/branch_reference/fork_basis_cannot_be_built_from_observation.rs:6:5
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/fork_basis_cannot_be_built_from_observation.rs:6:5
   |
 5 |     let observation: FoundationalBranchReferenceObservation<RelationalBranchTarget> = todo!();
   |                                                                                       ------- any code following this expression is unreachable
@@ -9,7 +9,7 @@ warning: unreachable statement
   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
 
 error[E0277]: the trait bound `AdmittedRelationalForkSourceBasis: From<FoundationalBranchReferenceObservation<RelationalBranchTarget>>` is not satisfied
- --> tests/ui/branch_reference/fork_basis_cannot_be_built_from_observation.rs:6:65
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/fork_basis_cannot_be_built_from_observation.rs:6:65
   |
 6 |     let _basis: AdmittedRelationalForkSourceBasis = observation.into();
   |                                                                 ^^^^ the trait `From<FoundationalBranchReferenceObservation<RelationalBranchTarget>>` is not implemented for `AdmittedRelationalForkSourceBasis`

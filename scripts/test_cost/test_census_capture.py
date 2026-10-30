@@ -14,6 +14,20 @@ from test_compiler_units import event, graph, unit
 
 
 class CensusCommandCaptureTests(unittest.TestCase):
+    def test_direct_command_profile_override_is_refused_before_declaring_or_launching_cargo(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            manifest, output = self.fixture(root)
+            command = ['cargo', 'check', '--config', 'profile.dev.debug=0']
+            argv, repo, cwd = self.cli(root, manifest, output, command)
+            with argv, repo, cwd, patch('census.CargoRunner') as runner, patch('census.run') as launch:
+                self.assertEqual(main(), 1)
+            runner.assert_not_called()
+            launch.assert_not_called()
+            result = json.loads((output/'census.json').read_text())
+            self.assertEqual(result['lanes'], {})
+            self.assertIn('omit --config overrides', result['capture_refusal'])
+
     def test_external_profile_override_refuses_cargo_and_wrappers_without_reusing_old_captures(self):
         for command in (['cargo', 'check'], [sys.executable, 'gate.py']):
             with self.subTest(command=command), tempfile.TemporaryDirectory() as temporary:

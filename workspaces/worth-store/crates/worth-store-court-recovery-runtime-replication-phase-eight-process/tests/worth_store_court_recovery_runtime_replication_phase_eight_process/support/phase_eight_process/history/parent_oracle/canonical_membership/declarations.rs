@@ -257,7 +257,7 @@ pub(crate) fn visit_root_block(
                     "parent oracle leaf routing length is invalid {path}"
                 ));
             }
-            for entry in payload[40..].chunks_exact(LEAF_ENTRY_BYTES) {
+            for entry in payload[40..].as_chunks::<LEAF_ENTRY_BYTES>().0.iter() {
                 placements.push(parse_placement(entry, frame.schema)?);
             }
         }
@@ -274,7 +274,7 @@ pub(crate) fn visit_root_block(
                     "parent oracle branch routing length is invalid {path}"
                 ));
             }
-            for child in payload[40..].chunks_exact(BRANCH_ENTRY_BYTES) {
+            for child in payload[40..].as_chunks::<BRANCH_ENTRY_BYTES>().0.iter() {
                 if child[18..20] != [0; 2] {
                     return Err(
                         "parent oracle branch reference reserved bytes are nonzero".to_owned()

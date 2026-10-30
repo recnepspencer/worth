@@ -36,6 +36,7 @@ pub(in crate::domain_computation::primary_graph) struct RetainedFact<T> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum StoreDenial {
     Allocation(ExecutionAllocationDenial),
+    ExecutionRequest(worth_execution::WorkCeilingDenial),
     RequestInterruption(
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption,
     ),
@@ -84,6 +85,7 @@ impl StoreDenial {
         let kind = match &self {
             Self::Allocation(_) => Kind::AllocationDenied,
             Self::RequestInterruption(_) => Kind::CurrentAuthorityDenied,
+            Self::ExecutionRequest(_) => Kind::RetainedSourceStorageDenied,
             Self::ConflictingBody => Kind::DecisionDependencyMismatch,
             _ => Kind::RetainedSourceStorageDenied,
         };
@@ -101,6 +103,11 @@ impl worth_execution::ChargedBytes for StoreDenial {
             Self::RequestInterruption(interruption) => {
                 fn inline<T: Copy>(_: &T) {}
                 inline(interruption);
+                0
+            }
+            Self::ExecutionRequest(cause) => {
+                fn inline<T: Copy>(_: &T) {}
+                inline(cause);
                 0
             }
             Self::Representability | Self::ConflictingBody => 0,

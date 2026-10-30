@@ -2,33 +2,11 @@
 use crate::c11_arena_copy_crash::pre_final::*;
 use {
     crate::c11_arena_copy_crash::checkpoint_source,
-    crate::c11_arena_copy_crash::observation::observe_copy_media,
-    crate::c11_arena_copy_crash::recover, crate::c11_arena_copy_crash::selected_extent,
-    std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread,
-    std::time::Duration, std::time::Instant, worth_proof::TransitionOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::PhysicalExtentCopyPhase,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationRequest,
     worth_store_testkit_recovery_runtime::support::append,
     worth_store_testkit_recovery_runtime::support::configuration,
-    worth_store_testkit_recovery_runtime::support::generation,
     worth_store_testkit_recovery_runtime::support::initialize,
     worth_store_testkit_recovery_runtime::support::open,
-    worth_store_testkit_recovery_runtime::support::scan,
     worth_store_testkit_recovery_runtime::support::EXTENT_BYTES,
-};
-use {
-    worth_store::physical_runtime::PhysicalExtentCopyResolutionProgress,
-    worth_store::physical_runtime::PhysicalMutationOutcome,
-    worth_store::physical_runtime::PhysicalMutationPreparationDenial,
-    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
-    worth_store::physical_runtime::RecordAppendBatch,
-    worth_store::physical_runtime::RecordAppendDenial,
 };
 
 #[test]

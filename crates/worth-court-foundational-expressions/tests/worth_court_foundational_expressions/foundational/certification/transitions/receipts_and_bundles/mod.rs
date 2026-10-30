@@ -1,9 +1,4 @@
 use {
-    worth_foundational::FoundationalBoundaryArtifactCategory,
-    worth_foundational::FoundationalTransitionIssuanceCause,
-};
-
-use {
     crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id,
     crate::certification::ordinary_context::transitions::fixtures::receipt::committed_authority_artifact,
     crate::certification::ordinary_context::transitions::fixtures::receipt::discard_closeout_cause,

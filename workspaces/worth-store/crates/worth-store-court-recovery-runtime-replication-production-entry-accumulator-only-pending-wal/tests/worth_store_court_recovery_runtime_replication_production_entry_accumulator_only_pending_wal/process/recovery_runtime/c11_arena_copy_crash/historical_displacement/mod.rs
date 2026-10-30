@@ -1,38 +1,14 @@
 #[allow(unused_imports)]
 use crate::c11_arena_copy_crash::historical_displacement::*;
-use std::fs;
-use worth_store_recovery_runtime::PhysicalRecoveryBlockKind;
 use {
     crate::c11_arena_copy_crash::kill_after_final_wal, crate::c11_arena_copy_crash::load_identity,
-    crate::c11_arena_copy_crash::pre_final, crate::c11_arena_copy_crash::recover,
-    crate::c11_arena_copy_crash::selected_extent, crate::copy_frame, std::path::Path,
-    std::path::PathBuf, worth_proof::TransitionOutcome,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationRequest,
-    worth_store_physical_format::DurableExtentRecordPlacement,
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::WorthStoreRecovery,
+    crate::c11_arena_copy_crash::recover, crate::c11_arena_copy_crash::selected_extent,
     worth_store_testkit_recovery_runtime::support::append,
     worth_store_testkit_recovery_runtime::support::configuration,
     worth_store_testkit_recovery_runtime::support::generation,
     worth_store_testkit_recovery_runtime::support::open,
-    worth_store_testkit_recovery_runtime::support::recovery_request,
     worth_store_testkit_recovery_runtime::support::scan,
     worth_store_testkit_recovery_runtime::support::EXTENT_BYTES,
-};
-use {
-    worth_store::physical_runtime::PhysicalMutationOutcome,
-    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
-    worth_store::physical_runtime::PhysicalRetirementDenial,
-};
-use {
-    worth_store_physical_format::decode_data_frame_page_lsn,
-    worth_store_physical_format::DurableExtentManifest,
-    worth_store_physical_format::DurableFrameKind,
-    worth_store_physical_format::ExtentArenaFrameLayout,
-    worth_store_physical_format::RecordArtifactFile,
-    worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES,
 };
 
 #[test]

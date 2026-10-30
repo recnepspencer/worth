@@ -72,6 +72,10 @@ pub fn durable_group(
     end_lsn
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Drives bounded foreground rotations while the fixture probes retained-WAL checkpoint races."
+)]
 pub fn publish_after_foreground_rotations(
     serving: &ServingPhysicalRuntime,
     submission: CertificationPhysicalRecordSubmission,
@@ -208,6 +212,10 @@ pub fn checkpoint_at_publication_replacement(
     (gate, handle, publication_arrival)
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Drives the foreground writer while the fixture controls the checkpoint cutover seam."
+)]
 pub fn start_cutover_foreground(
     submission: CertificationPhysicalRecordSubmission,
     placement: AdmittedRecordPlacementPolicy,

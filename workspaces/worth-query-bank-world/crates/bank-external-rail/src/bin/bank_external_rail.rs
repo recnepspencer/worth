@@ -9,6 +9,10 @@ use bank_external_rail::{
 };
 
 #[tokio::main]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime async-blocking=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+)]
 async fn main() {
     let bind_addr = parse_bind_addr();
     let protocol_support = parse_protocol_support();

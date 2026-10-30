@@ -4,6 +4,10 @@ pub use worth_store::physical_runtime::PhysicalStoreClosePhase;
 
 pub const PHASE_ENV: &str = "WORTH_STORE_C5_CLOSE_DEATH_PHASE";
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Retains a writer actor at the close-phase interruption seam."
+)]
 pub fn writer(root: &Path) {
     let serving = crate::physical_record_journeys::serving_from_initialization(root);
     let plan = serving.close_plan();

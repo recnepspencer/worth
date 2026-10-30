@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/subscription_authoritative_activation_rejects_preview_basis.rs:12:59
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_authoritative_activation_rejects_preview_basis.rs:12:59
    |
 12 |     let _ = runtime.activate_subscription_delivery(ready, preview_basis, consumer_contract);
    |                     ------------------------------        ^^^^^^^^^^^^^ expected `BridgeSubscriptionDeliveryCostProfile`, found `BridgeSubscriptionPreviewBasisBinding`
@@ -7,7 +7,7 @@ error[E0308]: mismatched types
    |                     arguments to this method are incorrect
    |
 note: method defined here
-  --> src/facade/runtime/subscription/delivery_admission.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription/delivery_admission.rs
    |
    |     pub fn activate_subscription_delivery(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

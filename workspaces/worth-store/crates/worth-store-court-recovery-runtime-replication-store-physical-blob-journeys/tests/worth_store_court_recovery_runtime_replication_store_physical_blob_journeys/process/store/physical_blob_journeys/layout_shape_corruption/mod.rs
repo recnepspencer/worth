@@ -1,31 +1,5 @@
-#![cfg(all())]
-
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::layout_shape_corruption::*;
-use {std::fs, std::num::NonZeroU64, std::path::Path, std::time::Duration};
-
-use worth_store_blob_chunks::BlobChunkSize;
-use worth_store_contracts::DurableArtifactFamilyId;
-use {
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress,
-    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest,
-    worth_store::physical_runtime::PhysicalIndexPointKey,
-    worth_store::physical_runtime::PhysicalLayoutDenial,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-};
-use {
-    worth_store_physical_format::BTreeNodeCellV1, worth_store_physical_format::BTreeNodeKind,
-    worth_store_physical_format::BTreeNodeV1,
-};
-use {
-    worth_store_physical_integrity::PhysicalDamageCause,
-    worth_store_physical_integrity::PhysicalFormatField,
-    worth_store_physical_integrity::PhysicalIntegrityObservationOutcome,
-    worth_store_physical_integrity::PhysicalIntegrityRejection,
-};
 
 use {
     crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,

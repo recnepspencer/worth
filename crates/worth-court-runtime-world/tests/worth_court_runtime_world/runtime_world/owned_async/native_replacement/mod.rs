@@ -1,15 +1,3 @@
-use crate::owned_async::ordinary_context::native_service::NativeServiceCourt;
-use {
-    worth_signal::facade::branch::SignalConditionalServiceExecutionDenial,
-    worth_signal::facade::branch::SignalOwnedAsyncManagedProgress as Progress,
-    worth_signal::facade::branch::SignalOwnedAsyncManagedReport as Report,
-    worth_signal::facade::branch::SignalOwnedAsyncQueueDenial as Denial,
-};
-use {
-    worth_signal::facade::ResourceRetryDenialClass,
-    worth_signal::facade::ResourceRevalidationIntent,
-};
-
 #[test]
 fn reissued_service_transfers_actual_queue_origin_without_rebinding_a_coalesced_queue() {
     let mut court = crate::owned_async::ordinary_context::native_service::NativeServiceCourt::new();

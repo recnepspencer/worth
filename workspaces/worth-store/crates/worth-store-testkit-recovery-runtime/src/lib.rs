@@ -1,7 +1,6 @@
 #[allow(dead_code, unused_imports)]
 #[path = "arena_route/mod.rs"]
 pub mod arena_route;
-#[allow(dead_code)]
 #[allow(dead_code, unused_imports)]
 #[path = "c10_phase_five_read/mod.rs"]
 pub mod c10_phase_five_read;
@@ -20,7 +19,6 @@ pub mod ordered_journals;
 #[allow(dead_code, unused_imports)]
 #[path = "pending_wal_world/mod.rs"]
 pub mod pending_wal_world;
-#[allow(dead_code)]
 #[allow(dead_code, unused_imports)]
 #[path = "phase_three_support/mod.rs"]
 pub mod phase_three_support;
@@ -33,7 +31,6 @@ pub mod published_above_checkpoint;
 #[allow(dead_code, unused_imports)]
 #[path = "release_reopen/mod.rs"]
 pub mod release_reopen;
-#[cfg(all())]
 #[allow(dead_code, unused_imports)]
 #[path = "selected_tag7_pruned_wal/mod.rs"]
 pub mod selected_tag7_pruned_wal;

@@ -1,5 +1,3 @@
-use {worth_store_physical_isolation::MovablePhysicalRefKind, worth_store_physical_isolation::TierMovementReadInterlockPlan, worth_store_physical_isolation::UnsupportedTierMovementClaim, worth_store_physical_isolation::UnsupportedTierMovementRequest};
-
 #[test]
 fn unsupported_hardware_placement_claim_is_denied_by_owner_api() {
     let denial = worth_store_physical_isolation::TierMovementReadInterlockPlan::reject_unsupported_tier_movement(

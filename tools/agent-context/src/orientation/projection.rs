@@ -7,9 +7,7 @@ use super::query_audience::{
     query_machine_fences_for_band,
 };
 use super::source_surface::{collect_owned_modules, ensure_facade_only_public_surface};
-use crate::authority_inputs::{
-    load_orientation_contract, CommittedFacadeSnapshot, OrientationContract,
-};
+use crate::authority_inputs::{facade_exports, load_orientation_contract, OrientationContract};
 use std::path::Path;
 
 pub(crate) fn load_orientations(
@@ -17,11 +15,10 @@ pub(crate) fn load_orientations(
     config_path: &Path,
 ) -> Result<Vec<CrateOrientation>, String> {
     let contract = load_orientation_contract(config_path)?;
-    let facade_snapshot = CommittedFacadeSnapshot::load(root)?;
     let discovered = discover_born_crates(root, &contract.subworkspace_paths)?;
     let mut orientations = discovered
         .into_iter()
-        .map(|born| project_governed_orientation(root, born, &contract, &facade_snapshot))
+        .map(|born| project_governed_orientation(root, born, &contract))
         .collect::<Result<Vec<_>, String>>()?;
     for workspace in &contract.context_workspaces {
         orientations.extend(
@@ -35,13 +32,11 @@ pub(crate) fn load_orientations(
         root,
         &contract.query_audience,
         &contract.machine_constitution,
-        &facade_snapshot,
     )?);
     if let Some(certification) = framework_certification_orientation(
         root,
         &contract.query_audience,
         &contract.machine_constitution,
-        &facade_snapshot,
     )? {
         orientations.push(certification);
     }
@@ -91,12 +86,11 @@ fn project_governed_orientation(
     root: &Path,
     born: DiscoveredCrate,
     contract: &OrientationContract,
-    facade_snapshot: &CommittedFacadeSnapshot,
 ) -> Result<CrateOrientation, String> {
     let crate_root = root.join(&born.relative_path);
     let identity = parse_governed_crate_identity(&born.package)?;
     let exemplar = contract.route_proof.get(&born.package);
-    let facade_exports = facade_snapshot.exports_for(&born.package)?;
+    let facade_exports = facade_exports(&crate_root)?;
     let owned_modules = collect_owned_modules(&crate_root.join("src"))?;
     ensure_facade_only_public_surface(&crate_root.join("src/lib.rs"))?;
 
@@ -146,7 +140,7 @@ fn skeleton_fence(relative_path: &str, contract: &OrientationContract) -> String
         .iter()
         .any(|path| path == relative_path)
     {
-        "Seed skeleton is machine-fenced by boundary-check; undeclared files and mixed-class modules are denied."
+        "Seed skeleton records the starting topology; visibility and code review own its composition."
             .to_owned()
     } else {
         "No seed-specific skeleton allowlist is declared for this born crate; general Road 1 boundary law still applies."

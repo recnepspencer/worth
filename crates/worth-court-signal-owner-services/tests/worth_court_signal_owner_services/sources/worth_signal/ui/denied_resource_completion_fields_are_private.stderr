@@ -1,5 +1,5 @@
 error: cannot construct `DeniedResourceCompletion` with struct literal syntax due to private fields
-  --> tests/ui/denied_resource_completion_fields_are_private.rs:7:13
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_completion_fields_are_private.rs:7:13
    |
  7 |     let _ = DeniedResourceCompletion {
    |             ^^^^^^^^^^^^^^^^^^^^^^^^

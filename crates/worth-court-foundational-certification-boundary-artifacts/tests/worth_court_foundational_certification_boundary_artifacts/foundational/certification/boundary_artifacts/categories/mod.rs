@@ -4,13 +4,8 @@ use {
     worth_foundational::boundary_receipt_category_of,
     worth_foundational::boundary_summary_category_of,
     worth_foundational::foundational_responsibilities,
-    worth_foundational::FoundationalBoundaryArtifactCategory,
-    worth_foundational::FoundationalBoundaryArtifactSurface,
-    worth_foundational::FoundationalBoundaryCategoryConstructionDenial,
     worth_foundational::FoundationalBoundaryCategorySurface,
-    worth_foundational::FoundationalBoundaryReceiptSurface,
     worth_foundational::FoundationalBoundaryReportSurface,
-    worth_foundational::FoundationalBoundarySummarySurface,
 };
 
 #[test]

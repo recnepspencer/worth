@@ -98,6 +98,13 @@ pub trait WorthQueryReadGraphPlanningContract {
     {
         None
     }
+    fn managed_index_selection(
+        &self,
+    ) -> Option<
+        &worth_query_declaration::facade::application_query::ApplicationQueryManagedIndexMeaning,
+    > {
+        None
+    }
     fn root_union_dedup_required(&self) -> bool {
         false
     }
@@ -159,6 +166,13 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphPlanningPre
     ) -> Option<&worth_query_declaration::facade::application_query::ApplicationQueryComponentMeaning>
     {
         self.meaning.component_selection.as_deref()
+    }
+    fn managed_index_selection(
+        &self,
+    ) -> Option<
+        &worth_query_declaration::facade::application_query::ApplicationQueryManagedIndexMeaning,
+    > {
+        self.meaning.managed_index.as_deref()
     }
     fn root_union_dedup_required(&self) -> bool {
         !self.meaning.root_paths.is_empty()
@@ -227,6 +241,13 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphReadContrac
     ) -> Option<&worth_query_declaration::facade::application_query::ApplicationQueryComponentMeaning>
     {
         self.component_selection()
+    }
+    fn managed_index_selection(
+        &self,
+    ) -> Option<
+        &worth_query_declaration::facade::application_query::ApplicationQueryManagedIndexMeaning,
+    > {
+        self.managed_index_selection()
     }
     fn root_union_dedup_required(&self) -> bool {
         !self.root_paths().is_empty()

@@ -1,11 +1,11 @@
 error[E0603]: module `registration` is private
- --> tests/ui/cross_family/worth_native_cannot_import_compat_http_internal.rs:1:42
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/cross_family/worth_native_cannot_import_compat_http_internal.rs
   |
-1 | use worth_server::surfaces::compat_http::registration::CompatHttpSurface;
+  | use worth_server::surfaces::compat_http::registration::CompatHttpSurface;
   |                                          ^^^^^^^^^^^^ private module
   |
 note: the module `registration` is defined here
- --> src/surfaces/compat_http/mod.rs
+ --> $WORKSPACE/crates/worth-server/src/surfaces/compat_http/mod.rs
   |
   | mod registration;
   | ^^^^^^^^^^^^^^^^

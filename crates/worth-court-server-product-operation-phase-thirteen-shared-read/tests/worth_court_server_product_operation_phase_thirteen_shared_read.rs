@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_server_product_operation_phase_thirteen_shared_read/support/compat_http_entry/mod.rs"]
 pub(crate) mod compat_http_entry;

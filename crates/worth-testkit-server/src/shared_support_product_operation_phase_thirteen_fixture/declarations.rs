@@ -1,11 +1,28 @@
 pub use {std::sync::Arc, std::sync::Mutex};
 
 pub use {serde_json::json, serde_json::Value};
-pub use {worth_server::WorthServer, worth_server::WorthServerCompatibilityPreparedRequest, worth_server::WorthServerProductAdapterExecutionError, worth_server::WorthServerProductApplicationAdapter, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerProductOperationAuthorizer, worth_server::WorthServerProductOperationDeclaration, worth_server::WorthServerProductOperationDenial, worth_server::WorthServerProductOperationErrorMaps, worth_server::WorthServerProductOperationInput, worth_server::WorthServerProductOperationPayload, worth_server::WorthServerProductOperationSuccess, worth_server::WorthServerProductOperationSupportSnapshot, worth_server::WorthServerProductSession, worth_server::WorthServerProductSessionCreationRequest, worth_server::WorthServerTransportCallerVerifier, worth_server::WorthServerWorthNativeSession, worth_server::WorthServerWorthNativeSessionInput};
+pub use {
+    worth_server::WorthServer, worth_server::WorthServerCompatibilityPreparedRequest,
+    worth_server::WorthServerProductAdapterExecutionError,
+    worth_server::WorthServerProductApplicationAdapter,
+    worth_server::WorthServerProductApplicationAdapterRegistration,
+    worth_server::WorthServerProductOperationAuthorizer,
+    worth_server::WorthServerProductOperationDeclaration,
+    worth_server::WorthServerProductOperationDenial,
+    worth_server::WorthServerProductOperationErrorMaps,
+    worth_server::WorthServerProductOperationInput,
+    worth_server::WorthServerProductOperationPayload,
+    worth_server::WorthServerProductOperationSuccess,
+    worth_server::WorthServerProductOperationSupportSnapshot,
+    worth_server::WorthServerProductSession,
+    worth_server::WorthServerProductSessionCreationRequest,
+    worth_server::WorthServerTransportCallerVerifier, worth_server::WorthServerWorthNativeSession,
+    worth_server::WorthServerWorthNativeSessionInput,
+};
 
 #[allow(unused_imports)]
-pub use {crate::shared_support_product_adapter_phase_nine_fixture as product_adapter_phase_nine_fixture};
-pub use {crate::shared_support_product_result_schema_bound_json as schema_bound_json};
+pub use crate::shared_support_product_adapter_phase_nine_fixture as product_adapter_phase_nine_fixture;
+pub use crate::shared_support_product_result_schema_bound_json as schema_bound_json;
 
 #[derive(Clone, Debug)]
 pub struct StatefulEditorLikeBackend {
@@ -46,7 +63,9 @@ impl StatefulEditorLikeBackend {
                     "product-editor.render.result.v1",
                 ),
                 worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("render-ready"),
+                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+                    "render-ready",
+                ),
             ),
         ))
         .with_operation(declared(
@@ -57,7 +76,9 @@ impl StatefulEditorLikeBackend {
                     "product-editor.select.result.v1",
                 ),
                 worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("select-ready"),
+                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+                    "select-ready",
+                ),
             ),
         ))
         .with_operation(declared(
@@ -68,7 +89,9 @@ impl StatefulEditorLikeBackend {
                     "product-editor.actions.result.v1",
                 ),
                 worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("actions-ready"),
+                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+                    "actions-ready",
+                ),
             ),
         ))
         .with_operation(declared(
@@ -79,7 +102,9 @@ impl StatefulEditorLikeBackend {
                     "product-editor.apply.result.v1",
                 ),
                 worth_server::WorthServerProductOperationBasisKind::ProductSessionDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("apply-ready"),
+                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+                    "apply-ready",
+                ),
                 "draft",
             ),
         ))
@@ -91,7 +116,9 @@ impl StatefulEditorLikeBackend {
                     "product-editor.finalize.result.v1",
                 ),
                 worth_server::WorthServerProductOperationBasisKind::ProductSessionDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("finalize-ready"),
+                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+                    "finalize-ready",
+                ),
                 "draft",
             ),
         ))
@@ -136,7 +163,10 @@ impl WorthServerProductApplicationAdapter for StatefulEditorLikeBackend {
                 }),
             ),
             "product_editor.select" => {
-                let node = body.get("node").and_then(serde_json::Value::as_str).unwrap_or("none");
+                let node = body
+                    .get("node")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("none");
                 product_success(
                     plan,
                     "product_editor.select",
@@ -177,12 +207,14 @@ impl WorthServerProductApplicationAdapter for StatefulEditorLikeBackend {
             }
             "product_editor.finalize" => {
                 if body.get("confirm").and_then(serde_json::Value::as_bool) != Some(true) {
-                    return Err(worth_server::WorthServerProductAdapterExecutionError::denied(
-                        worth_server::WorthServerProductOperationDenial::new(
-                            "product.finalize.confirm_required",
-                            "finalize requires explicit confirmation",
+                    return Err(
+                        worth_server::WorthServerProductAdapterExecutionError::denied(
+                            worth_server::WorthServerProductOperationDenial::new(
+                                "product.finalize.confirm_required",
+                                "finalize requires explicit confirmation",
+                            ),
                         ),
-                    ));
+                    );
                 }
                 state.revision += 1;
                 product_success(
@@ -191,16 +223,20 @@ impl WorthServerProductApplicationAdapter for StatefulEditorLikeBackend {
                     json!({ "status": "finalized", "basis": state.basis_digest() }),
                 )
             }
-            operation_name => Err(worth_server::WorthServerProductAdapterExecutionError::failed(
-                "unsupported_operation",
-                format!("unsupported editor-like operation `{operation_name}`"),
-            )),
+            operation_name => Err(
+                worth_server::WorthServerProductAdapterExecutionError::failed(
+                    "unsupported_operation",
+                    format!("unsupported editor-like operation `{operation_name}`"),
+                ),
+            ),
         }
     }
 }
 
 pub fn build_server(backend: &StatefulEditorLikeBackend) -> WorthServer {
-    crate::shared_support_product_adapter_phase_nine_fixture::build_server(vec![backend.registration()])
+    crate::shared_support_product_adapter_phase_nine_fixture::build_server(vec![
+        backend.registration()
+    ])
 }
 
 pub fn build_server_with_execution_authority(
@@ -238,7 +274,7 @@ pub fn direct_session_with_proof(
     server: &WorthServer,
     proof_identity: &str,
 ) -> WorthServerWorthNativeSession {
-    use {worth_proof::TransitionOutcome};
+    use worth_proof::TransitionOutcome;
 
     match server.worth_native().session(
         worth_server::WorthServerWorthNativeSessionInput::builder()
@@ -268,49 +304,6 @@ pub fn open_mutation_session(
                 .with_expiry_seconds(300),
         )
         .expect("mutation session should open")
-}
-
-pub fn prepared_read_request(
-    server: &WorthServer,
-    operation_name: &str,
-    basis_digest: Option<&str>,
-) -> WorthServerCompatibilityPreparedRequest {
-    crate::shared_support_product_adapter_phase_nine_fixture::prepared_read_request(server, operation_name, basis_digest)
-}
-
-pub fn prepared_mutation_request(
-    server: &WorthServer,
-    operation_name: &str,
-    basis_digest: Option<&str>,
-) -> WorthServerCompatibilityPreparedRequest {
-    crate::shared_support_product_adapter_phase_nine_fixture::prepared_mutation_request(
-        server,
-        operation_name,
-        basis_digest,
-    )
-}
-
-pub fn render_payload() -> WorthServerProductOperationPayload {
-    worth_server::WorthServerProductOperationPayload::json("product-editor.render.v1", json!({}))
-}
-
-pub fn select_payload(node: &str) -> WorthServerProductOperationPayload {
-    worth_server::WorthServerProductOperationPayload::json("product-editor.select.v1", json!({ "node": node }))
-}
-
-pub fn actions_payload() -> WorthServerProductOperationPayload {
-    worth_server::WorthServerProductOperationPayload::json("product-editor.actions.v1", json!({}))
-}
-
-pub fn apply_payload(title: &str) -> WorthServerProductOperationPayload {
-    worth_server::WorthServerProductOperationPayload::json("product-editor.apply.v1", json!({ "title": title }))
-}
-
-pub fn finalize_payload(confirm: bool) -> WorthServerProductOperationPayload {
-    worth_server::WorthServerProductOperationPayload::json(
-        "product-editor.finalize.v1",
-        json!({ "confirm": confirm }),
-    )
 }
 
 pub fn direct_read(
@@ -384,3 +377,7 @@ pub fn product_success(
         body,
     )
 }
+
+#[path = "declarations/operation_requests.rs"]
+mod operation_requests;
+pub use operation_requests::*;

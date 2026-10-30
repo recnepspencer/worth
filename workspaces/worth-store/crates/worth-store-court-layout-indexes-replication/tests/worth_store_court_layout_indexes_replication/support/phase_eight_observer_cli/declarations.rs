@@ -2,9 +2,23 @@ pub(crate) use {sha2::Digest, sha2::Sha256};
 pub(crate) use {std::process::Command, std::process::Output};
 pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {worth_store_offline_verifier::RecoveryObserverDecodeDenial, worth_store_offline_verifier::RecoveryObserverReport, worth_store_offline_verifier::RECOVERY_OBSERVER_REPORT_PROTOCOL, worth_store_offline_verifier::RECOVERY_OBSERVER_REPORT_VERSION};
-pub(crate) use {worth_store_physical_format::store_namespace::ProposedStoreIdentity, worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord, worth_store_physical_format::store_namespace::StoreNamespaceVersion};
-pub(crate) use {worth_store_physical_format::DurableRootSelector, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::RootSelectorIdentity, worth_store_physical_format::RootSelectorRole};
+pub(crate) use {
+    worth_store_offline_verifier::RecoveryObserverDecodeDenial,
+    worth_store_offline_verifier::RecoveryObserverReport,
+    worth_store_offline_verifier::RECOVERY_OBSERVER_REPORT_PROTOCOL,
+    worth_store_offline_verifier::RECOVERY_OBSERVER_REPORT_VERSION,
+};
+pub(crate) use {
+    worth_store_physical_format::store_namespace::ProposedStoreIdentity,
+    worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord,
+    worth_store_physical_format::store_namespace::StoreNamespaceVersion,
+};
+pub(crate) use {
+    worth_store_physical_format::DurableRootSelector,
+    worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    worth_store_physical_format::RootSelectorIdentity,
+    worth_store_physical_format::RootSelectorRole,
+};
 
 pub(crate) fn refresh_digest(bytes: &mut [u8]) {
     let split = bytes.len() - 32;
@@ -92,11 +106,13 @@ pub(crate) fn push_optional_array_flag(bytes: &mut Vec<u8>, offsets: &mut Vec<us
 pub(crate) fn run_observer(root: &std::path::Path, output: &std::path::Path, maximum_bytes: u64) {
     let maximum_bytes = maximum_bytes.to_string();
     let process = run_bounded(
-        std::process::Command::new(worth_store_testkit_executables::physical_store_offline_observer())
-            .arg("c8-recovery-observe")
-            .arg(root)
-            .arg(output)
-            .args(["2", "1", "1", maximum_bytes.as_str()]),
+        std::process::Command::new(
+            worth_store_testkit_executables::physical_store_offline_observer(),
+        )
+        .arg("c8-recovery-observe")
+        .arg(root)
+        .arg(output)
+        .args(["2", "1", "1", maximum_bytes.as_str()]),
     );
     assert!(
         process.status.success(),
@@ -135,16 +151,24 @@ pub(crate) fn selector_bytes(
     root_generation: u64,
     linked_generation: u64,
 ) -> Vec<u8> {
-    let proposed = worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes([7; 16]).expect("store identity");
-    let store = worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord::new(worth_store_physical_format::store_namespace::StoreNamespaceVersion::CURRENT, proposed)
-        .published_identity();
+    let proposed =
+        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes(
+            [7; 16],
+        )
+        .expect("store identity");
+    let store = worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord::new(
+        worth_store_physical_format::store_namespace::StoreNamespaceVersion::CURRENT,
+        proposed,
+    )
+    .published_identity();
     let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
         .admit()
         .expect("physical format");
     worth_store_physical_format::DurableRootSelector::new(
         store,
         format,
-        worth_store_physical_format::RootSelectorIdentity::new(identity).expect("selector identity"),
+        worth_store_physical_format::RootSelectorIdentity::new(identity)
+            .expect("selector identity"),
         worth_store_physical_format::RootSelectorRole::Current,
         root_generation,
         worth_store_physical_format::RootSelectorIdentity::new(linked),

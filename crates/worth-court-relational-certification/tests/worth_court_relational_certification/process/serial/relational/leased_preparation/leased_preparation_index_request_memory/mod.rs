@@ -1,4 +1,13 @@
-pub(crate) use {worth_execution::ExecutionAllocationPolicy as AllocationPolicy, worth_relational::facade::transactions::AspectFieldPatch, worth_foundational::facade::AspectValue, worth_relational::facade::history::BranchId, worth_relational::facade::transactions::BulkEntityCreateIntent, worth_execution::CancellationToken, worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::indexes::DerivedIndexBuildRequest, worth_relational::facade::indexes::DerivedIndexDefinition, worth_relational::facade::indexes::DerivedIndexExecutionDenialKind, worth_relational::facade::indexes::DerivedIndexId, worth_relational::facade::indexes::DerivedIndexKind, worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_relational::facade::identity::KindId, worth_relational::facade::transactions::MutationIntent, std::num::NonZeroUsize, worth_relational::facade::identity::PartitionId, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::transactions::WorkerIntentBatch, crate::leased_preparation::ordinary_context::authority, crate::leased_preparation::ordinary_context::lease_request, crate::leased_preparation::ordinary_context::serial, crate::leased_preparation::ordinary_context::support};
+pub(crate) use {
+    crate::leased_preparation::ordinary_context::authority,
+    crate::leased_preparation::ordinary_context::lease_request,
+    crate::leased_preparation::ordinary_context::serial,
+    worth_relational::facade::history::BranchId, worth_relational::facade::identity::KindId,
+    worth_relational::facade::indexes::DerivedIndexBuildRequest,
+    worth_relational::facade::indexes::DerivedIndexDefinition,
+    worth_relational::facade::indexes::DerivedIndexId,
+    worth_relational::facade::transactions::BulkEntityCreateIntent,
+};
 
 #[test]
 fn one_large_index_build_stops_at_its_request_memory_without_publication() {
@@ -12,35 +21,50 @@ fn one_large_index_build_stops_at_its_request_memory_without_publication() {
 
     let _serial = serial();
     let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .schema_registry(crate::leased_preparation::ordinary_context::support::demo_schema_registry())
+        .schema_registry(
+            crate::leased_preparation::ordinary_context::support::demo_schema_registry(),
+        )
         .build()
         .expect("valid native runtime configuration");
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).expect("main basis");
     let mut transaction = runtime
-        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .expect("admitted basis");
     let client_keys = (0..128)
-        .map(|index| worth_relational::facade::symbols::ClientKey::raw(format!("index-heavy-{index}")))
+        .map(|index| {
+            worth_relational::facade::symbols::ClientKey::raw(format!("index-heavy-{index}"))
+        })
         .collect();
     let field_patches = (0..128)
         .map(|index| {
             worth_relational::facade::transactions::AspectFieldPatch::from_locator(
                 crate::leased_preparation::ordinary_context::support::aspect_field_locator("name"),
-                worth_foundational::facade::AspectValue::String(format!("index-heavy-{index}").into()),
+                worth_foundational::facade::AspectValue::String(
+                    format!("index-heavy-{index}").into(),
+                ),
             )
         })
         .collect();
     transaction
         .push_batch(
-            worth_relational::facade::transactions::WorkerIntentBatch::new("large-index-source").push(worth_relational::facade::transactions::MutationIntent::Create(
-                worth_relational::facade::transactions::CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                    partition_id: worth_relational::facade::identity::PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_keys,
-                    field_patches,
-                }),
-            )),
+            worth_relational::facade::transactions::WorkerIntentBatch::new("large-index-source")
+                .push(
+                    worth_relational::facade::transactions::MutationIntent::Create(
+                        worth_relational::facade::transactions::CreateIntent::BulkEntities(
+                            BulkEntityCreateIntent {
+                                partition_id: worth_relational::facade::identity::PartitionId::main(
+                                ),
+                                kind_id: KindId(1),
+                                client_keys,
+                                field_patches,
+                            },
+                        ),
+                    ),
+                ),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("bulk source stages");
@@ -53,7 +77,10 @@ fn one_large_index_build_stops_at_its_request_memory_without_publication() {
             index_id: DerivedIndexId(0),
             name: "large.index.name".to_owned(),
             kind: worth_relational::facade::indexes::DerivedIndexKind::EntityField {
-                field_locator: crate::leased_preparation::ordinary_context::support::aspect_field_locator("name"),
+                field_locator:
+                    crate::leased_preparation::ordinary_context::support::aspect_field_locator(
+                        "name",
+                    ),
             },
             branch_scoped: true,
         })
@@ -74,7 +101,11 @@ fn one_large_index_build_stops_at_its_request_memory_without_publication() {
     request_lease.policy = worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Automatic,
         worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(64 * 1024), Some(1_000_000)),
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            Some(64 * 1024),
+            Some(1_000_000),
+        ),
     );
     let lease = authority()
         .request_lease(request_lease)

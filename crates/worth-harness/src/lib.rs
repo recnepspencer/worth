@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #![forbid(unsafe_code)]
 //! WORTH Harness is first-class execution infrastructure for WORTH runtimes.
 //!

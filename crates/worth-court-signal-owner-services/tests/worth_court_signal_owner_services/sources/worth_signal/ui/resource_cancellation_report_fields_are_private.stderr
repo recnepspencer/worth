@@ -1,5 +1,5 @@
 error[E0451]: fields `cancelled_request`, `dependent_propagation`, `denied_cancellation`, `lifecycle`, `transition` and `performance` of struct `ResourceCancellationReport` are private
-  --> tests/ui/resource_cancellation_report_fields_are_private.rs:29:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_cancellation_report_fields_are_private.rs:29:9
    |
 28 |     let _ = ResourceCancellationReport {
    |             -------------------------- in this type

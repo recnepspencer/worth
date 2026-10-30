@@ -6,8 +6,8 @@
 // here means removing one is a suite failure, not a silent shrink.
 
 pub(crate) use {
-    crate::shared_support::compile_fail::bundle::CompileFailBundle,
-    crate::shared_support::compile_fail::bundle::CompileFailCase,
+    crate::compile_fail::harness::bundle::CompileFailBundle,
+    crate::compile_fail::harness::bundle::CompileFailCase,
 };
 pub(crate) use {
     crate::shared_support::compile_pass::bundle::CompilePassBundle,
@@ -15,32 +15,32 @@ pub(crate) use {
 };
 
 pub(crate) fn compile_fail_bundle() -> CompileFailBundle {
-    crate::shared_support::compile_fail::bundle::CompileFailBundle::new(
+    crate::compile_fail::harness::bundle::CompileFailBundle::new(
         "upfront_contract_vocabulary",
         vec![
-            crate::shared_support::compile_fail::bundle::CompileFailCase::new(
+            crate::compile_fail::harness::bundle::CompileFailCase::new(
                 "instance_identity",
-                concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/brands_do_not_cross_scopes.rs"),
+                "tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/brands_do_not_cross_scopes.rs",
             ),
-            crate::shared_support::compile_fail::bundle::CompileFailCase::new(
+            crate::compile_fail::harness::bundle::CompileFailCase::new(
                 "linearity",
-                concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/linear_resource_cannot_terminate_twice.rs"),
+                "tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/linear_resource_cannot_terminate_twice.rs",
             ),
-            crate::shared_support::compile_fail::bundle::CompileFailCase::new(
+            crate::compile_fail::harness::bundle::CompileFailCase::new(
                 "evidence_minting",
-                concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/freshness_sample_is_not_caller_mintable.rs"),
+                "tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/freshness_sample_is_not_caller_mintable.rs",
             ),
-            crate::shared_support::compile_fail::bundle::CompileFailCase::new(
+            crate::compile_fail::harness::bundle::CompileFailCase::new(
                 "evidence_minting",
-                concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/causal_and_performed_evidence_are_not_caller_mintable.rs"),
+                "tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/causal_and_performed_evidence_are_not_caller_mintable.rs",
             ),
-            crate::shared_support::compile_fail::bundle::CompileFailCase::new(
+            crate::compile_fail::harness::bundle::CompileFailCase::new(
                 "source_substitution",
-                concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/freshness_source_and_policy_cannot_be_substituted.rs"),
+                "tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/freshness_source_and_policy_cannot_be_substituted.rs",
             ),
-            crate::shared_support::compile_fail::bundle::CompileFailCase::new(
+            crate::compile_fail::harness::bundle::CompileFailCase::new(
                 "dynamic_value_authority",
-                concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/binding_comparison_does_not_mint_reusable_authority.rs"),
+                "tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/binding_comparison_does_not_mint_reusable_authority.rs",
             ),
         ],
     )
@@ -51,7 +51,7 @@ pub(crate) fn compile_pass_bundle() -> CompilePassBundle {
         "upfront_contract_vocabulary",
         vec![crate::shared_support::compile_pass::bundle::CompilePassCase::new(
             "composition",
-            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_pass/upfront_contracts_compose.rs"),
+            "tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_pass/upfront_contracts_compose.rs",
         )],
     )
 }

@@ -1,22 +1,6 @@
 #[allow(unused_imports)]
 use crate::stable_read_plan_admission::*;
-use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
 
-use worth_store_physical_format::PhysicalGeneration;
-use {
-    worth_store_physical_isolation::admit_seed_stable_read_plan,
-    worth_store_physical_isolation::CurrentGenerationPhysicalReference,
-    worth_store_physical_isolation::PhysicalReadPlanAdmissionDenial,
-    worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics,
-    worth_store_physical_isolation::PhysicalReadPlanRetryPosture,
-    worth_store_physical_isolation::PostProtectionPhysicalReadObservation,
-    worth_store_physical_isolation::ProtectedPhysicalReferenceSet,
-    worth_store_physical_isolation::PublishedReaderHazard,
-    worth_store_physical_isolation::ReadPlanAdmissionScratchArena,
-    worth_store_physical_isolation::StablePhysicalReadPlan,
-    worth_store_physical_isolation::TraversalAdmissionGuard,
-    worth_store_physical_isolation::UnprotectedReadIntent,
-};
 use {
     worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference,
     worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,

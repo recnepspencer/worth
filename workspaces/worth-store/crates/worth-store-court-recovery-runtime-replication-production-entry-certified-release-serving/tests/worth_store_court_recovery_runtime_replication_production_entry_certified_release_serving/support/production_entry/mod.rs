@@ -1,4 +1,3 @@
-#[cfg(all())]
 #[allow(dead_code, unused_imports)]
 #[path = "anchored_records_oracle/mod.rs"]
 pub(crate) mod anchored_records_oracle;

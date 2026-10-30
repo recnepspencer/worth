@@ -1,5 +1,8 @@
 pub use {serde_json::json, serde_json::Map, serde_json::Value};
-pub use {worth_server::WorthServerMultipartUpload, worth_server::WorthServerUploadManifest, worth_server::WorthServerUploadPart};
+pub use {
+    worth_server::WorthServerMultipartUpload, worth_server::WorthServerUploadManifest,
+    worth_server::WorthServerUploadPart,
+};
 
 pub fn canonical_upload(identity: &str) -> WorthServerMultipartUpload {
     worth_server::WorthServerMultipartUpload::new(
@@ -47,7 +50,10 @@ pub fn reordered_canonical_upload(identity: &str) -> WorthServerMultipartUpload 
 
 pub fn ambiguous_metadata_upload() -> WorthServerMultipartUpload {
     let mut aspects = serde_json::Map::new();
-    aspects.insert("title.value".to_string(), serde_json::Value::String("safe".to_string()));
+    aspects.insert(
+        "title.value".to_string(),
+        serde_json::Value::String("safe".to_string()),
+    );
     aspects.insert(
         " Title.Value ".to_string(),
         serde_json::Value::String("unsafe".to_string()),

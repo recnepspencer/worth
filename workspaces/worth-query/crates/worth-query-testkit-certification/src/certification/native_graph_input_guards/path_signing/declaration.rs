@@ -1,9 +1,5 @@
 //! Native captures and path assignments compose once; no test executor builds effects.
-pub use super::{
-    super::{revision_query, schema::*},
-    binding::*,
-    schema::*,
-};
+pub use super::{super::revision_query, binding::*, schema::*};
 pub use crate::facade::certification::peer_audit::{
     Journal, JournalActor, JournalName, JournalRevision, ParentJournal,
 };

@@ -88,6 +88,10 @@ pub(super) struct BridgeErasedProviderSemanticContract {
 }
 
 impl BridgeErasedProviderSemanticContract {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(super) fn capture<P>(provider: &P) -> Self
     where
         P: BridgeConditionalProviderSemantics,

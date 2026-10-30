@@ -4,13 +4,7 @@
 use crate::expressions::ordinary_context::conformance::*;
 pub(crate) use {
     worth_foundational::expression_api::expressions,
-    worth_foundational::expression_api::ExpressionDenialDetail,
-    worth_foundational::expression_api::ExpressionDenialFamily as Family,
-    worth_foundational::expression_api::ExpressionOccurrence,
-    worth_foundational::expression_api::ExpressionType,
-    worth_foundational::expression_api::IntegerType,
     worth_foundational::expression_api::SourceOrigin,
-    worth_foundational::expression_api::SyntaxDenial,
 };
 
 pub(crate) use {

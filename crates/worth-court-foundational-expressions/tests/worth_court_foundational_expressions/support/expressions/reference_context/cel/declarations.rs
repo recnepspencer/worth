@@ -74,7 +74,7 @@ pub(crate) const FILES: [(&str, &str); 9] = [
 
 pub(crate) const TABLE: &str =
     include_str!("../../../../sources/worth_foundational/expressions/cel/classification.tsv");
-pub(crate) const TABLE_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_foundational_expressions/sources/worth_foundational/expressions/cel/classification.tsv");
+pub(crate) const TABLE_PATH: &str = "tests/worth_court_foundational_expressions/sources/worth_foundational/expressions/cel/classification.tsv";
 
 pub(crate) const RULES: [(&str, &str); 3] = [
     (

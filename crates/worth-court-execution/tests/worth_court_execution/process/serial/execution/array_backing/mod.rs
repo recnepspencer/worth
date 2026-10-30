@@ -4,24 +4,8 @@ use crate::array_backing::isolated_context::*;
 #[allow(unused_imports)]
 pub(crate) use crate::test_serialization;
 
-use {
-    std::alloc::Layout, std::cell::Cell, std::num::NonZeroUsize, std::sync::atomic::AtomicUsize,
-    std::sync::atomic::Ordering, std::sync::Arc, std::sync::Mutex, std::sync::OnceLock,
-    std::time::Duration, std::time::Instant,
-};
-use {
-    worth_execution::CancellationSource, worth_execution::CancellationToken,
-    worth_execution::ExecutionAllocationDenialKind as Kind,
-    worth_execution::ExecutionAllocationPolicy as Policy, worth_execution::ExecutionArrayBuilder,
-    worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig,
-    worth_execution::ExecutionResourceLease, worth_execution::LeaseDenial,
-    worth_execution::LeaseRequest, worth_execution::MemoryLimitDenial,
-    worth_execution::MemoryLimitLevel,
-};
-use {
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
-    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
-};
+use {std::cell::Cell, std::sync::atomic::AtomicUsize};
+use {worth_execution::ExecutionArrayBuilder, worth_execution::ExecutionResourceLease};
 
 #[test]
 fn typed_layout_moves_and_iterator_retain_one_charge_beyond_child_lease() {
@@ -63,8 +47,10 @@ fn typed_layout_moves_and_iterator_retain_one_charge_beyond_child_lease() {
             })
             .unwrap_err();
         assert_eq!(
-            denied.kind(),
-            worth_execution::ExecutionAllocationDenialKind::WriteBeyondReserved
+            denied.classify(),
+            worth_execution::ExecutionAllocationDenialClass::Physical(
+                worth_execution::ExecutionPhysicalAllocationDenialKind::WriteBeyondReserved
+            )
         );
         assert_eq!(denied.requested_payload_bytes(), Some(quote));
         assert_eq!(builder.len(), 3);
@@ -186,8 +172,10 @@ fn element_destruction_keeps_charge_until_partial_and_consuming_backings_drop() 
         .unwrap();
     let denied = partial.seal().unwrap_err();
     assert_eq!(
-        denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::IncompleteSeal
+        denied.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Physical(
+            worth_execution::ExecutionPhysicalAllocationDenialKind::IncompleteSeal
+        )
     );
     assert_eq!(denied.requested_payload_bytes(), Some(quote));
     assert_eq!(drops.get(), 4); // Uninitialized tail is not dropped.
@@ -222,8 +210,10 @@ fn zst_logical_fill_and_zero_charge_do_not_use_allocator_capacity_as_count() {
     }
     let denied = builder.push(Zero).unwrap_err();
     assert_eq!(
-        denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::WriteBeyondReserved
+        denied.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Physical(
+            worth_execution::ExecutionPhysicalAllocationDenialKind::WriteBeyondReserved
+        )
     );
     assert_eq!(denied.requested_payload_bytes(), Some(0));
     assert_eq!(builder.len(), 3);
@@ -275,8 +265,10 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
     )
     .unwrap_err();
     assert_eq!(
-        denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::Layout
+        denied.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Physical(
+            worth_execution::ExecutionPhysicalAllocationDenialKind::Layout
+        )
     );
     assert_eq!(denied.requested_payload_bytes(), None);
     let small = authority().request_lease(request(7)).unwrap();
@@ -286,14 +278,16 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
     )
     .unwrap_err();
     assert_eq!(
-        denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::Lease(
-            worth_execution::LeaseDenial::MemoryExhausted(
-                worth_execution::MemoryLimitDenial::Capacity {
-                    requested: 8,
-                    admitted: 7,
-                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-                }
+        denied.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Admission(
+                worth_execution::LeaseDenial::MemoryExhausted(
+                    worth_execution::MemoryLimitDenial::Capacity {
+                        requested: 8,
+                        admitted: 7,
+                        level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
+                    }
+                )
             )
         )
     );
@@ -314,8 +308,10 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
     );
     let denied = builder.push(2).unwrap_err();
     assert_eq!(
-        denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::Cancelled
+        denied.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
+        )
     );
     assert_eq!(denied.requested_payload_bytes(), Some(16));
     assert_eq!(builder.elements(), [1]);
@@ -334,8 +330,12 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
     )
     .unwrap_err();
     assert_eq!(
-        denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::DeadlineElapsed
+        denied.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Stopped(
+                worth_execution::MapKernelStop::DeadlineElapsed
+            )
+        )
     );
     assert_eq!(denied.requested_payload_bytes(), Some(16));
     assert_eq!(parent.reserve_memory(16).unwrap().bytes(), 16);

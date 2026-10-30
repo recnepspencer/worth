@@ -50,7 +50,6 @@ pub use {
 
 pub use crate::production_entry::blob_scope_admission::admitted_blob_scope;
 
-#[cfg(all())]
 pub use {
     crate::production_entry::ordered_journals::canonical_journal,
     crate::production_entry::ordered_journals::canonical_journal_oracle,

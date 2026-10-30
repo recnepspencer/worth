@@ -1,13 +1,7 @@
-use std::sync::atomic::Ordering;
-
-use worth_foundational::facade::DiagnosticRichnessProfile;
-use worth_server::WorthServerQueryHandoffDenialCode;
-
 use {
     crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_equal,
     crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_not_equal,
     crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains,
-    crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle,
     crate::shared_support_compat_http_phase_thirteen_bundle::AUDIT_EVIDENCE_DIGEST,
     crate::shared_support_compat_http_phase_thirteen_bundle::BASIS_DIGEST,
     crate::shared_support_compat_http_phase_thirteen_bundle::DECLARATION_DIGEST,
@@ -25,8 +19,6 @@ use {
     crate::shared_support_compat_http_phase_thirteen_runtime::idempotent_mutation,
     crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_counting_server,
     crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server,
-    worth_testkit_server::shared_support_compat_http_phase_two_runtime as compat_http_phase_two_runtime,
-    worth_testkit_server::shared_support_worth_native_assertions as worth_native_assertions,
 };
 
 #[test]

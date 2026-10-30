@@ -1,16 +1,16 @@
 error[E0624]: associated function `new` is private
-  --> tests/ui/contract_validation/raw_contract_constructor_is_not_public.rs:10:37
-   |
-10 |       let _contract = AspectContract::new(
-   |                                       ^^^ private associated function
-   |
-  ::: src/aspects/contracts/contract/construction.rs
-   |
-   | /     pub(crate) fn new(
-   | |         key: AspectKey,
-   | |         identity: AspectIdentity,
-   | |         revision: AspectContractRevision,
-...  |
-   | |         evolution: AspectEvolutionPolicy,
-   | |     ) -> Self {
-   | |_____________- private associated function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/contract_validation/raw_contract_constructor_is_not_public.rs
+  |
+  |       let _contract = AspectContract::new(
+  |                                       ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-foundational/src/aspects/contracts/contract/construction.rs
+  |
+  | /     pub(crate) fn new(
+  | |         key: AspectKey,
+  | |         identity: AspectIdentity,
+  | |         revision: AspectContractRevision,
+... |
+  | |         evolution: AspectEvolutionPolicy,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here

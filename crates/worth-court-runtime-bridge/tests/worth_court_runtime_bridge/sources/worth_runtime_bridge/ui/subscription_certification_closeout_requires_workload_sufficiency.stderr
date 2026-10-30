@@ -1,5 +1,5 @@
 warning: unreachable statement
-  --> tests/ui/subscription_certification_closeout_requires_workload_sufficiency.rs:11:5
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_closeout_requires_workload_sufficiency.rs:11:5
    |
 10 |     let report = loop {};
    |                  ------- any code following this expression is unreachable
@@ -9,7 +9,7 @@ warning: unreachable statement
    = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
 
 error[E0308]: mismatched types
-  --> tests/ui/subscription_certification_closeout_requires_workload_sufficiency.rs:12:26
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_closeout_requires_workload_sufficiency.rs:12:26
    |
 12 |     requires_sufficiency(report);
    |     -------------------- ^^^^^^ expected `BridgeSubscriptionReferenceWorkloadSufficiency`, found `BridgeSubscriptionReferenceWorkloadReport`
@@ -17,7 +17,7 @@ error[E0308]: mismatched types
    |     arguments to this function are incorrect
    |
 note: function defined here
-  --> tests/ui/subscription_certification_closeout_requires_workload_sufficiency.rs:7:4
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_closeout_requires_workload_sufficiency.rs:7:4
    |
  7 | fn requires_sufficiency(_: BridgeSubscriptionReferenceWorkloadSufficiency) {}
    |    ^^^^^^^^^^^^^^^^^^^^ -------------------------------------------------

@@ -1,47 +1,15 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::diagnostics::rows::*;
-use worth_foundational::EquivalenceBasisId;
-use worth_foundational::FoundationalMergeConflictLocator;
 use {
     worth_foundational::foundational_diagnostic_boundary_artifact_subject,
     worth_foundational::foundational_diagnostic_branch_candidate_subject,
     worth_foundational::foundational_diagnostic_branch_discard_subject,
-    worth_foundational::foundational_diagnostic_code,
     worth_foundational::foundational_diagnostic_commit_receipt_subject,
     worth_foundational::foundational_diagnostic_committed_authority_subject,
     worth_foundational::foundational_diagnostic_locator_boundary_artifact,
     worth_foundational::foundational_diagnostic_locator_transition,
     worth_foundational::foundational_diagnostic_merge_verdict_subject,
-    worth_foundational::foundational_diagnostic_scope,
     worth_foundational::sort_foundational_diagnostic_rows,
-    worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId,
-    worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle,
-    worth_foundational::FoundationalBranchCandidateId, worth_foundational::FoundationalBranchId,
-    worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis,
-    worth_foundational::FoundationalCommitReceiptIdentity,
-    worth_foundational::FoundationalDiagnosticAbsenceCause,
-    worth_foundational::FoundationalDiagnosticBreachClass,
-    worth_foundational::FoundationalDiagnosticComparisonRow,
-    worth_foundational::FoundationalDiagnosticDecisionRow,
-    worth_foundational::FoundationalDiagnosticDenialClass,
-    worth_foundational::FoundationalDiagnosticEvidencePosture,
-    worth_foundational::FoundationalDiagnosticFailureRow,
-    worth_foundational::FoundationalDiagnosticLocalityClaim,
-    worth_foundational::FoundationalDiagnosticOutcomeKind,
-    worth_foundational::FoundationalDiagnosticProvenanceReadyRow,
-    worth_foundational::FoundationalDiagnosticRow,
-    worth_foundational::FoundationalDiagnosticRowFamily,
-    worth_foundational::FoundationalDiagnosticSemanticLabelSet,
-    worth_foundational::FoundationalDiagnosticSeverity,
-    worth_foundational::FoundationalDiagnosticSupportEvidencePosture,
-    worth_foundational::FoundationalDiagnosticSupportRow,
-    worth_foundational::FoundationalDiagnosticWidenedFalloutPosture,
-    worth_foundational::FoundationalMergeConflictLocus,
-    worth_foundational::FoundationalTransitionLocator,
-};
-use {
-    worth_foundational::FoundationalCommittedDeltaLocator,
-    worth_foundational::FoundationalCommittedDeltaLocus,
 };
 
 #[test]

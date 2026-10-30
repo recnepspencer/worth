@@ -1,18 +1,6 @@
-use worth_proof::TransitionOutcome;
-use worth_signal::facade::runtime::SignalBranchRetirementDenial;
-use worth_signal::facade::SignalBranchRetirementReason;
 use {
     crate::branch_retention_lifecycle::ordinary_context::retention_support::fork_with_historical_target,
     crate::branch_retention_lifecycle::ordinary_context::retention_support::runtime,
-};
-use {
-    worth_signal::facade::branch::SignalBranchBasisReadmissionDenial,
-    worth_signal::facade::branch::SignalBranchRetainedReadmissionDenial,
-    worth_signal::facade::branch::SignalBranchRetentionAcquisitionDenial,
-    worth_signal::facade::branch::SignalBranchRetentionOwnerPosture,
-    worth_signal::facade::branch::SignalBranchRetentionReleaseDenial,
-    worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome,
-    worth_signal::facade::branch::SignalBranchRetentionTerminalOutcome,
 };
 
 #[test]

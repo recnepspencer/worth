@@ -764,6 +764,7 @@ dependencies = [
 name = "worth-query-court-decl-host"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
  "worth-execution",
  "worth-foundational",
  "worth-query-host",
@@ -819,6 +820,7 @@ dependencies = [
 name = "worth-query-court-installation"
 version = "0.1.0"
 dependencies = [
+ "worth-foundational",
  "worth-query-declaration",
  "worth-query-installation",
  "worth-query-testkit-installation",
@@ -977,6 +979,7 @@ dependencies = [
 name = "worth-query-package-archive"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "worth-foundational",
  "worth-query-declaration",
@@ -1069,6 +1072,7 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-query-decl",
+ "worth-query-execution",
  "worth-query-host",
  "worth-query-installation",
  "worth-query-testkit-document-retention",

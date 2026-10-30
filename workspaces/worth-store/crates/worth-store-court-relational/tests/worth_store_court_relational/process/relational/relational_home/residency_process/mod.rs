@@ -1,15 +1,6 @@
 //! Cold serving and interrupted cold readmission use the existing kill driver.
 #[allow(unused_imports)]
 use crate::residency_process::*;
-use worth_execution::ExecutionRequest;
-use {
-    crate::durable_run, crate::killed_child, crate::residency_fixture::Fixture,
-    crate::schema_transition, crate::workload,
-};
-use {std::fs, std::path::PathBuf};
-use {
-    worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeRequest,
-};
 
 #[test]
 fn a_killed_home_stays_cold_and_an_interrupted_cold_restore_reopens_again() {

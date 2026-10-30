@@ -1,5 +1,21 @@
 pub use {worth_proof::TransitionOutcome, worth_proof::TransitionReadiness};
-pub use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerConfig, worth_server::WorthServerDirectDeliveryClass, worth_server::WorthServerDirectFreshnessMode, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationAdmissionPosture, worth_server::WorthServerOperationAuthorityMetadata, worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationRequestInput, worth_server::WorthServerOperatorEvidenceConfig, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerQueryHandoffOutcome, worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerRequestContextDenial, worth_server::WorthServerRequestContextInput, worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerResponseConfig, worth_server::WorthServerResponseInput, worth_server::WorthServerResponseTransform, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+pub use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerConfig,
+    worth_server::WorthServerDirectDeliveryClass, worth_server::WorthServerDirectFreshnessMode,
+    worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationAdmissionPosture,
+    worth_server::WorthServerOperationAuthorityMetadata, worth_server::WorthServerOperationFamily,
+    worth_server::WorthServerOperationRequestInput,
+    worth_server::WorthServerOperatorEvidenceConfig, worth_server::WorthServerQueryHandoffConfig,
+    worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryHandoffInput,
+    worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerQueryHandoffOutcome,
+    worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig,
+    worth_server::WorthServerRequestContextDenial, worth_server::WorthServerRequestContextInput,
+    worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerResponseConfig,
+    worth_server::WorthServerResponseInput, worth_server::WorthServerResponseTransform,
+    worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass,
+};
 
 pub fn test_server(
     workspace_provider: impl WorthServerQueryWorkspaceProvider,
@@ -26,7 +42,9 @@ pub fn test_server_with_response_config(
                 .with_middleware_config(middleware_config)
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
-                        .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("request context config should validate"),
                 )
@@ -61,7 +79,9 @@ pub fn test_server_with_response_and_operator_evidence_config(
         workspace_provider,
         middleware_config,
         worth_server::WorthServerRequestContextConfig::builder()
-            .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+            .with_default_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Standard,
+            )
             .build()
             .expect("request context config should validate"),
         response_config,
@@ -139,9 +159,7 @@ pub fn resolve_preview_denial(server: &WorthServer) -> WorthServerRequestContext
     }
 }
 
-pub fn resolve_blank_principal_denial(
-    server: &WorthServer,
-) -> WorthServerRequestContextDenial {
+pub fn resolve_blank_principal_denial(server: &WorthServer) -> WorthServerRequestContextDenial {
     let input = worth_server::WorthServerRequestContextInput::builder()
         .with_surface_family(worth_server::WorthServerSurfaceFamily::CompatHttp)
         .with_transport_class(worth_server::WorthServerTransportClass::CompatHttp)
@@ -156,9 +174,7 @@ pub fn resolve_blank_principal_denial(
     }
 }
 
-pub fn resolve_blank_workspace_denial(
-    server: &WorthServer,
-) -> WorthServerRequestContextDenial {
+pub fn resolve_blank_workspace_denial(server: &WorthServer) -> WorthServerRequestContextDenial {
     let input = worth_server::WorthServerRequestContextInput::builder()
         .with_surface_family(worth_server::WorthServerSurfaceFamily::CompatHttp)
         .with_transport_class(worth_server::WorthServerTransportClass::CompatHttp)
@@ -243,7 +259,9 @@ pub fn admit_mutation_posture(
         .admit_from_worth_native_admission(
             &admission,
             worth_server::WorthServerOperationRequestInput::builder()
-                .with_operation_family(worth_server::WorthServerOperationFamily::QueryDirectSubmission)
+                .with_operation_family(
+                    worth_server::WorthServerOperationFamily::QueryDirectSubmission,
+                )
                 .with_operation_name("users.rename")
                 .with_idempotency_key("idem-7")
                 .build(),
@@ -307,8 +325,9 @@ pub fn query_handoff_success(
     };
     match server
         .query_handoff()
-        .prepare(worth_server::WorthServerQueryHandoffInput::new(admission, operation))
-    {
+        .prepare(worth_server::WorthServerQueryHandoffInput::new(
+            admission, operation,
+        )) {
         worth_proof::TransitionOutcome::Success(handoff) => handoff,
         other => panic!("expected query handoff success, got {other:?}"),
     }

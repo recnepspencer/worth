@@ -142,19 +142,26 @@ impl MemoryActivityGuard {
     pub(crate) fn resize(&mut self, bytes: u64) -> Result<(), crate::MemoryLimitDenial> {
         if bytes >= self.1 {
             let added = bytes - self.1;
-            let previous = self
-                .0
-                .current_memory
-                .fetch_update(Ordering::AcqRel, Ordering::Acquire, |held| {
-                    held.checked_add(added)
-                })
-                .map_err(|charged| {
-                    crate::MemoryLimitDenial::overflow(
-                        added,
-                        charged,
-                        crate::MemoryLimitLevel::Process,
-                    )
-                })?;
+            let previous = {
+                let mut held = self.0.current_memory.load(Ordering::Acquire);
+                loop {
+                    let Some(updated_value) = held.checked_add(added) else {
+                        break Err(held);
+                    };
+                    match self.0.current_memory.compare_exchange_weak(
+                        held,
+                        updated_value,
+                        Ordering::AcqRel,
+                        Ordering::Acquire,
+                    ) {
+                        Ok(previous) => break Ok(previous),
+                        Err(reloaded_value) => held = reloaded_value,
+                    }
+                }
+            }
+            .map_err(|charged| {
+                crate::MemoryLimitDenial::overflow(added, charged, crate::MemoryLimitLevel::Process)
+            })?;
             self.0
                 .peak_memory
                 .fetch_max(previous + added, Ordering::AcqRel);

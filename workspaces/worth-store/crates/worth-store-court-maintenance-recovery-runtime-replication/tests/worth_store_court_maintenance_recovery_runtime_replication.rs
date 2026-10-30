@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_maintenance_recovery_runtime_replication/support/access_policy_support/mod.rs"]
 pub(crate) mod access_policy_support;

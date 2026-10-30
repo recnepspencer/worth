@@ -1,8 +1,4 @@
-use worth_store_certification::S6FlushDurabilityEvidenceRow;
-use {
-    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
-    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
-};
+use worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment;
 
 #[test]
 fn certification_consumes_canonical_physical_completion_evidence() {

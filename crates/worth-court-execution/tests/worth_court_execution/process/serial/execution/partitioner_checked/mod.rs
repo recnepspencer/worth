@@ -1,21 +1,8 @@
 #[allow(unused_imports)]
 use crate::partitioner_checked::isolated_context::*;
-use {std::num::NonZeroUsize, std::sync::Arc, std::sync::Mutex, std::sync::OnceLock};
 
 use {
-    worth_execution::Bisection, worth_execution::CancellationSource,
-    worth_execution::CancellationToken, worth_execution::ComponentPartitioner,
-    worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig,
-    worth_execution::ExecutionMap, worth_execution::LeaseRequest,
-    worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition,
-    worth_execution::MapStop, worth_execution::PartitionItemId,
-    worth_execution::PartitionUpdateDenial, worth_execution::WeightedEdge,
-    worth_execution::WeightedItem,
-};
-use {
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
-    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
-    worth_foundational::PartitionIdentity,
+    worth_execution::MapKernelFailure, worth_execution::WeightedEdge, worth_execution::WeightedItem,
 };
 
 #[test]

@@ -1,11 +1,11 @@
 error[E0061]: this method takes 2 arguments but 1 argument was supplied
-  --> tests/ui/sealed_minting/witness_required_apis_reject_callers_without_witness.rs:13:51
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/witness_required_apis_reject_callers_without_witness.rs:13:51
    |
 13 |     let _missing_resolve = Recipe::new("payload").resolve_with_authority(7_u8);
    |                                                   ^^^^^^^^^^^^^^^^^^^^^^------ argument #2 of type `AuthorityWitness<_>` is missing
    |
 note: method defined here
-  --> src/recipe/minting.rs
+  --> $WORKSPACE/crates/worth-proof/src/recipe/minting.rs
    |
    |     pub fn resolve_with_authority<Auth, B>(
    |            ^^^^^^^^^^^^^^^^^^^^^^
@@ -15,13 +15,13 @@ help: provide the argument
    |                                                                              ++++++++++++++++++
 
 error[E0061]: this method takes 1 argument but 0 arguments were supplied
-  --> tests/ui/sealed_minting/witness_required_apis_reject_callers_without_witness.rs:16:35
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/witness_required_apis_reject_callers_without_witness.rs:16:35
    |
 16 |     let _missing_lower = resolved.lower_with_capability();
    |                                   ^^^^^^^^^^^^^^^^^^^^^-- argument #1 of type `CapabilityWitness<_>` is missing
    |
 note: method defined here
-  --> src/recipe/minting.rs
+  --> $WORKSPACE/crates/worth-proof/src/recipe/minting.rs
    |
    |     pub fn lower_with_capability<C>(
    |            ^^^^^^^^^^^^^^^^^^^^^
@@ -31,13 +31,13 @@ help: provide the argument
    |                                                         +++++++++++++++++
 
 error[E0061]: this method takes 1 argument but 0 arguments were supplied
-  --> tests/ui/sealed_minting/witness_required_apis_reject_callers_without_witness.rs:19:34
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/witness_required_apis_reject_callers_without_witness.rs:19:34
    |
 19 |     let _missing_admit = lowered.admit_with_authority();
    |                                  ^^^^^^^^^^^^^^^^^^^^-- argument #1 of type `AuthorityWitness<_>` is missing
    |
 note: method defined here
-  --> src/recipe/minting.rs
+  --> $WORKSPACE/crates/worth-proof/src/recipe/minting.rs
    |
    |     pub fn admit_with_authority<Auth>(
    |            ^^^^^^^^^^^^^^^^^^^^

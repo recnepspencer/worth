@@ -1,7 +1,0 @@
-# Committed legacy-reference baseline for governed Road 1 surfaces.
-# Phase 1 empty-inception freeze: references must remain [].
-# Candidate must equal the scan inventory; both must stay empty (BC6001).
-# Non-empty rows cannot self-authorize via matching source + snapshot, including
-# when the growth is already committed as HEAD in CI.
-schema_version = 1
-references = []

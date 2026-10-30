@@ -1,25 +1,8 @@
 #[allow(unused_imports)]
 use crate::aspect_native_terminal_projection_hostile_readmission::*;
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::aspects, worth_foundational::AspectContract, worth_foundational::AspectKey,
-    worth_foundational::AspectLocator, worth_foundational::AspectValue,
-    worth_foundational::BoundarySourceLocator, worth_foundational::InternedString,
-    worth_foundational::LocatorAuthority, worth_foundational::ScalarAspectType,
-};
 use {
     worth_store_aspect_native::project_store_boundary_fact_to_terminal_json,
     worth_store_aspect_native::readmit_external_terminal_projection_document_as_store_aspect_state,
-    worth_store_aspect_native::StoreAspectAuthorityInput,
-    worth_store_aspect_native::StoreAspectBoundaryFact,
-    worth_store_aspect_native::StoreAspectIdentity,
-    worth_store_aspect_native::StorePhysicalBoundaryWitness,
-    worth_store_aspect_native::StoreTerminalProjectionDenial,
-    worth_store_aspect_native::StoreTerminalProjectionDisplayLabel,
-};
-use {
-    worth_store_contracts::StorePhysicalAuthorityWitness,
-    worth_store_contracts::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
 };
 
 #[test]

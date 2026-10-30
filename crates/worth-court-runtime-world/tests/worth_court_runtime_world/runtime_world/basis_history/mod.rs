@@ -1,9 +1,3 @@
-use {
-    worth_runtime_world::facade::CompositeCallerCorrelation,
-    worth_runtime_world::facade::CompositeCommitParent,
-    worth_runtime_world::facade::RuntimeWorldPublicationPhase,
-};
-
 #[test]
 fn publication_phase_vocabulary_is_complete_for_diagnostics() {
     // Phase 1 intentionally fences only the public diagnostic vocabulary.

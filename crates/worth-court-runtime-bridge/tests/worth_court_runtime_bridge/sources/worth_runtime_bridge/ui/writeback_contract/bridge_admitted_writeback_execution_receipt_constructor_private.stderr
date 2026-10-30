@@ -1,10 +1,10 @@
 error[E0624]: associated function `new` is private
- --> tests/ui/writeback_contract/bridge_admitted_writeback_execution_receipt_constructor_private.rs:4:54
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_contract/bridge_admitted_writeback_execution_receipt_constructor_private.rs:4:54
   |
 4 |       let _ = BridgeAdmittedWritebackExecutionReceipt::new;
   |                                                        ^^^ private associated function
   |
- ::: src/writeback/execution_contract.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/writeback/execution_contract.rs
   |
   | /     pub(crate) fn new(
   | |         request: &BridgeAdmittedWritebackExecutionRequest,

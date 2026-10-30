@@ -1,11 +1,6 @@
-use {
-    worth_store_physical_format::DurablePhysicalRootManifest,
-    worth_store_physical_format::RecordArtifactFile,
-    worth_store_physical_format::CHECKPOINT_CERTIFIED_SCHEMA,
-};
+use worth_store_physical_format::CHECKPOINT_CERTIFIED_SCHEMA;
 
 use crate::phase_eight_process::production::harness::compare_runtime_and_observer_with_budget;
-use crate::phase_eight_process::production::harness::ProcessWorld;
 use {
     crate::production::writer_crash::successor_candidate_media::candidate_root_path,
     crate::production::writer_crash::successor_candidate_media::candidate_topology,

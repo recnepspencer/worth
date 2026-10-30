@@ -14,6 +14,44 @@ enum Refusal {
 }
 
 #[test]
+fn canonical_requirement_qualification_cause_survives_inventory_mapping() {
+    use crate::graph_read_access::WorthQueryGraphIndexInventoryAdmissionStop;
+    use worth_foundational::facade::with_refused_canonical_sort_qualification_for_test;
+    let query = installed_query();
+    let parameters = admit_application_query_parameters(
+        &query,
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap(),
+    )
+    .unwrap();
+    let derive = || {
+        derive_graph_read_access_requirements_for_contract_admitted(
+            query.read_family_binding().planning_contract(),
+            WorthQueryApplicationQueryLane::OneShot,
+            32,
+            parameters.identity(),
+            test_canonical_budget(),
+            &mut |_, _| Ok::<_, Refusal>(()),
+        )
+    };
+    let stop = with_refused_canonical_sort_qualification_for_test(derive).unwrap_err();
+    let WorthQueryCanonicalIdentityStop::UnsupportedSortImplementation(cause) = &stop else {
+        panic!("the genuine requirement preparation must preserve its sort qualification cause")
+    };
+    let expected = *cause;
+    // This tests the inventory conversion, not a stable sort inside inventory's local sorter.
+    assert!(
+        matches!(WorthQueryGraphIndexInventoryAdmissionStop::from(stop),
+        WorthQueryGraphIndexInventoryAdmissionStop::UnsupportedSortImplementation(actual)
+            if actual == expected)
+    );
+    assert!(!expected.compiler_release().is_empty());
+    assert_eq!(expected.compiler_commit().len(), 40);
+    derive().unwrap();
+}
+
+#[test]
 fn installed_contract_admitted_requirements_preserve_ordinary_meaning() {
     let query = installed_query();
     for parameter in [7_u64, 8] {

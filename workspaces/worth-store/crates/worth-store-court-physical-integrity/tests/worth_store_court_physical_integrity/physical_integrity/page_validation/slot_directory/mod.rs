@@ -1,8 +1,5 @@
-use worth_store_physical_format::{encode_inline_page, InlineRecordAppend, PhysicalPageSizeClass};
-use worth_store_physical_integrity::{
-    validate_inline_page, InlinePageIntegrityValidation, PhysicalBlastRadius, PhysicalDamageCause,
-    PhysicalFormatField, UntrustedPhysicalArtifact,
-};
+use worth_store_physical_format::encode_inline_page;
+use worth_store_physical_integrity::validate_inline_page;
 
 use crate::support::page_validation::{
     assert_damage, field_range, format, page, page_scope, record, reseal, slot, store,

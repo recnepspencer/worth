@@ -1,8 +1,5 @@
 #[allow(unused_imports)]
 use crate::s4_5_driver_contract_boundary_compile_fail::*;
-use std::path::Path;
-
-use worth_store_test_support::compiler_boundary::read_ui_fixture_suite;
 
 #[test]
 fn driver_contract_boundary_rejects_arbitrary_named_yieldpoint_authority() {

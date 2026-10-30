@@ -252,6 +252,6 @@
     }
   ],
   "snapshot_audiences": [
-    {"audience": "ordinary-production-store-consumer", "authority": {"declaration": "workspaces/worth-store/crates/worth-store-court-store-entry/tests/worth_store_court_store_entry/compile_fail/store/physical_adapter_authority_ui/mod.rs", "reader": "worth_testkit_compiler::production_denial"}, "dependencies": [{"default_features": true, "features": [], "name": "worth-store", "path": "workspaces/worth-store/crates/worth-store"}], "environment": "production", "source": "workspaces/worth-store/crates/worth-store-court-store-entry/tests/worth_store_court_store_entry/sources/worth_store/physical_adapter_authority/certification_authority_is_absent.rs"}
+    {"audience": "ordinary-production-store-consumer", "authority": {"declaration": "workspaces/worth-store/crates/worth-store-court-store/tests/worth_store_court_store/compile_fail/store/physical_adapter_authority_ui/mod.rs", "reader": "worth_testkit_compiler::production_denial"}, "dependencies": [{"default_features": true, "features": [], "name": "worth-store", "path": "workspaces/worth-store/crates/worth-store"}], "environment": "production", "source": "workspaces/worth-store/crates/worth-store-court-store/tests/worth_store_court_store/sources/worth_store/physical_adapter_authority/certification_authority_is_absent.rs"}
   ]
 }

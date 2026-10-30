@@ -152,7 +152,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     pub(in crate::domain_computation::primary_graph) const fn idempotency(
         &self,
     ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding
-    {
+{
         self.idempotency
     }
 

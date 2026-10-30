@@ -1,4 +1,5 @@
 use crate::transactions::data::TransactionCommitError;
+mod authored_retirement;
 mod completion;
 mod custody;
 mod producing_implementation;
@@ -53,9 +54,7 @@ impl crate::mvcc::ValidatedRelationalProposal {
         publication: RequiredOutputPublication,
     ) -> Result<Self, TransactionCommitError> {
         if self.required_output_publication.is_some()
-            || !installed
-                .authority
-                .admits_required_output(publication.running())
+            || !publication.admitted_by(installed)
             || self
                 .validation_input
                 .basis()

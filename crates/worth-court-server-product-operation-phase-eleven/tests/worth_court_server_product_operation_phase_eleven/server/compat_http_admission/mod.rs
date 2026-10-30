@@ -1,10 +1,8 @@
-
-
-
-
-use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityDenialCode, worth_server::WorthServerCompatibilityRequestInput};
-
-use {crate::compat_http_admission::ordinary_context::compat_http_admission_runtime::compat_http_admission_test_server, crate::compat_http_admission::ordinary_context::compat_http_admission_runtime::compat_http_denial, crate::compat_http_admission::ordinary_context::compat_http_admission_runtime::compat_http_request};
+use {
+    crate::compat_http_admission::ordinary_context::compat_http_admission_runtime::compat_http_admission_test_server,
+    crate::compat_http_admission::ordinary_context::compat_http_admission_runtime::compat_http_denial,
+    crate::compat_http_admission::ordinary_context::compat_http_admission_runtime::compat_http_request,
+};
 
 #[test]
 fn compat_http_canonicalizes_equivalent_requests_to_the_same_digest() {
@@ -62,7 +60,9 @@ fn compat_http_canonicalizes_body_content_type_and_diagnostics_in_request_contra
             .with_route_family(worth_server::WorthServerCompatHttpRouteFamily::Upload)
             .with_method("POST")
             .with_path("/v1/uploads")
-            .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+            .with_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Standard,
+            )
             .with_body_present(true)
             .with_body_content_type(" Application/Json ")
             .build()
@@ -77,7 +77,9 @@ fn compat_http_canonicalizes_body_content_type_and_diagnostics_in_request_contra
             .with_route_family(worth_server::WorthServerCompatHttpRouteFamily::Upload)
             .with_method("POST")
             .with_path("/v1/uploads")
-            .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+            .with_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Standard,
+            )
             .with_body_present(true)
             .with_body_content_type("application/json")
             .build()
@@ -92,7 +94,9 @@ fn compat_http_canonicalizes_body_content_type_and_diagnostics_in_request_contra
             .with_route_family(worth_server::WorthServerCompatHttpRouteFamily::Upload)
             .with_method("POST")
             .with_path("/v1/uploads")
-            .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal)
+            .with_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal,
+            )
             .with_body_present(true)
             .with_body_content_type("application/json")
             .build()

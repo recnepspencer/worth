@@ -1,16 +1,15 @@
 use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_installation::facade::{
-    ApplicationFieldPresence, WorthQueryInstalledGraphProjection,
-    WorthQueryInstalledGraphReadContract, WorthQueryInstalledGraphRelation,
+    WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphReadContract,
+    WorthQueryInstalledGraphRelation,
 };
 use worth_relational::facade::{
     identity::EntityId,
     indexes::{DerivedIndexGenerationId, DerivedIndexId, RelatedEntityOrderingBoundary},
-    runtime::{ProjectionAspectRequirement, ProjectionAspectScope},
     storage::RecordLifecycleState,
 };
 
@@ -27,12 +26,16 @@ use crate::domain_computation::primary_graph::application_query::projection::{
 mod bounded_ordering;
 mod collection_selection;
 pub(super) use collection_selection::*;
+pub(in crate::domain_computation::primary_graph::application_query) mod fallible_heap;
+mod fields;
+mod material_storage;
 mod relation_attachment;
 mod relation_distribution;
 mod relation_occurrence;
 mod relation_target_filter;
 mod source_footprint;
 mod work;
+use fields::{direct_projections, project_fields, projection_scope};
 
 use bounded_ordering::order_collection;
 use relation_attachment::{advance_omitted_relation, attach_relation};
@@ -68,11 +71,14 @@ pub(super) fn materialize_result_tree(
     interruption: super::ReadInterruption<'_>,
 
     spent: Option<&OneShotReadWorkObservation<'_>>,
+    material_source: Option<
+        &Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
+    >,
 ) -> Result<MaterializedApplicationResultTree, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .project_snapshot(snapshot)
         .ok_or_else(|| projection_denial(contract.root_entity()))?;
-    let mut work = ResultTreeWork::new(interruption, spent);
+    let mut work = ResultTreeWork::new(interruption, spent, *execution, material_source);
     work.checkpoint("root")?;
     let mut collection_selection = ActiveResultTreeCollectionSelection::new(collection_selection);
     let mut rows = project_nodes(
@@ -104,6 +110,7 @@ pub(super) fn materialize_result_tree(
         selected_predicate_source,
         root_path_source,
         &mut work,
+        material_source,
     )?;
     let rows = WorthQueryApplicationWorkingProjectionTree::new(rows).into_disclosed(governance);
     Ok(MaterializedApplicationResultTree {
@@ -136,8 +143,8 @@ fn project_nodes(
     work: &mut ResultTreeWork,
     collection_selection: &mut ActiveResultTreeCollectionSelection,
 ) -> Result<Vec<WorthQueryApplicationProjectionNode>, WorthQueryApplicationReadExecutionDenial> {
-    let fields = direct_projections(contract, governance, result_path);
-    let relations = direct_relations(contract, result_path);
+    let fields = direct_projections(contract, governance, result_path, work)?;
+    let relations = direct_relations(contract, result_path, work)?;
     let source_dependencies_complete = contract
         .projections()
         .iter()
@@ -147,6 +154,7 @@ fn project_nodes(
             .iter()
             .all(|relation| governance.is_disclosed(relation.slot_key_identity().as_ref()));
     work.charge_projection(entity_ids.len(), fields.len(), result_path)?;
+    work.material_slots::<WorthQueryApplicationProjectionNode>(entity_ids.len())?;
     let mut nodes = allocate_result_vector::<WorthQueryApplicationProjectionNode>(
         entity_ids.len(),
         result_path,
@@ -162,6 +170,7 @@ fn project_nodes(
                 work.reads.record_endpoint();
                 (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live).then(
                     || {
+                        work.material_slots::<WorthQueryApplicationProjectedField>(fields.len())?;
                         let projected = allocate_result_vector::<
                             WorthQueryApplicationProjectedField,
                         >(fields.len(), result_path)?;
@@ -170,6 +179,7 @@ fn project_nodes(
                 )
             }).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, result_path))?
             .ok_or_else(|| projection_denial(result_path))??;
+        work.material_slots::<WorthQueryApplicationProjectedRelation>(relations.len())?;
         let projected_relations = allocate_result_vector::<WorthQueryApplicationProjectedRelation>(
             relations.len(),
             result_path,
@@ -213,34 +223,6 @@ fn project_nodes(
     Ok(nodes)
 }
 
-fn project_fields(
-    record: worth_relational::facade::runtime::EntityProjectionRecord<'_>,
-    fields: &[&WorthQueryInstalledGraphProjection],
-    mut projected: Vec<WorthQueryApplicationProjectedField>,
-    work: &mut ResultTreeWork,
-) -> Result<Vec<WorthQueryApplicationProjectedField>, WorthQueryApplicationReadExecutionDenial> {
-    for projection in fields {
-        work.reads.record_fields(1);
-        let Some(value) =
-            record.aspect_field_value(projection.aspect_key(), projection.field_key())
-        else {
-            if projection.presence() == ApplicationFieldPresence::Optional {
-                continue;
-            }
-            return Err(projection_denial(projection.result_path()));
-        };
-        if value.value_family() != projection.scalar_family() {
-            return Err(projection_denial(projection.result_path()));
-        }
-
-        projected.push(WorthQueryApplicationProjectedField::new(
-            projection,
-            value.clone(),
-        ));
-    }
-    Ok(projected)
-}
-
 pub(super) fn allocate_result_vector<T>(
     capacity: usize,
     subject: &str,
@@ -252,61 +234,18 @@ pub(super) fn allocate_result_vector<T>(
     Ok(vector)
 }
 
-fn direct_projections<'a>(
-    contract: &'a WorthQueryInstalledGraphReadContract,
-    governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
-    parent: &str,
-) -> Vec<&'a WorthQueryInstalledGraphProjection> {
-    contract
-        .projections()
-        .iter()
-        .filter(|projection| {
-            let field = (projection.entity(), projection.aspect(), projection.field());
-            let disclosed = governance
-                .admit_disclosed_projection(
-                    projection.slot_key_identity().as_ref(),
-                    field,
-                    projection.field_key(),
-                )
-                .is_some();
-            let internal_ordering = contract.ordering().iter().any(|ordering| {
-                ordering.collection_path() == parent
-                    && ordering.field() == field
-                    && governance
-                        .admit_internal_projection(
-                            ordering.field(),
-                            ordering.field_key(),
-                            worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence::Ordering,
-                        )
-                        .is_some()
-            });
-            projection.parent_path() == parent
-                && (disclosed || internal_ordering)
-        })
-        .collect()
-}
-
 fn direct_relations<'a>(
     contract: &'a WorthQueryInstalledGraphReadContract,
     parent: &str,
-) -> Vec<&'a WorthQueryInstalledGraphRelation> {
-    contract
-        .relations()
-        .iter()
-        .filter(|relation| relation.parent_path() == parent)
-        .collect()
-}
-
-fn projection_scope(fields: &[&WorthQueryInstalledGraphProjection]) -> ProjectionAspectScope {
-    let mut keys = BTreeMap::new();
-    for field in fields {
-        keys.entry(field.aspect_key().clone())
-            .or_insert_with(BTreeSet::new)
-            .insert(field.field_key().clone());
-    }
-    ProjectionAspectScope::from_requirements(
-        keys.into_iter()
-            .map(|(aspect, fields)| ProjectionAspectRequirement::fields(aspect, fields)),
+    work: &ResultTreeWork,
+) -> Result<Vec<&'a WorthQueryInstalledGraphRelation>, WorthQueryApplicationReadExecutionDenial> {
+    work.collect_material(
+        contract.relations().len(),
+        contract
+            .relations()
+            .iter()
+            .filter(|relation| relation.parent_path() == parent),
+        parent,
     )
 }
 

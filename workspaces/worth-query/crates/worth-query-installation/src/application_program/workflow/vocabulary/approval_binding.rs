@@ -32,6 +32,10 @@ where
             .map(|binding| &binding.installed_identity)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     fn approval_binding<Capability, Operation>(&self) -> Option<&InstalledWorkflowCapabilityBinding>
     where
         Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,

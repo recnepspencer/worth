@@ -1,5 +1,8 @@
-pub use {serde_json::json};
-pub use {worth_server::WorthServerMultipartUpload, worth_server::WorthServerUploadManifest, worth_server::WorthServerUploadPart};
+pub use serde_json::json;
+pub use {
+    worth_server::WorthServerMultipartUpload, worth_server::WorthServerUploadManifest,
+    worth_server::WorthServerUploadPart,
+};
 
 pub fn canonical_upload(identity: &str) -> WorthServerMultipartUpload {
     worth_server::WorthServerMultipartUpload::new(

@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_format/support/blob_control_record_golden/mod.rs"]
 pub(crate) mod blob_control_record_golden;

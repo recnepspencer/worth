@@ -1,4 +1,7 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #![forbid(unsafe_code)]
+// Threaded owner tests derive Send/Sync through nested persistent graph storage.
+#![recursion_limit = "256"]
 // Query's public denials are deliberately rich, so its workspace allows large
 // error variants; this consumer returns them unchanged.
 #![allow(clippy::result_large_err)]
@@ -6,6 +9,7 @@
 mod application_invariant_acceptance;
 mod application_program;
 mod program_deployment;
+pub mod proposal_acceptance;
 use program_deployment::ConsumerProgramDeployment;
 
 pub use application_program::{
@@ -42,6 +46,10 @@ worth_query_application! {
 impl TopologySchemaBinding for ConsumerSchema {}
 impl ParameterSchemaBinding for ConsumerSchema {}
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "owner-entry-bridge owner-entry-bridge=1: This public consumer entry owns its joined application thread and stack; computation retains installed Execution authority"
+)]
 fn main() {
     // Match the execution stack provisioned by the public application examples.
     std::thread::Builder::new()

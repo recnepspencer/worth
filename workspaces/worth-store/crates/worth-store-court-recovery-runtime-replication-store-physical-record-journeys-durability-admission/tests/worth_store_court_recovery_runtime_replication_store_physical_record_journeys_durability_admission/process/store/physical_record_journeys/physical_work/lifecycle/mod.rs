@@ -3,15 +3,6 @@ use crate::physical_record_journeys::physical_work::lifecycle::*;
 use std::collections::BTreeSet;
 
 use tempfile::tempdir;
-use worth_proof::TransitionOutcome;
-use {
-    worth_store::physical_runtime::PhysicalSignalShutdownOutcome,
-    worth_store::physical_runtime::PhysicalWorkSubmissionDenial,
-    worth_store::physical_runtime::PhysicalWorkSubmissionOutcome,
-    worth_store::physical_runtime::PhysicalWorkSubmissionStale,
-    worth_store::physical_runtime::PhysicalWorkTerminalDisposition,
-    worth_store::physical_runtime::PhysicalWorkTerminalStage,
-};
 
 use {
     worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_mutation_fixture,

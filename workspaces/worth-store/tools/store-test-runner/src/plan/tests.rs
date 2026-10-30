@@ -30,13 +30,13 @@ fn scenario_sharding_uses_nextests_stable_hash_partition() {
 }
 
 #[test]
-fn scenario_plan_names_real_targets_without_absorbing_special_lanes() {
+fn scenario_plan_selects_ordinary_process_and_determinism_courts_by_prefix() {
     let plan = ci_plan(CiTestLane::Scenario, None);
     let command = nextest(&plan).arguments().join(" ");
 
     for selector in [
-        "binary_id(=worth-store-court-store-physical-record-journeys-durability-admission::worth_store_court_store_physical_record_journeys_durability_admission)",
-        "binary_id(=worth-store-court-recovery-runtime::worth_store_court_recovery_runtime)",
+        "binary_id(=worth-store-court-store-replication-physical-record-journeys-durability-admission::worth_store_court_store_replication_physical_record_journeys_durability_admission)",
+        "binary_id(=worth-store-court-recovery-runtime-replication::worth_store_court_recovery_runtime_replication)",
         "binary_id(=worth-store-court-relational::worth_store_court_relational)",
     ] {
         assert!(command.contains(selector), "missing court selector {selector}");
@@ -66,10 +66,10 @@ fn nonignored_cost_contracts_have_their_own_landing_partition() {
 }
 
 #[test]
-fn ui_and_formal_products_map_to_their_real_targets() {
+fn ui_and_formal_products_select_compile_fail_and_oracle_prefixes() {
     let ui = TestPlan::build(&TestProduct::Ui, workspace_root()).unwrap();
     let ui_command = nextest(&ui).arguments().join(" ");
-    assert!(ui_command.contains("binary_id(=worth-store-court-store-physical-record-journeys-physical-work::worth_store_court_store_physical_record_journeys_physical_work)"));
+    assert!(ui_command.contains("binary_id(=worth-store-court-store-replication-physical-record-journeys-physical-work::worth_store_court_store_replication_physical_record_journeys_physical_work)"));
     assert!(ui_command.contains(" & (test(/^compile_fail::/))"));
     assert!(!ui_command.contains(" & (test(/^process::/))"));
 
@@ -154,7 +154,7 @@ fn guarded_store_targets_enable_their_real_feature() {
         // dependency. Selecting it preserves that graph without a second
         // command-line feature configuration.
         assert!(command.contains(&format!(
-            "(binary_id(=worth-store-court-store-physical-record-journeys-physical-work::worth_store_court_store_physical_record_journeys_physical_work) & (test(/^{category}::/)))"
+            "(binary_id(=worth-store-court-store-replication-physical-record-journeys-physical-work::worth_store_court_store_replication_physical_record_journeys_physical_work) & (test(/^{category}::/)))"
         )));
         assert!(!arguments.iter().any(|argument| argument == "--features"));
     }
@@ -196,13 +196,13 @@ fn smoke_plan_uses_exact_real_test_selectors() {
             "certification::physical_isolation::stable_read_plan_admission::proof_bearing_read_plan_admits_before_execution_handle",
         ),
         (
-            "worth-store-court-store-physical-blob-journeys",
-            "worth_store_court_store_physical_blob_journeys",
+            "worth-store-court-store-replication-physical-blob-journeys",
+            "worth_store_court_store_replication_physical_blob_journeys",
             "process::store::physical_record_journeys::baseline_admission::empty_bootstrap_create_and_reopen_converge",
         ),
         (
-            "worth-store-court-store-physical-blob-journeys",
-            "worth_store_court_store_physical_blob_journeys",
+            "worth-store-court-store-replication-physical-blob-journeys",
+            "worth_store_court_store_replication_physical_blob_journeys",
             "process::store::physical_record_journeys::scan_journeys::scan_batch_widths_converge_to_one_physical_sequence",
         ),
         (
@@ -211,8 +211,8 @@ fn smoke_plan_uses_exact_real_test_selectors() {
             "process::store::physical_record_journeys::physical_work::failure::indeterminate_write_obligation_survives_orderly_close_and_reopen",
         ),
         (
-            "worth-store-court-store-physical-record-journeys-physical-work",
-            "worth_store_court_store_physical_record_journeys_physical_work",
+            "worth-store-court-store-replication-physical-record-journeys-physical-work",
+            "worth_store_court_store_replication_physical_record_journeys_physical_work",
             "process::store::physical_record_journeys::physical_work::serving_frame_residency::pins_distinguish_faults_hits_overpin_and_refault_without_another_runtime",
         ),
         (
@@ -221,18 +221,18 @@ fn smoke_plan_uses_exact_real_test_selectors() {
             "process::store::physical_record_journeys::record_chunk_views::borrowed_access::inline_view_exposes_only_the_record_payload_and_observational_basis",
         ),
         (
-            "worth-store-court-store-physical-blob-journeys",
-            "worth_store_court_store_physical_blob_journeys",
+            "worth-store-court-store-replication-physical-blob-journeys",
+            "worth_store_court_store_replication_physical_blob_journeys",
             "process::store::physical_record_journeys::record_chunk_views::bounded_copy::bounded_copies_and_views_share_one_cursor_with_exact_copy_evidence",
         ),
         (
-            "worth-store-court-store-physical-record-journeys-physical-work",
-            "worth_store_court_store_physical_record_journeys_physical_work",
+            "worth-store-court-store-replication-physical-record-journeys-physical-work",
+            "worth_store_court_store_replication_physical_record_journeys_physical_work",
             "process::store::physical_record_journeys::physical_work::residency_writeback_retry::no_effect_writeback_retains_dirty_ownership_through_signal_retry",
         ),
         (
-            "worth-store-court-store-physical-record-journeys-physical-work",
-            "worth_store_court_store_physical_record_journeys_physical_work",
+            "worth-store-court-store-replication-physical-record-journeys-physical-work",
+            "worth_store_court_store_replication_physical_record_journeys_physical_work",
             "process::store::physical_record_journeys::physical_work::speculative_residency::outcomes::cold_hot_and_mixed_speculation_reconcile_work_media_and_residency_truth",
         ),
     ];

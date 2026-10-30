@@ -1,5 +1,5 @@
 error[E0603]: tuple struct constructor `SealedAuthority` is private
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:23:39
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:23:39
    |
 15 |     worth_proof::authority_marker!(pub SealedAuthority);
    |     --------------------------------------------------- a constructor is private if any of the fields is private
@@ -8,19 +8,19 @@ error[E0603]: tuple struct constructor `SealedAuthority` is private
    |                                       ^^^^^^^^^^^^^^^ private tuple struct constructor
    |
 note: the tuple struct constructor `SealedAuthority` is defined here
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:15:5
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:15:5
    |
 15 |     worth_proof::authority_marker!(pub SealedAuthority);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the macro `worth_proof::authority_marker` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: consider making the field publicly accessible
-  --> src/proof/marker_authoring.rs
+  --> $WORKSPACE/crates/worth-proof/src/proof/marker_authoring.rs
    |
    |         $vis struct $name(pub ::core::marker::PhantomData<()>);
    |                           +++
 
 error[E0603]: tuple struct constructor `SealedCapability` is private
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:29:40
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:29:40
    |
 16 |     worth_proof::capability_marker!(pub SealedCapability);
    |     ----------------------------------------------------- a constructor is private if any of the fields is private
@@ -29,19 +29,19 @@ error[E0603]: tuple struct constructor `SealedCapability` is private
    |                                        ^^^^^^^^^^^^^^^^ private tuple struct constructor
    |
 note: the tuple struct constructor `SealedCapability` is defined here
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:16:5
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:16:5
    |
 16 |     worth_proof::capability_marker!(pub SealedCapability);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the macro `worth_proof::capability_marker` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: consider making the field publicly accessible
-  --> src/proof/marker_authoring.rs
+  --> $WORKSPACE/crates/worth-proof/src/proof/marker_authoring.rs
    |
    |         $vis struct $name(pub ::core::marker::PhantomData<()>);
    |                           +++
 
 error[E0624]: associated function `seal` is private
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:34:80
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:34:80
    |
 15 |     worth_proof::authority_marker!(pub SealedAuthority);
    |     --------------------------------------------------- private associated function defined here
@@ -50,7 +50,7 @@ error[E0624]: associated function `seal` is private
    |                                                                                ^^^^ private associated function
 
 error[E0624]: associated function `witness` is private
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:38:40
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:38:40
    |
 15 |     worth_proof::authority_marker!(pub SealedAuthority);
    |     --------------------------------------------------- private associated function defined here

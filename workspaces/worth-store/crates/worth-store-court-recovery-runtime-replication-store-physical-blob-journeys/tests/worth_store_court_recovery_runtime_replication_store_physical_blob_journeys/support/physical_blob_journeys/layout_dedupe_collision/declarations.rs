@@ -1,5 +1,3 @@
-#![cfg(all())]
-
 pub(crate) use std::num::NonZeroU64;
 
 pub(crate) use worth_store_blob_chunks::BlobChunkSize;

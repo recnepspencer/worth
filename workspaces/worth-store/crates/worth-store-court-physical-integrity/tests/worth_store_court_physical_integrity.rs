@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_integrity/support/blob_record_validation/mod.rs"]
 pub(crate) mod blob_record_validation;

@@ -1,14 +1,6 @@
-use worth_store_certification::S6CertifiedQueueExecutionEvidence;
 use {
     worth_store_io_scheduler::execute_grouped_ready_queue_plans,
     worth_store_io_scheduler::group_ready_queue_pair,
-    worth_store_io_scheduler::QueueGroupingOutcome,
-};
-use {
-    worth_store_physical_backend::BackendQueueExecutionAdaptation,
-    worth_store_physical_backend::BackendQueueExecutionCompletion,
-    worth_store_physical_backend::BackendQueueExecutionPosture,
-    worth_store_physical_backend::BackendQueueSpeculativeScope,
 };
 
 use {crate::support::admitted_plan, crate::support::backend_witness};

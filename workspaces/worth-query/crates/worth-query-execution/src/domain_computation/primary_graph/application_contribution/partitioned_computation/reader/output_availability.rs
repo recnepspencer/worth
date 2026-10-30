@@ -33,7 +33,7 @@ where
                 <<Demand::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Query>,
         Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
         <Demand::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Entity: OperationReads<Operation>,
-    {
+{
         self.reader
             .output_availability(producer, demand)
             .map_err(|stop| WorthQueryComputationReadDenial::OutputAvailability(Box::new(stop)))

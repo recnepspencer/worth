@@ -1,18 +1,5 @@
 pub(crate) use crate::court::ordinary_context::routing::ROUTED;
-pub(crate) use worth_proof::TransitionOutcome;
-pub(crate) use worth_relational::facade::mvcc::RelationalPublicationOutcome;
-pub(crate) use {
-    crate::court::ordinary_context::budgets, crate::court::ordinary_context::correspondence,
-    crate::court::ordinary_context::oracle,
-    crate::court::ordinary_context::relational::CargoRecords,
-    crate::court::ordinary_context::routing::RouteGraph,
-    crate::court::ordinary_context::CompositeSupplyChainCourt, worth_runtime_world::facade::*,
-    worth_signal::facade::SignalGraph,
-};
-pub(crate) use {
-    worth_runtime_bridge::facade::RelationalCommittedPatchRequest,
-    worth_runtime_bridge::facade::TruthCommitIdentity,
-};
+pub(crate) use worth_runtime_world::facade::*;
 
 #[test]
 fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
@@ -24,7 +11,7 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
     let nodes = crate::court::ordinary_context::routing::RouteGraph::install(&mut graph);
     let (bridge, installed, source) =
         crate::court::ordinary_context::correspondence::install(&records, &mut graph, nodes);
-    let mut oracle = crate::court::ordinary_context::oracle::CompositeWorldOracle::bootstrap();
+    let mut oracle = crate::oracle::support::ordinary_context::CompositeWorldOracle::bootstrap();
     // Both commits are real FieldSet patches in the same owner and contract.
     // Only grain matches the installed record correspondence.
     for (name, amount, expected_seeds) in [("steel", "5", 0), ("grain", "6", 1)] {

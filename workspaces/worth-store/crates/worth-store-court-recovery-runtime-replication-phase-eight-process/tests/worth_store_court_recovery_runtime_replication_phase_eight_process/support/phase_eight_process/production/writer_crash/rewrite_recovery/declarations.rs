@@ -15,9 +15,9 @@ pub(crate) use {
 
 pub(crate) use {
     crate::history::schedule::in_flight_mutation::MutationCrashWorkload,
-    crate::phase_eight_process::production::harness::process::assert_child_succeeded,
-    crate::phase_eight_process::production::harness::process::run_recovery_with_profile,
     crate::phase_eight_process::production::harness::ProcessWorld,
+    crate::process::support::production_harness::assert_child_succeeded,
+    crate::process::support::production_harness::run_recovery_with_profile,
 };
 
 pub(crate) fn wal_rewrite(root: &Path) -> Option<PhysicalRewriteRedo> {

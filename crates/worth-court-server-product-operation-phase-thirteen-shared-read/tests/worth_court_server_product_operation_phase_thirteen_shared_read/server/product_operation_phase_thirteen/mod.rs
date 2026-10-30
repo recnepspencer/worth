@@ -1,12 +1,6 @@
 #[allow(unused_imports)]
 use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {
-    worth_server::WorthServerProductIdempotencyKey, worth_server::WorthServerProductOperationInput,
-    worth_server::WorthServerProductOperationOutcome,
-    worth_server::WorthServerProductOperationSurfaceDenialCode,
-};
-
 #[allow(unused_imports)]
 use worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture as fixture;
 
@@ -21,7 +15,6 @@ use {
     worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::open_mutation_session,
     worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::render_payload,
     worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::select_payload,
-    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::StatefulEditorLikeBackend,
 };
 
 #[test]

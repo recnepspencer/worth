@@ -13,6 +13,10 @@ pub(super) struct PlatformPulseVisualReadiness {
 }
 
 impl PlatformPulseVisualReadiness {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "event-loop-watcher thread-builder=1: UI readiness, source, theme or event-loop observation runs independently of computation."
+    )]
     pub(super) fn install(
         signal: worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal,
     ) -> Self {

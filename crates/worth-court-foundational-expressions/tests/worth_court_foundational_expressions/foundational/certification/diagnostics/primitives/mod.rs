@@ -4,14 +4,6 @@ use {
     worth_foundational::foundational_diagnostic_code,
     worth_foundational::foundational_diagnostic_scope,
     worth_foundational::foundational_responsibilities,
-    worth_foundational::FoundationalDiagnosticArtifactKind,
-    worth_foundational::FoundationalDiagnosticAvailability,
-    worth_foundational::FoundationalDiagnosticBreachClass,
-    worth_foundational::FoundationalDiagnosticDeliveryClass,
-    worth_foundational::FoundationalDiagnosticEvidencePosture,
-    worth_foundational::FoundationalDiagnosticMaterializationLegalityDenial,
-    worth_foundational::FoundationalDiagnosticPrimitiveConstructionDenial,
-    worth_foundational::FoundationalDiagnosticSeverity,
 };
 
 #[test]

@@ -1,24 +1,5 @@
-use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
-use worth_store_test_support::harness::physical_isolation::read_plan as plan_admission;
-
 use crate::stable_read_execution::execution_security_scope::logical_decode_entry_for_handle;
 use crate::stable_read_execution::execution_support::with_record_chunk;
-use worth_proof::TransitionOutcome;
-use worth_store_physical_format::PhysicalCellReuseDomain;
-use worth_store_physical_isolation::PhysicalReadPlanRetryPosture;
-use {
-    worth_foundational::FoundationalBoundaryEvidenceReceiptKind,
-    worth_foundational::FoundationalDiagnosticOutcomeKind,
-    worth_foundational::FoundationalDiagnosticRowFamily,
-};
-use {
-    worth_store::physical_runtime::stability::PhysicalByteGuard,
-    worth_store::physical_runtime::stability::PhysicalByteGuardDenial,
-    worth_store::physical_runtime::stability::PhysicalByteGuardScope,
-    worth_store::physical_runtime::stability::PhysicalReadExecutionDenial,
-    worth_store::physical_runtime::stability::PhysicalReadIoAttempt,
-    worth_store::physical_runtime::stability::StablePhysicalReadExecution,
-};
 use {
     worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,
     worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority,

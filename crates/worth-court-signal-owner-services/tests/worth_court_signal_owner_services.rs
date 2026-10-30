@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_signal_owner_services/support/branch_bases_example/mod.rs"]
 pub(crate) mod branch_bases_example;
@@ -15,6 +16,8 @@ pub(crate) mod branch_retention_lifecycle;
 pub(crate) mod candidate_ticket_contention;
 #[path = "worth_court_signal_owner_services/compile_fail/mod.rs"]
 pub(crate) mod compile_fail;
+#[path = "worth_court_signal_owner_services/cost/mod.rs"]
+pub(crate) mod cost;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_signal_owner_services/support/execution_request_denials/mod.rs"]
 pub(crate) mod execution_request_denials;

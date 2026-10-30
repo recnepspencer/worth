@@ -1,19 +1,10 @@
 #[allow(unused_imports)]
 use crate::equivalence_contracts::isolated_context::*;
-use {std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
 
 use {
-    worth_execution::compare_canonical_values, worth_execution::CancellationSource,
-    worth_execution::CancellationToken, worth_execution::ConstructionDenial,
-    worth_execution::EquivalencePredicate, worth_execution::ExecutionAuthority,
-    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
-    worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
-    worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::OracleMismatch,
-};
-use {
-    worth_foundational::DeterminismContract, worth_foundational::EquivalenceContractId,
-    worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture,
-    worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity,
+    worth_execution::compare_canonical_values, worth_execution::ExecutionAuthorityConfig,
+    worth_execution::ExecutionMap, worth_execution::LeaseRequest,
+    worth_execution::MapKernelFailure, worth_execution::MapPartition,
 };
 
 #[test]

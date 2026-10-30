@@ -270,12 +270,12 @@ impl WorthUiActiveApplicationSession {
         // every event went somewhere else, which is the handover a latch
         // exists to prevent. The gesture latches to where it actually went.
         let entry = region.entry();
-        if let Some(held) = self.interaction.scroll_gesture_latch_at(input_tick) {
-            if held.binds(entry.owner(), entry.incarnation()) {
-                self.interaction
-                    .latch_scroll_gesture(held.refreshed(input_tick));
-                return;
-            }
+        if let Some(held) = self.interaction.scroll_gesture_latch_at(input_tick)
+            && held.binds(entry.owner(), entry.incarnation())
+        {
+            self.interaction
+                .latch_scroll_gesture(held.refreshed(input_tick));
+            return;
         }
         let Some(lifetime) = self.scroll_gesture_latch_lifetime(phase) else {
             return;

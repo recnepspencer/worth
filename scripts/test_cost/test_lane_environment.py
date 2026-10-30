@@ -2,10 +2,24 @@ import os
 import unittest
 from unittest.mock import patch
 
-from lane_environment import LaneEnvironmentRefusal, inherited, validate
+from lane_environment import LaneEnvironmentRefusal, inherited, validate, validate_command
 
 
 class QualificationEnvironmentTests(unittest.TestCase):
+    def test_direct_configuration_compiler_and_toolchain_overrides_are_refused(self):
+        for command in (['cargo', 'check', '--config', 'profile.dev.debug=0'],
+                        ['cargo', 'check', '--config=build.rustflags=["-Copt-level=3"]'],
+                        ['cargo', 'check', '--config', 'other-profile.toml'],
+                        ['cargo', '+1.94.0', 'check'], ['rustup', 'run', '1.94.0', 'cargo', 'check'],
+                        ['cargo', 'rustc', '--', '-C', 'opt-level=3']):
+            with self.subTest(command=command), self.assertRaises(LaneEnvironmentRefusal):
+                validate_command(command)
+
+    def test_selected_profile_and_runtime_arguments_preserve_the_committed_build_configuration(self):
+        validate_command(['cargo', 'test', '--profile', 'ci-test', '--locked', '--offline'])
+        validate_command(['cargo', 'test', '--', '--config', 'runtime-argument'])
+        validate_command(['python', 'gate.py'])
+
     def test_external_compiler_profile_and_target_flag_overrides_are_refused(self):
         for name in ('RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTDOCFLAGS',
                      'CARGO_ENCODED_RUSTDOCFLAGS', 'RUSTUP_TOOLCHAIN', 'RUSTC',

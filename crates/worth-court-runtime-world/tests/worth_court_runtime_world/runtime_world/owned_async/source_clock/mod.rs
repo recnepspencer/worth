@@ -1,10 +1,7 @@
 // Named coordinates advance the exact resource cell, before separate admission.
-use std::num::NonZeroU64;
-use worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial;
 use {
     crate::owned_async::ordinary_context::fixture::admit_managed,
     crate::owned_async::ordinary_context::fixture::selected_fork,
-    crate::owned_async::ordinary_context::fixture::AsyncSourceCourt,
 };
 
 #[test]

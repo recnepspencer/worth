@@ -3,14 +3,8 @@
 
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_expiry_recovery_negative::*;
-use {std::fs, std::process::Command, std::time::Duration};
 
-use worth_store::physical_runtime::BlobResumeToken;
-
-use {
-    crate::physical_blob_journeys::blob_crash,
-    worth_store_testkit_store::fixture::serving_from_open,
-};
+use worth_store_testkit_store::fixture::serving_from_open;
 
 #[test]
 fn resealed_future_expiry_wal_blocks_before_any_recovery_effect() {

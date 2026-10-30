@@ -1,22 +1,35 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::aspects::portable::patch_boundary::*;
-use {worth_foundational::export_portable_record_aspect_patch, worth_foundational::readmit_portable_record_aspect_patch, worth_foundational::AspectMask, worth_foundational::AspectValue, worth_foundational::AuthoritativeRecordAspectPatch, worth_foundational::CanonicalFieldPath, worth_foundational::ContractValidationInput, worth_foundational::MutationMask, worth_foundational::PortableAspectContractBasis, worth_foundational::PortableAspectPatchOperation, worth_foundational::PortableAspectReadmissionDenial, worth_foundational::PortablePatchReadmissionPurpose, worth_foundational::PortableRecordAspectPatch, worth_foundational::StructAspectValue};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::aspects::portable::patch_boundary::*;
+use {
+    worth_foundational::export_portable_record_aspect_patch,
+    worth_foundational::readmit_portable_record_aspect_patch, worth_foundational::AspectMask,
+    worth_foundational::MutationMask,
+};
 
-use {crate::certification::ordinary_context::aspects::patches::patch_fixtures::task_summary_contract, crate::certification::ordinary_context::aspects::patches::patch_fixtures::validated_task_summary};
-use {worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision};
+use {
+    crate::certification::ordinary_context::aspects::patches::patch_fixtures::task_summary_contract,
+    crate::certification::ordinary_context::aspects::patches::patch_fixtures::validated_task_summary,
+};
+use {
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision,
+};
 
 #[test]
 fn serialized_whole_struct_patch_earns_fresh_authority_from_the_current_contract() {
     let contract = task_summary_contract();
-    let worth_proof::TransitionOutcome::Success(patch) = worth_foundational::AuthoritativeRecordAspectPatch::whole_aspect(
-        [validated_task_summary(
-            &contract,
-            "ship",
-            false,
-            Some("carefully"),
-        )],
-        [],
-    ) else {
+    let worth_proof::TransitionOutcome::Success(patch) =
+        worth_foundational::AuthoritativeRecordAspectPatch::whole_aspect(
+            [validated_task_summary(
+                &contract,
+                "ship",
+                false,
+                Some("carefully"),
+            )],
+            [],
+        )
+    else {
         panic!("expected authoritative patch");
     };
 
@@ -43,12 +56,14 @@ fn field_set_and_clear_survive_without_becoming_a_field_map_authority() {
         worth_foundational::CanonicalFieldPath::single(field("done")),
         worth_foundational::CanonicalFieldPath::single(field("note")),
     ]);
-    let worth_proof::TransitionOutcome::Success(patch) = worth_foundational::AuthoritativeRecordAspectPatch::field_level(
-        &contract,
-        &mask,
-        [(field("done"), worth_foundational::AspectValue::Bool(true))],
-        [field("note")],
-    ) else {
+    let worth_proof::TransitionOutcome::Success(patch) =
+        worth_foundational::AuthoritativeRecordAspectPatch::field_level(
+            &contract,
+            &mask,
+            [(field("done"), worth_foundational::AspectValue::Bool(true))],
+            [field("note")],
+        )
+    else {
         panic!("expected authoritative field patch");
     };
 
@@ -90,19 +105,27 @@ fn whole_clear_retains_its_exact_contract_basis_across_transport() {
 #[test]
 fn stale_contract_and_duplicate_operations_deny_before_authority_exists() {
     let contract = task_summary_contract();
-    let stale_basis =
-        worth_foundational::PortableAspectContractBasis::new(contract.key().clone(), identity(20), revision(0));
+    let stale_basis = worth_foundational::PortableAspectContractBasis::new(
+        contract.key().clone(),
+        identity(20),
+        revision(0),
+    );
     let value = worth_foundational::ContractValidationInput::Struct(
         worth_foundational::StructAspectValue::new([
-            (field("title"), worth_foundational::AspectValue::String("ship".into())),
+            (
+                field("title"),
+                worth_foundational::AspectValue::String("ship".into()),
+            ),
             (field("done"), worth_foundational::AspectValue::Bool(false)),
         ])
         .expect("unique fields"),
     );
-    let stale = worth_foundational::PortableRecordAspectPatch::new([worth_foundational::PortableAspectPatchOperation::SetWhole {
-        basis: stale_basis,
-        value: value.clone(),
-    }]);
+    let stale = worth_foundational::PortableRecordAspectPatch::new([
+        worth_foundational::PortableAspectPatchOperation::SetWhole {
+            basis: stale_basis,
+            value: value.clone(),
+        },
+    ]);
 
     assert!(matches!(
         readmit_portable_record_aspect_patch(
@@ -110,7 +133,9 @@ fn stale_contract_and_duplicate_operations_deny_before_authority_exists() {
             worth_foundational::PortablePatchReadmissionPurpose::RecordMutation,
             &lookup(&contract),
         ),
-        worth_proof::TransitionOutcome::Denied(worth_foundational::PortableAspectReadmissionDenial::ContractRevisionMismatch { .. })
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::PortableAspectReadmissionDenial::ContractRevisionMismatch { .. }
+        )
     ));
 
     let basis = worth_foundational::PortableAspectContractBasis::from_contract(&contract);
@@ -127,6 +152,8 @@ fn stale_contract_and_duplicate_operations_deny_before_authority_exists() {
             worth_foundational::PortablePatchReadmissionPurpose::RecordMutation,
             &lookup(&contract),
         ),
-        worth_proof::TransitionOutcome::Denied(worth_foundational::PortableAspectReadmissionDenial::DuplicateAspectOperation(_))
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::PortableAspectReadmissionDenial::DuplicateAspectOperation(_)
+        )
     ));
 }

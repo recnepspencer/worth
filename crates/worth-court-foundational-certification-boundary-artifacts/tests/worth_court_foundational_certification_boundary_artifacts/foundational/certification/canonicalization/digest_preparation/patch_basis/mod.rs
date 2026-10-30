@@ -1,8 +1,4 @@
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::aspect_patch_digest_preparation_basis, worth_foundational::AspectValue,
-    worth_foundational::AuthoritativeRecordAspectPatch, worth_foundational::ScalarAspectType,
-};
+use worth_foundational::aspect_patch_digest_preparation_basis;
 
 use {crate::certification::ordinary_context::canonicalization::digest_preparation::readiness_fixtures::ready_patch};
 use {worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::validated_scalar};

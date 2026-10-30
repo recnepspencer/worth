@@ -1,9 +1,36 @@
 // Response replay ownership at the real Server boundary, not native Query custody proof.
-pub(crate) use {serde::Serialize};
-pub(crate) use {serde_json::json};
+pub(crate) use serde::Serialize;
+pub(crate) use serde_json::json;
+pub(crate) use worth_proof::TransitionOutcome;
 pub(crate) use {std::sync::Arc, std::sync::Mutex};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompletedProductOperation, worth_server::WorthServerConfig, worth_server::WorthServerDurableProductMutationContract, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationRegistration, worth_server::WorthServerProductAdapterCertificationCode, worth_server::WorthServerProductAdapterExecutionError, worth_server::WorthServerProductAdapterRegistry, worth_server::WorthServerProductApplicationAdapter, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerProductAuthorityScope, worth_server::WorthServerProductIdempotencyKey, worth_server::WorthServerProductIdempotencyRetention, worth_server::WorthServerProductOperationBaseDigest, worth_server::WorthServerProductOperationBasisKind, worth_server::WorthServerProductOperationDeclaration, worth_server::WorthServerProductOperationDenial, worth_server::WorthServerProductOperationErrorMaps, worth_server::WorthServerProductOperationOutcome, worth_server::WorthServerProductOperationPayload, worth_server::WorthServerProductOperationSuccess, worth_server::WorthServerProductOperationSupportSnapshot, worth_server::WorthServerProductResultContract, worth_server::WorthServerProductResultValue, worth_server::WorthServerProductRetryOwner, worth_server::WorthServerProductSessionCreationRequest, worth_server::WorthServerScheduledProductOperation, worth_server::WorthServerWorthNativeProductMutationCommand, worth_server::WorthServerWorthNativeSessionInput};
+pub(crate) use {
+    worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer,
+    worth_server::WorthServerCompletedProductOperation, worth_server::WorthServerConfig,
+    worth_server::WorthServerDurableProductMutationContract,
+    worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationRegistration,
+    worth_server::WorthServerProductAdapterCertificationCode,
+    worth_server::WorthServerProductAdapterExecutionError,
+    worth_server::WorthServerProductAdapterRegistry,
+    worth_server::WorthServerProductApplicationAdapter,
+    worth_server::WorthServerProductApplicationAdapterRegistration,
+    worth_server::WorthServerProductAuthorityScope, worth_server::WorthServerProductIdempotencyKey,
+    worth_server::WorthServerProductIdempotencyRetention,
+    worth_server::WorthServerProductOperationBaseDigest,
+    worth_server::WorthServerProductOperationBasisKind,
+    worth_server::WorthServerProductOperationDeclaration,
+    worth_server::WorthServerProductOperationDenial,
+    worth_server::WorthServerProductOperationErrorMaps,
+    worth_server::WorthServerProductOperationOutcome,
+    worth_server::WorthServerProductOperationPayload,
+    worth_server::WorthServerProductOperationSuccess,
+    worth_server::WorthServerProductOperationSupportSnapshot,
+    worth_server::WorthServerProductResultContract, worth_server::WorthServerProductResultValue,
+    worth_server::WorthServerProductRetryOwner,
+    worth_server::WorthServerProductSessionCreationRequest,
+    worth_server::WorthServerScheduledProductOperation,
+    worth_server::WorthServerWorthNativeProductMutationCommand,
+    worth_server::WorthServerWorthNativeSessionInput,
+};
 
 #[derive(Clone)]
 pub(crate) struct ControlledApplication(pub(crate) Arc<Mutex<ApplicationState>>);
@@ -13,10 +40,12 @@ pub(crate) struct ApplicationState {
 }
 impl ControlledApplication {
     pub(crate) fn new() -> Self {
-        Self(std::sync::Arc::new(std::sync::Mutex::new(ApplicationState {
-            allowed: true,
-            posture: "pending",
-        })))
+        Self(std::sync::Arc::new(std::sync::Mutex::new(
+            ApplicationState {
+                allowed: true,
+                posture: "pending",
+            },
+        )))
     }
     pub(crate) fn set(&self, allowed: bool, posture: &'static str) {
         *self.0.lock().unwrap() = ApplicationState { allowed, posture };
@@ -35,8 +64,12 @@ impl WorthServerProductResultValue for ApplicationReply {
     }
 }
 pub(crate) fn result_contract() -> WorthServerProductResultContract {
-    worth_server::WorthServerProductResultContract::canonical_json("controlled.application-reply.v1", 1, 1024)
-        .unwrap()
+    worth_server::WorthServerProductResultContract::canonical_json(
+        "controlled.application-reply.v1",
+        1,
+        1024,
+    )
+    .unwrap()
 }
 impl WorthServerProductApplicationAdapter for ControlledApplication {
     fn execute(
@@ -45,12 +78,14 @@ impl WorthServerProductApplicationAdapter for ControlledApplication {
     ) -> Result<WorthServerProductOperationSuccess, WorthServerProductAdapterExecutionError> {
         let state = self.0.lock().unwrap();
         if !state.allowed {
-            return Err(worth_server::WorthServerProductAdapterExecutionError::denied(
-                worth_server::WorthServerProductOperationDenial::new(
-                    "controlled.authentication_denied",
-                    "application authentication was revoked",
+            return Err(
+                worth_server::WorthServerProductAdapterExecutionError::denied(
+                    worth_server::WorthServerProductOperationDenial::new(
+                        "controlled.authentication_denied",
+                        "application authentication was revoked",
+                    ),
                 ),
-            ));
+            );
         }
         worth_server::WorthServerProductOperationSuccess::publish_json(
             "reply",
@@ -68,7 +103,9 @@ pub(crate) fn declaration(name: &str) -> WorthServerProductOperationDeclaration 
         "controlled.command.v1",
         result_contract(),
         worth_server::WorthServerProductOperationBasisKind::ProductSessionDerived,
-        worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("controlled-application"),
+        worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+            "controlled-application",
+        ),
         "draft",
     )
     .with_error_map(worth_server::WorthServerProductOperationErrorMaps::passthrough())

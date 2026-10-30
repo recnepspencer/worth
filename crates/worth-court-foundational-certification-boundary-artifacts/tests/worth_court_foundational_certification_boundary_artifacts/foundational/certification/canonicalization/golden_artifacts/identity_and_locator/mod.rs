@@ -1,11 +1,3 @@
-use {
-    worth_foundational::AspectLocator, worth_foundational::BoundaryArtifactField,
-    worth_foundational::BoundaryArtifactId, worth_foundational::BoundaryArtifactLocator,
-    worth_foundational::BoundaryEpoch, worth_foundational::BoundaryHandle,
-    worth_foundational::CanonicalDigestId, worth_foundational::EquivalenceBasisId,
-    worth_foundational::LocatorAuthority,
-};
-
 use worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key;
 
 #[test]

@@ -2,11 +2,7 @@
 use crate::certification::ordinary_context::profiles::composition::*;
 use {
     worth_foundational::foundational_responsibilities,
-    worth_foundational::AdmissionReadinessProfile, worth_foundational::CertificationPostureProfile,
-    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
-    worth_foundational::FoundationalProfileCompositionDenial,
-    worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput,
-    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
+    worth_foundational::FoundationalProfileSetInput,
 };
 
 #[test]

@@ -1,4 +1,3 @@
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::foundational_profile_progression_authority,
     worth_foundational::materialize_admitted_foundational_profile,
@@ -6,12 +5,7 @@ use {
     worth_foundational::plan_foundational_profile_materialization_with_elision,
     worth_foundational::plan_selected_foundational_profile_materialization,
     worth_foundational::plan_selected_foundational_profile_materialization_with_disposition,
-    worth_foundational::profiles, worth_foundational::FoundationalDescriptiveElisionProfile,
-    worth_foundational::FoundationalDescriptiveSurface,
-    worth_foundational::FoundationalMaterializationPlanningDenial,
-    worth_foundational::FoundationalObservationDisposition,
-    worth_foundational::FoundationalSurfaceAbsenceCause,
-    worth_foundational::ProofBearingArtifactTarget,
+    worth_foundational::profiles, worth_foundational::ProofBearingArtifactTarget,
 };
 
 use {

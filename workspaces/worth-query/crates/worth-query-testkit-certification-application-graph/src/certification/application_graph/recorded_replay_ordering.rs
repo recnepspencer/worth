@@ -20,7 +20,7 @@ pub use worth_query_host::facade::{
     },
     primary_graph::WorthQueryMutationHandlerWork,
     runtime::{
-        CancellationSource, CancellationToken, ExecutionAllocationDenialKind,
+        CancellationSource, CancellationToken, ExecutionAllocationDenialClass,
         ExecutionAllocationPolicy as Policy, ExecutionResourceLease, LeaseRequest,
     },
 };

@@ -1,22 +1,7 @@
-use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
-
-use {
-    worth_store_physical_isolation::admit_seed_stable_read_plan,
-    worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics,
-    worth_store_physical_isolation::PostProtectionPhysicalReadObservation,
-    worth_store_physical_isolation::ProtectedPhysicalReferenceSet,
-    worth_store_physical_isolation::PublishedReaderHazard,
-    worth_store_physical_isolation::ReadPlanAdmissionScratchArena,
-    worth_store_physical_isolation::TraversalAdmissionGuard,
-    worth_store_physical_isolation::UnprotectedReadIntent,
-};
+use worth_store_physical_isolation::admit_seed_stable_read_plan;
 use {
     worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority,
     worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout,
-};
-use {
-    worth_store_test_support::NativeAspectPhysicalReferenceDenial,
-    worth_store_test_support::NativeStoreAspectFixture,
 };
 
 #[test]

@@ -1,47 +1,8 @@
 #[allow(unused_imports)]
 use crate::tier_movement_future_chunk_stability::*;
-use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
 
 use {
-    worth_foundational::FoundationalBoundaryArtifactRole,
-    worth_foundational::FoundationalDiagnosticArtifactKind,
-    worth_foundational::FoundationalDiagnosticBreachClass,
-};
-use {
-    worth_store_physical_format::PhysicalExtentId,
-    worth_store_physical_format::PhysicalFutureChunkId,
-    worth_store_physical_format::PhysicalFutureChunkReference,
-    worth_store_physical_format::PhysicalGeneration,
-    worth_store_physical_format::PhysicalGenerationAuthority,
-    worth_store_physical_format::PhysicalReferenceAuthority,
-    worth_store_physical_format::PhysicalSegmentId,
-};
-use {
-    worth_store_physical_isolation::admit_seed_stable_read_plan,
-    worth_store_physical_isolation::ChunkMigrationReadInterlockPlan,
-    worth_store_physical_isolation::FutureBlobMigrationNonClaim,
-    worth_store_physical_isolation::FutureChunkStabilityBasis,
-    worth_store_physical_isolation::GenerationCountedPhysicalReference,
-    worth_store_physical_isolation::MovablePhysicalRef,
-    worth_store_physical_isolation::PhysicalChunkStabilityPlaceholder,
-    worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics,
-    worth_store_physical_isolation::ProtectedPhysicalReferenceSet,
-    worth_store_physical_isolation::PublishedReaderHazard,
-    worth_store_physical_isolation::ReadPlanAdmissionScratchArena,
-    worth_store_physical_isolation::StablePhysicalReadPlan,
-    worth_store_physical_isolation::TierMovementAdmissionLabel,
-    worth_store_physical_isolation::TierMovementReadInterlockPlan,
-    worth_store_physical_isolation::TierMovementStabilityDenial,
-    worth_store_physical_isolation::TierMovementStabilityVerdict,
-    worth_store_physical_isolation::TraversalAdmissionGuard,
-    worth_store_physical_isolation::UnprotectedReadIntent,
-    worth_store_physical_isolation::UnsupportedTierMovementClaim,
-    worth_store_physical_isolation::UnsupportedTierMovementRequest,
-};
-use {
     worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference,
-    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,
-    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_segment_reference,
     worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority,
     worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout,
 };

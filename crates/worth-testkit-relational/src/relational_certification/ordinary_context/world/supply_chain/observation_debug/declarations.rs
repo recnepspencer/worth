@@ -1,8 +1,20 @@
-pub use {worth_foundational::facade::AuthoritativeRecordAspectState};
+pub use worth_foundational::facade::AuthoritativeRecordAspectState;
 
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::observation::invalid, crate::relational_certification::ordinary_context::world::supply_chain::observation::string_value, crate::relational_certification::ordinary_context::world::supply_chain::observation::ObservationError};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema::BookingStatus, crate::relational_certification::ordinary_context::world::supply_chain::schema::HazardClass, crate::relational_certification::ordinary_context::world::supply_chain::schema::InspectionResult, crate::relational_certification::ordinary_context::world::supply_chain::schema::OperatingPosture, crate::relational_certification::ordinary_context::world::supply_chain::schema::Region, crate::relational_certification::ordinary_context::world::supply_chain::schema::VesselClass, crate::relational_certification::ordinary_context::world::supply_chain::schema::VoyageStatus};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::observation::invalid,
+    crate::relational_certification::ordinary_context::world::supply_chain::observation::string_value,
+    crate::relational_certification::ordinary_context::world::supply_chain::observation::ObservationError,
+};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::BookingStatus,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::HazardClass,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::InspectionResult,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::OperatingPosture,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::Region,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::VesselClass,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::VoyageStatus,
+};
 
 pub fn debug_text(
     key: EntityKey,

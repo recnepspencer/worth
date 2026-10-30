@@ -59,10 +59,12 @@ fn the_member_table_sits_between_the_header_and_the_payload_in_order() {
     assert_eq!(record.len() as u64, header.record_bytes());
     let table = &record[HEADER_BYTES..HEADER_BYTES + 2 * ANCHORED_RECORD_MEMBER_LOCATOR_BYTES];
     for (entry, expected) in table
-        .chunks_exact(ANCHORED_RECORD_MEMBER_LOCATOR_BYTES)
+        .as_chunks::<ANCHORED_RECORD_MEMBER_LOCATOR_BYTES>()
+        .0
+        .iter()
         .zip(&members)
     {
-        assert_eq!(decode_member(entry.try_into().unwrap()), Ok(*expected));
+        assert_eq!(decode_member(entry), Ok(*expected));
     }
     assert_eq!(&record[record.len() - payload.len()..], payload.as_slice());
     let next = AnchoredRecordHeader::describe(anchor("relational.home"), 1, &payload, 1);

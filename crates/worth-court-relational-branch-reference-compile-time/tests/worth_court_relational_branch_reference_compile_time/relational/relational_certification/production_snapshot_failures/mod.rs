@@ -1,8 +1,6 @@
 pub(crate) use {crate::relational_certification::ordinary_context::production_failures::court_program};
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline};
-pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord};
-pub(crate) use {worth_foundational::facade::AspectKey, worth_foundational::facade::AspectValue, worth_foundational::facade::FieldKey, worth_foundational::facade::InternedString};
-pub(crate) use {worth_relational::facade::transactions::planned_single_field_locator, worth_relational::facade::transactions::EntityMutationIntent, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::transactions::UpdateEntityFieldsIntent, worth_relational::facade::transactions::WorkerIntentBatch};
+pub(crate) use {worth_relational::facade::transactions::planned_single_field_locator, worth_relational::facade::transactions::UpdateEntityFieldsIntent};
 
 #[test]
 fn pinned_snapshot_observation_does_not_select_a_later_head() {

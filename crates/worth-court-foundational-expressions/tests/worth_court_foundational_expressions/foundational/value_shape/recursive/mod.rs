@@ -5,10 +5,6 @@ pub(crate) use {
     worth_foundational::facade::decode_canonical_value,
     worth_foundational::facade::decode_canonical_value_with_admission,
     worth_foundational::facade::encode_canonical_value, worth_foundational::facade::CanonicalValue,
-    worth_foundational::facade::ValueCodecDenial as D,
-    worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::ValueShape,
-    worth_foundational::facade::ValueShapeDefinition, worth_foundational::facade::ValueShapeDepth,
-    worth_foundational::facade::WorthValue,
 };
 
 #[test]

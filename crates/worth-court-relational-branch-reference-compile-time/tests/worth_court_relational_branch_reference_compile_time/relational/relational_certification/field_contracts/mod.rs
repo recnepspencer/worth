@@ -1,5 +1,4 @@
-pub(crate) use {crate::relational_certification::ordinary_context::field_values::field_value};
-pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::Anchor, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::FieldKey, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::definition};
+pub(crate) use crate::relational_certification::ordinary_context::field_values::field_value;
 
 #[test]
 fn field_vocabulary_is_exhaustive_and_not_aliased() {

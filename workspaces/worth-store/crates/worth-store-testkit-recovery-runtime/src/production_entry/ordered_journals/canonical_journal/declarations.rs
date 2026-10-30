@@ -265,6 +265,10 @@ pub fn checkpoint(world: &PhysicalResidencyStoreWorld) {
     ));
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Runs independent journal publication actors at the controlled crash boundary."
+)]
 pub fn child(marker: &Path, stop: Stop) -> ! {
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery("journal-killed")
         .expect("journal store");

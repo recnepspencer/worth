@@ -3,13 +3,11 @@ use crate::shared_support as support;
 #[allow(unused_imports)]
 use crate::static_fork_join_and_composition_family_certification::boundary_context::*;
 
-use crate::shared_support::compile_fail::run_compile_fail_bundle;
+use crate::compile_fail::harness::run_compile_fail_bundle;
 
-use crate::shared_support::composition_family;
 use {
     worth_proof::lower_deterministic_family_pair, worth_proof::resolve_family_symbol,
     worth_proof::AuthoritativeFamilyMember, worth_proof::CompositionFamilySymbol,
-    worth_proof::FamilyLifecycleAction,
 };
 
 #[test]

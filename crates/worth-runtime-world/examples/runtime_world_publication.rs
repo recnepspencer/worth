@@ -42,6 +42,10 @@ fn budgets() -> RuntimeWorldBudgets {
     })
     .unwrap()
 }
+#[expect(
+    clippy::disallowed_methods,
+    reason = "owner-thread thread-builder=1: The example owns and joins its native World publication thread with the required stack"
+)]
 fn main() {
     // Match an explicit host stack budget; Windows' main-thread default is too
     // small for the real component owners' unoptimized construction frames.

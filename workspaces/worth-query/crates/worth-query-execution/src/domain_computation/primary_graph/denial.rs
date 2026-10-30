@@ -22,6 +22,12 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     AlreadyInstalled,
     /// A binding the declaration requires is not installed.
     BindingNotInstalled,
+    /// A declared managed index has no configured executable provider.
+    MissingManagedIndexProvider,
+    /// A managed provider differs from its exact installed contract or version.
+    ManagedIndexProviderMeaningMismatch,
+    /// A managed index was configured more than once.
+    DuplicateManagedIndexProvider,
     /// A binding belongs to a different schema.
     BindingSchemaMismatch,
     /// Two bootstrap principals share an external identity.
@@ -84,7 +90,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// Native checkpoint recovery's allocation owner refused the backing.
     /// The checked quote is absent when layout could not be represented.
     NativeAllocation {
-        kind: worth_execution::ExecutionAllocationDenialKind,
+        kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
     /// Commit or index preparation was canceled or exceeded its deadline before publication.

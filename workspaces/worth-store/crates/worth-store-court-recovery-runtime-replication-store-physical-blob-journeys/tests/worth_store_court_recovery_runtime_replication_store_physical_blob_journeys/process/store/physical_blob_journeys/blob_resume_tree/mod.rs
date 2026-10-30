@@ -1,34 +1,11 @@
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_resume_tree::*;
-use {
-    std::fs, std::num::NonZeroU64, std::path::Path, std::thread, std::time::Duration,
-    std::time::Instant,
-};
 
-use {sha2::Digest, sha2::Sha256};
-use {
-    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
-    worth_store::physical_runtime::BlobIngestSession,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::BlobResumeFailure,
-    worth_store::physical_runtime::BlobResumeLimits,
-    worth_store::physical_runtime::BlobResumeToken,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalRecordId,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-};
-use {
-    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
-    worth_store_physical_format::BlobTreeNodeKind, worth_store_physical_format::BlobTreeNodeV1,
-    worth_store_physical_format::PersistedRecordIdentity,
-};
+use worth_store_physical_format::decode_blob_record;
 
 use {
     crate::blob_crash::recovery::recover_closed_store,
     crate::physical_blob_journeys::blob_crash::kill_at,
-    crate::physical_blob_journeys::blob_crash::marker_path,
-    crate::physical_blob_journeys::blob_crash::resume_token_path,
-    crate::physical_blob_journeys::blob_crash::write_marker,
     crate::physical_blob_journeys::blob_crash::SCOPE_KEY,
     crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
     worth_store_testkit_store::fixture::admitted_blob_scope,

@@ -1,5 +1,5 @@
 error[E0599]: no method named `build` found for struct `RuntimeBridgeBuilder` in the current scope
- --> tests/ui/builder_requires_mapping_before_build.rs:5:22
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_mapping_before_build.rs:5:22
   |
 5 |     let _ = _builder.build();
   |                      ^^^^^ method not found in `RuntimeBridgeBuilder`

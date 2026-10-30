@@ -1,34 +1,9 @@
 #[allow(unused_imports)]
 use crate::bootstrap_catalog::*;
-use {
-    worth_store_contracts::AcceptedHandoffReadiness,
-    worth_store_contracts::DurableArtifactFamilyId,
-    worth_store_contracts::HandoffEvidenceDigestSet, worth_store_contracts::StableDigest,
-    worth_store_contracts::ROADMAP_2_S1_SCOPE,
-};
+use worth_store_physical_format::physical_bootstrap_catalog;
 use {
     worth_store_layout_indexes::bootstrap_catalog,
     worth_store_layout_indexes::declarations::layout_declarations,
-    worth_store_layout_indexes::BootstrapOnlyAccessDenied,
-    worth_store_layout_indexes::BootstrapOnlyAccessPath,
-};
-use {
-    worth_store_physical_certification::FixtureCapabilityDeclaration,
-    worth_store_physical_certification::FixtureMutationBoundary,
-    worth_store_physical_certification::LargeStoreFixtureProfile,
-    worth_store_physical_certification::PhysicalFixtureBuilder,
-    worth_store_physical_certification::ProductionBackedFixtureMaterialization,
-};
-use {
-    worth_store_physical_format::physical_bootstrap_catalog,
-    worth_store_physical_format::InMemoryPhysicalFormatModel,
-    worth_store_physical_format::InMemoryPhysicalFormatModelRequest,
-    worth_store_physical_format::PhysicalExtentId, worth_store_physical_format::PhysicalGeneration,
-    worth_store_physical_format::PhysicalGenerationAuthority,
-    worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalRecordSlot,
-    worth_store_physical_format::PhysicalRootReference,
-    worth_store_physical_format::PhysicalSegmentId,
-    worth_store_physical_format::PlatformPhysicalAppendRequest,
 };
 
 // store-proof-identity[bootstrap_catalog_admits_minimal_root_discovery_and_typed_read_access]: worth-store-layout-indexes::layout/bootstrap::bootstrap_catalog::bootstrap_catalog_admits_minimal_root_discovery_and_typed_read_access

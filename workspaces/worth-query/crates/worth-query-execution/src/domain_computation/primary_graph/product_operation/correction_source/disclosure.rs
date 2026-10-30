@@ -46,6 +46,7 @@ pub enum WorthQueryCorrectionDerivationDenial {
     InputCapture(crate::domain_computation::primary_graph::WorthQueryOperationInputCaptureDenial),
     CommandKey(worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial),
     SourceDiverged,
+    RestoredSupport(super::WorthQueryCorrectionRestoredSupportDenial),
     UnsupportedTargetProgram,
     ProgramComparison(
         Box<worth_query_installation::facade::WorthQueryProgramAdoptionRequirementsDenial>,
@@ -76,6 +77,10 @@ pub enum WorthQueryCorrectionDerivationDenial {
 
 type Disclosure<Schema, C> = <C as ApplicationCorrectionBinding<Schema>>::Disclosure;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+)]
 pub(super) fn disclose_correction_source<Schema, C>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     phase: &WorthQueryAdvancementPhase<'_>,

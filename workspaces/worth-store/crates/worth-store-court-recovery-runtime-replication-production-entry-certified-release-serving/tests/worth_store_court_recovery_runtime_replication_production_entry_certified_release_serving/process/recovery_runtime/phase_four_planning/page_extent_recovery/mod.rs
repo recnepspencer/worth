@@ -1,11 +1,11 @@
-#[allow(unused_imports)] use crate::phase_four_planning::page_extent_recovery::*;
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store_recovery_physics::PhysicalRedoTargetIdentity, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome, worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution, worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::canonical_rooted_mutation_without_acknowledgment, worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked, crate::phase_four_planning::selected_ordinary_recovery};
-use {std::io::Read, std::io::Seek, std::io::SeekFrom, std::io::Write};
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_format::DurableExtentManifest, worth_store_physical_format::ExtentArenaFrameLayout, worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES};
-use {worth_store_recovery_runtime::PhysicalRecoveryIntegrityObservationOutcome};
-
-
+#[allow(unused_imports)]
+use crate::phase_four_planning::page_extent_recovery::*;
+use worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES;
+use {
+    crate::phase_four_planning::selected_ordinary_recovery,
+    worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,
+};
+use {std::io::Read, std::io::Seek, std::io::Write};
 
 #[test]
 fn extent_recovery_planning_admits_manifest_and_chunks_before_redo() {
@@ -62,19 +62,22 @@ fn corrupt_extent_recovery_frame_stops_before_owner_projection() {
             .write(true)
             .open(path)
             .unwrap();
-        file.seek(std::io::SeekFrom::Start(route.range.offset())).unwrap();
+        file.seek(std::io::SeekFrom::Start(route.range.offset()))
+            .unwrap();
         let mut manifest_bytes = [0_u8; EXTENT_ARENA_MANIFEST_FRAME_BYTES];
         file.read_exact(&mut manifest_bytes).unwrap();
-        let (manifest, format) = worth_store_physical_format::DurableExtentManifest::decode(&manifest_bytes).unwrap();
+        let (manifest, format) =
+            worth_store_physical_format::DurableExtentManifest::decode(&manifest_bytes).unwrap();
         // The literal root-tree route and the addressed manifest bind one extent.
         assert_eq!(manifest.record(), route.record);
         assert_eq!(manifest.extent().get(), route.extent);
         assert_eq!(manifest.extent_cell().generation().get(), route.generation);
         assert_eq!(manifest.logical_bytes(), route.payload_bytes);
-        let chunk_offset = worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment())
-            .unwrap()
-            .chunk_offset(1)
-            .unwrap();
+        let chunk_offset =
+            worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment())
+                .unwrap()
+                .chunk_offset(1)
+                .unwrap();
         let corruption = route.range.offset() + chunk_offset + 120;
         assert!(corruption < route.range.offset() + route.range.length());
         file.seek(std::io::SeekFrom::Start(corruption)).unwrap();

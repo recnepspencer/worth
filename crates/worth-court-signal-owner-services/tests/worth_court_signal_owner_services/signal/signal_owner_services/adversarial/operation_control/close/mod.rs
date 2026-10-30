@@ -1,18 +1,4 @@
-use crate::signal_owner_services::ordinary_context::execution_custody;
-pub(crate) use std::sync::mpsc;
-pub(crate) use std::thread;
-
-pub(crate) use {
-    worth_signal::facade::branch::SignalBranchAdvanceDenial,
-    worth_signal::facade::branch::SignalOwnerCancellationSource,
-    worth_signal::facade::branch::SignalOwnerLifecycleObservation,
-    worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest,
-};
-
-pub(crate) use {
-    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
-    crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND,
-};
+pub(crate) use crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND;
 
 #[test]
 fn close_fences_new_work_but_releases_an_already_admitted_operation() {

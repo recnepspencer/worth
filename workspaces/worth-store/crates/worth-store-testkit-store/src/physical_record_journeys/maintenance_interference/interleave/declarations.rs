@@ -38,6 +38,10 @@ pub use {
     crate::physical_record_journeys::maintenance_interference::segment_files,
 };
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Coordinates an independent cold reader with a controlled maintenance actor."
+)]
 pub fn run_cold_extent(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
     gate: worth_store_physical_backend::MediaPauseGate,

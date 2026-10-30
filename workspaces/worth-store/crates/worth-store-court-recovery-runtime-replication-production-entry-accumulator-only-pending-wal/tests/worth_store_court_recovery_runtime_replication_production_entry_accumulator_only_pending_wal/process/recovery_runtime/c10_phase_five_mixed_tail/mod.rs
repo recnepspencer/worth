@@ -1,39 +1,12 @@
 #[allow(unused_imports)]
 use crate::c10_phase_five_mixed_tail::*;
-use std::thread;
 use {
-    crate::c10_phase_five_mixed_tail::c10_crash_evidence::ordinary_limits,
     crate::c10_phase_five_mixed_tail::c10_crash_evidence::prepare_rewrite,
     crate::c10_phase_five_mixed_tail::c10_crash_evidence::segment_snapshot,
     crate::c10_phase_five_mixed_tail::c10_crash_evidence::wal_contains_rewrite,
 };
-use {std::path::Path, std::path::PathBuf};
-use {std::process::Command, std::process::Stdio};
-use {std::time::Duration, std::time::Instant};
 
-use worth_proof::TransitionOutcome;
-use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
-use worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits;
-use {
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationOutcome,
-    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
-    worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause,
-    worth_store::physical_runtime::PhysicalMutationRequest,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::WorthStoreRecovery,
-};
-use {
-    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
-    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
-};
+use worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment;
 
 #[test]
 fn mixed_append_and_rewrite_tail_publishes_the_rewrite_once() {

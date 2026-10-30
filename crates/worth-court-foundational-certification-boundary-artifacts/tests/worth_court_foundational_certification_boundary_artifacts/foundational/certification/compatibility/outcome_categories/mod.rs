@@ -1,11 +1,4 @@
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::JsonCompatibilityLoweringDeferred,
-    worth_foundational::JsonCompatibilityLoweringFailure,
-    worth_foundational::JsonCompatibilityLoweringOutcome,
-    worth_foundational::JsonCompatibilityLoweringStale,
-    worth_foundational::JsonCompatibilityRebindRequired,
-};
+use worth_foundational::JsonCompatibilityLoweringOutcome;
 
 use crate::certification::ordinary_context::compatibility::json_lowering_fixtures::source_for;
 

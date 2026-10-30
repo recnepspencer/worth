@@ -1,11 +1,6 @@
 #[allow(unused_imports)]
 use crate::branch_reference_contract::ordinary_context::*;
-use {
-    worth_foundational::FoundationalBranchReferenceGeneration,
-    worth_foundational::FoundationalBranchReferenceMismatchAxis,
-    worth_foundational::FoundationalBranchTarget,
-    worth_foundational::FoundationalBranchTargetBasis,
-};
+use worth_foundational::FoundationalBranchTargetBasis;
 use {
     worth_signal::facade::branch::signal_branch_observation,
     worth_signal::facade::branch::SignalBranchTarget,

@@ -4,14 +4,10 @@
 
 #[allow(unused_imports)]
 use crate::production_entry::anchored_record_members::recovery::*;
-use std::path::Path;
-
-use worth_store::physical_runtime::AnchoredRecordMemberReadFailure;
 
 use {crate::production_entry::anchored_record_members::assert_value, crate::production_entry::anchored_record_members::carried, crate::production_entry::anchored_record_members::content, crate::production_entry::anchored_record_members::new_member, crate::production_entry::anchored_record_members::publish_with_members};
 use {worth_store_testkit_recovery_runtime::production_entry::anchored_records::assert_journal, worth_store_testkit_recovery_runtime::production_entry::anchored_records::name, worth_store_testkit_recovery_runtime::production_entry::anchored_records::publish_journal_entry, worth_store_testkit_recovery_runtime::production_entry::anchored_records::value, worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT};
 use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::anchored_records};
 
 #[test]
 fn members_survive_abandoned_runtimes_and_recovery_twice() {

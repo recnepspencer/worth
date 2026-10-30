@@ -5,12 +5,6 @@
 // each operation, so it shares no code or overflow strategy with the crate.
 #[allow(unused_imports)]
 use crate::expressions::ordinary_context::reference::*;
-pub(crate) use {
-    worth_foundational::expression_api::ExpressionDenialFamily as Family,
-    worth_foundational::expression_api::ExpressionValue,
-};
-
-pub(crate) use crate::expressions::ordinary_context::evaluate;
 
 #[test]
 fn reference_boundaries_are_pinned() {

@@ -16,6 +16,12 @@ where
         self.reader.version()
     }
 
+    /// The actual Native runtime that owns this projection. This is descriptive
+    /// identity for comparing stored references, not admission or mutation authority.
+    pub fn runtime_instance_id(&self) -> u64 {
+        self.reader.runtime.runtime_instance_id()
+    }
+
     pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
         &mut self,
 

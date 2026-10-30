@@ -1,5 +1,5 @@
 error: cannot construct `ReadyTemporalWake` with struct literal syntax due to private fields
-  --> tests/ui/ready_temporal_wake_fields_are_private.rs:6:17
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/ready_temporal_wake_fields_are_private.rs:6:17
    |
  6 |     let _wake = ReadyTemporalWake {
    |                 ^^^^^^^^^^^^^^^^^

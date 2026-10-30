@@ -6,7 +6,7 @@ pub(crate) use {
 };
 
 pub(crate) use crate::phase_eight_process::checkpoint_crash::case::crash_frontier::CrashObservation;
-pub(crate) use crate::phase_eight_process::checkpoint_crash::process::recovery_report::fresh_recovery;
+pub(crate) use crate::process::support::checkpoint_crash::recovery_report::fresh_recovery;
 pub(crate) use {
     crate::checkpoint_crash::evidence::snapshot::copy_directory,
     crate::checkpoint_crash::evidence::snapshot::snapshot_directory,

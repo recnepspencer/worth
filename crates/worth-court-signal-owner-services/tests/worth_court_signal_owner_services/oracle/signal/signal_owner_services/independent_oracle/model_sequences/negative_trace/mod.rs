@@ -1,9 +1,5 @@
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::comparison::neutral_basis};
-pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::state::ModelOwnerLifecycle, crate::signal_owner_services::reference_context::independent_oracle::state::ModelWorld};
-pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::transition::ModelAction, crate::signal_owner_services::reference_context::independent_oracle::transition::ModelDenial, crate::signal_owner_services::reference_context::independent_oracle::transition::ModelResult, crate::signal_owner_services::reference_context::independent_oracle::transition::ModelSuccess};
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::assert_denial, crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::model_denial, crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::runtime, crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::ORACLE_SEED};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::branch::SignalBranchRetirementDenial, worth_signal::facade::branch::SignalBranchRetirementReason, worth_signal::facade::branch::SignalOwnerLifecycleObservation};
 
 #[test]
 fn model_preserves_current_branch_denial_instead_of_treating_it_as_retirement() {

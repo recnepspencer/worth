@@ -1,13 +1,17 @@
-#[allow(unused_imports)] use crate::request_context_resolution::ordinary_context::*;
-use {worth_proof::TransitionReadiness};
-use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerBranchTarget, worth_server::WorthServerConfig, worth_server::WorthServerRequestContext, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerRequestContextDenial, worth_server::WorthServerRequestContextDenialCode, worth_server::WorthServerRequestContextInput, worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+#[allow(unused_imports)]
+use crate::request_context_resolution::ordinary_context::*;
+use worth_server::WorthServerRequestContext;
 
 #[test]
 fn resolve_canonicalizes_trimmed_input_and_default_diagnostics() {
     let server = test_server(
         worth_server::WorthServerRequestContextConfig::builder()
-            .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
-            .with_maximum_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+            .with_default_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Standard,
+            )
+            .with_maximum_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+            )
             .build()
             .expect("request context config should validate"),
     );
@@ -27,7 +31,9 @@ fn resolve_canonicalizes_trimmed_input_and_default_diagnostics() {
             .with_tenant_id(" tenant-a ")
             .with_workspace_id(" workspace-42 ")
             .with_branch_id(" branch-9 ")
-            .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+            .with_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Standard,
+            )
             .build()
             .expect("input should validate"),
     );
@@ -256,8 +262,12 @@ fn resolve_denies_preview_targeting_and_overspecified_diagnostics_strictly() {
     );
     let diagnostics_denial_server = test_server(
         worth_server::WorthServerRequestContextConfig::builder()
-            .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
-            .with_maximum_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+            .with_default_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Standard,
+            )
+            .with_maximum_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Standard,
+            )
             .build()
             .expect("request context config should validate"),
     );
@@ -273,7 +283,9 @@ fn resolve_denies_preview_targeting_and_overspecified_diagnostics_strictly() {
     let diagnostics_denial = denied(
         diagnostics_denial_server.request_contexts().resolve(
             input_builder()
-                .with_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+                .with_diagnostics_profile(
+                    worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+                )
                 .build()
                 .expect("input should validate"),
         ),

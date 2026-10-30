@@ -1,22 +1,8 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::transitions::phase5_basis::locator_exactness::*;
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::prepare_locator_for_canonical_basis,
-    worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry,
-    worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus,
-    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalIntegerWidth,
-    worth_foundational::CanonicalLocatorInput,
-    worth_foundational::FoundationalBranchCandidateLocator,
-    worth_foundational::FoundationalCommitParentageLocator,
-    worth_foundational::FoundationalCommittedDeltaLocator,
-    worth_foundational::FoundationalMergeConflictLocator,
-    worth_foundational::FoundationalTransitionLocator,
-};
 
 use crate::certification::ordinary_context::transitions::fixtures::branch::authority_first_candidate;
 use crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id;
-use crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::version;
 use {
     crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict,
     crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority,

@@ -62,10 +62,10 @@ pub(super) fn derive_set_identity(
     basis.text("subject-name", subject_name)?;
     if let Some(input_type) = input_type {
         basis.text(
-            if subject_kind == "application-resource" {
-                "resource-purpose"
-            } else {
-                "input-type"
+            match subject_kind {
+                "application-resource" => "resource-purpose",
+                "application-managed-index" => "parent-binding",
+                _ => "input-type",
             },
             input_type,
         )?;

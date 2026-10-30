@@ -95,6 +95,5 @@ fn distinct_v3_descriptor_before_checkpoint_is_durable() {
 fn pending_wal_child() {
     worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::dispatch_child();
 }
-#[cfg(all())]
 #[path = "three_batch/mod.rs"]
 pub(crate) mod three_batch;

@@ -1,15 +1,6 @@
-use std::num::NonZeroUsize;
-
 use {
-    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
     worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
-    worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
-    worth_execution::MapOutcome,
-};
-use {
-    worth_foundational::DeterminismContract, worth_foundational::EquivalenceContractId,
-    worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture,
-    worth_foundational::ExecutionRequestPolicy,
+    worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
 };
 
 #[test]

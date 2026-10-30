@@ -5,25 +5,8 @@
 
 #[allow(unused_imports)]
 use crate::production_entry::anchored_record_members::*;
-use worth_store::physical_runtime::certification::MediaOperationRole;
-use {sha2::Digest, sha2::Sha256};
-use {
-    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
-    worth_store::physical_runtime::AnchoredRecordMember,
-    worth_store::physical_runtime::AnchoredRecordMemberLocator,
-    worth_store::physical_runtime::AnchoredRecordMemberReadFailure,
-    worth_store::physical_runtime::AnchoredRecordName,
-    worth_store::physical_runtime::AnchoredRecordPublication,
-    worth_store::physical_runtime::AnchoredRecordPublicationFailure,
-    worth_store::physical_runtime::AnchoredRecordPublished,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-};
+use worth_store::physical_runtime::AnchoredRecordMember;
 
-use {
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
-    worth_store_testkit_recovery_runtime::production_entry::anchored_records,
-};
 use {
     worth_store_testkit_recovery_runtime::production_entry::anchored_records::name,
     worth_store_testkit_recovery_runtime::production_entry::anchored_records::value,
@@ -261,9 +244,6 @@ fn members_are_admitted_against_the_current_value_before_any_effect() {
     );
     let _ = world.close();
 }
-#[cfg(all())]
-#[path = "oracle/mod.rs"]
-pub(crate) mod oracle;
-#[cfg(all())]
+
 #[path = "recovery/mod.rs"]
 pub(crate) mod recovery;

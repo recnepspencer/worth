@@ -4,7 +4,6 @@
 // that fused, reassociated, flushed, or widened would fail here.
 #[allow(unused_imports)]
 use crate::expressions::ordinary_context::vectors::*;
-pub(crate) use worth_foundational::expression_api::ExpressionDenialFamily as Family;
 
 pub(crate) use {
     crate::expressions::ordinary_context::evaluation_denial,

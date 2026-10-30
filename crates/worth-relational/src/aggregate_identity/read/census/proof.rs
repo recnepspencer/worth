@@ -28,6 +28,10 @@ impl PartialEq for AggregateCensusReadIdentity {
 }
 impl Eq for AggregateCensusReadIdentity {}
 impl Hash for AggregateCensusReadIdentity {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.source.observation.hash(state);
         self.source.committed.hash(state);

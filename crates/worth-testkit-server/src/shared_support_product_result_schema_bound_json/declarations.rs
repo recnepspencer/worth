@@ -1,6 +1,10 @@
+pub use serde_json::Value;
 pub use {serde::Serialize, serde::Serializer};
-pub use {serde_json::Value};
-pub use {worth_server::WorthServerProductAdapterExecutionError, worth_server::WorthServerProductOperationSuccess, worth_server::WorthServerProductResultContract, worth_server::WorthServerProductResultValue};
+pub use {
+    worth_server::WorthServerProductAdapterExecutionError,
+    worth_server::WorthServerProductOperationSuccess,
+    worth_server::WorthServerProductResultContract, worth_server::WorthServerProductResultValue,
+};
 
 pub struct SchemaBoundJsonResult {
     pub schema_identity: String,
@@ -47,7 +51,10 @@ pub fn publish_schema_bound_json(
     worth_server::WorthServerProductOperationSuccess::publish_json(
         result_key,
         contract,
-        &crate::shared_support_product_result_schema_bound_json::SchemaBoundJsonResult::v1(schema_identity, body),
+        &crate::shared_support_product_result_schema_bound_json::SchemaBoundJsonResult::v1(
+            schema_identity,
+            body,
+        ),
     )
     .map_err(worth_server::WorthServerProductAdapterExecutionError::invalid_result_artifact)
 }

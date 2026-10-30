@@ -1,17 +1,9 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::diagnostics::basis::*;
-use worth_proof::TransitionOutcome;
 use {
-    worth_foundational::compare_canonical_basis,
     worth_foundational::compare_diagnostic_explanation_bundles,
     worth_foundational::compare_diagnostic_support_reports,
     worth_foundational::foundational_diagnostic_canonical_basis_entries,
-    worth_foundational::prepare_canonical_comparison,
-    worth_foundational::prepare_diagnostic_explanation_bundle_for_canonical_basis,
-    worth_foundational::prepare_diagnostic_support_report_for_canonical_basis,
-    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
-    worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis,
-    worth_foundational::FoundationalDiagnosticEvidencePosture,
 };
 
 use {

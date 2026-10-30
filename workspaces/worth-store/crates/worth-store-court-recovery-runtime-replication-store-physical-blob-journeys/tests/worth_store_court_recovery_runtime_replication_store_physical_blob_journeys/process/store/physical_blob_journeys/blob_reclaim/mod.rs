@@ -1,35 +1,11 @@
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_reclaim::*;
-use {std::num::NonZeroU16, std::num::NonZeroU64};
-
-use worth_store_blob_chunks::BlobChunkSize;
-use {
-    worth_store::physical_runtime::AdmittedBlobScope,
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::BlobReclaimDeferral,
-    worth_store::physical_runtime::BlobReclaimDisposition,
-    worth_store::physical_runtime::BlobReclaimFailure,
-    worth_store::physical_runtime::BlobReclaimLimits,
-    worth_store::physical_runtime::BlobReclaimReceipt,
-    worth_store::physical_runtime::BlobReclaimRequest,
-    worth_store::physical_runtime::BlobReclaimRetirement,
-    worth_store::physical_runtime::BlobResumeToken,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalWorkCounterStage,
-    worth_store::physical_runtime::PhysicalWorkOperationFamily,
-    worth_store::physical_runtime::PhysicalWorkPressureClass,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1};
 
 use {
     crate::blob_crash::recovery::recover_closed_store,
     crate::physical_blob_journeys::blob_abort::deadline,
     crate::physical_blob_journeys::blob_abort::limits as terminal_limits,
     crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
-    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
     worth_store_testkit_store::fixture::admitted_blob_scope,
     worth_store_testkit_store::fixture::placement,
     worth_store_testkit_store::fixture::serving_from_initialization,
@@ -228,6 +204,5 @@ fn reclaim_inspection_bounds_and_nonterminal_custody_deny_before_effects() {
     );
     serving.close();
 }
-#[cfg(all())]
 #[path = "retirement_tests/mod.rs"]
 pub(crate) mod retirement_tests;

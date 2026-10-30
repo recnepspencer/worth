@@ -4,10 +4,9 @@
 
 #[allow(unused_imports)]
 use crate::components_differential::reference_context::*;
-use {std::collections::BTreeMap, std::collections::BTreeSet};
+use std::collections::BTreeSet;
 
-use worth_foundational::PartitionIdentity;
-use {worth_execution::ComponentPartitioner, worth_execution::PartitionItemId};
+use worth_execution::PartitionItemId;
 
 #[test]
 fn every_retained_partitioner_equals_a_fresh_one_and_untouched_islands_keep_identity() {

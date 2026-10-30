@@ -3,18 +3,12 @@
 // on admission; failures reproduce from the fixed seeds.
 #[allow(unused_imports)]
 use crate::expressions::reference_context::generated::*;
-pub(crate) use {
-    worth_foundational::expression_api::expressions,
-    worth_foundational::expression_api::ExpressionFunctionCatalog,
-    worth_foundational::expression_api::ExpressionProfile,
-    worth_foundational::expression_api::ExpressionSchema,
-    worth_foundational::expression_api::ExpressionType,
-};
+pub(crate) use worth_foundational::expression_api::expressions;
 
 pub(crate) use {
     crate::expressions::ordinary_context::draft,
     crate::expressions::ordinary_context::empty_catalog,
-    crate::expressions::ordinary_context::function, crate::expressions::ordinary_context::schema,
+    crate::expressions::ordinary_context::schema,
 };
 
 #[test]

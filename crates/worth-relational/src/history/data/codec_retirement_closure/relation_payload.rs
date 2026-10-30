@@ -1,9 +1,7 @@
 //! Reconstruct one live incident edge over its exact publication predecessors.
 use super::{charge, memory_overflow, reserve, CodecRetirementClosureStop as Stop};
 use crate::branch::RelationalBranchRoot;
-use crate::history::data::{
-    canonical_commit_envelope::CanonicalOutputPublication, CanonicalCommitEnvelope,
-};
+use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::RelationId;
 use crate::publication::patch::data::RecordStructuralChange as Change;
 use crate::runtime::RelationalRuntime;
@@ -114,7 +112,7 @@ pub(super) fn reconstruct(
             }
             break;
         };
-        let CanonicalOutputPublication::Preserve { predecessor } = origin.publication else {
+        let Some(predecessor) = origin.publication.predecessor() else {
             return Err("relation has predecessor under initial publication".into());
         };
         let previous = runtime

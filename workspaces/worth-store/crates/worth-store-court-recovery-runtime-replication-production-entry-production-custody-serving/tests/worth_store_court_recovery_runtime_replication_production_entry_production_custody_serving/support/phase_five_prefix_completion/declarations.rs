@@ -1,5 +1,3 @@
-#![cfg(all())]
-
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
 pub(crate) use worth_proof::TransitionOutcome;

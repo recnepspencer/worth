@@ -77,7 +77,7 @@ impl super::BranchBoundRelationalTransaction {
             ))
             .map_err(super::RelationalTransactionStagingDenial::into_conflict)?;
         let root = self.basis.inner.root.as_ref();
-        crate::authority::commit::pipeline::consult_stage_control(
+        crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::TransactionRead,
         )
@@ -123,7 +123,7 @@ impl super::BranchBoundRelationalTransaction {
             ))
             .map_err(super::RelationalTransactionStagingDenial::into_conflict)?;
         let root = self.basis.inner.root.as_ref();
-        crate::authority::commit::pipeline::consult_stage_control(
+        crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::TransactionRead,
         )

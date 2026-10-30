@@ -20,6 +20,8 @@ use crate::transactions::data::{
     RecordRef,
 };
 
+mod authored_index_writes;
+pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 mod authoritative_artifact_encoding;
 mod embedded_checkpoint;
 mod payload_digest;
@@ -54,6 +56,11 @@ pub struct CanonicalCommitEnvelope {
     #[serde(default)]
     pub(crate) required_output_materialization:
         Option<std::sync::Arc<CanonicalRequiredOutputMaterialization>>,
+    #[serde(
+        default,
+        skip_serializing_if = "CanonicalAuthoredIndexWrites::is_unavailable"
+    )]
+    pub(crate) authored_index_writes: CanonicalAuthoredIndexWrites,
     pub commit: RelationalCommitReceipt,
     pub branch_context: BranchId,
     /// Exact owner cell state immediately before this commit advances the
@@ -125,6 +132,7 @@ impl CanonicalCommitEnvelope {
         descriptor_semantics_version: DescriptorSemanticsVersion,
     ) -> Self {
         Self {
+            authored_index_writes: CanonicalAuthoredIndexWrites::default(),
             required_output_codec_retirements: Vec::new(),
             required_output_origin: None,
             required_output_materialization: None,
@@ -266,7 +274,18 @@ impl CanonicalCommitEnvelope {
             &self.schema_reconciliation_descriptor,
             &self.descriptor_semantics_version,
         );
-        rmp_serde::encode::write_named(writer, &(identity_and_authority, canonical_semantics))
+        if self.authored_index_writes.is_unavailable() {
+            rmp_serde::encode::write_named(writer, &(identity_and_authority, canonical_semantics))
+        } else {
+            rmp_serde::encode::write_named(
+                writer,
+                &(
+                    identity_and_authority,
+                    canonical_semantics,
+                    &self.authored_index_writes,
+                ),
+            )
+        }
     }
 
     pub(crate) fn committed_record_changes(

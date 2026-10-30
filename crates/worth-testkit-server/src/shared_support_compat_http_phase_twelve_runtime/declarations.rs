@@ -1,15 +1,28 @@
-pub use {worth_foundational::facade::DiagnosticRichnessProfile};
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerBinaryDownloadExecutionInput, worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityPreparedRequest, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerCompatibilityUploadExecutionInput, worth_server::WorthServerConfig, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerMultipartUpload, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerRequestContextConfig};
+pub use worth_foundational::facade::DiagnosticRichnessProfile;
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerBinaryDownloadExecutionInput,
+    worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityPreparedRequest,
+    worth_server::WorthServerCompatibilityRequestInput,
+    worth_server::WorthServerCompatibilityUploadExecutionInput, worth_server::WorthServerConfig,
+    worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerMultipartUpload,
+    worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerRequestContextConfig,
+};
 
-pub use {crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider};
+pub use crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider;
 
 pub fn build_phase_twelve_server() -> WorthServer {
-    build_server_with_max_diagnostics(worth_foundational::facade::DiagnosticRichnessProfile::Forensic)
+    build_server_with_max_diagnostics(
+        worth_foundational::facade::DiagnosticRichnessProfile::Forensic,
+    )
 }
 
 pub fn build_phase_twelve_budget_limited_server() -> WorthServer {
-    build_server_with_max_diagnostics(worth_foundational::facade::DiagnosticRichnessProfile::Standard)
+    build_server_with_max_diagnostics(
+        worth_foundational::facade::DiagnosticRichnessProfile::Standard,
+    )
 }
 
 pub fn build_server_with_max_diagnostics(
@@ -22,7 +35,9 @@ pub fn build_server_with_max_diagnostics(
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
                         .with_preview_targeting_enabled(true)
-                        .with_default_diagnostics_profile(worth_foundational::facade::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_foundational::facade::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("request context config should validate"),
                 )
@@ -137,8 +152,11 @@ pub fn download_input(
 }
 
 pub fn drip_fed_upload() -> WorthServerMultipartUpload {
-    use {serde_json::json};
-    use {worth_server::WorthServerUploadChunk, worth_server::WorthServerUploadManifest, worth_server::WorthServerUploadPart, worth_server::WorthServerUploadTransferMode};
+    use serde_json::json;
+    use {
+        worth_server::WorthServerUploadChunk, worth_server::WorthServerUploadManifest,
+        worth_server::WorthServerUploadPart, worth_server::WorthServerUploadTransferMode,
+    };
 
     let part = (0..33).fold(
         WorthServerUploadPart::file("blob")

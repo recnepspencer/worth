@@ -7,6 +7,7 @@ mod fixture;
 mod history;
 mod inspection;
 mod invariant;
+mod managed_index;
 mod mutation_description;
 mod operation_body;
 mod projected_member_domain;

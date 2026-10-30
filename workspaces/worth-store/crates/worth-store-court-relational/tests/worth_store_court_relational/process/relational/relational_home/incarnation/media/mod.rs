@@ -1,21 +1,7 @@
 //! The open-time incarnation decision under every identified media fault.
+use crate::durable_run::open;
 #[allow(unused_imports)]
 use crate::incarnation::media::*;
-use std::num::NonZeroU64;
-use worth_store::physical_runtime::certification::MediaOperationRole;
-use {
-    crate::durable_run::open, crate::incarnation::media, crate::workload, std::path::Path,
-    worth_execution::ExecutionRequest,
-    worth_store_relational::RelationalStoreHomeOpenRefusal as Refusal,
-};
-use {crate::media_faults, crate::schema_transition};
-use {
-    worth_store::physical_runtime::FilesystemAccessPosture,
-    worth_store::physical_runtime::FilesystemMediaAdmission,
-};
-use {
-    worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeRequest,
-};
 
 #[test]
 fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_advance() {

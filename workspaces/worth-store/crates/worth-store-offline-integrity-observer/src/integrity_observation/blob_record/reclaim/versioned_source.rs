@@ -34,8 +34,12 @@ pub(crate) fn decode_manifest_v3(payload: &[u8], frame_digest: [u8; 32]) -> Opti
         return None;
     }
     let mut dropped = Vec::with_capacity(count);
-    for bytes in payload[dropped_start..dropped_end].chunks_exact(24) {
-        let record: [u8; 24] = bytes.try_into().ok()?;
+    for bytes in payload[dropped_start..dropped_end]
+        .as_chunks::<24>()
+        .0
+        .iter()
+    {
+        let record = *bytes;
         if !valid_record(&record) || dropped.last().is_some_and(|prior| *prior >= record) {
             return None;
         }

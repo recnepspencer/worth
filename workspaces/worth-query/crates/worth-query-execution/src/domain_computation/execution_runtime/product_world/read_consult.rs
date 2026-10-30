@@ -42,6 +42,10 @@ impl super::WorthQueryProductRuntime {
             previous,
         }
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn enter_named_read(&self, name: NamedRead) -> NamedReadRegion {
         let previous = self
             .named_read_probe
@@ -53,6 +57,10 @@ impl super::WorthQueryProductRuntime {
             previous,
         }
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     fn named_read_active(&self, name: NamedRead) -> bool {
         self.named_read_probe.armed.load(Ordering::Acquire)
             && CURRENT.get() == (Arc::as_ptr(&self.named_read_probe) as usize, name as u8)

@@ -1,5 +1,3 @@
-use worth_runtime_bridge::facade::RuntimeWorldCorrespondenceAdmissionDenial;
-
 #[test]
 fn bridge_generation_drift_is_a_distinct_denial_axis() {
     let denial = worth_runtime_bridge::facade::RuntimeWorldCorrespondenceAdmissionDenial::InstalledGenerationDrift {

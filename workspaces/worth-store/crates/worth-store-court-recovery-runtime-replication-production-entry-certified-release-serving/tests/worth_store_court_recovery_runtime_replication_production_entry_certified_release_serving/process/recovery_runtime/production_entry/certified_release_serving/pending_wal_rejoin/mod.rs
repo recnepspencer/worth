@@ -1,7 +1,7 @@
 //! A post-claim selected-media drift must not cross Store's independent
 //! pending-WAL rejoin or create a checkpoint-capable Serving instance.
 
-use {std::sync::Arc, std::sync::atomic::AtomicBool, std::sync::Mutex, std::sync::atomic::Ordering, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial, worth_store_recovery_runtime::WorthStoreRecovery, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::plain_serving::assert_plain_serving_denied, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::open_serving_with_seal, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery::recover, worth_store_testkit_recovery_runtime::production_entry::release_reopen, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request, worth_store_testkit_recovery_runtime::certified_release_serving::tamper};
+use {worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::plain_serving::assert_plain_serving_denied, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::open_serving_with_seal, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request};
 
 #[test]
 fn pending_v3_sealed_serving_can_checkpoint_the_recovered_release() {

@@ -1,4 +1,3 @@
-use worth_store_formal_models::assumptions::ModeledBackendDurabilityAssumption;
 use {
     worth_store_physical_backend::AdversarialLostFlushProfile,
     worth_store_physical_backend::BackendDurabilityProfile,

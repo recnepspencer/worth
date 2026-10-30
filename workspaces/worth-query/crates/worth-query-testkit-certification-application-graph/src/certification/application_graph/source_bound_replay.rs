@@ -14,7 +14,7 @@ pub use worth_query_host::facade::{
         WorthQueryMutationHandlerWork, WorthQueryOperationProjectionDenialKind as ProjectionKind,
     },
     runtime::{
-        ExecutionAllocationDenialKind, ExecutionAllocationPolicy as Policy, LeaseDenial,
+        ExecutionAllocationDenialClass, ExecutionAllocationPolicy as Policy, LeaseDenial,
         LeaseRequest,
     },
 };

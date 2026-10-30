@@ -1,12 +1,9 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::profiles::readiness::*;
-use std::path::Path;
 use {
     worth_foundational::certify_foundational_profile_milestone3_production_test_readiness,
     worth_foundational::foundational_profile_milestone3_readiness_report,
     worth_foundational::require_foundational_profile_milestone3_production_test_readiness,
-    worth_foundational::FoundationalProfileProductionReadinessCertified,
-    worth_foundational::FoundationalProfileProductionTestReadyArtifact,
 };
 
 #[test]

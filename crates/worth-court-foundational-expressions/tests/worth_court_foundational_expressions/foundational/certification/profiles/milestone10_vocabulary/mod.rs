@@ -1,14 +1,8 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::profiles::milestone10_vocabulary::*;
-use worth_proof::TransitionOutcome;
 use {
-    worth_foundational::derive_foundational_profile_identity,
     worth_foundational::foundational_profile_progression_authority,
     worth_foundational::request_foundational_profile_set,
-    worth_foundational::FoundationalProfileResolutionFamily,
-    worth_foundational::FoundationalProfileResolutionLedger,
-    worth_foundational::FoundationalProfileResolutionRecord,
-    worth_foundational::FoundationalProfileResolutionRelation,
 };
 
 use {

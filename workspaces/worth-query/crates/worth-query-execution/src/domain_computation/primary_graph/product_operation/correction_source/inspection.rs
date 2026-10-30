@@ -47,7 +47,7 @@ impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
         Err(WorthQueryCorrectionDerivationDenial::UnsupportedSourceMeaning)
     }
     fn declared<C: ApplicationCorrectionBinding<Schema>>(self) -> Self::Output {
-        disclosure::disclose_correction_source::<Schema, C>(
+        let ancestry = disclosure::disclose_correction_source::<Schema, C>(
             self.target,
             self.phase,
             self.principal,
@@ -60,6 +60,7 @@ impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
             self.target,
             self.phase,
             self.source,
+            ancestry,
             None,
         )
         .map(|_| ())

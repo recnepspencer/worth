@@ -4,23 +4,6 @@ use crate::byte_backing::ordinary_context::*;
 #[allow(unused_imports)]
 pub(crate) use crate::test_serialization;
 
-pub(crate) use {
-    std::num::NonZeroUsize, std::sync::Arc, std::sync::Mutex, std::sync::OnceLock,
-    std::time::Duration, std::time::Instant,
-};
-pub(crate) use {
-    worth_execution::CancellationSource, worth_execution::CancellationToken,
-    worth_execution::ExecutionAllocationDenialKind as Kind,
-    worth_execution::ExecutionAllocationPolicy as Policy, worth_execution::ExecutionAuthority,
-    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionByteBuffer,
-    worth_execution::ExecutionImmutableBytes, worth_execution::LeaseRequest,
-    worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel,
-};
-pub(crate) use {
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
-    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
-};
-
 #[test]
 fn external_and_system_backings_are_uncharged_and_equal_by_bytes() {
     let bytes = std::sync::Arc::new(b"wire".to_vec().into_boxed_slice());
@@ -55,8 +38,10 @@ fn invalid_layout_and_incomplete_emission_never_seal_a_partial_payload() {
     )
     .unwrap_err();
     assert_eq!(
-        denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::Layout
+        denied.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Physical(
+            worth_execution::ExecutionPhysicalAllocationDenialKind::Layout
+        )
     );
     assert_eq!(denied.requested_payload_bytes(), None);
     let mut buffer = worth_execution::ExecutionByteBuffer::allocate(
@@ -67,8 +52,10 @@ fn invalid_layout_and_incomplete_emission_never_seal_a_partial_payload() {
     buffer.extend_from_slice(b"a").unwrap();
     let denied = buffer.seal().unwrap_err();
     assert_eq!(
-        denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::IncompleteSeal
+        denied.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Physical(
+            worth_execution::ExecutionPhysicalAllocationDenialKind::IncompleteSeal
+        )
     );
     assert_eq!(denied.requested_payload_bytes(), Some(3));
 }

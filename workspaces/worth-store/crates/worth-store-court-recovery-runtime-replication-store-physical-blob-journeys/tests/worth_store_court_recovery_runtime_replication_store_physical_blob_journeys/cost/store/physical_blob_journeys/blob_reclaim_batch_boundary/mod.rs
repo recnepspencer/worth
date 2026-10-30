@@ -1,49 +1,10 @@
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_reclaim_batch_boundary::*;
-use {std::num::NonZeroU16, std::num::NonZeroU32, std::num::NonZeroU64};
-
-use worth_proof::TransitionOutcome;
-use worth_store_blob_chunks::BlobChunkSize;
-use {
-    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::BlobReclaimDisposition,
-    worth_store::physical_runtime::BlobReclaimFailure,
-    worth_store::physical_runtime::BlobReclaimLimitDenial,
-    worth_store::physical_runtime::BlobReclaimLimits,
-    worth_store::physical_runtime::BlobReclaimReceipt,
-    worth_store::physical_runtime::BlobReclaimRequest,
-    worth_store::physical_runtime::BlobReclaimRetirement,
-    worth_store::physical_runtime::BlobReclaimRetirementBudget,
-    worth_store::physical_runtime::BlobResumeToken,
-    worth_store::physical_runtime::BlobTerminalLimits,
-    worth_store::physical_runtime::ManifestEntryCapacity,
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalRecordId,
-    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
-    worth_store::physical_runtime::RecordByteLimit,
-    worth_store::physical_runtime::RecordCountLimit,
-    worth_store::physical_runtime::RecordReadLimits,
-    worth_store::physical_runtime::RecordScanOutcome,
-    worth_store::physical_runtime::RecordScanRequest,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-};
-use {
-    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
-    worth_store_physical_format::PersistedRecordIdentity,
-};
 
 use {
     crate::blob_crash::recovery::recover_closed_store,
     crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
     worth_store_testkit_store::fixture::admitted_blob_scope,
-    worth_store_testkit_store::fixture::configuration,
     worth_store_testkit_store::fixture::serving_from_initialization_with_placement_and_tail,
     worth_store_testkit_store::fixture::serving_from_open_with_retained_wal_tail,
 };

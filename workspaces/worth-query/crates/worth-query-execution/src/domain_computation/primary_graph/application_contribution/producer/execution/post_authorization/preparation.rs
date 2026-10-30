@@ -98,10 +98,10 @@ where
     let contact_root = observed_source.model_root;
     let prepared_source = runtime
         .prepare_application_source_expectation::<Operation<Schema, Binding>, _>(
+            phase,
             &admission,
             observed_source,
             identities.mutation_input(),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .map_err(|error| input_cutoff::source_preparation_denial(Binding::IDENTITY, error))?;
 

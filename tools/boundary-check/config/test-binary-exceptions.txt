@@ -1,1 +1,0 @@
-# Convention v3: one canonical integration target; no executable exceptions.

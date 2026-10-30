@@ -39,4 +39,3 @@ fn candidate_footer_a_checkpoint_crash_diagnostic() {
         seed.perturbation,
     );
 }
-use {sha2::Digest, sha2::Sha256};

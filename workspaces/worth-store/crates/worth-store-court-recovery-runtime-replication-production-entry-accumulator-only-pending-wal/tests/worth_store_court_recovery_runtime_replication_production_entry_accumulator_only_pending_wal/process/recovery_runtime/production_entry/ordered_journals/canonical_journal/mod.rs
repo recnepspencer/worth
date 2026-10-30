@@ -5,39 +5,6 @@
 
 #[allow(unused_imports)]
 use worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal::*;
-use {
-    std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio,
-    std::thread, std::time::Duration, std::time::Instant,
-};
-
-use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
-use {sha2::Digest, sha2::Sha256};
-use {
-    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
-    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
-    worth_store::physical_runtime::ManifestEntryCapacity,
-    worth_store::physical_runtime::OrderedJournalPublication,
-    worth_store::physical_runtime::OrderedJournalPublicationFailure,
-    worth_store::physical_runtime::OrderedJournalPublished,
-    worth_store::physical_runtime::OrderedJournalResolution,
-    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
-    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::WorthStoreRecovery,
-};
-
-use {
-    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
-    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
-};
 
 #[test]
 fn the_journal_publishes_only_at_the_next_position_and_resolves_retries() {
@@ -119,6 +86,5 @@ fn canonical_journal_child() {
         .expect("journal child role");
     child(&marker, stop);
 }
-#[cfg(all())]
 #[path = "recovery_interruption/mod.rs"]
 pub(crate) mod recovery_interruption;

@@ -1,41 +1,13 @@
 #[allow(unused_imports)]
 use crate::c11_arena_copy_crash::*;
-use worth_proof::TransitionOutcome;
 use {
-    std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread,
-    std::time::Duration, std::time::Instant,
-};
-use {
-    worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint,
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::PhysicalExtentCopyPhase,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationRequest,
-};
-use {
-    worth_store::physical_runtime::ServingPhysicalRuntime,
     worth_store_testkit_recovery_runtime::support::append,
     worth_store_testkit_recovery_runtime::support::configuration,
     worth_store_testkit_recovery_runtime::support::generation,
     worth_store_testkit_recovery_runtime::support::initialize,
     worth_store_testkit_recovery_runtime::support::open,
-    worth_store_testkit_recovery_runtime::support::recovery_request,
     worth_store_testkit_recovery_runtime::support::scan,
     worth_store_testkit_recovery_runtime::support::EXTENT_BYTES,
-};
-use {
-    worth_store_physical_format::CurrentPhysicalRecordPlacement,
-    worth_store_physical_format::DurableExtentRecordPlacement,
-    worth_store_physical_format::PersistedRecordIdentity,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
-    worth_store_recovery_runtime::WorthStoreRecovery,
 };
 
 use crate::c11_arena_copy_crash::observation::observe_copy_media;

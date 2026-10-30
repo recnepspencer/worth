@@ -105,13 +105,17 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
     let allocation = invariant.allocation_denial().expect("exact lower cause");
     assert_eq!(denial.allocation_denial(), Some(allocation));
     assert_eq!(
-        allocation.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
-                requested: 38,
-                admitted: 0,
-                level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+        allocation.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(
+                worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+                    requested: 38,
+                    admitted: 0,
+                    level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy {
+                        ancestor: 0
+                    }
+                }
+            )
         ))
     );
     // The same actual Document identity predicate as the ordinary mutation control.
@@ -148,8 +152,13 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
     let head = observe_head(runtime, branch);
     token.cancel();
     assert_eq!(
-        Policy::Execution(&zero).check_live().unwrap_err().kind(),
-        ExecutionAllocationDenialKind::Cancelled
+        Policy::Execution(&zero)
+            .check_live()
+            .unwrap_err()
+            .classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::Cancelled
+        ))
     );
     let (retried, work) = runtime
         .request(&principal, &scope)

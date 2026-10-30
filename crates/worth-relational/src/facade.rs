@@ -91,6 +91,13 @@ pub mod history {
     };
     pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
+        RelationalAuthoredEntityIndexDefinition, RelationalAuthoredWriteCursor,
+        RelationalAuthoredWriteDenial, RelationalAuthoredWriteOccurrence,
+        RelationalAuthoredWritePage, RelationalAuthoredWritePageLimits,
+        RelationalAuthoredWriteScope, RelationalAuthoredWriteSelector,
+        RelationalPreparedAuthoredWritePage,
+    };
+    pub use crate::history::{
         RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,
         RelationalRecordHistoryChange, RelationalRecordHistoryDenial, RelationalRecordHistoryPage,
         RelationalRecordHistoryPageLimits, RelationalRecordHistorySelection,
@@ -207,13 +214,15 @@ pub mod runtime {
         PinnedStructuralWalkVisit, PositionedRelationalSnapshot, QueryLeasedReadOutcome,
         QueryReadExecutionStop, QueryReadPacketDenial, RecoveredCheckpointProgramActivationUpdate,
         RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
-        RelationalAdjacencyVisit, RelationalBorrowedRecordReadDenial,
+        RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
+        RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
         RelationalCandidateInputCounters, RelationalEntityMetadata,
         RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
-        RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
-        RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
-        RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
-        RelationalPinnedEntityMetadata, RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
+        RelationalFieldSupportComparisonDenial, RelationalInitialSchemaInstallation,
+        RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
+        RelationalInitialSchemaInstallationReceipt, RelationalPatchPositionReservationCounters,
+        RelationalPhase4ReferenceCostCounters, RelationalPinnedEntityMetadata,
+        RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
         RelationalProjectedFieldObservation, RelationalRelationMetadata, RelationalReplayRecord,
         RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalRuntime,
         RelationalRuntimeConfig, RelationalRuntimeConstructionDenial, RelationalRuntimeForkDenial,

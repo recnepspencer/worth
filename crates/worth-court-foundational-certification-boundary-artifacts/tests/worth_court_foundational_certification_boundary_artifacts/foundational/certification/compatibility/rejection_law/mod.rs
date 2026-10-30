@@ -1,11 +1,5 @@
 use serde_json::json;
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::lower_json_record_aspect_state, worth_foundational::AspectContract,
-    worth_foundational::ContractValidationDenial, worth_foundational::FieldKey,
-    worth_foundational::JsonCompatibilityAspectInput,
-    worth_foundational::JsonCompatibilityLoweringDenial, worth_foundational::ScalarAspectType,
-};
+use worth_foundational::lower_json_record_aspect_state;
 
 use {
     crate::certification::ordinary_context::compatibility::json_lowering_fixtures::field_source_for,

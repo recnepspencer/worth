@@ -2,13 +2,11 @@
 
 #[allow(unused_imports)]
 use crate::journeys::*;
-use worth_execution::ExecutionRequest;
 
 use {
     crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::open,
     crate::durable_run::steps_after, crate::durable_run::steps_before,
 };
-use {crate::workload, crate::workload::Script};
 
 #[test]
 fn the_reference_script_is_deterministic() {

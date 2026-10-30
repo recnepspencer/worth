@@ -73,14 +73,25 @@ impl KernelContext<'_, '_> {
             true
         } else {
             let restore = canonical_accepted - backend_charged;
-            meter
-                .limits
-                .physical_activity
-                .discarded_work
-                .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-                    current.checked_sub(restore)
-                })
-                .is_ok()
+            {
+                let update_counter = &meter.limits.physical_activity.discarded_work;
+                let mut current = update_counter.load(Ordering::Acquire);
+                loop {
+                    let Some(updated_value) = current.checked_sub(restore) else {
+                        break Err(current);
+                    };
+                    match update_counter.compare_exchange_weak(
+                        current,
+                        updated_value,
+                        Ordering::AcqRel,
+                        Ordering::Acquire,
+                    ) {
+                        Ok(previous) => break Ok(previous),
+                        Err(reloaded_value) => current = reloaded_value,
+                    }
+                }
+            }
+            .is_ok()
         }
     }
 }

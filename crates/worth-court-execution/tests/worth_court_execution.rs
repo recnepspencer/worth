@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_execution/support/array_backing/mod.rs"]
 pub(crate) mod array_backing;

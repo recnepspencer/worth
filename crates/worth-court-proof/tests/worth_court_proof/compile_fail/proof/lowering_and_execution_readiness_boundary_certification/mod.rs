@@ -1,9 +1,8 @@
 #[allow(unused_imports)]
 use crate::shared_support as support;
 
-use crate::shared_support::compile_fail::run_compile_fail_bundle;
+use crate::compile_fail::harness::run_compile_fail_bundle;
 
-use crate::shared_support::execution_readiness;
 use {
     worth_proof::AssumptionBasis, worth_proof::CurrentValidity, worth_proof::ExecutedRecipe,
     worth_proof::ExecutionReadyRecipe, worth_proof::FreshnessScopedBasis,

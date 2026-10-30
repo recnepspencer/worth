@@ -1784,6 +1784,7 @@ dependencies = [
 name = "worth-testkit-foundational"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "worth-foundational",
  "worth-proof",
 ]

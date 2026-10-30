@@ -14,6 +14,41 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn readmit_product_branch_reference(
+        &self,
+        description: &crate::branch::ProductBranchReferenceDescription,
+    ) -> Result<ProductBranchObservation, crate::branch::ProductBranchReferenceReadmissionDenial>
+    {
+        use crate::branch::ProductBranchReferenceReadmissionDenial as Denial;
+        if description.format_version != crate::branch::PRODUCT_BRANCH_REFERENCE_DESCRIPTION_VERSION
+        {
+            return Err(Denial::UnsupportedDescriptionVersion {
+                supported: crate::branch::PRODUCT_BRANCH_REFERENCE_DESCRIPTION_VERSION,
+                actual: description.format_version,
+            });
+        }
+        if description.owner_ordinal != self.owner_identity().get() {
+            return Err(Denial::Branch(
+                RuntimeWorldBranchAdmissionDenial::ForeignOwner,
+            ));
+        }
+        let name = crate::branch::ProductBranchName::try_new(description.branch_name.clone())
+            .map_err(Denial::InvalidName)?;
+        let branch = ProductBranchIdentity::issued(self.owner_identity(), name);
+        let observed = self
+            .observe_product_branch(&branch)
+            .map_err(Denial::Branch)?;
+        if description.lifecycle_ordinal != observed.lifecycle_incarnation().ordinal() {
+            return Err(Denial::IncarnationChanged);
+        }
+        if !description.matches_observation(&observed) {
+            return Err(Denial::Branch(
+                RuntimeWorldBranchAdmissionDenial::StaleSourceHead,
+            ));
+        }
+        Ok(observed)
+    }
+
     fn admit_product_branch_currentness<'selected>(
         &self,
         expected: &'selected ProductBranchObservation,

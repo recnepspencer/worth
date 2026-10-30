@@ -1,27 +1,27 @@
 error[E0308]: mismatched types
- --> tests/ui/transitions/merge_admission/raw_string_cannot_satisfy_merge_scope_api.rs:6:20
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/merge_admission/raw_string_cannot_satisfy_merge_scope_api.rs
   |
-6 |     requires_scope("gear");
+  |     requires_scope("gear");
   |     -------------- ^^^^^^ expected `FoundationalMergeScope`, found `&str`
   |     |
   |     arguments to this function are incorrect
   |
 note: function defined here
- --> tests/ui/transitions/merge_admission/raw_string_cannot_satisfy_merge_scope_api.rs:3:4
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/merge_admission/raw_string_cannot_satisfy_merge_scope_api.rs
   |
-3 | fn requires_scope(_: worth_foundational::FoundationalMergeScope) {}
+  | fn requires_scope(_: worth_foundational::FoundationalMergeScope) {}
   |    ^^^^^^^^^^^^^^ ---------------------------------------------
 
 error[E0308]: mismatched types
-  --> tests/ui/transitions/merge_admission/raw_string_cannot_satisfy_merge_scope_api.rs:25:51
-   |
-25 |     let _ = foundational_merge(source).with_scope(FoundationalSelectedNodeLocus::new("gear").unwrap());
-   |                                        ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `FoundationalMergeScope`, found `FoundationalSelectedNodeLocus`
-   |                                        |
-   |                                        arguments to this method are incorrect
-   |
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/merge_admission/raw_string_cannot_satisfy_merge_scope_api.rs
+  |
+  |     let _ = foundational_merge(source).with_scope(FoundationalSelectedNodeLocus::new("gear").unwrap());
+  |                                        ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `FoundationalMergeScope`, found `FoundationalSelectedNodeLocus`
+  |                                        |
+  |                                        arguments to this method are incorrect
+  |
 note: method defined here
-  --> src/transitions/merges/builder.rs
-   |
-   |     pub fn with_scope(mut self, scope: FoundationalMergeScope) -> Self {
-   |            ^^^^^^^^^^
+ --> $WORKSPACE/crates/worth-foundational/src/transitions/merges/builder.rs
+  |
+  |     pub fn with_scope(mut self, scope: FoundationalMergeScope) -> Self {
+  |            ^^^^^^^^^^

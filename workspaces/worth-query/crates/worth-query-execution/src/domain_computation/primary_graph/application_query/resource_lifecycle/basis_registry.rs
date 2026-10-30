@@ -55,6 +55,37 @@ pub enum WorthQueryApplicationBasisSelectionIdentity {
 }
 
 impl WorthQueryApplicationBasisIdentity {
+    pub(in crate::domain_computation) fn retained_clone_heap_bytes(&self) -> Option<u64> {
+        Self::clone_heap_bytes(&self.branch_id, &self.descriptor)
+    }
+
+    /// Price the actual selected descriptor before constructing its Query identity.
+    pub(in crate::domain_computation) fn retained_basis_clone_heap_bytes(
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Option<u64> {
+        Self::clone_heap_bytes(basis.identity().branch_id(), basis.descriptor())
+    }
+
+    fn clone_heap_bytes(
+        branch_id: &BranchId,
+        descriptor: &RelationalBranchBasisDescriptor,
+    ) -> Option<u64> {
+        let strings = branch_id
+            .0
+            .len()
+            .checked_add(descriptor.branch_id().0.len())?
+            .checked_add(descriptor.reference().branch_id().as_str().len())?;
+        let parents = match descriptor.reference().target() {
+            worth_foundational::FoundationalBranchTarget::Empty => 0,
+            worth_foundational::FoundationalBranchTarget::Basis(target) => {
+                std::alloc::Layout::array::<u64>(target.parent_commit_ids().len())
+                    .ok()?
+                    .size()
+            }
+        };
+        u64::try_from(strings.checked_add(parents)?).ok()
+    }
+
     pub const fn runtime_instance_id(&self) -> u64 {
         self.runtime_instance_id
     }

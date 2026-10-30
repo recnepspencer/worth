@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[global_allocator]
 static ALLOCATOR: tracking_allocator::Allocator<std::alloc::System> =
     tracking_allocator::Allocator::system();

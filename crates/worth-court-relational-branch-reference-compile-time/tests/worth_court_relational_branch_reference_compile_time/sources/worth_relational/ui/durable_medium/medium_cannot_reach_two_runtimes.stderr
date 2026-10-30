@@ -1,5 +1,5 @@
 error[E0382]: use of moved value: `medium`
-  --> tests/ui/durable_medium/medium_cannot_reach_two_runtimes.rs:11:41
+  --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/durable_medium/medium_cannot_reach_two_runtimes.rs:11:41
    |
  8 |     let medium: Box<dyn RelationalDurableMedium> = Box::new(Journal);
    |         ------ move occurs because `medium` has type `Box<dyn worth_relational::facade::durability::RelationalDurableMedium>`, which does not implement the `Copy` trait

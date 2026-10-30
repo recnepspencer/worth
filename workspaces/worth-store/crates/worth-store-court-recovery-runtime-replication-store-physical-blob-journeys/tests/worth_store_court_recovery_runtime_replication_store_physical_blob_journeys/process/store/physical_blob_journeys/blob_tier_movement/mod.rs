@@ -3,30 +3,8 @@
 
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_tier_movement::*;
-use {std::num::NonZeroU64, std::path::Path};
 
-use worth_proof::TransitionOutcome;
-use worth_signal::facade::TemporalDuration;
-use worth_store_blob_chunks::BlobChunkSize;
-use {
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobMovementFailure,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::PhysicalExtentCopyPhase,
-    worth_store::physical_runtime::PhysicalExtentCopyResolutionProgress,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationRequest,
-    worth_store::physical_runtime::RecordAppendDenial,
-    worth_store::physical_runtime::RecordAppendError,
-};
-use {
-    worth_store_physical_format::arena_tier_at_epoch,
-    worth_store_physical_format::BootstrapCatalog,
-    worth_store_physical_format::DurablePhysicalRootManifest,
-    worth_store_physical_format::PhysicalTierClass,
-};
+use worth_store_physical_format::arena_tier_at_epoch;
 
 use {
     crate::physical_blob_journeys::blob_copy_observer::current_extent_route,

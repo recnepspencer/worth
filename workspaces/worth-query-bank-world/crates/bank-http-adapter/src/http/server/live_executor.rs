@@ -85,6 +85,10 @@ impl Stream for BankHttpLiveEventStream {
 }
 
 impl BankHttpLiveExecutor {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "async-runtime thread-builder=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+    )]
     pub(super) fn start<A>(
         application: Arc<A>,
         open_queue_capacity: usize,
@@ -151,6 +155,10 @@ impl BankHttpLiveExecutor {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime async-runtime=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+)]
 fn run_local_executor<A>(
     application: Arc<A>,
     receiver: mpsc::Receiver<OpenAccountActivityStream>,

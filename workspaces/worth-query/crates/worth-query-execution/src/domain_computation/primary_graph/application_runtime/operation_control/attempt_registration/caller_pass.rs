@@ -16,12 +16,25 @@ impl CallerPassControl {
         self: &Arc<Self>,
         action: impl FnOnce() + Send + 'static,
     ) {
-        let owner = self
-            .next_arm
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-                value.checked_add(1)
-            })
-            .expect("receiver arm identity exhausted")
+        let owner = {
+            let update_counter = &self.next_arm;
+            let mut value = update_counter.load(Ordering::Relaxed);
+            loop {
+                let Some(updated_value) = value.checked_add(1) else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        }
+        .expect("receiver arm identity exhausted")
             + 1;
         let receiver = Arc::downgrade(self);
         owned_control_scope::register(move || {

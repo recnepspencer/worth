@@ -5,24 +5,6 @@ pub(crate) use crate::test_serialization;
 
 #[allow(unused_imports)]
 pub(crate) use crate::reducer_overlap;
-use {
-    std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
-    std::sync::Mutex, std::sync::OnceLock,
-};
-
-use {
-    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
-    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
-    worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
-    worth_execution::MapPartition, worth_execution::ReduceInputDenial,
-    worth_execution::ReductionPlan, worth_execution::ReductionRunStop,
-    worth_execution::ReductionTree,
-};
-use {
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
-    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
-    worth_foundational::PartitionIdentity,
-};
 
 #[test]
 fn frontier_concatenation_preserves_partition_identity_order_at_every_width() {

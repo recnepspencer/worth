@@ -208,7 +208,8 @@ fn reconstruct_chain(
                 super::codec_disposition::validate_birth(runtime, &current, context, lease)?;
                 break;
             }
-            CanonicalOutputPublication::Preserve { predecessor } => {
+            CanonicalOutputPublication::Preserve { predecessor }
+            | CanonicalOutputPublication::AuthoredRetirement { predecessor } => {
                 let previous = runtime
                     .history
                     .canonical_envelope(predecessor)

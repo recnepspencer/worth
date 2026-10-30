@@ -17,12 +17,12 @@ pub(crate) use crate::production::fate_markers::IndexedRecoveryFate;
 pub(crate) use {crate::history, crate::phase_eight_process::comparison};
 
 pub(crate) use crate::history::schedule::in_flight_mutation::MutationCrashWorkload;
-pub(crate) use crate::phase_eight_process::production::harness::process::run_recovery_with_profile;
+pub(crate) use crate::process::support::production_harness::run_recovery_with_profile;
 pub(crate) use {
-    crate::phase_eight_process::production::harness::process::assert_child_succeeded,
-    crate::phase_eight_process::production::harness::process::run_observer,
-    crate::phase_eight_process::production::harness::process::spawn_recovery_at_yieldpoint,
-    crate::phase_eight_process::production::harness::process::spawn_recovery_at_yieldpoint_with_deadline,
+    crate::process::support::production_harness::assert_child_succeeded,
+    crate::process::support::production_harness::run_observer,
+    crate::process::support::production_harness::spawn_recovery_at_yieldpoint,
+    crate::process::support::production_harness::spawn_recovery_at_yieldpoint_with_deadline,
 };
 pub(crate) use {
     crate::production::harness::markers::RecoveryFateMarker,
@@ -33,8 +33,7 @@ pub(crate) const C8_RECOVERY_MEMORY_BUDGET_BYTES: u64 = 512 * 1024;
 
 pub(crate) struct ProcessWorld {
     pub(crate) parent: TempDir,
-    pub(crate) writer:
-        crate::phase_eight_process::history::process::lifecycle::KilledProductionWriter,
+    pub(crate) writer: crate::process::support::history::lifecycle::KilledProductionWriter,
 }
 
 pub(crate) struct ObserverProcess {
@@ -60,14 +59,15 @@ impl ProcessWorld {
         perturbation_seed: u64,
     ) -> Self {
         let parent = tempfile::tempdir().expect("C8 mutation-crash process parent");
-        let writer = crate::phase_eight_process::history::process::mutation_writer::launch_killed_mutation_writer(
-            parent.path(),
-            stage,
-            workload,
-            schedule_seed,
-            perturbation_seed,
-        )
-        .expect("production writer must leave a killed mutation root");
+        let writer =
+            crate::process::support::history::mutation_writer::launch_killed_mutation_writer(
+                parent.path(),
+                stage,
+                workload,
+                schedule_seed,
+                perturbation_seed,
+            )
+            .expect("production writer must leave a killed mutation root");
         Self { parent, writer }
     }
 
@@ -76,7 +76,7 @@ impl ProcessWorld {
         perturbation_seed: u64,
     ) -> Self {
         let parent = tempfile::tempdir().expect("C8 capacity-transition process parent");
-        let writer = crate::phase_eight_process::history::process::mutation_writer::launch_killed_mutation_writer_with_operation_count(
+        let writer = crate::process::support::history::mutation_writer::launch_killed_mutation_writer_with_operation_count(
             parent.path(),
             "during-root-publication",
             crate::history::schedule::in_flight_mutation::MutationCrashWorkload::CapacityTransition,
@@ -90,13 +90,14 @@ impl ProcessWorld {
 
     pub(crate) fn start(stage: &str, schedule_seed: u64, perturbation_seed: u64) -> Self {
         let parent = tempfile::tempdir().expect("Phase 8 process parent");
-        let writer = crate::phase_eight_process::history::process::checkpoint_writer::launch_killed_production_writer(
-            parent.path(),
-            stage,
-            schedule_seed,
-            perturbation_seed,
-        )
-        .expect("production writer must leave a killed persisted root");
+        let writer =
+            crate::process::support::history::checkpoint_writer::launch_killed_production_writer(
+                parent.path(),
+                stage,
+                schedule_seed,
+                perturbation_seed,
+            )
+            .expect("production writer must leave a killed persisted root");
         Self { parent, writer }
     }
 
@@ -107,7 +108,7 @@ impl ProcessWorld {
         operation_count: usize,
     ) -> Self {
         let parent = tempfile::tempdir().expect("Phase 8 process parent");
-        let writer = crate::phase_eight_process::history::process::checkpoint_writer::launch_killed_production_writer_with_operation_count(
+        let writer = crate::process::support::history::checkpoint_writer::launch_killed_production_writer_with_operation_count(
             parent.path(),
             stage,
             schedule_seed,
@@ -132,7 +133,7 @@ impl ProcessWorld {
         operation_count: usize,
     ) -> Self {
         let parent = tempfile::tempdir().expect("Phase 8 durable-unacknowledged parent");
-        let writer = crate::phase_eight_process::history::process::durable_before_ack_writer::launch_killed_durable_unacknowledged_writer_with_operation_count(
+        let writer = crate::process::support::history::durable_before_ack_writer::launch_killed_durable_unacknowledged_writer_with_operation_count(
             parent.path(),
             schedule_seed,
             perturbation_seed,
@@ -148,7 +149,7 @@ impl ProcessWorld {
         operation_count: usize,
     ) -> Self {
         let parent = tempfile::tempdir().expect("Phase 8 cleanup-rotation parent");
-        let writer = crate::phase_eight_process::history::process::cleanup_rotation_writer::launch_killed_cleanup_writer_with_operation_count(
+        let writer = crate::process::support::history::cleanup_rotation_writer::launch_killed_cleanup_writer_with_operation_count(
             parent.path(),
             schedule_seed,
             perturbation_seed,

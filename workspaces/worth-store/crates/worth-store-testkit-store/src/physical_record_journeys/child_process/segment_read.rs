@@ -1,11 +1,9 @@
 //! Fresh-process reads preserve every requested segment identity and payload.
-use std::{io::Write, path::Path};
+use std::io::Write;
 
 use crate::child_process::{locator_codec::unhex, LOCATOR_ENV};
-use crate::physical_record_journeys::serving_from_open;
 
-pub fn segment_reader(root: &Path) {
-    let serving = serving_from_open(root);
+pub fn segment_reader(serving: worth_store::physical_runtime::ServingPhysicalRuntime) {
     for requested in std::env::var(LOCATOR_ENV).unwrap().split(';') {
         let (index, encoded) = requested.split_once(':').unwrap();
         let locator =

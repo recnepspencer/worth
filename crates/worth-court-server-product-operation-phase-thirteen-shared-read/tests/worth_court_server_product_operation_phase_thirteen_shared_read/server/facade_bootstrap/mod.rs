@@ -1,9 +1,3 @@
-use {
-    worth_server::facade::WorthServer, worth_server::facade::WorthServerBuildError,
-    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
-    worth_server::WorthServerConfig, worth_server::WorthServerSurfaceFamily,
-};
-
 #[test]
 fn build_preserves_explicit_surface_inventory_and_counter_snapshot() {
     let server = worth_server::facade::WorthServer::builder()

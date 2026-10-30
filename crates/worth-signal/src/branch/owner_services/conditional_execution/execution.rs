@@ -235,14 +235,25 @@ where
             _ => {}
         }
         let (contract_binding, retained_basis) = self.admit_contract_binding(contract)?;
-        let ordinal = self
-            .next_evaluation_ordinal
-            .fetch_update(
-                std::sync::atomic::Ordering::Relaxed,
-                std::sync::atomic::Ordering::Relaxed,
-                |value| value.checked_add(1),
-            )
-            .map_err(|_| Denial::EvaluationIdentityExhausted)?;
+        let ordinal = {
+            let update_counter = &self.next_evaluation_ordinal;
+            let mut value = update_counter.load(std::sync::atomic::Ordering::Relaxed);
+            loop {
+                let Some(updated_value) = value.checked_add(1) else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    std::sync::atomic::Ordering::Relaxed,
+                    std::sync::atomic::Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| Denial::EvaluationIdentityExhausted)?;
         let execution_identity = super::evaluation_identity::evaluation_identity(ordinal);
         let source = Arc::new(match source {
             ConditionalEvaluationSource::NoRelationalSource => {

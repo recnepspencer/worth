@@ -1,5 +1,5 @@
 error[E0382]: use of moved value: `basis`
-  --> tests/ui/branch_reference/fork_basis_is_consumed.rs:11:75
+  --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/fork_basis_is_consumed.rs:11:75
    |
  8 |     basis: AdmittedRelationalForkSourceBasis,
    |     ----- move occurs because `basis` has type `AdmittedRelationalForkSourceBasis`, which does not implement the `Copy` trait

@@ -1,14 +1,8 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::canonicalization::basis::basis_grammar::*;
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::prepare_canonical_basis_bundle,
     worth_foundational::prepare_canonical_basis_sequence,
-    worth_foundational::CanonicalBasisConstructionDenial, worth_foundational::CanonicalBasisDomain,
-    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
-    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadinessProofs,
-    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalBundleReadinessProofs,
-    worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalizationRuleVersion,
 };
 
 #[test]

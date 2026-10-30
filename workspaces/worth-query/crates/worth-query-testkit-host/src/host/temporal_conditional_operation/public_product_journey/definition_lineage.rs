@@ -8,6 +8,10 @@ pub use super::super::courtroom_support::outcome_kind;
 pub use super::super::product_query_support::fork_independent_product;
 pub use super::super::world::CourtroomWorld;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1: Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+)]
 pub fn independent_products_advance_and_retain_exact_definitions(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {

@@ -1,9 +1,3 @@
-use {
-    worth_server::facade::WorthServer, worth_server::facade::WorthServerBuildError,
-    worth_server::surfaces::WorthNativeSurface, worth_server::WorthServerConfig,
-    worth_server::WorthServerSurfaceFamily, worth_server::WorthServerSurfaceRegistryError,
-};
-
 #[test]
 fn duplicate_surface_family_registration_fails_typed() {
     let build_error = worth_server::facade::WorthServer::builder()

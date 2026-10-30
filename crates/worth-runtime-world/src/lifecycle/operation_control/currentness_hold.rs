@@ -73,6 +73,10 @@ impl RuntimeWorldOperationControlForTest {
 }
 
 impl ProductCurrentnessLatchForTest {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "certification-harness thread-spawn=1: Test operation control holds the real Product reference write lock with one bounded, joined actor to verify final-currentness contention and cancellation."
+    )]
     pub(crate) fn hold_reference_for_test(
         self: &Arc<Self>,
         cell: crate::branch::ProductBranchReferenceCell,

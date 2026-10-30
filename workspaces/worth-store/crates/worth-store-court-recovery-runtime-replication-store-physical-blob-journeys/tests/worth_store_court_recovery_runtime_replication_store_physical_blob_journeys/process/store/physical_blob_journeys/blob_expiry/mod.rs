@@ -1,40 +1,7 @@
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_expiry::*;
-use {std::fs, std::num::NonZeroU64, std::path::Path};
 
-use worth_proof::TransitionOutcome;
-use worth_signal::facade::TemporalDuration;
-use worth_store_blob_chunks::BlobChunkSize;
-use {
-    worth_store::physical_runtime::production::PhysicalCheckpointStep,
-    worth_store::physical_runtime::AdmittedBlobScope,
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestClaimDenial,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::BlobTerminalDisposition,
-    worth_store::physical_runtime::BlobTerminalFailure,
-    worth_store::physical_runtime::BlobTerminalLimits,
-    worth_store::physical_runtime::CompletedPhysicalCheckpoint,
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointHandle,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationOutcome,
-    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
-    worth_store::physical_runtime::PhysicalMutationRequest,
-    worth_store::physical_runtime::PhysicalWalReclamationObservation,
-    worth_store::physical_runtime::RecordAppendBatch,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-};
-use {
-    worth_store_physical_format::decode_blob_record,
-    worth_store_physical_format::BlobAbandonmentReasonV1,
-    worth_store_physical_format::BlobRecordV1,
-};
+use worth_store_physical_format::decode_blob_record;
 
 use {
     crate::blob_crash::recovery::recover_closed_store,

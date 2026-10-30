@@ -27,3 +27,21 @@ def inherited():
     environment = os.environ.copy()
     validate(environment)
     return environment
+
+
+def validate_command(command):
+    if not command:
+        return
+    executable = str(command[0]).replace('\\', '/').rsplit('/', 1)[-1].lower()
+    if executable in ('rustup', 'rustup.exe'):
+        raise LaneEnvironmentRefusal('qualification uses the checkout compiler; omit a rustup command override')
+    if executable not in ('cargo', 'cargo.exe'):
+        return
+    boundary = command.index('--') if '--' in command else len(command)
+    if any(value == '--config' or value.startswith('--config=') for value in command[1:boundary]):
+        raise LaneEnvironmentRefusal(
+            'qualification loads committed Cargo configuration from the checkout; omit --config overrides')
+    if command[1:2] and command[1].startswith('+'):
+        raise LaneEnvironmentRefusal('qualification uses the checkout compiler; omit the Cargo toolchain override')
+    if command[1:2] == ['rustc'] and boundary < len(command):
+        raise LaneEnvironmentRefusal('qualification uses committed compiler inputs; omit external rustc flags')

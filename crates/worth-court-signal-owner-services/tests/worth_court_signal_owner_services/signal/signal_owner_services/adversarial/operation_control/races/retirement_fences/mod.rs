@@ -1,9 +1,3 @@
-pub(crate) use worth_proof::TransitionOutcome;
-pub(crate) use {
-    worth_signal::facade::branch::SignalBranchRetirementDenial,
-    worth_signal::facade::branch::SignalBranchRetirementReason,
-};
-
 pub(crate) use crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld;
 pub(crate) use {
     crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::advance,

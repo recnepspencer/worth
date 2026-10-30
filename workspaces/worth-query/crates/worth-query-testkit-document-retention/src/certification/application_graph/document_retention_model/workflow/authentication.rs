@@ -57,11 +57,25 @@ impl CertificationAuthenticationClockSource {
 
     pub fn advance_for_test(&self, duration: Duration) {
         let additional = u64::try_from(duration.as_nanos()).expect("finite test clock advance");
-        self.offset_nanoseconds
-            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |previous| {
-                previous.checked_add(additional)
-            })
-            .expect("finite test clock offset");
+        {
+            let update_counter = &self.offset_nanoseconds;
+            let mut previous = update_counter.load(Ordering::SeqCst);
+            loop {
+                let Some(updated_value) = previous.checked_add(additional) else {
+                    break Err(previous);
+                };
+                match update_counter.compare_exchange_weak(
+                    previous,
+                    updated_value,
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => previous = reloaded_value,
+                }
+            }
+        }
+        .expect("finite test clock offset");
     }
 }
 

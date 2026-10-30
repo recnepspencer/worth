@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -13,6 +14,18 @@ from test_compiler_units import event as compiler_event, graph, unit
 
 
 class DocLaneTests(unittest.TestCase):
+    def test_documentation_checks_original_inputs_even_when_a_gate_normalized_its_environment(self):
+        runner = SimpleNamespace(environment={}, logs=[])
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)/'unused'
+            with patch.dict(os.environ, {'CARGO_INCREMENTAL': '1'}), \
+                 patch('doc_lane.collect') as discovery, patch('doc_lane.execute_documentation') as run:
+                with self.assertRaisesRegex(LaneEnvironmentRefusal, 'CARGO_INCREMENTAL'):
+                    execute(Path.cwd(), 'root', output, runner)
+            discovery.assert_not_called()
+            run.assert_not_called()
+            self.assertFalse(output.exists())
+
     def test_doc_only_gate_refuses_compiler_overrides_before_discovery_or_execution(self):
         runner = SimpleNamespace(environment={'RUSTUP_TOOLCHAIN': 'other-compiler'}, logs=[])
         with tempfile.TemporaryDirectory() as temporary:

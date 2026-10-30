@@ -1,5 +1,5 @@
 error[E0603]: module `merge` is private
- --> tests/ui/merge/conflict_classified_plan_private.rs:1:23
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/merge/conflict_classified_plan_private.rs:1:23
   |
 1 | use worth_relational::merge::data::ConflictClassifiedMergePlan;
   |                       ^^^^^  ---- module `data` is not publicly re-exported
@@ -7,7 +7,7 @@ error[E0603]: module `merge` is private
   |                       private module
   |
 note: the module `merge` is defined here
- --> src/lib.rs
+ --> $WORKSPACE/crates/worth-relational/src/lib.rs
   |
   | mod merge;
   | ^^^^^^^^^

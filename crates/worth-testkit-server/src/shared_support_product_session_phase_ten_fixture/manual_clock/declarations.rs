@@ -1,6 +1,6 @@
-pub use {std::sync::Mutex};
+pub use std::sync::Mutex;
 
-pub use {worth_server::WorthServerProductSessionClock};
+pub use worth_server::WorthServerProductSessionClock;
 
 #[derive(Debug)]
 pub struct ManualProductSessionClock {

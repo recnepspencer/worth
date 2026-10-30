@@ -1,6 +1,5 @@
 use {
-    worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path,
-    worth_foundational::boundary_evidence_api::lower_lane,
+    worth_foundational::boundary_evidence,
     worth_foundational::evaluate_boundary_evidence_primitive_legality,
     worth_foundational::foundational_boundary_evidence_category_definitions,
     worth_foundational::foundational_boundary_evidence_descriptive_role_definitions,
@@ -8,12 +7,6 @@ use {
     worth_foundational::foundational_boundary_evidence_freshness_posture_definitions,
     worth_foundational::foundational_boundary_evidence_locality_definitions,
     worth_foundational::foundational_responsibilities,
-    worth_foundational::FoundationalBoundaryEvidenceCategory,
-    worth_foundational::FoundationalBoundaryEvidenceDescriptiveRole,
-    worth_foundational::FoundationalBoundaryEvidenceExecutionPosture,
-    worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture,
-    worth_foundational::FoundationalBoundaryEvidenceLocality,
-    worth_foundational::FoundationalBoundaryEvidencePrimitiveLegalityDenial,
 };
 
 #[test]

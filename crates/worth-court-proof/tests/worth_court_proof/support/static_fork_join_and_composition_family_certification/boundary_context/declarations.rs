@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 pub(crate) use crate::shared_support as support;
 
-pub(crate) use crate::shared_support::compile_fail::run_compile_fail_bundle;
+pub(crate) use crate::compile_fail::harness::run_compile_fail_bundle;
 
 pub(crate) use crate::shared_support::composition_family;
 pub(crate) use {

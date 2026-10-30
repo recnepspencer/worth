@@ -2,7 +2,7 @@ use super::*;
 use crate::facade::durability::RelationalNativeCheckpointCaptureDenial as Denial;
 use std::num::NonZeroUsize;
 use worth_execution::{
-    CancellationSource, CancellationToken, ExecutionAllocationDenialKind,
+    CancellationSource, CancellationToken, ExecutionAllocationDenialClass,
     ExecutionAllocationPolicy as Policy, LeaseDenial, LeaseRequest, MemoryLimitDenial,
     MemoryLimitLevel,
 };
@@ -51,13 +51,13 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
         panic!("the encoded backing admission is the reached owner");
     };
     assert_eq!(
-        error.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            MemoryLimitDenial::Capacity {
+        error.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                 requested: quote,
                 admitted: 0,
                 level: MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+            })
         ))
     );
     assert_eq!(error.requested_payload_bytes(), Some(quote));
@@ -80,7 +80,12 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     else {
         panic!("caller cancellation must remain typed");
     };
-    assert_eq!(error.kind(), ExecutionAllocationDenialKind::Cancelled);
+    assert_eq!(
+        error.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::Cancelled
+        ))
+    );
     assert_eq!(error.requested_payload_bytes(), None);
     drop(stopped);
 

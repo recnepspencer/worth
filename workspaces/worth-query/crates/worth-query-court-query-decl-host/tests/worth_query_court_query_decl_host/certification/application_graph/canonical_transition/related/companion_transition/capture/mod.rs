@@ -45,14 +45,16 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
     let requested = cause.requested_payload_bytes().unwrap();
     assert!(requested > 0);
     assert_eq!(
-        cause.kind(),
-        worth_query_host::facade::runtime::ExecutionAllocationDenialKind::Lease(
-            worth_execution::LeaseDenial::MemoryExhausted(
-                worth_execution::MemoryLimitDenial::Capacity {
-                    requested,
-                    admitted: 0,
-                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-                }
+        cause.classify(),
+        worth_query_host::facade::runtime::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Admission(
+                worth_execution::LeaseDenial::MemoryExhausted(
+                    worth_execution::MemoryLimitDenial::Capacity {
+                        requested,
+                        admitted: 0,
+                        level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
+                    }
+                )
             )
         )
     );

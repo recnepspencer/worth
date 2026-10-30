@@ -1,5 +1,3 @@
-pub(crate) use worth_foundational::facade::FoundationalBoundaryEvidenceSupportTruthKind;
-
 pub(crate) use {
     crate::certification_suite::ordinary_context::certification_counter_assertions::assert_counter_exact,
     crate::certification_suite::ordinary_context::certification_counter_assertions::assert_counters_zero,

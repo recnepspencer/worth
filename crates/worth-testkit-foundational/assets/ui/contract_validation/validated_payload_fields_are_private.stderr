@@ -1,11 +1,11 @@
 error: cannot construct `ContractValidatedAspectValue` with struct literal syntax due to private fields
- --> tests/ui/contract_validation/validated_payload_fields_are_private.rs:4:19
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/contract_validation/validated_payload_fields_are_private.rs
   |
-4 |     let _worthd = ContractValidatedAspectValue {
+  |     let _worthd = ContractValidatedAspectValue {
   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-5 |         key: AspectKey::new("count").unwrap(),
+  |         key: AspectKey::new("count").unwrap(),
   |         ------------------------------------- private field
-6 |         contract_revision: AspectContractRevision(1),
+  |         contract_revision: AspectContractRevision(1),
   |         -------------------------------------------- private field
   |
   = note: ...and other private fields `contract`, `contract_identity` and `kind` that were not provided

@@ -1,30 +1,5 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::transitions::scoped_merge_canonical::*;
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::compare_canonical_basis,
-    worth_foundational::prepare_admitted_merge_scope_for_canonical_basis,
-    worth_foundational::prepare_canonical_comparison,
-    worth_foundational::prepare_merge_scope_for_canonical_basis,
-    worth_foundational::prepare_merge_verdict_for_canonical_basis,
-    worth_foundational::prepare_scoped_merge_denial_for_canonical_basis,
-    worth_foundational::prepare_scoped_merge_unavailable_for_canonical_basis,
-    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisLocus,
-    worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue,
-    worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis,
-    worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalizationRuleVersion,
-    worth_foundational::FoundationalAdmittedMergeScopeEvidence,
-    worth_foundational::FoundationalDeniedScopeLocus, worth_foundational::FoundationalMergeScope,
-    worth_foundational::FoundationalScopeAdmissionBasis,
-    worth_foundational::FoundationalScopedMergeDenialEvidence,
-    worth_foundational::FoundationalScopedMergeDenialKind,
-    worth_foundational::FoundationalScopedMergeUnavailablePosture,
-    worth_foundational::FoundationalScopedMergeUnavailableReason,
-    worth_foundational::FoundationalSelectedScopeLocus,
-    worth_foundational::FoundationalSelectedScopeNoOpCause,
-    worth_foundational::FoundationalSelectedScopeNoOpEvidence,
-    worth_foundational::FoundationalSkippedOutOfScopeEvidence, worth_foundational::InternedString,
-};
 
 use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
 use {

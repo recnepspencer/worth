@@ -1,6 +1,14 @@
-pub use {worth_foundational::facade::DiagnosticRichnessProfile};
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_server::WorthServer, worth_server::WorthServerBinaryDownloadExecutionInput, worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityExecutionInput, worth_server::WorthServerCompatibilityPreparedRequest, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerCompatibilityUploadExecutionInput, worth_server::WorthServerMultipartUpload};
+pub use worth_foundational::facade::DiagnosticRichnessProfile;
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_server::WorthServer, worth_server::WorthServerBinaryDownloadExecutionInput,
+    worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityExecutionInput,
+    worth_server::WorthServerCompatibilityPreparedRequest,
+    worth_server::WorthServerCompatibilityRequestInput,
+    worth_server::WorthServerCompatibilityUploadExecutionInput,
+    worth_server::WorthServerMultipartUpload,
+};
 
 pub fn prepared_request(
     server: &WorthServer,
@@ -61,7 +69,10 @@ pub fn compat_inspection_execution_input(
         .with_diagnostics_profile(diagnostics_profile)
         .build()
         .expect("phase ten inspect input should validate");
-    worth_server::WorthServerCompatibilityExecutionInput::new(prepared_request(server, input), operation_name)
+    worth_server::WorthServerCompatibilityExecutionInput::new(
+        prepared_request(server, input),
+        operation_name,
+    )
 }
 
 pub fn compat_upload_execution_input(

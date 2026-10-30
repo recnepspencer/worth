@@ -1,15 +1,9 @@
 //! Child execution of the process-kill plan; all parks use the existing Store gates.
 #[allow(unused_imports)]
 use crate::process_kill::child::*;
-use std::path::Path;
 use {
-    crate::durable_run::apply, crate::durable_run::open, crate::killed_child,
-    crate::process_kill::await_mutation_seam, crate::process_kill::child_wal_profile,
-    crate::process_kill::encode, crate::process_kill::script, crate::process_kill::Stop,
-    crate::process_kill::LOCATION_ENV, crate::process_kill::MARKERS_ENV,
-    crate::process_kill::ROLE_ENV, crate::workload, crate::workload::Step, std::path::PathBuf,
-    std::time::Instant, worth_execution::ExecutionRequest,
-    worth_store::physical_runtime::production::PhysicalCheckpointStep,
+    crate::process_kill::child_wal_profile, crate::process_kill::LOCATION_ENV,
+    crate::process_kill::MARKERS_ENV, crate::process_kill::ROLE_ENV,
 };
 
 #[test]

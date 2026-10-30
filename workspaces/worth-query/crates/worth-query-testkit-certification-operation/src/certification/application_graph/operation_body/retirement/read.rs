@@ -1,9 +1,6 @@
 //! Governed business-ID readback, independent of the retirement implementation.
 pub use super::{
-    super::{
-        query::{DocumentQueryParameters, DocumentQueryParametersBinding},
-        schema::*,
-    },
+    super::query::{DocumentQueryParameters, DocumentQueryParametersBinding},
     declaration::*,
 };
 pub use worth_query_host::facade::{

@@ -5,7 +5,7 @@ use {
     crate::phase_three_discovery::phase_three_support::synthetic_topology::publish_synthetic_nonempty_genesis,
 };
 use {
-    std::path::Path, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
     worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits,
     worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,
     worth_store_testkit_recovery_runtime::phase_three_support::initialize_store,
@@ -14,14 +14,6 @@ use {
     worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_checkpoint,
     worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis,
     worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_wal_tail,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
-    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
-    worth_store_recovery_runtime::PhysicalRecoveryLimits,
-    worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority,
-    worth_store_recovery_runtime::PhysicalRecoverySourceDenial,
-    worth_store_recovery_runtime::PhysicalRecoveryWalIntegrityObservationOutcome,
 };
 
 #[test]

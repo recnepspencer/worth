@@ -1,22 +1,6 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::profiles::phase2_adversarial::*;
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::admit_requested_foundational_profile_with_resolutions,
-    worth_foundational::compare_foundational_profiles,
-    worth_foundational::foundational_profile_progression_authority, worth_foundational::profiles,
-    worth_foundational::request_foundational_profile_set,
-    worth_foundational::AdmissionReadinessProfile, worth_foundational::CertificationPostureProfile,
-    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
-    worth_foundational::ExecutionObjectiveProfile,
-    worth_foundational::FoundationalProfileCompatibilityClass,
-    worth_foundational::FoundationalProfileFrontDoorConstructionDenial,
-    worth_foundational::FoundationalProfileFrontDoorFamily,
-    worth_foundational::FoundationalProfileResolutionLedger,
-    worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput,
-    worth_foundational::ObservationActivationProfile, worth_foundational::RetentionDeliveryProfile,
-    worth_foundational::SupportPostureProfile,
-};
+use {worth_foundational::compare_foundational_profiles, worth_foundational::profiles};
 
 #[test]
 fn objective_and_activation_form_an_orthogonal_three_by_two_matrix() {

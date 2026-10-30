@@ -43,17 +43,19 @@ pub struct WorthQueryPreparedCorrectionSource {
 }
 
 impl WorthQueryPreparedCorrectionSource {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(super) fn retain<
         Schema: ApplicationSchema,
         C: ApplicationCorrectionBinding<Schema>,
         Binding: ApplicationMutationBinding<Schema>,
     >(
-        target: &WorthQuerySelectedProductOperation<'_, Schema>,
+        checked: super::compatibility::CheckedCorrectionSource<'_, '_, '_, Schema, C, Binding>,
         phase: &WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
-        source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
-        ancestry: ProductBranchAncestorSelection,
         alternative_ancestry: Option<(
             ProductBranchAncestorSelection,
             ProductBranchAncestorSelection,
@@ -62,8 +64,6 @@ impl WorthQueryPreparedCorrectionSource {
         key: &WorthQueryCorrectionCommandKey,
         input: &ApplicationEncodedInput<Binding::InputBinding>,
         scope: Binding::ScopeBinding,
-        target_program: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation,
-        required_root: Option<crate::equality_type_id::EqualityTypeId>,
         workflow: Option<PreparedWorkflowCorrection>,
     ) -> Result<Self, WorthQueryCorrectionDerivationDenial>
     where
@@ -71,6 +71,7 @@ impl WorthQueryPreparedCorrectionSource {
             ApplicationMutationScopeResolution<Schema, Binding::PrincipalIdentity>,
     {
         use WorthQueryCorrectionDerivationDenial as Denial;
+        let (target, source, ancestry, target_program, required_root) = checked.into_parts();
         let binding = target
             .application()
             .installed_schema()
@@ -166,6 +167,10 @@ impl WorthQueryPreparedCorrectionSource {
     pub(crate) fn target_branch(&self) -> &BranchId {
         &self.target_branch
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(crate) fn is_action_binding<Binding: 'static>(&self) -> bool {
         self.action_binding == std::any::TypeId::of::<Binding>()
     }

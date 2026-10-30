@@ -1,20 +1,7 @@
 #[allow(unused_imports)]
 use crate::epoch_scope_foundational_lowering::*;
-use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
 
-use worth_proof::BasisPostureKind;
-use {
-    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisLocus,
-    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalIntegerWidth,
-    worth_foundational::InternedString,
-};
-use {
-    worth_store_physical_isolation::compare_physical_epoch_vectors_with_evidence,
-    worth_store_physical_isolation::EpochComparisonScope,
-    worth_store_physical_isolation::EpochRetryDecision,
-    worth_store_physical_isolation::PhysicalEpochDriftKind,
-    worth_store_physical_isolation::PhysicalEpochVector,
-};
+use worth_store_physical_isolation::compare_physical_epoch_vectors_with_evidence;
 use {
     worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference,
     worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,

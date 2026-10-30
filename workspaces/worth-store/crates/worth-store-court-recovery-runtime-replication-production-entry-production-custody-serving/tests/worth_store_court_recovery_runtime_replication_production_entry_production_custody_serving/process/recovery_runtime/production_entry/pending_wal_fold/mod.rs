@@ -1,26 +1,6 @@
 //! Genuine two-object post-NoRelease history folds into a selected tag-7
 //! Batch/Accumulator checkpoint, then survives a fresh C.8/Store reopen.
 
-use std::fs;
-
-use {
-    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
-    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
-    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
-};
-use {
-    worth_store_physical_format::DurablePhysicalRootManifest,
-    worth_store_physical_format::RecordArtifactFile,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::WorthStoreRecovery,
-};
-
 #[test]
 fn two_killed_v3_batches_fold_at_next_checkpoint_and_reopen() {
     let world = worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::first();
@@ -190,9 +170,7 @@ fn post_seal_intermediate_history_root_substitution_denies_serving() {
     assert_eq!(std::fs::read(&selected_path).unwrap(), selected_before);
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::open_serving_with_seal_expect_mismatch(world.root(), seal);
 }
-#[cfg(all())]
 #[path = "directory_media/mod.rs"]
 pub(crate) mod directory_media;
-#[cfg(all())]
 #[path = "memory_budget/mod.rs"]
 pub(crate) mod memory_budget;

@@ -11,7 +11,7 @@ pub(crate) fn dispatch(role: &str, root: &std::path::Path) {
     match role {
         "writer" => crate::physical_record_journeys::child_process::record_round_trip::writer(root),
         "reader" => crate::physical_record_journeys::child_process::record_round_trip::reader(root),
-        "segment_reader" => worth_store_testkit_store::physical_record_journeys::child_process::segment_reader(root),
+        "segment_reader" => crate::physical_record_journeys::child_process::segment_read::run(root),
         "extent_reader" => {
             crate::physical_record_journeys::extent_child::extent_reader(root, &std::env::var(LOCATOR_ENV).unwrap())
         }

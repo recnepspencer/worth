@@ -1,19 +1,10 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::transitions::branch_reference::*;
-use {serde::Deserialize, serde::Serialize};
 use {
-    worth_foundational::FoundationalBranchComparisonBasis,
-    worth_foundational::FoundationalBranchForkBasis, worth_foundational::FoundationalBranchId,
-    worth_foundational::FoundationalBranchReferenceGeneration,
-    worth_foundational::FoundationalBranchReferenceGenerationAdvanceDenial,
-    worth_foundational::FoundationalBranchReferenceMismatchAxis,
-    worth_foundational::FoundationalBranchReferenceMovement,
-    worth_foundational::FoundationalBranchReferenceMovementKind,
+    worth_foundational::FoundationalBranchId,
     worth_foundational::FoundationalBranchReferenceObservation,
     worth_foundational::FoundationalBranchTarget,
-    worth_foundational::FoundationalBranchTargetBasis,
     worth_foundational::FoundationalBranchTargetEncoding,
-    worth_foundational::FoundationalBranchTargetEncodingConstructionDenial,
 };
 
 #[test]

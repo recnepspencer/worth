@@ -1,10 +1,4 @@
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::foundational_merge, worth_foundational::FoundationalBranchBasisDriftKind,
-    worth_foundational::FoundationalMergeAdmissionDenial,
-    worth_foundational::FoundationalMergeConstructionDenial,
-    worth_foundational::FoundationalMergeIntent, worth_foundational::FoundationalMergeVerdictKind,
-};
+use worth_foundational::foundational_merge;
 
 use {
     crate::certification::ordinary_context::transitions::fixtures::branch::branch_id,

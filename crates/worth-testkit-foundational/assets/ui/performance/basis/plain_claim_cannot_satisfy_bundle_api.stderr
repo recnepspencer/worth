@@ -1,19 +1,19 @@
 error[E0308]: mismatched types
-  --> tests/ui/performance/basis/plain_claim_cannot_satisfy_bundle_api.rs:32:20
-   |
-32 |     require_bundle(&claim);
-   |     -------------- ^^^^^^ expected `&FoundationalPerformanceBundle<...>`, found `&...`
-   |     |
-   |     arguments to this function are incorrect
-   |
-   = note: expected reference `&FoundationalPerformanceBundle<FoundationalAuthoritativePerformanceClaim>`
-              found reference `&FoundationalAuthoritativePerformanceClaim`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/basis/plain_claim_cannot_satisfy_bundle_api.rs
+  |
+  |     require_bundle(&claim);
+  |     -------------- ^^^^^^ expected `&FoundationalPerformanceBundle<...>`, found `&...`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected reference `&FoundationalPerformanceBundle<FoundationalAuthoritativePerformanceClaim>`
+             found reference `&FoundationalAuthoritativePerformanceClaim`
 note: function defined here
-  --> tests/ui/performance/basis/plain_claim_cannot_satisfy_bundle_api.rs:9:4
-   |
- 9 |   fn require_bundle(
-   |      ^^^^^^^^^^^^^^
-10 | /     _bundle: &worth_foundational::FoundationalPerformanceBundle<
-11 | |         worth_foundational::FoundationalAuthoritativePerformanceClaim,
-12 | |     >,
-   | |_____-
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/basis/plain_claim_cannot_satisfy_bundle_api.rs
+  |
+  |   fn require_bundle(
+  |      ^^^^^^^^^^^^^^
+  | /     _bundle: &worth_foundational::FoundationalPerformanceBundle<
+  | |         worth_foundational::FoundationalAuthoritativePerformanceClaim,
+  | |     >,
+  | |_____-

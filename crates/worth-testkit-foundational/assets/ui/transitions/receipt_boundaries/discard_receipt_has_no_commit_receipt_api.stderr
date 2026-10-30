@@ -1,5 +1,5 @@
 error[E0599]: no method named `commit_id` found for struct `FoundationalBranchDiscardReceipt` in the current scope
-  --> tests/ui/transitions/receipt_boundaries/discard_receipt_has_no_commit_receipt_api.rs:24:21
-   |
-24 |     let _ = discard.commit_id();
-   |                     ^^^^^^^^^ method not found in `FoundationalBranchDiscardReceipt`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/receipt_boundaries/discard_receipt_has_no_commit_receipt_api.rs
+  |
+  |     let _ = discard.commit_id();
+  |                     ^^^^^^^^^ method not found in `FoundationalBranchDiscardReceipt`

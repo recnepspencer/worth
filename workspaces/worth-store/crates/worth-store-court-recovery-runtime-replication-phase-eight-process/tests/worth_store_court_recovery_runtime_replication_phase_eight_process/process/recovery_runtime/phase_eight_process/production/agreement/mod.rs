@@ -1,5 +1,3 @@
-use crate::phase_eight_process::production::harness::ProcessWorld;
-
 #[test]
 fn production_and_observer_agree_across_real_process_boundary() {
     let world = crate::phase_eight_process::production::harness::ProcessWorld::start(

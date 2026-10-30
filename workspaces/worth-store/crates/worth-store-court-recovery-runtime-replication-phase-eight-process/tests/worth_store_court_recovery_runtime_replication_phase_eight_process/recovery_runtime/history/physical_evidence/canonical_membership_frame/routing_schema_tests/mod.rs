@@ -1,7 +1,6 @@
 #[allow(unused_imports)] use crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::routing_schema_tests::*;
-use {crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::parse_placement, crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::Placement, crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity};
-    use {crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::crc32c, crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::decode_frame, crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::FRAME_BYTES};
-    use {worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::ExtentArenaId, worth_store_physical_format::ExtentArenaRange, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalExtentId, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::PhysicalRootRoutingBlock, worth_store_physical_format::SelectedRecordContentClass, worth_store_physical_format::SelectedRecordRouteMetadata};
+use {crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::parse_placement, crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity};
+    use crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::decode_frame;
 
 #[test]
 fn selected_routing_leaf_preserves_exact_extent_placement() {

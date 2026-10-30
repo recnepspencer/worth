@@ -9,7 +9,7 @@ pub(crate) use {
 };
 pub(crate) use {
     worth_execution::CancellationSource, worth_execution::CancellationToken,
-    worth_execution::ExecutionAllocationDenialKind as Kind,
+    worth_execution::ExecutionAllocationDenialClass as Kind,
     worth_execution::ExecutionAllocationPolicy as Policy, worth_execution::ExecutionArrayBuilder,
     worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig,
     worth_execution::ExecutionResourceLease, worth_execution::LeaseDenial,

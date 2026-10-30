@@ -11,7 +11,6 @@ pub fn dispatch_child() {
     match role.as_str() {
         "writer" => record_round_trip::writer(&root),
         "reader" => record_round_trip::reader(&root),
-        "segment_reader" => super::segment_reader(&root),
         "extent_reader" => extent_child::extent_reader(&root, &std::env::var(LOCATOR_ENV).unwrap()),
         "allocation_writer" => {
             extent_child::allocation_writer(&root, &std::env::var(LOCATOR_ENV).unwrap())

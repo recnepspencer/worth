@@ -4,10 +4,13 @@
 
 pub(crate) use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, std::num::NonZeroU16, std::num::NonZeroU64, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request, crate::production_entry::certified_release_serving::certificate_roster_scale::world};
 
-pub(crate) use {worth_proof::AdmittedBlobReleaseProof};
-pub(crate) use {worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::PhysicalRetirementDenial};
-pub(crate) use {worth_store_blob_chunks::BlobChunkSize};
-pub(crate) use {worth_store_physical_format::MAX_CHECKPOINT_CERTIFICATE_RECORDS};
+pub(crate) use worth_proof::AdmittedBlobReleaseProof;
+pub(crate) use worth_store_blob_chunks::BlobChunkSize;
+pub(crate) use worth_store_physical_format::MAX_CHECKPOINT_CERTIFICATE_RECORDS;
+pub(crate) use {
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::PhysicalRetirementDenial,
+};
 
 // The production ingest declaration admits chunks from 64 KiB upward.
 pub(crate) const CHUNK_BYTES: usize = 64 << 10;
@@ -31,7 +34,9 @@ pub(crate) fn checkpointed_partial_release_world() -> PhysicalResidencyStoreWorl
     .expect("initialize genuine compact-routing release world");
     let scope = admitted_blob_scope("c11.recovery.ledger.partial-release");
     let blobs = world.serving().blobs().expect("blob owner");
-    let read = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(SELECTED_RECORD_LIMIT).unwrap());
+    let read = worth_store::physical_runtime::BlobReadLimits::new(
+        std::num::NonZeroU64::new(SELECTED_RECORD_LIMIT).unwrap(),
+    );
     let object = blobs.issue_object_id(read).expect("one object identity");
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         object,
@@ -39,7 +44,8 @@ pub(crate) fn checkpointed_partial_release_world() -> PhysicalResidencyStoreWorl
         (CHUNKS * CHUNK_BYTES) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -53,9 +59,11 @@ pub(crate) fn checkpointed_partial_release_world() -> PhysicalResidencyStoreWorl
             .expect("genuine distinct payload chunk");
     }
     let published = match ingest.finish() {
-        Ok(published) | Err(worth_store::physical_runtime::BlobIngestFailure::PublishedIndexPending { published, .. }) => {
-            published
-        }
+        Ok(published)
+        | Err(worth_store::physical_runtime::BlobIngestFailure::PublishedIndexPending {
+            published,
+            ..
+        }) => published,
         Err(failure) => panic!("multi-chunk publication failed: {failure:?}"),
     };
     let marker = world
@@ -97,7 +105,8 @@ pub(crate) fn checkpointed_partial_release_world() -> PhysicalResidencyStoreWorl
         let request = worth_store::physical_runtime::BlobReclaimRequest::released(
             proof,
             world.placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
             worth_store::physical_runtime::BlobReclaimLimits::new(
                 std::num::NonZeroU64::new(SELECTED_RECORD_LIMIT).unwrap(),
                 std::num::NonZeroU64::new(32 << 20).unwrap(),
@@ -113,10 +122,15 @@ pub(crate) fn checkpointed_partial_release_world() -> PhysicalResidencyStoreWorl
             .unwrap_or_else(|failure| panic!("partial V3 admission {ordinal}: {failure:?}"))
             .wait()
             .unwrap_or_else(|failure| panic!("partial V3 completion {ordinal}: {failure:?}"));
-        assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+        assert_eq!(
+            receipt.disposition(),
+            worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+        );
         assert_eq!(
             receipt.retirement(),
-            worth_store::physical_runtime::BlobReclaimRetirement::Pending(worth_store::physical_runtime::PhysicalRetirementDenial::Waiting)
+            worth_store::physical_runtime::BlobReclaimRetirement::Pending(
+                worth_store::physical_runtime::PhysicalRetirementDenial::Waiting
+            )
         );
         assert_eq!(
             std::fs::read(&checkpoint_path).unwrap_err().kind(),
@@ -157,7 +171,8 @@ pub(crate) fn checkpointed_partial_release_world() -> PhysicalResidencyStoreWorl
 pub(crate) fn checkpoint(world: &PhysicalResidencyStoreWorld, key: u8) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(120_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -165,7 +180,10 @@ pub(crate) fn checkpoint(world: &PhysicalResidencyStoreWorld, key: u8) {
         panic!("roster fixture checkpoint {key:#x} must admit")
     };
     assert!(
-        matches!(handle.wait(), worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            handle.wait(),
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "roster fixture checkpoint {key:#x} must complete"
     );
 }

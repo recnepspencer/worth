@@ -1,9 +1,4 @@
-use worth_store_physical_format::PhysicalRecordFormatDeclaration;
-use worth_store_physical_integrity::{
-    validate_physical_work_obligation, PhysicalArtifactScope, PhysicalBlastRadius,
-    PhysicalByteRange, PhysicalDamageCause, PhysicalFormatField,
-    PhysicalWorkObligationIntegrityValidation, UntrustedPhysicalArtifact,
-};
+use worth_store_physical_integrity::validate_physical_work_obligation;
 
 use crate::support::physical_work_obligation_validation::{
     assert_damage, field_range, identity, reseal, scope, store,

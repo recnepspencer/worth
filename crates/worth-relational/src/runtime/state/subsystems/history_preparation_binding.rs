@@ -120,10 +120,39 @@ impl RelationalPreparationHistory {
 
     pub(crate) fn reserve_canonical_publication_route(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
         root: Arc<RelationalBranchRoot>,
-    ) -> Result<super::PreparedCanonicalPublicationRoute, &'static str> {
-        RelationalCanonicalPublicationRoutes::reserve(&self.canonical_routes, envelope, root)
+    ) -> Result<
+        super::PreparedCanonicalPublicationRoute,
+        crate::transactions::data::TransactionCommitError,
+    > {
+        let resident = envelope.get().ok_or_else(|| {
+            crate::transactions::data::TransactionCommitError::publication(
+                crate::publication::data::PublicationError::new(
+                    crate::publication::bundle::PublicationStage::BundleAssembly,
+                    "prepared publication envelope is not resident",
+                ),
+            )
+        })?;
+        let generation = self
+            .canonical_routes
+            .prepare_authored_generation(execution, &resident)
+            .map_err(super::canonical_publication_routes::authored_write_commit_denial)?;
+        RelationalCanonicalPublicationRoutes::reserve(
+            &self.canonical_routes,
+            envelope,
+            root,
+            generation,
+        )
+        .map_err(|detail| {
+            crate::transactions::data::TransactionCommitError::publication(
+                crate::publication::data::PublicationError::new(
+                    crate::publication::bundle::PublicationStage::BundleAssembly,
+                    detail,
+                ),
+            )
+        })
     }
 
     pub(crate) fn record_transaction_validation_attempt(&self, branch: &BranchId) {

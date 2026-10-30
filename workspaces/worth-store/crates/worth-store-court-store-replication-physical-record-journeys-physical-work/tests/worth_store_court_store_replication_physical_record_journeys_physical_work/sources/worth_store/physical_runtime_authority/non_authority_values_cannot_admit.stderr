@@ -1,0 +1,155 @@
+error[E0308]: mismatched types
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:14:41
+   |
+14 |     let _runtime = PhysicalStore::admit(identity);
+   |                    -------------------- ^^^^^^^^ expected `PhysicalRuntimeAdmission`, found `RuntimeIdentity`
+   |                    |
+   |                    arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store/src/physical_runtime/admission.rs
+   |
+   |     pub fn admit(
+   |            ^^^^^
+
+error[E0308]: mismatched types
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:18:41
+   |
+18 |     let _runtime = PhysicalStore::admit(observation);
+   |                    -------------------- ^^^^^^^^^^^ expected `PhysicalRuntimeAdmission`, found `ObservationHandle`
+   |                    |
+   |                    arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store/src/physical_runtime/admission.rs
+   |
+   |     pub fn admit(
+   |            ^^^^^
+
+error[E0308]: mismatched types
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:22:41
+   |
+22 |     let _runtime = PhysicalStore::admit(diagnostics);
+   |                    -------------------- ^^^^^^^^^^^ expected `PhysicalRuntimeAdmission`, found `ProcessRuntimeCounterSnapshot`
+   |                    |
+   |                    arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store/src/physical_runtime/admission.rs
+   |
+   |     pub fn admit(
+   |            ^^^^^
+
+error[E0308]: mismatched types
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:26:41
+   |
+26 |     let _runtime = PhysicalStore::admit(model);
+   |                    -------------------- ^^^^^ expected `PhysicalRuntimeAdmission`, found `InMemoryPhysicalFormatModel`
+   |                    |
+   |                    arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store/src/physical_runtime/admission.rs
+   |
+   |     pub fn admit(
+   |            ^^^^^
+
+error[E0308]: mismatched types
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:30:41
+   |
+30 |     let _runtime = PhysicalStore::admit(replay);
+   |                    -------------------- ^^^^^^ expected `PhysicalRuntimeAdmission`, found `InMemoryPhysicalFormatReplayArtifact`
+   |                    |
+   |                    arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store/src/physical_runtime/admission.rs
+   |
+   |     pub fn admit(
+   |            ^^^^^
+
+error[E0308]: mismatched types
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:34:41
+   |
+34 |     let _runtime = PhysicalStore::admit(layout);
+   |                    -------------------- ^^^^^^ expected `PhysicalRuntimeAdmission`, found `PersistedPhysicalLayout`
+   |                    |
+   |                    arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store/src/physical_runtime/admission.rs
+   |
+   |     pub fn admit(
+   |            ^^^^^
+
+error[E0599]: no method named `initialize_record_store` found for struct `InMemoryPhysicalFormatModel` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:38:26
+   |
+38 |     let _serving = model.initialize_record_store(request);
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `InMemoryPhysicalFormatModel`
+
+error[E0599]: no method named `initialize_record_store` found for struct `InMemoryPhysicalFormatReplayArtifact` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:45:27
+   |
+45 |     let _serving = replay.initialize_record_store(request);
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `InMemoryPhysicalFormatReplayArtifact`
+
+error[E0599]: no method named `initialize_record_store` found for struct `PersistedPhysicalLayout` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:49:27
+   |
+49 |     let _serving = layout.initialize_record_store(request);
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `PersistedPhysicalLayout`
+
+error[E0599]: no method named `initialize_record_store` found for struct `QualifiedFilesystemMedia` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:53:26
+   |
+53 |     let _serving = media.initialize_record_store(request);
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `QualifiedFilesystemMedia`
+
+error[E0599]: no method named `initialize_record_store` found for struct `PhysicalBinaryEncodingWitness` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:60:28
+   |
+60 |     let _serving = witness.initialize_record_store(request);
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `PhysicalBinaryEncodingWitness`
+
+error[E0599]: no method named `initialize_record_store` found for struct `CanonicalDigestId` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:64:27
+   |
+64 |     let _serving = digest.initialize_record_store(request);
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `CanonicalDigestId`
+
+error[E0599]: no method named `initialize_record_store` found for struct `FoundationalCommitReceiptArtifact` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:71:29
+   |
+71 |     let _serving = artifact.initialize_record_store(request);
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `FoundationalCommitReceiptArtifact`
+
+error[E0599]: no method named `initialize_record_store` found for struct `StableStoreIdentity` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:75:29
+   |
+75 |     let _serving = identity.initialize_record_store(request);
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `StableStoreIdentity`
+
+error[E0599]: no method named `record_id` found for struct `ExternalPhysicalRecordLocator` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:79:13
+   |
+79 |     locator.record_id()
+   |             ^^^^^^^^^ method not found in `ExternalPhysicalRecordLocator`
+
+error[E0599]: no method named `initialize_record_store` found for struct `PhysicalRecordPublicationSummary` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:86:28
+   |
+86 |     let _serving = summary.initialize_record_store(request);
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `PhysicalRecordPublicationSummary`
+
+error[E0599]: no method named `initialize_record_store` found for struct `FoundationalCounterBackedPerformanceReceipt<Claim>` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:93:28
+   |
+93 |     let _serving = receipt.initialize_record_store(request);
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `FoundationalCounterBackedPerformanceReceipt<FoundationalAuthoritativePerformanceClaim>`
+
+error[E0599]: no method named `publish_current_root` found for struct `FramePortCounterObserver` in the current scope
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/non_authority_values_cannot_admit.rs:97:14
+   |
+97 |     observer.publish_current_root();
+   |              ^^^^^^^^^^^^^^^^^^^^ method not found in `FramePortCounterObserver`

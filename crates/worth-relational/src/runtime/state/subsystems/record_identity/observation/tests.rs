@@ -104,7 +104,7 @@ fn recording_interruption_retains_its_original_cause_instead_of_certifying_a_pre
     );
     assert!(matches!(observer.report(SystemAllocation),
         Err(RecordReservationObservationDenial::Allocation(ref cause))
-            if cause.kind() == worth_execution::ExecutionAllocationDenialKind::Cancelled));
+            if cause.classify() == worth_execution::ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled))));
 }
 #[test]
 fn bounded_observation_and_sealed_reports_hold_exactly_their_payload_charge() {

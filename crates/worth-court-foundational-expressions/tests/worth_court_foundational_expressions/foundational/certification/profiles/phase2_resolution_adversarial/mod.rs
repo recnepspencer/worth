@@ -1,23 +1,10 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::profiles::phase2_resolution_adversarial::*;
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::admit_requested_foundational_profile_with_resolutions,
     worth_foundational::foundational_profile_progression_authority,
     worth_foundational::materialize_admitted_foundational_profile_with_resolutions,
     worth_foundational::request_foundational_profile_set,
-    worth_foundational::AdmissionReadinessProfile, worth_foundational::CertificationPostureProfile,
-    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
-    worth_foundational::ExecutionObjectiveProfile,
-    worth_foundational::FoundationalProfileProgressionDenial,
-    worth_foundational::FoundationalProfileResolutionFamily,
-    worth_foundational::FoundationalProfileResolutionLedger,
-    worth_foundational::FoundationalProfileResolutionLedgerDenial,
-    worth_foundational::FoundationalProfileResolutionRecord,
-    worth_foundational::FoundationalProfileResolutionRelation,
-    worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput,
-    worth_foundational::ObservationActivationProfile, worth_foundational::RetentionDeliveryProfile,
-    worth_foundational::SupportPostureProfile,
 };
 
 #[test]

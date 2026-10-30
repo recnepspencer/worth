@@ -53,7 +53,7 @@ pub(crate) fn compile_fail_fixture_root() -> std::path::PathBuf {
 }
 
 pub(crate) fn canonicalization_test_root() -> std::path::PathBuf {
-    Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization"))
+    Path::new("tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization")
         .canonicalize()
         .expect("canonicalization court test root exists")
 }

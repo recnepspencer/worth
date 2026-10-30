@@ -344,20 +344,20 @@ impl UiDeclarationArtifact {
             UiDeclaredMeasurementPolicyPosture::new(mode, modifier, basis_source, None, vec![])
         });
         let measurement_policy = measurement_policy.map(|mut policy| {
-            if policy.mode().is_none() {
-                if let Some(mode) = mode {
-                    policy = policy.with_mode(mode);
-                }
+            if policy.mode().is_none()
+                && let Some(mode) = mode
+            {
+                policy = policy.with_mode(mode);
             }
-            if policy.constraint_modifier().is_none() {
-                if let Some(modifier) = modifier {
-                    policy = policy.with_constraint_modifier(modifier);
-                }
+            if policy.constraint_modifier().is_none()
+                && let Some(modifier) = modifier
+            {
+                policy = policy.with_constraint_modifier(modifier);
             }
-            if policy.basis_source().is_none() {
-                if let Some(basis_source) = basis_source {
-                    policy = policy.with_basis_source(basis_source);
-                }
+            if policy.basis_source().is_none()
+                && let Some(basis_source) = basis_source
+            {
+                policy = policy.with_basis_source(basis_source);
             }
             policy
         });

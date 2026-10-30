@@ -11,6 +11,10 @@ pub use {
     worth_store::physical_runtime::BlobReclaimRequest,
 };
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Parks a recovery writer at the descriptor WAL seam for the crash fixture."
+)]
 pub fn park_at_descriptor_wal(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
     request: BlobReclaimRequest,

@@ -1,13 +1,4 @@
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::profiles, worth_foundational::AdmissionReadinessProfile,
-    worth_foundational::CertificationPostureProfile,
-    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
-    worth_foundational::FoundationalDescriptiveSurface,
-    worth_foundational::FoundationalProfileNarrowingKind,
-    worth_foundational::FoundationalProfileNarrowingRecord,
-    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
-};
+use worth_foundational::profiles;
 
 #[test]
 fn profile_front_doors_expose_compose_progress_attach_materialize_and_strengthen() {

@@ -1,7 +1,7 @@
 pub(crate) use std::any::type_name;
 pub(crate) use {
-    crate::shared_support::compile_fail::bundle::CompileFailBundle,
-    crate::shared_support::compile_fail::bundle::CompileFailCase,
+    crate::compile_fail::harness::bundle::CompileFailBundle,
+    crate::compile_fail::harness::bundle::CompileFailCase,
 };
 pub(crate) use {
     crate::shared_support::proof_shapes::digest::BasisDigest,
@@ -28,20 +28,20 @@ pub(crate) use {
 
 pub(crate) fn compile_fail_bundle() -> CompileFailBundle {
     let cases = vec![
-        crate::shared_support::compile_fail::bundle::CompileFailCase::new(
+        crate::compile_fail::harness::bundle::CompileFailCase::new(
             "phase_boundaries",
-            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_artifact_cannot_satisfy_validated_api.rs"),
+            "tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_artifact_cannot_satisfy_validated_api.rs",
         ),
-        crate::shared_support::compile_fail::bundle::CompileFailCase::new(
+        crate::compile_fail::harness::bundle::CompileFailCase::new(
             "proven_collection_boundaries",
-            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs"),
+            "tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs",
         ),
-        crate::shared_support::compile_fail::bundle::CompileFailCase::new(
+        crate::compile_fail::harness::bundle::CompileFailCase::new(
             "fixed_shape_boundaries",
-            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs"),
+            "tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs",
         ),
     ];
-    crate::shared_support::compile_fail::bundle::CompileFailBundle::new(
+    crate::compile_fail::harness::bundle::CompileFailBundle::new(
         "core_artifact_and_proof_substrate",
         cases,
     )

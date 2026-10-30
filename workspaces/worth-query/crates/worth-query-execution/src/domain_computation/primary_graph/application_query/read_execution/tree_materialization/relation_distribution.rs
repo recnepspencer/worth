@@ -26,6 +26,9 @@ pub(super) fn distribute_relation_rows(
     let mut predicate_sources = predicate_sources.into_iter();
     for ((parent, count), predicate_count) in parents.iter_mut().zip(counts).zip(predicate_counts) {
         work.checkpoint(relation.result_path())?;
+        work.material_slots::<WorthQueryApplicationProjectionNode>(count)?;
+        work.material_slots::<worth_relational::facade::identity::EntityId>(predicate_count)?;
+        work.material_text(relation.slot_type())?;
         let mut rows = allocate_result_vector::<WorthQueryApplicationProjectionNode>(
             count,
             relation.result_path(),

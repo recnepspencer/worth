@@ -224,6 +224,7 @@ impl WorthQueryExecutionInstallationAuthority {
             recovered_checkpoint_restore_work,
             mutation_handlers: Default::default(),
             resources: Default::default(),
+            managed_indexes: Default::default(),
             program_activation_seed: None,
             program_activation: None,
             invariant_installation_receipt,
@@ -244,7 +245,7 @@ pub(super) fn map_checkpoint_recovery_stop(
         ),
         RelationalRecoveryStop::Allocation(cause) => primary_graph_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::NativeAllocation {
-                kind: cause.kind(),
+                kind: cause.classify(),
                 requested_payload_bytes: cause.requested_payload_bytes(),
             },
             "native checkpoint recovery allocation refused",
@@ -327,7 +328,7 @@ mod tests {
     #[test]
     fn checkpoint_recovery_allocation_keeps_physical_kind_and_checked_quote() {
         use worth_execution::{
-            ExecutionAllocationDenialKind as AllocationKind, ExecutionAllocationPolicy,
+            ExecutionAllocationDenialClass as AllocationKind, ExecutionAllocationPolicy,
             ExecutionByteBuffer,
         };
         use worth_relational::facade::durability::RelationalRecoveryStop;
@@ -344,8 +345,20 @@ mod tests {
                 .seal()
                 .unwrap_err();
         for (cause, kind, quote) in [
-            (layout, AllocationKind::Layout, None),
-            (incomplete, AllocationKind::IncompleteSeal, Some(17)),
+            (
+                layout,
+                AllocationKind::Physical(
+                    worth_execution::ExecutionPhysicalAllocationDenialKind::Layout,
+                ),
+                None,
+            ),
+            (
+                incomplete,
+                AllocationKind::Physical(
+                    worth_execution::ExecutionPhysicalAllocationDenialKind::IncompleteSeal,
+                ),
+                Some(17),
+            ),
         ] {
             assert_eq!(
                 map_checkpoint_recovery_stop(RelationalRecoveryStop::Allocation(cause)).kind(),

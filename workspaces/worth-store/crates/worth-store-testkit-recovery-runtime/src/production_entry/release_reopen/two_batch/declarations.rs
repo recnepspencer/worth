@@ -106,6 +106,10 @@ pub fn run(carryforward: bool) {
     recover(root);
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Provides the fixture stack for production recovery of the two-batch world."
+)]
 pub fn recover(root: std::path::PathBuf) {
     let worker = std::thread::Builder::new()
         .name("two-release-c8-recovery".to_owned())

@@ -18,6 +18,10 @@ pub fn assert_stale(
     );
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1: Fixture-owned independent request actors and watchdogs expose native publication races; computation remains under installed runtime authority."
+)]
 pub fn stale_owner(
     host: &Host,
     competing_days: u64,

@@ -5,23 +5,12 @@
 
 #[allow(unused_imports)]
 use crate::production_entry::ordered_journals::two_journals::*;
-use {sha2::Digest, sha2::Sha256};
 use {
-    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
-    worth_store::physical_runtime::OrderedJournal,
-    worth_store::physical_runtime::OrderedJournalName,
-    worth_store::physical_runtime::OrderedJournalNameDenial,
-    worth_store::physical_runtime::OrderedJournalPublication,
-    worth_store::physical_runtime::OrderedJournalPublicationFailure,
-    worth_store::physical_runtime::OrderedJournalPublished,
-    worth_store::physical_runtime::OrderedJournalResolution,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
     worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS,
     worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS,
 };
 
 use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
-use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
 
 #[test]
 fn two_journals_keep_independent_sequences_reads_and_resolutions() {

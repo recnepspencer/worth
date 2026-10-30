@@ -20,8 +20,9 @@ def retain(result, repository, workspace, output):
 
 
 def execute(repository, workspace, output, runner, profile='dev', engine=None):
+    original_environment = inherited()
     environment = getattr(runner, 'environment', None)
-    validate_environment(inherited() if environment is None else environment)
+    validate_environment(original_environment if environment is None else environment)
     repository, output = Path(repository).resolve(), Path(output).resolve()
     manifest = repository / WORKSPACES[workspace]
     configuration = json.loads(Path(__file__).with_name('budgets.json').read_text())

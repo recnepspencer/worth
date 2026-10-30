@@ -126,7 +126,7 @@ impl WorthQueryProductUnpublishedRecoveryReleaseFailure {
     pub fn into_owner_cleanup(
         self,
     ) -> Option<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup>
-    {
+{
         match self {
             Self::Recovery(_) => None,
             Self::OwnerCleanup(failure) => Some(failure.into_cleanup()),

@@ -1,17 +1,4 @@
 use tempfile::tempdir;
-use worth_proof::TransitionOutcome;
-use worth_store_physical_backend::MediaFaultDirective;
-use {
-    worth_store::physical_runtime::PhysicalExecutorCommand,
-    worth_store::physical_runtime::PhysicalStoreCloseOutcome,
-    worth_store::physical_runtime::PhysicalWorkCapacity,
-    worth_store::physical_runtime::PhysicalWorkEffectFate,
-    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
-    worth_store::physical_runtime::PhysicalWorkRecoveryDisposition,
-    worth_store::physical_runtime::PhysicalWorkRetryScheduleOutcome,
-    worth_store::physical_runtime::PhysicalWorkSchedulerPosture,
-    worth_store::physical_runtime::PhysicalWorkSettlementEvidence,
-};
 use {
     worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write,
     worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault,
@@ -20,11 +7,6 @@ use {
     worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::secure_demand,
     worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::write_demand,
     worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt,
-};
-
-pub(crate) use {
-    worth_store_testkit_store::physical_record_journeys::physical_work::failure::recovery::crash_reopener,
-    worth_store_testkit_store::physical_record_journeys::physical_work::failure::recovery::crash_writer,
 };
 
 #[test]

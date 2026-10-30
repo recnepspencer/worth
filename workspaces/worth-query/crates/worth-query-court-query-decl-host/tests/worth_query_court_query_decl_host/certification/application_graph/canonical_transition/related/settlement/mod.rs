@@ -46,13 +46,15 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
     let requested = cause.requested_payload_bytes().unwrap();
     assert!(requested > 0);
     assert_eq!(
-        cause.kind(),
-        ExecutionAllocationDenialKind::Lease(worth_execution::LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial::Capacity {
-                requested,
-                admitted: 0,
-                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
-            }
+        cause.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            worth_execution::LeaseDenial::MemoryExhausted(
+                worth_execution::MemoryLimitDenial::Capacity {
+                    requested,
+                    admitted: 0,
+                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+                }
+            )
         ))
     );
     let repaired = worth_query_host::facade::application_contribution::with_bootstrap_advancement(

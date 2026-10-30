@@ -1,15 +1,10 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::transitions::phase5_basis::profile_evidence_floor::*;
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::attach_proof_bearing_profiled_commit_receipt,
     worth_foundational::plan_foundational_profile_materialization_with_elision,
     worth_foundational::request_foundational_profile_set,
-    worth_foundational::AdmissionReadinessProfile, worth_foundational::CertificationPostureProfile,
-    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
-    worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput,
-    worth_foundational::ProofBearingArtifactTarget, worth_foundational::RetentionDeliveryProfile,
-    worth_foundational::SupportPostureProfile,
+    worth_foundational::ProofBearingArtifactTarget,
 };
 
 use {

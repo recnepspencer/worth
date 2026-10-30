@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
- --> tests/ui/diagnostics/materialization/plain_rows_cannot_satisfy_explanation_bundle_api.rs:8:30
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/materialization/plain_rows_cannot_satisfy_explanation_bundle_api.rs
   |
-8 |     needs_explanation_bundle(rows);
+  |     needs_explanation_bundle(rows);
   |     ------------------------ ^^^^ expected `FoundationalDiagnosticExplanationBundle`, found `Vec<FoundationalDiagnosticRow>`
   |     |
   |     arguments to this function are incorrect
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected struct `FoundationalDiagnosticExplanationBundle`
              found struct `Vec<FoundationalDiagnosticRow>`
 note: function defined here
- --> tests/ui/diagnostics/materialization/plain_rows_cannot_satisfy_explanation_bundle_api.rs:4:4
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/materialization/plain_rows_cannot_satisfy_explanation_bundle_api.rs
   |
-4 | fn needs_explanation_bundle(_bundle: FoundationalDiagnosticExplanationBundle) {}
+  | fn needs_explanation_bundle(_bundle: FoundationalDiagnosticExplanationBundle) {}
   |    ^^^^^^^^^^^^^^^^^^^^^^^^ ------------------------------------------------

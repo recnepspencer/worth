@@ -77,6 +77,10 @@ pub fn run_tier_and_release() {
     );
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Provides the fixture stack for a real production recovery and release journey."
+)]
 pub fn run_world(
     (world, receipt, _): (
         worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
@@ -361,3 +365,7 @@ pub fn open_serving_inner_with_format(
     serving.close();
     None
 }
+
+#[path = "declarations/serving_durability.rs"]
+mod serving_durability;
+pub use serving_durability::*;

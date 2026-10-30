@@ -1,5 +1,18 @@
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityPreparedRequest, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerCompatibilityUpload, worth_server::WorthServerCompatibilityUploadExecutionInput, worth_server::WorthServerCompatibilityUploadOutcome, worth_server::WorthServerConfig, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerMultipartUpload, worth_server::WorthServerPreparedMultipartUpload, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig};
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityPreparedRequest,
+    worth_server::WorthServerCompatibilityRequestInput,
+    worth_server::WorthServerCompatibilityUpload,
+    worth_server::WorthServerCompatibilityUploadExecutionInput,
+    worth_server::WorthServerCompatibilityUploadOutcome, worth_server::WorthServerConfig,
+    worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerMultipartUpload,
+    worth_server::WorthServerPreparedMultipartUpload, worth_server::WorthServerQueryHandoffConfig,
+    worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryWorkspaceProvider,
+    worth_server::WorthServerRequestContextConfig,
+};
 
 pub fn build_phase_six_server_with_workspace_provider(
     workspace_provider: impl WorthServerQueryWorkspaceProvider,
@@ -11,7 +24,9 @@ pub fn build_phase_six_server_with_workspace_provider(
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
                         .with_preview_targeting_enabled(true)
-                        .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("request context config should validate"),
                 )
@@ -78,16 +93,16 @@ pub fn prepared_upload(
     boundary: &str,
     upload: WorthServerMultipartUpload,
 ) -> WorthServerPreparedMultipartUpload {
-    match server
-        .compat_http()
-        .prepare_upload(worth_server::WorthServerCompatibilityUploadExecutionInput::new(
+    match server.compat_http().prepare_upload(
+        worth_server::WorthServerCompatibilityUploadExecutionInput::new(
             prepared_request(
                 server,
                 upload_input(tenant_id, workspace_id, branch_id, operation_name, boundary),
             ),
             operation_name,
             upload,
-        )) {
+        ),
+    ) {
         worth_proof::TransitionOutcome::Success(value) => value,
         other => panic!("expected prepared upload, got {other:?}"),
     }

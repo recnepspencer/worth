@@ -1,33 +1,7 @@
 #[allow(unused_imports)]
 use crate::physical_record_journeys::segment_truth::*;
-use worth_store_physical_backend::MediaOperationRole;
-use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-use {
-    worth_store::physical_runtime::ManifestEntryCapacity,
-    worth_store::physical_runtime::PageFillPercent,
-    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationPreparationDenial,
-    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
-    worth_store::physical_runtime::PhysicalRecordInitialization,
-    worth_store::physical_runtime::PhysicalRecordOpen,
-    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
-    worth_store::physical_runtime::PhysicalWalGroupAppendFailureCause,
-    worth_store::physical_runtime::PhysicalWalGroupAppendOutcome,
-    worth_store::physical_runtime::PhysicalWalReservationDenial,
-    worth_store::physical_runtime::RecordAppendBatch,
-    worth_store::physical_runtime::RecordAppendDenial,
-    worth_store::physical_runtime::RecordBootstrapDenial,
-    worth_store::physical_runtime::RecordByteLimit,
-    worth_store::physical_runtime::RecordReadDenial,
-    worth_store::physical_runtime::RecordReadLimits,
-    worth_store::physical_runtime::RecordServingTerminalPosture,
-    worth_store::physical_runtime::SegmentPageCount,
-    worth_store::physical_runtime::StalePhysicalRecordPlacement,
-};
 
 use {
-    worth_store_testkit_store::durable_publication,
     worth_store_testkit_store::physical_record_journeys::configuration,
     worth_store_testkit_store::physical_record_journeys::media,
     worth_store_testkit_store::physical_record_journeys::success,

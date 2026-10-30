@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/generic_authority_substitution.rs:13:76
+  --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/generic_authority_substitution.rs:13:76
    |
 13 |     let _ = RuntimeWorldBootstrapIntent::new(creation, relational, signal, authority);
    |             --------------------------------                               ^^^^^^^^^ expected `AdmittedRuntimeWorldCorrespondenceBasis`, found `AuthorityWitness<Auth>`
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
    = note: expected struct `AdmittedRuntimeWorldCorrespondenceBasis`
               found struct `AuthorityWitness<Auth>`
 note: associated function defined here
-  --> src/branch/bootstrap.rs
+  --> $WORKSPACE/crates/worth-runtime-world/src/branch/bootstrap.rs
    |
    |     pub fn new(
    |            ^^^

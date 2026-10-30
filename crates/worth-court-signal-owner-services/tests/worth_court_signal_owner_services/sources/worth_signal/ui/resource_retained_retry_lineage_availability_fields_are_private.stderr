@@ -1,5 +1,5 @@
 error[E0451]: fields `previous`, `retry_ordinal`, `node`, `reason`, `next_attempt`, `scheduled_delay`, `class` and `policy_decision_digest` of struct `ResourceRetainedRetryLineageAvailability` are private
-  --> tests/ui/resource_retained_retry_lineage_availability_fields_are_private.rs:12:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retained_retry_lineage_availability_fields_are_private.rs:12:9
    |
 11 |     let _availability = ResourceRetainedRetryLineageAvailability {
    |                         ---------------------------------------- in this type

@@ -1,32 +1,14 @@
 #[allow(unused_imports)]
 use crate::physical_record_journeys::foundational_evidence::*;
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::compare_canonical_basis,
-    worth_foundational::prepare_canonical_basis_sequence,
-    worth_foundational::prepare_canonical_comparison, worth_foundational::CanonicalBasisEntry,
-    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue,
-    worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis,
-    worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalMismatchKind,
-};
+use worth_foundational::prepare_canonical_basis_sequence;
 use {
     worth_store::physical_runtime::lower_record_operation_performance_receipt,
     worth_store::physical_runtime::lower_record_publication_canonical_basis,
-    worth_store::physical_runtime::PhysicalRecordAccessSummary,
-    worth_store::physical_runtime::PhysicalRecordPerformanceContract,
-    worth_store::physical_runtime::RecordAppendBatch,
-    worth_store::physical_runtime::RecordByteLimit,
     worth_store::physical_runtime::RecordLocatePerformanceExpectation,
-    worth_store::physical_runtime::RecordManifestPerformanceExpectation,
-    worth_store::physical_runtime::RecordReadLimits,
-    worth_store::physical_runtime::RecordScanOutcome,
     worth_store::physical_runtime::RecordScanPerformanceExpectation,
-    worth_store::physical_runtime::RecordScanRequest,
-    worth_store::physical_runtime::RecordTransferPerformanceExpectation,
 };
 
 use {
-    worth_store_testkit_store::durable_publication,
     worth_store_testkit_store::physical_record_journeys::configuration,
     worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
 };

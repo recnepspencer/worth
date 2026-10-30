@@ -84,16 +84,24 @@ impl ManagedDerivedViewRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some((_, found)) = state.native_counts.iter().find(|(_, state)| {
-            state.runtime_authority == runtime
-                && &state.binding == binding
-                && state.product_branch == *product.branch_identity()
-                && state.branch == *product.relational_basis().identity().branch_id()
-                && state.incarnation == product.observation().lifecycle_incarnation()
-                && matches!(&state.source,ManagedDerivedSource::NativeCount {
+        if let Some(found) = state
+            .owned
+            .iter()
+            .filter_map(|(_, entry)| match entry {
+                OwnedDerivedView::NativeCount(state) => Some(state),
+                OwnedDerivedView::ManagedIndex { .. } => None,
+            })
+            .find(|state| {
+                state.runtime_authority == runtime
+                    && &state.binding == binding
+                    && state.product_branch == *product.branch_identity()
+                    && state.branch == *product.relational_basis().identity().branch_id()
+                    && state.incarnation == product.observation().lifecycle_incarnation()
+                    && matches!(&state.source,ManagedDerivedSource::NativeCount {
                     definition:actual,association:actual_association,root:actual_root,
                 } if actual==definition && actual_association==association && *actual_root==root)
-        }) {
+            })
+        {
             return Some(Arc::clone(found));
         }
         state.views.retain(|_, view| view.strong_count() > 0);
@@ -113,27 +121,37 @@ impl ManagedDerivedViewRegistry {
         ));
         let erased: Arc<dyn RegisteredDerivedView> = retained.clone();
         state.views.insert(id, Arc::downgrade(&erased));
-        state.native_counts.push((id, Arc::clone(&retained)));
+        state
+            .owned
+            .push((id, OwnedDerivedView::NativeCount(Arc::clone(&retained))));
         state.next_id = id;
         Some(retained)
     }
 
     pub(in crate::domain_computation::primary_graph) fn discard_native_counts(&self) {
-        let owned = {
+        loop {
             let mut state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let owned = std::mem::take(&mut state.native_counts);
-            for (id, _) in &owned {
+            let removed = state
+                .owned
+                .iter()
+                .position(|(_, entry)| matches!(entry, OwnedDerivedView::NativeCount(_)))
+                .map(|position| state.owned.remove(position));
+            if let Some((id, _)) = &removed {
                 state.views.remove(id);
             }
-            owned
-        };
-        // A previously prepared publication may still hold an Arc. Dispose the
-        // retained owner so accepting that old plan can never revive its rows.
-        for (_, state) in owned {
-            state.dispose();
+            let empty = state.take_empty_material_storage();
+            drop(state);
+            drop(empty);
+            match removed {
+                Some((_, OwnedDerivedView::NativeCount(state))) => state.dispose(),
+                Some((_, OwnedDerivedView::ManagedIndex { .. })) => {
+                    unreachable!("selected Native count")
+                }
+                None => break,
+            }
         }
     }
 
@@ -144,9 +162,12 @@ impl ManagedDerivedViewRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .native_counts
+            .owned
             .iter()
-            .map(|(_, state)| Arc::clone(state))
+            .filter_map(|(_, entry)| match entry {
+                OwnedDerivedView::NativeCount(state) => Some(Arc::clone(state)),
+                OwnedDerivedView::ManagedIndex { .. } => None,
+            })
             .collect::<Vec<_>>();
         owned.iter().map(|state| state.lifecycle()).collect()
     }

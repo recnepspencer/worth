@@ -1,24 +1,5 @@
 #[allow(unused_imports)]
 use crate::external_resource_execution::ordinary_context::*;
-use serde::Serialize;
-use {
-    worth_query::facade::foundation::WorthQueryAsyncFailurePosture,
-    worth_query::facade::foundation::WorthQueryAsyncLoadingPosture,
-    worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart,
-    worth_query::facade::foundation::WorthQueryAsyncResourceRequestIdentity,
-    worth_query::facade::foundation::WorthQueryAsyncSourceFamily,
-};
-use {
-    worth_server::WorthServerExternalResourceBudget,
-    worth_server::WorthServerExternalResourceExecutionBoundary,
-    worth_server::WorthServerExternalResourceExecutionDenialCode,
-    worth_server::WorthServerExternalResourceExecutionOutcome,
-    worth_server::WorthServerExternalResourceIntent,
-    worth_server::WorthServerExternalResourceTransport,
-    worth_server::WorthServerExternalResourceTransportOutcome,
-    worth_server::WorthServerExternalResourceTransportResponse,
-    worth_server::WorthServerLoweredExternalResourcePlan,
-};
 
 #[test]
 fn one_shot_resource_execution_carries_exact_bounded_attempt_evidence() {

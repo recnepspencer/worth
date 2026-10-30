@@ -113,11 +113,12 @@ impl DerivedFamilyRootDirectoryV1 {
             bytes[77..93].copy_from_slice(&quarantine.allocation_epoch());
             bytes[93..101].copy_from_slice(&quarantine.ordinal().to_le_bytes());
         }
-        for (entry, frame) in self
-            .entries
-            .iter()
-            .zip(bytes[PREFIX_V2_BYTES..].chunks_exact_mut(ENTRY_BYTES))
-        {
+        for (entry, frame) in self.entries.iter().zip(
+            bytes[PREFIX_V2_BYTES..]
+                .as_chunks_mut::<ENTRY_BYTES>()
+                .0
+                .iter_mut(),
+        ) {
             frame[..2].copy_from_slice(&family_tag(entry.family).unwrap().to_le_bytes());
             frame[2..18].copy_from_slice(&entry.root_record.allocation_epoch());
             frame[18..26].copy_from_slice(&entry.root_record.ordinal().to_le_bytes());
@@ -182,7 +183,7 @@ impl DerivedFamilyRootDirectoryV1 {
             )
         };
         let mut entries = Vec::with_capacity(count);
-        for frame in bytes[PREFIX_V2_BYTES..].chunks_exact(ENTRY_BYTES) {
+        for frame in bytes[PREFIX_V2_BYTES..].as_chunks::<ENTRY_BYTES>().0.iter() {
             let tag = u16::from_le_bytes(frame[..2].try_into().unwrap());
             let family = family_from_tag(tag).ok_or(DerivedFamilyDirectoryDenial::UnknownFamily)?;
             let record = PersistedRecordIdentity::new(

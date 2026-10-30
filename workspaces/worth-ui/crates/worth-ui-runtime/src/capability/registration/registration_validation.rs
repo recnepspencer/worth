@@ -298,10 +298,10 @@ fn theme_token_alias_reaches_itself(
         if next_key == start_key {
             return true;
         }
-        if visited.insert(next_key.clone()) {
-            if let Some(next_candidate) = find_candidate(candidates, &next_key) {
-                frontier.extend(theme_token_alias_targets(next_candidate, resolvable_keys));
-            }
+        if visited.insert(next_key.clone())
+            && let Some(next_candidate) = find_candidate(candidates, &next_key)
+        {
+            frontier.extend(theme_token_alias_targets(next_candidate, resolvable_keys));
         }
     }
     false

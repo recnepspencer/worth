@@ -1,32 +1,10 @@
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_reclaim_released::shared_reuse::*;
-use {std::num::NonZeroU16, std::num::NonZeroU64};
-
-use worth_proof::AdmittedBlobReleaseProof;
-use {
-    worth_store::physical_runtime::AdmittedBlobScope,
-    worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::BlobReadOpenFailure,
-    worth_store::physical_runtime::BlobReclaimDisposition,
-    worth_store::physical_runtime::BlobReclaimLimits,
-    worth_store::physical_runtime::BlobReclaimReceipt,
-    worth_store::physical_runtime::BlobReclaimRequest,
-    worth_store::physical_runtime::BlobReclaimRetirement,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PublishedBlobGeneration,
-    worth_store::physical_runtime::RecordReadDenial,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-};
-use {
-    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
-    worth_store_physical_format::IndexedThroughBlobPublication,
-};
 
 use {
     crate::physical_blob_journeys::blob_reclaim_released::publish_one,
     crate::physical_blob_journeys::blob_reclaim_released::shared_format,
     crate::physical_blob_journeys::blob_reclaim_released::shared_placement,
-    crate::physical_blob_journeys::blob_reclaim_released::SHARED_CHUNK as CHUNK,
 };
 use {
     worth_store_testkit_store::fixture::admitted_blob_scope,

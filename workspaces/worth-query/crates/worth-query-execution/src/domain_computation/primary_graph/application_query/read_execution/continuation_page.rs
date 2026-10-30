@@ -79,6 +79,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
         }),
         ReadInterruption::Query(plan.controls.request_scope()),
         None,
+        None,
     )?;
     let actual_work = selection.work_units.saturating_add(tree.work_units);
 
@@ -91,6 +92,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
 
     Ok(RawNonLiveKernelOutcome {
         raw: RawOneShotRows {
+            material_source: None,
             rows: tree.rows,
             source_footprints: tree.source_footprints,
             result_set_source: selection.result_set_source,

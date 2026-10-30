@@ -124,10 +124,10 @@ impl WorthUiActiveApplicationSession {
             .ok_or(Stop::Transition)?
             .prepare_dismissal(trigger, sampled_bounds, idempotency)
             .map_err(|_| Stop::Transition)?;
-        if let UiPortalDismissalPreparation::Prepared(dismissal) = &preparation {
-            if dismissal.presentation() != presentation {
-                return Err(Stop::StalePresentation);
-            }
+        if let UiPortalDismissalPreparation::Prepared(dismissal) = &preparation
+            && dismissal.presentation() != presentation
+        {
+            return Err(Stop::StalePresentation);
         }
         Ok(preparation)
     }

@@ -1,5 +1,5 @@
 error[E0616]: field `scenario_matrix` of struct `AsyncNodeMilestoneDCertificationRun` is private
- --> tests/ui/async_node_milestone_d_certification_run_fields_are_private.rs:9:17
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_milestone_d_certification_run_fields_are_private.rs:9:17
   |
 9 |     let _ = run.scenario_matrix;
   |                 ^^^^^^^^^^^^^^^ private field

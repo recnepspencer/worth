@@ -2,13 +2,11 @@ use {
     crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_equal,
     crate::shared_support_compat_http_phase_thirteen_assertions::assert_compatibility_denial_contains,
     crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains,
-    crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle,
     crate::shared_support_compat_http_phase_thirteen_bundle::CACHEABILITY_DIGEST,
     crate::shared_support_compat_http_phase_thirteen_bundle::POLICY_DIGEST,
     crate::shared_support_compat_http_phase_thirteen_bundle::REQUEST_CONTRACT_DIGEST,
     crate::shared_support_compat_http_phase_thirteen_runtime::canonical_download_success,
     crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server,
-    worth_testkit_server::shared_support_compat_http_phase_ten_runtime as compat_http_phase_ten_runtime,
 };
 
 #[test]

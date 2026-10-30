@@ -5,7 +5,7 @@ pub(crate) use {
     crate::byte_backing::ordinary_context::request, crate::byte_backing::ordinary_context::SERIAL,
     crate::test_serialization, std::time::Duration, std::time::Instant,
     worth_execution::CancellationSource, worth_execution::CancellationToken,
-    worth_execution::ExecutionAllocationDenialKind as Kind,
+    worth_execution::ExecutionAllocationDenialClass as Kind,
     worth_execution::ExecutionAllocationPolicy as Policy, worth_execution::ExecutionByteBuffer,
     worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel,
 };
@@ -33,13 +33,17 @@ fn fixed_backing_preserves_pointer_and_charge_through_shared_child_custody() {
         assert_eq!(buffer.bytes(), b"dOta");
         let denied = buffer.extend_from_slice(b"x").unwrap_err();
         assert_eq!(
-            denied.kind(),
-            worth_execution::ExecutionAllocationDenialKind::WriteBeyondReserved
+            denied.classify(),
+            worth_execution::ExecutionAllocationDenialClass::Physical(
+                worth_execution::ExecutionPhysicalAllocationDenialKind::WriteBeyondReserved
+            )
         );
         assert_eq!(denied.requested_payload_bytes(), Some(4));
         assert_eq!(
-            buffer.overwrite(usize::MAX, b"x").unwrap_err().kind(),
-            worth_execution::ExecutionAllocationDenialKind::WriteBeyondReserved
+            buffer.overwrite(usize::MAX, b"x").unwrap_err().classify(),
+            worth_execution::ExecutionAllocationDenialClass::Physical(
+                worth_execution::ExecutionPhysicalAllocationDenialKind::WriteBeyondReserved
+            )
         );
         assert_eq!(buffer.bytes(), b"dOta");
         assert_eq!(buffer.bytes().as_ptr(), pointer);
@@ -100,14 +104,18 @@ fn stopped_builder_retains_checked_quote_and_releases_actual_backing_charge() {
     stop.cancel();
     let early = policy.check_live().unwrap_err();
     assert_eq!(
-        early.kind(),
-        worth_execution::ExecutionAllocationDenialKind::Cancelled
+        early.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
+        )
     );
     assert_eq!(early.requested_payload_bytes(), None);
     let denied = buffer.check_live().unwrap_err();
     assert_eq!(
-        denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::Cancelled
+        denied.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
+        )
     );
     assert_eq!(denied.requested_payload_bytes(), Some(8));
     assert_eq!(buffer.extend_from_slice(b"rest").unwrap_err(), denied);
@@ -117,8 +125,10 @@ fn stopped_builder_retains_checked_quote_and_releases_actual_backing_charge() {
     assert_eq!(parent.reserve_memory(8).unwrap().bytes(), 8);
     let denied = worth_execution::ExecutionByteBuffer::allocate(8, policy).unwrap_err();
     assert_eq!(
-        denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::Cancelled
+        denied.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
+        )
     );
     assert_eq!(denied.requested_payload_bytes(), Some(8));
     stop_request.cancellation = worth_execution::CancellationToken::new();
@@ -130,13 +140,21 @@ fn stopped_builder_retains_checked_quote_and_releases_actual_backing_charge() {
     let expired = parent.child(stop_request).unwrap();
     let policy = worth_execution::ExecutionAllocationPolicy::Execution(&expired);
     assert_eq!(
-        policy.check_live().unwrap_err().kind(),
-        worth_execution::ExecutionAllocationDenialKind::DeadlineElapsed
+        policy.check_live().unwrap_err().classify(),
+        worth_execution::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Stopped(
+                worth_execution::MapKernelStop::DeadlineElapsed
+            )
+        )
     );
     let denied = worth_execution::ExecutionByteBuffer::allocate(8, policy).unwrap_err();
     assert_eq!(
-        denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::DeadlineElapsed
+        denied.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Stopped(
+                worth_execution::MapKernelStop::DeadlineElapsed
+            )
+        )
     );
     assert_eq!(denied.requested_payload_bytes(), Some(8));
 }

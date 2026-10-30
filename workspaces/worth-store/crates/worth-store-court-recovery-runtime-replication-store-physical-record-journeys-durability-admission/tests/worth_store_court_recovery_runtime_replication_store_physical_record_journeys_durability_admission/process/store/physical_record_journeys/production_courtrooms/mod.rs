@@ -1,4 +1,3 @@
-use worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence;
 use {
     crate::courtroom_evidence_support::hex, crate::courtroom_evidence_support::inline_placement,
     crate::courtroom_evidence_support::locator_identities,

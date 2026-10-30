@@ -13,5 +13,8 @@ worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-installation = { path = "../worth-query-installation" }
 
+[dev-dependencies]
+serde.workspace = true
+
 [lints]
 workspace = true

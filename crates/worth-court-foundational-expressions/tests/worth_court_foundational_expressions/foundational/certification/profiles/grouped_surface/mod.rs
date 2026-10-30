@@ -1,15 +1,3 @@
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::profiles_api::common_path,
-    worth_foundational::profiles_api::lower_lane::attachment,
-    worth_foundational::profiles_api::lower_lane::certification,
-    worth_foundational::profiles_api::lower_lane::composition,
-    worth_foundational::profiles_api::lower_lane::materialization,
-    worth_foundational::profiles_api::lower_lane::progression,
-    worth_foundational::profiles_api::stronger_lane::readiness as stronger_readiness,
-    worth_foundational::FoundationalDescriptiveSurface,
-};
-
 #[test]
 fn grouped_profile_surface_exposes_common_lower_and_stronger_lanes() {
     let requested = worth_foundational::profiles_api::common_path::profiles()

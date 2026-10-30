@@ -1,5 +1,5 @@
 warning: unreachable expression
- --> tests/ui/construction/compat_http/private_request_constructor.rs:6:27
+ --> tests/worth_court_server_product_operation_phase_thirteen_shared_read/sources/worth_server/ui/construction/compat_http/private_request_constructor.rs:6:27
   |
 5 |         admission: todo!(),
   |                    ------- any code following this expression is unreachable
@@ -10,7 +10,7 @@ warning: unreachable expression
   = note: this warning originates in the macro `todo` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0451]: fields `admission` and `request_contract` of struct `WorthServerCompatibilityRequest` are private
- --> tests/ui/construction/compat_http/private_request_constructor.rs:5:9
+ --> tests/worth_court_server_product_operation_phase_thirteen_shared_read/sources/worth_server/ui/construction/compat_http/private_request_constructor.rs:5:9
   |
 4 |     let _request = WorthServerCompatibilityRequest {
   |                    ------------------------------- in this type

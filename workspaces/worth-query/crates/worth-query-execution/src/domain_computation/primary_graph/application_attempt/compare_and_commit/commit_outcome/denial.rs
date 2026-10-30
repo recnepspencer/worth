@@ -4,6 +4,7 @@ mod advancement;
 mod capacity;
 mod decision_read_set;
 mod denial_cause;
+mod effect_lowering;
 mod execution;
 mod invariant_execution;
 mod invariant_refusal;
@@ -14,7 +15,7 @@ mod relation_law;
 mod request_authority;
 mod signed_creation;
 mod signing_lifecycle;
-mod unique_value;
+mod unobserved_write;
 mod workflow;
 
 /// Why a commit was refused before publication.
@@ -53,6 +54,8 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// A write of a unique field names a value another live entity holds, or
     /// the program writes one value twice; `detail()` names the field.
     UniqueValueTaken,
+    /// An existing field write lacks its exact completed decision observation.
+    UnobservedWrite,
     /// A unique field's equality index could not answer the lookup its write
     /// must observe.
     UniqueIndexUnavailable,

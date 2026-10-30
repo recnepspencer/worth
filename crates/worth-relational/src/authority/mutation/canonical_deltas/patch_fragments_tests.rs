@@ -63,6 +63,7 @@ fn scalar_delta(aspect_key: AspectKey, value: &str) -> CanonicalRecordAspectDelt
         kind_id: KindId(7),
         plan_revision: AspectContractPlanRevision(1),
         structural_change: RecordStructuralChange::Updated,
+        retained_relation_endpoints: None,
         changed_aspects: crate::publication::patch::data::ordered_aspect_keys([aspect_key.clone()]),
         evaluated_bindings: smallvec::smallvec![
             EvaluatedAspectBinding {

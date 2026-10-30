@@ -1,10 +1,4 @@
 use {
-    worth_store::physical_runtime::BlobReclaimDisposition,
-    worth_store::physical_runtime::BlobReclaimRetirement,
-    worth_store::physical_runtime::PhysicalRetirementDenial,
-};
-
-use {
     crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
     crate::physical_blob_journeys::blob_reclaim::abandoned_prefix,
     crate::physical_blob_journeys::blob_reclaim::request,

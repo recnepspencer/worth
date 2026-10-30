@@ -16,6 +16,7 @@ mod derived_relation;
 mod history;
 mod inspection;
 mod invariant;
+mod managed_index;
 mod mutation_description;
 mod operation;
 mod projected_member_domain;
@@ -29,6 +30,7 @@ mod source_disclosure;
 mod vocabulary;
 
 fn require_supported_field_codec(member: &ApplicationSchemaMember) -> Result<(), Denial> {
+    managed_index::require_shape(member)?;
     projected_member_domain::require_shape(member)?;
     inspection::require_shape(member)?;
     derived_relation::require_shape(member)?;
@@ -58,7 +60,8 @@ pub(super) fn require_encoding_contract(
     }
     if matches!(
         member,
-        ApplicationSchemaMember::ApplicationInvariant { .. }
+        ApplicationSchemaMember::ManagedIndex { .. }
+            | ApplicationSchemaMember::ApplicationInvariant { .. }
             | ApplicationSchemaMember::ProjectedMemberDomain { .. }
             | ApplicationSchemaMember::ApplicationQueryInspection { .. }
             | ApplicationSchemaMember::DerivedRelation { .. }
@@ -93,6 +96,9 @@ pub(super) fn write(
     }
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::ManagedIndex { definition } => {
+            managed_index::write(output, definition)
+        }
         ApplicationSchemaMember::DerivedComponentSet { definition } => {
             derived_component_set::write(output, definition)
         }
@@ -165,6 +171,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        48 => managed_index::decode(input, budget),
         46 => derived_component_set::decode(input, budget),
         47 => derived_relation::decode(47, input, budget),
         45 => inspection::decode(input, budget),
@@ -200,6 +207,7 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::ManagedIndex { .. } => 48,
         ApplicationSchemaMember::ProjectedMemberDomain { .. } => 44,
         ApplicationSchemaMember::ApplicationQueryInspection { .. } => 45,
         ApplicationSchemaMember::DerivedRelation { definition } => if definition.is_legacy_shape() { 41 } else { 47 },

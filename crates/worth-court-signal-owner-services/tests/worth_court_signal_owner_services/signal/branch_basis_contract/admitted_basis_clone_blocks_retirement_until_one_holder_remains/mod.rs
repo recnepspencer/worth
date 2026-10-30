@@ -1,10 +1,6 @@
 // Admitted basis clone blocks retirement until one holder remains.
 
-use {
-    crate::branch_basis_contract::ordinary_context::runtime, worth_proof::TransitionOutcome,
-    worth_signal::facade::runtime::SignalBranchRetirementDenial,
-    worth_signal::facade::SignalBranchRetirementReason,
-};
+use crate::branch_basis_contract::ordinary_context::runtime;
 
 #[test]
 fn admitted_basis_clone_blocks_retirement_until_one_holder_remains() {

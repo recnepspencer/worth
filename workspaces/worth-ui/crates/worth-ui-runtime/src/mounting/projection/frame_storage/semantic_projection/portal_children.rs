@@ -121,10 +121,10 @@ impl UiMountedSemanticProjection {
         for owner in owners {
             let (node, probes) = self.nodes.get_with_probes(owner);
             work += probes;
-            if let Some(node) = node {
-                if let Some(component) = &node.component_id {
-                    keys.insert((node.receipt.semantic_surface(), component.clone()));
-                }
+            if let Some(node) = node
+                && let Some(component) = &node.component_id
+            {
+                keys.insert((node.receipt.semantic_surface(), component.clone()));
             }
         }
         let mut selected = Vec::new();

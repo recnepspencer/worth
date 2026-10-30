@@ -3,23 +3,9 @@ pub(crate) use crate::work_ceiling::isolated_context::retained_run;
 #[allow(unused_imports)]
 use crate::work_ceiling::ordinary_context::*;
 
-pub(crate) use {std::num::NonZeroUsize, std::panic::catch_unwind, std::panic::AssertUnwindSafe};
+pub(crate) use {std::panic::catch_unwind, std::panic::AssertUnwindSafe};
 
-pub(crate) use {
-    worth_execution::CancellationSource, worth_execution::CancellationToken,
-    worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig,
-    worth_execution::ExecutionMap, worth_execution::ExecutionResourceLease,
-    worth_execution::ExecutionWorkCeiling, worth_execution::LeaseRequest,
-    worth_execution::MapKernelFailure, worth_execution::MapKernelStop,
-    worth_execution::MapPartition, worth_execution::MapStop, worth_execution::ReduceInputDenial,
-    worth_execution::ReductionRunStop, worth_execution::SerialRequest,
-    worth_execution::WorkCeilingDenial,
-};
-pub(crate) use {
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
-    worth_foundational::ExecutionPosture, worth_foundational::ExecutionReport,
-    worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity,
-};
+pub(crate) use worth_execution::MapKernelFailure;
 
 #[test]
 fn a_declared_ceiling_decides_the_canonical_exhaustion_boundary_without_a_lease() {

@@ -75,6 +75,7 @@ impl<Schema, Operation, Input, Scope>
         locator: worth_foundational::facade::AspectFieldLocator,
         value: std::borrow::Cow<'_, worth_foundational::facade::AspectValue>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.require_field_observation(entity_id, &locator)?;
         let position = self
             .field_write_positions
             .position(field.entity(), entity_id);

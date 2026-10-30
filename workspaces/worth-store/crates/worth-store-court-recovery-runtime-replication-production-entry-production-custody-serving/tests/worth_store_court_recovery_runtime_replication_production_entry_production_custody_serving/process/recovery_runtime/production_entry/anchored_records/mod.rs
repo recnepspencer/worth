@@ -5,23 +5,12 @@
 
 #[allow(unused_imports)]
 use worth_store_testkit_recovery_runtime::production_entry::anchored_records::*;
-use {sha2::Digest, sha2::Sha256};
 use {
-    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
-    worth_store::physical_runtime::AnchoredRecordName,
-    worth_store::physical_runtime::AnchoredRecordNameDenial,
-    worth_store::physical_runtime::AnchoredRecordPublication,
-    worth_store::physical_runtime::AnchoredRecordPublicationFailure,
-    worth_store::physical_runtime::AnchoredRecordPublished,
-    worth_store::physical_runtime::AnchoredRecordReadFailure,
-    worth_store::physical_runtime::OrderedJournalPublication,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
     worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS,
     worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS,
 };
 
 use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
-use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_store_testkit_recovery_runtime::production_entry::anchored_records};
 
 #[test]
 fn anchored_record_names_refuse_the_ordered_journals_and_malformed_names() {

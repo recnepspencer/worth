@@ -182,17 +182,15 @@ impl<'a> WorthUiMeasurementInspectionBoundary<'a> {
             }
         }
 
-        if let Some(admission) = measurement_admission.as_ref() {
-            if let UiMeasurementAdmissionPosture::Admitted {
+        if let Some(admission) = measurement_admission.as_ref()
+            && let UiMeasurementAdmissionPosture::Admitted {
                 host_capability, ..
             } = admission.posture()
-            {
-                if bundle.is_none_or(|candidate| candidate.host_capability_report().is_none()) {
-                    evidence_inputs.push(MeasurementEvidenceInput::host_capability_report(
-                        host_capability,
-                    ));
-                }
-            }
+            && bundle.is_none_or(|candidate| candidate.host_capability_report().is_none())
+        {
+            evidence_inputs.push(MeasurementEvidenceInput::host_capability_report(
+                host_capability,
+            ));
         }
 
         MeasurementInspectionOutcome::Basis(Box::new(admit_measurement_basis(

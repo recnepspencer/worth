@@ -1,15 +1,5 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::transitions::scoped_merge_posture::*;
-use std::fmt::Debug;
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::FoundationalMergeAdmissionDenial,
-    worth_foundational::FoundationalMergeConstructionDenial,
-    worth_foundational::FoundationalMergeScope,
-    worth_foundational::FoundationalScopedMergeUnavailableOutcomeCategory,
-    worth_foundational::FoundationalScopedMergeUnavailablePosture,
-    worth_foundational::FoundationalScopedMergeUnavailableReason,
-};
 
 use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
 use {

@@ -1,21 +1,5 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::canonicalization::grouped_surface::*;
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::admit_authoritative_record_aspect_state,
-    worth_foundational::canonicalization_api::common_path,
-    worth_foundational::canonicalization_api::lower_lane::basis as lower_basis,
-    worth_foundational::canonicalization_api::lower_lane::comparison as lower_comparison,
-    worth_foundational::canonicalization_api::lower_lane::digest as lower_digest,
-    worth_foundational::canonicalization_api::lower_lane::export as lower_export,
-    worth_foundational::canonicalization_api::stronger_lane::readiness as stronger_readiness,
-    worth_foundational::validate_aspect_value, worth_foundational::AspectValue,
-    worth_foundational::CanonicalEquivalenceBasis,
-    worth_foundational::CanonicalMilestone2PhaseGate, worth_foundational::CanonicalProducerShape,
-    worth_foundational::ScalarAspectType,
-};
-
-use worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::scalar_contract;
 
 #[test]
 fn grouped_canonicalization_surface_exposes_common_lower_and_stronger_lanes() {

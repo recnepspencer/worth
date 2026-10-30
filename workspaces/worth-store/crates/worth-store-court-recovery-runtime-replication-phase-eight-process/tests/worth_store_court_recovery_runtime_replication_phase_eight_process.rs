@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_recovery_runtime_replication_phase_eight_process/support/checkpoint_crash/mod.rs"]
 pub(crate) mod checkpoint_crash;

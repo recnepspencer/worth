@@ -1,14 +1,31 @@
 pub use {std::sync::atomic::Ordering, std::sync::Arc, std::sync::Mutex};
 
-pub use {serde_json::Value};
-pub use {worth_server::WorthServerAdmittedDurableProductMutation, worth_server::WorthServerDurableProductMutationCompletion, worth_server::WorthServerDurableProductMutationConclusion, worth_server::WorthServerDurableProductMutationExecution, worth_server::WorthServerDurableProductMutationExecutor, worth_server::WorthServerDurableProductMutationRecoveryHandle, worth_server::WorthServerProductDurabilityCapability, worth_server::WorthServerProductOperationBaseDigest, worth_server::WorthServerProductOperationDenial, worth_server::WorthServerProductOperationSuccess};
+pub use serde_json::Value;
+pub use {
+    worth_server::WorthServerAdmittedDurableProductMutation,
+    worth_server::WorthServerDurableProductMutationCompletion,
+    worth_server::WorthServerDurableProductMutationConclusion,
+    worth_server::WorthServerDurableProductMutationExecution,
+    worth_server::WorthServerDurableProductMutationExecutor,
+    worth_server::WorthServerDurableProductMutationRecoveryHandle,
+    worth_server::WorthServerProductDurabilityCapability,
+    worth_server::WorthServerProductOperationBaseDigest,
+    worth_server::WorthServerProductOperationDenial,
+    worth_server::WorthServerProductOperationSuccess,
+};
 
-pub use {crate::shared_support_durable_product_mutation::persistence_state::retained_record, crate::shared_support_durable_product_mutation::persistence_state::retention_deadline, crate::shared_support_durable_product_mutation::persistence_state::DurableProductState, crate::shared_support_durable_product_mutation::persistence_state::DurableRecord, crate::shared_support_durable_product_mutation::persistence_state::DurableScopeIdentity, crate::shared_support_durable_product_mutation::persistence_state::DurableScopeState};
-pub use {crate::shared_support_durable_product_mutation::product_result::DurableMutationProductResult};
-pub use {crate::shared_support_durable_product_mutation::concurrency_probe::TestConcurrencyProbe};
+pub use crate::shared_support_durable_product_mutation::concurrency_probe::TestConcurrencyProbe;
+pub use crate::shared_support_durable_product_mutation::product_result::DurableMutationProductResult;
+pub use {
+    crate::shared_support_durable_product_mutation::persistence_state::retained_record,
+    crate::shared_support_durable_product_mutation::persistence_state::retention_deadline,
+    crate::shared_support_durable_product_mutation::persistence_state::DurableProductState,
+    crate::shared_support_durable_product_mutation::persistence_state::DurableRecord,
+    crate::shared_support_durable_product_mutation::persistence_state::DurableScopeIdentity,
+    crate::shared_support_durable_product_mutation::persistence_state::DurableScopeState,
+};
 
-
-pub use {crate::shared_support_durable_product_mutation::executor::crash_execution::injected_crash_execution};
+pub use crate::shared_support_durable_product_mutation::executor::crash_execution::injected_crash_execution;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DurableMutationCrashPoint {
@@ -29,7 +46,10 @@ impl DurableMutationCrashPoint {
     }
 
     pub fn from_payload(payload: &Value) -> Option<Self> {
-        match payload.get("crash_point").and_then(serde_json::Value::as_str) {
+        match payload
+            .get("crash_point")
+            .and_then(serde_json::Value::as_str)
+        {
             Some("before-intent") => Some(Self::BeforeIntent),
             Some("after-intent") => Some(Self::AfterIntent),
             Some("after-mutation-before-commit") => Some(Self::AfterMutationBeforeCommit),
@@ -66,7 +86,9 @@ impl TestDurableProductExecutor {
     }
 
     pub fn commit_count(&self) -> usize {
-        self.state.commit_count.load(std::sync::atomic::Ordering::Relaxed)
+        self.state
+            .commit_count
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn observed_attempts(&self) -> Vec<(String, String)> {
@@ -78,7 +100,9 @@ impl TestDurableProductExecutor {
     }
 
     pub fn advance_time(&self, seconds: u64) {
-        self.state.now_seconds.fetch_add(seconds, std::sync::atomic::Ordering::Relaxed);
+        self.state
+            .now_seconds
+            .fetch_add(seconds, std::sync::atomic::Ordering::Relaxed);
     }
 
     pub fn completion_for(
@@ -122,7 +146,10 @@ impl TestDurableProductExecutor {
     ) -> WorthServerDurableProductMutationExecution {
         let scope = self.scope_state(attempt);
         let mut scope = scope.lock().expect("durable product scope transaction");
-        let now = self.state.now_seconds.load(std::sync::atomic::Ordering::Relaxed);
+        let now = self
+            .state
+            .now_seconds
+            .load(std::sync::atomic::Ordering::Relaxed);
         let key = attempt.idempotency_key().value();
         if let Some(record) = retained_record(&mut scope.records, key, now) {
             return retry_conclusion(attempt, record);
@@ -171,15 +198,18 @@ impl TestDurableProductExecutor {
         }
 
         let next_version = scope.current_version + 1;
-        let completion =
-            match build_completion(attempt, next_version, &self.product_commit_namespace) {
-                Ok(completion) => completion,
-                Err(error) => {
-                    return worth_server::WorthServerDurableProductMutationExecution::after_basis_comparison(
+        let completion = match build_completion(
+            attempt,
+            next_version,
+            &self.product_commit_namespace,
+        ) {
+            Ok(completion) => completion,
+            Err(error) => {
+                return worth_server::WorthServerDurableProductMutationExecution::after_basis_comparison(
                         worth_server::WorthServerDurableProductMutationConclusion::InvalidResultArtifact(error),
                     );
-                }
-            };
+            }
+        };
         if self.consume_crash(
             &mut scope,
             key,
@@ -199,7 +229,9 @@ impl TestDurableProductExecutor {
         };
         scope.current_version = next_version;
         scope.records.insert(key.to_string(), record.clone());
-        self.state.commit_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.state
+            .commit_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         if self.consume_crash(
             &mut scope,
@@ -317,9 +349,14 @@ impl WorthServerDurableProductMutationExecutor for TestDurableProductExecutor {
             .expect("recovery override lock")
             .clone()
         {
-            return worth_server::WorthServerDurableProductMutationConclusion::PreviouslyCommitted(completion);
+            return worth_server::WorthServerDurableProductMutationConclusion::PreviouslyCommitted(
+                completion,
+            );
         }
-        let now = self.state.now_seconds.load(std::sync::atomic::Ordering::Relaxed);
+        let now = self
+            .state
+            .now_seconds
+            .load(std::sync::atomic::Ordering::Relaxed);
         let mut recoveries = self
             .state
             .recoveries
@@ -340,44 +377,6 @@ impl WorthServerDurableProductMutationExecutor for TestDurableProductExecutor {
     }
 }
 
-pub fn retry_conclusion(
-    attempt: &WorthServerAdmittedDurableProductMutation,
-    record: &DurableRecord,
-) -> WorthServerDurableProductMutationExecution {
-    let conclusion = if record.request_digest == attempt.request_digest() {
-        worth_server::WorthServerDurableProductMutationConclusion::PreviouslyCommitted(record.completion.clone())
-    } else {
-        worth_server::WorthServerDurableProductMutationConclusion::IdempotencyConflict {
-            bound_request_digest: record.request_digest.clone(),
-        }
-    };
-    worth_server::WorthServerDurableProductMutationExecution::before_basis_comparison(conclusion)
-}
-
-pub fn build_completion(
-    attempt: &WorthServerAdmittedDurableProductMutation,
-    next_version: u64,
-    product_commit_namespace: &str,
-) -> Result<
-    WorthServerDurableProductMutationCompletion,
-    worth_server::WorthServerProductResultArtifactError,
-> {
-    let next_basis = worth_server::WorthServerProductOperationBaseDigest::new(format!("basis:{next_version}"))
-        .expect("test executor basis should be canonical");
-    let result = crate::shared_support_durable_product_mutation::product_result::DurableMutationProductResult::from_attempt(attempt, next_basis.value());
-    let success = worth_server::WorthServerProductOperationSuccess::publish_json(
-        format!("{}:{next_version}", attempt.operation_name()),
-        attempt.result_contract(),
-        &result,
-    )?;
-    Ok(worth_server::WorthServerDurableProductMutationCompletion::new(
-        attempt,
-        success,
-        next_basis,
-        format!(
-            "product-commit:{product_commit_namespace}:{}:{next_version}",
-            attempt.canonical_digest()
-        ),
-    )
-    .expect("test executor completion should match its attempt"))
-}
+#[path = "declarations/result_completion.rs"]
+mod result_completion;
+pub use result_completion::*;

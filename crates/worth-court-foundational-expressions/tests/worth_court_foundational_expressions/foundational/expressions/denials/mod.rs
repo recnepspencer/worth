@@ -1,7 +1,3 @@
-mod admission_limits;
-mod identity_equivalence;
-mod type_argument_contracts;
-
 // Exact denial families for builtin, constructor, binder, record, and
 // decoder contracts, plus the admission meter and identity invariants that
 // guard them.
@@ -10,18 +6,8 @@ use crate::expressions::ordinary_context::denials::*;
 pub(crate) use {
     worth_foundational::expression_api::expressions, worth_foundational::expression_api::Dynamic,
     worth_foundational::expression_api::ExpressionBuilder,
-    worth_foundational::expression_api::ExpressionDenial,
-    worth_foundational::expression_api::ExpressionDenialDetail,
-    worth_foundational::expression_api::ExpressionDenialFamily as Family,
     worth_foundational::expression_api::ExpressionFunctionCatalog,
-    worth_foundational::expression_api::ExpressionFunctionDeclaration,
-    worth_foundational::expression_api::ExpressionProfile,
-    worth_foundational::expression_api::ExpressionResource,
-    worth_foundational::expression_api::ExpressionSchema,
-    worth_foundational::expression_api::ExpressionType,
-    worth_foundational::expression_api::ExpressionTypeArgument,
-    worth_foundational::expression_api::ExpressionTypeName,
-    worth_foundational::expression_api::IntegerType, worth_foundational::expression_api::Term,
+    worth_foundational::expression_api::Term,
 };
 
 pub(crate) use {
@@ -82,7 +68,96 @@ fn builtins_deny_mismatched_arguments_by_contract() {
 
 #[test]
 fn type_arguments_are_denied_where_callees_take_none() {
-    type_argument_contracts::nongeneric_callees_deny_type_arguments();
+    // Source spells type arguments only on generic intrinsics; builders and
+    // decoded drafts can attach them to any call.
+    assert_eq!(
+        expressions()
+            .parse("geometry::area<Int8>(width, depth)")
+            .unwrap_err()
+            .family(),
+        worth_foundational::expression_api::ExpressionDenialFamily::Syntax
+    );
+    let int8 = worth_foundational::expression_api::ExpressionTypeArgument::Type(
+        worth_foundational::expression_api::ExpressionType::Integer(
+            worth_foundational::expression_api::IntegerType::Int8,
+        ),
+    );
+    let schema = schema();
+    let catalog = catalog(&schema, [area()]);
+    let calls: [(&str, fn(&mut ExpressionBuilder) -> Vec<Term<Dynamic>>); 6] = [
+        ("geometry::area", |b| vec![b.name("width"), b.name("depth")]),
+        ("int32", |b| vec![b.int(5).dynamic()]),
+        ("float64", |b| vec![b.float(1.0).dynamic()]),
+        ("decimal", |b| vec![b.text("1.5").dynamic()]),
+        ("sqrt", |b| vec![b.name("width")]),
+        ("bit_not", |b| vec![b.name("bus")]),
+    ];
+    for (function, arguments) in calls {
+        let mut builder = worth_foundational::expression_api::ExpressionBuilder::new();
+        let arguments = arguments(&mut builder);
+        let call = builder.generic_call(function, std::slice::from_ref(&int8), &arguments);
+        let denial = builder
+            .finish(call)
+            .and_then(|draft| {
+                draft.admit(
+                    &schema,
+                    &catalog,
+                    worth_foundational::expression_api::ExpressionProfile::interactive(),
+                )
+            })
+            .unwrap_err();
+        assert_eq!(
+            denial.family(),
+            worth_foundational::expression_api::ExpressionDenialFamily::UnsupportedFeature,
+            "{function}"
+        );
+    }
+    // Every reserved constructor but `bits<N>` denies type arguments.
+    let constructors = [
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "float32",
+        "float64",
+        "decimal",
+        "bytes",
+        "logic4",
+        "quantity",
+        "magnitude",
+    ];
+    for function in constructors {
+        let mut builder = worth_foundational::expression_api::ExpressionBuilder::new();
+        let argument = builder.int(5).dynamic();
+        let call = builder.generic_call(function, std::slice::from_ref(&int8), &[argument]);
+        let denial = builder
+            .finish(call)
+            .and_then(|draft| {
+                draft.admit(
+                    &schema,
+                    &catalog,
+                    worth_foundational::expression_api::ExpressionProfile::interactive(),
+                )
+            })
+            .unwrap_err();
+        assert_eq!(
+            denial.family(),
+            worth_foundational::expression_api::ExpressionDenialFamily::UnsupportedFeature,
+            "{function}"
+        );
+    }
+    assert_eq!(
+        denied_family("INT8(5)"),
+        worth_foundational::expression_api::ExpressionDenialFamily::UnknownBinding
+    );
+    assert_eq!(
+        denied_family("Int8(5)"),
+        worth_foundational::expression_api::ExpressionDenialFamily::UnknownBinding
+    );
 }
 
 #[test]
@@ -227,83 +302,41 @@ fn decoding_requires_canonical_post_order() {
 
 #[test]
 fn admission_work_and_canonical_bytes_are_exhausted() {
-    admission_limits::work_and_canonical_byte_limits_are_enforced();
-}
-
-#[test]
-fn four_valued_values_have_no_implied_equality() {
-    let schema = worth_foundational::expression_api::ExpressionSchema::builder()
-        .record(
-            "Sig",
-            1,
-            [(
-                "line",
-                worth_foundational::expression_api::ExpressionType::Logic4(1),
-            )],
-        )
-        .and_then(|builder| {
-            builder.operand(
-                "enable",
-                worth_foundational::expression_api::ExpressionType::Logic4(1),
-            )
-        })
-        .and_then(|builder| {
-            builder.operand(
-                "sig",
-                worth_foundational::expression_api::ExpressionType::Record(
-                    worth_foundational::expression_api::ExpressionTypeName::new("Sig", 1)?,
-                ),
-            )
-        })
-        .expect("fixture schema is valid")
-        .build();
-    let denied = |source: &str| {
-        draft(source)
-            .admit(
-                &schema,
-                &empty_catalog(&schema),
-                worth_foundational::expression_api::ExpressionProfile::interactive(),
-            )
-            .expect_err(source)
-    };
-    for (source, function) in [
-        ("enable == enable", "=="),
-        ("enable != enable", "!="),
-        ("some(enable) == some(enable)", "=="),
-        ("[enable] != [enable]", "!="),
-        ("sig == sig", "=="),
-        ("contains([enable], enable)", "contains"),
-    ] {
-        match denied(source).detail() {
-            worth_foundational::expression_api::ExpressionDenialDetail::FunctionContractMismatch {
-                function: named, ..
-            } => {
-                assert_eq!(named, function, "{source}");
-            }
-            other => panic!("{source} denied with {other:?}"),
-        }
-    }
-    let admitted = |source: &str| {
-        draft(source).admit(
-            &schema,
-            &empty_catalog(&schema),
-            worth_foundational::expression_api::ExpressionProfile::interactive(),
-        )
-    };
-    assert!(admitted("case_equal(sig.line, enable)").is_ok());
-    let result = admitted("logic_eq(sig.line, enable) == logic_eq(enable, enable)");
+    let schema = schema();
+    let catalog = empty_catalog(&schema);
+    let long = format!("[{}width]", "width, ".repeat(200));
+    let result = draft(&long).admit(
+        &schema,
+        &catalog,
+        narrowed(
+            worth_foundational::expression_api::ExpressionResource::AdmissionWork,
+            500,
+        ),
+    );
     assert_eq!(
-        result.unwrap_err().family(),
-        worth_foundational::expression_api::ExpressionDenialFamily::FunctionContractMismatch
+        exceeded(result),
+        worth_foundational::expression_api::ExpressionResource::AdmissionWork
+    );
+    let text = format!(r#"label ?? "{}""#, "x".repeat(400));
+    let result = draft(&text).admit(
+        &schema,
+        &catalog,
+        narrowed(
+            worth_foundational::expression_api::ExpressionResource::CanonicalBytes,
+            256,
+        ),
+    );
+    assert_eq!(
+        exceeded(result),
+        worth_foundational::expression_api::ExpressionResource::CanonicalBytes
     );
 }
 
-#[test]
-fn bus_widths_are_checked_through_records_and_callees() {
-    admission_limits::record_and_callee_bus_widths_are_bounded();
-}
+#[path = "four_valued_equality.rs"]
+mod four_valued_equality;
 
-#[test]
-fn identity_ignores_binder_names_and_unrelated_installs() {
-    identity_equivalence::binder_and_catalog_changes_preserve_expected_identity();
-}
+#[path = "bus_widths.rs"]
+mod bus_widths;
+
+#[path = "binder_identity.rs"]
+mod binder_identity;

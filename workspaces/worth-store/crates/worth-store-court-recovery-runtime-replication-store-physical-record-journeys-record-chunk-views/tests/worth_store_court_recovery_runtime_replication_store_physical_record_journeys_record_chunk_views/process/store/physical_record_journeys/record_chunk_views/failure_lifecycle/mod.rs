@@ -1,16 +1,6 @@
-use {std::io::Seek, std::io::SeekFrom, std::io::Write};
-
-use {
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::RecordAppendBatch,
-    worth_store::physical_runtime::RecordByteLimit,
-    worth_store::physical_runtime::RecordReadLimits,
-    worth_store::physical_runtime::RecordServingTerminalPosture,
-    worth_store::physical_runtime::RecordStreamFailureKind,
-};
+use {std::io::Seek, std::io::Write};
 
 use worth_store_testkit_store::durable_publication::root::publish_single;
-use worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture;
 
 #[test]
 fn later_extent_damage_through_a_view_stays_local_and_releases_read_authority() {

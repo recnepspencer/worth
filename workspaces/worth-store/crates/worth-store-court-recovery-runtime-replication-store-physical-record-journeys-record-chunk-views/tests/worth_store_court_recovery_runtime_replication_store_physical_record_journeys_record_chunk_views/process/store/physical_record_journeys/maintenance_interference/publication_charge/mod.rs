@@ -1,31 +1,5 @@
 #[allow(unused_imports)]
 use crate::physical_record_journeys::maintenance_interference::publication_charge::*;
-use {std::num::NonZeroU32, std::num::NonZeroU64};
-
-use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-use {
-    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
-    worth_store::physical_runtime::ManifestEntryCapacity,
-    worth_store::physical_runtime::PhysicalDataDispatchOutcome,
-    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
-    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
-    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
-    worth_store::physical_runtime::PhysicalRecordInitialization,
-    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
-    worth_store::physical_runtime::PhysicalWalGroupAppendOutcome,
-    worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome,
-    worth_store::physical_runtime::PhysicalWalPolicy,
-    worth_store::physical_runtime::RecordAppendBatch,
-    worth_store::physical_runtime::WalSegmentByteLimit,
-    worth_store::physical_runtime::WalSegmentInventoryLimit,
-};
-use {
-    worth_store_physical_format::BOOTSTRAP_CATALOG_BYTES,
-    worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES,
-    worth_store_physical_format::ROOT_SELECTOR_BYTES,
-};
 
 use worth_store_testkit_store::physical_record_journeys::maintenance_interference::reopen::open_interference;
 use {
@@ -33,8 +7,6 @@ use {
     worth_store_testkit_store::physical_record_journeys::maintenance_interference::residency,
     worth_store_testkit_store::physical_record_journeys::maintenance_interference::RESIDENT_BYTES,
 };
-
-use worth_store_testkit_store::publication_metadata_oracle as oracle;
 
 #[test]
 fn branched_group_settles_one_actual_metadata_charge_and_reopens_exactly() {

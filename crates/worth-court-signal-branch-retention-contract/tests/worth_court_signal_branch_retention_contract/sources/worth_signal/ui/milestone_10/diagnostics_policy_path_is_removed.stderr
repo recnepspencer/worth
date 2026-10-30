@@ -1,5 +1,5 @@
 error[E0432]: unresolved import `worth_signal::diagnostics::policy::SignalRuntimePolicy`
- --> tests/ui/milestone_10/diagnostics_policy_path_is_removed.rs:1:5
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_10/diagnostics_policy_path_is_removed.rs:1:5
   |
 1 | use worth_signal::diagnostics::policy::SignalRuntimePolicy;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `SignalRuntimePolicy` in `diagnostics::policy`

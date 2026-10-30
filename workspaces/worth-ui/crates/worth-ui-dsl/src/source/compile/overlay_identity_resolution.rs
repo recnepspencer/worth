@@ -35,14 +35,13 @@ pub(crate) fn resolve_file_authored_overlay_declarations(
         for declaration in declarations {
             match declaration {
                 WorthUiFileAuthoredLoweredDeclaration::Artifact(node) => {
-                    if let WorthUiArtifactInputNode::SemanticArtifact(artifact) = &node {
-                        if let Some(crate::WorthUiServiceDeclarationMeaning::Portal(portal)) =
+                    if let WorthUiArtifactInputNode::SemanticArtifact(artifact) = &node
+                        && let Some(crate::WorthUiServiceDeclarationMeaning::Portal(portal)) =
                             artifact.declaration().service_declaration()
-                        {
-                            portal_surface_identity(portal, &tables).map_err(|denial| {
-                                resolver_report(denial, Some(artifact.provenance()))
-                            })?;
-                        }
+                    {
+                        portal_surface_identity(portal, &tables).map_err(|denial| {
+                            resolver_report(denial, Some(artifact.provenance()))
+                        })?;
                     }
                     nodes.push(node)
                 }

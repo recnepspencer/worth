@@ -1,32 +1,5 @@
 #[allow(unused_imports)]
 use crate::latch_algorithm_shape::*;
-use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
-
-use std::collections::HashSet;
-use {std::hash::BuildHasher, std::hash::Hasher};
-
-use {
-    worth_store_physical_isolation::lower_latch_acquisition_plan,
-    worth_store_physical_isolation::CanonicalLatchAcquisitionOrder,
-    worth_store_physical_isolation::LatchAcquisitionDenial,
-    worth_store_physical_isolation::LatchAcquisitionRequest,
-    worth_store_physical_isolation::LatchAcquisitionStep,
-    worth_store_physical_isolation::LatchUpgradeAuthority,
-    worth_store_physical_isolation::LatchWaitForGraph,
-    worth_store_physical_isolation::LatchWaitForGraphAdmissionDenial,
-    worth_store_physical_isolation::PhysicalLatchClass,
-    worth_store_physical_isolation::PhysicalLatchDeadlockPolicy,
-    worth_store_physical_isolation::PhysicalLatchFamilyDeadlockPolicy,
-    worth_store_physical_isolation::PhysicalLatchKey,
-    worth_store_physical_isolation::PhysicalLatchWaitEdge,
-};
-use {
-    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference,
-    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,
-    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_segment_reference,
-    worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority,
-    worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout,
-};
 
 #[test]
 fn canonical_latch_order_survives_permutation_hash_seed_and_rebuild() {

@@ -1,10 +1,10 @@
 error[E0624]: associated function `admit` is private
- --> tests/ui/bridge_truth_identity/admitted_commit_cannot_be_minted_from_projection.rs:7:48
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/admitted_commit_cannot_be_minted_from_projection.rs:7:48
   |
 7 |     let _ = BridgeAdmittedTruthCommitIdentity::admit(projection);
   |                                                ^^^^^ private associated function
   |
- ::: src/correspondence/admitted_truth_identity.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/correspondence/admitted_truth_identity.rs
   |
   |     pub(crate) fn admit(projection: TruthCommitIdentity) -> Self {
   |     ------------------------------------------------------------ private associated function defined here

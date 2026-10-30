@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal/support/artifact_snapshot/mod.rs"]
 pub(crate) mod artifact_snapshot;

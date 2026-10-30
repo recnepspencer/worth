@@ -35,15 +35,17 @@ fn allocation_cause_keeps_its_error_source_type() {
     assert!(std::ptr::eq(source, denial.allocation_denial().unwrap()));
     // One u8 payload has Layout size1; the unused zero-byte policy admits0.
     assert_eq!(
-        source.kind(),
-        worth_execution::ExecutionAllocationDenialKind::Lease(
-            worth_execution::LeaseDenial::MemoryExhausted(
-                worth_execution::MemoryLimitDenial::Capacity {
-                    requested: std::mem::size_of::<u8>() as u64,
-                    admitted: 0,
-                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
-                }
-            ),
+        source.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Admission(
+                worth_execution::LeaseDenial::MemoryExhausted(
+                    worth_execution::MemoryLimitDenial::Capacity {
+                        requested: std::mem::size_of::<u8>() as u64,
+                        admitted: 0,
+                        level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+                    }
+                ),
+            )
         )
     );
 }

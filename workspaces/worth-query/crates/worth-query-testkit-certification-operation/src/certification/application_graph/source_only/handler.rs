@@ -5,12 +5,27 @@ pub use std::sync::{
     Arc,
 };
 pub use worth_query_host::facade::primary_graph::*;
-#[derive(Default)]
 pub struct Contacts {
+    observe_retention: bool,
     pub decision: AtomicUsize,
     pub candidate: AtomicUsize,
 }
+impl Default for Contacts {
+    fn default() -> Self {
+        Self {
+            observe_retention: true,
+            decision: AtomicUsize::new(0),
+            candidate: AtomicUsize::new(0),
+        }
+    }
+}
 impl Contacts {
+    pub(super) fn without_retention_observation() -> Self {
+        Self {
+            observe_retention: false,
+            ..Self::default()
+        }
+    }
     pub fn counts(&self) -> (usize, usize) {
         (
             self.decision.load(Ordering::Relaxed),
@@ -38,12 +53,14 @@ impl OperationHandler<SourceOnlyRetentionSchema, SetRetentionBinding> for Retent
         if let Err(error) = reader.field(&document, DocumentIdentityField::reference()) {
             return HandlerResult::ExecutionDenied(error);
         }
-        match reader.field(&document, DocumentRetentionField::reference()) {
-            Ok(Some(current)) if current == input.retention_days => {
-                return HandlerResult::DomainDenied(SetRetentionDenial::RetentionUnchanged)
+        if self.0.observe_retention {
+            match reader.field(&document, DocumentRetentionField::reference()) {
+                Ok(Some(current)) if current == input.retention_days => {
+                    return HandlerResult::DomainDenied(SetRetentionDenial::RetentionUnchanged)
+                }
+                Ok(_) => {}
+                Err(error) => return HandlerResult::ExecutionDenied(error),
             }
-            Ok(_) => {}
-            Err(error) => return HandlerResult::ExecutionDenied(error),
         }
         match reader.mutation_target(&document) {
             Ok(target) => HandlerResult::Completed(target),

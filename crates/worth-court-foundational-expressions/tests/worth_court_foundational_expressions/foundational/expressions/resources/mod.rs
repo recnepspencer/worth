@@ -2,17 +2,7 @@
 // read under wide ceilings is re-checked against the admitting profile.
 #[allow(unused_imports)]
 use crate::expressions::ordinary_context::resources::*;
-pub(crate) use {
-    worth_foundational::expression_api::expressions,
-    worth_foundational::expression_api::ExpressionBuilder,
-    worth_foundational::expression_api::ExpressionDenial,
-    worth_foundational::expression_api::ExpressionDenialDetail,
-    worth_foundational::expression_api::ExpressionFunctionCatalog,
-    worth_foundational::expression_api::ExpressionProfile,
-    worth_foundational::expression_api::ExpressionResource,
-    worth_foundational::expression_api::ExpressionSchema,
-    worth_foundational::expression_api::ExpressionType,
-};
+pub(crate) use worth_foundational::expression_api::expressions;
 
 pub(crate) use {
     crate::expressions::ordinary_context::draft,

@@ -74,8 +74,12 @@ where
     {
         return Err(Denial::ActiveReversalConsumed);
     }
-    let interpretation =
-        super::compatibility::require_reapplication_program::<S, C>(target, source, required_root)?;
+    let checked = super::compatibility::require_reapplication_program::<S, C>(
+        target,
+        source,
+        ancestry,
+        required_root,
+    )?;
     let workflow = super::preparation::prepare_workflow::<S, C>(target, phase, source)?;
     let retained = source
         .occurrence()
@@ -93,19 +97,15 @@ where
             C::Source,
         >>::scope_for_binding(input.input());
     let prepared = WorthQueryPreparedCorrectionSource::retain::<S, C, C::Source>(
-        target,
+        checked,
         phase,
         principal,
         request,
-        source,
-        ancestry,
         Some((selected, active_ancestry)),
         selected_lineage(alternative)?,
         key,
         &input,
         scope,
-        interpretation,
-        required_root,
         workflow,
     )?;
     Ok((input, std::sync::Arc::new(prepared)))

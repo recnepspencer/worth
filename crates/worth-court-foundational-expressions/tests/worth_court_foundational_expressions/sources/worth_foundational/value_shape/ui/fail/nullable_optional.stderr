@@ -3,13 +3,13 @@ error[E0080]: evaluation panicked: canonical Option payload can encode null; use
   |
   = note: evaluation of `worth_foundational::value_shape::containers::require_nonnullable_optional_payload::<worth_foundational::OptionalDelegate<worth_foundational::ValueDelegate<u64>>>::{constant#0}` failed here
   |
- ::: src/value_shape/containers.rs
+ ::: $WORKSPACE/crates/worth-foundational/src/value_shape/containers.rs
   |
   | ...   assert!(!Value::WIRE_NULLABLE, "canonical Option payload can encode null; use a named externally tagged enum to preserve presence");
   |       ----------------------------------------------------------------------------------------------------------------------------------- in this macro invocation
 
 note: erroneous constant encountered
- --> src/value_shape/containers.rs
+ --> $WORKSPACE/crates/worth-foundational/src/value_shape/containers.rs
   |
   | /     const {
   | |         assert!(!Value::WIRE_NULLABLE, "canonical Option payload can encode null; use a named externally tagged enum to preserve ...
@@ -17,7 +17,7 @@ note: erroneous constant encountered
   | |_____^
 
 note: erroneous constant encountered
- --> src/value_shape/definition.rs
+ --> $WORKSPACE/crates/worth-foundational/src/value_shape/definition.rs
   |
   |             body: Delegate::SHAPE_BODY,
   |                   ^^^^^^^^^^^^^^^^^^^^
@@ -29,7 +29,7 @@ error[E0080]: evaluation panicked: canonical Option payload can encode null; use
   |
   = note: evaluation of `worth_foundational::value_shape::containers::require_nonnullable_optional_payload::<worth_foundational::ValueDelegate<UnitMarker>>::{constant#0}` failed here
   |
- ::: src/value_shape/containers.rs
+ ::: $WORKSPACE/crates/worth-foundational/src/value_shape/containers.rs
   |
   | ...   assert!(!Value::WIRE_NULLABLE, "canonical Option payload can encode null; use a named externally tagged enum to preserve presence");
   |       ----------------------------------------------------------------------------------------------------------------------------------- in this macro invocation

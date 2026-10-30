@@ -2,14 +2,8 @@
 //! home descriptor and the checkpoint manifest share the root's 32-slot table.
 //! Twenty-eight other records fill it; the next refuses before any effect.
 
-use {
-    worth_store::physical_runtime::AnchoredRecordPublicationFailure,
-    worth_store::physical_runtime::OrderedJournalPublicationFailure,
-};
-
 use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
-use {crate::production_entry::ordered_journals::two_journals::assert_holds, crate::production_entry::ordered_journals::two_journals::publish, crate::production_entry::ordered_journals::two_journals::Journal};
-use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+use {crate::production_entry::ordered_journals::two_journals::assert_holds, crate::production_entry::ordered_journals::two_journals::publish};
 use {worth_store_testkit_recovery_runtime::production_entry::anchored_records::current, worth_store_testkit_recovery_runtime::production_entry::anchored_records::name, worth_store_testkit_recovery_runtime::production_entry::anchored_records::publish as publish_anchored, worth_store_testkit_recovery_runtime::production_entry::anchored_records::value, worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT, worth_store_testkit_recovery_runtime::production_entry::anchored_records::HOME};
 
 #[test]

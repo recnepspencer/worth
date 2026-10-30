@@ -1,16 +1,4 @@
-use {
-    worth_store::physical_runtime::PhysicalOperationAllocationScope,
-    worth_store::physical_runtime::PhysicalResidencyDimension,
-    worth_store::physical_runtime::PhysicalResidencyRetryPosture,
-    worth_store::physical_runtime::RecordAppendBatch,
-    worth_store::physical_runtime::RecordByteLimit,
-    worth_store::physical_runtime::RecordReadDenial,
-    worth_store::physical_runtime::RecordReadLimits,
-    worth_store::physical_runtime::RecordStreamFailureKind,
-};
-
 use worth_store_testkit_store::durable_publication::root::publish_single;
-use worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture;
 
 #[test]
 fn caller_maximum_payload_denies_before_session_delivery_and_releases_allocation() {

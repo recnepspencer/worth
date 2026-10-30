@@ -1,5 +1,5 @@
 error: cannot construct `AsyncNodeAdmissionClassification` with struct literal syntax due to private fields
-  --> tests/ui/async_node_admission_classification_fields_are_private.rs:8:27
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_admission_classification_fields_are_private.rs:8:27
    |
  8 |     let _classification = AsyncNodeAdmissionClassification {
    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

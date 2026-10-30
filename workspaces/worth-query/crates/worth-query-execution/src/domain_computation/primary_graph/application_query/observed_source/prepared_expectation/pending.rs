@@ -21,8 +21,8 @@ impl<Query> WorthQueryPendingSourceExpectation<Query> {
     pub fn consume_into<Schema, Operation, Input, Scope>(
         self,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQuerySourceExpectationDenial>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
@@ -65,13 +65,17 @@ impl<Query> WorthQueryPendingSourceExpectation<Query> {
             self.expected_query_identifier,
             query_identity,
         )?;
-        let control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(admission.publication_request(), allocation_policy);
-        let facts = self.source.validated_facts(
-            &graph.layout,
-            self.expected_query_identifier,
+        // The pending owner carries only source custody across resolution. Borrow
+        // this advancement now, after idempotency selected fresh execution.
+        let control = SourceFactExpansionControl::for_phase(
+            runtime,
+            phase,
             Some(admission.publication_request()),
-            control.policy(),
+            self.expected_query_identifier,
         )?;
+        let facts =
+            self.source
+                .validated_facts(&graph.layout, self.expected_query_identifier, control)?;
         admission.bind_source_facts(facts, self.source.retain_expression_binding());
         Ok(())
     }

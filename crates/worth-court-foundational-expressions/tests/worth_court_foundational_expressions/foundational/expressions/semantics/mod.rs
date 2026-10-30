@@ -2,12 +2,7 @@
 // typed denials for width, unit, and type errors.
 pub(crate) use {
     worth_foundational::expression_api::expressions,
-    worth_foundational::expression_api::ExpressionDenialDetail,
-    worth_foundational::expression_api::ExpressionDenialFamily as Family,
-    worth_foundational::expression_api::ExpressionFunctionCatalog,
-    worth_foundational::expression_api::ExpressionProfile,
     worth_foundational::expression_api::ExpressionType,
-    worth_foundational::expression_api::IntegerType,
 };
 
 pub(crate) use {

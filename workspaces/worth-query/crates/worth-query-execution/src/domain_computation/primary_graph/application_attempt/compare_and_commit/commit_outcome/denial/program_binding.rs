@@ -9,6 +9,10 @@ use super::{
 
 impl WorthQueryApplicationCommitDenial {
     /// The attempt reached the direct commit entry for a program-owned operation.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph::application_attempt) fn program_lane_required<
         Operation,
     >() -> Self {
@@ -19,6 +23,10 @@ impl WorthQueryApplicationCommitDenial {
     }
 
     /// A producer presented an operation outside the installed conditional inventory.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph::application_attempt) fn conditional_operation_not_installed<
         Operation,
     >() -> Self {
@@ -29,6 +37,10 @@ impl WorthQueryApplicationCommitDenial {
     }
 
     /// The occurrence was resolved, but its actual program does not declare this route.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(in crate::domain_computation::primary_graph::application_attempt) fn operation_not_declared_by_active_program<
         Operation,
     >(

@@ -72,7 +72,7 @@ pub enum WorthQueryExternalDispatchPreparationDenial {
     },
     CompletionAllocationDenied {
         stage: Stage,
-        kind: worth_execution::ExecutionAllocationDenialKind,
+        kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
     CompletionStagingCardinalityOverflow,
@@ -124,7 +124,7 @@ pub enum WorthQueryExternalRedispatchDenial {
     },
     CompletionAllocationDenied {
         stage: Stage,
-        kind: worth_execution::ExecutionAllocationDenialKind,
+        kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
     CompletionStagingCardinalityOverflow,

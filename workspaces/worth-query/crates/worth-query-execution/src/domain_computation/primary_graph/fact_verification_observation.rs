@@ -1,5 +1,5 @@
 //! Actual retained-fact and computation handoff work, apart from request billing.
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 pub(super) mod input_cutoff;
 mod registry_custody;
 pub use input_cutoff::{
@@ -17,7 +17,7 @@ use crate::domain_computation::execution_observation;
 
 /// Each field names a separate examination boundary; summing them would
 /// double-count facts examined in several phases. These are not admission units.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryFactVerificationForTest {
     /// Current partition entries read to construct the native dispatch plan.
     pub computation_dispatch_plan_visits: u64,
@@ -81,6 +81,11 @@ pub struct WorthQueryFactVerificationForTest {
     pub completion_fresh_key_visits: u64,
     /// Last refusal of an existing native completion candidate; no fact data.
     pub native_completion_last_decline: Option<&'static str>,
+    /// Last actual correction-overlap refusal branch; vocabulary only, no fact data.
+    pub correction_restored_support_last_unsupported: Option<&'static str>,
+    /// First rejecting correction stage, exact fact coordinate when known, and
+    /// typed denial before any consumer category projection. Passive only.
+    pub correction_restored_support_rejection: Option<String>,
     /// Admitted source facts walked before interruption/validation filtering.
     pub source_admission_visits: u64,
     /// Postcommit capacity and endpoint preparation walks over source facts.
@@ -113,7 +118,7 @@ pub struct WorthQueryFactVerificationForTest {
 }
 
 thread_local! {
-    static OBSERVED: Cell<WorthQueryFactVerificationForTest> = const { Cell::new(WorthQueryFactVerificationForTest {
+    static OBSERVED: RefCell<WorthQueryFactVerificationForTest> = const { RefCell::new(WorthQueryFactVerificationForTest {
         computation_dispatch_plan_visits: 0, computation_result_receiver_visits: 0,
         computation_prepared_partition_visits: 0, computation_tree_plan_visits: 0,
         computation_native_range_visits: 0, computation_native_copied_nodes: 0, computation_native_carried_slot_visits: 0,
@@ -126,7 +131,7 @@ thread_local! {
         sealed_computation_index_visits: 0, completion_metadata_visits: 0,
         completed_fact_moves: 0, completed_fact_chunks: 0, completed_fact_joins: 0,
         carried_call_records: 0, fresh_read_key_records: 0, handler_read_key_records: 0, carried_key_expansion_visits: 0, fallback_carried_metadata_visits: 0,
-        completion_call_roster_visits: 0, completion_fresh_key_visits: 0, native_completion_last_decline: None,
+        completion_call_roster_visits: 0, completion_fresh_key_visits: 0, native_completion_last_decline: None, correction_restored_support_last_unsupported: None, correction_restored_support_rejection: None,
         source_admission_visits: 0, source_currentness_visits: 0,
         provider_application_fact_visits: 0, effect_index_fact_visits: 0, posting_fact_visits: 0, posting_registration_visits: 0, rebase_touch_key_visits: 0,
         rebase_preparation_visits: 0, rebase_resolution_visits: 0, rebase_unanswered_visits: 0,
@@ -297,9 +302,7 @@ fn record(update: impl FnOnce(&mut WorthQueryFactVerificationForTest)) {
     if !CLEANUP_REGISTERED.replace(true) {
         execution_observation::register_cleanup(clear);
     }
-    let mut observed = OBSERVED.get();
-    update(&mut observed);
-    OBSERVED.set(observed);
+    OBSERVED.with_borrow_mut(update);
 }
 
 fn add(total: &mut u64, value: u64) {
@@ -344,4 +347,45 @@ pub(super) fn rebase_touch_key() {
 
 pub(super) fn posting_registration() {
     record(|observed| add(&mut observed.posting_registration_visits, 1));
+}
+
+pub(super) fn correction_restored_support_unsupported(reason: &'static str) {
+    record(|observed| observed.correction_restored_support_last_unsupported = Some(reason));
+}
+
+/// Formatting and coordinate allocation happen only under the existing guard.
+pub(super) fn correction_rejection(
+    stage: &'static str,
+    fact: Option<&super::application_attempt::WorthQueryApplicationObservedFact>,
+    cause: &impl std::fmt::Debug,
+) {
+    record(|observed| {
+        if observed.correction_restored_support_rejection.is_none() {
+            use super::application_attempt::WorthQueryApplicationObservedFact as Fact;
+            let coordinate = fact.map(|fact| match fact {
+                Fact::SourceFieldRevision {
+                    entity_id, locator, ..
+                }
+                | Fact::Field {
+                    entity_id, locator, ..
+                }
+                | Fact::AbsentField {
+                    entity_id, locator, ..
+                }
+                | Fact::OptionalAspectAbsent {
+                    entity_id, locator, ..
+                } => format!("entity={entity_id:?}; locator={locator:?}"),
+                Fact::IndexedEntitySelection {
+                    index_id,
+                    entity_kind,
+                    locator,
+                    ..
+                } => format!("index={index_id:?}; kind={entity_kind:?}; locator={locator:?}"),
+                _ => fact.locator_identity(),
+            });
+            observed.correction_restored_support_rejection = Some(format!(
+                "stage={stage}; coordinate={coordinate:?}; denial={cause:?}"
+            ));
+        }
+    });
 }

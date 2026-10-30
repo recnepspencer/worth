@@ -111,13 +111,13 @@ const SMOKE_CASES: &[SmokeCase] = &[
         "certification::physical_isolation::stable_read_plan_admission::proof_bearing_read_plan_admits_before_execution_handle",
     ),
     smoke(
-        "worth-store-court-store-physical-blob-journeys",
-        "worth_store_court_store_physical_blob_journeys",
+        "worth-store-court-store-replication-physical-blob-journeys",
+        "worth_store_court_store_replication_physical_blob_journeys",
         "process::store::physical_record_journeys::baseline_admission::empty_bootstrap_create_and_reopen_converge",
     ),
     smoke(
-        "worth-store-court-store-physical-blob-journeys",
-        "worth_store_court_store_physical_blob_journeys",
+        "worth-store-court-store-replication-physical-blob-journeys",
+        "worth_store_court_store_replication_physical_blob_journeys",
         "process::store::physical_record_journeys::scan_journeys::scan_batch_widths_converge_to_one_physical_sequence",
     ),
     smoke(
@@ -126,8 +126,8 @@ const SMOKE_CASES: &[SmokeCase] = &[
         "process::store::physical_record_journeys::physical_work::failure::indeterminate_write_obligation_survives_orderly_close_and_reopen",
     ),
     smoke(
-        "worth-store-court-store-physical-record-journeys-physical-work",
-        "worth_store_court_store_physical_record_journeys_physical_work",
+        "worth-store-court-store-replication-physical-record-journeys-physical-work",
+        "worth_store_court_store_replication_physical_record_journeys_physical_work",
         "process::store::physical_record_journeys::physical_work::serving_frame_residency::pins_distinguish_faults_hits_overpin_and_refault_without_another_runtime",
     ),
     smoke(
@@ -136,18 +136,18 @@ const SMOKE_CASES: &[SmokeCase] = &[
         "process::store::physical_record_journeys::record_chunk_views::borrowed_access::inline_view_exposes_only_the_record_payload_and_observational_basis",
     ),
     smoke(
-        "worth-store-court-store-physical-blob-journeys",
-        "worth_store_court_store_physical_blob_journeys",
+        "worth-store-court-store-replication-physical-blob-journeys",
+        "worth_store_court_store_replication_physical_blob_journeys",
         "process::store::physical_record_journeys::record_chunk_views::bounded_copy::bounded_copies_and_views_share_one_cursor_with_exact_copy_evidence",
     ),
     smoke(
-        "worth-store-court-store-physical-record-journeys-physical-work",
-        "worth_store_court_store_physical_record_journeys_physical_work",
+        "worth-store-court-store-replication-physical-record-journeys-physical-work",
+        "worth_store_court_store_replication_physical_record_journeys_physical_work",
         "process::store::physical_record_journeys::physical_work::residency_writeback_retry::no_effect_writeback_retains_dirty_ownership_through_signal_retry",
     ),
     smoke(
-        "worth-store-court-store-physical-record-journeys-physical-work",
-        "worth_store_court_store_physical_record_journeys_physical_work",
+        "worth-store-court-store-replication-physical-record-journeys-physical-work",
+        "worth_store_court_store_replication_physical_record_journeys_physical_work",
         "process::store::physical_record_journeys::physical_work::speculative_residency::outcomes::cold_hot_and_mixed_speculation_reconcile_work_media_and_residency_truth",
     ),
 ];

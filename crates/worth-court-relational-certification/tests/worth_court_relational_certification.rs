@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "worth_court_relational_certification/cost/mod.rs"]
 pub(crate) mod cost;
 #[path = "worth_court_relational_certification/determinism/mod.rs"]

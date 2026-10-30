@@ -1,11 +1,7 @@
 use serde_json::json;
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::admit_authoritative_record_aspect_state, worth_foundational::compatibility,
     worth_foundational::lower_json_record_aspect_state, worth_foundational::validate_aspect_value,
-    worth_foundational::AspectValue, worth_foundational::ContractValidatedAspectValueView,
-    worth_foundational::JsonCompatibilityAspectInput, worth_foundational::ScalarAspectType,
-    worth_foundational::StructAspectValue,
 };
 
 use {

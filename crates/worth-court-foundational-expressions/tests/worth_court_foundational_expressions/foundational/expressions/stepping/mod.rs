@@ -3,21 +3,7 @@
 // supplied profile resets or widens the admitted limits.
 #[allow(unused_imports)]
 use crate::expressions::ordinary_context::stepping::*;
-pub(crate) use {
-    worth_foundational::expression_api::expressions,
-    worth_foundational::expression_api::ExpressionCost,
-    worth_foundational::expression_api::ExpressionDenialDetail,
-    worth_foundational::expression_api::ExpressionEvaluation,
-    worth_foundational::expression_api::ExpressionFunctionCatalog,
-    worth_foundational::expression_api::ExpressionInputs,
-    worth_foundational::expression_api::ExpressionProfile,
-    worth_foundational::expression_api::ExpressionResource,
-    worth_foundational::expression_api::ExpressionSchema,
-    worth_foundational::expression_api::ExpressionStep,
-    worth_foundational::expression_api::ExpressionType,
-    worth_foundational::expression_api::ExpressionValue,
-    worth_foundational::expression_api::MAX_SLICE_QUANTUM,
-};
+pub(crate) use worth_foundational::expression_api::expressions;
 
 pub(crate) use {
     crate::expressions::ordinary_context::admit,

@@ -95,24 +95,23 @@ impl super::WorthUiApplicationSessionState {
                     meaning
                 }
             };
-            if let Meaning::Layout(layout) = meaning.as_ref() {
-                if let Some(descriptor) = layout.region_descriptor() {
-                    if let (Some(declaration), Some(clipping)) = (
-                        material
-                            .overlay_declaration_bindings()
-                            .region_on_surface(surface, descriptor.id().as_str()),
-                        descriptor.clipping().cloned(),
-                    ) {
-                        regions.push(UiMountedRegionDeclarationBinding {
-                            executed_region: identity.clone(),
-                            region_kind: descriptor.id().as_str().into(),
-                            declaration,
-                            plan_index,
-                            depth,
-                            clipping,
-                        });
-                    }
-                }
+            if let Meaning::Layout(layout) = meaning.as_ref()
+                && let Some(descriptor) = layout.region_descriptor()
+                && let (Some(declaration), Some(clipping)) = (
+                    material
+                        .overlay_declaration_bindings()
+                        .region_on_surface(surface, descriptor.id().as_str()),
+                    descriptor.clipping().cloned(),
+                )
+            {
+                regions.push(UiMountedRegionDeclarationBinding {
+                    executed_region: identity.clone(),
+                    region_kind: descriptor.id().as_str().into(),
+                    declaration,
+                    plan_index,
+                    depth,
+                    clipping,
+                });
             }
             pending.extend(
                 meaning

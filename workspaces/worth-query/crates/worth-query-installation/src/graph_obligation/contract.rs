@@ -40,6 +40,9 @@ impl WorthQueryInstalledGraphCapabilityRequirement {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledGraphObligationResourcePosture {
+    ApplicationManagedIndex {
+        maximum_source_results: usize,
+    },
     ApplicationResource {
         maximum_authorization_facts: usize,
     },
@@ -61,6 +64,7 @@ pub enum WorthQueryInstalledGraphObligationEffectPosture {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledGraphObligationTerminalRequirement {
+    ManagedIndexSourceSelection,
     GraphReadProduct,
     AuthorizationDecisionFact,
     TouchedScopeEvidence,
@@ -70,6 +74,9 @@ pub enum WorthQueryInstalledGraphObligationTerminalRequirement {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledGraphObligationSelectionBasis<'a> {
+    ApplicationManagedIndex(
+        &'a crate::application_query::WorthQueryInstalledManagedIndexReadMeaning,
+    ),
     ApplicationQueryGraph(&'a WorthQueryInstalledGraphReadContract),
     ApplicationOperationGraphRole(&'a WorthQueryOperationGraphReadRole),
     AuthenticatedAccessContext,
@@ -106,6 +113,9 @@ impl WorthQueryInstalledGraphObligationIdentity {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryInstalledGraphObligationContract {
+    ManagedIndexRead {
+        meaning: Arc<crate::application_query::WorthQueryInstalledManagedIndexReadMeaning>,
+    },
     QueryGraphRead {
         graph: WorthQueryInstalledGraphReadContract,
     },
@@ -156,7 +166,8 @@ impl WorthQueryInstalledGraphObligation {
 
     pub const fn kind(&self) -> WorthQueryInstalledGraphObligationKind {
         match self.contract {
-            WorthQueryInstalledGraphObligationContract::QueryGraphRead { .. }
+            WorthQueryInstalledGraphObligationContract::ManagedIndexRead { .. }
+            | WorthQueryInstalledGraphObligationContract::QueryGraphRead { .. }
             | WorthQueryInstalledGraphObligationContract::OperationGraphRead { .. } => {
                 WorthQueryInstalledGraphObligationKind::GraphRead
             }
@@ -179,7 +190,8 @@ impl WorthQueryInstalledGraphObligation {
 
     pub const fn required_owners(&self) -> &'static [WorthQueryInstalledGraphObligationOwner] {
         match self.contract {
-            WorthQueryInstalledGraphObligationContract::QueryGraphRead { .. }
+            WorthQueryInstalledGraphObligationContract::ManagedIndexRead { .. }
+            | WorthQueryInstalledGraphObligationContract::QueryGraphRead { .. }
             | WorthQueryInstalledGraphObligationContract::OperationGraphRead { .. }
             | WorthQueryInstalledGraphObligationContract::PrincipalAuthorization
             | WorthQueryInstalledGraphObligationContract::EffectApplication { .. } => {
@@ -196,8 +208,11 @@ impl WorthQueryInstalledGraphObligation {
         }
     }
 
-    pub const fn selection_basis(&self) -> WorthQueryInstalledGraphObligationSelectionBasis<'_> {
+    pub fn selection_basis(&self) -> WorthQueryInstalledGraphObligationSelectionBasis<'_> {
         match &self.contract {
+            WorthQueryInstalledGraphObligationContract::ManagedIndexRead { meaning } => {
+                WorthQueryInstalledGraphObligationSelectionBasis::ApplicationManagedIndex(meaning)
+            }
             WorthQueryInstalledGraphObligationContract::QueryGraphRead { graph } => {
                 WorthQueryInstalledGraphObligationSelectionBasis::ApplicationQueryGraph(graph)
             }
@@ -227,7 +242,8 @@ impl WorthQueryInstalledGraphObligation {
 
     pub const fn effect_posture(&self) -> WorthQueryInstalledGraphObligationEffectPosture {
         match self.contract {
-            WorthQueryInstalledGraphObligationContract::QueryGraphRead { .. }
+            WorthQueryInstalledGraphObligationContract::ManagedIndexRead { .. }
+            | WorthQueryInstalledGraphObligationContract::QueryGraphRead { .. }
             | WorthQueryInstalledGraphObligationContract::OperationGraphRead { .. }
             | WorthQueryInstalledGraphObligationContract::MutationTouch { .. } => {
                 WorthQueryInstalledGraphObligationEffectPosture::Observational
@@ -250,6 +266,9 @@ impl WorthQueryInstalledGraphObligation {
         &self,
     ) -> WorthQueryInstalledGraphObligationTerminalRequirement {
         match self.contract {
+            WorthQueryInstalledGraphObligationContract::ManagedIndexRead { .. } => {
+                WorthQueryInstalledGraphObligationTerminalRequirement::ManagedIndexSourceSelection
+            }
             WorthQueryInstalledGraphObligationContract::QueryGraphRead { .. }
             | WorthQueryInstalledGraphObligationContract::OperationGraphRead { .. } => {
                 WorthQueryInstalledGraphObligationTerminalRequirement::GraphReadProduct

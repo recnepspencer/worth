@@ -17,6 +17,10 @@ pub fn allocations_during<T>(operation: impl FnOnce() -> T) -> (T, Stats) {
     (result, region.change())
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Observes allocator peaks while a separately driven fixture performs physical work."
+)]
 pub fn peak_live_bytes_during<T>(operation: impl FnOnce() -> T) -> (T, usize) {
     let baseline = live_bytes(ALLOCATOR.stats());
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));

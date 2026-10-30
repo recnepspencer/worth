@@ -1,11 +1,5 @@
 use serde_json::json;
-use worth_proof::TransitionOutcome;
-use {
-    worth_foundational::aspects, worth_foundational::compatibility,
-    worth_foundational::AspectLocator, worth_foundational::AspectValue,
-    worth_foundational::BoundarySourceLocator, worth_foundational::LocatorAuthority,
-    worth_foundational::ScalarAspectType,
-};
+use {worth_foundational::aspects, worth_foundational::compatibility};
 
 use crate::certification::ordinary_context::compatibility::json_lowering_fixtures::task_summary_contract;
 

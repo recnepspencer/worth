@@ -15,7 +15,7 @@ impl<Schema, Operation, Input, Scope>
     ) where
         Schema: ApplicationSchema,
         Contract: worth_query_declaration::facade::application_operation::ApplicationMutationOutputContract<Schema>,
-    {
+{
         self.output_correspondence
             .prepare_test_contract::<Schema, Contract>();
     }

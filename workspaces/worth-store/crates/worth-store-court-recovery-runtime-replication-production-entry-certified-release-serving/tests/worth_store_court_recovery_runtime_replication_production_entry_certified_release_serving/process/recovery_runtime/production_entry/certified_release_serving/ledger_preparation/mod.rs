@@ -9,15 +9,8 @@
 //! seal-plus-bootstrap resident ceiling is unit-tested by
 //! `recovery_residency::tests::retained_state_and_reducing_ceiling_precede_allocation`.
 
-#[allow(unused_imports)] use crate::production_entry::certified_release_serving::ledger_preparation::*;
-use {std::num::NonZeroU32, std::num::NonZeroU64, std::path::Path};
-
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::CheckpointMemoryLimit, worth_store::physical_runtime::FilesystemAccessPosture, worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::GroupCommitDelay, worth_store::physical_runtime::GroupCommitLimit, worth_store::physical_runtime::IdempotencyRetentionGenerations, worth_store::physical_runtime::LiveIdempotencyBindingLimit, worth_store::physical_runtime::PendingUnresolvedMutationLimit, worth_store::physical_runtime::PhysicalCheckpointPolicy, worth_store::physical_runtime::PhysicalDurabilityDeclaration, worth_store::physical_runtime::PhysicalIdempotencyPolicy, worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::RecordBootstrapDenial, worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody, worth_store::physical_runtime::RetainedWalTailLimit, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
-
-use {worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::open_serving_with_seal, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery::recover, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request_with_memory};
-
-
+#[allow(unused_imports)]
+use crate::production_entry::certified_release_serving::ledger_preparation::*;
 
 #[test]
 fn recovered_seal_refuses_a_different_serving_policy_then_reopens_under_its_own() {

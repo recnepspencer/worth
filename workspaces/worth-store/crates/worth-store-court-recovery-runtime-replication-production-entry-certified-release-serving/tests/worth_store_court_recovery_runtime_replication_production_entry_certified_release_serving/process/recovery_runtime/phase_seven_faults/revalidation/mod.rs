@@ -1,14 +1,13 @@
-#[allow(unused_imports)] use crate::phase_seven_faults::revalidation::*;
-use {worth_store::physical_runtime::certification::MediaFaultDirective};
-use {worth_store::physical_runtime::PhysicalRecoveryCleanupRemovalDenialKind, worth_store::physical_runtime::RecoveryCleanupArtifactRevalidationDenial, worth_store::physical_runtime::RecoveryCleanupRemovalDenialCause};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence, worth_store_recovery_runtime::RecoveryCleanupPosture};
+#[allow(unused_imports)]
+use crate::phase_seven_faults::revalidation::*;
 
-use {crate::phase_seven_faults::world::cleanup_fault, crate::phase_seven_faults::world::cleanup_world, crate::phase_seven_faults::world::empty_fault_schedule, crate::phase_seven_faults::world::recover_with_schedule, crate::phase_seven_faults::world::reopen_with_schedule};
-
-
-
-
-
+use {
+    crate::phase_seven_faults::world::cleanup_fault,
+    crate::phase_seven_faults::world::cleanup_world,
+    crate::phase_seven_faults::world::empty_fault_schedule,
+    crate::phase_seven_faults::world::recover_with_schedule,
+    crate::phase_seven_faults::world::reopen_with_schedule,
+};
 
 #[test]
 fn cleanup_denial_retains_the_artifact_and_exact_backend_failure() {
@@ -16,18 +15,25 @@ fn cleanup_denial_retains_the_artifact_and_exact_backend_failure() {
     let candidate = world.oldest_wal();
     let candidate_bytes = std::fs::metadata(&candidate).unwrap().len();
     let checkpoint_bytes = current_checkpoint_bytes(&world.root);
-    let schedule = cleanup_fault(worth_store::physical_runtime::certification::MediaFaultDirective::FailBefore {
-        kind: std::io::ErrorKind::PermissionDenied,
-        raw_os_error: None,
-    });
+    let schedule = cleanup_fault(
+        worth_store::physical_runtime::certification::MediaFaultDirective::FailBefore {
+            kind: std::io::ErrorKind::PermissionDenied,
+            raw_os_error: None,
+        },
+    );
     let handoff = recover_with_schedule(&world.root, schedule);
-    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
+    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) =
+        handoff.cleanup_posture()
+    else {
         panic!("cleanup denial produces deferred recovered handoff")
     };
     assert!(candidate.exists());
     assert!(evidence.performed_removals().is_empty());
     assert_eq!(evidence.counters().denied_before_effect, 1);
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect {
+        denial,
+        ..
+    }] = evidence.deferrals()
     else {
         panic!("one exact denied cleanup settlement")
     };
@@ -68,7 +74,10 @@ fn cleanup_revalidates_exact_wal_bytes_before_deletion() {
     crate::revalidation::window::flip_last_byte(&candidate);
     let indeterminate = crate::revalidation::window::rejoin_denied(reopened.finish());
     let evidence = crate::revalidation::window::deferred_cleanup(&indeterminate);
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect {
+        denial,
+        ..
+    }] = evidence.deferrals()
     else {
         panic!("one exact digest mismatch")
     };
@@ -101,13 +110,20 @@ fn cleanup_revalidation_read_failure_retains_exact_zero_byte_progress() {
     let checkpoint_bytes = current_checkpoint_bytes(&world.root);
     std::fs::remove_file(candidate).unwrap();
 
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
+        reopened.finish()
+    else {
         panic!("reread failure remains deferred cleanup debt")
     };
-    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
+    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) =
+        handoff.cleanup_posture()
+    else {
         panic!("missing cleanup artifact must defer")
     };
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect {
+        denial,
+        ..
+    }] = evidence.deferrals()
     else {
         panic!("one exact reread failure")
     };
@@ -140,13 +156,20 @@ fn missing_wal_directory_retains_checkpoint_read_and_scheduled_denial_evidence()
     let wal_directory = world.root.join("families").join("wal");
     std::fs::rename(&wal_directory, world.root.join("families").join("wal-away")).unwrap();
 
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
+        reopened.finish()
+    else {
         panic!("missing WAL directory remains deferred cleanup debt")
     };
-    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
+    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) =
+        handoff.cleanup_posture()
+    else {
         panic!("missing WAL directory must defer cleanup")
     };
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect {
+        denial,
+        ..
+    }] = evidence.deferrals()
     else {
         panic!("one exact WAL directory read failure")
     };
@@ -180,13 +203,20 @@ fn cleanup_rejects_a_distinct_valid_persisted_checkpoint_before_wal_revalidation
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
     let checkpoint_bytes = current_checkpoint_bytes(&world.root);
     let (root, store) = (world.root.clone(), reopened.store_identity());
-    let outcome = crate::revalidation::window::finish_changed_before_revalidation(reopened, move || {
-        let replaced = crate::revalidation::checkpoint_replacement::replace_with_distinct_valid_checkpoint(&root, store);
-        assert_eq!(replaced, checkpoint_bytes);
-    });
+    let outcome =
+        crate::revalidation::window::finish_changed_before_revalidation(reopened, move || {
+            let replaced =
+                crate::revalidation::checkpoint_replacement::replace_with_distinct_valid_checkpoint(
+                    &root, store,
+                );
+            assert_eq!(replaced, checkpoint_bytes);
+        });
     let indeterminate = crate::revalidation::window::rejoin_denied(outcome);
     let evidence = crate::revalidation::window::deferred_cleanup(&indeterminate);
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect {
+        denial,
+        ..
+    }] = evidence.deferrals()
     else {
         panic!("one exact checkpoint mismatch")
     };
@@ -218,13 +248,20 @@ fn cleanup_binding_substitution_denies_in_store_before_backend_revalidation_or_e
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
     reopened.certification_substitute_cleanup_authorization();
 
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) =
+        reopened.finish()
+    else {
         panic!("authorization mismatch remains deferred cleanup debt")
     };
-    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
+    let worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence) =
+        handoff.cleanup_posture()
+    else {
         panic!("authorization mismatch must defer cleanup")
     };
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect {
+        denial,
+        ..
+    }] = evidence.deferrals()
     else {
         panic!("one exact authorization denial")
     };
@@ -245,9 +282,7 @@ fn cleanup_binding_substitution_denies_in_store_before_backend_revalidation_or_e
     assert!(evidence.performed_removals().is_empty());
     assert!(candidate.exists());
 }
-#[cfg(all())]
 #[path = "denial_matrix/mod.rs"]
 pub(crate) mod denial_matrix;
-#[cfg(all())]
 #[path = "lasting_changes/mod.rs"]
 pub(crate) mod lasting_changes;

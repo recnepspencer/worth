@@ -1,15 +1,5 @@
 #[allow(unused_imports)]
 use crate::artifact_snapshot::process_context::*;
-use {std::collections::BTreeMap, std::collections::BTreeSet};
-use {std::path::Path, std::path::PathBuf};
-
-use worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity;
-use worth_store_physical_format::RecordArtifactFile;
-use {
-    worth_store_recovery_runtime::RecoveryCleanupDispositionKind,
-    worth_store_recovery_runtime::RecoveryCleanupEvidence,
-    worth_store_recovery_runtime::RecoveryCleanupTarget,
-};
 
 #[test]
 fn an_omitted_preexisting_artifact_cannot_be_hidden_by_the_cleanup_oracle() {

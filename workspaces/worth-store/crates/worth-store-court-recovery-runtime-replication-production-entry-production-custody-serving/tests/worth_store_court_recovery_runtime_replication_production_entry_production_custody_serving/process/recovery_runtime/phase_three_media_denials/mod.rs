@@ -2,30 +2,10 @@ use crate::phase_three_media_denials::phase_three_support::synthetic_topology::p
 #[allow(unused_imports)]
 use crate::phase_three_media_denials::*;
 use {
-    std::path::Path, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
     worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,
     worth_store_testkit_recovery_runtime::phase_three_support::initialize_store,
     worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis,
-};
-use {
-    worth_store::physical_runtime::ArtifactTreeFailureKind,
-    worth_store::physical_runtime::RecoveryDiscoveryArtifact,
-};
-use {
-    worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily,
-    worth_store_physical_format::RecordArtifactFile,
-};
-use {
-    worth_store_physical_integrity::PhysicalDamageCause,
-    worth_store_physical_integrity::PhysicalIntegrityRejection,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
-    worth_store_recovery_runtime::PhysicalRecoveryIntegrityObservationOutcome,
-    worth_store_recovery_runtime::PhysicalRecoveryMediaObservationFailure,
-    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolArtifact,
-    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial,
-    worth_store_recovery_runtime::PhysicalRecoverySourceDenial,
 };
 
 #[test]

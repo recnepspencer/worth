@@ -1,12 +1,6 @@
 #[allow(unused_imports)]
 use crate::decompose_pattern::ordinary_context::tree_reuse::*;
-pub(crate) use {
-    crate::decompose_pattern::ordinary_context::EDITIONS, worth_execution::BackInput,
-    worth_execution::ExecutionDecompose, worth_execution::ExecutionMap,
-    worth_execution::InterfaceSolution, worth_execution::InteriorResult,
-    worth_execution::MapKernelFailure, worth_execution::MapPartition,
-    worth_foundational::PartitionIdentity,
-};
+pub(crate) use crate::decompose_pattern::ordinary_context::EDITIONS;
 
 #[test]
 fn one_changed_contribution_recombines_only_path_and_matches_fresh_tree() {

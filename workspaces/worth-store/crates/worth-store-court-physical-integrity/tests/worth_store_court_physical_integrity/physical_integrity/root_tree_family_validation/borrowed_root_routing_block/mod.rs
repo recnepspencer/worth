@@ -1,10 +1,5 @@
-use worth_store_physical_format::{RootRoutingCoordinateKey, SelectedRecordContentClass};
-use worth_store_physical_integrity::{
-    validate_root_routing_block_borrowed, BorrowedRootRoutingBlockIntegrityValidation,
-    UntrustedPhysicalArtifact,
-};
-
-use crate::support::root_tree_family_validation as support;
+use worth_store_physical_format::RootRoutingCoordinateKey;
+use worth_store_physical_integrity::validate_root_routing_block_borrowed;
 
 #[test]
 fn borrowed_route_validation_matches_owned_exact_scope_and_placements() {

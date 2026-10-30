@@ -1,4 +1,9 @@
-pub use {worth_server::WorthServerAbuseBudgetReceipt, worth_server::WorthServerBinaryCounterSet, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerExternalCounterSet, worth_server::WorthServerTransferByteClass, worth_server::WorthServerTransferCleanupEvidence, worth_server::WorthServerTransferCleanupReason};
+pub use {
+    worth_server::WorthServerAbuseBudgetReceipt, worth_server::WorthServerBinaryCounterSet,
+    worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerExternalCounterSet,
+    worth_server::WorthServerTransferByteClass, worth_server::WorthServerTransferCleanupEvidence,
+    worth_server::WorthServerTransferCleanupReason,
+};
 
 pub fn assert_budget_receipt(
     receipt: &WorthServerAbuseBudgetReceipt,
@@ -51,11 +56,7 @@ pub fn assert_external_counter(
     );
 }
 
-pub fn assert_binary_counter(
-    counters: &WorthServerBinaryCounterSet,
-    name: &str,
-    expected: u64,
-) {
+pub fn assert_binary_counter(counters: &WorthServerBinaryCounterSet, name: &str, expected: u64) {
     assert_eq!(
         counters.counter(name),
         Some(expected),

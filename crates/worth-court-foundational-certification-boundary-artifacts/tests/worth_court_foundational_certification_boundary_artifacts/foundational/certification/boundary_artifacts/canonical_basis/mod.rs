@@ -1,6 +1,5 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::boundary_artifacts::canonical_basis::*;
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::claim_derived_projection_boundary_surface,
     worth_foundational::claim_receipt_evidence_boundary_surface,
@@ -10,19 +9,6 @@ use {
     worth_foundational::plan_descriptive_boundary_materialization,
     worth_foundational::prepare_materialized_boundary_artifact_for_canonical_basis,
     worth_foundational::prepare_materialized_boundary_bundle_for_canonical_basis,
-    worth_foundational::AdmissionReadinessProfile, worth_foundational::CanonicalBasisDomain,
-    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
-    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue,
-    worth_foundational::CanonicalComparisonOutcome,
-    worth_foundational::CertificationPostureProfile,
-    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
-    worth_foundational::FoundationalBoundaryArtifactSurface,
-    worth_foundational::FoundationalBoundaryMaterializationSeam,
-    worth_foundational::FoundationalBoundaryMaterializationSource,
-    worth_foundational::FoundationalBoundaryReceiptSurface,
-    worth_foundational::FoundationalBoundaryReportSurface,
-    worth_foundational::FoundationalBoundarySummarySurface,
-    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
 };
 
 use {

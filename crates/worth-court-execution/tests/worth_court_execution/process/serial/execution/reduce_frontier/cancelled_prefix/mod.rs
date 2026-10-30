@@ -1,18 +1,9 @@
 // A later stopped task cannot discard an earlier canonical join.
 use {
     crate::reduce_frontier::isolated_context::authority,
-    crate::reduce_frontier::isolated_context::lease, crate::reduce_frontier::isolated_context::map,
+    crate::reduce_frontier::isolated_context::map,
     crate::reduce_frontier::isolated_context::mapped_u64,
-    crate::reduce_frontier::isolated_context::TEST_LOCK, crate::test_serialization,
-    std::num::NonZeroUsize, std::sync::Mutex, worth_execution::LeaseRequest,
-    worth_execution::ReduceInputDenial, worth_execution::ReductionRunStop,
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
-    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
-};
-use {
-    worth_execution::CancellationSource, worth_execution::ExecutionResourceLease,
-    worth_execution::ExecutionWorkCeiling, worth_execution::MapKernelStop,
-    worth_execution::SerialMemoryBudget, worth_execution::SerialRequest,
+    crate::reduce_frontier::isolated_context::TEST_LOCK, worth_execution::LeaseRequest,
 };
 
 #[test]

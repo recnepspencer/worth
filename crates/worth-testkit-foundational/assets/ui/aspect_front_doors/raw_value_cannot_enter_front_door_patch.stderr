@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
- --> tests/ui/aspect_front_doors/raw_value_cannot_enter_front_door_patch.rs:7:14
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/aspect_front_doors/raw_value_cannot_enter_front_door_patch.rs
   |
-7 |         .set(AspectValue::Int64(1))
+  |         .set(AspectValue::Int64(1))
   |          --- ^^^^^^^^^^^^^^^^^^^^^ expected `Artifact<ContractValidated, ...>`, found `AspectValue`
   |          |
   |          arguments to this method are incorrect
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected struct `worth_proof::artifact::carrier::Artifact<worth_foundational::aspects::validation::validated_value::ContractValidated, ContractValidatedAspectValue>`
                found enum `AspectValue`
 note: method defined here
- --> src/aspects/front_doors/patches/whole_aspect_builder.rs
+ --> $WORKSPACE/crates/worth-foundational/src/aspects/front_doors/patches/whole_aspect_builder.rs
   |
   |     pub fn set(mut self, artifact: ContractValidatedAspectArtifact) -> Self {
   |            ^^^

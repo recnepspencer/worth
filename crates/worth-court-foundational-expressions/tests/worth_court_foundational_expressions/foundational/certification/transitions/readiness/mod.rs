@@ -1,6 +1,5 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::transitions::readiness::*;
-use std::path::Path;
 use {
     worth_foundational::certify_foundational_transition_milestone5_production_test_readiness,
     worth_foundational::certify_foundational_transition_milestone9_scoped_merge_production_test_readiness,
@@ -8,9 +7,6 @@ use {
     worth_foundational::foundational_transition_milestone9_scoped_merge_readiness_report,
     worth_foundational::require_foundational_transition_milestone5_production_test_readiness,
     worth_foundational::require_foundational_transition_milestone9_scoped_merge_production_test_readiness,
-    worth_foundational::FoundationalTransitionCertifiedSurface,
-    worth_foundational::FoundationalTransitionProductionReadinessCertified,
-    worth_foundational::FoundationalTransitionProductionTestReadyArtifact,
 };
 
 #[test]
@@ -181,4 +177,13 @@ fn production_readiness_phase_gates_are_evidence_backed() {
         .phase_gates()
         .iter()
         .all(|evidence| crate_root_path(evidence.evidence_path()).exists()));
+}
+
+fn transition_test_root() -> std::path::PathBuf {
+    std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/worth_court_foundational_expressions/foundational/certification/transitions"
+    ))
+    .canonicalize()
+    .expect("transition court test root exists")
 }

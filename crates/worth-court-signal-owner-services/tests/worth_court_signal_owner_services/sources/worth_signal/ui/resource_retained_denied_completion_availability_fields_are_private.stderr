@@ -1,5 +1,5 @@
 error[E0451]: fields `denial_id`, `request_id`, `node`, `denial_class` and `class` of struct `ResourceRetainedDeniedCompletionAvailability` are private
-  --> tests/ui/resource_retained_denied_completion_availability_fields_are_private.rs:12:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retained_denied_completion_availability_fields_are_private.rs:12:9
    |
 11 |     let _availability = ResourceRetainedDeniedCompletionAvailability {
    |                         -------------------------------------------- in this type

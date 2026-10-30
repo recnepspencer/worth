@@ -292,3 +292,7 @@ pub fn read_u64_at(bytes: &[u8], offset: usize) -> Result<u64, BindingInspection
 pub fn array<const N: usize>(bytes: &[u8]) -> [u8; N] {
     bytes.try_into().expect("fixed field length was checked")
 }
+
+#[path = "declarations/expected_fields.rs"]
+mod expected_fields;
+pub use expected_fields::*;

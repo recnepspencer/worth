@@ -1,5 +1,5 @@
 error[E0451]: fields `scheduled_frontier_width`, `ready_frontier_width`, `next_due_tick`, `next_due_wake_id`, `next_due_wake_ordinal`, `next_ready_wake_id` and `next_ready_wake_ordinal` of struct `TemporalFrontierSnapshot` are private
-  --> tests/ui/temporal_frontier_snapshot_fields_are_private.rs:5:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/temporal_frontier_snapshot_fields_are_private.rs:5:9
    |
  4 |     let _snapshot = TemporalFrontierSnapshot {
    |                     ------------------------ in this type

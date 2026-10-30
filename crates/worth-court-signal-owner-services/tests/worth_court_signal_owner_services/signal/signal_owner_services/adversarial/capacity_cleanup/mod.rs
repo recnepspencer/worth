@@ -2,20 +2,8 @@
 // ordinary court but are selected by the Scale roster with `--ignored`.
 #[allow(unused_imports)]
 use crate::signal_owner_services::ordinary_context::adversarial::capacity_cleanup::*;
-pub(crate) use std::thread;
-pub(crate) use {std::sync::mpsc, std::sync::Arc, std::sync::Condvar, std::sync::Mutex};
 
-pub(crate) use {
-    worth_signal::facade::branch::SignalBranchAdvanceDenial,
-    worth_signal::facade::branch::SignalBranchRetentionAcquisitionDenial,
-    worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome,
-    worth_signal::facade::branch::SignalOwnerCancellationSource,
-};
-
-pub(crate) use {
-    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
-    crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND,
-};
+pub(crate) use crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND;
 
 #[test]
 fn operation_capacity_denies_the_65th_and_restores_after_release() {

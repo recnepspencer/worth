@@ -1,15 +1,5 @@
 #[allow(unused_imports)]
 use crate::branch_retention_contract::ordinary_context::*;
-use worth_proof::TransitionOutcome;
-use worth_signal::facade::runtime::SignalBranchRetirementDenial;
-use {
-    worth_signal::facade::branch::SignalBranchRetentionAcquisitionDenial,
-    worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome,
-};
-use {
-    worth_signal::facade::SignalBranchRetirementReason, worth_signal::facade::SignalGraph,
-    worth_signal::facade::SignalRuntime,
-};
 
 #[test]
 fn retention_capacity_denies_before_unbounded_growth() {

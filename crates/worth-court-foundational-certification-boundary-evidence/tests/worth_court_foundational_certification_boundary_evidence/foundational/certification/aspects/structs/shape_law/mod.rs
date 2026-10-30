@@ -1,7 +1,11 @@
-use {worth_foundational::validate_aspect_value, worth_foundational::AbsenceLaw, worth_foundational::AspectContract, worth_foundational::AspectValue, worth_foundational::CanonicalString, worth_foundational::ContractValidationDenial, worth_foundational::FieldDeclaration, worth_foundational::FieldKey, worth_foundational::FieldRequirement, worth_foundational::ScalarAspectType, worth_foundational::StructAspectShape, worth_foundational::StructAspectValue, worth_foundational::StructAspectValueConstructionDenial};
-use {worth_proof::TransitionOutcome};
+use worth_foundational::validate_aspect_value;
 
-use {worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision};
+use {
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision,
+};
 
 #[test]
 fn struct_contract_validation_is_canonical_and_hostile_to_unknown_fields() {
@@ -26,26 +30,40 @@ fn struct_contract_validation_is_canonical_and_hostile_to_unknown_fields() {
         .expect("coherent field law"),
     ])
     .expect("unique fields");
-    let contract =
-        worth_foundational::AspectContract::struct_aspect(key("task.summary"), identity(2), revision(1), shape);
+    let contract = worth_foundational::AspectContract::struct_aspect(
+        key("task.summary"),
+        identity(2),
+        revision(1),
+        shape,
+    );
 
     let value = worth_foundational::StructAspectValue::new([
         (
             title.clone(),
-            worth_foundational::AspectValue::String(worth_foundational::CanonicalString::from("Ship it")),
+            worth_foundational::AspectValue::String(worth_foundational::CanonicalString::from(
+                "Ship it",
+            )),
         ),
         (done.clone(), worth_foundational::AspectValue::Bool(false)),
     ])
     .expect("unique fields");
     let outcome = validate_aspect_value(&contract, value.into());
 
-    assert!(matches!(outcome, worth_proof::TransitionOutcome::Success(_)));
+    assert!(matches!(
+        outcome,
+        worth_proof::TransitionOutcome::Success(_)
+    ));
 
     let unknown = field("surprise");
     let denied = validate_aspect_value(
         &contract,
         worth_foundational::StructAspectValue::new([
-            (title, worth_foundational::AspectValue::String(worth_foundational::CanonicalString::from("Ship it"))),
+            (
+                title,
+                worth_foundational::AspectValue::String(worth_foundational::CanonicalString::from(
+                    "Ship it",
+                )),
+            ),
             (done, worth_foundational::AspectValue::Bool(false)),
             (unknown.clone(), worth_foundational::AspectValue::Bool(true)),
         ])
@@ -55,7 +73,9 @@ fn struct_contract_validation_is_canonical_and_hostile_to_unknown_fields() {
 
     assert_eq!(
         denied,
-        worth_proof::TransitionOutcome::Denied(worth_foundational::ContractValidationDenial::UnknownField(unknown))
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::ContractValidationDenial::UnknownField(unknown)
+        )
     );
 }
 
@@ -87,11 +107,15 @@ fn struct_value_construction_rejects_duplicate_fields() {
     let denied = worth_foundational::StructAspectValue::new([
         (
             title.clone(),
-            worth_foundational::AspectValue::String(worth_foundational::CanonicalString::from("first")),
+            worth_foundational::AspectValue::String(worth_foundational::CanonicalString::from(
+                "first",
+            )),
         ),
         (
             title.clone(),
-            worth_foundational::AspectValue::String(worth_foundational::CanonicalString::from("second")),
+            worth_foundational::AspectValue::String(worth_foundational::CanonicalString::from(
+                "second",
+            )),
         ),
     ]);
 

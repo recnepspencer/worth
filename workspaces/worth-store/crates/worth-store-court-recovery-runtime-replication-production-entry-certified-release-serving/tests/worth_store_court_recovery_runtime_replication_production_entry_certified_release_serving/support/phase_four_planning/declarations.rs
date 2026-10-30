@@ -1,30 +1,64 @@
-
-
-
-
-
-
-
-
-
-
-
-pub(crate) use {std::num::NonZeroU64};
+pub(crate) use std::num::NonZeroU64;
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits, worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked, worth_store_testkit_recovery_runtime::phase_three_support::initialize_store, worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_checkpoint, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_covered_wal, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::StoreRecoveryBindingSampleDenial};
-pub(crate) use {worth_store_physical_format::encode_data_frame_page_lsn, worth_store_physical_format::CheckpointBindingCompactionHeader, worth_store_physical_format::CheckpointRootBasis, worth_store_physical_format::CheckpointStreamEncoder, worth_store_physical_format::CheckpointWalSourceRange, worth_store_physical_format::DurableFrameKind, worth_store_physical_format::PhysicalCheckpointIdentity, worth_store_physical_format::PhysicalCheckpointSource, worth_store_physical_format::PhysicalPageLsn, worth_store_physical_format::RecordArtifactFile};
-pub(crate) use {worth_store_recovery_physics::PhysicalRedoDecisionKind, worth_store_recovery_physics::PhysicalRedoPlanningDenial, worth_store_recovery_physics::PhysicalRedoTargetIdentity, worth_store_recovery_physics::RecoveryOperationFate, worth_store_recovery_physics::RecoveryPlanCostDenial};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial};
-pub(crate) use {worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution, worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::canonical_rooted_mutation_without_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::StoreRecoveryBindingSampleDenial,
+};
+pub(crate) use {
+    worth_store_physical_format::encode_data_frame_page_lsn,
+    worth_store_physical_format::CheckpointBindingCompactionHeader,
+    worth_store_physical_format::CheckpointRootBasis,
+    worth_store_physical_format::CheckpointStreamEncoder,
+    worth_store_physical_format::CheckpointWalSourceRange,
+    worth_store_physical_format::DurableFrameKind,
+    worth_store_physical_format::PhysicalCheckpointIdentity,
+    worth_store_physical_format::PhysicalCheckpointSource,
+    worth_store_physical_format::PhysicalPageLsn, worth_store_physical_format::RecordArtifactFile,
+};
+pub(crate) use {
+    worth_store_recovery_physics::PhysicalRedoDecisionKind,
+    worth_store_recovery_physics::PhysicalRedoPlanningDenial,
+    worth_store_recovery_physics::PhysicalRedoTargetIdentity,
+    worth_store_recovery_physics::RecoveryOperationFate,
+    worth_store_recovery_physics::RecoveryPlanCostDenial,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration,
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits,
+    worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,
+    worth_store_testkit_recovery_runtime::phase_three_support::initialize_store,
+    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_checkpoint,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_covered_wal,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis,
+};
+pub(crate) use {
+    worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution,
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::canonical_rooted_mutation_without_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
 pub(crate) fn publish_secured_synthetic_checkpoint(
     root: &Path,
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
 ) -> PhysicalCheckpointIdentity {
-    let checkpoint = worth_store_physical_format::PhysicalCheckpointIdentity::new(store, std::num::NonZeroU64::new(1).unwrap());
+    let checkpoint = worth_store_physical_format::PhysicalCheckpointIdentity::new(
+        store,
+        std::num::NonZeroU64::new(1).unwrap(),
+    );
     let source = worth_store_physical_format::PhysicalCheckpointSource::secured_concurrent(
         checkpoint,
         worth_store_physical_format::CheckpointWalSourceRange::new(1, 2).unwrap(),
@@ -35,7 +69,8 @@ pub(crate) fn publish_secured_synthetic_checkpoint(
     )
     .unwrap();
     let (encoder, header) = worth_store_physical_format::CheckpointStreamEncoder::begin(source);
-    let cutover = worth_store_physical_format::CheckpointBindingCompactionHeader::new(1, 2).unwrap();
+    let cutover =
+        worth_store_physical_format::CheckpointBindingCompactionHeader::new(1, 2).unwrap();
     let (compaction, cutover_record) = encoder.begin_binding_compaction(cutover);
     let (_, footer) = compaction.finish();
     let mut bytes = Vec::new();
@@ -46,7 +81,9 @@ pub(crate) fn publish_secured_synthetic_checkpoint(
     checkpoint
 }
 
-pub(crate) fn prepare_ordinary_recovery_root(name: &str) -> worth_store_test_support::TemporaryDirectory {
+pub(crate) fn prepare_ordinary_recovery_root(
+    name: &str,
+) -> worth_store_test_support::TemporaryDirectory {
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery(name).unwrap();
     let retained_root = world.retained_root();
     let acknowledgment =
@@ -54,7 +91,8 @@ pub(crate) fn prepare_ordinary_recovery_root(name: &str) -> worth_store_test_sup
     assert_ne!(acknowledgment.request_fingerprint().bytes(), [0; 32]);
     let checkpoint_request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x42; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) = world
         .serving()
@@ -65,7 +103,9 @@ pub(crate) fn prepare_ordinary_recovery_root(name: &str) -> worth_store_test_sup
         panic!("ordinary checkpoint admission must succeed")
     };
     let checkpoint = match handle.wait() {
-        worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(checkpoint) => checkpoint,
+        worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(checkpoint) => {
+            checkpoint
+        }
         other => panic!("ordinary checkpoint publication must complete: {other:?}"),
     };
     assert!(checkpoint.retained_wal_tail().segment_count().get() > 0);
@@ -75,7 +115,9 @@ pub(crate) fn prepare_ordinary_recovery_root(name: &str) -> worth_store_test_sup
     retained_root
 }
 
-pub(crate) fn ordinary_recovery_declaration(manifest_entries: u64) -> PhysicalRecoveryLimitDeclaration {
+pub(crate) fn ordinary_recovery_declaration(
+    manifest_entries: u64,
+) -> PhysicalRecoveryLimitDeclaration {
     let mut declaration = limit_declaration(2, 8, 2 * 1024 * 1024);
     declaration.manifest_entries = manifest_entries;
     declaration.wal_bytes = 2 * 1024 * 1024;

@@ -36,6 +36,10 @@ use worth_query_decl::facade::application_schema::OperationEmits;
 
 use rail_transport::BankEstateRailTransport;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "owner-thread thread-builder=1: The example retains native World and final disposal on its joined owner thread"
+)]
 fn main() -> Result<(), ExampleFailure> {
     let close = std::thread::Builder::new()
         .name("inbound-completion-example".to_owned())
@@ -50,6 +54,10 @@ fn main() -> Result<(), ExampleFailure> {
     Ok(())
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime async-runtime=1: The example owns the callback transport executor while native computation stays Query-owned"
+)]
 fn run() -> Result<bank_http_adapter::BankRailCompletionClose, ExampleFailure> {
     let _declared = BankSchema::declaration().expect("Bank publishes its Query schema");
     fn require_declared_effect<Operation, Effect: OperationEmits<Operation>>() {}

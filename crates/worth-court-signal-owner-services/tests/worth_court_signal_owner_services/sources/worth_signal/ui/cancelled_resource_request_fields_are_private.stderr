@@ -1,5 +1,5 @@
 error[E0451]: fields `handle`, `cancellation_ordinal`, `reason`, `policy_decision_digest`, `host_advisory`, `grace_window` and `lifecycle_transition` of struct `CancelledResourceRequest` are private
-  --> tests/ui/cancelled_resource_request_fields_are_private.rs:29:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/cancelled_resource_request_fields_are_private.rs:29:9
    |
 28 |     let _ = CancelledResourceRequest {
    |             ------------------------ in this type

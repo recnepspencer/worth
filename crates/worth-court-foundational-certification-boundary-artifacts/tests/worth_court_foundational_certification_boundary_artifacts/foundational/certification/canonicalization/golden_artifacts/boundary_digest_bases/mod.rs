@@ -1,7 +1,6 @@
 #[allow(unused_imports)] use crate::certification::ordinary_context::canonicalization::golden_artifacts::boundary_digest_bases::*;
 use {serde_json::json};
-use {worth_foundational::aspect_contract_digest_preparation_basis, worth_foundational::aspect_mask_digest_preparation_basis, worth_foundational::aspect_patch_digest_preparation_basis, worth_foundational::aspect_state_digest_preparation_basis, worth_foundational::lower_json_record_aspect_state, worth_foundational::validate_aspect_value, worth_foundational::AspectLocator, worth_foundational::AspectMask, worth_foundational::AspectValue, worth_foundational::CanonicalDigestPreparationEntry, worth_foundational::CanonicalFieldPath, worth_foundational::JsonCompatibilityAspectInput, worth_foundational::LocatorAuthority, worth_foundational::MutationMask, worth_foundational::StructAspectValue};
-use {worth_proof::TransitionOutcome};
+use {worth_foundational::aspect_contract_digest_preparation_basis, worth_foundational::aspect_mask_digest_preparation_basis, worth_foundational::aspect_patch_digest_preparation_basis, worth_foundational::aspect_state_digest_preparation_basis, worth_foundational::lower_json_record_aspect_state, worth_foundational::validate_aspect_value, worth_foundational::AspectMask, worth_foundational::MutationMask};
 
 use {
     crate::certification::ordinary_context::canonicalization::golden_artifacts::golden_fixtures::admitted_state,

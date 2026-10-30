@@ -1,7 +1,7 @@
 // Separate process because the physical authority is constructed once per process.
 pub(crate) use std::num::NonZeroUsize;
 pub(crate) use {
-    worth_execution::CancellationToken, worth_execution::ExecutionAllocationDenialKind,
+    worth_execution::CancellationToken, worth_execution::ExecutionAllocationDenialClass,
     worth_execution::ExecutionAllocationPolicy, worth_execution::ExecutionAuthority,
     worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionByteBuffer,
     worth_execution::LeaseDenial, worth_execution::LeaseRequest,

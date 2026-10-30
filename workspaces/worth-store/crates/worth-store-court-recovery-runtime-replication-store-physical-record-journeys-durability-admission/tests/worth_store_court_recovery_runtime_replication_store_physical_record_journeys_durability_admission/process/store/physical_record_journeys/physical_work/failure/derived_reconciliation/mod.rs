@@ -1,9 +1,4 @@
 use tempfile::tempdir;
-use worth_store::physical_runtime::PhysicalExecutorCommand;
-use {
-    worth_store_physical_backend::MediaFaultDirective,
-    worth_store_physical_backend::MediaOperationRole,
-};
 
 use {
     worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write,

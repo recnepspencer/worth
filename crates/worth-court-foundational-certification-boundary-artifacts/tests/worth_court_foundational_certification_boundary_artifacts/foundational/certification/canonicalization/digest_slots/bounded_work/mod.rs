@@ -1,17 +1,9 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::canonicalization::digest_slots::bounded_work::*;
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::admit_canonical_sequence_digest_derivation_with_budget,
     worth_foundational::derive_canonical_digest,
-    worth_foundational::prepare_canonical_basis_sequence, worth_foundational::CanonicalBasisDomain,
-    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
-    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue,
-    worth_foundational::CanonicalDigestAlgorithmId,
-    worth_foundational::CanonicalDigestDerivationDenial,
-    worth_foundational::CanonicalDigestWorkBudget, worth_foundational::CanonicalIntegerWidth,
-    worth_foundational::CanonicalSingleSequenceDigestAlgorithmSlot,
-    worth_foundational::CanonicalizationRuleVersion,
+    worth_foundational::prepare_canonical_basis_sequence,
 };
 
 #[test]

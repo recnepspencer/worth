@@ -143,6 +143,7 @@ fn selected_pins_keep_complete_membership_and_stored_history_after_snapshot_reti
     );
     drop((original_read, split_read, retained_part, merged_read));
     release_test_commit_snapshot(&runtime, &merged);
+    drop((runtime, old_pin, split_pin, born, split, merged));
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
 }
 
@@ -198,6 +199,7 @@ fn siblings_share_identity_without_sharing_members_and_pin_schema_ignores_curren
         read(&selected_main, execution, ids[1]).identity(),
         read(&selected_fork, execution, ids[1]).identity()
     );
+    drop((selected_main, selected_fork, born, forked));
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
 }
 
@@ -264,6 +266,7 @@ fn legal_multiple_definitions_refuse_unqualified_source_without_changing_schema_
     assert_eq!(denial.reads, Default::default());
     assert!(denial.work > 0);
     release_test_commit_snapshot(&runtime, &born);
+    drop(born);
     let normal = super::fixtures::runtime();
     let born = commit(execution, &normal, "main", birth(&[1, 0]));
     assert_eq!(
@@ -276,5 +279,6 @@ fn legal_multiple_definitions_refuse_unqualified_source_without_changing_schema_
         2
     );
     release_test_commit_snapshot(&normal, &born);
+    drop((runtime, normal, born));
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
 }

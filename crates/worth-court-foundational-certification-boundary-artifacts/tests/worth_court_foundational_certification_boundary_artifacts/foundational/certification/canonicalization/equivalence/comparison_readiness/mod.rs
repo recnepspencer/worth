@@ -1,16 +1,7 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::canonicalization::equivalence::comparison_readiness::*;
-use worth_proof::TransitionOutcome;
 use {
-    worth_foundational::compare_canonical_basis,
-    worth_foundational::prepare_canonical_basis_sequence,
-    worth_foundational::prepare_canonical_comparison, worth_foundational::CanonicalBasisDomain,
-    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
-    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact,
-    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome,
-    worth_foundational::CanonicalComparisonReadinessProofs,
-    worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalIntegerWidth,
-    worth_foundational::CanonicalMismatchKind, worth_foundational::CanonicalizationRuleVersion,
+    worth_foundational::compare_canonical_basis, worth_foundational::prepare_canonical_comparison,
 };
 
 #[test]

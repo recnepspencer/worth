@@ -55,7 +55,7 @@ where
         SourceValue<Schema, ParentDemand>: WorthQueryApplicationProjection<Schema, SourceQuery<Schema, ParentDemand>> + Clone,
         <Source<Schema, ParentDemand> as ApplicationQueryBinding<Schema>>::Input: ApplicationQueryIntent<Schema, Binding = Source<Schema, ParentDemand>>,
         <Source<Schema, ParentDemand> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Source<Schema, ParentDemand> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
-    {
+{
         Some(
             super::super::performed_outputs::WorthQueryApplicationProgramOutputHandle::<
                 Schema,

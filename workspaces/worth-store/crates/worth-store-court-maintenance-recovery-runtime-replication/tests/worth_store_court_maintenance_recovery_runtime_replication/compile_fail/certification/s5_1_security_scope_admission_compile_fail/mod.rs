@@ -1,6 +1,5 @@
 #[allow(unused_imports)]
 use crate::s5_1_security_scope_admission_compile_fail::*;
-use std::path::Path;
 use worth_store_test_support::compiler_boundary::UiCompilerEnvironment;
 
 use worth_store_test_support::compiler_boundary::read_ui_fixture_suite;

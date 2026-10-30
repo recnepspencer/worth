@@ -1,10 +1,7 @@
 //! The production home must serve an untouched cold directory after reopen.
-use {crate::batches, crate::durable_run, crate::residency_capture::members, crate::workload};
-use {worth_execution::ExecutionAllocationPolicy, worth_execution::ExecutionRequest};
+use crate::residency_capture::members;
 use {
     worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId,
-    worth_relational::facade::transactions::CreateIntent,
-    worth_relational::facade::transactions::MutationIntent,
 };
 
 #[test]

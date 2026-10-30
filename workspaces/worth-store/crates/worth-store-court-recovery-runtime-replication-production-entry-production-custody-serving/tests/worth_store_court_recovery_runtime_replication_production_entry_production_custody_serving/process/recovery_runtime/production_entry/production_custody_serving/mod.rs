@@ -4,20 +4,7 @@
 #[allow(unused_imports)]
 use crate::production_entry::production_custody_serving::*;
 use worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution;
-use {
-    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
-    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
-    worth_store_testkit_recovery_runtime::production_entry::initialized_recovery_world,
-    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::WorthStoreRecovery,
-};
+use worth_store_testkit_recovery_runtime::production_entry::initialized_recovery_world;
 
 #[test]
 fn production_release_custody_opens_serving_after_fresh_recovery() {

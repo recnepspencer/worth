@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -57,6 +58,31 @@ def bash():
             return candidate
     return shutil.which("bash") or "bash"
 
+def powershell():
+    return shutil.which("pwsh") or shutil.which("powershell") or "pwsh"
+
+def consumer_doctest_commands():
+    configuration = tomllib.loads(
+        (ROOT / "tools/boundary-check/config/consumer-docs.toml").read_text(encoding="utf-8")
+    )
+    return [
+        ("doc-" + Path(selection["manifest"]).parent.name,
+         ["cargo", "test", "--doc", "--no-fail-fast",
+          "--manifest-path", selection["manifest"], *packages(*selection["packages"])])
+        for selection in configuration["doctests"]
+    ] + [
+        ("doc-owning-fixtures", ["cargo", "test", "--manifest-path", FIXTURE,
+         "-p", "worth-query-consumer-root", "-p", "worth-query-topology-entry",
+         "--bins", "--lib", "--config", "build.incremental=false", "--no-fail-fast", "--",
+         "compiled_examples_match_consumer_documents"]),
+        ("doc-owning-examples", ["cargo", "test", "--manifest-path", QUERY,
+         *packages("worth-query-declaration", "worth-query-execution", "worth-query-publication",
+                   "worth-query-host", "worth-query-certification"),
+         "--example", "authored_workflow", "--example", "ordinary_product_workflow",
+         "--no-fail-fast"]),
+    ]
+
+
 # suite -> [(label, command)], one command at a time
 COMMAND_SUITES = {
     "fmt": [
@@ -83,13 +109,10 @@ COMMAND_SUITES = {
         ("wasm-check", ["cargo", "check", "-p", "worth-signal-wasm", "--all-targets"]),
     ],
     "boundary": [
-        ("boundary-check",
-         ["cargo", "run", "--manifest-path", BOUNDARY, "-p", "boundary-check",
-          "--bin", "boundary-check"]),
-        ("boundary-tests", ["cargo", "test", "--manifest-path", BOUNDARY]),
-        ("agent-context",
-         ["cargo", "run", "--manifest-path", "tools/agent-context/Cargo.toml",
-          "-p", "agent-context", "--bin", "agent-context", "--", "check"]),
+        ("prepare-constitution", [powershell(), "-NoProfile", "-File", "scripts/prepare-constitution-hook.ps1"]),
+        ("constitution", [powershell(), "-NoProfile", "-File", "scripts/check-constitution.ps1"]),
+        ("boundary-tests", ["cargo", "test", "--manifest-path", BOUNDARY,
+                            "--target-dir", "target/constitution-tools"]),
         ("line-caps", [bash(), "scripts/ci/check_workspace_rust_line_caps.sh", "dirty"]),
     ],
     "extra": [
@@ -105,6 +128,7 @@ COMMAND_SUITES = {
 
 # Environment one command adds over the gate's own.
 COMMAND_ENV = {
+    "constitution": {"WORTH_CONSTITUTION_PREBUILT": "1"},
     # sccache 0.18.0 inserts `/WX-` between cc 1.9.0's `-Tp` and its file, so
     # cl reads it as the source and libmimalloc-sys (via apps/platform-pulse)
     # fails to build. The empty wrapper also overrides `rustc-wrapper = sccache` in

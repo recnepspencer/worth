@@ -1,12 +1,4 @@
-use {
-    worth_foundational::performance, worth_foundational::performance_api,
-    worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntryKind,
-    worth_foundational::CanonicalComparisonOutcome,
-    worth_foundational::FoundationalPerformanceAccessPatternPosture,
-    worth_foundational::FoundationalPerformanceAllocationPosture,
-    worth_foundational::FoundationalPerformanceCounterRow,
-    worth_foundational::FoundationalPerformanceWorkClass,
-};
+use worth_foundational::performance;
 
 use {
     crate::certification::ordinary_context::performance::basis_support::assert_entries_present,

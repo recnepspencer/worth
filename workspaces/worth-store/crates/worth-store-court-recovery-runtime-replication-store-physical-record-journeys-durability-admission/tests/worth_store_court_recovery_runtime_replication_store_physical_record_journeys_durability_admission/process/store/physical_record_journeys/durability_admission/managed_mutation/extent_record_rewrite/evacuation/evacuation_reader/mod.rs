@@ -1,5 +1,4 @@
 use {crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::evacuation::LIVE_PAYLOAD_BYTES, crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::evacuation::REOPEN_DIRECTORY};
-use {worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest};
 
 #[test]
 #[ignore = "the sparse-arena parent starts this reader in a fresh process"]

@@ -1,31 +1,7 @@
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_copy_observer::*;
-use {std::io::Read, std::io::Seek, std::io::SeekFrom, std::path::Path};
 
-use {
-    worth_store::physical_runtime::PhysicalExtentCopyPhase,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationOutcome,
-    worth_store::physical_runtime::PhysicalMutationRequest,
-    worth_store::physical_runtime::PhysicalRecordId,
-};
-use {
-    worth_store_physical_format::decode_blob_record,
-    worth_store_physical_format::decode_extent_chunk, worth_store_physical_format::BlobRecordV1,
-    worth_store_physical_format::BootstrapCatalog,
-    worth_store_physical_format::CurrentPhysicalRecordPlacement,
-    worth_store_physical_format::DurableExtentManifest,
-    worth_store_physical_format::DurableExtentRecordPlacement,
-    worth_store_physical_format::DurablePhysicalRootManifest,
-    worth_store_physical_format::ExtentArenaFrameLayout,
-    worth_store_physical_format::ExtentChunkCoordinate,
-    worth_store_physical_format::PersistedRecordIdentity,
-    worth_store_physical_format::PhysicalRootRoutingBlock,
-    worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES,
-    worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES,
-    worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES,
-};
+use worth_store_physical_format::decode_blob_record;
 
 use {
     crate::physical_blob_journeys::blob_abort::unfinished,

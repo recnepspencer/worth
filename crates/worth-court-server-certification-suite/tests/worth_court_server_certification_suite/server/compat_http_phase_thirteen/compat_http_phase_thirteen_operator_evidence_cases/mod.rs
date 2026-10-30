@@ -2,7 +2,6 @@ use {
     crate::shared_support_compat_http_phase_thirteen_assertions::assert_binary_counter,
     crate::shared_support_compat_http_phase_thirteen_assertions::assert_bundle_digests_not_equal,
     crate::shared_support_compat_http_phase_thirteen_assertions::assert_external_counter,
-    crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle,
     crate::shared_support_compat_http_phase_thirteen_bundle::AUDIT_EVIDENCE_DIGEST,
     crate::shared_support_compat_http_phase_thirteen_bundle::FAILURE_DIGEST,
     crate::shared_support_compat_http_phase_thirteen_bundle::RESPONSE_DIGEST,

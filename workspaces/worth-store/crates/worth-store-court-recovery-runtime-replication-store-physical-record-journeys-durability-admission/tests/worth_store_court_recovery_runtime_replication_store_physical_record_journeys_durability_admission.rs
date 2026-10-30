@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[macro_use]
 extern crate worth_store_testkit_store;
 

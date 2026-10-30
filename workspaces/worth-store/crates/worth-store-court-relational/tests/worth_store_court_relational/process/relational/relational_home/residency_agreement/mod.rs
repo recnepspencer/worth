@@ -1,16 +1,8 @@
 //! A real Store home agrees with an independent memory runtime at every warmth.
 #[allow(unused_imports)]
 use crate::residency_agreement::*;
-use worth_execution::ExecutionRequest;
-use {crate::batches, crate::durable_run, crate::schema_transition, crate::workload};
 use {
-    worth_relational::facade::branch::RelationalBranchObservation,
-    worth_relational::facade::history::BranchId, worth_relational::facade::identity::EntityId,
-    worth_relational::facade::identity::PartitionId,
-    worth_relational::facade::runtime::RelationalRuntime,
-    worth_relational::facade::transactions::CreateIntent,
-    worth_relational::facade::transactions::MutationIntent,
-    worth_relational::facade::transactions::RecordRef,
+    worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId,
 };
 
 #[test]

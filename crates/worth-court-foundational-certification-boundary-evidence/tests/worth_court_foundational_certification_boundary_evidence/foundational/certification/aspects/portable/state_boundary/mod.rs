@@ -1,9 +1,20 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::aspects::portable::state_boundary::*;
-use {worth_foundational::export_portable_record_aspect_state, worth_foundational::readmit_portable_record_aspect_state, worth_foundational::AspectContract, worth_foundational::AspectValue, worth_foundational::ContractValidationInput, worth_foundational::PortableAspectContractBasis, worth_foundational::PortableAspectReadmissionDenial, worth_foundational::PortableRecordAspectState, worth_foundational::PortableRecordAspectStateEntry, worth_foundational::ScalarAspectType};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::aspects::portable::state_boundary::*;
+use {
+    worth_foundational::export_portable_record_aspect_state,
+    worth_foundational::readmit_portable_record_aspect_state,
+};
 
-use {crate::certification::ordinary_context::aspects::patches::patch_fixtures::admitted_state, crate::certification::ordinary_context::aspects::patches::patch_fixtures::task_summary_contract, crate::certification::ordinary_context::aspects::patches::patch_fixtures::validated_task_summary};
-use {worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision};
+use {
+    crate::certification::ordinary_context::aspects::patches::patch_fixtures::admitted_state,
+    crate::certification::ordinary_context::aspects::patches::patch_fixtures::task_summary_contract,
+    crate::certification::ordinary_context::aspects::patches::patch_fixtures::validated_task_summary,
+};
+use {
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision,
+};
 
 #[test]
 fn serialized_state_is_only_a_candidate_until_every_entry_readmits() {
@@ -38,7 +49,9 @@ fn duplicate_state_entries_deny_the_complete_snapshot() {
 
     assert!(matches!(
         readmit_portable_record_aspect_state(duplicate, &lookup(&contract)),
-        worth_proof::TransitionOutcome::Denied(worth_foundational::PortableAspectReadmissionDenial::StateAdmission(_))
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::PortableAspectReadmissionDenial::StateAdmission(_)
+        )
     ));
 }
 
@@ -62,10 +75,13 @@ fn a_late_invalid_entry_denies_the_complete_snapshot() {
             .expect("state exports");
     let invalid_entry = worth_foundational::PortableRecordAspectStateEntry::new(
         worth_foundational::PortableAspectContractBasis::from_contract(&count_contract),
-        worth_foundational::ContractValidationInput::Scalar(worth_foundational::AspectValue::Bool(true)),
+        worth_foundational::ContractValidationInput::Scalar(worth_foundational::AspectValue::Bool(
+            true,
+        )),
     );
-    let snapshot =
-        worth_foundational::PortableRecordAspectState::new(portable.entries().iter().cloned().chain([invalid_entry]));
+    let snapshot = worth_foundational::PortableRecordAspectState::new(
+        portable.entries().iter().cloned().chain([invalid_entry]),
+    );
     let contracts = |aspect_key: &worth_foundational::AspectKey| {
         if aspect_key == summary_contract.key() {
             Some(summary_contract.clone())
@@ -78,6 +94,8 @@ fn a_late_invalid_entry_denies_the_complete_snapshot() {
 
     assert!(matches!(
         readmit_portable_record_aspect_state(snapshot, &contracts),
-        worth_proof::TransitionOutcome::Denied(worth_foundational::PortableAspectReadmissionDenial::ValueValidation { .. })
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::PortableAspectReadmissionDenial::ValueValidation { .. }
+        )
     ));
 }

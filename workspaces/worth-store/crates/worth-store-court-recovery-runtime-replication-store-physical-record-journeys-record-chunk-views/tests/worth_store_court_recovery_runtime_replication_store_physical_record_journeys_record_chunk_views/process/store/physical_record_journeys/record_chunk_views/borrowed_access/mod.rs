@@ -1,16 +1,4 @@
-use {
-    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
-    worth_store::physical_runtime::RecordAppendBatch,
-    worth_store::physical_runtime::RecordByteLimit,
-    worth_store::physical_runtime::RecordReadLimits,
-};
-use {
-    worth_store_physical_format::RecordArtifactFile,
-    worth_store_physical_format::RecordFrameCoordinate,
-};
-
 use worth_store_testkit_store::durable_publication::root::publish_single;
-use worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture;
 
 #[test]
 fn inline_view_exposes_only_the_record_payload_and_observational_basis() {

@@ -5,6 +5,10 @@ pub use std::thread::JoinHandle;
 pub const MAXIMUM_PIPE_BYTES: usize = 4 * 1024 * 1024;
 pub type Capture = JoinHandle<Result<Vec<u8>, String>>;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Drains a child process output pipe while the fixture observes its lifecycle."
+)]
 pub fn start(pipe: Option<impl Read + Send + 'static>, label: &'static str) -> Option<Capture> {
     pipe.map(|pipe| {
         std::thread::spawn(move || {

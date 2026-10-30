@@ -25,16 +25,16 @@ pub(crate) use {
     crate::phase_eight_process::history::physical_history::ParentPhysicalHistory,
 };
 pub(crate) use {
-    crate::phase_eight_process::history::process::checkpoint_writer::launch_killed_production_writer,
-    crate::phase_eight_process::history::process::checkpoint_writer::launch_killed_production_writer_with_operation_count,
-    crate::phase_eight_process::history::process::cleanup_rotation_writer::launch_killed_cleanup_writer_with_operation_count,
-    crate::phase_eight_process::history::process::durable_before_ack_writer::launch_killed_durable_unacknowledged_writer_with_operation_count,
-    crate::phase_eight_process::history::process::lifecycle::KilledProductionWriter,
-    crate::phase_eight_process::history::process::mutation_writer::launch_killed_mutation_writer,
-    crate::phase_eight_process::history::process::mutation_writer::launch_killed_mutation_writer_with_operation_count,
-    crate::phase_eight_process::history::process::mutation_writer::launch_multi_page_rewrite_root,
-};
-pub(crate) use {
     crate::phase_eight_process::history::writer_history::expected_history::ExpectedWriterHistory,
     crate::phase_eight_process::history::writer_history::submitted_program::SubmittedOperationProgram,
+};
+pub(crate) use {
+    crate::process::support::history::checkpoint_writer::launch_killed_production_writer,
+    crate::process::support::history::checkpoint_writer::launch_killed_production_writer_with_operation_count,
+    crate::process::support::history::cleanup_rotation_writer::launch_killed_cleanup_writer_with_operation_count,
+    crate::process::support::history::durable_before_ack_writer::launch_killed_durable_unacknowledged_writer_with_operation_count,
+    crate::process::support::history::lifecycle::KilledProductionWriter,
+    crate::process::support::history::mutation_writer::launch_killed_mutation_writer,
+    crate::process::support::history::mutation_writer::launch_killed_mutation_writer_with_operation_count,
+    crate::process::support::history::mutation_writer::launch_multi_page_rewrite_root,
 };

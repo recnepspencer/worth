@@ -3,8 +3,6 @@ use crate::shared_support as support;
 
 use std::any::type_name;
 
-use crate::shared_support::core_artifact;
-use crate::shared_support::type_shapes::type_shape::TypeShapeCheck;
 use {
     worth_proof::Artifact, worth_proof::ArtifactParts, worth_proof::ArtifactView,
     worth_proof::AssumptionBasis, worth_proof::CanonicalOrder, worth_proof::CanonicalVec,
@@ -69,15 +67,15 @@ fn evidence_bundle_is_machine_checkable() {
         vec![
             (
                 "phase_boundaries",
-                concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_artifact_cannot_satisfy_validated_api.rs"),
+                "tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_artifact_cannot_satisfy_validated_api.rs",
             ),
             (
                 "proven_collection_boundaries",
-                concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs"),
+                "tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs",
             ),
             (
                 "fixed_shape_boundaries",
-                concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs"),
+                "tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs",
             ),
         ]
     );

@@ -1,30 +1,6 @@
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_scrub_issuers::*;
-use {std::fs, std::num::NonZeroU64, std::path::Path, std::time::Duration};
 
-use worth_store_blob_chunks::BlobChunkSize;
-use {sha2::Digest, sha2::Sha256};
-use {
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::BlobScrubTargetFailure,
-    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress,
-    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest,
-    worth_store::physical_runtime::PhysicalIntegrityScrubSource,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-};
-use {
-    worth_store_physical_format::BlobGenerationPublicationV1,
-    worth_store_physical_format::BlobRecordKind, worth_store_physical_format::BlobTreeNodeV1,
-    worth_store_physical_format::PersistedRecordIdentity,
-};
-use {
-    worth_store_physical_integrity::PhysicalIntegrityObservationOutcome,
-    worth_store_physical_integrity::PhysicalIntegrityRejection,
-};
-
-use crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named;
 use {
     worth_store_testkit_store::fixture::admitted_blob_scope,
     worth_store_testkit_store::fixture::placement,

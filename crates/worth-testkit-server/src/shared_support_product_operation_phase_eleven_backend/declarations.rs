@@ -1,9 +1,19 @@
 pub use {std::sync::Arc, std::sync::Mutex};
 
-pub use {serde_json::json};
-pub use {worth_server::WorthServerProductAdapterExecutionError, worth_server::WorthServerProductApplicationAdapter, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerProductOperationBasisKind, worth_server::WorthServerProductOperationDeclaration, worth_server::WorthServerProductOperationErrorMaps, worth_server::WorthServerProductOperationPayload, worth_server::WorthServerProductOperationSuccess, worth_server::WorthServerProductOperationSupportSnapshot};
+pub use serde_json::json;
+pub use {
+    worth_server::WorthServerProductAdapterExecutionError,
+    worth_server::WorthServerProductApplicationAdapter,
+    worth_server::WorthServerProductApplicationAdapterRegistration,
+    worth_server::WorthServerProductOperationBasisKind,
+    worth_server::WorthServerProductOperationDeclaration,
+    worth_server::WorthServerProductOperationErrorMaps,
+    worth_server::WorthServerProductOperationPayload,
+    worth_server::WorthServerProductOperationSuccess,
+    worth_server::WorthServerProductOperationSupportSnapshot,
+};
 
-pub use {crate::shared_support_product_result_schema_bound_json as schema_bound_json};
+pub use crate::shared_support_product_result_schema_bound_json as schema_bound_json;
 
 #[derive(Clone, Debug)]
 pub struct StatefulProductEditorBackend {
@@ -43,26 +53,33 @@ impl StatefulProductEditorBackend {
 pub fn stateful_editor_registration(
     backend: StatefulProductEditorBackend,
 ) -> WorthServerProductApplicationAdapterRegistration {
-    worth_server::WorthServerProductApplicationAdapterRegistration::new("stateful-editor", std::sync::Arc::new(backend))
-        .with_operation(declared(
-            worth_server::WorthServerProductOperationDeclaration::product_read(
-                "product_editor.render_preview",
-                "product-editor.render-preview.v1",
-                result_contract("product-editor.render-preview.result.v1"),
-                worth_server::WorthServerProductOperationBasisKind::ProductSessionDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("preview-session"),
+    worth_server::WorthServerProductApplicationAdapterRegistration::new(
+        "stateful-editor",
+        std::sync::Arc::new(backend),
+    )
+    .with_operation(declared(
+        worth_server::WorthServerProductOperationDeclaration::product_read(
+            "product_editor.render_preview",
+            "product-editor.render-preview.v1",
+            result_contract("product-editor.render-preview.result.v1"),
+            worth_server::WorthServerProductOperationBasisKind::ProductSessionDerived,
+            worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+                "preview-session",
             ),
-        ))
-        .with_operation(declared(
-            worth_server::WorthServerProductOperationDeclaration::product_mutation(
-                "product_editor.apply",
-                "product-editor.apply.v1",
-                result_contract("product-editor.apply.result.v1"),
-                worth_server::WorthServerProductOperationBasisKind::ProductSessionDerived,
-                worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("apply-session"),
-                "draft",
+        ),
+    ))
+    .with_operation(declared(
+        worth_server::WorthServerProductOperationDeclaration::product_mutation(
+            "product_editor.apply",
+            "product-editor.apply.v1",
+            result_contract("product-editor.apply.result.v1"),
+            worth_server::WorthServerProductOperationBasisKind::ProductSessionDerived,
+            worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+                "apply-session",
             ),
-        ))
+            "draft",
+        ),
+    ))
 }
 
 pub fn controlled_apply_payload(title: &str, fail: bool) -> WorthServerProductOperationPayload {
@@ -103,10 +120,12 @@ impl WorthServerProductApplicationAdapter for StatefulProductEditorBackend {
             "product_editor.apply" => {
                 let body = operation.plan().payload().body();
                 if body.get("fail").and_then(|value| value.as_bool()) == Some(true) {
-                    return Err(worth_server::WorthServerProductAdapterExecutionError::failed(
-                        "adapter_failed",
-                        format!("controlled failure at {}", state.basis_digest()),
-                    ));
+                    return Err(
+                        worth_server::WorthServerProductAdapterExecutionError::failed(
+                            "adapter_failed",
+                            format!("controlled failure at {}", state.basis_digest()),
+                        ),
+                    );
                 }
                 let title = body
                     .get("title")
@@ -120,10 +139,12 @@ impl WorthServerProductApplicationAdapter for StatefulProductEditorBackend {
                     json!({ "basis": state.basis_digest(), "title": state.title }),
                 )
             }
-            operation_name => Err(worth_server::WorthServerProductAdapterExecutionError::failed(
-                "unsupported_operation",
-                format!("stateful editor backend does not support `{operation_name}`"),
-            )),
+            operation_name => Err(
+                worth_server::WorthServerProductAdapterExecutionError::failed(
+                    "unsupported_operation",
+                    format!("stateful editor backend does not support `{operation_name}`"),
+                ),
+            ),
         }
     }
 }

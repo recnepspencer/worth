@@ -1,13 +1,13 @@
 error[E0308]: mismatched types
- --> tests/ui/portable_aspect_readmission/portable_patch_cannot_satisfy_authoritative_patch_api.rs:6:27
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/portable_aspect_readmission/portable_patch_cannot_satisfy_authoritative_patch_api.rs
   |
-6 |     require_authoritative(PortableRecordAspectPatch::new([]));
+  |     require_authoritative(PortableRecordAspectPatch::new([]));
   |     --------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `AuthoritativeRecordAspectPatch`, found `PortableRecordAspectPatch`
   |     |
   |     arguments to this function are incorrect
   |
 note: function defined here
- --> tests/ui/portable_aspect_readmission/portable_patch_cannot_satisfy_authoritative_patch_api.rs:3:4
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/portable_aspect_readmission/portable_patch_cannot_satisfy_authoritative_patch_api.rs
   |
-3 | fn require_authoritative(_: AuthoritativeRecordAspectPatch) {}
+  | fn require_authoritative(_: AuthoritativeRecordAspectPatch) {}
   |    ^^^^^^^^^^^^^^^^^^^^^ ---------------------------------

@@ -159,7 +159,7 @@ impl IndexDefinitionReadBinding {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), Failure> {
-        if self.state.read().definitions.is_empty() {
+        if self.state.read().catalog.definitions.is_empty() {
             return Ok(());
         }
         demand(&self.state, execution)

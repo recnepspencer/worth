@@ -1,10 +1,7 @@
-use {worth_store::physical_runtime::PhysicalRecoveryFreshReopenDenialKind};
-use {worth_store_physical_format::RecordArtifactFile};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome};
-
 #[test]
 fn corrupt_published_selector_blocks_fresh_reopen_before_the_root_read() {
-    let retained_root = crate::phase_four_planning::prepare_ordinary_recovery_root("c8-phase6-corrupt-selector");
+    let retained_root =
+        crate::phase_four_planning::prepare_ordinary_recovery_root("c8-phase6-corrupt-selector");
     let published = crate::phase_four_planning::selected_ordinary_recovery(retained_root.path())
         .plan()
         .unwrap()
@@ -22,7 +19,10 @@ fn corrupt_published_selector_blocks_fresh_reopen_before_the_root_read() {
     )
     .expect("corrupt current selector");
 
-    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(outcome)) = published.reopen() else {
+    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+        outcome,
+    )) = published.reopen()
+    else {
         panic!("corrupt namespace-durable selector requires indeterminate reopen evidence")
     };
     let failure = outcome
@@ -39,7 +39,8 @@ fn corrupt_published_selector_blocks_fresh_reopen_before_the_root_read() {
 
 #[test]
 fn corrupt_published_root_retains_both_completed_fresh_reads() {
-    let retained_root = crate::phase_four_planning::prepare_ordinary_recovery_root("c8-phase6-corrupt-root");
+    let retained_root =
+        crate::phase_four_planning::prepare_ordinary_recovery_root("c8-phase6-corrupt-root");
     let published = crate::phase_four_planning::selected_ordinary_recovery(retained_root.path())
         .plan()
         .unwrap()
@@ -52,10 +53,16 @@ fn corrupt_published_root_retains_both_completed_fresh_reads() {
         .path()
         .join("families/records")
         .join("roots")
-        .join(worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name());
+        .join(
+            worth_store_physical_format::RecordArtifactFile::RootManifest { generation }
+                .file_name(),
+        );
     std::fs::write(root, [0_u8; 64]).expect("corrupt published root");
 
-    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(outcome)) = published.reopen() else {
+    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+        outcome,
+    )) = published.reopen()
+    else {
         panic!("corrupt namespace-durable root requires indeterminate reopen evidence")
     };
     let failure = outcome

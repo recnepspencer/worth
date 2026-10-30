@@ -1,12 +1,7 @@
 #[allow(unused_imports)]
 use crate::map_admission::ordinary_context::*;
-use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
 
-use worth_foundational::PartitionIdentity;
-use {
-    worth_execution::ExecutionMap, worth_execution::MapDenial, worth_execution::MapKernelFailure,
-    worth_execution::MapOutcome, worth_execution::MapPartition,
-};
+use worth_execution::MapKernelFailure;
 
 #[test]
 fn exact_coverage_and_access_proof_bind_the_dispatched_values() {

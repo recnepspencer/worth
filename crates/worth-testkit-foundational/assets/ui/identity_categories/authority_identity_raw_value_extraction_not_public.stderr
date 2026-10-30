@@ -1,7 +1,7 @@
 error[E0599]: no method named `into_value` found for struct `FoundationalAuthorityIdentity<Value, Authority, Kind>` in the current scope
-  --> tests/ui/identity_categories/authority_identity_raw_value_extraction_not_public.rs:23:31
+  --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/authority_identity_raw_value_extraction_not_public.rs
    |
-23 |     let _raw_value = identity.into_value();
+   |     let _raw_value = identity.into_value();
    |                               ^^^^^^^^^^
    |
 help: there is a method `value` with a similar name

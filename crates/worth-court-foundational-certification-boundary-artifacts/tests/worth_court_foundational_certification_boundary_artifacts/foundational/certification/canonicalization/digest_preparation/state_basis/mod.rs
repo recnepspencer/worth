@@ -1,11 +1,7 @@
 use serde_json::json;
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::aspect_state_digest_preparation_basis,
     worth_foundational::lower_json_record_aspect_state, worth_foundational::validate_aspect_value,
-    worth_foundational::AspectValue, worth_foundational::CanonicalDigestPreparationEntry,
-    worth_foundational::JsonCompatibilityAspectInput, worth_foundational::ScalarAspectType,
-    worth_foundational::StructAspectValue,
 };
 
 use {crate::certification::ordinary_context::canonicalization::digest_preparation::readiness_fixtures::admitted_state, crate::certification::ordinary_context::canonicalization::digest_preparation::readiness_fixtures::ready_state, crate::certification::ordinary_context::canonicalization::digest_preparation::readiness_fixtures::task_summary_contract};

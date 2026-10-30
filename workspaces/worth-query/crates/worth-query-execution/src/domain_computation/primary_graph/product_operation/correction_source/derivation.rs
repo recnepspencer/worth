@@ -49,10 +49,11 @@ where
         maximum_results,
     )?;
     let lineage = super::lineage::reverse_lineage(target, phase, source)?;
-    let interpretation = super::compatibility::require_compatible_source::<Schema, C>(
+    let checked = super::compatibility::require_compatible_source::<Schema, C>(
         target,
         phase,
         source,
+        ancestry,
         required_root,
     )?;
     let retained = source
@@ -77,19 +78,15 @@ where
         C,
         ApplicationInverseBinding<Schema, C>,
     >(
-        target,
+        checked,
         phase,
         principal,
         request,
-        source,
-        ancestry,
         None,
         lineage,
         key,
         &input,
         inverse.scope_binding(),
-        interpretation,
-        required_root,
         workflow,
     )?;
     Ok((input, std::sync::Arc::new(prepared)))

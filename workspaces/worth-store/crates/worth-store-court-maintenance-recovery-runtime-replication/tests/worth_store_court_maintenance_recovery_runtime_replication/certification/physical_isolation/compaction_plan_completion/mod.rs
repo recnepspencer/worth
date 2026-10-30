@@ -1,10 +1,5 @@
 //! Local cutover correlation: these fixtures do not execute Store byte I/O.
-use {
-    worth_store_physical_isolation::CompactionOwnerCaseId,
-    worth_store_physical_isolation::CompactionReadInterlockDenial,
-    worth_store_physical_isolation::CompactionReadPlanCompletion,
-    worth_store_physical_isolation::PhysicalReadPlanCompletionReceipt,
-};
+use worth_store_physical_isolation::PhysicalReadPlanCompletionReceipt;
 use {
     worth_store_test_support::harness::physical_isolation::compaction::admitted_compaction_plan,
     worth_store_test_support::harness::physical_isolation::compaction::admitted_compaction_plan_for_seed,

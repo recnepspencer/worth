@@ -9,15 +9,6 @@ use {
     worth_foundational::claim_support_only_boundary_surface,
     worth_foundational::evaluate_boundary_role_claim_legality,
     worth_foundational::foundational_boundary_authority_admission,
-    worth_foundational::FoundationalBoundaryArtifactCategory,
-    worth_foundational::FoundationalBoundaryArtifactRole,
-    worth_foundational::FoundationalBoundaryArtifactSurface,
-    worth_foundational::FoundationalBoundaryAuthorityAdmitted,
-    worth_foundational::FoundationalBoundaryCategoryConstructionDenial,
-    worth_foundational::FoundationalBoundaryReceiptSurface,
-    worth_foundational::FoundationalBoundaryReportSurface,
-    worth_foundational::FoundationalBoundaryRoleClaimDenial,
-    worth_foundational::FoundationalBoundarySummarySurface,
 };
 
 #[test]

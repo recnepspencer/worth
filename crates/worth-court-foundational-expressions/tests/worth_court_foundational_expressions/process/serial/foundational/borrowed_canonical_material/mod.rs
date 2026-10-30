@@ -5,16 +5,12 @@
 
 #[allow(unused_imports)]
 use crate::borrowed_canonical_material::isolated_context::*;
-use {stats_alloc::Region, stats_alloc::StatsAlloc, stats_alloc::INSTRUMENTED_SYSTEM};
+use stats_alloc::INSTRUMENTED_SYSTEM;
 use {
     worth_foundational::facade::write_aspect_value_identity_material,
     worth_foundational::facade::write_struct_aspect_value_identity_material,
-    worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalBigInt,
-    worth_foundational::facade::CanonicalDecimal,
-    worth_foundational::facade::CanonicalMaterialByteCount,
-    worth_foundational::facade::CanonicalMaterialSink,
-    worth_foundational::facade::CanonicalRational, worth_foundational::facade::FieldKey,
-    worth_foundational::facade::StructAspectValue,
+    worth_foundational::facade::CanonicalBigInt, worth_foundational::facade::CanonicalDecimal,
+    worth_foundational::facade::CanonicalRational,
 };
 
 #[test]

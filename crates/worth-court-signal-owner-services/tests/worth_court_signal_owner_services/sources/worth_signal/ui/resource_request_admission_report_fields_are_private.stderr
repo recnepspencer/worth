@@ -1,5 +1,5 @@
 error[E0451]: fields `admitted_request`, `lifecycle`, `transition`, `supersession_record`, `intent_equivalence_coalescing`, `superseded_request`, `superseded_transition` and `performance` of struct `ResourceRequestAdmissionReport` are private
-  --> tests/ui/resource_request_admission_report_fields_are_private.rs:33:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_request_admission_report_fields_are_private.rs:33:9
    |
 32 |     let _ = ResourceRequestAdmissionReport {
    |             ------------------------------ in this type

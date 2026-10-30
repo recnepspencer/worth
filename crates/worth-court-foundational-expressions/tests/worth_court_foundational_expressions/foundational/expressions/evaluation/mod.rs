@@ -3,12 +3,6 @@
 // evaluator.
 #[allow(unused_imports)]
 use crate::expressions::ordinary_context::evaluation::*;
-pub(crate) use {
-    worth_foundational::expression_api::ExpressionDenialDetail,
-    worth_foundational::expression_api::ExpressionDenialFamily as Family,
-    worth_foundational::expression_api::ExpressionOccurrence,
-    worth_foundational::expression_api::ExpressionValue,
-};
 
 pub(crate) use {
     crate::expressions::ordinary_context::evaluation_denial,

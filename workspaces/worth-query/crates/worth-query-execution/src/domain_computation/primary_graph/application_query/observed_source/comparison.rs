@@ -63,6 +63,22 @@ pub(in crate::domain_computation::primary_graph::application_query) fn equal(
                     }
                     _ => return Ok(false),
                 }
+                match (&left.managed_index, &right.managed_index) {
+                    (None, None) => {}
+                    (Some(a), Some(b)) => {
+                        if !a.same_truth(b, walks, execution, control, &mut |units| {
+                            if context.has_accounting() {
+                                context.checkpoint(units)
+                            } else {
+                                context.poll()
+                            }
+                            .map_err(Into::into)
+                        })? {
+                            return Ok(false);
+                        }
+                    }
+                    _ => return Ok(false),
+                }
                 let left = left.walks.as_ref().map_or(&[][..], |w| w.values());
                 let right = right.walks.as_ref().map_or(&[][..], |w| w.values());
                 if left.len() != right.len() {

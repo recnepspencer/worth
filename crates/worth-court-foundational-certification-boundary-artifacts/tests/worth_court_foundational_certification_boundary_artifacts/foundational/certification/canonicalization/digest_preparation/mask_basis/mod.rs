@@ -1,7 +1,5 @@
 use {
     worth_foundational::aspect_mask_digest_preparation_basis, worth_foundational::AspectMask,
-    worth_foundational::CanonicalDigestMaskMode,
-    worth_foundational::CanonicalDigestPreparationEntry, worth_foundational::CanonicalFieldPath,
     worth_foundational::MutationMask, worth_foundational::ProjectionMask,
 };
 

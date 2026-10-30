@@ -1,7 +1,4 @@
-use {
-    crate::store_recovery_runtime_context::process_context::assert_child_succeeded,
-    crate::store_recovery_runtime_context::process_context::ProcessWorld,
-};
+use crate::store_recovery_runtime_context::process_context::assert_child_succeeded;
 
 #[test]
 fn post_publication_cleanup_removes_only_the_exact_checkpoint_covered_wal() {

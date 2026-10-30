@@ -1,9 +1,7 @@
 #[allow(unused_imports)]
 use crate::shared_support as support;
 
-use crate::shared_support::compile_fail::run_compile_fail_bundle;
-
-use crate::shared_support::dx;
+use crate::compile_fail::harness::run_compile_fail_bundle;
 
 #[test]
 fn pleasant_lane_dx_certification() {

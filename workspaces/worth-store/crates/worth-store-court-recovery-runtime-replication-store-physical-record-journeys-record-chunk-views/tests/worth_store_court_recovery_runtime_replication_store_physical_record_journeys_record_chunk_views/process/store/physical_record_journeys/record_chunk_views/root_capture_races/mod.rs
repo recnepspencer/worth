@@ -1,18 +1,7 @@
 #[allow(unused_imports)]
 use crate::physical_record_journeys::record_chunk_views::root_capture_races::*;
-use std::thread;
 
-use {
-    worth_store::physical_runtime::certification::CertificationReadRootCaptureStage,
-    worth_store::physical_runtime::RecordByteLimit,
-    worth_store::physical_runtime::RecordReadDenial,
-    worth_store::physical_runtime::RecordReadLimits,
-};
-
-use {
-    crate::record_chunk_views::managed_append::append,
-    worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture,
-};
+use crate::record_chunk_views::managed_append::append;
 
 #[test]
 fn publication_before_capture_registers_only_the_new_root() {

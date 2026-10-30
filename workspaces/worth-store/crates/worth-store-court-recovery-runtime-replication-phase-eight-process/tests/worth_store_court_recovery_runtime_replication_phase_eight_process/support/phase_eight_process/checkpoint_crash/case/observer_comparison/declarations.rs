@@ -2,7 +2,7 @@ pub(crate) use worth_store_recovery_runtime::RecoveryReportOutcome;
 
 pub(crate) use crate::checkpoint_crash::evidence::snapshot::snapshot_directory;
 pub(crate) use crate::phase_eight_process::checkpoint_crash::case::independent_recoveries::RecoverySet;
-pub(crate) use crate::phase_eight_process::checkpoint_crash::process::observer_report::fresh_observer;
+pub(crate) use crate::process::support::checkpoint_crash::observer_report::fresh_observer;
 pub(crate) use {crate::history, crate::phase_eight_process::comparison};
 
 pub(crate) fn compare(recoveries: &RecoverySet) {
