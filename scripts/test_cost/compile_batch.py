@@ -12,7 +12,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'test_topology'))
 from manifest_edit import toml_value
 
 from logs import json_objects
-from diagnostic_flags import arguments as diagnostic_arguments
+from compiler_flags import arguments as compiler_arguments
+from diagnostic_flags import FLAGS as DIAGNOSTIC_FLAGS
 from compiler_audiences import source_identity, sources as fixture_sources
 from compiler_features import violations as production_feature_violations
 from fixture_graph import dependency_manifest
@@ -154,7 +155,7 @@ def prepare_environment(workspace_manifest, environment, output, cargo_runner):
                '--manifest-path', str(output / 'Cargo.toml'),
                '--target-dir', str(target), '--config', 'build.incremental=false',
                '--profile', environment['profile']]
-    with diagnostic_arguments(cargo_runner) as flags:
+    with compiler_arguments(cargo_runner, DIAGNOSTIC_FLAGS) as flags:
         observed = cargo_runner(command + flags, workspace_manifest.parent, output / 'check.log')
     if observed.returncode not in (0, 101):
         raise BatchCompilationFailure(f'compiler session failed to execute: {observed.returncode}')
