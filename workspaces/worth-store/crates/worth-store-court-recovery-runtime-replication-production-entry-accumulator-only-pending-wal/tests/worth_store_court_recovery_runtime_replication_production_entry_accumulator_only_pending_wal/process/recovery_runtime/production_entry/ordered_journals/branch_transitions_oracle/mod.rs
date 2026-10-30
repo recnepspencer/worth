@@ -19,7 +19,7 @@ use crate::production_entry::ordered_journals::branch_transitions_oracle::*;
 fn every_media_operation_of_a_branch_transition_recovers_to_the_old_or_new_head() {
     let cases = fault_cases();
     let scheduled = cases.len();
-    let exercised = worth_store_test_support::sweep::run(cases, |case| {
+    let exercised = worth_store_testkit_sweep::run(cases, |case| {
         run_case(case.target, case.role, case.ordinal, case.directive)
     });
     assert_eq!(

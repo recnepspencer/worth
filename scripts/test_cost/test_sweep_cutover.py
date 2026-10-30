@@ -7,6 +7,7 @@ class IndependentSweepCutoverTests(unittest.TestCase):
         text = 'fn proof() { for case in [1,1,3] { run_case(case); } after(); }'
         result, rows = rewrite(text, 'run_case')
         self.assertEqual(len(rows), 1)
+        self.assertIn('worth_store_testkit_sweep::run(', result)
         self.assertIn('IntoIterator::into_iter([1,1,3]).collect()', result)
         self.assertIn('|case| { run_case(case); }', result)
         self.assertIn('after();', result)

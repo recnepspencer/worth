@@ -22,7 +22,7 @@ fn every_media_operation_of_a_member_carrying_replacement_recovers_to_one_whole_
         !counts.is_empty(),
         "the replacement performed media operations"
     );
-    let mut answers = crate::oracle::support::anchored_record_members::Answers::default();
+    let mut cases = Vec::new();
     for (role, count) in counts {
         for nth in 1..=count {
             let nth = std::num::NonZeroU64::new(nth).unwrap();
@@ -33,10 +33,27 @@ fn every_media_operation_of_a_member_carrying_replacement_recovers_to_one_whole_
                 },
                 worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect,
             ] {
-                run_case(role, nth, directive, &mut answers);
+                cases.push((role, nth, directive));
             }
         }
     }
+    let scheduled = cases.len();
+    let outcomes = worth_store_testkit_sweep::run(cases, |(role, nth, directive)| {
+        run_case(role, nth, directive)
+    });
+    assert_eq!(
+        outcomes.len(),
+        scheduled,
+        "scheduled member replacement cases were lost"
+    );
+    let answers = outcomes.into_iter().fold(
+        crate::oracle::support::anchored_record_members::Answers::default(),
+        |mut answers, case| {
+            answers.member_batch_refusals += case.member_batch_refusals;
+            answers.anchor_batch_failures += case.anchor_batch_failures;
+            answers
+        },
+    );
     assert!(
         answers.member_batch_refusals > 0 && answers.anchor_batch_failures > 0,
         "the sweep stopped publications in both the member batch and the anchor batch"

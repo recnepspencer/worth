@@ -8,6 +8,7 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+worth-store-testkit-sweep = { path = "../worth-store-testkit-sweep" }
 "serde_json" = { "version" = "^1" }
 "sha2" = { "version" = "^0.10" }
 "tempfile" = { "version" = "^3" }

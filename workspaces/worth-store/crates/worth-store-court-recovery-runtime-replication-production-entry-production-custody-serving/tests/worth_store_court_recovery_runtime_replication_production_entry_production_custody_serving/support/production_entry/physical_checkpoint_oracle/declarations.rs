@@ -254,7 +254,7 @@ pub(crate) fn sweep(target: Target) {
         }
     }
     let scheduled = cases.len();
-    let outcomes = worth_store_test_support::sweep::run(cases, |(role, nth, directive)| {
+    let outcomes = worth_store_testkit_sweep::run(cases, |(role, nth, directive)| {
         run_case(target, role, nth, directive)
     });
     let cases = outcomes.len();

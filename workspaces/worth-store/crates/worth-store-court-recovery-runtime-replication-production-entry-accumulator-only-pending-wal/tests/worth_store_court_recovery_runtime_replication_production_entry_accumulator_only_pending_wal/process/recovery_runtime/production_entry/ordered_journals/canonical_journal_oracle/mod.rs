@@ -38,7 +38,7 @@ fn every_media_operation_of_a_publication_recovers_to_a_reference_prefix() {
         }
     }
     let scheduled = cases.len();
-    let outcomes = worth_store_test_support::sweep::run(cases, |(target, role, nth, directive)| {
+    let outcomes = worth_store_testkit_sweep::run(cases, |(target, role, nth, directive)| {
         run_case(artifacts, target, role, nth, directive);
     });
     assert_eq!(

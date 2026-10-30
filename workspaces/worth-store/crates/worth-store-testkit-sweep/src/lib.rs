@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 //! Bounded execution of independently owned cases, with canonical result order.
 
 use std::collections::VecDeque;
@@ -44,7 +46,7 @@ fn run_with_worker_limit<C: Send, R: Send>(
 
 #[expect(
     clippy::disallowed_methods,
-    reason = "category: independent certification harness; source: worth-store-test-support::sweep::run_jobs; one available_parallelism query, one thread::scope and one Scope::spawn site; bounded placement drains every independent case without introducing a leased semantic context"
+    reason = "category: independent certification harness; source: worth-store-testkit-sweep::run_jobs; one available_parallelism query, one thread::scope and one Scope::spawn site; bounded placement drains every independent case without introducing a leased semantic context"
 )]
 fn run_jobs(jobs: Vec<Box<dyn FnOnce() + Send + '_>>, worker_limit: Option<usize>) {
     // Match the existing home oracle's maximum worker footprint. Available

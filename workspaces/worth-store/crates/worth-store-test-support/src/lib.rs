@@ -32,7 +32,6 @@ mod terminal_projection_json_fixtures;
 pub mod compiler_boundary;
 pub mod harness;
 mod prebuilt_executable;
-pub mod sweep;
 mod test_directory;
 
 pub use prebuilt_executable::{

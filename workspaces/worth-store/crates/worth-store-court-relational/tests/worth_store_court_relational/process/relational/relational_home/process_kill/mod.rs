@@ -24,7 +24,7 @@ fn a_home_killed_on_either_side_of_its_first_checkpoint_recovers() {
 #[test]
 fn a_commit_killed_at_each_mutation_seam_recovers_durable_before_live() {
     let _: Vec<()> =
-        worth_store_test_support::sweep::run(IntoIterator::into_iter(SEAMS).collect(), |seam| {
+        worth_store_testkit_sweep::run(IntoIterator::into_iter(SEAMS).collect(), |seam| {
             assert_killed_home_recovers(crate::process_kill::Stop::Commit(seam));
         });
 }
@@ -32,7 +32,7 @@ fn a_commit_killed_at_each_mutation_seam_recovers_durable_before_live() {
 #[test]
 fn a_checkpoint_killed_at_each_mutation_seam_keeps_one_selected() {
     let _: Vec<()> =
-        worth_store_test_support::sweep::run(IntoIterator::into_iter(SEAMS).collect(), |seam| {
+        worth_store_testkit_sweep::run(IntoIterator::into_iter(SEAMS).collect(), |seam| {
             assert_killed_home_recovers(crate::process_kill::Stop::CheckpointMembers(seam));
             assert_killed_home_recovers(crate::process_kill::Stop::Checkpoint(seam));
         });
@@ -41,7 +41,7 @@ fn a_checkpoint_killed_at_each_mutation_seam_keeps_one_selected() {
 #[test]
 fn a_branch_transition_killed_at_each_mutation_seam_recovers() {
     let _: Vec<()> =
-        worth_store_test_support::sweep::run(IntoIterator::into_iter(SEAMS).collect(), |seam| {
+        worth_store_testkit_sweep::run(IntoIterator::into_iter(SEAMS).collect(), |seam| {
             for stop in [
                 crate::process_kill::Stop::BranchTransition(seam),
                 crate::process_kill::Stop::Archive(seam),
@@ -88,19 +88,17 @@ fn a_late_mutation_seam_is_not_mistaken_for_a_finished_child() {
 #[test]
 fn carried_members_survive_a_kill_at_each_manifest_mutation_seam() {
     let _: Vec<()> =
-        worth_store_test_support::sweep::run(IntoIterator::into_iter(SEAMS).collect(), |seam| {
+        worth_store_testkit_sweep::run(IntoIterator::into_iter(SEAMS).collect(), |seam| {
             assert_killed_home_recovers(crate::process_kill::Stop::CheckpointCarried(seam));
         });
 }
 
 #[test]
 fn acknowledged_locators_survive_each_physical_checkpoint_seam_and_return() {
-    let _: Vec<()> = worth_store_test_support::sweep::run(
-        IntoIterator::into_iter(PHYSICAL_STEPS).collect(),
-        |step| {
+    let _: Vec<()> =
+        worth_store_testkit_sweep::run(IntoIterator::into_iter(PHYSICAL_STEPS).collect(), |step| {
             assert_killed_home_recovers(crate::process_kill::Stop::CheckpointAcknowledged(step));
-        },
-    );
+        });
     assert_killed_home_recovers(crate::process_kill::Stop::CheckpointReturned);
 }
 #[path = "child/mod.rs"]

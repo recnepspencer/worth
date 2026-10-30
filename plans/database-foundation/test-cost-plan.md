@@ -170,3 +170,25 @@ workspace is needed to validate this infrastructure correction.
   qualification refuse external artifact-changing inputs before execution;
   committed profiles and the selected checkout pin govern the actual capture.
   Existing overridden captures retain their original inputs/results unchanged.
+
+
+### Integrated pool owner and duplicate court mounts
+
+The coordinator's physical-owner ruling after `bad2fed572` relocates the existing
+independent sweep and its seven tests to the dependency-free
+`worth-store-testkit-sweep` owner. Its three courts import it directly; Relational
+loses only its scheduling-only TestSupport edge. Fixture dependencies, serial
+fallback, complete panic draining, input order and every case remain unchanged.
+
+The incoming `959ee77f37` court-layout decision supersedes forty unmounted old
+paths reintroduced during integration. Their mounted counterparts retain all
+seven named tests (three scheduled profiles, two structural-cost proofs, the
+25-input sealed-artifact denial and the anchored replacement oracle). No claim
+is retired. Physical-format oracle helpers live in `oracle/support/literal_vectors`;
+phase-eight checkpoint/history helpers retain the canonical oracle/process
+support mounts; incarnation children retain `writable_ownership` selectors.
+The anchored replacement's independent-case collection and witness reduction
+are transferred to its mounted `replacement_recovery` test before removing the
+old copy. `category-path-audit.json` in the B3 integration evidence records every
+old mount and named-test counterpart. This removes duplicate source copies,
+not tests, continuations or assertions.

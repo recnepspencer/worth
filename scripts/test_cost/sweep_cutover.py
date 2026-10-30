@@ -42,7 +42,7 @@ def rewrite(text, helper):
                 body_tokens[i:i + 2] in (['+', '='], ['-', '=']) for i in range(len(body_tokens) - 1)):
             raise SharedCaseState('shared mutable case state requires a returned-witness reduction')
         expression = text[stream[index + 3].start:stream[current].start].strip()
-        replacement = ('let _: Vec<()> = worth_store_test_support::sweep::run(\n'
+        replacement = ('let _: Vec<()> = worth_store_testkit_sweep::run(\n'
                        f'    IntoIterator::into_iter({expression}).collect(),\n'
                        f'    |{variable}| {{{body}}},\n);')
         changes.append((token.start, stream[closing].end, replacement))

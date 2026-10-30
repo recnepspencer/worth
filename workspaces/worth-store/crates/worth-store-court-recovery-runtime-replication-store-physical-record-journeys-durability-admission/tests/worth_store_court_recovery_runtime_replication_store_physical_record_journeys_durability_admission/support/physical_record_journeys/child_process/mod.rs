@@ -7,3 +7,5 @@ pub(crate) mod dispatch;
 #[allow(dead_code, unused_imports)]
 #[path = "record_round_trip/mod.rs"]
 pub(crate) mod record_round_trip;
+#[path = "segment_read/mod.rs"]
+pub(crate) mod segment_read;
