@@ -137,9 +137,22 @@ mod tests {
 
     #[test]
     fn disabled_observation_does_not_construct_inputs() {
-        let called = Cell::new(false);
-        record_at(None, "", "", &|_| called.set(true)).unwrap();
-        assert!(!called.get());
+        if std::env::var("WORTH_SETUP_DISABLED_ENTRY_CHILD").as_deref() == Ok("1") {
+            let called = Cell::new(false);
+            record("unused-when-disabled", &|_| called.set(true)).unwrap();
+            assert!(!called.get());
+            return;
+        }
+        let child = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "tests::disabled_observation_does_not_construct_inputs",
+            ])
+            .env_remove("WORTH_TEST_COST_SETUP_DIRECTORY")
+            .env("WORTH_SETUP_DISABLED_ENTRY_CHILD", "1")
+            .output()
+            .unwrap();
+        assert!(child.status.success(), "{child:?}");
     }
 
     #[test]
