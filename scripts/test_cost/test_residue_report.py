@@ -16,6 +16,18 @@ def lane(name, tests=(), setup=()):
 
 
 class ResidueEvidenceTests(unittest.TestCase):
+    def test_home_process_cost_uses_both_recorded_identity_formats_without_inventing_or_mixing_work(self):
+        baseline = lane('historical.log', [event('worth_store_relational_home$process_kill::seams', 7)])
+        current = lane('initial.log', [
+            event('worth-store-court-relational::worth_store_court_relational$process::relational::relational_home::process_kill::seams', 11, 'failed'),
+            event('court$process::relational::relational_home::process_kill::scheduled', 999, 'ignored'),
+            {'name': 'court$process::relational::relational_home::process_kill::unmeasured', 'event': 'ok'}])
+        result = generate('store', {}, {}, baseline_lanes=[baseline], runtime_lanes=[current])
+        self.assertEqual([(row['item'], row['work_seconds'], row['frequency']) for row in result['baseline']],
+                         [('home-process', 7, 1)])
+        self.assertEqual([(row['item'], row['work_seconds'], row['frequency'], row['failed']) for row in result['ranked']],
+                         [('home-process', 11, 1, 1)])
+
     def test_work_rank_is_observed_cost_times_frequency_and_excludes_ignored(self):
         observed = lane('scenario.log', [
             event('court$branch_transitions_oracle::one', 8),
@@ -33,6 +45,12 @@ class ResidueEvidenceTests(unittest.TestCase):
             'owner::backend_qualification_public_boundary_compile_fail$sealed_boundary', 900)])
         result = generate('store', {}, {}, baseline_lanes=[observed])
         self.assertEqual(result['ranked'], [])
+
+    def test_court_relocated_home_process_names_keep_their_cost_family(self):
+        observed = lane('run-process.log', [event(
+            'court$process::relational::relational_home::process_kill::keeps_selected', 12)])
+        result = generate('store', {}, {}, runtime_lanes=[observed])
+        self.assertEqual(result['ranked'][0]['item'], 'home-process')
 
     def test_unknown_costs_receive_no_numeric_rank_or_inferred_zero(self):
         result = generate('query', {'source_counts': {'sleep': 7}},

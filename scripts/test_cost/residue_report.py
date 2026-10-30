@@ -13,7 +13,7 @@ ITEMS = {
     'store': [
         ('home-media', 'Relational home media sweeps', ('media_sweep::',), 'remaining',
          'Profile per-worker prefix restoration and filesystem I/O; retain every seed, cut and continuation.'),
-        ('home-process', 'Relational home process kills', ('relational_home$process_kill::',), 'pool implemented; runtime pending',
+        ('home-process', 'Relational home process kills', ('relational_home$process_kill::', 'relational_home::process_kill::'), 'pool implemented; runtime pending',
          'Independent stops may run concurrently; preserve actual process kills, both checkpoint cases and the late-arrival race.'),
         ('qualification', 'Backend qualification setup', ('backend_qualification',), 'remaining',
          'Share only evidence with equal backend, scenario, simulation and executed-evidence identity; preserve negative twins.'),
