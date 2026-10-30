@@ -2,7 +2,6 @@
 """Prebuild once, prove partitions, and run governed tests without nested Cargo."""
 import argparse
 import json
-import os
 import re
 from pathlib import Path
 import sys
@@ -15,6 +14,7 @@ from coverage import inventory
 from doc_contracts import execute as execute_documentation
 from executed_coverage import observations as execution_observations, prove as prove_executions
 from logs import read_lane
+from lane_environment import inherited, validate as validate_environment
 from measured_slots import load as load_slots, retain as retain_slots
 from nextest_build import LANES, build, coverage, list_tests
 from prebuild import prepare
@@ -75,10 +75,8 @@ def selected_lanes(names):
 
 
 def child_environment():
-    value = os.environ.copy()
-    value.update(CARGO_PROFILE_DEV_DEBUG='0', CARGO_PROFILE_TEST_DEBUG='0',
-                 CARGO_PROFILE_CI_TEST_DEBUG='0', CARGO_PROFILE_DIAGNOSTIC_TEST_DEBUG='0',
-                 WORTH_IMPLEMENTATION_BUILD_ID='00000000-0000-4000-8000-000000000001',
+    value = inherited()
+    value.update(WORTH_IMPLEMENTATION_BUILD_ID='00000000-0000-4000-8000-000000000001',
                  NEXTEST_EXPERIMENTAL_LIBTEST_JSON='1')
     return value
 
@@ -87,24 +85,20 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
             partition=None, nextest_profile='ci', cargo_runner=None, queries=None, build_only=False,
             include_docs=False):
     repository, output = Path(repository).resolve(), Path(output).resolve()
-    output.mkdir(parents=True, exist_ok=True)
     environment = (cargo_runner.environment if cargo_runner is not None and
                    cargo_runner.environment is not None else child_environment())
+    validate_environment(environment)
     # A gate may already own its build identity and complete child environment.
     # Retain that dictionary so published prebuild paths reach its CargoRunner.
     for key, value in child_environment().items():
         environment.setdefault(key, value)
-    for key in ('CARGO_PROFILE_DEV_DEBUG', 'CARGO_PROFILE_TEST_DEBUG',
-                'CARGO_PROFILE_CI_TEST_DEBUG', 'CARGO_PROFILE_DIAGNOSTIC_TEST_DEBUG'):
-        environment[key] = '0'
+    output.mkdir(parents=True, exist_ok=True)
     runner = cargo_runner or CargoRunner(repository, environment)
     runner.environment = environment
     manifest = repository / WORKSPACES[workspace]
     budgets = json.loads(Path(__file__).with_name('budgets.json').read_text())
     budget = lane_budget(budgets, workspace, lanes, profile)
     environment.setdefault('WORTH_REPO', str(repository))
-    if profile == 'ci-test':
-        environment['CARGO_INCREMENTAL'] = '0'
     # Refuse the source boundary before any expensive build.
     before = collect(manifest, repository)
     forbidden = source_violations(before['source_sites'])

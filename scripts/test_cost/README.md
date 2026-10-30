@@ -4,6 +4,15 @@ The standard-library census covers root, Query, Bank and Store. `worth-ui` is
 excluded. Timings, CPU parallelism and setup frequency are telemetry; they never
 decide whether a test passes.
 
+Qualification inherits the checkout's pinned compiler and committed Cargo
+profiles/configuration. It refuses external profile, incremental, compiler,
+toolchain and Rust flag overrides before discovery or execution, including
+direct census commands, wrapper commands and standalone prebuilds. Build
+identity and cache/parallelism settings retain their existing owners. Explicit
+IR instrumentation remains a separate measurement, not landing qualification.
+Historical captures with the earlier debug/cold-probe overrides remain honest
+records of those inputs; they are not clean qualification of a newer checkout.
+
 `source_roots.py` resolves Cargo-declared and automatic target sources for both
 source enforcement and LLVM ownership. It includes binary unit tests under
 `src/bin/*.rs` and `src/bin/*/main.rs`, honors each automatic-target flag and

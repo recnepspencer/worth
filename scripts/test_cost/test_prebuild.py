@@ -1,14 +1,25 @@
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from prebuild import prepare
+from prebuild import main, prepare
+from lane_environment import LaneEnvironmentRefusal
 from native_features import NativeFeatureRefusal
 
 
 class PrerequisiteOwnershipTests(unittest.TestCase):
+    def test_standalone_prebuild_refuses_external_flags_before_preparing_any_graph(self):
+        with patch('sys.argv', ['prebuild.py', '--workspace', 'query']), \
+             patch.dict(os.environ, {'RUSTFLAGS': '-C opt-level=3'}), \
+             patch('prebuild.CargoRunner') as runner, patch('prebuild.prepare') as build:
+            with self.assertRaises(LaneEnvironmentRefusal):
+                main()
+        runner.assert_not_called()
+        build.assert_not_called()
+
     def test_workspace_prebuild_exports_only_its_owned_environment(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary)

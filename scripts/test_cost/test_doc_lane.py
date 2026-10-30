@@ -7,11 +7,23 @@ from unittest.mock import patch
 
 from doc_lane import execute
 from run_lane import LaneExecutionFailure
+from lane_environment import LaneEnvironmentRefusal
 from compiler_units import declarations
 from test_compiler_units import event as compiler_event, graph, unit
 
 
 class DocLaneTests(unittest.TestCase):
+    def test_doc_only_gate_refuses_compiler_overrides_before_discovery_or_execution(self):
+        runner = SimpleNamespace(environment={'RUSTUP_TOOLCHAIN': 'other-compiler'}, logs=[])
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)/'unused'
+            with patch('doc_lane.collect') as discovery, patch('doc_lane.execute_documentation') as run:
+                with self.assertRaises(LaneEnvironmentRefusal):
+                    execute(Path.cwd(), 'root', output, runner)
+            discovery.assert_not_called()
+            run.assert_not_called()
+            self.assertFalse(output.exists())
+
     def workspace(self, root):
         (root / 'src').mkdir()
         (root / 'src/lib.rs').write_text('', encoding='utf-8')

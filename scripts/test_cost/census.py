@@ -12,6 +12,7 @@ from cargo_capture import CargoRunner, instrument
 from compiler_units import CompilerUnitRefusal
 from evidence import run
 from logs import llvm_lines, read_lane
+from lane_environment import LaneEnvironmentRefusal, validate as validate_environment
 from ratchet import source_violations
 from source_scan import scan_workspace
 from telemetry import setup_counts, slot_use, timing_summary
@@ -140,6 +141,10 @@ def package_inventory_lines(groups, noun):
 
 def capture_command(command, path, capture_index, repository, environment):
     logs, actual, refusal = [], None, None
+    try:
+        validate_environment(environment)
+    except LaneEnvironmentRefusal as error:
+        return 1, [], str(error)
     if command[0] == 'cargo':
         command = instrument(command)
         runner = CargoRunner(repository, environment)
@@ -218,6 +223,7 @@ def main():
                          {lane: json.loads(p.read_text()) for lane, p in args.selection}, args.llvm)
         if capture_refusal is not None:
             result['capture_refusal'] = capture_refusal
+            print(capture_refusal, file=sys.stderr)
         (destination / 'census.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n', encoding='utf-8')
         (destination / 'census.md').write_text(markdown(result), encoding='utf-8')
         print(f'{name}: {result["source_counts"]}; coverage={result["coverage"]["status"]}; {destination}')

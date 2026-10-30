@@ -162,3 +162,11 @@ workspace is needed to validate this infrastructure correction.
   boundaries, source caps, formatting and current nonignored membership;
   unchanged exhaustive sweeps are not rerun for a local site declaration.
   Earlier 1.94 captures remain references, not integrated 1.99.1 qualification.
+- The coordinator's subsequent committed-profile ruling retires the old
+  `test_environment_keeps_every_core_and_disables_debug_information` assertion
+  that the runner must force debug zero. Its replacement preserves parallelism
+  and build identity while asserting no injected profile/incremental/toolchain
+  settings. Native, documentation-only, direct census and standalone prebuild
+  qualification refuse external artifact-changing inputs before execution;
+  committed profiles and the selected checkout pin govern the actual capture.
+  Existing overridden captures retain their original inputs/results unchanged.

@@ -6,6 +6,7 @@ from census import collect, markdown
 from complete_coverage import merge
 from doc_contracts import execute as execute_documentation
 from executed_coverage import observations, prove
+from lane_environment import inherited, validate as validate_environment
 from ratchet import build_violations, compiler_observations, lane_budget, source_violations
 from run_lane import LaneExecutionFailure
 from workspace import WORKSPACES
@@ -19,6 +20,8 @@ def retain(result, repository, workspace, output):
 
 
 def execute(repository, workspace, output, runner, profile='dev', engine=None):
+    environment = getattr(runner, 'environment', None)
+    validate_environment(inherited() if environment is None else environment)
     repository, output = Path(repository).resolve(), Path(output).resolve()
     manifest = repository / WORKSPACES[workspace]
     configuration = json.loads(Path(__file__).with_name('budgets.json').read_text())

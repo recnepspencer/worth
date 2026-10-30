@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 
 from cargo_capture import CargoRunner
+from lane_environment import inherited
 from workspace import WORKSPACES, repository_root
 
 
@@ -49,7 +50,8 @@ def main():
     args = parser.parse_args()
     root = repository_root(Path.cwd())
     output = args.output or root / 'target/test-cost' / args.workspace / 'prebuilt'
-    environment = prepare(root, args.workspace, output, native_build=args.native_build)
+    environment = prepare(root, args.workspace, output, CargoRunner(root, inherited()),
+                          native_build=args.native_build)
     print(json.dumps(environment, indent=2))
 
 
