@@ -88,7 +88,7 @@ pub fn scalar_storage_connects_only_the_actual_performed_occurrence() {
             .execute_governed(
                 super::super::causal_inspection::capability::Inspect::reference(),
                 super::super::causal_inspection::capability::InspectCausalEvidence::reference(),
-                super::super::causal_inspection::capability::Input,
+                super::super::causal_inspection::capability::Input::at("numeric"),
             )
             .unwrap();
         assert_eq!(governed.rows().len(), 1);

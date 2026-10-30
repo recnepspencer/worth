@@ -99,3 +99,17 @@ fn optional_whole_aspect_connection_revalidates_current_authority_and_release() 
 fn optional_whole_aspect_declaration_requires_optional_parent_and_sibling_read_closure() {
     super::model::aspect_input::declaration::only_complete_optional_parent_declarations_admit_removal();
 }
+
+#[test]
+fn distinct_query_root_connects_only_its_real_nested_producer_output() {
+    super::model::causal_inspection::distinct_subjects::connects_distinct_original_source_and_nested_query_subjects();
+}
+
+#[test]
+fn distinct_subject_permissions_cannot_be_borrowed_and_revoke_independently() {
+    super::model::causal_inspection::distinct_subjects::lifecycle::neither_subject_lends_capabilities_and_revocation_rechecks_each_member();
+}
+#[test]
+fn distinct_original_query_subject_keeps_generation_cancellation_and_release() {
+    super::model::causal_inspection::distinct_subjects::lifecycle::original_query_subject_refuses_replacement_generation_and_cancelled_inspection();
+}

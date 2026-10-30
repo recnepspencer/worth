@@ -214,7 +214,7 @@ fn read(
         .execute_governed(
             capability::Inspect::reference(),
             capability::InspectCausalEvidence::reference(),
-            capability::Input,
+            capability::Input::at("numeric"),
         )
         .unwrap();
     assert_eq!(result.rows().len(), 1);
@@ -341,7 +341,13 @@ pub(in super::super) fn access<P: ApplicationProgramDefinition<NumericSchema>>(
                 )
                 .unwrap();
             selected
-                .admit_capability_access(&phase, &principal, &capability, capability::Input, scope)
+                .admit_capability_access(
+                    &phase,
+                    &principal,
+                    &capability,
+                    capability::Input::at("numeric"),
+                    scope,
+                )
                 .unwrap()
         })
         .unwrap()

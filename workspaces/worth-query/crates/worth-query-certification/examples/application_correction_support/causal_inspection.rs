@@ -5,6 +5,7 @@ use worth_query_host::facade::declaration::{
 };
 pub mod absence;
 pub mod capability;
+pub mod distinct_subjects;
 pub mod independent;
 pub mod journey;
 pub mod output_query;
@@ -42,7 +43,12 @@ impl ApplicationSourceDisclosureBinding<NumericSchema> for SourceDisclosure {
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
-    capability::declare(schema)
+    distinct_subjects::grant_status::declare(capability::declare(schema))
+        .application_query(distinct_subjects::query::definition())
+        .application_query_binding::<distinct_subjects::query::Binding>()
+        .application_query_inspection(independent::metadata::<distinct_subjects::query::Binding>(
+            "numeric-distinct-subject-metadata",
+        ))
         .application_query_inspection(source_only::metadata())
         .application_query(query::definition())
         .application_query_binding::<query::Binding>()

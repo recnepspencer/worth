@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     governance: WorthQueryApplicationQueryGovernance,
     diagnostic: Option<WorthQueryApplicationQueryGovernance>,
-    source: Option<super::connected::SourceRead>,
+    source: Option<super::connected::BoundSourcePolicy>,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
 }
 
@@ -36,7 +36,7 @@ impl<'storage, Schema: ApplicationSchema, Scope> InspectionRead<'_, 'storage, Sc
             authorization: self.authorization,
             governance: self.governance,
             diagnostic: self.diagnostic,
-            source: self.source,
+            source: self.source.map(|source| source.policy),
             memory: self.memory,
         })
     }

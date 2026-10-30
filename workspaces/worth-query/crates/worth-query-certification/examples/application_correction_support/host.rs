@@ -31,6 +31,9 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
         (): (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup.handler::<super::causal_inspection::distinct_subjects::grant_status::Binding, _>(
+            super::causal_inspection::distinct_subjects::grant_status::Handler,
+        )?;
         setup.handler::<super::calculation::Binding, _>(super::calculation::Handler)?;
         setup.handler::<super::scalar_input::authoring::Binding, _>(
             super::scalar_input::authoring::Handler,
@@ -121,6 +124,19 @@ where
     P: ApplicationProgramDefinition<NumericSchema, Contributions = (NumericContribution,)>,
     P::Outputs: WorthQueryApplicationProgramRoots<NumericSchema>,
 {
+    install_program_with_seed(program, roster, |_| Ok(()))
+}
+pub(super) fn install_program_with_seed<P>(
+    program: ValidatedApplicationProgram<NumericSchema, P>,
+    roster: WorthQueryApplicationProgramRoster<'_, NumericSchema>,
+    seed: impl FnOnce(
+        &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
+) -> WorthQueryProgramApplicationRuntime<NumericSchema, P>
+where
+    P: ApplicationProgramDefinition<NumericSchema, Contributions = (NumericContribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<NumericSchema>,
+{
     in_memory_rostered_program(
         program,
         roster,
@@ -166,7 +182,7 @@ where
             )?;
             super::adoption::seed(graph);
             super::causal_inspection::capability::seed(graph);
-            Ok(())
+            seed(graph)
         },
     )
     .unwrap()

@@ -109,6 +109,23 @@ impl WorthQueryApplicationInspectionTarget {
                 .as_ref()
                 .is_some_and(|source| Arc::ptr_eq(source, target))
     }
+    pub(in crate::domain_computation) fn original_subject(
+        &self,
+    ) -> worth_relational::facade::identity::EntityId {
+        match &self.original {
+            InspectionOriginal::Query { original, .. } => {
+                original.source.retained_scope_selector().subject()
+            }
+            InspectionOriginal::Source(source) => source.disclosure.scope().subject(),
+        }
+    }
+    pub(in crate::domain_computation) fn admits_member_subject(
+        &self,
+        target: &Arc<Self>,
+        subject: worth_relational::facade::identity::EntityId,
+    ) -> bool {
+        self.admits_member(target) && target.original_subject() == subject
+    }
     pub(super) fn connection_source(&self) -> Option<&Arc<Self>> {
         self.connection_source.as_ref()
     }

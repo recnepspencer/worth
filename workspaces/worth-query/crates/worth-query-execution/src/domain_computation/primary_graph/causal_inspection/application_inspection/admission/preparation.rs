@@ -110,7 +110,10 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     target: Arc<WorthQueryApplicationInspectionTarget>,
     policy: super::policy::PreparedInspectionPolicy,
     reserved: WorthQueryPreparedProductReadSessionIdentity,
-    source: Option<super::policy::PreparedInspectionPolicy>,
+    source: Option<(
+        &'a dyn super::source_scope::InspectionSourceScope,
+        super::policy::PreparedInspectionPolicy,
+    )>,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
 ) -> Result<InspectionRead<'a, 'storage, Schema, Scope>, InspectionAdmissionDenial> {
     let product = selected.product().read_lease();
@@ -192,14 +195,14 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
         })
         .transpose()?;
     let source = source
-        .map(|policy| {
+        .map(|(source_scope, policy)| {
             super::connected::bind_source(
                 execution,
                 memory,
                 &session,
                 &target,
                 principal,
-                scope.entity_id(),
+                source_scope,
                 policy,
             )
         })

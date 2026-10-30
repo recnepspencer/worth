@@ -136,21 +136,26 @@ where
     {
         let runtime = self.0.request.runtime;
         let request = self.0.request.request;
-        self.0
-            .execute_with(|execution, query, source, principal, scope, memory| {
-                let qd = governed::prepare_capability(
+        self.0.execute_with(
+            |execution, query, principal, scope, memory| {
+                let diagnostic = governed::prepare_capability(
                     runtime, request, execution, query, principal, scope, qd, memory,
                 )?;
-                let sd = governed::prepare_capability(
+                Ok(action::PendingInspectionPolicies {
+                    metadata: None,
+                    diagnostic,
+                })
+            },
+            |execution, source, principal, scope, memory| {
+                let diagnostic = governed::prepare_capability(
                     runtime, request, execution, source, principal, scope, sd, memory,
                 )?;
-                Ok(action::ConnectionPolicies {
-                    query_metadata: None,
-                    query_diagnostic: Some(qd),
-                    source_metadata: None,
-                    source_diagnostic: sd,
+                Ok(action::PendingInspectionPolicies {
+                    metadata: None,
+                    diagnostic,
                 })
-            })
+            },
+        )
     }
     pub fn execute_governed<QMC, QMO, QMI, QDC, QDO, QDI, SMC, SMO, SMI, SDC, SDO, SDI>(
         self,
@@ -167,26 +172,31 @@ where
     {
         let runtime = self.0.request.runtime;
         let request = self.0.request.request;
-        self.0
-            .execute_with(|execution, query, source, principal, scope, memory| {
-                let qm = governed::prepare_capability(
+        self.0.execute_with(
+            |execution, query, principal, scope, memory| {
+                let metadata = governed::prepare_capability(
                     runtime, request, execution, query, principal, scope, qm, memory,
                 )?;
-                let qd = governed::prepare_capability(
+                let diagnostic = governed::prepare_capability(
                     runtime, request, execution, query, principal, scope, qd, memory,
                 )?;
-                let sm = governed::prepare_capability(
+                Ok(action::PendingInspectionPolicies {
+                    metadata: Some(metadata),
+                    diagnostic,
+                })
+            },
+            |execution, source, principal, scope, memory| {
+                let metadata = governed::prepare_capability(
                     runtime, request, execution, source, principal, scope, sm, memory,
                 )?;
-                let sd = governed::prepare_capability(
+                let diagnostic = governed::prepare_capability(
                     runtime, request, execution, source, principal, scope, sd, memory,
                 )?;
-                Ok(action::ConnectionPolicies {
-                    query_metadata: Some(qm),
-                    query_diagnostic: Some(qd),
-                    source_metadata: Some(sm),
-                    source_diagnostic: sd,
+                Ok(action::PendingInspectionPolicies {
+                    metadata: Some(metadata),
+                    diagnostic,
                 })
-            })
+            },
+        )
     }
 }

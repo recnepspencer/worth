@@ -124,6 +124,7 @@ fn features<
     D: ApplicationActionDelivery<NumericSchema, OtherBinding>,
 >() -> Vec<ApplicationFeatureSpec> {
     vec![
+        super::causal_inspection::distinct_subjects::grant_status::feature(),
         super::compensation_movement::feature(),
         super::source_output_model::feature(),
         super::composite_definition_model::feature(),

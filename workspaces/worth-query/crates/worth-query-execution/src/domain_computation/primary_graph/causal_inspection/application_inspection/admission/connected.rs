@@ -9,35 +9,43 @@ use crate::domain_computation::authorization::application_disclosure::WorthQuery
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::identity::EntityId;
 
-pub(super) struct SourceRead {
+pub(super) struct SourceRead<'scope> {
+    pub(super) scope: &'scope dyn super::source_scope::InspectionSourceScope,
+    pub(super) policy: BoundSourcePolicy,
+}
+
+/// Owned policy custody may cross release only after the read's final proof.
+pub(super) struct BoundSourcePolicy {
     pub(super) target: Arc<WorthQueryApplicationInspectionTarget>,
     pub(super) authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     pub(super) governance: WorthQueryApplicationQueryGovernance,
     pub(super) diagnostic: WorthQueryApplicationQueryGovernance,
 }
-impl SourceRead {
+impl SourceRead<'_> {
     pub(super) fn fact_count(&self) -> usize {
-        self.authorization.exact_fact_count()
+        self.policy.authorization.exact_fact_count()
             + self
+                .policy
                 .governance
                 .authorization()
                 .map_or(0, |v| v.exact_fact_count())
             + self
+                .policy
                 .diagnostic
                 .authorization()
                 .map_or(0, |v| v.exact_fact_count())
     }
 }
 #[allow(clippy::too_many_arguments)]
-pub(super) fn bind_source(
+pub(super) fn bind_source<'scope>(
     execution: &ExecutionRequest<'_, '_>,
     memory: &mut Option<ExecutionMemoryReservation>,
     session: &WorthQueryManagedGraphWorkSession,
     root: &Arc<WorthQueryApplicationInspectionTarget>,
     principal: EntityId,
-    scope: EntityId,
+    scope: &'scope dyn super::source_scope::InspectionSourceScope,
     policy: PreparedInspectionPolicy,
-) -> Result<SourceRead, InspectionAdmissionDenial> {
+) -> Result<SourceRead<'scope>, InspectionAdmissionDenial> {
     let target = root
         .connection_source()
         .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
@@ -50,34 +58,33 @@ pub(super) fn bind_source(
             target,
             target.parameters(),
             principal,
-            scope,
+            scope.entity_id(),
         )?;
         policy
             .bind_inspection(binding)
             .map_err(InspectionAdmissionDenial::Governance)
     };
     Ok(SourceRead {
-        target: Arc::clone(target),
-        authorization: policy.authorization,
-        governance: bind(policy.metadata, memory)?,
-        diagnostic: bind(
-            policy
-                .diagnostic
-                .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?,
-            memory,
-        )?,
+        scope,
+        policy: BoundSourcePolicy {
+            target: Arc::clone(target),
+            authorization: policy.authorization,
+            governance: bind(policy.metadata, memory)?,
+            diagnostic: bind(
+                policy
+                    .diagnostic
+                    .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?,
+                memory,
+            )?,
+        },
     })
 }
 
-pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) struct ConnectionPolicies
+pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) struct PendingInspectionPolicies
 {
-    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) query_metadata:
+    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) metadata:
         Option<WorthQueryPendingApplicationQueryGovernance>,
-    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) query_diagnostic:
-        Option<WorthQueryPendingApplicationQueryGovernance>,
-    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) source_metadata:
-        Option<WorthQueryPendingApplicationQueryGovernance>,
-    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) source_diagnostic:
+    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) diagnostic:
         WorthQueryPendingApplicationQueryGovernance,
 }
 

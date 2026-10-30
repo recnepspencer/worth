@@ -46,11 +46,11 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
         SourceBinding::Principal,
         SourceBinding::PrincipalIdentity,
     >,
-    source_scope: &WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope<Schema, SourceBinding>>,
+    source_scope: &'a WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope<Schema, SourceBinding>>,
     original: &WorthQueryApplicationQueryObservation,
     source: &SourceOriginal,
     query_prepared: PreparedConnectionQuery,
-    policies: ConnectionPolicies,
+    policies: PendingInspectionPolicies,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
 ) -> Result<InspectionRead<'a, 'storage, Schema, Scope<Schema, Binding>>, InspectionAdmissionDenial>
 where
@@ -59,9 +59,7 @@ where
     SourceBinding: ApplicationQueryBinding<Schema>,
 {
     let principal_id = principal.principal().principal_entity_id();
-    if source_principal.principal().principal_entity_id() != principal_id
-        || source_scope.scope().entity_id() != scope.scope().entity_id()
-    {
+    if source_principal.principal().principal_entity_id() != principal_id {
         return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
     }
     let PreparedConnectionQuery {
@@ -78,8 +76,8 @@ where
         source_scope,
         request,
         InspectionSubject::Source(source),
-        policies.source_metadata,
-        Some(policies.source_diagnostic),
+        policies.metadata,
+        Some(policies.diagnostic),
         &reserved,
         memory,
     )?;
@@ -108,7 +106,7 @@ where
         target,
         query_policy,
         reserved,
-        Some(source_policy),
+        Some((source_scope.scope(), source_policy)),
         memory,
     )
 }
@@ -133,7 +131,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     >,
     scope: &WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope<Schema, Binding>>,
     original: &WorthQueryApplicationQueryObservation,
-    policies: &mut ConnectionPolicies,
+    policies: PendingInspectionPolicies,
     memory: &mut Option<ExecutionMemoryReservation>,
 ) -> Result<PreparedConnectionQuery, InspectionAdmissionDenial>
 where
@@ -142,10 +140,7 @@ where
 {
     let reserved = WorthQueryPreparedProductReadSessionIdentity::reserve()
         .map_err(InspectionAdmissionDenial::Session)?;
-    let diagnostic = policies
-        .query_diagnostic
-        .take()
-        .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
+    let diagnostic = policies.diagnostic;
     let (contract, policy) = policy::prepare(
         runtime,
         execution,
@@ -155,7 +150,7 @@ where
         scope,
         request,
         InspectionSubject::Query(original),
-        policies.query_metadata.take(),
+        policies.metadata,
         Some(diagnostic),
         &reserved,
         memory,

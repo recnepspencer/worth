@@ -130,6 +130,7 @@ impl ApplicationProgramDefinition<NumericSchema> for OutputProgram {
             super::scalar_input::program::calculation_feature(),
             super::aspect_input::program::source_feature(),
             super::aspect_input::program::calculation_feature(),
+            super::causal_inspection::distinct_subjects::grant_status::feature(),
             super::compensation_movement::feature(),
             super::source_output_model::feature(),
             super::composite_definition_model::feature(),

@@ -159,14 +159,36 @@ Public metadata uses `execute_with_diagnostics(query_diagnostics, source_diagnos
 Each original retains its complete binding and parameters; their values need not
 equal each other. Source diagnostics admit the input; query diagnostics independently
 admit the output and observable influences. Both current READ and policy sets are
-checked in one session before publication. This connection requires the same full
-subject and branch occurrence.
+checked in one session before publication. Each member retains its own exact
+full-generation subject; both belong to the same original branch occurrence.
 
 The independent route rejects foreign issuer/installed association and source-subject
 affinity before connection admission. Its public denial can be coarse `Admission`
 with no connection projection. The paired route's later connection validator can
 return exact `ForeignSource` for a sibling source. A missing connection projection
 is not success and supplies no protected original-admission detail.
+
+### Distinct Original Source And Query Subjects
+
+An ordinary nested query rooted at B can observe A's produced field through an
+authored reference while the performed source and producer belong to A. Use the
+same `caused_by::<SourceDisclosure>` call and supply query capabilities for B and
+source capabilities for A. Each member is freshly resolved, admitted and checked
+again before the consuming terminal. A capability for one subject cannot be used
+for the other, even when both records have the same entity kind and principal.
+
+The [compiled distinct-subject journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/distinct_subjects.rs)
+asserts both root B and nested A keys, the independently expected result and exact
+source/producer receipts. A same-kind sibling's nested value cannot supply the
+output join. Its [lifecycle courts](../../../worth-query-certification/examples/application_correction_support/causal_inspection/distinct_subjects/lifecycle.rs)
+withdraw either real grant, replace B under the same selector with a new Native
+generation, and cancel inspection without exposing cause details or retaining a
+reader. An original observation remains descriptive evidence through those
+refusals; a replacement identity grants no use of the original subject.
+
+This qualified shape is a nested observation of A from B. Applications still
+need actual performed input, canonical output and declared role correspondence;
+a reference alone cannot establish a producer or authorize another subject.
 
 ### Original Settled Producer Custody
 

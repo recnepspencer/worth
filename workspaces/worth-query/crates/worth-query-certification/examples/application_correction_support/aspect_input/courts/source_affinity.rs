@@ -18,7 +18,7 @@ pub(super) fn observe(
         .execute_governed(
             capability::Inspect::reference(),
             capability::InspectCausalEvidence::reference(),
-            capability::Input,
+            capability::Input::at("numeric"),
         )
         .unwrap();
     assert_eq!(result.rows().len(), 1);

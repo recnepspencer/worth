@@ -116,7 +116,7 @@ pub fn source_metadata_is_independent_of_payload_and_query_metadata() {
         .execute_governed(
             capability::Inspect::reference(),
             capability::InspectCausalEvidence::reference(),
-            capability::Input,
+            capability::Input::at("numeric"),
         )
         .unwrap();
     request

@@ -41,14 +41,14 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                     self.principal,
                     self.scope.entity_id(),
                 )?;
-                let source_admission = source_read.diagnostic.admit_diagnostic_comparison(
+                let source_admission = source_read.policy.diagnostic.admit_diagnostic_comparison(
                     context,
                     source_query,
                     &self.session,
-                    &source_read.target,
-                    &source_read.target.parameters(),
+                    &source_read.policy.target,
+                    &source_read.policy.target.parameters(),
                     self.principal,
-                    self.scope.entity_id(),
+                    source_read.scope.entity_id(),
                 )?;
                 Ok((query_admission, source_admission))
             })

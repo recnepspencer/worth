@@ -1,5 +1,6 @@
 //! Cancellation after the actual consuming terminal prevents final publication.
 use super::*;
+mod affinity;
 use crate::domain_computation::primary_graph::{
     application_query::FreshQueryPermissionStop,
     causal_inspection::application_inspection::{
@@ -93,6 +94,11 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
                             .unwrap_or_else(|_| {
                                 panic!("actual fresh inspection preparation succeeds")
                             });
+                            affinity::assert_subject_affinity(
+                                &read,
+                                &execution,
+                                principal.principal().principal_entity_id(),
+                            );
                             let report = read
                                 .materialize(&execution)
                                 .unwrap_or_else(|_| panic!("actual report materializes"));

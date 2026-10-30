@@ -1,5 +1,5 @@
 //! Independent issued identities and policy preparation feed one common session.
-pub(super) use super::super::super::admission::connected::ConnectionPolicies;
+pub(super) use super::super::super::admission::connected::PendingInspectionPolicies;
 use super::super::super::{admission, source_original::SourceOriginal};
 use super::*;
 use crate::domain_computation::primary_graph::{
@@ -16,14 +16,20 @@ impl<
 {
     pub(super) fn execute_with(
         self,
-        pending: impl FnOnce(
+        query_pending: impl FnOnce(
             &ExecutionRequest<'_, '_>,
             &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
+            EntityId,
+            EntityId,
+            &mut Option<ExecutionMemoryReservation>,
+        ) -> Result<PendingInspectionPolicies, InspectionCause>,
+        source_pending: impl FnOnce(
+            &ExecutionRequest<'_, '_>,
             &WorthQueryInstalledApplicationQueryBinding<Schema, Disclosure::Disclosure>,
             EntityId,
             EntityId,
             &mut Option<ExecutionMemoryReservation>,
-        ) -> Result<ConnectionPolicies, InspectionCause>,
+        ) -> Result<PendingInspectionPolicies, InspectionCause>,
     ) -> Result<WorthQueryConnectedApplicationInspection<'o>, WorthQueryApplicationInspectionDenial>
     {
         let mut memory = None;
@@ -68,15 +74,9 @@ impl<
                     |_, principal, scope| {
                         let principal_id = principal.principal().principal_entity_id();
                         let scope_id = scope.scope().entity_id();
-                        let mut policies = pending(
-                            execution,
-                            &query,
-                            &source_binding,
-                            principal_id,
-                            scope_id,
-                            &mut memory,
-                        )
-                        .map_err(FreshQueryPermissionStop::Inspect)?;
+                        let policies =
+                            query_pending(execution, &query, principal_id, scope_id, &mut memory)
+                                .map_err(FreshQueryPermissionStop::Inspect)?;
                         let query_prepared = admission::connected::prepare_query(
                             self.request.runtime,
                             execution,
@@ -86,7 +86,7 @@ impl<
                             principal,
                             scope,
                             self.request.original,
-                            &mut policies,
+                            policies,
                             &mut memory,
                         )
                         .map_err(|cause| {
@@ -110,6 +110,13 @@ impl<
                             self.request.request,
                             |_, source_principal, source_scope| {
                                 let inspect = || -> Result<_, InspectionCause> {
+                                    let policies = source_pending(
+                                        execution,
+                                        &source_binding,
+                                        source_principal.principal().principal_entity_id(),
+                                        source_scope.scope().entity_id(),
+                                        &mut memory,
+                                    )?;
                                     let mut read = admission::connected::prepare::<
                                         Schema,
                                         Binding,

@@ -10,9 +10,16 @@ mod contract;
 worth_query_field!(pub Disclosure for NumericSchema, Grant, GrantFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_capability!(pub Inspect in NumericSchema);
 #[derive(Clone, serde::Serialize)]
-pub struct Input;
-worth_query_portable_type!(Input => "numeric-correction.inspect-input.v1");
-worth_query_structured_value_binding!(pub InputBinding for Input { identity: "numeric-correction.inspect-input.v1" });
+pub struct Input {
+    pub key: String,
+}
+impl Input {
+    pub fn at(key: impl Into<String>) -> Self {
+        Self { key: key.into() }
+    }
+}
+worth_query_portable_type!(Input => "numeric-correction.inspect-input.v2");
+worth_query_structured_value_binding!(pub InputBinding for Input { identity: "numeric-correction.inspect-input.v2" });
 worth_query_operation!(pub InspectCausalEvidence for NumericSchema, input InputBinding);
 worth_query_operation_reads!(InspectCausalEvidence => [Key]);
 impl ApplicationCapabilityRequest<NumericSchema, Inspect> for Input {
@@ -25,7 +32,7 @@ impl ApplicationCapabilityRequest<NumericSchema, Inspect> for Input {
         ApplicationCapabilityRequestProjectionDenial,
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
-            ApplicationCapabilityEntitySelector::new(Key::reference(), text("numeric")),
+            ApplicationCapabilityEntitySelector::new(Key::reference(), text(&self.key)),
             text("inspect"),
             text("audit"),
             ApplicationCapabilityRequestContext::new(AdoptContext::reference()),

@@ -35,9 +35,9 @@ impl WorthQueryApplicationQueryGovernance {
     ) -> bool {
         match self {
             Self::Public => graph_work.inspection_binding().is_some_and(|(actual, _)| {
-                actual.admits_member(target)
+                actual.admits_member_subject(target, scope)
                     && graph_work.principal() == principal
-                    && graph_work.entity_access_context() == Some(scope)
+                    && graph_work.entity_access_context() == Some(actual.original_subject())
             }),
             Self::Governed { computation, .. } => computation
                 .binding

@@ -1,6 +1,7 @@
 //! Original READ and metadata are admitted before any protected target traversal.
 mod plan;
 pub(super) use plan::InspectionPlanDenial;
+mod source_scope;
 mod subject;
 pub(super) use subject::InspectionSubject;
 pub(super) mod connected;
@@ -73,7 +74,7 @@ pub(super) struct InspectionRead<'a, 'storage, Schema, Scope> {
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     governance: WorthQueryApplicationQueryGovernance,
     diagnostic: Option<WorthQueryApplicationQueryGovernance>,
-    source: Option<connected::SourceRead>,
+    source: Option<connected::SourceRead<'a>>,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
 }
 

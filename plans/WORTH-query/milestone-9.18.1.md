@@ -1379,7 +1379,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.4 | Independent source/query bindings and permissions | Complete; qualified `21674b9dac` | Integrated regression protection in 9.11 |
 | 9.5 | Canonical field absence and mandatory currentness proof | Complete; qualified `70812eb0c3` | Stronger whole-aspect/scalar journeys belong to 9.6-9.7 |
 | 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
-| 9.7 | Remaining connection shapes and lifecycle cases | In progress; U64 Scalar input/output journeys qualified | Distinct-subject and retired original output-role connections |
+| 9.7 | Remaining connection shapes and lifecycle cases | In progress; U64 Scalar and distinct nested-subject journeys qualified | Retired original output-role connections |
 | 9.8 | Genuine equivalent-output suppression explanations | Open | Actual Signal suppression evidence through the application surface |
 | 9.9 | Optional rich materialization | Open | Freshly admitted, demand-driven views from existing evidence owners |
 | 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
@@ -1462,7 +1462,7 @@ Do not weaken Required-child semantics or substitute scalar owner tests.
 
 #### Phase 9.7: Remaining Connection Shapes And Lifecycle Cases
 
-**Status: in progress; U64 Scalar input/output slices qualified. Depends on: 9.4-9.6 for their respective meanings.** Complete
+**Status: in progress; U64 Scalar and distinct nested-subject slices qualified. Depends on: 9.4-9.6 for their respective meanings.** Complete
 the public Query scalar storage/binding journey, connections between distinct
 genuine subjects and connections involving retired output roles. Preserve full
 generations, installed shape/contract interpretation, actual performed reads,
@@ -1478,8 +1478,8 @@ The bounded scalar journey installs an Optional Scalar aspect with one Required
 output. It connects the original performed input, source-created Native revision,
 declared role and settled query observation under independent admissions. Equal,
 no-op, ABA, foreign-source and reader-release controls retain their distinct
-meanings. Distinct subjects and retired original output roles remain required
-for 9.7 and parent Phase 9.
+meanings. Retired original output roles remain required for 9.7 and parent
+Phase 9.
 
 The qualified Scalar-output journey extends that ordinary producer with an
 explicitly installed Optional Scalar output, Required `u64` child and Scalar-only
@@ -1499,6 +1499,19 @@ Scalar output beside changed Struct output, independent admissions and reader
 release. It qualifies Preserve-to-Preserve output roles; the owner lifecycle
 court alone does not assert a public Create-to-Preserve journey. No historical
 receipt search or per-field origin archive is introduced.
+
+The qualified distinct-subject shape is a query rooted at B observing A's
+produced field through an authored reference. Source and query retain separate
+issued full-generation subjects, freshly admitted READ/metadata/diagnostic
+policies and exact membership in one original-branch inspection session. Query
+admission precedes source lookup; source capabilities prepare only under the
+actual freshly resolved source. The borrowed source identity is revalidated
+through the existing resolution owner before final proof; owned policy custody
+survives reader release. Genuine public controls cover both keys and expected
+values, a same-kind wrong nested output, swapped subject capabilities, actual
+withdrawal of either scoped grant, replacement generation, cancellation and
+release. This names nested observation support without claiming cross-entity
+producer publication or an unrestricted path language.
 
 #### Phase 9.8: Genuine Equivalent-Output Suppression Explanations
 

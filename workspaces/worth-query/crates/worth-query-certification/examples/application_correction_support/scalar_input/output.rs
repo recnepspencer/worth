@@ -50,7 +50,7 @@ pub fn scalar_output_uses_its_own_performed_revision() {
         .execute_governed(
             capability::Inspect::reference(),
             capability::InspectCausalEvidence::reference(),
-            capability::Input,
+            capability::Input::at("numeric"),
         )
         .unwrap();
     assert_eq!(initial.rows().len(), 1);

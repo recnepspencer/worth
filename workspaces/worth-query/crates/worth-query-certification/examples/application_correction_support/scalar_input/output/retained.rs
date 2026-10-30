@@ -55,7 +55,13 @@ pub(super) fn read(
                 )
                 .unwrap();
             let capability = selected
-                .admit_capability_access(&phase, &principal, &installed, capability::Input, scope)
+                .admit_capability_access(
+                    &phase,
+                    &principal,
+                    &installed,
+                    capability::Input::at("numeric"),
+                    scope,
+                )
                 .unwrap();
             let retained = observation.select_on(&phase, runtime).unwrap();
             let plan = selected

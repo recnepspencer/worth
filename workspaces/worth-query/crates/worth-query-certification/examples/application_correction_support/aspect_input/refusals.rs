@@ -92,7 +92,7 @@ pub fn incomplete_read_and_mixed_parent_child_writes_refuse_atomically() {
             .execute_governed(
                 capability::Inspect::reference(),
                 capability::InspectCausalEvidence::reference(),
-                capability::Input,
+                capability::Input::at("numeric"),
             )
             .unwrap();
         assert_eq!(read.rows().len(), 1);
@@ -162,7 +162,7 @@ fn ordinary_data_read_does_not_authorize_inspection(app: &host::OutputHost) {
         .execute_governed(
             capability::Inspect::reference(),
             capability::InspectCausalEvidence::reference(),
-            capability::Input,
+            capability::Input::at("numeric"),
         )
         .expect("the output observation uses its actual governed audience");
     assert_eq!(inspected.rows().len(), 1);

@@ -15,14 +15,27 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<WorthQuerySessionInspectionReadProof, InspectionAdmissionDenial> {
         require_request(execution, self.request)?;
-        for (target, governance) in std::iter::once((&self.target, &mut self.governance))
-            .chain(self.diagnostic.iter_mut().map(|v| (&self.target, v)))
-            .chain(self.source.iter_mut().flat_map(|source| {
-                [
-                    (&source.target, &mut source.governance),
-                    (&source.target, &mut source.diagnostic),
-                ]
-            }))
+        for (target, governance, subject) in
+            std::iter::once((&self.target, &mut self.governance, self.scope.entity_id()))
+                .chain(
+                    self.diagnostic
+                        .iter_mut()
+                        .map(|v| (&self.target, v, self.scope.entity_id())),
+                )
+                .chain(self.source.iter_mut().flat_map(|source| {
+                    [
+                        (
+                            &source.policy.target,
+                            &mut source.policy.governance,
+                            source.scope.entity_id(),
+                        ),
+                        (
+                            &source.policy.target,
+                            &mut source.policy.diagnostic,
+                            source.scope.entity_id(),
+                        ),
+                    ]
+                }))
         {
             if let Some(authorization) = governance.authorization_mut() {
                 self.runtime
@@ -39,7 +52,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                     target,
                     &target.parameters(),
                     self.principal,
-                    self.scope.entity_id(),
+                    subject,
                 )
             {
                 return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
@@ -52,6 +65,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             || self.target.connection_source().is_some() != self.source.is_some()
             || self.source.as_ref().is_some_and(|source| {
                 !source
+                    .policy
                     .authorization
                     .belongs_to_session(self.session.identity())
             })
@@ -98,6 +112,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                         .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
                     if let Some(source) = &self.source {
                         source
+                            .policy
                             .authorization
                             .validate_currentness_in(
                                 execution,
@@ -109,11 +124,9 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                     }
                     for governance in std::iter::once(&self.governance)
                         .chain(self.diagnostic.iter())
-                        .chain(
-                            self.source
-                                .iter()
-                                .flat_map(|source| [&source.governance, &source.diagnostic]),
-                        )
+                        .chain(self.source.iter().flat_map(|source| {
+                            [&source.policy.governance, &source.policy.diagnostic]
+                        }))
                     {
                         if let Some(authorization) = governance.authorization() {
                             authorization
@@ -132,7 +145,13 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                             snapshot,
                             WorthQueryPrincipalResolutionMode::Ordinary,
                         )
-                        .and_then(|truth| truth.validate_entity_freshness(execution, self.scope))
+                        .and_then(|truth| {
+                            truth.validate_entity_freshness(execution, self.scope)?;
+                            if let Some(source) = &self.source {
+                                source.scope.validate_currentness(&truth, execution)?;
+                            }
+                            Ok(())
+                        })
                         .map_err(InspectionAdmissionDenial::Scope)
                 },
             ))
