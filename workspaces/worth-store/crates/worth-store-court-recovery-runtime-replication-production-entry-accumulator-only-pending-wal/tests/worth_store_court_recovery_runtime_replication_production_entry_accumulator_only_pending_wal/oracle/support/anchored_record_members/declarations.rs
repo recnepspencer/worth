@@ -72,7 +72,7 @@ pub(crate) fn prepared_store() -> (
                 inputs.unsigned("journal-position", position);
                 inputs.bytes(
                     "journal-payload",
-                    &anchored_records::journal_payload(position),
+                    &worth_store_testkit_recovery_runtime::production_entry::anchored_records::journal_payload(position),
                 );
             }
             inputs.bytes("anchor-name", CHECKPOINT.as_bytes());
