@@ -38,12 +38,3 @@ pub fn compile_fail_fixture_root() -> std::path::PathBuf {
     .canonicalize()
     .expect("shared compile-fail asset root exists")
 }
-
-pub fn transition_test_root() -> std::path::PathBuf {
-    Path::new(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/worth_court_foundational_expressions/foundational/certification/transitions"
-    ))
-    .canonicalize()
-    .expect("transition court test root exists")
-}

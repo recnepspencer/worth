@@ -147,7 +147,7 @@ pub(crate) fn assert_fixture_completeness() {
     let catalog = CASES
         .iter()
         .map(|case| {
-            Path::new(case.path())
+            root.join(case.path())
                 .strip_prefix(&root)
                 .expect("fixture belongs to worth-court-proof")
                 .to_string_lossy()

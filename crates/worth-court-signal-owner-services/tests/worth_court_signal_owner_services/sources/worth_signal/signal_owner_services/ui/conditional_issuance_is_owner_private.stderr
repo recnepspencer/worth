@@ -1,5 +1,5 @@
 error[E0624]: associated function `issue` is private
- --> tests/signal_owner_services/ui/conditional_issuance_is_owner_private.rs:6:59
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/conditional_issuance_is_owner_private.rs:6:59
   |
 6 |       let _ = SignalConditionalExecutionPort::<(), (), ()>::issue(
   |                                                             ^^^^^ private associated function

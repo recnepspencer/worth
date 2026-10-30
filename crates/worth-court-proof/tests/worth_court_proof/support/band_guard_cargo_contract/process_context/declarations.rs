@@ -8,7 +8,7 @@ pub(crate) fn worth_proof_root() -> PathBuf {
 }
 
 pub(crate) fn fixture_manifest() -> PathBuf {
-    worth_proof_root().join(
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(
         "tests/worth_court_proof/sources/worth_proof/fixtures/band_guard_cargo_contract/Cargo.toml",
     )
 }

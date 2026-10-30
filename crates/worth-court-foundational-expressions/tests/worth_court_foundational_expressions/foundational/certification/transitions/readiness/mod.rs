@@ -178,3 +178,12 @@ fn production_readiness_phase_gates_are_evidence_backed() {
         .iter()
         .all(|evidence| crate_root_path(evidence.evidence_path()).exists()));
 }
+
+fn transition_test_root() -> std::path::PathBuf {
+    std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/worth_court_foundational_expressions/foundational/certification/transitions"
+    ))
+    .canonicalize()
+    .expect("transition court test root exists")
+}

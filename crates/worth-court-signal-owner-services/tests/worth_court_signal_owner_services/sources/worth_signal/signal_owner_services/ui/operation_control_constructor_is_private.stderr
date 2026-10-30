@@ -1,5 +1,5 @@
 error[E0624]: associated function `new` is private
- --> tests/signal_owner_services/ui/operation_control_constructor_is_private.rs:4:41
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/operation_control_constructor_is_private.rs:4:41
   |
 4 |     SignalOwnerOperationControlForTest::new()
   |                                         ^^^ private associated function

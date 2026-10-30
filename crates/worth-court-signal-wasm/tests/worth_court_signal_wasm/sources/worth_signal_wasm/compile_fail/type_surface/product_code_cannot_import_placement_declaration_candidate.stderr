@@ -1,5 +1,5 @@
 error[E0603]: module `runtime` is private
- --> tests/compile_fail/type_surface/product_code_cannot_import_placement_declaration_candidate.rs:3:28
+ --> tests/worth_court_signal_wasm/sources/worth_signal_wasm/compile_fail/type_surface/product_code_cannot_import_placement_declaration_candidate.rs:3:28
   |
 3 |         worth_signal_wasm::runtime::placement::declaration_candidate::PlacementDeclarationCandidate,
   |                            ^^^^^^^ private module                     ----------------------------- struct `PlacementDeclarationCandidate` is not publicly re-exported
