@@ -54,10 +54,16 @@ pub(super) fn install_with_probe(graph: Graph, probe: super::probe::Probe) -> Wo
 
 fn install_world(graph: Graph, probe: super::probe::Probe) -> World {
     let observation = Observation::default();
-    let setup_items = graph.nodes.checked_add(graph.edges.len()).unwrap();
+    // Each node authors its own entity plus NodeOwner and GroupRoot relations.
+    let setup_items = graph
+        .nodes
+        .checked_mul(3)
+        .and_then(|rows| rows.checked_add(graph.edges.len()))
+        .unwrap();
+    const NATIVE_AUTHORING_ALLOWANCE_PER_ROW: u64 = 1_000_000;
     let setup_work = u64::try_from(setup_items)
         .unwrap()
-        .checked_mul(32_000)
+        .checked_mul(NATIVE_AUTHORING_ALLOWANCE_PER_ROW)
         .and_then(|work| work.checked_add(8_000_000))
         .expect("authored graph fixture work is finite");
     with_test_bootstrap_advancement(setup_work, |phase| {

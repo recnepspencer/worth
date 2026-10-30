@@ -4,9 +4,10 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 };
 
 pub(super) fn install(population: usize) -> AuthorizationWorld {
+    const NATIVE_AUTHORING_ALLOWANCE_PER_ENTITY: u64 = 1_000_000;
     let work = u64::try_from(population)
         .unwrap()
-        .checked_mul(32_000)
+        .checked_mul(NATIVE_AUTHORING_ALLOWANCE_PER_ENTITY)
         .and_then(|work| work.checked_add(8_000_000))
         .expect("native population fixture work is finite");
     let resources =
