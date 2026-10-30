@@ -100,6 +100,21 @@ cleanup.
 
 ### Store an expected basis and select it again
 
+Keep records on a separately owned storage branch when saving them must leave
+the authored model's basis current. Fork that branch's Relational component
+with `parts.fork_relational()` and bind recording requests with
+`.on_branch(storage_branch)`. Keep the storage branch's lifecycle owner and
+close it explicitly when the records are no longer needed.
+
+Use a declared canonical field binding for structured records so ordinary
+queries restore their typed values. The compiled
+[record schema](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/schema/data.rs)
+and [storage example](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/storage.rs)
+store model and target occurrences, ordered typed parameters and comparison
+data through ordinary mutations and queries. Its collection query returns a
+complete result or a typed limit refusal; exact-key selection follows the
+successful read.
+
 Call `selected.describe_basis()` before releasing an admitted selection. Store
 the returned `WorthQueryExpectedProductBasisDescription` with ordinary versioned
 application data. It implements Serde serialization and contains comparison

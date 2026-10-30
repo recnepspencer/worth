@@ -6,6 +6,7 @@
 mod application_invariant_acceptance;
 mod application_program;
 mod program_deployment;
+mod proposal_acceptance;
 use program_deployment::ConsumerProgramDeployment;
 
 pub use application_program::{

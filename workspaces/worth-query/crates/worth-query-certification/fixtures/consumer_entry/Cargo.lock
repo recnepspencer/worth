@@ -798,6 +798,7 @@ name = "worth-query-consumer-root"
 version = "0.0.0"
 dependencies = [
  "serde",
+ "serde_json",
  "stats_alloc",
  "worth-execution",
  "worth-foundational",
