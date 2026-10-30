@@ -24,7 +24,10 @@ fn owner(input: &Inputs, path: &str) -> Option<String> {
         .or_else(|| path.split_once("/src/").map(|(p, _)| format!("{p}/")))
 }
 fn test_name(name: &str) -> bool {
-    name.ends_with("_for_test") || name.ends_with("ForTest")
+    (name.ends_with("_for_test") || name.ends_with("ForTest"))
+        && name
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || !c.is_ascii())
 }
 fn permitted(path: &str, owners: &BTreeSet<String>, callers: &BTreeSet<(&str, &str)>) -> bool {
     owners.iter().any(|o| {
@@ -58,6 +61,11 @@ fn declarations<'a>(t: &[Token<'a>]) -> (Vec<&'a str>, Vec<&'a str>) {
     let (mut names, mut aliases) = (Vec::new(), Vec::new());
     let mut generic_until = 0;
     for (i, w) in t.windows(2).enumerate() {
+        match w[0].text {
+            "fn" | "struct" | "enum" | "trait" | "type" | "const" | "static" | "mod" | "union"
+            | "macro" | "!" | "use" | "extern" | "impl" => {}
+            _ => continue,
+        }
         if w[0].end - w[0].start != w[0].text.len() || i > 0 && t[i - 1].text == "'" {
             continue; // Raw identifiers and lifetime names are not item keywords.
         }
@@ -203,7 +211,11 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
             .into_iter()
             .collect();
     for (path, t) in &sources {
-        let names: BTreeSet<_> = t.iter().map(|t| t.text).collect();
+        let names: BTreeSet<_> = t
+            .iter()
+            .map(|t| t.text)
+            .filter(|name| test_name(name) || FACTORIES.contains(name))
+            .collect();
         for name in &names {
             if let Some(owners) = doors.get(*name) {
                 if !permitted(path, owners, &controls) {
@@ -285,7 +297,7 @@ mod tests {
                 ("crates/worth-signal/src/control.rs", "struct DoorForTest;"),
                 (
                     "app/src/lib.rs",
-                    "// DoorForTest\nlet text = r#\"DoorForTest\"#; /* DoorForTest */",
+                    "// DoorForTest\nlet text = r#\"DoorForTest\"#; noop!(\"ignored\"DoorForTest); /* DoorForTest */",
                 ),
             ],
             "",
