@@ -6,6 +6,7 @@ use worth_execution::{ChargedBytes, ExecutionOrderedMapDenial};
 
 pub(super) fn storage_denial(cause: ExecutionOrderedMapDenial) -> StoreDenial {
     match cause {
+        ExecutionOrderedMapDenial::Request(cause) => StoreDenial::ExecutionRequest(cause),
         ExecutionOrderedMapDenial::Allocation(cause) => StoreDenial::Allocation(cause),
         ExecutionOrderedMapDenial::CapacityOverflow => StoreDenial::Representability,
     }

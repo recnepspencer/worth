@@ -8,6 +8,10 @@ use worth_query_installation::facade::WorthQueryInstalledGraphReadContract;
 use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
 
 pub(in crate::domain_computation::primary_graph::application_query) struct ReadPlan<'a> {
+    pub(in crate::domain_computation::primary_graph::application_query) parent_session:
+        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    pub(in crate::domain_computation::primary_graph::application_query) managed_rows:
+        Option<&'a super::super::managed_index::selection::SelectionRows>,
     pub(in crate::domain_computation::primary_graph::application_query) binding:
         &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph::application_query) name: &'a str,
@@ -20,6 +24,11 @@ pub(in crate::domain_computation::primary_graph::application_query) struct ReadP
         &'a WorthQueryAdmittedApplicationQueryParameters,
     pub(in crate::domain_computation::primary_graph::application_query) governance:
         &'a WorthQueryApplicationQueryGovernance,
+    pub(in crate::domain_computation::primary_graph::application_query) material_source: Option<
+        &'a std::sync::Arc<
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+        >,
+    >,
 
     pub(in crate::domain_computation::primary_graph::application_query) maximum_result_count: usize,
 }
@@ -37,6 +46,8 @@ impl<'a> ReadPlan<'a> {
         plan: &'a WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,
     ) -> Self {
         Self {
+            parent_session: plan.graph_work.identity(),
+            managed_rows: None,
             binding: plan.query.binding_identity(),
             name: plan.query.name(),
             contract: plan.query.read_family_binding().planning_contract(),
@@ -44,6 +55,7 @@ impl<'a> ReadPlan<'a> {
             snapshot: plan.basis.snapshot_handle(),
             parameters: &plan.parameters,
             governance: &plan.governance,
+            material_source: None,
             maximum_result_count: plan.controls.maximum_result_count().get(),
         }
     }
@@ -70,6 +82,8 @@ impl worth_execution::ChargedBytes for ReadPlan<'_> {
     fn additional_charged_bytes(&self) -> u64 {
         // Borrowed installed/pinned values and inline limits allocate nothing.
         let Self {
+            parent_session: _parent_session,
+            managed_rows: _managed_rows,
             binding: _binding,
             name: _name,
             contract: _contract,
@@ -77,6 +91,7 @@ impl worth_execution::ChargedBytes for ReadPlan<'_> {
             snapshot: _snapshot,
             parameters: _parameters,
             governance: _governance,
+            material_source: _material_source,
 
             maximum_result_count: _maximum_result_count,
         } = self;
@@ -93,6 +108,8 @@ impl ReadPlan<'_> {
         snapshot: &'b SnapshotHandle,
     ) -> ReadPlan<'b> {
         ReadPlan {
+            parent_session: self.parent_session,
+            managed_rows: self.managed_rows,
             binding: self.binding,
             name: self.name,
             contract: self.contract,
@@ -100,6 +117,7 @@ impl ReadPlan<'_> {
             snapshot,
             parameters: self.parameters,
             governance: self.governance,
+            material_source: self.material_source,
 
             maximum_result_count: self.maximum_result_count,
         }

@@ -162,7 +162,7 @@ impl Denial {
                     Some(Ok(kind))
                 } else { allocation_control(failure.allocation_denial()) }
             }
-            Some(Cause::SourceRebase(_)) | None => None,
+            Some(Cause::SourceRebase(_) | Cause::UnobservedWrite(_)) | None => None,
         }
     }
 

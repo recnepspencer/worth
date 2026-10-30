@@ -4,6 +4,7 @@ use crate::mvcc::RequiredOutputPublication as Publication;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::{CommitCreatedEntityBindings, CommitCreatedRelationBindings};
 use worth_execution::{ExecutionRequest, MapKernelContext};
+mod predecessor;
 mod retained_origin;
 use retained_origin::compare_retained_origin;
 
@@ -61,12 +62,11 @@ impl CanonicalCommitEnvelope {
             publication,
         } = admission;
         context.checkpoint(1).map_err(origin_request)?;
-        let running = publication.running();
         if installed.runtime_instance_id != runtime.runtime_instance_id()
             || installed.custom_invariant_generation
                 != runtime.schema_contract_runtime.custom_invariant_generation
             || installed.schema_digest != basis.inner.root.schema_authority().authority_digest()
-            || !installed.authority.admits_required_output(running)
+            || !publication.admitted_by(&installed)
             || self.branch_context != *basis.descriptor().branch_id()
             || !self.is_unmerged_output_publication_step()
             || self.schema_transition.is_some()
@@ -77,8 +77,7 @@ impl CanonicalCommitEnvelope {
                 "required-output installation changed before native preparation",
             ));
         }
-        let producer = running.producer();
-        let dependency_identity = *running.dependency_identity();
+        let (producer, dependency_identity) = publication.lineage_attribution();
         let mut after_codec_retirement = None;
         let (meaning, roles, previous) = match &publication {
             Publication::Birth {
@@ -98,89 +97,55 @@ impl CanonicalCommitEnvelope {
                 (meaning, roles, None)
             }
             Publication::Preserve {
-                admission,
                 predecessor,
                 meaning,
                 roles,
+                ..
             } => {
-                if predecessor.runtime_instance_id != runtime.runtime_instance_id()
-                    || !installed
-                        .authority
-                        .admits_required_output_succession(admission, &predecessor.authority)
-                {
-                    return Err(crate::mvcc::origin_denial(
-                        "foreign native predecessor publication custody",
-                    ));
-                }
-                let origin = predecessor
+                let origin = predecessor::validate(
+                    self,
+                    runtime,
+                    basis,
+                    predecessor,
+                    meaning,
+                    lease,
+                    context,
+                )?;
+                (meaning, roles, Some(origin))
+            }
+            Publication::AuthoredRetirement {
+                predecessor, roles, ..
+            } => {
+                let meaning = &predecessor
                     .envelope
                     .required_output_origin
                     .as_ref()
-                    .ok_or_else(|| {
-                        crate::mvcc::origin_denial(
-                            "predecessor lacks native publication membership",
-                        )
-                    })?;
-                context
-                    .checkpoint((origin.meaning.family.len() + meaning.family.len() + 96) as u64)
-                    .map_err(origin_request)?;
-                if origin.meaning.family != meaning.family
-                    || origin.meaning.source_scope != meaning.source_scope
-                    || origin.meaning.source_partition != meaning.source_partition
-                {
-                    return Err(crate::mvcc::origin_denial(
-                        "successor changes complete installed family/source correspondence",
-                    ));
-                }
-                let position = basis
-                    .inner
-                    .root
-                    .output_publication_positions
-                    .get(&origin.meaning, context)?;
-                let exact_cold_basis = predecessor
-                    .readmitted_at
-                    .as_ref()
-                    .is_some_and(|readmitted| readmitted.descriptor() == basis.descriptor());
-                if position.is_some_and(|selected| {
-                    selected
-                        != crate::history::data::RequiredOutputRoutePosition::Published(
-                            origin.commit.commit_id,
-                        )
-                }) || (position.is_none() && !exact_cold_basis)
-                {
-                    return Err(crate::mvcc::origin_denial(
-                        "predecessor is not the publication selected at the native before image",
-                    ));
-                }
-                // The carried holder is checked against its exact performed native coordinate,
-                // not an ancestry search or a caller-supplied description.
-                context.checkpoint(1).map_err(origin_request)?;
-                let canonical = runtime
-                    .history
-                    .canonical_envelope_for_version(origin.commit.version_id)
-                    .ok_or_else(|| {
-                        crate::mvcc::origin_denial("retained predecessor canonical position absent")
-                    })?;
-                let expected = canonical.required_output_origin.as_deref().ok_or_else(|| {
-                    crate::mvcc::origin_denial("retained predecessor native membership absent")
-                })?;
-                compare_retained_origin(origin, expected, context)?;
-                canonical
-                    .validate_output_membership_header()
-                    .map_err(relation_stop)?;
-                crate::history::data::publication_relations::validate(
-                    &basis.inner.root,
-                    None,
-                    origin,
-                    None,
-                    &mut |commit| runtime.history.canonical_envelope(commit),
-                    &mut |version| runtime.history.canonical_envelope_for_version(version),
-                    runtime.history.canonical_catalog_len(),
+                    .expect("Native custody retains canonical membership")
+                    .meaning;
+                let origin = predecessor::validate(
+                    self,
+                    runtime,
+                    basis,
+                    predecessor,
+                    meaning,
                     lease,
                     context,
-                )
-                .map_err(relation_stop)?;
-                (meaning, roles, Some(origin.as_ref()))
+                )?;
+                if roles
+                    .iter()
+                    .any(|role| role.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+                    || roles.len()
+                        != origin
+                            .members
+                            .iter()
+                            .filter(|member| {
+                                member.posture != crate::mvcc::RequiredOutputRolePosture::Retire
+                            })
+                            .count()
+                {
+                    return Err(crate::mvcc::origin_denial("authored retirement requires every prior live member and only Retire roles"));
+                }
+                (meaning, roles, Some(origin))
             }
         };
         if roles.is_empty() {
@@ -316,8 +281,16 @@ impl CanonicalCommitEnvelope {
                         CanonicalOutputPublication::BirthAfterCodecRetirement { retirement }
                     })
                 },
-                |prior| CanonicalOutputPublication::Preserve {
-                    predecessor: prior.commit.commit_id,
+                |prior| {
+                    if matches!(publication, Publication::AuthoredRetirement { .. }) {
+                        CanonicalOutputPublication::AuthoredRetirement {
+                            predecessor: prior.commit.commit_id,
+                        }
+                    } else {
+                        CanonicalOutputPublication::Preserve {
+                            predecessor: prior.commit.commit_id,
+                        }
+                    }
                 },
             ),
             birth: previous.map_or(self.commit.commit_id, |prior| prior.birth),
@@ -338,7 +311,17 @@ impl CanonicalCommitEnvelope {
             lease,
             context,
         )
-        .map_err(relation_stop)?;
+        .map_err(|stop| relation_context(stop, "candidate", basis, self))?;
+        if matches!(publication, Publication::AuthoredRetirement { .. })
+            && self
+                .required_output_origin
+                .as_ref()
+                .is_some_and(|origin| !origin.relations.is_empty())
+        {
+            return Err(crate::mvcc::origin_denial(
+                "authored retirement must actually retire every owned relation",
+            ));
+        }
         Ok(positions)
     }
 }
@@ -350,6 +333,24 @@ pub(super) fn relation_stop(
         crate::history::data::CodecRetirementClosureStop::Request(cause) => origin_request(cause),
         crate::history::data::CodecRetirementClosureStop::Payload(detail) => {
             crate::mvcc::origin_denial(detail)
+        }
+    }
+}
+
+fn relation_context(
+    stop: crate::history::data::CodecRetirementClosureStop,
+    stage: &str,
+    basis: &AdmittedRelationalBranchBasis,
+    candidate: &CanonicalCommitEnvelope,
+) -> TransactionCommitError {
+    match stop {
+        crate::history::data::CodecRetirementClosureStop::Request(cause) => origin_request(cause),
+        crate::history::data::CodecRetirementClosureStop::Payload(detail) => {
+            crate::mvcc::origin_denial(format!(
+                "{detail}; publication_stage={stage}; before={:?}; candidate={:?}",
+                basis.descriptor(),
+                candidate.commit
+            ))
         }
     }
 }

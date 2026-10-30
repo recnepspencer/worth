@@ -7,6 +7,7 @@ use super::VisibilityProjectionView;
 
 #[path = "field_revisions/admitted_entity.rs"]
 mod admitted_entity;
+pub(super) use admitted_entity::btree_navigation_work;
 #[path = "field_revisions/relation_revision.rs"]
 mod relation_revision;
 

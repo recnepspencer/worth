@@ -75,7 +75,8 @@ pub mod runtime {
         CancellationSource, CancellationToken, ConstructionDenial, ExecutionAllocationDenial,
         ExecutionAllocationDenialClass, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
         ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMemoryReservation,
-        ExecutionPhysicalAllocationDenialKind, ExecutionResourceLease, LeaseDenial, LeaseRequest,
+        ExecutionOrderedMapDenial, ExecutionPhysicalAllocationDenialKind,
+        ExecutionRequestArrayDenial, ExecutionResourceLease, LeaseDenial, LeaseRequest,
         MapKernelStop, MemoryLimitDenial, MemoryLimitLevel, WorkCeilingDenial,
     };
     pub use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};

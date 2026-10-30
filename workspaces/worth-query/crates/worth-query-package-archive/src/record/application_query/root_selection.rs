@@ -1,3 +1,4 @@
+pub(super) mod choice;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryRootPathGuard, ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep,
     ApplicationQueryRootPathTraversal as Traversal, RelationDirection,

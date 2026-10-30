@@ -5,8 +5,8 @@
 > Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
-> Phases 13–14 and 16–18 remain required here, including Rust 1.99.x qualification.
-> Addendum 1 adds required P1 Phase 19: correction-aware consecutive source undo.
+> Phases 13–14 and 19 are complete. Phases 16–18 remain unfinished.
+> Addendum 1 defines correction-aware consecutive source undo.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -1679,7 +1679,7 @@ the proposal supplies neither acceptance permission nor replay authority.
 
 ### Destination Ownership And Module Boundaries
 
-The following tree names owners for the remaining Phases 13–14 and 16–18.
+The following tree names owners for Phases 13–14 and 16–18.
 The generic index topology is governed by 9.19, not a spatial subsystem here.
 Created destinations are populated by their implementing slice, not by
 empty placeholders in this specification change. Implementation planning may
@@ -1735,15 +1735,16 @@ or private adoption is required to close 9.18.1.
 
 ## Phase 13: Honest Compiler Qualification Refusals
 
-**Status: unfinished; required. Priority: P1.**
+**Status: complete. Priority: P1.**
 **Owner:** worth-foundational + Query Admission/Execution.
 **Depends on:** existing canonical sort admission; independent of Phases 6, 8–9
 and 12. Rust 1.99 qualification does not substitute for this repair.
 
 ### Requirements And Acceptance
 
-`canonical_verified_std_sort` currently recognizes only exact release/commit
-pairs for Rust 1.94.0 and 1.98.0. Preserve an unqualified implementation as a typed
+`canonical_verified_std_sort` requires an exact release/full-commit identity;
+the [contributor toolchain contract](../../CONTRIBUTING.md#rust-toolchain-and-canonical-sort-qualification)
+lists the supported identities. Preserve an unqualified implementation as a typed
 compiler-qualification refusal containing the actual compiler release and full
 commit, rather than `AccountingOverflow` or
 `ExecutionResource { denial: ChargedBytesOverflow }`. Carry that cause through
@@ -1764,7 +1765,7 @@ the qualified twin must reach the caller before this phase closes.
 
 ## Phase 14: Preserve Unobserved Field-Write Causes
 
-**Status: unfinished; required. Priority: P2.**
+**Status: complete. Priority: P2.**
 **Owner:** worth-query-execution.
 **Depends on:** existing decision observations and candidate effect lowering;
 independent of the new spatial and async work.
@@ -1836,9 +1837,12 @@ stand in for this acceptance.
 ## Phase 17: Proposal Acceptance Through Fresh Ordinary Requests
 
 **Status: unfinished; required. Priority: P3.**
-**Owner:** Query entry/admission + Proprietary authoring.
+**Owner:** Query entry/basis admission, Native/World source-basis receivers and
+Proprietary authoring.
 **Depends on:** ordinary governed application requests and existing source
 operation/correction contracts. Independent of spatial indexing and Phases 8–9.
+The missing ordinary expected-source handoff is a prerequisite delivered within
+this phase, not a reason to substitute a private currentness check.
 
 ### Requirements And Acceptance
 
@@ -1860,6 +1864,160 @@ existing audience. Document how the existing request mechanism supplies this
 path, correcting any missing facade integration without introducing a proposal
 executor or using certification replay to simulate ordinary acceptance.
 
+### Current Boundary And Decisive Court
+
+CAD's `CadSession::apply` checks a process-owned model revision, while its installed
+runtime later forks the branch currently selected by the model's head map. The
+counter is not an owner-issued Native/World basis. Query's ordinary fork builder
+admits the source occurrence when creating the fork; it does not consume the
+proposal's previously selected basis. Native already rechecks an admitted fork
+source under its transition coordination, and World carries an expected source
+observation through branch creation. Complete that existing handoff; do not
+duplicate currentness or fork authority in CAD.
+
+The decisive installed journey records a real edit against model A, releases the
+recording request and later accepts under the current caller. Recording must not
+move A's authored-model head. Move A after expected-source comparison but before
+fork creation, and separately while the candidate is being evaluated before
+adoption. Acceptance must refuse the stale selection at the receiving owner, or
+the latter movement must be structurally impossible under an actual exclusive
+model transition. A standalone precheck, an unguarded head-map update or a final
+check after forking a different source cannot pass this court.
+
+Retire and recreate a referenced feature under the same display name, and reopen
+another session whose local handle spelling is again `model-1`. Neither may bind
+the stored proposal to a replacement occurrence. Revoke proposal/result READ and
+mutation authority separately, including on an idempotent acceptance retry. The
+ordinary denial must occur before the protected lookup or effect it governs.
+Include a two-intent refusal and observe the real staged-fork cleanup and published
+model head; report the existing partial, committed, indeterminate or cleanup
+posture without inventing rollback. Observe authored parameters and resulting CAD
+geometry independently of the mechanism being tested.
+
+### Basis, Storage And Admission Contract
+
+- Proposal data retains the genuine model incarnation, typed target occurrences,
+  authored intents and descriptive expected model/product-basis coordinates.
+  A process-local handle, feature name or counter alone is insufficient.
+  Descriptors are comparison data, not read admission, fork custody or permission.
+  No admitted basis, snapshot lease, writer or executable receipt is serialized.
+- A fresh ordinary request admits proposal/model visibility and compares the
+  stored expected selection through the actual Native/World owners. The exact
+  admitted selection then reaches Query's fork receiver and World's existing
+  expected-source creation plan. The receiver must not resample a newer source
+  after comparison. Missing, foreign, retired and stale selections retain typed
+  refusals; equal payloads do not establish the original basis.
+- Expected-source fork construction requires the freshly admitted selection as
+  a nonoptional input. Ordinary unconditional fork-from-current remains a
+  different product operation; it cannot satisfy proposal acceptance. Preserve
+  Native's source-generation/root/version recheck and World component affinity.
+  Reuse their existing evidence and custody rather than adding a second proof
+  registry or a proposal-specific platform executor.
+- Protect adoption of the candidate as the selected model's head with the same
+  expected source. Use the existing owning transition to compare and adopt, or
+  carry a structurally enforced exclusive interval covering selection, fork and
+  adoption. An application convention about exclusive access is not proof.
+  Fork construction consumes the admitted selection into live transition custody;
+  its result retains the candidate and expected-source continuation needed for
+  adoption. A bare branch handle cannot certify that transition. Refusal after a
+  fork exists preserves its actual cleanup or recovery custody and cannot claim
+  that no effect occurred anywhere.
+- Store proposals as ordinary versioned domain entities on a separately owned
+  storage branch, so saving a proposal does not advance the checked authored
+  model head. Its live branch custody belongs to the application runtime, outside
+  the stored record. Specify close, cancellation, unavailable storage and pending
+  cleanup through existing lifecycle owners; no immortal side map or retention
+  ledger substitutes for versioned data.
+- Family-owned `Params<D>` retain their typed meaning in proposal storage. The
+  caller interprets those intents through the existing family inventory and
+  ordinary source operations. Do not widen `ReplaceDefinition` into a replay
+  route or treat realization's later source read as protection for an earlier
+  unguarded replacement.
+- Fresh proposal/model/result disclosure precedes cached-result disclosure at
+  the proposal ingress. Create a new acceptance-attempt idempotency key and reuse
+  it only for retries of that attempt. Do not reuse the recording token or an
+  old continuation. Preserve ordinary operation idempotency; do not move its
+  established semantics merely to conceal an unauthenticated proposal ingress.
+  The accepting host/caller identity governs both loading and execution; stored
+  authorship supplies neither identity nor authority.
+
+### Destination And Delivery Order
+
+`E` marks an existing owner and `C` a responsibility created by this phase.
+Populate destinations only when implementing their responsibility; the tree does
+not authorize empty placeholders or duplicate services.
+
+```text
+worth-query-execution/src/
+  basis/product_branch/
+    creation.rs                         E ordinary fork construction
+    creation/expected_source.rs         C required admitted-selection handoff
+  domain_computation/primary_graph/
+    product_operation/branches.rs        E application lifecycle composition
+worth-runtime-world/src/
+  branch/creation/lowered.rs             E expected composite source
+  lifecycle/owner/branch_service/
+    creation/execution/forks.rs          E component-owner fork and source recheck
+worth-relational/src/branch/
+  owner_services/basis_port.rs           E owner basis readmission/comparison
+  fork_source_validation.rs              E source generation/root/version recheck
+worth-query-certification/fixtures/consumer_entry/consumer_root/src/
+  proposal_acceptance.rs                 C two-facade application journey
+  proposal_acceptance/schema.rs          C ordinary versioned domain declarations
+  proposal_acceptance/courts.rs          C admission, basis and occurrence controls
+worth-cad-entry/src/
+  schema/proposals.rs                   C proposal identity and typed domain links
+  families/operation/schema/proposal.rs C family-owned authored parameter data
+  session/proposals/
+    data.rs                            C stored intent/reference descriptions
+    acceptance.rs                      C fresh request and attempt orchestration
+  session/runtime/proposals/
+    storage.rs                         C ordinary storage-branch custody and I/O
+    source_basis.rs                    C expected fork and model-head adoption join
+worth-cad-entry/tests/operation_family/installed/
+  proposals.rs                         C real CAD acceptance and hostile sequences
+```
+
+Existing owner types construct all admitted selections and transition custody.
+Only audience facades export the ordinary Query workflow; consumer code does not
+import World, Native or cert-only replay to perform it. CAD owns authored intent
+meaning and model-head selection. Cross-domain fork composition remains in Query
+and World, and Native remains authoritative for its source axes. No new Native
+algorithm is required where the existing receiver already proves the contract.
+
+First complete the ordinary expected-basis handoff and its comparison-to-fork
+race court through Decl/Host. Then record one typed proposal, release its original
+request and accept it through the real CAD family path with a freshly admitted
+selection. Expand that same journey with the hostile sequences above and actual
+storage/close lifecycle. Commit reviewed slices; phase acceptance still requires
+the complete public and private journeys and their required repository gates.
+
+The target DX makes the freshly admitted selection explicit; final API names
+are compiled by the two-facade fixture before becoming consumer guidance:
+
+```rust,ignore
+// Target API shape, not an already available consumer recipe.
+let selected = fresh_request.select_expected_basis(&proposal.model, &proposal.basis)?;
+let candidate = application.branches()
+    .fork_expected(selected)
+    .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
+    .create(&phase)?;
+// Run ordinary authored requests on candidate; adopt only through the guarded
+// model-head transition that still consumes this expected-source selection.
+```
+
+### Continuing Documentation
+
+For application authors, extend `docs/build-an-application.md` and
+`docs/capability-index.md` with the compiled expected-basis workflow, independent
+READ/mutation refusal, attempt retries and cleanup. Keep the ordinary request
+guide authoritative for admission. For CAD callers, update the entry usage in
+the Proprietary `README.md` and correct the proposal wording in
+`cad/docs/plans/general-modeling.md` to describe reissuing authored requests,
+storage ownership and typed stale/retired outcomes. Consumer guides teach the
+implemented behavior only; they do not advertise this target API before it works
+or contain handoff logistics, qualification counts or milestone history.
+
 ---
 
 ## Phase 18: Mandatory Current Rust Toolchain Qualification
@@ -1870,6 +2028,15 @@ SDK qualification.
 **Depends on:** the canonical sort bound and its existing compatibility contract.
 Source review can run alongside Phase 13; closure includes Phase 13's honest
 refusal on an unqualified compiler.
+
+The qualified workspace and CI toolchain selects official stable Rust 1.99.1,
+full compiler commit `58cf8f9c35b355199727627d07ae34a4e2846d67`, with the
+existing 32/64-bit target boundary. Exact core sort, alloc buffer and compiler
+specialization-owner review preserves the existing bounds and canonical version.
+The [contributor toolchain contract](../../CONTRIBUTING.md#rust-toolchain-and-canonical-sort-qualification)
+owns the exact compiler identities and upgrade procedure. Proprietary default
+toolchain adoption and the remaining SDK qualification are unfinished; public
+qualification alone does not close this phase.
 
 ### Requirements And Acceptance
 
@@ -1899,7 +2066,7 @@ toolchain/contributor documentation, including the typed unqualified outcome.
 
 ## Phase 19: Consecutive Undo After Verified Source Restoration
 
-**Status: unfinished; required. Priority: P1.**
+**Status: accepted. Priority: P1.**
 **Owner:** Query correction derivation, consuming existing canonical occurrence,
 footprint and correction-lineage owners. **Depends on:** 9.18's recorded source
 capture, ordinary correction binding, exact target ancestry and fresh admission.
@@ -2028,6 +2195,33 @@ available implementation when it ships, not this phase's progress or future API.
 This phase closes only after public qualification and the candidate-SDK private
 probe pass, reviewed corrections to the superseded expectation, and required
 repository checks. A plan change or a value-equality shortcut cannot close it.
+
+### Reverse Consecutive Original Sources
+
+Keep each original performed receipt. After A changes a source from `3` to `7`
+and B changes it to `8`, reverse original B first. Once its reversal is published,
+use a fresh correction request to select original A and reverse it to `3`.
+Select the original receipt for each operation; a reapplication has its own new
+performed receipt.
+
+Call `request.retain_current_read()` immediately after an endpoint whose Product
+history must remain readable, and keep the returned observation alive through the
+later correction. Receipts alone do not retain that history. Prepare and publish
+each correction through the ordinary request API, retaining the returned owner
+while publication or recovery is unsettled.
+
+Handle `SourceDiverged` when a live or reapplied overlapping write or changed
+independent dependency blocks the selected source. Equal values alone do not
+establish restoration. Canonical performed cancellation, complete compatible
+field/aspect support, current disclosure and inverse admission still apply.
+Unavailable retained evidence and unsupported shapes return typed refusals. If
+publication finds a stale target, prepare again against the current target while
+keeping the same client key for the same command.
+
+Follow the [recorded-source correction guide](../../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
+for the request, preparation, publication and retry sequence. The
+[compiled correction example](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs)
+shows the same calls with original receipts and retained endpoint observations.
 
 ## Documentation And Successor Handoff For The Added Phases
 

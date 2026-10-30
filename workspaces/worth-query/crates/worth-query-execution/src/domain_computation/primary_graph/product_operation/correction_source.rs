@@ -22,6 +22,8 @@ pub use alternatives::{
 };
 pub(in crate::domain_computation::primary_graph) use authored_identity::AuthoredCorrectionCandidateDenial;
 mod compatibility;
+mod restored_support;
+pub use restored_support::WorthQueryCorrectionRestoredSupportDenial;
 mod derivation;
 mod inspection;
 mod intent;
@@ -137,7 +139,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
         <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding:
             ApplicationMutationScopeResolution<Schema, <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::PrincipalIdentity>,
-    {
+{
         derivation::derive_correction_inverse::<Schema, C>(
             self,
             access,

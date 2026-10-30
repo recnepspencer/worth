@@ -222,6 +222,9 @@ fn maximum_touch_count(
         budget.checkpoint(1)?;
         total = total
             .checked_add(1 + delta.changed_aspects.len())
+            .and_then(|count| {
+                count.checked_add(usize::from(delta.retained_relation_endpoints.is_some()))
+            })
             .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
         for binding in &delta.evaluated_bindings {
             budget.checkpoint(1)?;
@@ -273,6 +276,17 @@ fn append_delta(
                 relation,
                 kind: delta.kind_id,
             },
+        });
+    }
+    if let (RecordRef::Relation(relation), Some((source, target))) =
+        (&delta.target, delta.retained_relation_endpoints)
+    {
+        budget.checkpoint(1)?;
+        touches.push(Touch::RelationMembership {
+            relation: *relation,
+            kind: delta.kind_id,
+            source,
+            target,
         });
     }
     for aspect in &delta.changed_aspects {

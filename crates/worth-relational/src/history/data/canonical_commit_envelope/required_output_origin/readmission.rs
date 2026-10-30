@@ -91,6 +91,10 @@ impl CanonicalCommitEnvelope {
             .ok_or("present output has no installed producer publication")?;
         if origin.commit != self.commit
             || !origin.meaning.implementation.valid()
+            || (matches!(
+                origin.publication,
+                CanonicalOutputPublication::AuthoredRetirement { .. }
+            ) && !origin.relations.is_empty())
             || origin.producer.is_empty()
             || origin.basis.branch_id() != &self.branch_context
             || self
@@ -118,6 +122,9 @@ impl CanonicalCommitEnvelope {
                                 || member.birth != self.commit.commit_id
                                 || member.birth_producer != origin.producer
                                 || member.birth_dependency != origin.dependency_identity
+                        }
+                        CanonicalOutputPublication::AuthoredRetirement { .. } => {
+                            member.posture != Posture::Retire || member.before_write.is_none()
                         }
                         CanonicalOutputPublication::Preserve { .. } => {
                             (member.posture == Posture::Create) != member.before_write.is_none()

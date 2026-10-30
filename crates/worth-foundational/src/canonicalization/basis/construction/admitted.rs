@@ -14,8 +14,8 @@ pub enum CanonicalBasisPreparationStop<Stop> {
         quote: super::CanonicalBasisPreparationQuote,
     },
     AccountingOverflow,
-    /// The active compiler's stable-sort implementation has no reviewed bound.
-    UnsupportedSortImplementation,
+    /// Stable-sort qualification refused for the actual configured compiler/target.
+    UnsupportedSortImplementation(super::CanonicalSortImplementationDenial),
 }
 
 /// Moves owned entries through the ordinary canonical validation and sort.
@@ -27,8 +27,7 @@ pub fn prepare_owned_canonical_basis_sequence_admitted<Stop>(
     entries: Vec<CanonicalBasisEntry>,
     mut admit: impl FnMut(usize, usize) -> Result<(), Stop>,
 ) -> Result<CanonicalBasisReadyArtifact, CanonicalBasisPreparationStop<Stop>> {
-    if !cfg!(canonical_verified_std_sort) || !matches!(usize::BITS, 32 | 64) {
-        return Err(CanonicalBasisPreparationStop::UnsupportedSortImplementation);
-    }
+    super::sort_qualification::require_qualified_sort()
+        .map_err(CanonicalBasisPreparationStop::UnsupportedSortImplementation)?;
     prepare_owned_sequence(version, domain, entries, Some(&mut admit))
 }

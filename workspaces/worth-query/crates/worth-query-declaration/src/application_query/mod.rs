@@ -18,7 +18,18 @@ mod history;
 mod inspection;
 mod lane_eligibility;
 mod live_cause;
+mod managed_index;
 mod marker_identity;
+pub use managed_index::{
+    ApplicationManagedIndexBinding, ApplicationManagedIndexBindingDescriptor,
+    ApplicationManagedIndexDefinition, ApplicationManagedIndexDefinitionDenial,
+    ApplicationManagedIndexProbeMeaning, ApplicationManagedIndexRef,
+    ApplicationManagedIndexSelectionRecipe, ApplicationManagedIndexSourceMeaning,
+    ApplicationManagedIndexSourceParameters, ApplicationManagedIndexSourceScope,
+    ApplicationQueryManagedIndexMeaning, ErasedApplicationManagedIndexDefinition,
+    WorthQueryPortableManagedIndexParts, WorthQueryPortableManagedIndexProbeParts,
+    WorthQueryPortableQueryManagedIndexParts,
+};
 mod orbit;
 mod ordering;
 pub use orbit::{

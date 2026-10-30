@@ -7,6 +7,8 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonica
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 
+#[path = "canonical_publication_routes/authored_writes.rs"]
+mod authored_writes;
 #[path = "canonical_publication_routes/branch_transition_stream.rs"]
 mod branch_transition_stream;
 #[path = "canonical_publication_routes/checkpoint_admission.rs"]
@@ -20,6 +22,8 @@ mod patch_position_reservation;
 mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
 mod position_admission;
+pub(crate) use authored_writes::commit_denial as authored_write_commit_denial;
+pub(crate) use authored_writes::AuthoredWriteGeneration;
 #[path = "canonical_publication_routes/position_retention.rs"]
 mod position_retention;
 pub(crate) use position_retention::RetainedCanonicalPosition;
@@ -172,6 +176,7 @@ impl RelationalCanonicalPublicationRoutes {
         routes: &Arc<Self>,
         envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
         root: Arc<crate::branch::RelationalBranchRoot>,
+        authored_writes: Option<AuthoredWriteGeneration>,
     ) -> Result<PreparedCanonicalPublicationRoute, &'static str> {
         let resident = envelope.get().ok_or("prepared envelope is not resident")?;
         let commit = resident.commit.clone();
@@ -179,6 +184,7 @@ impl RelationalCanonicalPublicationRoutes {
             .descriptor()
             .cloned()
             .ok_or("prepared root has no committed descriptor")?;
+        envelope.replace_authored_write_generation(authored_writes);
         let route = Arc::new(CanonicalPublicationRoute {
             envelope,
             commit,

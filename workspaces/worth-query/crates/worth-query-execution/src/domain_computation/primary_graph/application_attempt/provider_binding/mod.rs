@@ -12,6 +12,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use regist
 mod semantic_model_tests;
 #[cfg(test)]
 mod unique_value_tests;
+#[cfg(test)]
+mod unobserved_write_tests;
 
 use worth_query_installation::facade::{
     InstalledCorrectionMechanism, InstalledPreImageDemand, WorthQueryInstalledAftermathContract,

@@ -1,5 +1,17 @@
 #![forbid(unsafe_code)]
 
+mod box2;
+pub use box2::{BoundsDenial, Box2, Box2Coordinates};
+mod box_tree;
+pub use box_tree::{build_box_tree, query_box_tree, BoxIndexDenial, BoxNode, BoxNodeLinks};
+mod prefix_order;
+mod prefix_tree;
+pub use prefix_order::{compare_prefix_keys, prefix_order, PrefixOrder};
+pub use prefix_tree::{
+    build_prefix_tree, query_prefix_tree, PrefixBuildStorage, PrefixIndexDenial, PrefixNode,
+    PrefixQueryStorage,
+};
+
 mod planar_operation;
 mod planar_replacement;
 pub use planar_replacement::{

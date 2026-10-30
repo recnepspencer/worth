@@ -104,7 +104,7 @@ pub fn prepare_canonical_basis_sequence(
         Err(super::CanonicalBasisPreparationStop::AccountingOverflow) => {
             unreachable!("ordinary preparation performs no resource arithmetic")
         }
-        Err(super::CanonicalBasisPreparationStop::UnsupportedSortImplementation) => {
+        Err(super::CanonicalBasisPreparationStop::UnsupportedSortImplementation(_)) => {
             unreachable!("ordinary preparation has no admitted sort restriction")
         }
     }

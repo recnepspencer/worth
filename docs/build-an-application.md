@@ -18,7 +18,7 @@ this guide explain the underlying contracts and support specialized composition.
 
 | Your next task | Start here | What you supply |
 |---|---|---|
-| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md) | A source receipt, current principal, target branch and client key; the contribution declares the inverse and disclosure query. |
+| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
@@ -599,6 +599,15 @@ with value 11. Run it from the repository root:
 ```text
 cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-topology-entry --example required_feature
 ```
+
+`DecisionReader::prior_output_preserved_or_created` selects the latest publication
+of its declared Create/Preserve bindings in one installed output family, exact
+source partition and selected ancestry. The selected typed role must still be
+a live full-generation entity. A stale or missing member is a denial; it never
+falls back to an older binding. Ordinary `prior_output` keeps its exact-binding
+historical meaning. Query owns source-native-version commitment, completed
+dependencies and current publication custody; a separate application command
+nonce is not a replacement for that contract.
 
 ### 3.2 Attach actions to features
 
@@ -1849,7 +1858,7 @@ Features, connections, and rules come from `installed_program()`, not from
 discovery.
 
 Managed asynchronous resource requests are available through Decl/Host following
-[9.18.1 Phase 8 acceptance](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
+[Managed async resource contract](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
 [Application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md)
 documents the concrete `request.resources()` start/advance/inspection/close path,
 installed provider, finite ingress, exact selector reclaim and recovery handoff.
@@ -5284,6 +5293,122 @@ Set optional published-snapshot, active-snapshot and prepared-candidate policies
 in `PublicationConfig`; `Some(amount)` selects a finite policy. Retain snapshots
 and candidates through their owning runtime and generation. Handle stale or
 foreign-runtime refusals and release each original holder when finished.
+
+### Construct committed provider indexes
+
+Declare an `ApplicationManagedIndexBinding` with its complete Source query,
+candidate entity, admitted Probe codec and versioned provider identity. Add its
+`ApplicationManagedIndexDefinition` to the schema and select it on the Parent
+query with `.managed_index(Index::reference(), probe_parameter)`. The contribution
+installs the matching pure provider with `setup.managed_index::<Index, _>(provider)`.
+Providers borrow disclosed, query-bound Source rows and finite node/candidate
+writers; they receive no mutation handle or reusable read permission.
+
+Source queries have no parameters and must have Public authorization and Public
+disclosure without capability or rule governance. Parent queries may use Public
+or Governed disclosure, with their own installed READ ability and capability
+admission. Opaque `InstalledPolicyRequired` disclosure is unsupported. Run index
+requests as current committed one-shot reads with the same admitted principal
+and full-generation scope.
+Parent admission and current READ/security checks precede cache/provider access;
+ordinary Parent predicates, final ordering, result limits and disclosure still
+apply after candidate selection.
+
+Call `request.query(intent).open_index::<Index>()` to obtain a Created registration,
+then `request.query(intent).rebuild_index(&index)` for explicit cold construction.
+Ordinary `execute()` returns typed `NotReady` while Created or Evicted; it does
+not silently rebuild or fall back to a scope-root query. Probe values share the
+same complete Source image. Source authored ordering remains intact; the provider
+receives a separate canonical full-generation source-slot order. Every publication
+on the owning branch makes the image cold again.
+
+For a governed Parent, use `open_index_governed` and `rebuild_index_governed`
+with the actual capability, operation and request input, then `execute_governed`
+for each read. Approved elevation has corresponding `open_index_approved`,
+`rebuild_index_approved` and `execute_approved` entrances. Each call freshly
+admits the Parent capability and READ policy before cache or provider access;
+its normal final disclosure still applies. A valid Public Source or a Ready
+cache does not authorize the Parent.
+
+Repeated opens share one registration. `index.lifecycle()` reports retained cache
+status, not fresh authorization. `evict()` releases its image; explicit rebuild
+is required before another indexed read. `close()` disposes and unregisters it
+for every sibling handle; later open creates a fresh registration. Dropping a
+handle leaves the runtime-owned cache alive; explicit close or final runtime
+disposal releases the registration's image. Outstanding results, Source
+observations or in-flight selections can retain their own backing. Final
+release requires those owners and all runtime keepalives to close or drop.
+A stopped cold rebuild may leave Failed status; it publishes no Ready image.
+Use a fresh lawful request for another explicit rebuild. Historical/pinned
+managed-index reads and rebuilds remain unsupported; ordinary historical Source
+reads retain their existing contract.
+
+Indexed results retain complete positive, empty and ordering dependencies from
+the original Source, including nonmatching rows. The ordinary `expect_source`
+and `expect_result_set` mutation entrances consume these observations under the
+current request. Keep the observation until the mutation consumes it. The
+mutation rechecks the complete Source: a previously nonmatching record entering
+an empty prefix invalidates the expectation. If the Source has changed, reread
+and reassess the operation instead of substituting only the returned rows.
+Reuse the operation's idempotency identity for a recorded retry; it does not
+repeat the completed mutation.
+
+Use the request-bearing mutation entrances for indexed observations. A lower-level
+conversion without an Execution request returns `ManagedSourceExpansionUnsupported`;
+supplying an allocation policy alone does not make that conversion available.
+
+An index belongs to its installed provider version, runtime, branch and
+full-generation scope. Open a new registration when any of those changes;
+a handle from another branch, installation or generation cannot be reused.
+Keep result owners only as long as needed, and close the shared registration
+when the application no longer needs the index.
+
+The
+[public prefix consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs)
+shows explicit construction, UTF-8 prefix reads, an ordinary scan oracle and
+shared-handle cleanup; its
+[provider adapter](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs)
+uses the same finite storage contract as other providers. Prefix v1 uses
+unnormalized, case-sensitive UTF-8 prefix matching. Construction consumes
+canonical full-generation Source order; the Parent returns final rows in
+identity order.
+
+The prefix and closed-box adapters declare the same source/probe/provider
+contract. Their probe codecs retain their complete canonical meaning:
+
+<!-- compiled: managed_prefix_index.rs -->
+```rust
+impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
+    type SourceBinding = query::SourceBinding;
+    type ProbeBinding = query::ProbeBinding;
+    type Entity = super::schema::Item;
+    const NAME: &'static str = "catalog_prefix_index";
+    const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
+    const PROVIDER_VERSION: u32 = 1;
+}
+```
+
+<!-- compiled: managed_box_index.rs -->
+```rust
+impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
+    type SourceBinding = query::SourceBinding;
+    type ProbeBinding = super::coordinates::Binding;
+    type Entity = Item;
+    const NAME: &'static str = "catalog_box_index";
+    const PROVIDER: &'static str = "managed-catalog.closed-box2.v1";
+    const PROVIDER_VERSION: u32 = 1;
+}
+```
+
+The box probe carries the numerical owner's explicit integer-length unit and XY
+frame. Its admitted codec reconstructs coordinates; `Box2::new` rejects reversed
+intervals before BVH navigation, preserving `BoxIndexDenial::Bounds` as the typed
+provider cause. Overlap is inclusive, so a shared boundary is a match, and
+distinct Source occurrences with equal bounds remain distinct rows. The
+[box scan comparison](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/geometry.rs)
+and [governed grant lifecycle](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/authority.rs)
+show ordinary final ordering, explicit rebuild and separate capability/READ
+revocation handling.
 
 ### Ordinary Query resource policies
 

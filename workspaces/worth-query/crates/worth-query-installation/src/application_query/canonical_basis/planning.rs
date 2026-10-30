@@ -25,6 +25,7 @@ pub(in crate::application_query) fn prepare_planning_basis(
             entries.push(text(format!("components.{key}"), value))
         });
     }
+    super::append_managed_index(&mut entries, graph.managed_index_selection());
     append_projections(&mut entries, graph);
     append_relations(&mut entries, graph);
     entries.push(text(

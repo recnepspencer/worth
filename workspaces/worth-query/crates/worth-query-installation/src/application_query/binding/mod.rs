@@ -1,5 +1,6 @@
 mod catalog;
 mod compilation;
+pub(in crate::application_query) use compilation::graph_obligation_denial;
 mod compiled_binding;
 mod compiled_contract;
 mod key;

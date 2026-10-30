@@ -1,6 +1,6 @@
 //! Validate retained outputs and original query dependencies at one selected image.
+use super::SourceFactExpansionControl;
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use crate::domain_computation::primary_graph::output_reuse::retained_fact_denial;
 use crate::domain_computation::primary_graph::output_reuse::{
     first_moved_fact_in, RetainedFactVerification,
@@ -39,6 +39,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 self.require_current_settlements_in_extent(execution, relational, settlements, &mut verification)?;
                 for source in dependencies.sources.elements() {
                     self.require_current_dependency_in(
+                        &execution,
                         relational,
                         source,
                         control.policy(),
@@ -53,6 +54,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     // production validates each member at the same selected native image.
     pub(super) fn require_current_dependency_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         source: &super::RetainedQuerySource,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -85,8 +87,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let prepared = source.admit_fact_materialization(
             &runtime.primary_provider.graph.layout,
             &source.query_identifier,
+            SourceFactExpansionControl::in_request(*execution, Some(request)),
         )?;
-        let facts = prepared.into_facts(StorageControl::new(policy, Some(request)))?;
+        let facts = prepared.into_facts()?;
         match first_moved_fact_in(verification, facts.iter()) {
             Ok(None) => {}
             Ok(Some(fact)) => {

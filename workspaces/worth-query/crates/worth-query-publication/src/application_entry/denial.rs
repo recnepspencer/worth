@@ -29,6 +29,7 @@ pub enum WorthQueryApplicationRequestQueryDenialKind {
     ScopeResolution,
     Admission,
     Execution,
+    ManagedIndex,
     ContinuationExecution,
     RequestMode,
     CapabilityInstallation,
@@ -49,6 +50,7 @@ pub enum WorthQueryApplicationRequestQueryDenial {
     ScopeResolution(WorthQueryEntityResolutionDenial),
     Admission(WorthQueryApplicationQueryAdmissionDenial),
     Execution(WorthQueryApplicationOneShotDenial),
+    ManagedIndex(worth_query_execution::facade::primary_graph::WorthQueryManagedIndexDenial),
     ContinuationExecution(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationContinuationDenial,
     ),
@@ -81,6 +83,7 @@ impl WorthQueryApplicationRequestQueryDenial {
             }
             Self::Admission(_) => WorthQueryApplicationRequestQueryDenialKind::Admission,
             Self::Execution(_) => WorthQueryApplicationRequestQueryDenialKind::Execution,
+            Self::ManagedIndex(_) => WorthQueryApplicationRequestQueryDenialKind::ManagedIndex,
             Self::ContinuationExecution(_) => {
                 WorthQueryApplicationRequestQueryDenialKind::ContinuationExecution
             }

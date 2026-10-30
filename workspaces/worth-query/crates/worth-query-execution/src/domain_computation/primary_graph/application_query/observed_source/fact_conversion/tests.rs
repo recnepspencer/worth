@@ -51,3 +51,5 @@ fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
         )
         .unwrap());
 }
+
+mod expansion;

@@ -4,6 +4,9 @@ use super::{
     schema::NumericSchema,
 };
 use std::num::NonZeroUsize;
+use worth_query_execution::facade::primary_graph::{
+    fact_verification_on_this_thread_for_test, WorthQueryExecutionObservation,
+};
 use worth_query_host::facade::{application_entry::*, primary_graph::*};
 
 pub fn limits() -> WorthQueryCorrectionHistoryLimits {
@@ -167,13 +170,22 @@ pub fn reverse(
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
     let selected = request.corrections().select(source, limits()).unwrap();
-    let prepared = request
-        .corrections()
-        .reverse(&selected)
-        .idempotency(key)
-        .limits(limits())
-        .prepare()
-        .unwrap();
+    let prepared = {
+        let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+        request
+            .corrections()
+            .reverse(&selected)
+            .idempotency(key)
+            .limits(limits())
+            .prepare()
+            .unwrap_or_else(|cause| {
+                let observed = fact_verification_on_this_thread_for_test();
+                panic!(
+                    "fresh reversal {key}: {cause:?}; unsupported overlap: {:?}",
+                    observed.correction_restored_support_last_unsupported
+                )
+            })
+    };
     let WorthQueryApplicationCorrectionPreparation::Prepared(prepared) = prepared else {
         panic!("fresh reversal must prepare")
     };

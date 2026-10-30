@@ -38,6 +38,7 @@ pub(super) fn evaluate_authoritative_patch_delta(
         kind_id,
         plan_revision: plan.plan_revision,
         structural_change,
+        retained_relation_endpoints: None,
         changed_aspects,
         evaluated_bindings,
         contains_opaque_aspect,

@@ -13,6 +13,7 @@ pub enum WorthQueryGraphIndexInventoryAdmissionStop<Stop> {
     AccountingOverflow,
     AllocationUnavailable,
     UnsupportedPreparation,
+    UnsupportedSortImplementation(worth_foundational::facade::CanonicalSortImplementationDenial),
 }
 
 impl<Stop> From<AdmittedHashStop<Stop>> for WorthQueryGraphIndexInventoryAdmissionStop<Stop> {
@@ -45,9 +46,9 @@ impl<Stop> From<WorthQueryCanonicalIdentityStop<Stop>>
             WorthQueryCanonicalIdentityStop::AccountingOverflow => Self::AccountingOverflow,
             WorthQueryCanonicalIdentityStop::AllocationUnavailable => Self::AllocationUnavailable,
             WorthQueryCanonicalIdentityStop::Derivation(_)
-            | WorthQueryCanonicalIdentityStop::Construction(_)
-            | WorthQueryCanonicalIdentityStop::UnsupportedSortImplementation => {
-                Self::UnsupportedPreparation
+            | WorthQueryCanonicalIdentityStop::Construction(_) => Self::UnsupportedPreparation,
+            WorthQueryCanonicalIdentityStop::UnsupportedSortImplementation(cause) => {
+                Self::UnsupportedSortImplementation(cause)
             }
         }
     }

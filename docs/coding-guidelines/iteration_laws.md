@@ -154,7 +154,7 @@ without a check is category 5: hope.
     - `loop gate` runs everything, once, at handoff;
     - `loop where <path>` prints the owning crate, its role, its court crates
       and their prefixes.
-    
+
     Scope comes from the diff, the crate registry (law 11) and the court
     registry (which production crates and areas each court crate covers),
     never from an agent's guess. Agents, briefs and footers say `loop`, never
@@ -171,7 +171,7 @@ without a check is category 5: hope.
     - the toolchain not the pinned one;
     - generated profiles out of date;
     - an unregistered package or test target.
-    
+
     The refusal names the drift and its fix. A tier that runs on a drifted
     configuration is how a workspace silently stops using its cache. *Check:
     the preflight itself, with fixture tests for each drift.*

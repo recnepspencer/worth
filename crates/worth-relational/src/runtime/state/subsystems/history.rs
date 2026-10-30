@@ -61,11 +61,11 @@ mod history_retention;
 #[path = "history_root_capture.rs"]
 mod history_root_capture;
 pub(crate) use canonical_publication_routes::{
-    readmit_positioned_canonical_commit, BranchTransitionPublication, BranchTransitionRecordError,
-    CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
-    PatchPositionReservationAdmission, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,
-    RetainedCanonicalPosition,
+    authored_write_commit_denial, readmit_positioned_canonical_commit, AuthoredWriteGeneration,
+    BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
+    CanonicalPositionAdmission, CanonicalPublicationRecordError, PatchPositionReservationAdmission,
+    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
+    RelationalCanonicalPublicationRoutes, RetainedCanonicalPosition,
 };
 pub use canonical_publication_routes::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,

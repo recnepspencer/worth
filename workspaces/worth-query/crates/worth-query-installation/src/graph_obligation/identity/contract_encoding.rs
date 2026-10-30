@@ -18,6 +18,33 @@ pub(super) fn encode_contract(
 ) -> Result<(), CanonicalDigestDerivationDenial> {
     let prefix = format!("obligation[{index}]");
     match contract {
+        WorthQueryInstalledGraphObligationContract::ManagedIndexRead { meaning } => {
+            // The exact installed schema commits the full portable Index
+            // recipe/profile. These select its actual Source and Parent views.
+            basis.text(format!("{prefix}.kind"), "managed-index-read-v1")?;
+            basis.text(
+                format!("{prefix}.index"),
+                &meaning.definition().parts().name,
+            )?;
+            basis.text(format!("{prefix}.source-binding"), meaning.source_binding())?;
+            basis.digest(
+                format!("{prefix}.source-query"),
+                *meaning.source_query().digest(),
+            )?;
+            basis.digest(
+                format!("{prefix}.source-read-family"),
+                *meaning.source_graph().canonical_planning_basis().digest(),
+            )?;
+            basis.text(format!("{prefix}.parent-binding"), meaning.parent_binding())?;
+            basis.digest(
+                format!("{prefix}.parent-query"),
+                *meaning.parent_query().digest(),
+            )?;
+            basis.digest(
+                format!("{prefix}.parent-read-family"),
+                *meaning.parent_graph().canonical_planning_basis().digest(),
+            )?;
+        }
         WorthQueryInstalledGraphObligationContract::QueryGraphRead { graph } => {
             basis.text(format!("{prefix}.kind"), "query-graph-read")?;
             basis.digest(format!("{prefix}.graph"), *graph.digest())?;
@@ -133,6 +160,12 @@ pub(super) fn encode_resources(
     resources: &WorthQueryInstalledGraphObligationResourcePosture,
 ) -> Result<(), CanonicalDigestDerivationDenial> {
     match resources {
+        WorthQueryInstalledGraphObligationResourcePosture::ApplicationManagedIndex {
+            maximum_source_results,
+        } => {
+            basis.text("resources.kind", "application-managed-index")?;
+            basis.unsigned_usize("resources.maximum-source-results", *maximum_source_results)?;
+        }
         WorthQueryInstalledGraphObligationResourcePosture::ApplicationQuery {
             maximum_traversal_depth,
             maximum_result_count,

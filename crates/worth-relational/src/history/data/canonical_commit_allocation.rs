@@ -50,6 +50,7 @@ impl CanonicalCommitEnvelope {
             .saturating_add(optional_canonical_nested_bytes(
                 &self.required_output_materialization,
             ))
+            .saturating_add(self.authored_index_writes.unpaid_owned_bytes())
             .saturating_add(commit_parents)
             .saturating_add(self.branch_context.0.capacity() as u64)
             .saturating_add(optional_canonical_nested_bytes(

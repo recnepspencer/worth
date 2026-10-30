@@ -49,7 +49,8 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
                     partition_identity,
                 }))
             }
-            Kind::ProviderRejected
+            Kind::UnobservedWrite
+            | Kind::ProviderRejected
             | Kind::CustomInvariantDenied
             | Kind::WorkflowSettlementDenied { .. }
             | Kind::ProductBasisStale

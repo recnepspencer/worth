@@ -31,6 +31,7 @@ impl Serialize for AuthoritativeArtifactEnvelopeRef<'_> {
         S: serde::Serializer,
     {
         let CanonicalCommitEnvelope {
+            authored_index_writes,
             required_output_codec_retirements,
             required_output_origin,
             required_output_materialization,
@@ -64,7 +65,11 @@ impl Serialize for AuthoritativeArtifactEnvelopeRef<'_> {
             determinism: diagnostics_summary.determinism,
             entries: Vec::new(),
         };
-        let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", 26)?;
+        let field_count = 26 + usize::from(!authored_index_writes.is_unavailable());
+        let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
+        if !authored_index_writes.is_unavailable() {
+            fields.serialize_field("authored_index_writes", authored_index_writes)?;
+        }
         fields.serialize_field(
             "required_output_codec_retirements",
             required_output_codec_retirements,

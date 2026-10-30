@@ -1,4 +1,4 @@
-//! Unique-value refusals decided while lowering a program's effects.
+//! Typed refusals decided while lowering a program's effects.
 
 use super::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
@@ -9,12 +9,14 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 
 impl WorthQueryApplicationCommitDenial {
-    /// Carries a lowering refusal to the commit outcome. Unique-value kinds
-    /// keep their meaning and name the field; every other lowering refusal
-    /// stays a binding rejection that names its kind and subject.
+    /// Carries exact missing-observation and unique-value refusals through lowering.
+    /// Other refusals keep their existing binding rejection and diagnostic subject.
     pub(in crate::domain_computation::primary_graph::application_attempt) fn effect_lowering_denied(
         denial: &WorthQueryApplicationAttemptDenial,
     ) -> Self {
+        if let Some(cause) = denial.unobserved_write() {
+            return Self::unobserved_write_denied(cause.clone());
+        }
         let kind = match denial.kind() {
             WorthQueryApplicationAttemptDenialKind::UniqueValueTaken => {
                 WorthQueryApplicationCommitDenialKind::UniqueValueTaken

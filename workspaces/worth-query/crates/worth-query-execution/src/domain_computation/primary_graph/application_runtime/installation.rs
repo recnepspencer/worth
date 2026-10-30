@@ -64,6 +64,7 @@ where
     } = input;
     validate_application_schema(&runtime, &installed_schema)?;
     bootstrap.resources.validate_complete(&installed_schema)?;
+    let managed_indexes = bootstrap.managed_indexes.take_complete(&installed_schema)?;
     let resources = std::mem::take(&mut bootstrap.resources);
     let mutation_projection = bootstrap.retain_invariant_projection_authority();
     let mutation_handlers = bootstrap
@@ -98,6 +99,7 @@ where
         Default::default(),
     )?;
     application.installed_resources = resources;
+    application.managed_indexes = managed_indexes;
     Ok(application)
 }
 pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_conditionals<
@@ -134,6 +136,10 @@ where
     bootstrap
         .resources
         .validate_complete(&installed_schema)
+        .map_err(super::super::conditional_operation::publication_denial)?;
+    let managed_indexes = bootstrap
+        .managed_indexes
+        .take_complete(&installed_schema)
         .map_err(super::super::conditional_operation::publication_denial)?;
     let resources = std::mem::take(&mut bootstrap.resources);
     let mutation_projection = bootstrap.retain_invariant_projection_authority();
@@ -219,6 +225,7 @@ where
     )
     .map_err(super::super::conditional_operation::publication_denial)?;
     application.installed_resources = resources;
+    application.managed_indexes = managed_indexes;
     conditional_operations.reconstruct_all(&application)?;
     conditional_operations.reconcile_all(&mut application.bridge.conditional_lifecycle())?;
     *application

@@ -1,7 +1,9 @@
 //! Shared ordered backing whose actual new cells admit their own allocations.
 mod edit;
+mod funding;
 mod iteration;
 pub(crate) mod node;
+mod request;
 use crate::{ChargedBytes, ExecutionAllocationDenial, ExecutionAllocationPolicy};
 use node::{Entry, Link};
 
@@ -9,6 +11,7 @@ use node::{Entry, Link};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ExecutionOrderedMapDenial {
     Allocation(ExecutionAllocationDenial),
+    Request(crate::WorkCeilingDenial),
     CapacityOverflow,
 }
 impl From<ExecutionAllocationDenial> for ExecutionOrderedMapDenial {
@@ -138,7 +141,7 @@ impl<K: Ord, V> ExecutionOrderedMap<K, V> {
         if !self.contains_key(key) {
             return Ok(false);
         }
-        let root = edit::remove(&self.root, key, policy)?;
+        let root = edit::remove(&self.root, key, policy.into())?;
         policy.check_live()?;
         self.root = root;
         Ok(true)
@@ -154,8 +157,8 @@ impl<K: Ord + Clone + ChargedBytes, V: Clone + ChargedBytes> ExecutionOrderedMap
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), ExecutionOrderedMapDenial> {
         policy.check_live()?;
-        let entry = Entry::cloned(key, value, policy)?;
-        let root = edit::insert(&self.root, entry, policy)?;
+        let entry = Entry::cloned(key, value, policy.into())?;
+        let root = edit::insert(&self.root, entry, policy.into())?;
         policy.check_live()?;
         self.root = Some(root);
         Ok(())
@@ -171,8 +174,8 @@ impl<K: Ord + Clone, V: Clone> ExecutionOrderedMap<K, V> {
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), ExecutionOrderedMapDenial> {
         policy.check_live()?;
-        let entry = Entry::cloned_native(key, value, policy)?;
-        let root = edit::insert(&self.root, entry, policy)?;
+        let entry = Entry::cloned_native(key, value, policy.into())?;
+        let root = edit::insert(&self.root, entry, policy.into())?;
         policy.check_live()?;
         self.root = Some(root);
         Ok(())

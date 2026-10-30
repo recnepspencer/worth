@@ -7,6 +7,28 @@ use crate::publication::patch::data::PatchStreamPosition;
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn discard_authored_write_generation(
+        &self,
+        commit: CommitId,
+    ) -> Result<(), crate::history::RelationalAuthoredWriteDenial> {
+        self.canonical_publication_routes
+            .discard_authored_generation(commit)
+    }
+    pub(crate) fn rebuild_authored_write_generation(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        commit: CommitId,
+    ) -> Result<usize, crate::history::RelationalAuthoredWriteDenial> {
+        self.canonical_publication_routes
+            .rebuild_authored_generation(execution, commit)
+    }
+    pub(crate) fn authored_write_generation(
+        &self,
+        commit: CommitId,
+    ) -> Option<crate::runtime::AuthoredWriteGeneration> {
+        self.canonical_publication_routes
+            .authored_generation(commit)
+    }
     pub(crate) fn performed_envelope_residency(
         &self,
         id: CommitId,

@@ -22,6 +22,7 @@ pub struct WorthQueryPortableApplicationQueryParts {
     pub root_paths: Vec<ApplicationQueryRootPathMeaning>,
     pub component_selection: Option<crate::application_query::ApplicationQueryComponentMeaning>,
     pub orbit: Option<super::super::ApplicationQueryOrbitMeaning>,
+    pub managed_index: Option<super::super::ApplicationQueryManagedIndexMeaning>,
     pub cardinality: ApplicationQueryCardinality,
     pub predicates: Vec<ApplicationQueryPredicate>,
     pub ordering: Vec<ApplicationQueryOrderingTerm>,
@@ -78,6 +79,12 @@ impl WorthQueryPortableApplicationQueryParts {
 
     pub fn orbit(&self) -> Option<&crate::application_query::ApplicationQueryOrbitMeaning> {
         self.orbit.as_ref()
+    }
+
+    pub fn managed_index(
+        &self,
+    ) -> Option<&crate::application_query::ApplicationQueryManagedIndexMeaning> {
+        self.managed_index.as_ref()
     }
 
     pub fn root_paths(&self) -> &[ApplicationQueryRootPathMeaning] {
@@ -139,6 +146,7 @@ impl WorthQueryPortableApplicationQueryParts {
             result_shape: definition.result_shape,
             root_paths: definition.root_paths,
             orbit: definition.orbit,
+            managed_index: definition.managed_index,
             component_selection: definition.component_selection,
             cardinality: definition.cardinality,
             predicates: definition.predicates,
@@ -167,6 +175,7 @@ impl WorthQueryPortableApplicationQueryParts {
             result_shape: definition.result_shape.clone(),
             root_paths: definition.root_paths.clone(),
             orbit: definition.orbit.clone(),
+            managed_index: definition.managed_index.clone(),
             component_selection: definition.component_selection.clone(),
             cardinality: definition.cardinality,
             predicates: definition.predicates.clone(),

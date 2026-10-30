@@ -23,6 +23,19 @@ enum Transition {
     },
 }
 impl WorthQueryCorrectionLineageBinding {
+    pub(super) fn owned_receipt_backing_bytes(&self) -> Option<u64> {
+        let root = super::receipt_backing_bytes(self.root.relational())?;
+        match &self.transition {
+            Transition::Reverse { prior } => root.checked_add(match prior {
+                Some(prior) => super::receipt_backing_bytes(prior.relational())?,
+                None => 0,
+            }),
+            Transition::Reapply { selected, active } => root
+                .checked_add(super::receipt_backing_bytes(selected.relational())?)?
+                .checked_add(super::receipt_backing_bytes(active.relational())?),
+        }
+    }
+
     pub(crate) fn reverse(
         root: WorthQueryRecordedCorrectionSource,
         prior: Option<WorthQueryRecordedCorrectionSource>,

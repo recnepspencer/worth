@@ -50,42 +50,9 @@ fn heap_sort(
     ordering: &[AdmittedOrdering<'_>],
     work: &mut ResultTreeWork,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-    for root in (0..rows.len() / 2).rev() {
-        sift_down(rows, root, rows.len(), ordering, work)?;
-    }
-    for end in (1..rows.len()).rev() {
-        rows.swap(0, end);
-        sift_down(rows, 0, end, ordering, work)?;
-    }
-    Ok(())
-}
-
-fn sift_down(
-    rows: &mut [WorthQueryApplicationProjectionNode],
-    mut root: usize,
-    end: usize,
-    ordering: &[AdmittedOrdering<'_>],
-    work: &mut ResultTreeWork,
-) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-    loop {
-        let left = root.saturating_mul(2).saturating_add(1);
-        if left >= end {
-            return Ok(());
-        }
-        let right = left + 1;
-        let greater = if right < end
-            && compare_rows(&rows[left], &rows[right], ordering, work)? == Ordering::Less
-        {
-            right
-        } else {
-            left
-        };
-        if compare_rows(&rows[root], &rows[greater], ordering, work)? != Ordering::Less {
-            return Ok(());
-        }
-        rows.swap(root, greater);
-        root = greater;
-    }
+    super::fallible_heap::sort_by(rows, |left, right| {
+        compare_rows(left, right, ordering, work)
+    })
 }
 
 fn compare_rows(

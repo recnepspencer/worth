@@ -19,6 +19,9 @@ pub(crate) struct CanonicalRecordAspectDelta {
     pub(crate) kind_id: crate::identity::data::KindId,
     pub(crate) plan_revision: AspectContractPlanRevision,
     pub(crate) structural_change: RecordStructuralChange,
+    /// Audit retention keeps these actual before/after endpoints unchanged.
+    /// Publication carries membership evidence without a physical adjacency delta.
+    pub(crate) retained_relation_endpoints: Option<(EntityId, EntityId)>,
     pub(crate) changed_aspects: Vec<AspectKey>,
     pub(crate) evaluated_bindings: SmallVec<[EvaluatedAspectBinding; 4]>,
     pub(crate) contains_opaque_aspect: bool,

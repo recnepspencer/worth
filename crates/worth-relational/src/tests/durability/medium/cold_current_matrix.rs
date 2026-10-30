@@ -10,6 +10,8 @@ use crate::identity::data::{EntityId, RelationId};
 
 #[path = "cold_accepted_pins.rs"]
 mod accepted_pins;
+#[path = "cold_adjacency_support.rs"]
+mod adjacency_support;
 #[path = "cold_aspect_history_matrix.rs"]
 mod aspect_history_matrix;
 #[path = "cold_current_door.rs"]

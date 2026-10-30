@@ -132,7 +132,7 @@ where
                 .map(|graph| graph.retain_entity_resolution_context())
         },
         |runtime, layout, security, entity_resolution| {
-            let authorization_work = validate_current_authorization(
+            let authorization_work = super::validation::validate_current_read_at_basis(
                 execution,
                 application,
                 &entity_resolution,
@@ -141,21 +141,6 @@ where
                 plan,
             )
             .map_err(Stop::from)?;
-            let authorization_work =
-                authorization_work.with_execution_security_product_resolution();
-            entity_resolution
-                .at_snapshot(
-                    runtime,
-                    plan.basis.snapshot_handle(),
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .and_then(|truth| truth.validate_entity_freshness(execution, plan.scope))
-                .map_err(|denial| {
-                    Stop::from(freshness_denial(
-                        denial,
-                        WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope,
-                    ))
-                })?;
             let output = read(runtime, layout, security, plan)?;
             Ok((output, authorization_work))
         },

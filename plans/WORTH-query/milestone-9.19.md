@@ -1,6 +1,6 @@
 # Milestone 9.19: Managed Advanced Access And Verified Footprints
 
-> **Status:** Not started.
+> **Status:** In progress. Phase 1 complete; Phases 2–6 unfinished.
 > **Scope revised 2026-10-27:** the general managed derived-index extension owns
 > the spatial-index finding formerly assigned to 9.18.1 Phase 12 and the dependent
 > CAD locality qualification from Phase 15. Proprietary cutover is the final phase.
@@ -341,6 +341,23 @@ installation, cold construction, supported reads and cleanup. Compile the public
 example for both providers; label candidate/advanced coverage as unfinished.
 This phase closes when the lifecycle and typed failures pass, without claiming
 candidate maintenance, complete advanced membership or Proprietary adoption.
+
+**Use the committed provider lifecycle.** Declare and install the box or
+versioned-prefix provider through the same Decl/Host contract. Construct its root
+from the admitted committed Source, and retain the returned owner while reading
+results. Handle original-request cancellation, allocation and provider failures;
+a stopped construction publishes no Ready root. Use a fresh request to rebuild
+after eviction, and close the final retained owner to release its backing.
+Keep the exact runtime, branch, retained basis and full-generation identity;
+matching values or provider names cannot substitute for those bindings.
+
+Follow the
+[application guide](../../docs/build-an-application.md#construct-committed-provider-indexes),
+[prefix lifecycle](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle.rs),
+and [box lifecycle](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/lifecycle.rs)
+for the declaration, read, rebuild and release sequence. Committed reads retain
+complete conservative Source dependencies; an index result grants no narrower
+read or mutation authority.
 
 ### Phase 2: Incremental Roots And Candidate-State Reads
 

@@ -5749,7 +5749,7 @@ milestone, as defined by the governing 9.18 specification.
 
 ## Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-**Progress, 2026-10-27:** Phases 1–4 are accepted: actual-read observations,
+**Progress, 2026-10-29:** Phases 1–4 are accepted: actual-read observations,
 declared relation laws, complete Native walks/reachability/closure, declared
 query closure steps, stored orbits, persistent aggregate identity/lineage and
 qualified Proprietary history-reader and boundary-edit adoption. Phases 5–6 are
@@ -5764,8 +5764,8 @@ includes incoming main `52b0fd370ee428f1`: all 356 Entry tests pass (one existin
 ignored), all 3,480 workspace CI tests pass (78 skipped), 62 cost tests and 213
 doc tests pass, and the all-target, oracle, determinism and policy gates pass.
 The CI and cost lanes exclude only Entry, qualified separately in full. SDK
-`5b01312ed0048ad4591e6b4a50e08685ea6d77ba` is unchanged. Actual Rust 1.98.0
-qualification leaves Phase 18’s Rust 1.99.x requirement open.
+`5b01312ed0048ad4591e6b4a50e08685ea6d77ba` was the SDK for that accepted
+qualification on Rust 1.98.0; current Phase 19 adoption is recorded below.
 The 2026-10-26 runtime audit adds required Phases 7–11: exact async
 source commit identity, application managed async resources, receipt-rooted causal
 inspection, bounded record/aspect history, and one batch for both cleanup findings.
@@ -5786,6 +5786,14 @@ use the ordinary Decl/Host start, fresh inspection, progression and close path,
 with finite provider/ingress/result custody and genuine owned-effect recovery.
 Its combined workflow qualifies populated forks, burned prepared adoptions and
 sibling publications against the actual Native source. Phase 9 remains unfinished.
+
+Consecutive original-source correction reverses later sources before earlier
+ones. Retain each original receipt and the required endpoint read observation;
+select each original through a fresh request, then prepare and publish its
+reversal. Live or reapplied overlaps and changed independent dependencies still
+refuse; equal values alone do not establish restoration. Use the
+[recorded-source correction guide](../../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
+for the ordinary request and retry sequence.
 These additions do not reopen the original phases. The 2026-10-27 Proprietary
 report against SDK `ba86433627` adds compiler and unobserved-write refusals,
 cell-version/live-at-k qualification, fresh ordinary proposal acceptance and
@@ -5793,8 +5801,8 @@ mandatory current Rust qualification. Index implementation and its dependent CAD
 locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
 Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
 19 for consecutive source undo after verified correction/restoration.
-Seventeen implementation phases remain required in 9.18.1, preserving the other
-numbers; the report's pin is provenance, not a pin update.
+The retained scope has seventeen implementation phases; 9, 16, 17 and 18
+remain unfinished.
 
 ### Goal
 
@@ -5847,9 +5855,15 @@ The governing milestone spec is
   ordinary callers instead of accounting overflow or cause-erased rejection
 - cell-version/storage/live-at-k evidence at 1, 100 and 10,000 features, without
   private platform workarounds; spatial-dependent locality is required in 9.19
-- proposal acceptance reissuing fresh ordinary requests with replay kept cert-only
+- proposal acceptance reissuing fresh ordinary requests from versioned domain
+  intents, with exact Native/World expected-source fork/adoption and genuine
+  target occurrences; replay remains cert-only
 - mandatory exact-release Rust 1.99.x sort qualification and current qualified
-  stable workspace/CI/Proprietary toolchains
+  stable workspace/CI/Proprietary toolchains; the qualified workspace/CI 1.99.1/full
+  `58cf8f9c35b355199727627d07ae34a4e2846d67` retains the reviewed
+  32/64-bit bounds and older compatibility entries, with Proprietary default
+  adoption and remaining SDK qualification still required under the
+  [contributor toolchain contract](../../CONTRIBUTING.md#rust-toolchain-and-canonical-sort-qualification)
 - P1 consecutive source undo through ordinary correction requests: reverse B then
   A on one field, preserving genuine live/reapplied divergence and fresh admission
 
@@ -5900,6 +5914,19 @@ in one final cutover, rather than a private SDK refactor after each phase.
 
 The governing milestone spec is
 [milestone-9.19.md](./milestone-9.19.md).
+
+### Committed Provider Indexes
+
+Declare and install a box or versioned-prefix provider through the same Decl/Host
+contract. Construct and read its index against the admitted committed Source;
+retain the returned owner while using its results. Handle typed stop, allocation,
+version, runtime and basis refusals. Rebuild after eviction with a fresh request,
+and release the final owner when finished. Committed reads retain complete
+conservative Source dependencies.
+
+Follow the [provider lifecycle contract](./milestone-9.19.md#phase-1-declared-providers-and-managed-index-ownership)
+and [application guide](../../docs/build-an-application.md#construct-committed-provider-indexes)
+for the declaration, read, rebuild and cleanup sequence.
 
 ### Must Ship
 

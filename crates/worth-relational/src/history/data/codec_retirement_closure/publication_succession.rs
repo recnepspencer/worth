@@ -2,7 +2,9 @@
 use super::membership::writes;
 use super::require_linear_history;
 use super::{charge, CodecRetirementClosureStop as Stop};
-use crate::history::data::canonical_commit_envelope::CanonicalRequiredOutputOrigin;
+use crate::history::data::canonical_commit_envelope::{
+    CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
+};
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::publication::patch::data::RecordStructuralChange;
 use crate::runtime::RelationalRuntime;
@@ -30,6 +32,22 @@ pub(super) fn validate_succession(
         return Err("publication succession changes complete family/source membership".into());
     }
     use crate::mvcc::RequiredOutputRolePosture as Posture;
+    if matches!(
+        current.publication,
+        CanonicalOutputPublication::AuthoredRetirement { .. }
+    ) && (current.producer != prior.producer
+        || current.dependency_identity != prior.dependency_identity
+        || current.meaning != prior.meaning
+        || current
+            .members
+            .iter()
+            .any(|member| member.posture != Posture::Retire)
+        || !current.relations.is_empty())
+    {
+        return Err(
+            "authored retirement changes lineage provenance or retains live membership".into(),
+        );
+    }
     for member in &current.members {
         charge(
             context,

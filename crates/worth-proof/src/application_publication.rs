@@ -35,6 +35,13 @@ pub struct AdmittedRequiredOutputSuccession {
     predecessor: RequiredOutputPublicationAuthority,
 }
 
+/// The installed ordinary author retires an exact performed publication.
+/// This is not a running producer and carries no producer dependency claim.
+#[derive(Debug)]
+pub struct AdmittedAuthoredOutputRetirement {
+    predecessor: RequiredOutputPublicationAuthority,
+}
+
 /// Admission issued only after the installed owner authenticates its recovered
 /// program activation predecessor. Native adoption still binds the exact patch.
 #[derive(Debug)]
@@ -44,6 +51,16 @@ pub struct AdmittedCheckpointProgramActivation {
 }
 
 impl InstalledApplicationPublicationOwner {
+    pub fn admit_authored_output_retirement(
+        &self,
+        predecessor: &RequiredOutputPublicationAuthority,
+    ) -> Option<AdmittedAuthoredOutputRetirement> {
+        Arc::ptr_eq(&self.occurrence, &predecessor.occurrence).then(|| {
+            AdmittedAuthoredOutputRetirement {
+                predecessor: predecessor.clone(),
+            }
+        })
+    }
     pub fn admit_required_output_succession(
         &self,
         running: AdmittedRequiredOutputPublication,
@@ -98,6 +115,15 @@ impl AdmittedCheckpointProgramActivation {
 }
 
 impl InstalledApplicationPublicationAuthority {
+    pub fn admits_authored_output_retirement(
+        &self,
+        proof: &AdmittedAuthoredOutputRetirement,
+        predecessor: &RequiredOutputPublicationAuthority,
+    ) -> bool {
+        Arc::ptr_eq(&self.occurrence, &predecessor.occurrence)
+            && Arc::ptr_eq(&self.occurrence, &proof.predecessor.occurrence)
+            && predecessor.publication == proof.predecessor.publication
+    }
     pub fn same_publication_owner(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.occurrence, &other.occurrence)
     }

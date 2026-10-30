@@ -64,6 +64,7 @@ fn derivation(cause: WorthQueryCorrectionDerivationDenial) -> BankHttpDenial {
         D::Ancestry(cause) => ancestry(cause),
         D::Selection(cause) => selection(*cause),
         D::History(cause) => history(cause),
+        D::RestoredSupport(cause) => restored_support(cause),
         D::SourceOutput(WorthQueryCorrectionOutputProjectionDenial::Stopped(stop)) => {
             advancement_denial::request(WorkCeilingDenial::Stopped(stop))
         }
@@ -104,6 +105,32 @@ fn derivation(cause: WorthQueryCorrectionDerivationDenial) -> BankHttpDenial {
         | D::RequiredOutputReconciliation
         | D::TargetProgram(_)
         | D::Basis(_) => unavailable(),
+    }
+}
+
+fn restored_support(cause: WorthQueryCorrectionRestoredSupportDenial) -> BankHttpDenial {
+    use worth_query_host::facade::runtime::ExecutionOrderedMapDenial as Storage;
+    use WorthQueryCorrectionRestoredSupportDenial as D;
+    match cause {
+        D::Request(cause) | D::Storage(Storage::Request(cause)) => {
+            advancement_denial::request(cause)
+        }
+        D::Interrupted(stop) => advancement_denial::request(WorkCeilingDenial::Stopped(stop)),
+        D::Execution(cause) => crate::http::server::relational_execution_denial::denial(cause),
+        D::Allocation(cause) | D::Storage(Storage::Allocation(cause)) => {
+            input_capture(WorthQueryOperationInputCaptureDenial::Allocation(cause))
+        }
+        D::SizeOverflow | D::Storage(Storage::CapacityOverflow) => {
+            BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator)
+        }
+        D::UnsupportedFact
+        | D::CanonicalEvidenceUnavailable
+        | D::CanonicalAssociationMismatch
+        | D::Native(_)
+        | D::Selection(_)
+        | D::FieldSupport(_)
+        | D::AspectPresence(_)
+        | D::Adjacency(_) => unavailable(),
     }
 }
 

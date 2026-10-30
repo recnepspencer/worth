@@ -29,6 +29,8 @@ pub(crate) struct WorthQueryInstalledApplicationQueryCatalog {
     bindings: BTreeMap<String, Arc<WorthQueryCompiledApplicationQueryBinding>>,
     histories:
         BTreeMap<String, Arc<crate::application_query::history::CompiledApplicationHistoryQuery>>,
+    managed_indexes:
+        BTreeMap<String, Arc<crate::application_query::managed_index::CompiledManagedIndex>>,
 }
 
 pub(crate) enum AdmittedQueryCatalogStop<E> {
@@ -37,6 +39,23 @@ pub(crate) enum AdmittedQueryCatalogStop<E> {
 }
 
 impl WorthQueryInstalledApplicationQueryCatalog {
+    pub(in crate::application_query) fn managed_index_lookup_work(
+        &self,
+        name: &str,
+    ) -> Option<u64> {
+        self.managed_indexes
+            .len()
+            .checked_add(1)?
+            .checked_mul(name.len().checked_add(1)?)?
+            .try_into()
+            .ok()
+    }
+    pub(crate) fn get_managed_index(
+        &self,
+        name: &str,
+    ) -> Option<Arc<crate::application_query::managed_index::CompiledManagedIndex>> {
+        self.managed_indexes.get(name).map(Arc::clone)
+    }
     pub(crate) fn get_history(
         &self,
         identity: &str,
@@ -143,10 +162,12 @@ where
         }
     }
     crate::application_query::inspection::validate(schema, &bindings)?;
+    let managed_indexes = crate::application_query::managed_index::compile(schema, &bindings)?;
     Ok(WorthQueryInstalledApplicationQueryCatalog {
         histories: crate::application_query::history::compile(schema, &bindings)?,
         certification: CertificationQueryCatalog::new(queries.into_values().collect()),
         bindings,
+        managed_indexes,
     })
 }
 

@@ -251,16 +251,11 @@ pub(super) fn prepare_publication_phase(
     let canonical_publication_route = runtime
         .history
         .reserve_canonical_publication_route(
+            *execution,
             prepared_history.envelope_residency(),
             Arc::clone(prepared_history.root()),
         )
-        .map_err(|detail| {
-            TransactionCommitError::publication(PublicationError::new(
-                PublicationStage::BundleAssembly,
-                detail,
-            ))
-            .with_commit_log(commit_log.clone())
-        })?;
+        .map_err(|error| error.with_commit_log(commit_log.clone()))?;
 
     let mirror_publication = runtime
         .mirror_residency

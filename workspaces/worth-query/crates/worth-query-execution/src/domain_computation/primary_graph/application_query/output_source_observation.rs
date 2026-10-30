@@ -193,9 +193,17 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             .into_iter()
             .next()
             .expect("exactly one native source");
-        let facts = source.admit_fact_materialization(&application.primary_provider.graph.layout, installed.query().name()).and_then(|prepared| prepared.into_facts(
-            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), Some(self.request)),
-        )).map_err(Stop::SourceFacts)?;
+        let facts = source
+            .admit_fact_materialization(
+                &application.primary_provider.graph.layout,
+                installed.query().name(),
+                super::observed_source::SourceFactExpansionControl::in_request(
+                    *execution,
+                    Some(self.request),
+                ),
+            )
+            .and_then(|prepared| prepared.into_facts())
+            .map_err(Stop::SourceFacts)?;
         let graph = application
             .runtime
             .primary_graph()

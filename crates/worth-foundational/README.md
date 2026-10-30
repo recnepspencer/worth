@@ -50,6 +50,16 @@ installed correspondence. Signal keeps its local aspect allocation separate.
 
 ## Canonicalization
 
+Admitted stable-sort preparation requires the configured compiler's reviewed
+implementation and supported target width. A qualification refusal carries
+`CanonicalSortImplementationDenial` with the actual compiler release, full
+commit and pointer width; it is distinct from checked accounting overflow or
+request exhaustion. Query retains that cause through parameter preparation and
+original-source capture. Ordinary nonadmitted canonical ordering is unchanged.
+Qualification tests deliberately refuse the real gate and then exercise the
+configured qualified compiler after restoring it; they do not qualify a new
+compiler or substitute a byte-overflow failure.
+
 When identity or equality crosses crates, use Foundational canonicalization and
 comparison artifacts. Do not format debug text or join strings to create a
 semantic digest.
