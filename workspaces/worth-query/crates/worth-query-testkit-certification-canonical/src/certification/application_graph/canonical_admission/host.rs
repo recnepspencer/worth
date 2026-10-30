@@ -68,7 +68,7 @@ pub fn install_owned(
         AdmissionSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        super::limits::limits(work),
+        super::limits::limits(work.max(super::FUNDED_WORK)),
         |_, graph, installed| {
             projection = Some(graph.retain_invariant_projection_authority());
             graph.bind_principal(
@@ -109,10 +109,26 @@ pub fn install_owned(
         },
     )
     .expect("ordinary canonical admission schema installs");
-    (
-        host,
-        projection.expect("real bootstrap retains its native projection authority"),
+    let projection = projection.expect("real bootstrap retains its native projection authority");
+    if work >= super::FUNDED_WORK {
+        return (host, projection);
+    }
+    // Fund authored bootstrap commits before testing the narrow decoding request.
+    // Native reopen keeps that request's original ceiling and mints its own authority.
+    let checkpoint = capture(&host);
+    drop(projection);
+    drop(host);
+    in_memory_program_from_checkpoint_with_projection(
+        ApplicationProgramAuthoring::<AdmissionSchema, Program>::begin()
+            .validated_program()
+            .unwrap(),
+        AdmissionSchema::declaration().unwrap(),
+        ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+        super::limits::limits(work),
+        checkpoint,
     )
+    .expect("native checkpoint reopens under the original request ceiling")
 }
 pub fn key(identity: &str) -> WorthQueryApplicationEntityKey<AdmissionSchema, Document> {
     WorthQueryApplicationEntityKey::new(identity).unwrap()
