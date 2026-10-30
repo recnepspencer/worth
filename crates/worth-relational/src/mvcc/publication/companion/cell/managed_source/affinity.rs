@@ -42,7 +42,7 @@ impl CompanionBranchCellCore {
     }
 }
 impl ManagedSourceCellAffinity {
-    pub(super) fn admit(
+    pub(in crate::mvcc::publication::companion) fn admit(
         &self,
         selected: &PositionedRelationalSnapshot,
         generation: u64,
@@ -60,7 +60,7 @@ impl ManagedSourceCellAffinity {
 }
 
 impl ManagedSourceRootImage {
-    pub(super) fn admit_selected(
+    pub(in crate::mvcc::publication::companion) fn admit_selected(
         &self,
         selected: &PositionedRelationalSnapshot,
         generation: u64,

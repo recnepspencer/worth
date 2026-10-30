@@ -148,12 +148,19 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
         .arc::<crate::domain_computation::provider_session::WorthQueryCompletedSourceRead>()
         .map_err(&failure)?;
     let terminal = Arc::new(parts.terminal);
+    storage
+        .arc::<super::source_image::SourceMaterial>()
+        .map_err(&failure)?;
+    let material = Arc::new(super::source_image::SourceMaterial {
+        tree,
+        order,
+        _allocation: Arc::clone(&parts.allocation),
+    });
     storage.arc::<SourceImage<S, I>>().map_err(&failure)?;
     Ok(Arc::new(SourceImage {
         rebuild_loan,
         installed,
-        tree,
-        order,
+        material,
         dependencies,
         sources: parts.sources,
         result_set: parts.result_set,

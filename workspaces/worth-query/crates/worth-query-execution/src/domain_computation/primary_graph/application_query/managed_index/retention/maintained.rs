@@ -29,13 +29,15 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         let old = state.root.replace(image);
         state.status = WorthQueryManagedIndexLifecycle::Ready;
         drop(state);
-        drop(old);
+        if let Some(old) = old {
+            old.retire();
+        }
         Ok(())
     }
 }
 
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexState<S, I> {
-    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn admit_maintained_build(
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn admit_build(
         &self,
         epoch: u64,
         proof: &crate::domain_computation::provider_session::WorthQueryManagedIndexSelectionProof<
@@ -96,6 +98,8 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
             Some(image)
         };
         drop(state);
-        drop(old);
+        if let Some(old) = old {
+            old.retire();
+        }
     }
 }

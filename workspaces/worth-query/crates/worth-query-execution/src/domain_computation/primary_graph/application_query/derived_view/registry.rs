@@ -10,6 +10,12 @@ mod native_count;
 
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 
+pub(in crate::domain_computation::primary_graph::application_query) trait RegisteredManagedIndex:
+    Send + Sync
+{
+    fn dispose(&self);
+}
+
 pub(in crate::domain_computation::primary_graph::application_query) trait RegisteredDerivedView:
     Send + Sync
 {
@@ -64,7 +70,7 @@ enum OwnedDerivedView {
     ),
     ManagedIndex {
         state: Arc<dyn Any + Send + Sync>,
-        _publication: Arc<dyn RegisteredDerivedView>,
+        cleanup: Arc<dyn RegisteredManagedIndex>,
     },
 }
 
@@ -76,6 +82,17 @@ struct RegistryState {
     views: BTreeMap<u64, Weak<dyn RegisteredDerivedView>>,
     owned: Vec<(u64, OwnedDerivedView)>,
     material_allocations: Vec<Arc<SourceFactsAllocation>>,
+}
+
+impl RegistryState {
+    fn registration_count(&self) -> usize {
+        self.views.len()
+            + self
+                .owned
+                .iter()
+                .filter(|(_, entry)| matches!(entry, OwnedDerivedView::ManagedIndex { .. }))
+                .count()
+    }
 }
 
 #[derive(Default)]
@@ -153,7 +170,7 @@ impl ManagedDerivedViewRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.views.retain(|_, view| view.strong_count() > 0);
         let result = (|| {
-            if state.views.len() >= MAXIMUM_REGISTERED_VIEWS {
+            if state.registration_count() >= MAXIMUM_REGISTERED_VIEWS {
                 return None;
             }
             let id = state.next_id.checked_add(1)?;
@@ -207,7 +224,11 @@ impl ManagedDerivedViewRegistry {
                 view.dispose();
             }
         }
-        drop(owned);
+        for (_, entry) in owned {
+            if let OwnedDerivedView::ManagedIndex { cleanup, .. } = entry {
+                cleanup.dispose();
+            }
+        }
         drop(allocations);
         drop(source_branches);
     }

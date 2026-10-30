@@ -15,6 +15,7 @@ pub use publication::{ManagedIndexSourcePublication, ManagedIndexSourcePublicati
 mod image;
 pub(crate) use image::ManagedIndexSourceAssociation;
 pub use image::ManagedIndexSourceCacheRetirement;
+pub(crate) use image::PublicCacheEntry;
 pub use image::{ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot};
 mod scope_closure;
 mod staged;

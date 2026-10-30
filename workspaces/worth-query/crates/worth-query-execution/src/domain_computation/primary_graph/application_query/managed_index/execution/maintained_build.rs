@@ -66,7 +66,7 @@ pub(super) fn rebuild<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>
     )
     .map_err(Denial::NativeSource)?;
     state
-        .admit_maintained_build(epoch, &proof, parent, request, &source.terminal)
+        .admit_build(epoch, &proof, parent, request, &source.terminal)
         .map_err(Denial::Lifecycle)?;
     let graph = application
         .runtime

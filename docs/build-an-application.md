@@ -5319,8 +5319,13 @@ then `request.query(intent).rebuild_index(&index)` for explicit cold constructio
 Ordinary `execute()` returns typed `NotReady` while Created or Evicted; it does
 not silently rebuild or fall back to a scope-root query. Probe values share the
 same complete Source image. Source authored ordering remains intact; the provider
-receives a separate canonical full-generation source-slot order. Every publication
-on the owning branch makes the image cold again.
+receives a separate canonical full-generation source-slot order. Native owns the
+public cache at the actual selected image and publishes a cold successor in its
+compound effect. This conservative cache does not require an invariant Source
+association; supported ordinary Source guards remain usable. If Native has
+performed while World publication is pending, a fresh read at the unchanged World
+can still use its genuine selected predecessor cache. After World adopts the
+successor, indexed reads return `NotReady` until explicit rebuild.
 
 For a governed Parent, use `open_index_governed` and `rebuild_index_governed`
 with the actual capability, operation and request input, then `execute_governed`
@@ -5331,7 +5336,9 @@ its normal final disclosure still applies. A valid Public Source or a Ready
 cache does not authorize the Parent.
 
 Repeated opens share one registration. `index.lifecycle()` reports retained cache
-status, not fresh authorization. `evict()` releases its image; explicit rebuild
+status, not fresh authorization. Public-only status observes the Native head and
+can report Evicted while an unchanged World still selects a retained predecessor.
+`evict()` releases its image; explicit rebuild
 is required before another indexed read. `close()` disposes and unregisters it
 for every sibling handle; later open creates a fresh registration. Dropping a
 handle leaves the runtime-owned cache alive; explicit close or final runtime

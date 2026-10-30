@@ -16,6 +16,7 @@ pub(in crate::domain_computation::primary_graph) use publication::{
     ViewChange, ViewPublicationBasis,
 };
 pub(in crate::domain_computation::primary_graph::application_query) use registry::RegisteredDerivedView;
+pub(in crate::domain_computation::primary_graph::application_query) use registry::RegisteredManagedIndex;
 pub(in crate::domain_computation::primary_graph) use registry::{
     ManagedDerivedViewRegistry, PreparedManagedViewPublication,
 };

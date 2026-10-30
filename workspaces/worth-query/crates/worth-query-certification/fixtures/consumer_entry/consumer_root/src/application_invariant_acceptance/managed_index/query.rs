@@ -104,6 +104,28 @@ pub fn source_definition(
         .build()
         .unwrap()
 }
+
+/// A real Phase 1 Source shape outside the invariant Source compiler: its two
+/// disjoint guarded paths cover the actual complete Boolean field universe.
+pub fn guarded_source_definition(
+) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, ItemRow, Directory> {
+    let mut builder = base(SourceQuery::reference());
+    for enabled in [true, false] {
+        builder = builder.root_path(
+            ApplicationQueryRootPath::from(Directory::reference())
+                .forward(Contains::reference())
+                .where_equal(
+                    ItemEnabled::reference(),
+                    ApplicationEncodedScalarValue::try_new(enabled).unwrap(),
+                ),
+        );
+    }
+    builder
+        .order_by(name(), ApplicationQueryOrderingDirection::Descending)
+        .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
+        .build()
+        .unwrap()
+}
 pub fn prefix_definition(
 ) -> ApplicationQueryDefinition<Catalog, PrefixQuery, Parameters, ItemRow, Directory> {
     base(PrefixQuery::reference())

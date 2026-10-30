@@ -107,7 +107,7 @@ impl ManagedDerivedViewRegistry {
         state.views.retain(|_, view| view.strong_count() > 0);
         // Both ordinary weak registrations and these framework-owned states
         // occupy this same index and its one existing capacity.
-        if state.views.len() >= MAXIMUM_REGISTERED_VIEWS {
+        if state.registration_count() >= MAXIMUM_REGISTERED_VIEWS {
             return None;
         }
         let id = state.next_id.checked_add(1)?;

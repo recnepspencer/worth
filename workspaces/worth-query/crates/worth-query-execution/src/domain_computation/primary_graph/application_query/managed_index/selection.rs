@@ -131,11 +131,13 @@ impl<'parent, 'request, 'authority> ManagedSelectionLease<'parent, 'request, 'au
                 }
                 let original = root
                     .source
+                    .material
                     .order
                     .get(slot.ordinal)
                     .ok_or_else(|| control.refuse(Stop::SourceSlotUnavailable))?;
                 let row = root
                     .source
+                    .material
                     .tree
                     .at(*original)
                     .ok_or_else(|| control.refuse(Stop::SourceSlotUnavailable))?;

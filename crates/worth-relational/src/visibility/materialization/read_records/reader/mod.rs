@@ -19,6 +19,7 @@ mod paid_record_walk;
 mod pinned_read;
 mod positioned_snapshot;
 mod projection_record_reader;
+mod public_managed_cache;
 mod query_execution;
 mod query_packetization;
 mod query_plan_execution;

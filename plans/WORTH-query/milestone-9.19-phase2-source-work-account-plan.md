@@ -102,10 +102,12 @@ unbilled work or whole-population traversal at their responsible owners.
 
 1. Original Source accounting: qualified in this slice (SDK 259, Native 3,
    public managed 32; independent QA and mandatory gates pass).
-2. Remove the public-only managed index's legacy late updater so Native's prepared
-   Source owner supplies the single ordinary publication path for every index.
-3. Replace managed-view registry scans in ordinary index lookup and publication
-   with routing proportional to the affected views.
+2. Public-only late updater: removed by
+   [the conservative Native cache slice](milestone-9.19-phase2-public-cache-owner-plan.md).
+   Its selected-image custody preserves Phase 1 Source shapes and cold behavior.
+3. Replace managed-view registry scans in ordinary index lookup with indexed
+   routing. Managed indexes no longer participate in late publication scans;
+   unrelated derived views retain their existing owner.
 4. Qualify the actual 1,000/2,000 chain, 50,000 unrelated geometry and independently
    retained-query axes through the real public path and original SDK invoice.
 5. Audit the Phase 2 required receiver/failure/lifecycle twins against concrete

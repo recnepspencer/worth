@@ -18,10 +18,12 @@ use super::preflight::{CompanionPreflightStop, PublicationCompanionPreflight};
 pub(super) mod publication_admission;
 pub use publication_admission::{CompanionBranchCellSlot, PreparedCompanionBranchCell};
 mod derived_replacement;
+mod public_cache;
 pub use derived_replacement::{
     CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, PreparedCompanionDerivedRoot,
 };
+pub use public_cache::{ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement};
 
 pub(super) struct CompanionRootImage {
     pub(super) root_id: u64,

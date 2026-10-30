@@ -155,7 +155,7 @@ impl VisibilityReadContext<'_> {
         Ok(observation.remains_current_at(&selected, generation))
     }
 
-    fn managed_source_position(
+    pub(super) fn managed_source_position(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &SnapshotHandle,

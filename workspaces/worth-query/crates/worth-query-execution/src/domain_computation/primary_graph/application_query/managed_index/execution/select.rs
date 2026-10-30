@@ -3,7 +3,8 @@ use super::{purpose, ProviderExecutionDenial as Denial};
 use crate::domain_computation::{
     primary_graph::{
         application_query::managed_index::{
-            retention::ManagedIndexState, selection::ManagedSelectionLease,
+            retention::{ManagedIndexState, ReadyIndexMaterial},
+            selection::ManagedSelectionLease,
         },
         source_facts::SourceFactsAllocation,
         WorthQueryPrimaryGraphApplicationRuntime,
@@ -32,6 +33,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     parent: &'a WorthQueryManagedGraphWorkSession,
     request: &'a WorthQueryRequestScope,
     association: &WorthQueryInstalledManagedIndexParent,
+    selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'_, S>,
     state: Arc<ManagedIndexState<S, I>>,
     probe: &AspectValue,
     allocation: &Arc<SourceFactsAllocation>,
@@ -49,6 +51,22 @@ where
         return Err(Denial::ForeignAssociation);
     }
     let (epoch, root) = state.ready().map_err(Denial::Lifecycle)?;
+    let graph = application
+        .runtime
+        .primary_graph()
+        .ok_or(Denial::ForeignAssociation)?;
+    let material = graph.with_runtime(execution, |runtime| {
+        runtime.read_truth().public_managed_index_cache_payload(
+            execution, selected.application_basis().snapshot_handle(), &root.cache,
+        )
+    }).map_err(|cause| match cause {
+        worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial::RootUnavailable =>
+            Denial::Lifecycle(super::super::retention::WorthQueryManagedIndexLifecycleDenial::NotReady),
+        cause => Denial::NativeSource(cause),
+    })?.downcast::<ReadyIndexMaterial>().map_err(|_| Denial::ForeignAssociation)?;
+    if !Arc::ptr_eq(&material.source, &root.source.material) {
+        return Err(Denial::ForeignAssociation);
+    }
     let session = purpose::start(
         execution,
         application,
@@ -64,7 +82,7 @@ where
                 actual,
                 root.source
                     .view(application.installed_schema().value_bindings()),
-                root.nodes.as_ref(),
+                material.nodes.as_ref(),
                 probe,
             )
         })

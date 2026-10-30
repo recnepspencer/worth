@@ -41,8 +41,6 @@ impl RegistryState {
             replacement.push(Arc::clone(allocation));
             self.material_allocations = replacement;
         }
-        allocation
-            .claim_tree::<(u64, Weak<dyn RegisteredDerivedView>)>(execution, self.views.len())?;
         if self.owned.len() == self.owned.capacity() {
             let count = self
                 .owned

@@ -205,6 +205,28 @@ cursor, subjects and returned entries/pages to release their
 native retention leases and charged backing. The older eager branch-wide history
 selectors retain their existing contract.
 
+## Conservative managed index caches
+
+Platform integrations can retain pure opaque index material with
+`read_truth().retain_public_managed_index_cache(execution, snapshot, &payload)`.
+The returned `ManagedIndexPublicCache` is issued from the actual selected Native
+image and current companion registration. It grants neither principal READ nor
+invariant Source membership. The installed companion must already publish that
+managed image; an arbitrary root identifier cannot substitute for its custody.
+
+Use `public_managed_index_cache_payload(execution, snapshot, &cache)` to reborrow
+at that exact selected image, including a retained predecessor. A Native successor
+and fork start with a cold public directory. Keep completed read terminals and
+World observations outside the stored payload: retaining the owning root through
+its own cache would create a cycle. Query stores only disclosed row material and
+provider nodes there, with completed READ custody in its external attachment.
+
+`cache.retire()` removes the exact disposable slot without allocation. Keep its
+`ManagedIndexPublicCacheRetirement` until after leaving runtime, registry and cache
+state guards, then drop it. Original entry and token reservations follow their
+last retained owners. `is_at_head()` reports cache metadata only; selected reads
+must still use the snapshot-bearing receiver and their own READ admission.
+
 ## Contained real lanes
 
 These are real public capabilities, but not the default first-contact story:

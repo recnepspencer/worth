@@ -35,14 +35,20 @@ pub(super) type SourcePlan<'a, S, I> = WorthQueryAdmittedApplicationQueryPlan<
 pub(super) struct SourceImage<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
     pub(super) rebuild_loan: Option<worth_relational::facade::runtime::ManagedIndexSourceRebuild>,
     pub(super) installed: WorthQueryInstalledManagedIndex<S, I>,
-    pub(super) tree: WorthQueryApplicationDisclosedProjectionTree,
-    pub(super) order: worth_execution::ExecutionArray<usize>,
+    pub(super) material: Arc<SourceMaterial>,
     pub(super) dependencies: Arc<super::super::observed_source::ManagedSourceDependencies>,
     pub(super) sources: Vec<WorthQueryObservedSource<SourceQuery<S, I>>>,
     pub(super) result_set: WorthQueryObservedResultSet<SourceQuery<S, I>>,
     pub(super) affinity: WorthQueryApplicationQueryRequestAffinity,
     pub(super) terminal: Arc<WorthQueryCompletedSourceRead>,
     pub(super) allocation: Arc<SourceFactsAllocation>,
+}
+
+/// Immutable disclosed rows carry no completed READ, World or Native root custody.
+pub(super) struct SourceMaterial {
+    pub(super) tree: WorthQueryApplicationDisclosedProjectionTree,
+    pub(super) order: worth_execution::ExecutionArray<usize>,
+    pub(super) _allocation: Arc<SourceFactsAllocation>,
 }
 
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> SourceImage<S, I> {
@@ -53,8 +59,8 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> SourceImage<S, 
         SourceImageView {
             owner: self.terminal.session_identity(),
             rows: super::source_rows::SourceImageRows::Completed {
-                tree: &self.tree,
-                order: &self.order,
+                tree: &self.material.tree,
+                order: &self.material.order,
             },
             governance: &WorthQueryApplicationQueryGovernance::Public,
             bindings,

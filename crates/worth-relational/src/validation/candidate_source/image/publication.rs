@@ -77,6 +77,7 @@ impl ManagedIndexBranchImage {
             .map_err(|cause| Stop::Execution(cause.into()))?;
         Ok(Arc::new(Self {
             roots: image.roots,
+            public_caches: image.public_caches,
             _memory: memory,
         }))
     }

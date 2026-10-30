@@ -11,9 +11,9 @@ pub(crate) use managed_fork::PreparedManagedIndexSourceFork;
 pub use cell::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
     CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
-    CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped,
-    ManagedIndexSourceObservation, ManagedIndexSourceRebuild, PreparedCompanionBranchCell,
-    PreparedCompanionDerivedRoot, ReservedCompanionBranchCell,
+    CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, ManagedIndexPublicCache,
+    ManagedIndexPublicCacheRetirement, ManagedIndexSourceObservation, ManagedIndexSourceRebuild,
+    PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, ReservedCompanionBranchCell,
 };
 pub(crate) use preflight::CandidateCompanionBinding;
 pub use preflight::{

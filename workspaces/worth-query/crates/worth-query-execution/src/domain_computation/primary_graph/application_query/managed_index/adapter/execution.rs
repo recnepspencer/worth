@@ -142,6 +142,7 @@ where
             parent,
             request,
             association,
+            selected,
             state,
             probe,
             allocation,

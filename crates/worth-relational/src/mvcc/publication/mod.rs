@@ -32,12 +32,12 @@ pub use companion::{
     CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
-    ManagedIndexSourceForkPreparation, ManagedIndexSourceObservation, ManagedIndexSourceRebuild,
-    PendingCompanionRegistration, PreparedCompanionBranchCell, PreparedCompanionDerivedRoot,
-    PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
-    PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
-    PublicationCompanionRegistrationStop, RelationalPublicationCompanion,
-    ReservedCompanionBranchCell,
+    ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement, ManagedIndexSourceForkPreparation,
+    ManagedIndexSourceObservation, ManagedIndexSourceRebuild, PendingCompanionRegistration,
+    PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
+    PublicationCompanionPreflight, PublicationCompanionRegistration,
+    PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,
+    RelationalPublicationCompanion, ReservedCompanionBranchCell,
 };
 pub use outcome::{
     PerformedRelationalCommit, PublishRelationalCommit, RelationalPublicationDeferred,

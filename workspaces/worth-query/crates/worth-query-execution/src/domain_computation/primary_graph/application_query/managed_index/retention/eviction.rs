@@ -38,6 +38,8 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
             None
         };
         drop(state);
-        drop(old);
+        if let Some(old) = old {
+            old.retire();
+        }
     }
 }

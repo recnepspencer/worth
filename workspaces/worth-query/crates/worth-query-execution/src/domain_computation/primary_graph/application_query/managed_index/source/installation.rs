@@ -17,10 +17,11 @@ use worth_relational::facade::runtime::ManagedIndexSourceProgram;
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct ManagedSourceInstallation {
     sources: HashMap<ManagedIndexSourceProgram, Arc<dyn SourceService>>,
+    public_cache_owner: bool,
 }
 impl ManagedSourceInstallation {
     pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
-        self.sources.is_empty()
+        self.sources.is_empty() && !self.public_cache_owner
     }
     pub(in crate::domain_computation::primary_graph) fn compile<S: ApplicationSchema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -54,13 +55,20 @@ impl ManagedSourceInstallation {
             }
         }
         if required.is_empty() {
-            return Ok((Self::default(), None));
+            return Ok((
+                Self {
+                    sources: HashMap::new(),
+                    public_cache_owner: !providers.is_empty(),
+                },
+                None,
+            ));
         }
         let (issuer, authority) =
             super::initialization::SourceInitializationIssuer::install(execution)
                 .map_err(super::initialization::initialization_execution_denial)?;
         Ok((
             Self {
+                public_cache_owner: !providers.is_empty(),
                 sources: required
                     .into_iter()
                     .map(|(program, (provider, cold))| {

@@ -16,6 +16,7 @@ pub(super) static ALLOCATOR: &StatsAlloc<std::alloc::System> = &INSTRUMENTED_SYS
 
 mod affinity;
 mod installation;
+mod publication;
 
 fn find(prefix: &str) -> query::FindPrefix {
     query::FindPrefix {

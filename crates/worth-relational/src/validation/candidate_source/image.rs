@@ -11,7 +11,9 @@ mod entry;
 mod eviction;
 pub use eviction::ManagedIndexSourceCacheRetirement;
 mod key;
+pub(crate) mod public_cache;
 mod publication;
+pub(crate) use public_cache::PublicCacheEntry;
 mod refill;
 pub(crate) use entry::ManagedIndexSourceAssociation;
 use key::SourceKey;
@@ -23,12 +25,15 @@ type Directory = ExecutionOrderedMap<SourceKey, Arc<ManagedIndexPublishedSourceR
 #[derive(Default)]
 pub struct ManagedIndexBranchImage {
     roots: Mutex<Directory>,
+    pub(crate) public_caches: Mutex<public_cache::PublicCacheDirectory>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl Clone for ManagedIndexBranchImage {
     fn clone(&self) -> Self {
         Self {
             roots: Mutex::new(self.directory().clone()),
+            // Conservative public material never becomes a successor or fork root.
+            public_caches: Mutex::new(public_cache::PublicCacheDirectory::default()),
             _memory: None,
         }
     }

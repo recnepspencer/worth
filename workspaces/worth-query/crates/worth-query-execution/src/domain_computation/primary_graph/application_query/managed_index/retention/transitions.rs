@@ -11,16 +11,19 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         epoch: u64,
         root: &Arc<ReadyIndex<S, I>>,
     ) -> bool {
-        let state = self
-            .retained
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.status == Status::Ready
+        let matches = {
+            let state = self
+                .retained
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            state.status == Status::Ready
             && state.epoch == epoch
             && state
                 .root
                 .as_ref()
                 .is_some_and(|actual| matches!(actual, RetainedIndexImage::Completed(actual) if Arc::ptr_eq(actual, root)))
+        };
+        matches && root.cache.payload().is_some()
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn begin_build(
@@ -58,7 +61,9 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         state.status = Status::Rebuilding;
         let old = state.root.take();
         drop(state);
-        drop(old);
+        if let Some(old) = old {
+            old.retire();
+        }
         Ok(epoch)
     }
 
@@ -104,7 +109,9 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         let old = state.root.replace(RetainedIndexImage::Completed(root));
         state.status = Status::Ready;
         drop(state);
-        drop(old);
+        if let Some(old) = old {
+            old.retire();
+        }
         Ok(())
     }
 
@@ -164,7 +171,9 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
             state.epoch = next;
         }
         drop(state);
-        drop(old);
+        if let Some(old) = old {
+            old.retire();
+        }
         next.map(|_| ()).ok_or(Denial::EpochExhausted)
     }
 
@@ -180,6 +189,8 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         }
         let old = state.root.take();
         drop(state);
-        drop(old);
+        if let Some(old) = old {
+            old.retire();
+        }
     }
 }

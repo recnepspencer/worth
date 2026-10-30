@@ -48,6 +48,9 @@ impl<S> Clone for ManagedIndexProviderCatalog<S> {
 }
 
 impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
+    pub(super) fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
     pub(super) fn source_factory(
         &self,
         definition: &worth_query_declaration::facade::application_query::ErasedApplicationManagedIndexDefinition,

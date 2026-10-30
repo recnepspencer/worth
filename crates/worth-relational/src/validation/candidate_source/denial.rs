@@ -12,6 +12,7 @@ pub enum ManagedIndexSourcePreparationDenial {
     IncompletePreparation,
     ForeignSource,
     RootUnavailable,
+    PublicCacheIdentityExhausted,
 }
 
 impl From<DerivedRelationReadDenial> for ManagedIndexSourcePreparationDenial {

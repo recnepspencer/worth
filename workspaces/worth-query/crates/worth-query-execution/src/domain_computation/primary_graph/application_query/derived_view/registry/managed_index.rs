@@ -96,7 +96,7 @@ impl ManagedDerivedViewRegistry {
                 state.views.remove(&id);
             }
             state.views.retain(|_, view| view.strong_count() > 0);
-            if state.views.len() >= MAXIMUM_REGISTERED_VIEWS {
+            if state.registration_count() >= MAXIMUM_REGISTERED_VIEWS {
                 return Err(Denial::RegistrationCapacityExceeded);
             }
             let id = state
@@ -104,14 +104,13 @@ impl ManagedDerivedViewRegistry {
                 .checked_add(1)
                 .ok_or(Denial::RegistrationIdentityExhausted)?;
             state.admit_index(execution, &candidate.allocation)?;
-            let publication: Arc<dyn RegisteredDerivedView> = candidate.clone();
+            let cleanup: Arc<dyn RegisteredManagedIndex> = candidate.clone();
             let erased: Arc<dyn Any + Send + Sync> = candidate.clone();
-            state.views.insert(id, Arc::downgrade(&publication));
             state.owned.push((
                 id,
                 OwnedDerivedView::ManagedIndex {
                     state: erased,
-                    _publication: publication,
+                    cleanup,
                 },
             ));
             state.next_id = id;

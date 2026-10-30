@@ -721,6 +721,17 @@ on refusal. Closed or foreign SDK scopes cannot reuse the loan; genuine worker
 report joins bill once, and retained affinity backing remains charged until final
 release. All 259 SDK tests, three registered Source controls and 32 public managed
 controls pass. See [the work-account slice](milestone-9.19-phase2-source-work-account-plan.md).
+Public-only provider caches now belong to the same Native managed image owner.
+The successor starts cold in the Native compound effect; the managed-index late
+World updater is removed. Only pure disclosed rows and provider nodes enter that
+image; completed Source READ custody stays outside it to avoid a retention cycle.
+A real Boolean-guarded Source preserves the independent seven-row oracle without
+opting into the finite invariant Source compiler. Actual Native-ahead/World-pending
+publication keeps the genuine predecessor queryable, then adoption selects a cold
+successor without replaying the provider. Exact-slot eviction and close allocate
+nothing and carry opaque cleanup beyond owner guards. Three Native owner controls,
+six existing managed-cache controls and all 33 public managed-index controls pass.
+See [the public cache owner slice](milestone-9.19-phase2-public-cache-owner-plan.md).
 This does not retime World's frozen cancellation sampling or prove cancellation
 inside the atomic swap. Remaining hostile controls and whole-path growth remain
 open. These process-local courts do not qualify crash/network persistence.
