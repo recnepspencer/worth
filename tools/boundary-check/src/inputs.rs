@@ -16,11 +16,13 @@ pub struct Inputs {
     pub config: toml::Value,
 }
 fn command(root: &Path, program: &str, args: &[&str]) -> Result<Vec<u8>, String> {
-    let result = Command::new(program)
-        .args(args)
-        .current_dir(root)
-        .output()
-        .map_err(|e| e.to_string())?;
+    let mut command = Command::new(program);
+    command.args(args).current_dir(root);
+    if program == "cargo" {
+        // Metadata performs compiler queries, not compilation to cache.
+        command.env("RUSTC_WRAPPER", "");
+    }
+    let result = command.output().map_err(|e| e.to_string())?;
     if result.status.success() {
         Ok(result.stdout)
     } else {
