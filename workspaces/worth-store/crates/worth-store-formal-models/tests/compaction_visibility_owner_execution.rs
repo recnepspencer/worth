@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 use std::collections::BTreeSet;
 
 use worth_store_formal_models::{

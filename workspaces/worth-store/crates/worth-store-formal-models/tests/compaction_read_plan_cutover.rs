@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 use worth_store_formal_models::{map_compaction_observation, CompactionVisibilityAction};
 use worth_store_physical_isolation::CompactionReadPlanCompletion;
 use worth_store_test_support::harness::physical_isolation::compaction::{

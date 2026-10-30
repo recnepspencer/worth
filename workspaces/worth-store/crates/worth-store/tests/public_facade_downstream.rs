@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 use worth_foundational::{
     aspects, AspectValue, ContractValidationInput, InternedString, ScalarAspectType,
 };

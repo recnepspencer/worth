@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code)]
 mod phase_three_support;
 #[path = "phase_seven_cleanup/process.rs"]

@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[allow(dead_code)]
 mod c10_crash_evidence;
 #[allow(dead_code)]

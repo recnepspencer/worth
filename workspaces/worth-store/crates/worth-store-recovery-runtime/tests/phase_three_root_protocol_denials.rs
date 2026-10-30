@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[expect(
     dead_code,
     reason = "this target uses genesis fixtures; other recovery targets exercise checkpoint, WAL and topology fixtures"

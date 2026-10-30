@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[test]
 fn physical_adapters_receive_observation_without_pool_control() {
     let cases = trybuild::TestCases::new();

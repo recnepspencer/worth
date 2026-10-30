@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "physical_store_recover/admission.rs"]
 mod admission;
 #[path = "physical_store_recover/arguments.rs"]

@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "physical_runtime_authority/bounded_physical_record_access_examples.rs"]
 #[allow(
     dead_code,

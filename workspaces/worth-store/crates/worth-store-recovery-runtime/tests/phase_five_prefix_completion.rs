@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #![cfg(feature = "certification-test-authority")]
 
 #[allow(dead_code)]

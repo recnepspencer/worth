@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[test]
 fn runtime_progression_is_compiler_sealed_and_public_raw_facades_stay_private() {
     let cases = trybuild::TestCases::new();

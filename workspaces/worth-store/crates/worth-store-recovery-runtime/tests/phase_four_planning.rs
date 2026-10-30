@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "phase_four_planning/page_extent_recovery.rs"]
 mod page_extent_recovery;
 #[path = "phase_four_planning/phase_four_denial_counters.rs"]

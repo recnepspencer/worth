@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "c10_extent_rewrite_crash/arena_io.rs"]
 mod arena_io;
 #[path = "c10_extent_rewrite_crash/arena_route.rs"]
