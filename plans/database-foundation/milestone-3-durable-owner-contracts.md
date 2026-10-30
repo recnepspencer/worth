@@ -42,6 +42,9 @@ owning runtime facade; old definitions are removed rather than aliased.
 World retains one checked issuer with its existing identity families. Recovery
 supplies the maximum durable value for each family from its checkpoint,
 remaining journal tails and custody. The issuer resumes at the next value.
+The existing World owner identity itself is readmitted, not replaced by a new
+owner on each open. Only genuinely new owner initialization issues it; reopen
+restores that owner and resumes its subordinate family frontiers.
 Frontier snapshots are data; only the private-construction readmitted World
 state configures a production issuer. No second counter, evidence-index high
 water mark, clock-derived ID or readmission-time issuance is allowed. Never

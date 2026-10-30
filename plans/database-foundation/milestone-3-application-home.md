@@ -48,6 +48,72 @@ registry, recovery progression, `home.checkpoint`, triggers, resolve routing
 and close. Split those responsibilities into named modules at or below 400
 lines. Delete the old home type/request/lifecycle exports; retain no wrapper.
 
+### Destination topology
+
+The primary axis is authority owner (Application versus Relational versus
+Query), then lifecycle operation, then the owner-specific step. Physical
+opening, application binding and native section meaning never share a file.
+The destination is:
+
+```text
+workspaces/worth-store/crates/worth-store-application/
+  src/lib.rs                       # module wiring; facade re-export only
+  src/facade.rs                    # stable composition audience
+  src/home_context.rs              # owned lease and live owner custody
+  src/home_request.rs              # admitted opening inputs
+  src/registry.rs                  # exact journal/anchor declaration
+  src/resolve.rs                   # owner resolution routing
+  src/open/{mod,physical_admission,descriptor_admission}.rs
+  src/open/readmission/{mod,relational,signal_bridge,world,query,custody,transition}.rs
+  src/descriptor/{mod,binding,incarnation,codec}.rs
+  src/checkpoint/{mod,manifest,publication,triggers}.rs
+  src/close/{mod,admission,posture}.rs
+workspaces/worth-store/crates/worth-store-relational/
+  src/lib.rs                       # stable native-section/medium facade
+  src/section/{mod,attachment,readmission,checkpoint,codec,selection}.rs
+  src/{journal_medium,recovered_history,recovered_transitions}.rs
+  src/cold_source.rs               # existing placement/demand owner
+  src/cold_source/                 # existing member custody and its courts
+workspaces/worth-store/crates/worth-store-application-oracle/
+  tests/worth_store_application_oracle.rs
+  tests/worth_store_application_oracle/
+    {home_lifecycle,checkpoint,relational_section,transition,retry,process}/
+```
+
+Braced filenames declare separate responsibility files, not bucket modules.
+Only implemented owners/operations get bodies; later phases extend the
+declared slots rather than adding dead placeholder variants. Parent `mod.rs`
+files wire or compose their one operation and stay within the line cap.
+Oracle cases split by the behavior they dispute; reference model, schema,
+batch authoring and process dispatch have their own named owners.
+
+Shared value definitions live in
+`crates/worth-foundational/src/durability/` by meaning: home identity,
+incarnation, attempt association, World identity family, owner family and
+retention class. Existing publication-fate vocabulary stays canonical.
+`crates/worth-proof/src/home_recovery/` has one file per named D8 proof.
+Both use their existing crate facades; no runtime counter or live table moves
+into either substrate.
+
+Query Installation's admitted binding belongs in
+`src/application_home/{mod,binding}.rs`, exported through its facade. Query
+Execution's preparation/completion stay inside the existing
+`src/domain_computation/primary_graph/application_installation/` owner, split
+into `preparation.rs`, `completion.rs` and the existing construction core as
+needed. Its audience facade remains `src/facade/application_installation.rs`.
+Host gains `src/application_home/{mod,request,open,memory_only,directory,
+interim_checkpoint,discard}.rs`; only that production composition subtree
+names Store Application. Host's existing `src/facade.rs` exports Host-owned
+request/results, not Store internals. These later Query/Host edits follow the
+owner journey and may not become a competing constructor implementation.
+
+Forbidden placements: a flat `home.rs`/`application.rs` containing all owners
+and phases; catch-all `helpers`, `util`, `common` or test `support` bags; owner
+codecs in the home manifest module; cold-source internals in public facades;
+Store composition in other Query crates; or old-home/checkpoint adapters kept
+beside the new owner. A new readmission owner extends its named step and the
+typed progression constructor, not a boolean-driven generic recovery bucket.
+
 StoreRelational retains journal placement and cold demand reads. Its narrow
 section carrier hides the cold-source implementation and custody registry. It
 attaches one medium to the native builder, readmits its section and two tails,
