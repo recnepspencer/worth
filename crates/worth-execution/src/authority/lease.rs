@@ -333,4 +333,5 @@ impl AuthorityInner {
     }
 }
 
+#[cfg(test)]
 pub(crate) use fixed_backing::ExecutionAllocationDenialKind;

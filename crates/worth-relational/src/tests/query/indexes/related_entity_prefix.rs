@@ -295,6 +295,6 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
         .execute_bounded_related_entity_prefix_lookup(Prefix::new(ordered(), &[], None), &request)
         .unwrap_err();
     assert!(matches!(refused, Denial::Lookup(cause)
-        if cause.classify() == crate::facade::indexes::BoundedRelatedEntityOrderedLookupDenialKind::CorruptIndexEntries));
+        if cause.kind() == crate::facade::indexes::BoundedRelatedEntityOrderedLookupDenialKind::CorruptIndexEntries));
     assert_eq!(funded.charged_memory_bytes(), 0);
 }
