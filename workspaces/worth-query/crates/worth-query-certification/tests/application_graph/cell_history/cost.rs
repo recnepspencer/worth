@@ -78,8 +78,13 @@ fn cell_publication_and_history_reads_separate_the_two_small_scale_axes() {
 }
 
 #[test]
-#[ignore = "scheduled cell-history qualification at the required maximum scale"]
-fn cell_publication_and_history_reads_qualify_independent_ten_thousand_axes() {
+#[ignore = "scheduled qualification at ten thousand retained feature steps"]
+fn cell_publication_and_history_reads_qualify_ten_thousand_retained_steps() {
     history_axis(&[1, 100, 10_000]);
+}
+
+#[test]
+#[ignore = "scheduled qualification at ten thousand live cells"]
+fn cell_publication_and_history_reads_qualify_ten_thousand_live_cells() {
     body_axis(&[1, 100, 10_000]);
 }

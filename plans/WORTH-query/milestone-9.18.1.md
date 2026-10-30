@@ -1866,6 +1866,17 @@ for custody. Preserve held gaps, fork points, delivery claims and accumulated
 generation spans. Existing World reachability counters expose this work;
 Native copy/hash counters alone cannot qualify it.
 
+Field-only region publication must carry the selected prior authenticated
+relation-kind commitment when both incidence journal sets are empty. It must
+not reset and reconstruct unchanged historical kind buckets or serialize their
+whole projection. Keep runtime-pin clearing independent of that reuse. Head
+history prefixes and peer claims remain covered by the carried commitment;
+this does not promote Head to Full or read cold history. Initial/cold validation
+and incidence-changing publication retain their reconstruction contracts. The
+v2 kind digest's whole changed-region projection is a distinct topology granule,
+not evidence that scalar cell storage requires a body-wide rebuild. Report root
+and canonical-artifact allocation components without redefining the aggregate.
+
 Native index-generation cleanup belongs in that same ordinary interval. Its
 eligibility authority remains actual live heads and registered branch or
 historical root obligations, with exact version and schema identity. A commit

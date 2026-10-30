@@ -74,6 +74,11 @@ pub fn report_warm(
         "ordinary publication shares original commit envelopes"
     );
     let sharing = observation.relational().sharing();
+    let new_root_authoritative_bytes = delta.publication_new_root_authoritative_bytes;
+    let new_artifact_authoritative_bytes = delta
+        .publication_new_authoritative_bytes
+        .saturating_sub(new_root_authoritative_bytes);
+    println!("cell warm allocation_components new_root_authoritative_bytes={new_root_authoritative_bytes} new_artifact_authoritative_bytes={new_artifact_authoritative_bytes}");
     let native_index_retention_roots_examined = observation
         .relational()
         .maintenance_cost_delta()
