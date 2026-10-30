@@ -120,8 +120,7 @@ link to that list and keep their local lifecycle and refusal explanations.
 `source-facts` regions agree with owning declarations: update both and check
 the diff. The checker's `document_rules.rs` verifies agreement.
 Do not hand-maintain a second variant list or claim an unresolved API is absent.
-A `known-gap` reference needs its checked canonical absence claim; Unsupported
-source knowledge is not an absence proof. Keep new native API claims pending
+Unsupported source knowledge is not an absence proof. Keep new native API claims pending
 until their owner and compiled caller are accepted. Required executable examples
 must bind to real compiled/CI-run code, not be relabeled illustrative.
 
