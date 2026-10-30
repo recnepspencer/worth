@@ -8,7 +8,7 @@ sharing path is added.
 
 The optional `WORTH_TEST_COST_SETUP_DIRECTORY` destination uses the existing
 schema-1 `test-cost-setup` / `construction-started` event consumed by
-`telemetry.setup_summary`. `NEXTEST_BINARY_ID` identifies the observing binary.
+`telemetry.setup_counts`. `NEXTEST_BINARY_ID` identifies the observing binary.
 When the destination is absent, the recipe closure does not execute. Builders
 ignore observation I/O errors. Files are created separately per process, owning
 module and sequence; independent included copies cannot corrupt a shared append
