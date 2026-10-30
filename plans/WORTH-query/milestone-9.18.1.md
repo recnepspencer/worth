@@ -1619,6 +1619,46 @@ currentness and inspection court and 17-test readiness/checkpoint court from the
 preceding slices. Boundary/context checks, dirty Rust size and formatting/whitespace
 checks pass. Phases 9.9-9.11 and parent Phase 9 remain open.
 
+**Operational sequence and proof boundary.** The result must explain a real
+equivalence decision, not relabel an unchanged result.
+
+1. Start at Signal's `logic/evaluation/effect/operational.rs`
+   (`EvaluationVerdict`, `SuppressionReason`) and
+   `data/conditional_execution/decision.rs`. Establish which actual owner-issued
+   decision the installed producer uses. `SuppressedBeforeCompute`,
+   `DependencyUnchanged` and `ComputedRevertedClean` have different meanings;
+   a readiness condition's suppression is not evidence of producer output
+   equivalence. Follow the installed comparator/equivalence contract, not a
+   label or contact counter.
+2. Carry that exact evaluation and its source/dependency/output basis through
+   Bridge's `conditional_execution/causal_observation.rs` and Query's
+   `conditional_operation/execution_provenance/classification.rs` into the
+   original settled supplier. If the real output-equivalence evidence is not
+   carried there yet, extend its owning Signal/Bridge handoff first. Query may
+   describe that evidence; it may not recreate an authoritative verdict.
+3. Extend the application connection/report owners with a distinct suppressed
+   outcome: actual changed source and performed evaluation, admitted equivalence
+   decision, unchanged observed output and its retained original provenance.
+   Do not relax the creation connection's exact-revision requirement from 9.7.
+   Suppression creates no fictitious Native output revision. Fresh independent
+   source/query diagnostics precede discovering or rendering this outcome.
+
+| Failure pressure and real setup | Required observation / allowed effect | Naive implementation this must reject |
+| --- | --- | --- |
+| Authored source changes `2 -> 4`; real installed producer computes parity using its declared equivalence contract | Independently expected output stays `0`; actual owner-issued equivalent-output decision and exact evaluation/source association are exposed through Host. No semantic output change is invented. | Inferring suppression solely from equal output bytes or an unchanged revision. |
+| Same producer, source `4 -> 5` | Output becomes `1` and owner evidence reports change, not suppression. | A hard-coded suppressed result or a comparator disconnected from production. |
+| Unchanged source reuse; restored checkpoint; readiness condition prevents compute | Each retains its actual typed meaning and cannot satisfy the equivalent-output positive assertion. Reuse need not execute the handler. | Calling all zero-contact or non-changing outcomes suppression. |
+| Same-shaped sibling evaluation or old equivalent result from another source occurrence | Exact runtime, lowering, source/dependency and output association reject substitution. | Joining a current source with any retained successful comparator result. |
+| Revoke source/query diagnostics or cancel before optional explanation | Original result remains usable; explanation refuses without protected fields or a fabricated verdict, and releases its own custody. | Treating retained owner evidence as disclosure authority or rerunning the producer for diagnostics. |
+
+**Architecture and closure.** Laws 6, 10, 17 and 18 keep canonical effects,
+equivalence and descriptive evidence distinct; Laws 16 and 20 keep inspection
+freshly admitted. Add the small positive/changed/reuse contrast to the existing
+correction model and grouped application court. Retain adequate owner comparison
+tests and add only missing handoff tests. Closure requires the public report to
+expose the actual owner decision and the hostile contrasts to reject false
+attribution; a successful 9.7 equal-output refusal alone is insufficient. This
+supplies the suppression evidence consumed by 9.9 and 9.11 without a new archive.
 
 #### Phase 9.9: Optional Rich Materialization
 
@@ -1691,6 +1731,52 @@ Reference-only reports do not close this subphase, and generic older routes
 cannot bypass fresh application admission. No new 9.21 decision attachments or
 synchronous explanatory work on ordinary commits is required.
 
+**Operational sequence and proof boundary.** Required richness is a governed
+structured view of the selected original observation/source, its qualified
+producer or suppression evidence, owner/family references and explicit omissions.
+Materialize only requested and authorized detail already supplied by those
+owners. This is not arbitrary family traversal, new decision attachments or a
+promise that every registered family has retained payload.
+
+1. Follow `application_inspection/request/action.rs` and
+   `admission/connected/materialization.rs` through fresh READ, metadata and
+   DiagnosticMask into `InspectionRead`, then its consuming terminal/result.
+   Add the explicit rich request to this same progression. A previous
+   reference-only result does not grant a new rich read; a later rich request
+   or continuation freshly admits its requested detail.
+2. Reuse the existing `causal_inspection/materialization/` policy, artifact and
+   omission vocabulary and Bridge's `diagnostics/causal_envelope/assembly/`.
+   `materialization/contract.rs::require_legacy_materialization_source` currently
+   rejects `RetainedNativeObservation` and `QueryObservationReport` with
+   `NativeInspectionAdmissionRequired`. Preserve that old-door fence; introduce
+   the application-admitted handoff consuming its genuine proof rather than
+   deleting the check or restamping application evidence as a legacy record.
+3. Assemble the selected owner evidence after admission and under the existing
+   request owners. Keep original evidence funding/custody on its original payer;
+   the fresh inspection pays for its report and requested materialization.
+   Transfer the actual leases through every success/refusal/close path. Optional
+   materialization failure leaves the performed business result intact.
+
+| Failure pressure and real setup | Required observation / allowed effect | Naive implementation this must reject |
+| --- | --- | --- |
+| Obtain a real original receipt; request reference-only, then separately request admitted rich detail | Reference-only contains its declared references. Rich result contains independently expected permitted detail, exact original association and requested evidence families. | Returning the same reference header under a rich API name or eagerly materializing all detail. |
+| Original payload was readable; fresh request lacks metadata or a requested DiagnosticMask field | Typed denial or policy-defined typed omission occurs before that protected lookup; no field/link/count/family-availability leak. | Reusing original payload permission or filtering an already disclosed rich object. |
+| Original query observes an earlier source; current head now has different values | Rich detail describes the original evidence with its provenance or reports unavailable. It never silently reads current head as the original. | Re-executing the query/producer or combining old identity with current contents. |
+| Supply an application envelope to the older unadmitted materialization door | Existing typed `NativeInspectionAdmissionRequired` fence remains. The genuine newly admitted application route succeeds. | Removing the fence to make the positive case pass. |
+| Owner omitted a family, or selected optional evidence is unavailable | Rich view preserves actual typed omission/availability and all retained correctness facts; it cannot claim complete evidence from an empty set. | Inventing detail, erasing omission reasons, or treating missing as admitted-empty. |
+| Cancel during real requested assembly or revoke before a later continuation; close remaining holders | Typed stop, no business rollback or new source publication, and final release through existing owners. Cancellation must reach the intended assembly boundary. | Testing only pre-cancelled entry, leaking partial detail/custody, or moving cleanup to a second registry. |
+
+**Architecture and closure.** Laws 4 and 16 require a lowered request and
+proof-consuming materialization; Laws 7, 19, 20 and 22 require explicit omissions,
+managed lifetime, disclosure and cancellation posture. Rich work remains in the
+diagnostic lane under the performance laws. Extend the existing grouped Host
+and correction journeys with real rich assertions; retain a narrow old-door
+negative test with a valid admitted counterpart. Add compile fences only for
+new meaningful public construction restrictions, in the existing grouped
+compiler lane. This phase closes when authorized rich detail, omission,
+revocation, interruption and release are demonstrated through the application
+route. It supplies a materialized result with explicit custody for 9.10/9.11.
+
 #### Phase 9.10: Evidence Availability, Expiry And Retention Lifecycle
 
 **Status: complete for qualified Native evidence modes.
@@ -1702,6 +1788,56 @@ suppression; request expiry is not evidence expiry. Strong immutable originals
 have no invented TTL. Exercise actual supported expiry/release, revocation before
 availability lookup and final-holder cleanup without a parallel retention
 registry or a new durable-restart promise.
+
+**Operational sequence and proof boundary.** Distinguish three things before
+coding: immutable original custody, optional owner-retained detail, and request
+permission/lifetime. Availability is descriptive metadata, never permission to
+read. Expiry is an actual owner transition, not a conclusion from missing detail.
+
+1. Trace `application_observation/declared_query.rs`,
+   `application_output_demand/settlement/observation.rs`,
+   `application_inspection/source_original.rs` and
+   `application_inspection/result/` to identify actual holders and final release.
+   Qualify the held availability candidate through the real Host route; its
+   existence or compilation does not establish any retention guarantee.
+2. Map only actual owner states. Bridge's
+   `diagnostics/causal_envelope/binding.rs` distinguishes query reports, retained
+   Native observations and retained Bridge records. Signal's
+   `diagnostics/policy/materialization.rs::DiagnosticsAvailability` distinguishes
+   retained/reconstructed, omitted, inactive and unavailable states; it does
+   not provide a generic Expired variant. Preserve those distinctions through
+   Query rather than deriving availability from nonempty bindings or digests.
+3. For each exposed expirable optional family, identify the owner's concrete
+   retention handle, eviction/expiry operation and typed loss cause before
+   implementing the adapter. Exercise that real transition with the owner's
+   deterministic control. If expiry is not expressible, extend the actual
+   owner's loss reporting where evidence can be lost; never add a Query TTL or
+   relabel `NotRetained`. Immutable originals still have no synthetic expiry.
+   Closure cannot claim expiry from a test that only expires a request.
+4. Admit availability metadata before owner lookup. Keep any later rich read
+   separately admitted and handle loss between availability and use with the
+   owner's typed outcome. Close through the existing original-request holders,
+   including refusal/interruption. No additional retention registry.
+
+| Failure pressure and real setup | Required observation / allowed effect | Naive implementation this must reject |
+| --- | --- | --- |
+| Hold a genuine original projection/supplier/Native observation; release the operational reader | Freshly admitted availability reports the custody actually retained. Immutable reference remains valid under its existing contract; reader baseline is restored. | Confusing a live reader with evidence retention, or inventing an age-based expiry. |
+| Deliberately omit or never activate an optional owner family | Preserve the owner's omitted/inactive/not-retained meaning. Do not report Expired, no producer, suppression or complete-empty evidence. | A single boolean inferred from an empty evidence list. |
+| Retain an actually expirable optional family, then perform its real owner expiry/eviction | Before/after availability and use preserve the actual typed loss cause. The immutable business receipt and other retained families survive. | Sleeping until request deadline, clearing a test-only option, or forging an expired report. |
+| Availability succeeds; owner detail is lawfully lost before requested materialization | Materialization reports the actual loss and releases its temporary custody without changing the source/query result. | Treating an earlier available flag as a lasting lease or permission. |
+| Revoke metadata before availability lookup; separately cancel/expire the request | Permission/request refusal precedes protected discovery. It is distinct from evidence unavailable/expired. | Leaking existence through family counts or translating request failure into evidence expiry. |
+| Two lawful holders retain the same original; close one, use the other, then close the final holder | First close cannot invalidate the survivor. Final close releases original funding and retained owner resources on success and denial paths. | Releasing on first close, leaking on denial, or keeping a hidden global strong reference. |
+
+**Architecture and closure.** Laws 5, 10, 18, 19 and 20 require typed loss,
+separate truth/lifetime meanings, disposable derived detail and owner-controlled
+release/disclosure. Law 22 governs interruption without rollback. Use existing
+Host/correction custody fixtures and owner lifecycle controls, not arbitrary
+timestamps or a simulated retention store. This phase closes with genuine
+retained/unavailable/owner-loss observations, revocation-before-lookup and
+final-holder release. Where the owner guarantees immutable retention, document
+that guarantee and test release instead of inventing expiry. Any required
+optional expiry handoff remains open until its actual owner transition is
+qualified; 9.11 may not erase that gap.
 
 Qualified immutable-custody increment (2026-10-30): fresh reference, compared,
 connected, evaluated and rich Query reports expose the actual retained projection,
@@ -1770,6 +1906,126 @@ Carry adequate evidence; run changed-boundary courts and required final checks
 on the integrated candidate rather than replaying all historical portfolios
 after each edit. Final capability/consumer review closes the parent Phase 9.
 
+**Operational sequence and proof boundary.** Integrate accepted evidence rather
+than building another demonstration runtime or reopening completed portfolios.
+
+1. Extend the real `application_correction_support` model and its existing
+   `application_graph/correction/causal_inspection.rs` grouped entry. One coherent
+   installed application must obtain actual source and query receipts, inspect
+   them under fresh independent admissions, demonstrate qualified production
+   and suppression, request rich detail and availability, and close original
+   holders. Use separately isolated cases within that model when a denial or
+   loss would make a later action unreachable. Do not force every shape into
+   one giant test or duplicate the 9.7 matrix here.
+2. Exercise the public request surface from
+   `worth-query-publication/src/application_entry/` and its Host facade.
+   Extend `worth-query-host/tests/application_runtime_surface/inspection.rs`
+   for public signature/lifetime changes. Keep the actual runtime journey in
+   the existing certification composition; signature compilation alone is not
+   evidence of acquisition, admission or cleanup. Applications import only
+   Decl/Host and never mint Bridge/Signal/Relational evidence.
+3. At actual call sites, migrate displaced older orchestration to this path.
+   Remove or narrow its duplicate orchestration while preserving separately
+   authorized platform audiences. Apply dependency/visibility gates to prevent
+   ordinary callers from reopening raw or cert-only doors. Inspect canonical
+   report identities when adding new outcome meanings; preserve version and
+   compatibility distinctions under Law 21 rather than reusing an old identity.
+4. Revise `docs/build-an-application.md`, `docs/capability-index.md`, the Query
+   causal-inspection guide and `plans/WORTH-query/causal-inspection-dx.md` around
+   the compiled public workflow. Teach original retention, fresh authorization,
+   source selection, suppression versus creation, rich omissions, owner loss,
+   cancellation and final close. Link the executable example, not speculative
+   pseudocode that silently requires raw platform handles.
+
+| Failure pressure and real setup | Required observation / allowed effect | Naive implementation this must reject |
+| --- | --- | --- |
+| Complete ordinary source -> installed producer -> retained query -> fresh inspection -> optional rich view | Independently expected business values and exact source/evaluation/output association survive every public handoff. | Several passing unit tests whose receipts or proofs cannot compose in production. |
+| Equal-output suppression in the same installed application, contrasted with real changed output | Public outcome preserves owner-issued suppression and actual output-change distinctions without claiming a new creator revision. | Joining unrelated phase fixtures or rendering all unchanged queries as suppression. |
+| Revoke one side; cancel rich assembly; lose optional evidence; retain another lawful original holder | Expected typed stops/omissions, no unauthorized detail, business result unchanged and survivor usable; final close releases the existing owners. | A success-only integration test, hidden global retention or partial protected reports. |
+| Compile and execute the documented Decl/Host usage; inspect ordinary dependency reach | Example needs no raw evidence factories or replay. Removed duplicate orchestration cannot remain an ordinary bypass. | Facade re-export presented as migration, or cert-only setup counterfeit as application DX. |
+| Rerun affected grouped paths on the final integrated source | Discovery reaches the intended behaviors; earlier sufficient evidence is carried within its scope, and changed handoffs retain their hostile assertions. | Zero-test green, stale binaries, or a full historical rerun substituted for checking the actual changed boundary. |
+
+**Architecture and closure.** Laws 1, 4, 9, 16 and 19 govern independent owners,
+planned progression and total lifecycle propagation; Laws 10, 20 and 21 govern
+meaning, disclosure and versioned identity. DX Law 18 makes guidance executable.
+Close the parent only after the public integration, required checks and final
+capability/consumer review pass with no material open 9.7-9.10 obligation.
+Separate private storage/proposal adoption and 9.19 index work remain separate;
+they cannot be used to require an invented CAD feature for this phase.
+
+#### Evidence Execution And Code Navigation For Phases 9.7-9.11
+
+The numbered laws above refer to
+[Architectural Laws](../../docs/coding-guidelines/arch_laws.md). Apply them with
+[Performance Architecture Laws](../../docs/coding-guidelines/perf_laws.md),
+[Testing Evidence Laws](../../docs/coding-guidelines/testing_laws.md),
+[Composition Laws](../../docs/coding-guidelines/composition_laws.md) and
+[Domain Structure Laws](../../docs/coding-guidelines/domain_structure_laws.md).
+The phase plan must preserve the authority contract even when a weaker design
+would pass a happy-path assertion.
+
+The matrices describe failure families, not required test counts or a Cartesian
+product. Every positive case first proves setup/publication/read succeeded;
+negative cases assert the intended typed failure and surviving state. Expected
+values and identities come from independently authored expectations and genuine
+owner observations, not the disputed join or a synthesized receipt. Mutation
+probes are optional where assertion sensitivity is already clear. Reuse accepted
+permission and lifecycle evidence unless the changed seam invalidates it.
+
+Paths below are starting owners, not claims that unfinished capabilities exist.
+Within the operational steps, `application_inspection/` and
+`application_observation/` are rooted in Execution's
+`primary_graph/causal_inspection/`; `application_output_demand/`,
+`application_contribution/` and `conditional_operation/` are rooted in the
+linked Execution `primary_graph/`;
+`scalar_input/` and `causal_inspection/` model fixtures are rooted in the linked
+correction example support. Other crate-relative paths name their crate.
+
+| Existing owner / evidence destination | Responsibility and next edit boundary |
+| --- | --- |
+| [Execution primary graph](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/) | Runtime orchestration above Native and Bridge owners; no new authoritative history. |
+| [Application inspection admission](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission.rs), [connection](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/connection.rs), [result](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/result.rs) | Fresh policy/proof progression, exact causal selection, and consuming publication/close remain separate. |
+| [Original supplier custody](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/settlement/observation.rs) | Descriptive original evidence; cannot grant currentness, execution or disclosure. |
+| [Legacy materialization contract](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/materialization/contract.rs) | Preserve its application-evidence admission fence while reusing policy/artifact mechanics behind the admitted route. |
+| [Bridge causal observation](../../crates/worth-runtime-bridge/src/conditional_execution/causal_observation.rs), [causal assembly](../../crates/worth-runtime-bridge/src/diagnostics/causal_envelope/assembly/), [Signal decisions](../../crates/worth-signal/src/data/conditional_execution/decision.rs), [Signal availability](../../crates/worth-signal/src/diagnostics/policy/materialization.rs) | Native evidence provenance, assembly, actual decision meanings and optional-detail availability; Query consumes rather than invents them. |
+| [Correction model](../../workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/), [grouped causal court](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/causal_inspection.rs) | Real installed source/producer/query worlds and independently expected public outcomes. Add semantic scenario modules here, not one test binary per phase. |
+| [Host inspection journey](../../workspaces/worth-query/crates/worth-query-host/tests/application_runtime_surface/inspection.rs) | Real ordinary request/receipt entry, facade type/lifetime contracts and final release. |
+
+**Focused development.** Establish the selected capability's failing public case
+and narrow owner failure before expanding the implementation. Run cheap discovery,
+fixture/configuration checks and exact path selection first. Follow
+[Iteration Laws](../../docs/coding-guidelines/iteration_laws.md) 1-4 and 18-21:
+derive the owning crate/court scope, use `loop where`, `loop edit` and narrowed
+`loop court` where implemented, and verify the selected tests actually exist.
+If that tooling is missing, record the concrete discovery/tooling gap and use
+the existing documented grouped lane with explicit owner/path selection; absence
+does not waive configuration or scope checks. Do not invent a second runner.
+Test-only scenario changes must not require rebuilding production. Keep new
+private algorithm tests local; new runtime worlds belong in leaf courts. Do not
+expand legacy runtime-in-`src` courts as the primary acceptance surface.
+
+**Slice and integration gates.** After meaningful corrections, rerun their
+causally affected evidence, using the same declared build configuration and
+cached lane artifacts. Do not duplicate compiler sessions between reviewers,
+add features, change artifact flags or create phase-specific binaries. A small
+execution filter does not excuse compiling unrelated runtime worlds. Run the
+milestone's mandatory per-implementation-commit gates below, affected grouped
+certification paths, formatting and dirty line caps before slice completion;
+batch checks against a stable candidate instead of running them after every
+edit. Run the integrated affected portfolio and `loop gate` where implemented
+at 9.11 handoff. Expensive unrelated fuzz/scale/restart campaigns remain in their
+existing scheduled lanes. Timings diagnose iteration cost, not correctness.
+
+Review must compare the final production path and test assertions with the
+matrices and architecture laws, then stop when evidence is adequate and no
+material in-scope finding remains. Do not add proof ledgers, blanket exhaustion
+matrices, exact incidental work/contact counts, or speculative accounting to
+make review appear stronger. Existing contact assertions may distinguish actual
+execution from no-op reuse when necessary; they never establish causal identity
+or output equivalence. A documentation-only refinement checks links, owner/path
+claims and contract consistency without compiling runtimes or claiming runtime
+qualification.
+
 Qualified integrated consumer handoff (2026-10-30): the existing Host runtime
 surface fixture now declares its identity/grant/query members as one actual
 contribution and installs through public Host in_memory construction, explicit
@@ -1806,17 +2062,36 @@ Native retains canonical effects and revisions. The existing Query owner is
 
 ```text
 application_inspection/
-  request/          E typed observed, compared, source and connected requests
-  admission/        E/S fresh policy, currentness, terminal and rich-view admission
-  connection/       E/S genuine source/input/output and additional shape joins
-  identity/         E exact original and report identities
-  report/           E/S descriptive reports and existing evidence assembly
-  result/           E/S consuming publication, reference and richer results
-  availability.rs   E/S retained-evidence metadata and owner availability
-  stop/             E/S typed denial and unavailable/expired propagation
+  request/                   E/S typed reference/rich intent; no owner lookup
+  admission/                 E/S fresh policy, currentness and consuming terminal
+    materialization/         E/S admitted rich-detail handoff and its local tests
+  connection/                E/S genuine source/input/output joins
+    publication.rs           N select direct/carried creator evidence
+    retirement.rs            N qualify exact original role retirement
+    suppression.rs           N consume owner-issued equivalence evidence
+    overlap/                 E/S installed field/read/canonical-effect matching
+  identity/                  E/S original/report/outcome versioned identities
+  report/                    E/S descriptive assembly, never authority issuance
+    materialization.rs       N assemble requested admitted detail/omissions
+  result/                    E/S consuming publication and reference close
+    materialized.rs          N rich result with explicit existing-owner custody
+  availability.rs            N admitted metadata mapped from actual owner states
+  stop/                      E/S preserve typed policy, owner-loss and request causes
 ```
 
-`E` is existing; `S` extends that responsibility for the remaining subphases.
+`E` is existing; `S` extends that responsibility for the remaining subphases;
+`N` is a planned populated responsibility, not a claim that its implementation
+already exists. Create each new leaf with its slice, not as an empty placeholder.
+If an active candidate has already populated a named leaf, extend that owner
+rather than creating another implementation. The tree is classified by
+admission, evidence interpretation, reporting and result lifecycle; the stable
+facade remains Decl/Host. Private selection facts prove a connection only and
+cannot authorize execution or disclosure. Native/Signal/Bridge issue their own
+facts; Query's admission owner issues the scoped consuming proof, and the result
+owner consumes it after releasing operational readers. Facades aggregate those
+capabilities without implementing their decisions. Visibility and dependency
+checks preserve this direction. No catch-all evidence manager, shared mutable
+world, public raw factory or second ordinary inspection engine is permitted.
 No empty placeholders or parallel runtime are authorized. Public reach stays
 through Decl/Host, enforced by visibility and boundary checks. Evidence is not
 permission; results are not provenance; later stages consume owner-issued proofs.
