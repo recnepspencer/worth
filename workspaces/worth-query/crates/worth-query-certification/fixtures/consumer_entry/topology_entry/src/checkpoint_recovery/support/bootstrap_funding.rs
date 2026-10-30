@@ -123,10 +123,20 @@ fn zero_memory_bootstrap_refuses_without_borrowing_the_worlds_resources() {
                 |_| seeded = true,
             )
         });
-    assert!(matches!(
-        result,
-        Err(OpeningDenial::Resource(Resource::PolicyMemoryLimit))
-    ));
+    let Err(denial) = result else {
+        panic!("zero setup memory must refuse the original request opening");
+    };
+    assert!(
+        matches!(
+            &denial,
+            OpeningDenial::Resource(Resource::MemoryLimit {
+                requested,
+                admitted: 0,
+                level: worth_query_host::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy,
+            }) if *requested > 0
+        ),
+        "actual original-request opening refusal: {denial:?}"
+    );
     assert!(!seeded);
     assert_eq!(setup.memory().unwrap().charged_memory_bytes(), 0);
 }

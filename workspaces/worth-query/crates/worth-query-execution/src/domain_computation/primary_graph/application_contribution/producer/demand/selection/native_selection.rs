@@ -263,17 +263,26 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                         selected.retained_output_binding = Some(candidate.binding);
                         return Ok((selected, entry));
                     }
-                    // Output delivery may join the actual committed Ready of
-                    // this exact source epoch without an input-cutoff contract.
-                    // Keep the ordinary admission path: no retained key or
-                    // checkpoint/input-reuse authority is supplied here.
+                    // A cached delivery belongs to the currently applicable
+                    // producer, not merely the binding of a historical output.
+                    // A different Preserve binding must execute its own work.
+                    // No retained input key or checkpoint authority is supplied.
                     let may_rejoin_ready = match purpose {
                         SelectionPurpose::Lifecycle => false,
                         SelectionPurpose::OutputDelivery => true,
                     };
-                    if may_rejoin_ready && let Some(epoch) = source.output_source_epoch() {
+                    if may_rejoin_ready
+                        && let Some(epoch) = source.output_source_epoch()
+                        && let Ok((delivery, delivery_entry)) = self
+                            .installed_producers
+                            .select::<Family>(WorthQueryProducerApplicability::new(
+                                profile_kind,
+                                WorthQueryProducerLifecyclePosture::Preserve,
+                            ))
+                        && delivery_entry.declaration.operation_binding_type == candidate.binding
+                    {
                         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
-                            Family::IDENTITY, selected.identity.clone(), selected.applicability, epoch,
+                            Family::IDENTITY, delivery.identity.clone(), delivery.applicability, epoch,
                         );
                         if self.output_demands.has_committed_ready(
                             &key,
@@ -282,8 +291,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                             candidate.correspondence.as_ref(),
                             &candidate.idempotency_key_identity,
                         ) {
-                            selected.exact_retained_output = false;
-                            return Ok((selected, entry));
+                            return Ok((delivery, delivery_entry));
                         }
                     }
                 }
