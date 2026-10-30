@@ -67,11 +67,12 @@ fn declarations<'a>(t: &[Token<'a>]) -> (Vec<&'a str>, Vec<&'a str>) {
         {
             generic_until = generic_until.max(generic_end(t, header));
         }
-        if !w[1]
-            .text
-            .chars()
-            .next()
-            .is_some_and(|c| c == '_' || c.is_alphabetic() || !c.is_ascii())
+        if w[0].text != "use"
+            && !w[1]
+                .text
+                .chars()
+                .next()
+                .is_some_and(|c| c == '_' || c.is_alphabetic() || !c.is_ascii())
         {
             continue;
         }
@@ -252,6 +253,8 @@ mod tests {
             "enum Control { arm_for_test }",
             "enum Control { Armed { arm_for_test: () } }",
             "pub use ordinary as arm_for_test;",
+            "pub use {crate::ordinary as arm_for_test};",
+            "pub use ::ordinary as arm_for_test;",
             "extern crate ordinary as arm_for_test;",
             "#[proc_macro_derive(arm_for_test)] fn derive() {}",
             "#[cfg(test)] impl Private { fn arm_for_test() {} }",
