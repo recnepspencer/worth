@@ -1,11 +1,7 @@
 //! Consumer Markdown code regions and repository-relative destinations.
-use crate::{
-    config::*,
-    inputs::Inputs,
-    lexical::{close, tokens},
-    runtime_courts::normalize,
-};
+use crate::{config::*, inputs::Inputs, runtime_courts::normalize};
 use std::collections::{BTreeMap, BTreeSet};
+mod source_facts;
 pub fn check(input: &Inputs) -> Vec<Diagnostic> {
     let config =
         match toml::from_str::<toml::Value>(input.text(&format!("{CONFIG}consumer-docs.toml"))) {
@@ -24,6 +20,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         };
         let mut lines = text.lines().enumerate().peekable();
         let mut marker = None;
+        let mut link_lines = vec![""; text.lines().count()];
         let definitions: BTreeMap<_, _> = text
             .lines()
             .filter_map(reference_definition)
@@ -31,18 +28,42 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
             .collect();
         while let Some((index, line)) = lines.next() {
             let subject = format!("{document}:{}", index + 1);
-            if let Some(name) = line
-                .strip_prefix("<!-- compiled: ")
-                .and_then(|s| s.strip_suffix(" -->"))
-            {
-                marker = Some(name);
+            if line.trim().starts_with("<!-- compiled:") {
+                if marker.take().is_some() {
+                    out.push(diagnostic(
+                        Code::DocumentRegion,
+                        &subject,
+                        "compiled marker replaced before its fenced region",
+                    ));
+                }
+                marker = line
+                    .trim()
+                    .strip_prefix("<!-- compiled: ")
+                    .and_then(|s| s.strip_suffix(" -->"))
+                    .filter(|s| !s.is_empty());
+                if marker.is_none() {
+                    out.push(diagnostic(
+                        Code::DocumentRegion,
+                        &subject,
+                        "invalid compiled marker",
+                    ));
+                }
                 continue;
             }
             if line.trim_start().starts_with("```") || line.trim_start().starts_with("~~~") {
-                let fence = &line.trim_start()[..3];
+                let opening = line.trim_start();
+                let width = opening
+                    .bytes()
+                    .take_while(|b| *b == opening.as_bytes()[0])
+                    .count();
+                let fence = &opening[..width];
                 let mut code = String::new();
                 for (_, line) in lines.by_ref() {
-                    if line.trim_start().starts_with(fence) {
+                    if line.trim_start().strip_prefix(fence).is_some_and(|tail| {
+                        tail.trim_start_matches(opening.as_bytes()[0] as char)
+                            .trim()
+                            .is_empty()
+                    }) {
                         break;
                     }
                     code.push_str(line);
@@ -70,14 +91,22 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                     "compiled marker must immediately precede a fenced region",
                 ));
             }
-            for destination in destinations(line, &definitions) {
-                if let Err(reason) = link(input, &document, &destination) {
-                    out.push(diagnostic(
-                        Code::DocumentLink,
-                        &subject,
-                        format!("{destination}: {reason}"),
-                    ));
-                }
+            if reference_definition(line).is_none() {
+                link_lines[index] = line;
+            }
+        }
+        let link_text = link_lines.join("\n");
+        for (offset, destination) in destinations(&link_text, &definitions) {
+            if let Err(reason) = link(input, &document, &destination) {
+                let subject = format!(
+                    "{document}:{}",
+                    link_text[..offset].bytes().filter(|b| *b == b'\n').count() + 1
+                );
+                out.push(diagnostic(
+                    Code::DocumentLink,
+                    &subject,
+                    format!("{destination}: {reason}"),
+                ));
             }
         }
         if marker.is_some() {
@@ -88,7 +117,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
             ));
         }
     }
-    out.extend(facts(input, &config));
+    out.extend(source_facts::check(input, &config));
     out
 }
 fn region_matches(source: &str, code: &str) -> bool {
@@ -105,14 +134,12 @@ fn reference_definition(line: &str) -> Option<(&str, &str)> {
     let (label, tail) = line.trim().strip_prefix('[')?.split_once(']')?;
     Some((label, tail.strip_prefix(':')?.trim()))
 }
-fn destinations(line: &str, definitions: &BTreeMap<String, &str>) -> Vec<String> {
-    if reference_definition(line).is_some() {
-        return Vec::new();
-    }
+fn destinations(line: &str, definitions: &BTreeMap<String, &str>) -> Vec<(usize, String)> {
     let mut result = Vec::new();
     let mut rest = line;
     let mut literal = false;
     while let Some(i) = rest.find(['[', '`']) {
+        let offset = line.len() - rest.len() + i;
         let ch = rest.as_bytes()[i];
         rest = &rest[i + 1..];
         if ch == b'`' {
@@ -141,7 +168,8 @@ fn destinations(line: &str, definitions: &BTreeMap<String, &str>) -> Vec<String>
                 }
             }
             if let Some(end) = end {
-                result.push(
+                result.push((
+                    offset,
                     tail[..end]
                         .trim()
                         .split_whitespace()
@@ -149,7 +177,7 @@ fn destinations(line: &str, definitions: &BTreeMap<String, &str>) -> Vec<String>
                         .unwrap_or("")
                         .trim_matches(['<', '>'])
                         .into(),
-                );
+                ));
                 rest = &tail[end + 1..];
             } else {
                 break;
@@ -159,7 +187,7 @@ fn destinations(line: &str, definitions: &BTreeMap<String, &str>) -> Vec<String>
                 if let Some(dest) =
                     definitions.get(&if key.is_empty() { label } else { key }.to_lowercase())
                 {
-                    result.push(dest.split_whitespace().next().unwrap_or("").into());
+                    result.push((offset, dest.split_whitespace().next().unwrap_or("").into()));
                 }
                 rest = tail;
             } else {
@@ -167,13 +195,14 @@ fn destinations(line: &str, definitions: &BTreeMap<String, &str>) -> Vec<String>
             }
         } else {
             if let Some(dest) = definitions.get(&label.to_lowercase()) {
-                result.push(
+                result.push((
+                    offset,
                     dest.split_whitespace()
                         .next()
                         .unwrap_or("")
                         .trim_matches(['<', '>'])
                         .into(),
-                );
+                ));
             }
             rest = after;
         }
@@ -264,105 +293,6 @@ fn anchors(text: &str) -> BTreeSet<String> {
         anchors.insert(slug);
     }
     anchors
-}
-fn facts(input: &Inputs, config: &toml::Value) -> Vec<Diagnostic> {
-    let mut out = Vec::new();
-    for fact in table(config, "facts") {
-        let name = string(fact, "item").rsplit("::").next().unwrap();
-        let mut definitions = Vec::new();
-        for (_, source) in input
-            .files
-            .iter()
-            .filter(|(p, s)| p.ends_with(".rs") && s.contains(&format!("enum {name}")))
-        {
-            let t = tokens(source);
-            for i in 0..t.len().saturating_sub(2) {
-                if t[i].text != "enum" || t[i + 1].text != name {
-                    continue;
-                }
-                let Some(open) = (i + 2..t.len()).find(|i| t[*i].text == "{") else {
-                    continue;
-                };
-                let end = close(&t, open);
-                let mut at = open + 1;
-                let mut variants = Vec::new();
-                while at < end {
-                    if t[at].text == "#" && t.get(at + 1).is_some_and(|t| t.text == "[") {
-                        at = close(&t, at + 1) + 1;
-                        continue;
-                    }
-                    if t[at].text == "," {
-                        at += 1;
-                        continue;
-                    }
-                    let name = t[at].text.to_owned();
-                    at += 1;
-                    let shape = if ["(", "{"].contains(&t[at].text) {
-                        let prefix = if t[at].text == "(" { "tuple" } else { "named" };
-                        canonical(&format!(
-                            "{prefix}{}",
-                            t[at..=close(&t, at)]
-                                .iter()
-                                .map(|t| t.text)
-                                .collect::<String>()
-                        ))
-                    } else {
-                        "unit".into()
-                    };
-                    variants.push((name, shape));
-                    while at < end && t[at].text != "," {
-                        at = close(&t, at) + 1;
-                    }
-                }
-                definitions.push(variants);
-            }
-        }
-        let document = string(fact, "document");
-        let text = input.text(document);
-        let start = format!("<!-- source-facts: {} begin -->", string(fact, "id"));
-        let end = format!("<!-- source-facts: {} end -->", string(fact, "id"));
-        let rows: Vec<_> = text
-            .split_once(&start)
-            .and_then(|(_, t)| t.split_once(&end))
-            .map(|(t, _)| {
-                t.lines()
-                    .filter_map(|l| {
-                        l.strip_prefix("| `")
-                            .and_then(|l| l.split_once('`'))
-                            .map(|(v, shape)| {
-                                (
-                                    v.to_owned(),
-                                    canonical(shape.trim().trim_matches('|').trim()),
-                                )
-                            })
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
-        if definitions.len() != 1 || definitions[0] != rows {
-            out.push(diagnostic(
-                Code::DocumentRegion,
-                document,
-                format!("source-facts variant or payload drift for {name}"),
-            ));
-        }
-    }
-    out
-}
-fn canonical(shape: &str) -> String {
-    let t = tokens(shape);
-    t.iter()
-        .enumerate()
-        .filter(|(i, token)| {
-            token.text != ","
-                && !(token.text == ":"
-                    && (i.checked_sub(1).is_some_and(|p| t[p].text == ":")
-                        || t.get(i + 1).is_some_and(|t| t.text == ":")))
-                && !(t.get(i + 1).is_some_and(|t| t.text == ":")
-                    && t.get(i + 2).is_some_and(|t| t.text == ":"))
-        })
-        .map(|(_, t)| t.text)
-        .collect()
 }
 #[cfg(test)]
 mod tests;

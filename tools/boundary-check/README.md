@@ -38,8 +38,8 @@ and construct no disk repositories.
 | BC7009 root Clippy superset | `local_clippy_configuration_carries_every_root_entry` |
 | BC7012 closed control callers | `every_control_reference_requires_its_owner_or_an_exact_caller`, `comments_and_literals_do_not_create_control_references`, `cross_owner_composition_does_not_grant_ownership`, `field_initializers_and_renamed_imports_cannot_claim_a_foreign_door` |
 | BC7013 construction callers | `certification_factory_callers_are_class_and_file_exact` |
-| BC8008 source bytes and source facts | `compiled_regions_compare_exact_code_and_require_unique_delimiters`, `a_compiled_marker_requires_a_following_code_region`, `documented_enum_rows_detect_payload_changes_as_well_as_variants` |
-| BC8009 relative links | `relative_links_require_targets_and_unique_heading_anchors`, `shortcut_reference_links_check_defined_targets_without_treating_definitions_as_links` |
+| BC8008 source bytes and source facts | `compiled_regions_compare_exact_code_and_require_unique_delimiters`, `a_compiled_marker_requires_a_following_code_region`, `compiled_markers_cannot_hide_orphans_or_malformed_directives`, `documented_enum_rows_detect_payload_changes_as_well_as_variants` |
+| BC8009 relative links | `relative_links_require_targets_and_unique_heading_anchors`, `shortcut_reference_links_check_defined_targets_without_treating_definitions_as_links`, `multiline_relative_links_are_checked_outside_fenced_examples` |
 | BC9001 one build | `features_are_refused_except_for_declared_signal_profiles`, `feature_predicates_are_detected_without_matching_quoted_examples` |
 | BC9002 court topology | `courts_have_one_canonical_target_and_remain_dependency_leaves`, `products_cannot_hide_integration_tests_in_the_file_list`, `product_dependencies_on_testkits_are_dev_only`, `categories_follow_top_level_directory_segments`, `frontier_uses_reachable_product_roots_and_excludes_dependency_dev_edges`, `area_splits_require_explicit_delegation_of_nested_owners` |
 | Law 2 runtime roots | `runtime_mentions_are_scoped_to_inline_and_mounted_test_modules`, `inline_test_modules_follow_all_mounted_descendants` |
