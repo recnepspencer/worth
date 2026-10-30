@@ -25,7 +25,7 @@ pub(crate) use {
 };
 
 pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal::recovery_interruption::kill_recovery_at};
-pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::open_with_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
+pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::open_with_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::prepare_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
 pub(crate) use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome};
 
 /// Entries before the checkpoint the sweep interrupts.
@@ -197,12 +197,12 @@ pub(crate) fn run_case(
     nth: NonZeroU64,
     directive: MediaFaultDirective,
 ) -> bool {
-    let store = prepared_store(target);
-    let root = store.path();
-    let Some((serving, activations)) = open_with_faults(root, &[(role, nth, directive.clone())])
-    else {
+    let Some(prepared) = prepare_faults(&[(role, nth, directive.clone())]) else {
         return false;
     };
+    let store = prepared_store(target);
+    let root = store.path();
+    let (serving, activations) = prepared.open(root);
     activations[0].arm().unwrap();
     let _ = checkpoint(&serving, 0xb2);
     let case = format!("{target:?} {role:?}#{nth} {directive:?}");
@@ -218,6 +218,33 @@ pub(crate) fn run_case(
         );
     assert_recovers(root, &case);
     killed
+}
+
+#[test]
+fn refused_create_directives_preserve_checkpoint_case_outcomes() {
+    for target in [Target::First, Target::Replacement] {
+        assert!(!run_case(
+            target,
+            MediaOperationRole::CreateNew,
+            NonZeroU64::MIN,
+            MediaFaultDirective::IndeterminateAfterEffect,
+        ));
+    }
+}
+
+#[test]
+fn admitted_create_directives_exercise_checkpoint_recovery() {
+    for target in [Target::First, Target::Replacement] {
+        run_case(
+            target,
+            MediaOperationRole::CreateNew,
+            NonZeroU64::MIN,
+            MediaFaultDirective::FailBefore {
+                kind: std::io::ErrorKind::Other,
+                raw_os_error: None,
+            },
+        );
+    }
 }
 
 /// Recovery serves without inspection, keeps every entry, publishes the next

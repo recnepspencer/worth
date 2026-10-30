@@ -25,6 +25,7 @@
 "worth-store-test-support" = { "path" = "../worth-store-test-support", "features" = ["recovery-runtime-fixtures"], "default-features" = false }
 "worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
 "worth-store-testkit-recovery-runtime" = { "path" = "../worth-store-testkit-recovery-runtime" }
+"worth-store-testkit-sweep" = { "path" = "../worth-store-testkit-sweep" }
 
 [[test]]
 name = "worth_store_court_recovery_runtime_replication_phase_eight_process"

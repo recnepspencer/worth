@@ -27,7 +27,7 @@ from pathlib import Path
 
 from query_gate_artifacts import test_binaries
 from query_gate_diagnostics import failed_tests, report_failed_command
-from query_gate_environment import environment
+from query_gate_environment import environment, require_build_identity, verification_identity
 from query_gate_prebuild import GatePrebuild, PrerequisiteFailure, refused_scale_suites
 from query_gate_cost import CostGate, DOC_SUITES, SUITE_ALIASES, expand_suites, governed
 from cargo_capture import CargoRunner
@@ -148,10 +148,9 @@ class Gate:
     def __init__(self, out, census=False):
         self.out = out
         self.env = environment(ROOT)
-        # An explicitly supplied build identity governs this complete gate.
-        # Otherwise environment() issues one identity for all its child builds.
-        if build_id := os.environ.get("WORTH_IMPLEMENTATION_BUILD_ID"):
-            self.env["WORTH_IMPLEMENTATION_BUILD_ID"] = build_id
+        self.explicit_build_identity = os.environ.get("WORTH_IMPLEMENTATION_BUILD_ID")
+        if self.explicit_build_identity is not None:
+            self.env["WORTH_IMPLEMENTATION_BUILD_ID"] = require_build_identity(self.explicit_build_identity)
         self.built = {}
         self.prepared = set()
         self.census = census
@@ -159,7 +158,12 @@ class Gate:
         self.cost = CostGate(ROOT, out / "test-cost", self.env)
 
     def plan(self, suites):
+        first_plan = not self.cost.configured
         self.cost.configure(suites)
+        if first_plan and self.explicit_build_identity is None:
+            issued = verification_identity(ROOT, self.cost.output, self.cost.groups)
+            if issued is not None:
+                self.env["WORTH_IMPLEMENTATION_BUILD_ID"] = issued
 
     def command(self, label, argv):
         log = self.out / f"{label}.log"
@@ -321,6 +325,8 @@ class Gate:
         }
 
     def run(self, suite):
+        if governed(suite) and not self.cost.configured:
+            self.plan([suite])
         result = self.tests(suite) if suite in TEST_SUITES or suite in DOC_SUITES else self.commands(suite)
         (self.out / f"{suite}.json").write_text(json.dumps(result, indent=1),
                                                 encoding="utf-8")

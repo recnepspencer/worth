@@ -36,7 +36,56 @@ def summary(text, key):
     return found[0]
 
 
-def build(manifest, output, cargo_runner, profile='dev'):
+def selection_arguments(metadata, selection):
+    """Validate explicit owners against Cargo, without another target registry."""
+    if selection is None:
+        return ['--workspace', '--all-targets']
+    packages = sorted(set(selection.get('packages', [])))
+    members = set(metadata['workspace_members'])
+    owned = {p['name']: p for p in metadata['packages'] if p['id'] in members}
+    if not packages or set(packages) - set(owned):
+        raise NextestPrebuildFailure('native selection requires known workspace packages')
+    kinds = selection.get('targets', {})
+    if set(kinds) - {'lib', 'test', 'bin', 'example', 'bench'}:
+        raise NextestPrebuildFailure('unknown native target kind')
+    arguments = [part for package in packages for part in ('--package', package)]
+    for kind, names in sorted(kinds.items()):
+        if kind == 'lib':
+            if names is not True or any(not any(set(t['kind']) & {'lib', 'proc-macro'}
+                 for t in owned[p]['targets']) for p in packages):
+                raise NextestPrebuildFailure('selected package has no library target')
+            arguments.append('--lib')
+        else:
+            if not names or not isinstance(names, list):
+                raise NextestPrebuildFailure('native targets need explicit names')
+            for name in sorted(set(names)):
+                if not any(t['name'] == name and kind in t['kind']
+                           for p in packages for t in owned[p]['targets']):
+                    raise NextestPrebuildFailure(f'unknown {kind} target: {name}')
+                arguments += ['--' + kind, name]
+    return arguments + ([] if kinds else ['--all-targets'])
+
+
+def source_packages(metadata, selection):
+    if selection is None:
+        return None
+    packages = {p['id']: p for p in metadata['packages']}
+    members = set(metadata['workspace_members'])
+    pending = [key for key in members if packages[key]['name'] in selection['packages']]
+    nodes = {node['id']: node for node in metadata['resolve']['nodes']}
+    required = set()
+    while pending:
+        key = pending.pop()
+        if key in required:
+            continue
+        if key not in nodes:
+            raise NextestPrebuildFailure('source selection lacks a resolved dependency: ' + key)
+        required.add(key)
+        pending.extend(nodes[key]['dependencies'])
+    return sorted(packages[key]['name'] for key in required & members)
+
+
+def build(manifest, output, cargo_runner, profile='dev', selection=None, before_compile=None):
     manifest, output = Path(manifest).resolve(), Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     observed = cargo_runner(['cargo', 'metadata', '--offline', '--format-version', '1',
@@ -45,7 +94,15 @@ def build(manifest, output, cargo_runner, profile='dev'):
         raise NextestPrebuildFailure('Cargo metadata failed')
     metadata_path = output / 'cargo-metadata.json'
     metadata_path.write_text(observed.stdout, encoding='utf-8')
-    observed = cargo_runner(['cargo', 'nextest', 'list', '--workspace', '--all-targets',
+    metadata = json.loads(observed.stdout)
+    selected = selection(metadata) if callable(selection) else selection
+    arguments = selection_arguments(metadata, selected)
+    (output / 'native-selection.json').write_text(json.dumps({
+        'scope': 'workspace' if selected is None else 'selected-packages',
+        'selection': selected, 'cargo_arguments': arguments}, indent=2) + '\n', encoding='utf-8')
+    if before_compile is not None:
+        before_compile(metadata, selected)
+    observed = cargo_runner(['cargo', 'nextest', 'list', *arguments,
                              '--cargo-profile', profile,
                              '--manifest-path', str(manifest), '--list-type', 'binaries-only',
                              '--message-format', 'json'], manifest.parent, output / 'binaries-build.log')
