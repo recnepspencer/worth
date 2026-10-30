@@ -8,24 +8,34 @@
 //! journal's `resolve` of the next position, and the history a reopened home
 //! recovers.
 
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
+pub(crate) use worth_relational::facade::durability::RelationalCanonicalCommitArtifact;
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use worth_relational::facade::identity::EntityId;
+pub(crate) use worth_relational::facade::publication::PatchStreamPosition;
+pub(crate) use worth_store::physical_runtime::certification::MediaOperationRole;
+pub(crate) use worth_store_relational::RelationalStoreCommitFate;
 pub(crate) use {worth_execution::ExecutionAllocationPolicy, worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::durability::RelationalCanonicalCommitArtifact};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_relational::facade::identity::EntityId};
-pub(crate) use {worth_relational::facade::mvcc::RelationalPublicationDenial, worth_relational::facade::mvcc::RelationalTransactionIntent};
-pub(crate) use {worth_relational::facade::publication::PatchStreamPosition};
-pub(crate) use {worth_relational::facade::transactions::RecordRef, worth_relational::facade::transactions::TransactionCommitError, worth_relational::facade::transactions::WorkerIntentBatch};
-pub(crate) use {worth_store::physical_runtime::certification::MediaOperationRole};
-pub(crate) use {worth_store_relational::RelationalStoreCommitFate};
-pub(crate) use {worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreJournalRefusal};
+pub(crate) use {
+    worth_relational::facade::mvcc::RelationalPublicationDenial,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+};
+pub(crate) use {
+    worth_relational::facade::transactions::RecordRef,
+    worth_relational::facade::transactions::TransactionCommitError,
+    worth_relational::facade::transactions::WorkerIntentBatch,
+};
+pub(crate) use {
+    worth_store_relational::RelationalStoreHome,
+    worth_store_relational::RelationalStoreJournalRefusal,
+};
 
-pub(crate) use {crate::batches};
-pub(crate) use {crate::durable_run::open};
-pub(crate) use {crate::media_faults};
-pub(crate) use {crate::schema_transition::SOURCE};
-pub(crate) use {crate::workload};
+pub(crate) use crate::batches;
+pub(crate) use crate::durable_run::open;
+pub(crate) use crate::media_faults;
+pub(crate) use crate::schema_transition::SOURCE;
+pub(crate) use crate::workload;
 
 pub(crate) fn main() -> BranchId {
     BranchId("main".to_owned())
@@ -36,8 +46,13 @@ pub(crate) fn create(
     step: usize,
     execution: &ExecutionRequest<'_, '_>,
 ) -> EntityId {
-    let outcome = crate::workload::commit(home.runtime(), execution, &main(), crate::batches::create(step))
-        .expect("the create commits");
+    let outcome = crate::workload::commit(
+        home.runtime(),
+        execution,
+        &main(),
+        crate::batches::create(step),
+    )
+    .expect("the create commits");
     match outcome.changed_records[..] {
         [worth_relational::facade::transactions::RecordRef::Entity(entity)] => entity,
         ref other => panic!("a create changed {other:?}"),
@@ -89,10 +104,16 @@ pub(crate) fn race(
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let mut transactions = [first, second].map(|batch| {
         let mut transaction = runtime
-            .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+            .begin_branch_transaction(
+                &basis,
+                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+            )
             .expect("a transaction on the shared basis");
         transaction
-            .push_batch(batch, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            .push_batch(
+                batch,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("the batch stages");
         Some(transaction)
     });

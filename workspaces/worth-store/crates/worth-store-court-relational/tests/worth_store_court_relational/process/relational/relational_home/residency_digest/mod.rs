@@ -1,11 +1,31 @@
 //! A checksum-valid Store record must still match its manifest's member digest.
-#[allow(unused_imports)] use crate::residency_digest::*;
-use {crate::durable_run, crate::residency_fixture::Fixture, crate::residency_media, crate::selected_checkpoint, crate::workload};
-use {std::path::Path};
-use {worth_execution::ExecutionRequest};
-use {worth_relational::facade::identity::PartitionId, worth_relational::facade::mvcc::RelationalTransactionReadDenial, worth_relational::facade::storage::RelationalStorageSubject, worth_relational::facade::storage::RelationalStorageUnavailableCause};
-use {worth_store::physical_runtime::AnchoredRecordMemberDamage, worth_store::physical_runtime::AnchoredRecordMemberReadFailure, worth_store::physical_runtime::AnchoredRecordName, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits};
-use {worth_store_physical_format::decode_data_frame_page_lsn, worth_store_physical_format::durable_artifact_checksum, worth_store_physical_format::DurableFrameKind, worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES};
+#[allow(unused_imports)]
+use crate::residency_digest::*;
+use std::path::Path;
+use worth_execution::ExecutionRequest;
+use {
+    crate::durable_run, crate::residency_fixture::Fixture, crate::residency_media,
+    crate::selected_checkpoint, crate::workload,
+};
+use {
+    worth_relational::facade::identity::PartitionId,
+    worth_relational::facade::mvcc::RelationalTransactionReadDenial,
+    worth_relational::facade::storage::RelationalStorageSubject,
+    worth_relational::facade::storage::RelationalStorageUnavailableCause,
+};
+use {
+    worth_store::physical_runtime::AnchoredRecordMemberDamage,
+    worth_store::physical_runtime::AnchoredRecordMemberReadFailure,
+    worth_store::physical_runtime::AnchoredRecordName,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+};
+use {
+    worth_store_physical_format::decode_data_frame_page_lsn,
+    worth_store_physical_format::durable_artifact_checksum,
+    worth_store_physical_format::DurableFrameKind,
+    worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES,
+};
 
 #[test]
 fn a_checksum_valid_substituted_member_refuses_its_digest_and_keeps_subject_damage_sticky() {
@@ -38,7 +58,9 @@ fn a_checksum_valid_substituted_member_refuses_its_digest_and_keeps_subject_dama
     let mut session = reader
         .open(
             locator.record(),
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(u32::MAX).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(u32::MAX).unwrap(),
+            ),
         )
         .unwrap();
     let mut accepted = vec![0; substituted.len()];
@@ -57,16 +79,24 @@ fn a_checksum_valid_substituted_member_refuses_its_digest_and_keeps_subject_dama
             .anchored_records()
             .unwrap()
             .read_member(
-                worth_store::physical_runtime::AnchoredRecordName::new(crate::selected_checkpoint::ANCHOR).unwrap(),
+                worth_store::physical_runtime::AnchoredRecordName::new(
+                    crate::selected_checkpoint::ANCHOR
+                )
+                .unwrap(),
                 locator,
                 1 << 30
             ),
-        Err(worth_store::physical_runtime::AnchoredRecordMemberReadFailure::Damaged(
-            worth_store::physical_runtime::AnchoredRecordMemberDamage::DigestMismatch
-        ))
+        Err(
+            worth_store::physical_runtime::AnchoredRecordMemberReadFailure::Damaged(
+                worth_store::physical_runtime::AnchoredRecordMemberDamage::DigestMismatch
+            )
+        )
     ));
     let refusal = crate::residency_media::read(&home, &fixture.records[0], &execution).unwrap_err();
-    let worth_relational::facade::mvcc::RelationalTransactionReadDenial::StorageUnavailable(unavailable) = &refusal else {
+    let worth_relational::facade::mvcc::RelationalTransactionReadDenial::StorageUnavailable(
+        unavailable,
+    ) = &refusal
+    else {
         panic!("{refusal:?}")
     };
     assert_eq!(

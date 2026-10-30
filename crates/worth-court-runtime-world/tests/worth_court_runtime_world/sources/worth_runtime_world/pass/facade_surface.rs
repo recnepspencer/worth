@@ -49,7 +49,7 @@ where
 {
 }
 
-fn main() {
+pub(crate) fn main() {
     let cancellation = RuntimeWorldCancellationSource::new();
     let _token: RuntimeWorldCancellationToken = cancellation.token();
     names_the_signal_execution_seam(|_transaction| Ok(()));

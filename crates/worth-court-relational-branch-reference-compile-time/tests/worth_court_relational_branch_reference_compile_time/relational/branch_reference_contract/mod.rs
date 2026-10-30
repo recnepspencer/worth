@@ -1,6 +1,9 @@
-use {worth_foundational::FoundationalBranchReferenceGeneration, worth_foundational::FoundationalBranchTarget};
-use {worth_relational::facade::branch::relational_branch_observation};
-use {worth_relational::facade::history::BranchId};
+use worth_relational::facade::branch::relational_branch_observation;
+use worth_relational::facade::history::BranchId;
+use {
+    worth_foundational::FoundationalBranchReferenceGeneration,
+    worth_foundational::FoundationalBranchTarget,
+};
 
 #[test]
 fn empty_relational_targets_remain_runtime_affine_through_branch_identity() {

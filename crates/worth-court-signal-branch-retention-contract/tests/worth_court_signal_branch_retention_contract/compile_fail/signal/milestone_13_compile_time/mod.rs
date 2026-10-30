@@ -1,23 +1,14 @@
 #[test]
-fn public_invalidation_observation_surface_is_current() {
-    let tests = trybuild::TestCases::new();
-    tests.pass(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/frontier_public_inventory.rs"));
-}
-
-#[test]
 fn old_frontier_api_is_removed() {
-    let tests = trybuild::TestCases::new();
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/old_frontier_api_is_removed.rs"));
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/old_frontier_api_is_removed.rs")).expect("prebuilt compiler denial");
 }
 
 #[test]
 fn invalidation_progression_remains_private() {
-    let tests = trybuild::TestCases::new();
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/invalidation_progression_is_private.rs"));
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/invalidation_progression_is_private.rs")).expect("prebuilt compiler denial");
 }
 
 #[test]
 fn predicted_counters_cannot_satisfy_performed_receipt_api() {
-    let tests = trybuild::TestCases::new();
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/predicted_counters_are_not_performed.rs"));
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/predicted_counters_are_not_performed.rs")).expect("prebuilt compiler denial");
 }

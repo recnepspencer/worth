@@ -1,3 +1,2 @@
-#[path = "declarations.rs"]
-mod declarations;
-pub(crate) use self::declarations::*;
+mod prebuilt_observations;
+pub(crate) use self::prebuilt_observations::*;

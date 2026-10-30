@@ -1,8 +1,22 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::authority_mutants::*;
-use {worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalSignalSettlementOutcome, worth_store::physical_runtime::PhysicalWorkEffectFate};
-use {worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::authority_mutants::*;
+use {
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalSignalSettlementOutcome,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+};
+use {
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write, worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_mutation_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_mutation_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 #[test]
 fn signal_evaluation_is_filesystem_effect_free() {
@@ -42,7 +56,11 @@ fn generic_signal_completion_cannot_upgrade_proven_no_effect() {
         },
     );
     let admitted = admitted_write(&serving, request);
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"noeffect".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"noeffect".as_slice(),
+    )
+    .unwrap();
     let before = serving.media_counters();
 
     let outcome = serving.execute_physical_work(command).unwrap();
@@ -58,16 +76,25 @@ fn generic_signal_completion_cannot_upgrade_proven_no_effect() {
     );
     let after = serving.media_counters();
     assert_eq!(
-        after.completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
-        before.completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
+        after.completed_operations_for(
+            worth_store_physical_backend::MediaOperationRole::PositionedWrite
+        ),
+        before.completed_operations_for(
+            worth_store_physical_backend::MediaOperationRole::PositionedWrite
+        )
     );
     assert_eq!(
-        after.completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
-        before.completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
+        after
+            .completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+        before
+            .completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
     );
     assert_eq!(
-        after.denied_before_effect_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.denied_before_effect_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+        after.denied_before_effect_for(
+            worth_store_physical_backend::MediaOperationRole::PositionedWrite
+        ) - before.denied_before_effect_for(
+            worth_store_physical_backend::MediaOperationRole::PositionedWrite
+        ),
         1
     );
     serving.close();
@@ -79,7 +106,11 @@ fn physical_settlement_requires_backend_and_scheduler_evidence() {
     let (profile, _, request) = work_fixture();
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
     let admitted = admitted_write(&serving, request);
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"settled1".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"settled1".as_slice(),
+    )
+    .unwrap();
 
     let outcome = serving
         .execute_physical_work(command)
@@ -90,7 +121,10 @@ fn physical_settlement_requires_backend_and_scheduler_evidence() {
         worth_store::physical_runtime::PhysicalWorkEffectFate::WriteCompleted,
         "C5_PREDICATE:settlement: completed backend and scheduler evidence must produce exact physical settlement"
     );
-    assert_eq!(outcome.signal(), worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed);
+    assert_eq!(
+        outcome.signal(),
+        worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed
+    );
     serving.close();
 }
 
@@ -100,13 +134,20 @@ fn derived_completion_must_join_the_real_signal_request() {
     let (profile, _, request) = work_fixture();
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
     let admitted = admitted_write(&serving, request);
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"derived1".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"derived1".as_slice(),
+    )
+    .unwrap();
 
     let outcome = serving
         .execute_physical_work(command)
         .expect("the canonical write must reach physical settlement");
 
-    assert_eq!(outcome.signal(), worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed);
+    assert_eq!(
+        outcome.signal(),
+        worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed
+    );
     let signal = serving.physical_signal_observation().unwrap();
     assert_eq!(
         signal.active_locality_count(),
@@ -137,7 +178,11 @@ fn one_canonical_write_requires_one_backend_effect() {
     let (profile, _, request) = work_fixture();
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
     let admitted = admitted_write(&serving, request);
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"onewrite".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"onewrite".as_slice(),
+    )
+    .unwrap();
     let before = serving.media_counters();
 
     let outcome = serving.execute_physical_work(command);
@@ -151,13 +196,17 @@ fn one_canonical_write_requires_one_backend_effect() {
     let after = serving.media_counters();
     assert_eq!(
         after.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
         1,
         "C5_PREDICATE:raw-backend-dispatch: a write escaped the canonical executor path"
     );
     assert_eq!(
-        after.completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+        after
+            .completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
+            - before.completed_bytes_for(
+                worth_store_physical_backend::MediaOperationRole::PositionedWrite
+            ),
         8
     );
     serving.close();

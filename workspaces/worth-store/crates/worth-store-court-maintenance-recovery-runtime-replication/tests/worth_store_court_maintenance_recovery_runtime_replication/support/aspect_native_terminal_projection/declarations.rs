@@ -1,8 +1,34 @@
+pub(crate) use worth_proof::TransitionOutcome;
 pub(crate) use {serde_json::Map, serde_json::Number, serde_json::Value};
-pub(crate) use {worth_foundational::aspects, worth_foundational::AspectContract, worth_foundational::AspectKey, worth_foundational::AspectLocator, worth_foundational::AspectValue, worth_foundational::BoundarySourceLocator, worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalDigestAlgorithmId, worth_foundational::CanonicalizationRuleVersion, worth_foundational::InternedString, worth_foundational::LocatorAuthority, worth_foundational::ScalarAspectType};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store_aspect_native::project_store_boundary_fact_to_terminal_json, worth_store_aspect_native::readmit_external_terminal_projection_document_as_store_aspect_state, worth_store_aspect_native::readmit_terminal_json_projection_as_store_aspect_state, worth_store_aspect_native::StoreAspectAuthorityInput, worth_store_aspect_native::StoreAspectBoundaryFact, worth_store_aspect_native::StoreAspectIdentity, worth_store_aspect_native::StoreCanonicalBasisConstruction, worth_store_aspect_native::StoreCanonicalBasisFamily, worth_store_aspect_native::StoreDigestAuthority, worth_store_aspect_native::StoreDigestEvidence, worth_store_aspect_native::StorePhysicalBoundaryWitness, worth_store_aspect_native::StoreTerminalDocumentChecksum, worth_store_aspect_native::StoreTerminalProjectionDenial, worth_store_aspect_native::StoreTerminalProjectionDisplayLabel, worth_store_aspect_native::StoreTerminalProjectionDocumentBytes};
-pub(crate) use {worth_store_contracts::StorePhysicalAuthorityWitness, worth_store_contracts::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE};
+pub(crate) use {
+    worth_foundational::aspects, worth_foundational::AspectContract, worth_foundational::AspectKey,
+    worth_foundational::AspectLocator, worth_foundational::AspectValue,
+    worth_foundational::BoundarySourceLocator, worth_foundational::CanonicalBasisReadyArtifact,
+    worth_foundational::CanonicalDigestAlgorithmId,
+    worth_foundational::CanonicalizationRuleVersion, worth_foundational::InternedString,
+    worth_foundational::LocatorAuthority, worth_foundational::ScalarAspectType,
+};
+pub(crate) use {
+    worth_store_aspect_native::project_store_boundary_fact_to_terminal_json,
+    worth_store_aspect_native::readmit_external_terminal_projection_document_as_store_aspect_state,
+    worth_store_aspect_native::readmit_terminal_json_projection_as_store_aspect_state,
+    worth_store_aspect_native::StoreAspectAuthorityInput,
+    worth_store_aspect_native::StoreAspectBoundaryFact,
+    worth_store_aspect_native::StoreAspectIdentity,
+    worth_store_aspect_native::StoreCanonicalBasisConstruction,
+    worth_store_aspect_native::StoreCanonicalBasisFamily,
+    worth_store_aspect_native::StoreDigestAuthority,
+    worth_store_aspect_native::StoreDigestEvidence,
+    worth_store_aspect_native::StorePhysicalBoundaryWitness,
+    worth_store_aspect_native::StoreTerminalDocumentChecksum,
+    worth_store_aspect_native::StoreTerminalProjectionDenial,
+    worth_store_aspect_native::StoreTerminalProjectionDisplayLabel,
+    worth_store_aspect_native::StoreTerminalProjectionDocumentBytes,
+};
+pub(crate) use {
+    worth_store_contracts::StorePhysicalAuthorityWitness,
+    worth_store_contracts::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
+};
 
 pub(crate) fn boundary_fact(contract: &AspectContract, raw_value: &str) -> StoreAspectBoundaryFact {
     let validated = match aspects()
@@ -33,7 +59,10 @@ pub(crate) fn struct_boundary_fact(
         .vocabulary()
         .struct_value()
         .with_field("segment", aspect_string(segment))
-        .with_field("generation", worth_foundational::AspectValue::UInt64(generation))
+        .with_field(
+            "generation",
+            worth_foundational::AspectValue::UInt64(generation),
+        )
         .finish()
         .unwrap();
     let validated = match aspects().validate().against(contract).value(struct_value) {
@@ -84,7 +113,10 @@ pub(crate) fn aspect_string(value: &str) -> AspectValue {
 }
 
 pub(crate) fn source_locator(aspect_key: AspectKey) -> BoundarySourceLocator {
-    worth_foundational::BoundarySourceLocator::Aspect(worth_foundational::AspectLocator::new(worth_foundational::LocatorAuthority::Projected, aspect_key))
+    worth_foundational::BoundarySourceLocator::Aspect(worth_foundational::AspectLocator::new(
+        worth_foundational::LocatorAuthority::Projected,
+        aspect_key,
+    ))
 }
 
 pub(crate) fn physical_witness() -> StorePhysicalBoundaryWitness {
@@ -97,8 +129,12 @@ pub(crate) fn physical_witness() -> StorePhysicalBoundaryWitness {
     .unwrap()
 }
 
-pub(crate) fn terminal_checksum(bytes: StoreTerminalProjectionDocumentBytes) -> StoreTerminalDocumentChecksum {
-    worth_store_aspect_native::StoreTerminalDocumentChecksum::for_terminal_projection_document_bytes(&bytes)
+pub(crate) fn terminal_checksum(
+    bytes: StoreTerminalProjectionDocumentBytes,
+) -> StoreTerminalDocumentChecksum {
+    worth_store_aspect_native::StoreTerminalDocumentChecksum::for_terminal_projection_document_bytes(
+        &bytes,
+    )
 }
 
 pub(crate) fn readmitted_external_struct_projection<const N: usize>(

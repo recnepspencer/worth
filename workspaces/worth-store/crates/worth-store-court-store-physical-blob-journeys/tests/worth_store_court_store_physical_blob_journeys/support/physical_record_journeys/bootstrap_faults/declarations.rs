@@ -1,8 +1,24 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::RecordBootstrapDenial};
-pub(crate) use {worth_store_physical_backend::FilesystemAccessPosture, worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore,
+    worth_store::physical_runtime::RecordBootstrapDenial,
+};
+pub(crate) use {
+    worth_store_physical_backend::FilesystemAccessPosture,
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::serving_from_initialization, worth_store_testkit_store::physical_record_journeys::success};
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 pub(crate) fn exercise_cut(
     index: usize,
@@ -13,14 +29,18 @@ pub(crate) fn exercise_cut(
 ) {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join(format!("store-{index}"));
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::production(worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::production(
+        worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let authority = admission.fault_schedule_authority();
     let directive_label = format!("{directive:?}");
     let schedule = authority
         .schedule(vec![authority.rule(role, ordinal, directive)])
         .unwrap();
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(worth_store::physical_runtime::PhysicalRuntimeAdmission::new(&root).unwrap()).unwrap();
+    let runtime = worth_store::physical_runtime::PhysicalStore::admit(
+        worth_store::physical_runtime::PhysicalRuntimeAdmission::new(&root).unwrap(),
+    )
+    .unwrap();
     let faulted_media = match runtime
         .try_admit_filesystem_media(admission.with_fault_schedule(schedule))
         .into_raw()
@@ -30,7 +50,9 @@ pub(crate) fn exercise_cut(
     };
     let (format, placement, access) = configuration();
     let outcome = initialize_record_store!(faulted_media, |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     })
     .into_raw();
     if !mutation_started {
@@ -44,9 +66,9 @@ pub(crate) fn exercise_cut(
     assert!(matches!(outcome, worth_proof::TransitionOutcome::Failed(_)));
     let catalog_published = root.join("families/records/bootstrap.catalog").is_file();
 
-    let observed = open_record_store!(media(&root), |durability| worth_store::physical_runtime::PhysicalRecordOpen::new(
-        format, access, durability
-    ))
+    let observed = open_record_store!(media(&root), |durability| {
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+    })
     .into_raw();
     match observed {
         worth_proof::TransitionOutcome::Success(serving) if catalog_published => {

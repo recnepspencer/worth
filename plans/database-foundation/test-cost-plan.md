@@ -58,3 +58,30 @@ independently compiled executables. Sweep placement preserves every case,
 continuation, panic and comparison; adaptive or shared-state loops stay serial.
 Timings are telemetry, never merge gates. No optimization profile, system
 configuration, Cargo feature, compatibility path or sampling is introduced.
+
+## Requirement map
+
+These names map the B3 brief and the widened workspace scope to executable
+checks. Milestone-3 D17 governs typed refusals; iteration laws 7, 16 and 22
+govern compile size, test names and non-gating measurements respectively.
+
+| Requirement | Enforcement / named evidence |
+|---|---|
+| Build census, including nested gates | `test_nested_gate_processes_register_their_complete_evidence_logs`; `test_fresh_artifacts_do_not_count_as_compilation` |
+| No Cargo or trybuild in running tests | `census.py --all --check-sources`; `test_named_executable_and_imported_command_alias_cannot_bypass_the_rule` |
+| Real batched compiler fixtures and workspace lock | `test_each_diagnostic_is_attributed_to_its_fixture_not_the_aggregate_exit`; `test_generated_package_may_be_new_but_registry_versions_stay_workspace_locked`; `compiler_probe.py` |
+| Missing prerequisites refuse through types | `CompilerFixtureRefusal`, `PrebuiltExecutableRefusal`, Store compiler-boundary refusal types; consumer courts assert the real outcomes |
+| Complete compiler snapshots | `compiler_codes_labels_source_and_coordinates_are_not_normalized_away`; `compiler_warning_text_and_order_remain_part_of_the_snapshot` |
+| Production certification absence | `production_denial_refuses_a_certification_capture`; real `certification_authority_is_absent_in_the_production_environment`; prebuilder rejects resolved test features |
+| Successful fixtures compile and execute ordinarily | `test_ordinary_test_executes_the_program_and_preserves_a_moved_test_name`; emitted supported-program court tests |
+| Independently built process executables | `test_only_independently_compiled_binary_can_be_retained`; existing moved process courts consume the manifest |
+| Compile-count ratchet | `test_same_unit_recompiled_in_another_directory_exceeds_budget`; committed `scripts/test_cost/budgets.json` |
+| Measured slot reservations, never timing verdicts | `test_recommendation_uses_peak_observed_cpu_parallelism_without_a_timing_gate`; `test_generated_config_preserves_timeouts_and_places_measured_rule_first` |
+| Construction input fingerprints | Executable court tests under `setup_observation::`; only complete named recipes are instrumented |
+| Exhaustive independent worker sweeps | Store sweep tests and changed oracle/process parents; `test_rerunning_the_cutover_does_not_pool_a_worker_again` |
+| Exact lane coverage, including executable examples | `test_zero_and_multiple_selections_cannot_prove_exact_coverage`; `test_nextest_metadata_binds_identity_and_is_filtered_before_libtest_listing`; `transport_probe.py` |
+| Ignored tests stay scheduled-only | `test_scheduled_scale_is_never_an_executable_landing_lane`; the transport probe inventories an ignored panic without executing it |
+
+Boundary-check is being replaced under `orchestration/m3/boundary_triage.md`.
+This slice does not edit that checker; its no-in-test-compilation rule is owned
+by `scripts/test_cost` for the coordinator's subsequent port.

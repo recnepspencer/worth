@@ -26,11 +26,14 @@ fn model_preserves_current_branch_denial_instead_of_treating_it_as_retirement() 
         }),
         "current-branch retirement",
     );
-    let denial = services
-        .lifecycle_port()
-        .plan_retirement_exact(basis, worth_signal::facade::branch::SignalBranchRetirementReason::Rejected);
+    let denial = services.lifecycle_port().plan_retirement_exact(
+        basis,
+        worth_signal::facade::branch::SignalBranchRetirementReason::Rejected,
+    );
     let actual = match denial {
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementDenial::CurrentBranch { branch_id }) => {
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::branch::SignalBranchRetirementDenial::CurrentBranch { branch_id },
+        ) => {
             assert_eq!(branch_id, branch.id);
             crate::signal_owner_services::reference_context::independent_oracle::transition::ModelDenial::CurrentBranch
         }

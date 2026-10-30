@@ -19,14 +19,16 @@ fn checked_resolution_and_composition_progression_compiles(
     admission_authority: AuthorityWitness<AdmissionAuthority>,
 ) {
     let unresolved = Recipe::<Unresolved, _>::new("payload");
-    let denied =
-        PreConstructionGate::<RecipeResolutionContext<u8, ResolutionAuthority>, _, &'static str>::denied(
-            "denied",
-        );
-    let deferred =
-        PreConstructionGate::<RecipeResolutionContext<u8, ResolutionAuthority>, &'static str, _>::deferred(
-            "deferred",
-        );
+    let denied = PreConstructionGate::<
+        RecipeResolutionContext<u8, ResolutionAuthority>,
+        _,
+        &'static str,
+    >::denied("denied");
+    let deferred = PreConstructionGate::<
+        RecipeResolutionContext<u8, ResolutionAuthority>,
+        &'static str,
+        _,
+    >::deferred("deferred");
     let ready: PreConstructionGate<
         RecipeResolutionContext<u8, ResolutionAuthority>,
         &'static str,
@@ -56,4 +58,4 @@ fn checked_resolution_and_composition_progression_compiles(
     );
 }
 
-fn main() {}
+pub(crate) fn main() {}

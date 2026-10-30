@@ -1,14 +1,41 @@
-#[allow(unused_imports)] use crate::product_result_registration::ordinary_context::*;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use crate::product_result_registration::ordinary_context::*;
+#[allow(unused_imports)]
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {std::sync::Arc};
+use std::sync::Arc;
 
-use {serde_json::json};
-use {worth_server::WorthServerAdmittedDurableProductMutation, worth_server::WorthServerDurableProductMutationConclusion, worth_server::WorthServerDurableProductMutationContract, worth_server::WorthServerDurableProductMutationExecution, worth_server::WorthServerDurableProductMutationExecutor, worth_server::WorthServerDurableProductMutationRecoveryHandle, worth_server::WorthServerProductAdapterCertificationCode, worth_server::WorthServerProductAdapterExecutionError, worth_server::WorthServerProductAdapterRegistry, worth_server::WorthServerProductApplicationAdapter, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerProductAuthorityScope, worth_server::WorthServerProductDurabilityCapability, worth_server::WorthServerProductIdempotencyRetention, worth_server::WorthServerProductOperationBasisKind, worth_server::WorthServerProductOperationDeclaration, worth_server::WorthServerProductOperationErrorMaps, worth_server::WorthServerProductOperationExecutionBoundary, worth_server::WorthServerProductOperationInput, worth_server::WorthServerProductOperationPayload, worth_server::WorthServerProductOperationSuccess, worth_server::WorthServerProductOperationSupportSnapshot, worth_server::WorthServerProductOperationSurfaceDenialCode, worth_server::WorthServerProductResultContract, worth_server::WorthServerScheduledProductOperation};
+use serde_json::json;
+use {
+    worth_server::WorthServerAdmittedDurableProductMutation,
+    worth_server::WorthServerDurableProductMutationConclusion,
+    worth_server::WorthServerDurableProductMutationContract,
+    worth_server::WorthServerDurableProductMutationExecution,
+    worth_server::WorthServerDurableProductMutationExecutor,
+    worth_server::WorthServerDurableProductMutationRecoveryHandle,
+    worth_server::WorthServerProductAdapterCertificationCode,
+    worth_server::WorthServerProductAdapterExecutionError,
+    worth_server::WorthServerProductAdapterRegistry,
+    worth_server::WorthServerProductApplicationAdapter,
+    worth_server::WorthServerProductApplicationAdapterRegistration,
+    worth_server::WorthServerProductAuthorityScope,
+    worth_server::WorthServerProductDurabilityCapability,
+    worth_server::WorthServerProductIdempotencyRetention,
+    worth_server::WorthServerProductOperationBasisKind,
+    worth_server::WorthServerProductOperationDeclaration,
+    worth_server::WorthServerProductOperationErrorMaps,
+    worth_server::WorthServerProductOperationExecutionBoundary,
+    worth_server::WorthServerProductOperationInput,
+    worth_server::WorthServerProductOperationPayload,
+    worth_server::WorthServerProductOperationSuccess,
+    worth_server::WorthServerProductOperationSupportSnapshot,
+    worth_server::WorthServerProductOperationSurfaceDenialCode,
+    worth_server::WorthServerProductResultContract,
+    worth_server::WorthServerScheduledProductOperation,
+};
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_durable_product_mutation as durable_support};
+use worth_testkit_server::shared_support_durable_product_mutation as durable_support;
 
 #[test]
 fn adapter_cannot_return_a_result_under_an_undeclared_schema() {
@@ -33,7 +60,10 @@ fn adapter_cannot_return_a_result_under_an_undeclared_schema() {
         .with_error_map(worth_server::WorthServerProductOperationErrorMaps::passthrough()),
     );
     let server = worth_testkit_server::shared_support_durable_product_mutation::runtime::build_server_with_registration(registration);
-    let denial = worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::direct_session(&server)
+    let denial =
+        worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::direct_session(
+            &server,
+        )
         .product_operations()
         .execute(
             worth_server::WorthServerProductOperationInput::new(
@@ -53,14 +83,17 @@ fn adapter_cannot_return_a_result_under_an_undeclared_schema() {
     );
     assert_eq!(
         denial.facts().and_then(|facts| facts.execution_boundary()),
-        Some(&worth_server::WorthServerProductOperationExecutionBoundary::AdapterExecutionAttempted)
+        Some(
+            &worth_server::WorthServerProductOperationExecutionBoundary::AdapterExecutionAttempted
+        )
     );
 }
 
 #[test]
 fn durable_declaration_without_atomic_executor_denies_registration() {
-    let error = worth_server::WorthServerProductAdapterRegistry::build(vec![durable_registration(None)])
-        .expect_err("durable declaration without executor must fail registration");
+    let error =
+        worth_server::WorthServerProductAdapterRegistry::build(vec![durable_registration(None)])
+            .expect_err("durable declaration without executor must fail registration");
     assert_eq!(
         error.certification_code(),
         Some(worth_server::WorthServerProductAdapterCertificationCode::MissingDurableMutationExecutor)
@@ -69,10 +102,12 @@ fn durable_declaration_without_atomic_executor_denies_registration() {
 
 #[test]
 fn weaker_durability_capability_cannot_satisfy_atomic_completion() {
-    let executor: Arc<dyn WorthServerDurableProductMutationExecutor> = std::sync::Arc::new(WeakExecutor);
-    let error =
-        worth_server::WorthServerProductAdapterRegistry::build(vec![durable_registration(Some(executor))])
-            .expect_err("weaker executor must fail registration");
+    let executor: Arc<dyn WorthServerDurableProductMutationExecutor> =
+        std::sync::Arc::new(WeakExecutor);
+    let error = worth_server::WorthServerProductAdapterRegistry::build(vec![durable_registration(
+        Some(executor),
+    )])
+    .expect_err("weaker executor must fail registration");
     assert_eq!(
         error.certification_code(),
         Some(worth_server::WorthServerProductAdapterCertificationCode::IncompatibleDurableMutationCapability)
@@ -82,7 +117,10 @@ fn weaker_durability_capability_cannot_satisfy_atomic_completion() {
 #[test]
 fn route_inventory_binds_result_and_durability_contract_identity() {
     let executor = worth_testkit_server::shared_support_durable_product_mutation::executor::TestDurableProductExecutor::default();
-    let server = worth_testkit_server::shared_support_durable_product_mutation::runtime::build_server(&executor);
+    let server =
+        worth_testkit_server::shared_support_durable_product_mutation::runtime::build_server(
+            &executor,
+        );
     let inventory = server.route_inventory();
     let row = inventory
         .rows()

@@ -2,7 +2,7 @@ use worth_execution::{CancellationToken, SerialMemoryBudget, SerialRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
-fn main() {
+pub(crate) fn main() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,

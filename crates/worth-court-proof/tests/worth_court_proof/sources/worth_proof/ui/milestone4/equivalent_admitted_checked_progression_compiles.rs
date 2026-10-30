@@ -1,9 +1,9 @@
 use worth_proof::{
-    AdmitRecipeTransition, Admitted, AuthorityMarker, AuthorityWitness, CapabilityMarker,
-    CapabilityWitness, CurrentValidity, FreshnessScopedBasis, LowerRecipeTransition,
-    PreConstructionGate, Recipe, RecipeAdmissionReadiness, RecipeLoweringReadiness,
-    RecipeResolutionContext, RecipeResolutionGate, TransitionOutcome, Unresolved,
-    resolve_checked_lower_and_admit_recipe, resolve_lower_and_admit_recipe,
+    resolve_checked_lower_and_admit_recipe, resolve_lower_and_admit_recipe, AdmitRecipeTransition,
+    Admitted, AuthorityMarker, AuthorityWitness, CapabilityMarker, CapabilityWitness,
+    CurrentValidity, FreshnessScopedBasis, LowerRecipeTransition, PreConstructionGate, Recipe,
+    RecipeAdmissionReadiness, RecipeLoweringReadiness, RecipeResolutionContext,
+    RecipeResolutionGate, TransitionOutcome, Unresolved,
 };
 
 struct ResolutionAuthority;
@@ -78,4 +78,4 @@ fn equivalent_admitted_checked_progression_compiles(
     };
 }
 
-fn main() {}
+pub(crate) fn main() {}

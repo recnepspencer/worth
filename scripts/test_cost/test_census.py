@@ -4,6 +4,7 @@ import tempfile
 import unittest
 
 from census import collect, markdown
+from ratchet import source_violations
 
 
 class CensusFixtureTests(unittest.TestCase):
@@ -22,6 +23,11 @@ class CensusFixtureTests(unittest.TestCase):
             self.assertEqual(result['coverage']['status'], 'pass')
             self.assertEqual(result['lanes']['lane']['timing_telemetry']['pass'], 1)
             self.assertIn('unknown', markdown(result))
+
+    def test_source_rule_refuses_compiler_launches_but_does_not_gate_telemetry(self):
+        sites = [{'kind': kind} for kind in ('cargo-command', 'cargo-environment',
+                                            'cargo-metadata', 'trybuild', 'sleep', 'polling-loop')]
+        self.assertEqual(len(source_violations(sites)), 4)
 
 
 if __name__ == '__main__':

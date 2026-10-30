@@ -1,7 +1,14 @@
-use {tempfile::tempdir};
-use {worth_store::physical_runtime::PhysicalSignalAspectRole, worth_store::physical_runtime::PhysicalWorkSignalFamily, worth_store::physical_runtime::PhysicalWorkSignalFamilySet};
+use tempfile::tempdir;
+use {
+    worth_store::physical_runtime::PhysicalSignalAspectRole,
+    worth_store::physical_runtime::PhysicalWorkSignalFamily,
+    worth_store::physical_runtime::PhysicalWorkSignalFamilySet,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 #[test]
 fn durability_policy_installs_the_exact_dependency_signal_families() {
@@ -19,14 +26,19 @@ fn durability_policy_installs_the_exact_dependency_signal_families() {
                 == "store.physical.durability.policy-binding-basis"
         })
         .expect("the admitted durability policy must install one Signal binding");
-    assert_eq!(policy_binding.role(), worth_store::physical_runtime::PhysicalSignalAspectRole::Dependency);
+    assert_eq!(
+        policy_binding.role(),
+        worth_store::physical_runtime::PhysicalSignalAspectRole::Dependency
+    );
     assert_eq!(
         policy_binding.families(),
-        worth_store::physical_runtime::PhysicalWorkSignalFamilySet::only(worth_store::physical_runtime::PhysicalWorkSignalFamily::WalAppend)
-            .with(worth_store::physical_runtime::PhysicalWorkSignalFamily::DurabilityBarrier)
-            .with(worth_store::physical_runtime::PhysicalWorkSignalFamily::CheckpointCapture)
-            .with(worth_store::physical_runtime::PhysicalWorkSignalFamily::RootPublication)
-            .with(worth_store::physical_runtime::PhysicalWorkSignalFamily::WalReclamation)
+        worth_store::physical_runtime::PhysicalWorkSignalFamilySet::only(
+            worth_store::physical_runtime::PhysicalWorkSignalFamily::WalAppend
+        )
+        .with(worth_store::physical_runtime::PhysicalWorkSignalFamily::DurabilityBarrier)
+        .with(worth_store::physical_runtime::PhysicalWorkSignalFamily::CheckpointCapture)
+        .with(worth_store::physical_runtime::PhysicalWorkSignalFamily::RootPublication)
+        .with(worth_store::physical_runtime::PhysicalWorkSignalFamily::WalReclamation)
     );
 
     let policy_digest = serving

@@ -1,4 +1,22 @@
-use {worth_execution::CancellationSource, worth_execution::CancellationToken, worth_execution::DecomposeFailure, worth_foundational::DeterminismContract, crate::phase_two_neutral_certification::isolated_context::EDITIONS, worth_execution::ExecutionMap, worth_foundational::ExecutionPosture, std::time::Instant, worth_execution::InterfaceSolution, worth_execution::MapKernelFailure, worth_execution::MapKernelStop, worth_execution::MapOutcome, worth_execution::MapStop, worth_foundational::PartitionIdentity, crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::Subdomain, crate::phase_two_neutral_certification::isolated_context::TEST_LOCK, crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::back, crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::decomposition, crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::domain_map, crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::domains, crate::phase_two_neutral_certification::isolated_context::integer_map, crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::interface, crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::interior, crate::phase_two_neutral_certification::isolated_context::lease};
+use {
+    crate::phase_two_neutral_certification::isolated_context::integer_map,
+    crate::phase_two_neutral_certification::isolated_context::lease,
+    crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::back,
+    crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::decomposition,
+    crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::domain_map,
+    crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::domains,
+    crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::interface,
+    crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::interior,
+    crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::Subdomain,
+    crate::phase_two_neutral_certification::isolated_context::EDITIONS,
+    crate::phase_two_neutral_certification::isolated_context::TEST_LOCK, std::time::Instant,
+    worth_execution::CancellationSource, worth_execution::CancellationToken,
+    worth_execution::DecomposeFailure, worth_execution::ExecutionMap,
+    worth_execution::InterfaceSolution, worth_execution::MapKernelFailure,
+    worth_execution::MapKernelStop, worth_execution::MapOutcome, worth_execution::MapStop,
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionPosture,
+    worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn stage_stops_keep_canonical_prefix_and_do_not_publish_partial_decomposition() {

@@ -1,46 +1,43 @@
-#[allow(unused_imports)] use crate::band_guard_cargo_contract::process_context::*;
-use {std::fs};
-use {std::path::Path, std::path::PathBuf};
-use {std::process::Command, std::process::Output};
-use {std::time::SystemTime, std::time::UNIX_EPOCH};
+use crate::band_guard_cargo_contract::process_context::*;
 
 #[test]
 fn macro_arguments_select_disjoint_expanding_package_bands() {
-    let target_dir = isolated_root("band-policy-target");
+    let observations = PrebuiltProofObservations::from_environment().unwrap();
 
     for legal_package in [
         "worth-entry-consumer",
         "worthy-entry-consumer",
         "worth-cert-consumer",
     ] {
-        assert_package_compiles(legal_package, &target_dir);
+        let observed = observations.compiler_observation(legal_package).unwrap();
+        assert_eq!(
+            observed.outcome,
+            PackageCompilation::Compiled,
+            "legal fixture {legal_package} failed:\n{}",
+            observed.output()
+        );
     }
     assert_package_is_denied(
         "worth-schema-consumer",
         &["worth-entry-", "worthy-entry-"],
-        &target_dir,
+        &observations,
     );
     assert_package_is_denied(
         "worth-entry-cert-consumer",
         &["worth-cert-", "worthy-cert-"],
-        &target_dir,
+        &observations,
     );
-
-    let _ = std::fs::remove_dir_all(target_dir);
 }
 
 #[test]
 fn empty_prefix_cannot_disable_the_expansion_fence() {
-    let target_dir = isolated_root("empty-prefix-target");
-    let output = run_cargo(
-        &["check", "--package", "empty-prefix-consumer"],
-        &fixture_manifest(),
-        &target_dir,
-    );
-    let _ = std::fs::remove_dir_all(target_dir);
-    let output_text = compiler_output(&output);
+    let observations = PrebuiltProofObservations::from_environment().unwrap();
+    let observed = observations
+        .compiler_observation("empty-prefix-consumer")
+        .unwrap();
+    let output_text = observed.output();
     assert!(
-        !output.status.success(),
+        observed.outcome == PackageCompilation::Denied,
         "empty prefix unexpectedly compiled"
     );
     assert!(
@@ -51,29 +48,16 @@ fn empty_prefix_cannot_disable_the_expansion_fence() {
 
 #[test]
 fn production_package_has_no_normal_dependencies() {
-    let target_dir = isolated_root("dependency-target");
-    let output = run_cargo(
-        &[
-            "tree",
-            "--package",
-            "worth-proof",
-            "--edges",
-            "normal",
-            "--depth",
-            "1",
-            "--prefix",
-            "none",
-        ],
-        &worth_proof_root().join("Cargo.toml"),
-        &target_dir,
-    );
-    let _ = std::fs::remove_dir_all(target_dir);
-    assert!(
-        output.status.success(),
+    let observations = PrebuiltProofObservations::from_environment().unwrap();
+    let observed = observations.normal_dependencies().unwrap();
+    assert_eq!(
+        observed.exit_code,
+        0,
         "cargo tree failed:\n{}",
-        compiler_output(&output)
+        observed.output()
     );
-    let resolved_packages: Vec<_> = String::from_utf8_lossy(&output.stdout)
+    let resolved_packages: Vec<_> = observed
+        .stdout
         .lines()
         .filter(|line| !line.trim().is_empty())
         .map(str::to_owned)
@@ -88,17 +72,13 @@ fn production_package_has_no_normal_dependencies() {
 
 #[test]
 fn successful_guard_expansion_adds_no_runtime_artifact_surface() {
-    let specimen_root = isolated_root("zero-cost-specimen");
-    write_zero_cost_specimen(&specimen_root);
-    let manifest = specimen_root.join("Cargo.toml");
-    let target_dir = specimen_root.join("target");
-
-    write_specimen_source(&specimen_root, false);
-    let baseline_surface = compile_runtime_surface(&manifest, &target_dir);
-    write_specimen_source(&specimen_root, true);
-    let guarded_surface = compile_runtime_surface(&manifest, &target_dir);
-
-    let _ = std::fs::remove_dir_all(&specimen_root);
+    let observations = PrebuiltProofObservations::from_environment().unwrap();
+    let baseline_surface = observations
+        .runtime_surface(RuntimeSpecimen::Baseline)
+        .unwrap();
+    let guarded_surface = observations
+        .runtime_surface(RuntimeSpecimen::Guarded)
+        .unwrap();
     assert!(
         baseline_surface
             .iter()
@@ -109,4 +89,41 @@ fn successful_guard_expansion_adds_no_runtime_artifact_surface() {
         guarded_surface, baseline_surface,
         "a successful band guard expansion changed release LLVM runtime definitions"
     );
+}
+
+#[test]
+fn missing_prebuilt_observations_are_refused() {
+    let missing = std::env::temp_dir().join(format!(
+        "worth-proof-missing-prerequisite-{}",
+        std::process::id()
+    ));
+    let result = PrebuiltProofObservations::from_directory(missing);
+    assert!(matches!(
+        result,
+        Err(ProofPrebuildFailure::MissingObservation(_))
+    ));
+}
+
+fn assert_package_is_denied(
+    package: &str,
+    legal_prefixes: &[&str],
+    observations: &PrebuiltProofObservations,
+) {
+    let observed = observations.compiler_observation(package).unwrap();
+    let output_text = observed.output();
+    assert!(
+        observed.outcome == PackageCompilation::Denied,
+        "wrong-band fixture {package} unexpectedly compiled"
+    );
+    let legal_list = format!("legal package prefixes: {}", legal_prefixes.join(", "));
+    for required_text in [
+        legal_list.as_str(),
+        "cad/docs/worthy-foundations/BOUNDARIES.md",
+        package,
+    ] {
+        assert!(
+            output_text.contains(required_text),
+            "diagnostic for {package} omitted {required_text:?}:\n{output_text}"
+        );
+    }
 }

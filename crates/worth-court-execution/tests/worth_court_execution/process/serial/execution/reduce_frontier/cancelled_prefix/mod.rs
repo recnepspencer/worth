@@ -1,6 +1,19 @@
 // A later stopped task cannot discard an earlier canonical join.
-use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_execution::LeaseRequest, std::sync::Mutex, std::num::NonZeroUsize, worth_execution::ReduceInputDenial, worth_execution::ReductionRunStop, crate::reduce_frontier::isolated_context::TEST_LOCK, crate::reduce_frontier::isolated_context::authority, crate::reduce_frontier::isolated_context::lease, crate::reduce_frontier::isolated_context::map, crate::reduce_frontier::isolated_context::mapped_u64, crate::test_serialization};
-use {worth_execution::CancellationSource, worth_execution::ExecutionResourceLease, worth_execution::ExecutionWorkCeiling, worth_execution::MapKernelStop, worth_execution::SerialMemoryBudget, worth_execution::SerialRequest};
+use {
+    crate::reduce_frontier::isolated_context::authority,
+    crate::reduce_frontier::isolated_context::lease, crate::reduce_frontier::isolated_context::map,
+    crate::reduce_frontier::isolated_context::mapped_u64,
+    crate::reduce_frontier::isolated_context::TEST_LOCK, crate::test_serialization,
+    std::num::NonZeroUsize, std::sync::Mutex, worth_execution::LeaseRequest,
+    worth_execution::ReduceInputDenial, worth_execution::ReductionRunStop,
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+};
+use {
+    worth_execution::CancellationSource, worth_execution::ExecutionResourceLease,
+    worth_execution::ExecutionWorkCeiling, worth_execution::MapKernelStop,
+    worth_execution::SerialMemoryBudget, worth_execution::SerialRequest,
+};
 
 #[test]
 fn a_wide_cancelled_frontier_settles_every_earlier_canonical_join() {
@@ -29,7 +42,11 @@ fn a_wide_cancelled_frontier_settles_every_earlier_canonical_join() {
                     worth_foundational::ExecutionPosture::Automatic
                 },
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(workers).unwrap(), None, Some(10_000)),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::new(workers).unwrap(),
+                    None,
+                    Some(10_000),
+                ),
             ),
             deadline: None,
             cancellation: cancellation.token(),
@@ -39,8 +56,11 @@ fn a_wide_cancelled_frontier_settles_every_earlier_canonical_join() {
             1 => Some(worth_execution::ExecutionResourceLease::serial(policy).unwrap()),
             _ => Some(authority().request_lease(policy).unwrap()),
         };
-        let serial =
-            worth_execution::SerialRequest::from_memory(worth_execution::SerialMemoryBudget::new(None), cancellation.token(), None);
+        let serial = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(None),
+            cancellation.token(),
+            None,
+        );
         let input = map(9);
         let first = (std::sync::Mutex::new(false), std::sync::Condvar::new());
         let run = || {
@@ -84,7 +104,8 @@ fn a_wide_cancelled_frontier_settles_every_earlier_canonical_join() {
         } else {
             run()
         };
-        let Err(worth_execution::ReduceInputDenial::ReductionStopped { failure, report }) = stopped else {
+        let Err(worth_execution::ReduceInputDenial::ReductionStopped { failure, report }) = stopped
+        else {
             panic!("the selected leaf must stop during its second combine");
         };
         assert!(matches!(

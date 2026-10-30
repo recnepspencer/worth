@@ -53,6 +53,6 @@ fn scoped_defaults_progression(
     let _ = overridden.payload();
 }
 
-fn main() {
+pub(crate) fn main() {
     let _ = scoped_defaults_progression;
 }

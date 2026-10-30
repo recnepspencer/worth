@@ -1,7 +1,6 @@
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
-    PhysicalMutationOutcome, PhysicalMutationPreparationOutcome,
-    PhysicalMutationPreparationSuccess,
+    PhysicalMutationOutcome, PhysicalMutationPreparationOutcome, PhysicalMutationPreparationSuccess,
 };
 
 fn consume_preparation(outcome: PhysicalMutationPreparationOutcome) {
@@ -53,4 +52,4 @@ fn consume_terminal(outcome: PhysicalMutationOutcome) {
     }
 }
 
-fn main() {}
+pub(crate) fn main() {}

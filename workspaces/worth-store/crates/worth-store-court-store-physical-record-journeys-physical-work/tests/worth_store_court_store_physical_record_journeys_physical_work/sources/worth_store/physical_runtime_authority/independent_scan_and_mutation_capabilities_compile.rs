@@ -57,4 +57,4 @@ fn capabilities_typecheck() {
     let _ = scan.read_next_into(&mut scratch);
 }
 
-fn main() {}
+pub(crate) fn main() {}

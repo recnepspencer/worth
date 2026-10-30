@@ -1,6 +1,14 @@
-use {crate::owned_async::ordinary_context::native_service::NativeServiceCourt};
-use {worth_signal::facade::branch::SignalConditionalServiceExecutionDenial, worth_signal::facade::branch::SignalOwnedAsyncManagedProgress as Progress, worth_signal::facade::branch::SignalOwnedAsyncManagedReport as Report, worth_signal::facade::branch::SignalOwnedAsyncQueueDenial as Denial};
-use {worth_signal::facade::ResourceRetryDenialClass, worth_signal::facade::ResourceRevalidationIntent};
+use crate::owned_async::ordinary_context::native_service::NativeServiceCourt;
+use {
+    worth_signal::facade::branch::SignalConditionalServiceExecutionDenial,
+    worth_signal::facade::branch::SignalOwnedAsyncManagedProgress as Progress,
+    worth_signal::facade::branch::SignalOwnedAsyncManagedReport as Report,
+    worth_signal::facade::branch::SignalOwnedAsyncQueueDenial as Denial,
+};
+use {
+    worth_signal::facade::ResourceRetryDenialClass,
+    worth_signal::facade::ResourceRevalidationIntent,
+};
 
 #[test]
 fn reissued_service_transfers_actual_queue_origin_without_rebinding_a_coalesced_queue() {
@@ -18,7 +26,9 @@ fn reissued_service_transfers_actual_queue_origin_without_rebinding_a_coalesced_
             .revalidate_managed_owned_async_request(
                 &source,
                 &mut court.owner,
-                worth_signal::facade::ResourceRevalidationIntent::with_expected_active(court.node, prior),
+                worth_signal::facade::ResourceRevalidationIntent::with_expected_active(
+                    court.node, prior
+                ),
             )
             .unwrap(),
         worth_signal::facade::branch::SignalOwnedAsyncManagedProgress::Replaced
@@ -30,14 +40,18 @@ fn reissued_service_transfers_actual_queue_origin_without_rebinding_a_coalesced_
             .revalidate_managed_owned_async_request(
                 &source,
                 &mut court.owner,
-                worth_signal::facade::ResourceRevalidationIntent::with_expected_active(court.node, winner),
+                worth_signal::facade::ResourceRevalidationIntent::with_expected_active(
+                    court.node, winner
+                ),
             )
             .unwrap(),
         worth_signal::facade::branch::SignalOwnedAsyncManagedProgress::Coalesced
     );
     assert_eq!(court.owner.admitted_request().handle(), winner);
     assert!(court.owner.refusal().is_none());
-    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Revalidation(report) = court.owner.report() else {
+    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Revalidation(report) =
+        court.owner.report()
+    else {
         panic!("native report")
     };
     assert!(report
@@ -70,7 +84,10 @@ fn reissued_service_transfers_actual_queue_origin_without_rebinding_a_coalesced_
             .revalidate_managed_owned_async_request(
                 &source,
                 &mut court.owner,
-                worth_signal::facade::ResourceRevalidationIntent::with_expected_active(court.node, successor_before),
+                worth_signal::facade::ResourceRevalidationIntent::with_expected_active(
+                    court.node,
+                    successor_before
+                ),
             )
             .unwrap(),
         worth_signal::facade::branch::SignalOwnedAsyncManagedProgress::Replaced
@@ -111,7 +128,8 @@ fn reissued_service_transfers_actual_queue_origin_without_rebinding_a_coalesced_
 #[test]
 fn foreign_schedule_cannot_advance_clock_and_refused_ready_retry_cleans_only_its_occurrence() {
     let mut first = crate::owned_async::ordinary_context::native_service::NativeServiceCourt::new();
-    let mut second = crate::owned_async::ordinary_context::native_service::NativeServiceCourt::new();
+    let mut second =
+        crate::owned_async::ordinary_context::native_service::NativeServiceCourt::new();
     first
         .port
         .advance_managed_owned_async_request_to_timeout(&mut first.owner, 5)
@@ -158,7 +176,9 @@ fn foreign_schedule_cannot_advance_clock_and_refused_ready_retry_cleans_only_its
             .unwrap(),
         worth_signal::facade::branch::SignalOwnedAsyncManagedProgress::TemporalDeferred
     );
-    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::TemporalDeferred(clock) = second.owner.report() else {
+    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::TemporalDeferred(clock) =
+        second.owner.report()
+    else {
         panic!("actual native clock")
     };
     assert_eq!(
@@ -179,7 +199,9 @@ fn foreign_schedule_cannot_advance_clock_and_refused_ready_retry_cleans_only_its
             .unwrap(),
         worth_signal::facade::branch::SignalOwnedAsyncManagedProgress::Denied
     );
-    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Retry(denied) = second.owner.report() else {
+    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Retry(denied) =
+        second.owner.report()
+    else {
         panic!("genuine denied retry")
     };
     assert_eq!(
@@ -238,7 +260,8 @@ fn foreign_schedule_cannot_advance_clock_and_refused_ready_retry_cleans_only_its
 
 #[test]
 fn same_port_other_resource_cannot_advance_the_custodied_retry() {
-    let (mut court, other_node) = crate::owned_async::ordinary_context::native_service::NativeServiceCourt::two_nodes();
+    let (mut court, other_node) =
+        crate::owned_async::ordinary_context::native_service::NativeServiceCourt::two_nodes();
     let other = court
         .port
         .bind_owned_async_source(court.port.issuance_basis(), other_node)
@@ -274,7 +297,9 @@ fn same_port_other_resource_cannot_advance_the_custodied_retry() {
             .unwrap(),
         worth_signal::facade::branch::SignalOwnedAsyncManagedProgress::TemporalDeferred
     );
-    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::TemporalDeferred(clock) = court.owner.report() else {
+    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::TemporalDeferred(clock) =
+        court.owner.report()
+    else {
         panic!("actual clock")
     };
     assert_eq!(clock.current_tick().get(), 6);

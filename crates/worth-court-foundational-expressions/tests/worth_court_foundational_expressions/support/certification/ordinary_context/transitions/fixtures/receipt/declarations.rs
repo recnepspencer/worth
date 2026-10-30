@@ -1,11 +1,20 @@
-pub(crate) use {worth_foundational::foundational_commit_receipt_issuance, worth_foundational::BoundaryHandle, worth_foundational::FoundationalBranchCloseoutCause, worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitReceiptIdentity, worth_foundational::FoundationalTransitionIssuanceCause};
-pub(crate) use {worth_proof::AuthorityWitness};
+pub(crate) use worth_proof::AuthorityWitness;
+pub(crate) use {
+    worth_foundational::foundational_commit_receipt_issuance, worth_foundational::BoundaryHandle,
+    worth_foundational::FoundationalBranchCloseoutCause, worth_foundational::FoundationalCommitId,
+    worth_foundational::FoundationalCommitReceiptIdentity,
+    worth_foundational::FoundationalTransitionIssuanceCause,
+};
 
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::branch::authority_first_candidate};
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict, crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority, crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input};
+pub(crate) use crate::certification::ordinary_context::transitions::fixtures::branch::authority_first_candidate;
+pub(crate) use {
+    crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict,
+    crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority,
+    crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input,
+};
 
-pub(crate) fn receipt_authority() -> AuthorityWitness<worth_foundational::FoundationalCommitReceiptIssuance>
-{
+pub(crate) fn receipt_authority(
+) -> AuthorityWitness<worth_foundational::FoundationalCommitReceiptIssuance> {
     foundational_commit_receipt_issuance()
 }
 
@@ -14,7 +23,9 @@ pub(crate) const fn commit_id(value: u64) -> FoundationalCommitId {
 }
 
 pub(crate) const fn receipt_identity(value: u64) -> FoundationalCommitReceiptIdentity {
-    worth_foundational::FoundationalCommitReceiptIdentity::new(worth_foundational::BoundaryHandle::new(value))
+    worth_foundational::FoundationalCommitReceiptIdentity::new(
+        worth_foundational::BoundaryHandle::new(value),
+    )
 }
 
 pub(crate) fn committed_authority_artifact(

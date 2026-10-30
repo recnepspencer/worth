@@ -1,8 +1,13 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::record_chunk_views::bounded_copy::*;
-use {worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::record_chunk_views::bounded_copy::*;
+use {
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+};
 
-use {worth_store_testkit_store::durable_publication::root::publish_single};
-use {worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture};
+use worth_store_testkit_store::durable_publication::root::publish_single;
+use worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture;
 
 #[test]
 fn bounded_copy_streams_the_complete_larger_than_memory_record_with_exact_evidence() {
@@ -15,7 +20,8 @@ fn bounded_copy_streams_the_complete_larger_than_memory_record_with_exact_eviden
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([170; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
     );
     let record = published.settled_members()[0].record_id(0).unwrap();
     let copies_before = serving.residency_observation().counters();
@@ -24,7 +30,9 @@ fn bounded_copy_streams_the_complete_larger_than_memory_record_with_exact_eviden
         .expect("read protection admission")
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
     let mut reconstructed = Vec::with_capacity(expected.len());
@@ -77,7 +85,8 @@ fn bounded_copies_and_views_share_one_cursor_with_exact_copy_evidence() {
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([170; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
     );
     let record = published.settled_members()[0].record_id(0).unwrap();
     let copies_before = serving.residency_observation().counters();
@@ -86,7 +95,9 @@ fn bounded_copies_and_views_share_one_cursor_with_exact_copy_evidence() {
         .expect("read protection admission")
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
     let mut reconstructed = Vec::with_capacity(expected.len());

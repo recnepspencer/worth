@@ -127,7 +127,9 @@ pub(crate) fn observe_offline_population(
     // Current and previous roots each read the selected frames; WAL and
     // manifest admission need additional room beyond those two payload walks.
     let observed_byte_budget = logical_bytes * 4 + (4_u64 << 30);
-    let executable = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();
+    let executable = worth_store_test_support::OFFLINE_ROOT_OBSERVER
+        .path()
+        .expect("runner must prebuild the independent executable");
     let report_path = directory.join("arena-scale-observation.json");
     let output = std::process::Command::new(executable)
         .args(["observe", "--store-root"])

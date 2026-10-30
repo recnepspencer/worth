@@ -43,7 +43,7 @@ fn trust_boundary_flow(
     let _ = executed.strong_basis().value();
 }
 
-fn main() {
+pub(crate) fn main() {
     let _ = checked_flow;
     let _ = trust_boundary_flow;
 }

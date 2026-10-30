@@ -37,6 +37,8 @@ pub(crate) mod open_refusals;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_relational/support/prepared_home/mod.rs"]
 pub(crate) mod prepared_home;
+#[path = "worth_store_court_relational/process/mod.rs"]
+pub(crate) mod process;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_relational/support/process_kill/mod.rs"]
 pub(crate) mod process_kill;
@@ -79,5 +81,3 @@ pub(crate) mod transition_oracle;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_relational/support/workload/mod.rs"]
 pub(crate) mod workload;
-#[path = "worth_store_court_relational/process/mod.rs"]
-pub(crate) mod process;

@@ -10,3 +10,6 @@ pub(crate) mod compile_time_boundaries;
 pub(crate) mod foundational;
 #[path = "worth_court_foundational_certification_boundary_artifacts/oracle/mod.rs"]
 pub(crate) mod oracle;
+
+#[path = "worth_court_foundational_certification_boundary_artifacts/supported_programs/mod.rs"]
+mod supported_programs;

@@ -5,10 +5,42 @@
 pub(crate) use {std::num::NonZeroU64, std::thread, std::time::Duration, std::time::Instant};
 
 pub(crate) use {worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::BlobAppendFailure, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::CertificationScopedAllocation, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalReadProtectionDenial, worth_store::physical_runtime::PhysicalRetirementDenial, worth_store::physical_runtime::PreparedPhysicalMutation, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub(crate) use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::BlobAppendFailure,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::CertificationScopedAllocation,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalReadProtectionDenial,
+    worth_store::physical_runtime::PhysicalRetirementDenial,
+    worth_store::physical_runtime::PreparedPhysicalMutation,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {crate::physical_blob_journeys::terminal_head_retirement::checkpoint, crate::physical_blob_journeys::terminal_head_retirement::deadline, crate::physical_blob_journeys::terminal_head_retirement::denied, crate::physical_blob_journeys::terminal_head_retirement::publish, crate::physical_blob_journeys::terminal_head_retirement::release_batch, crate::physical_blob_journeys::terminal_head_retirement::release_request, crate::physical_blob_journeys::terminal_head_retirement::release_to_terminal, crate::physical_blob_journeys::terminal_head_retirement::retire, crate::physical_blob_journeys::terminal_head_retirement::settle, worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial, worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure, crate::physical_blob_journeys::terminal_head_retirement::WHOLE_GENERATION};
-pub(crate) use {worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+pub(crate) use {
+    crate::physical_blob_journeys::terminal_head_retirement::checkpoint,
+    crate::physical_blob_journeys::terminal_head_retirement::deadline,
+    crate::physical_blob_journeys::terminal_head_retirement::denied,
+    crate::physical_blob_journeys::terminal_head_retirement::publish,
+    crate::physical_blob_journeys::terminal_head_retirement::release_batch,
+    crate::physical_blob_journeys::terminal_head_retirement::release_request,
+    crate::physical_blob_journeys::terminal_head_retirement::release_to_terminal,
+    crate::physical_blob_journeys::terminal_head_retirement::retire,
+    crate::physical_blob_journeys::terminal_head_retirement::settle,
+    crate::physical_blob_journeys::terminal_head_retirement::WHOLE_GENERATION,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure,
+};
+pub(crate) use {
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+};
 
 /// One Store whose only release head is terminal and checkpoint-attested.
 pub(crate) fn attested_world() -> (
@@ -23,19 +55,31 @@ pub(crate) fn attested_world() -> (
     (directory, serving, proof)
 }
 
-pub(crate) fn prepared_append(serving: &ServingPhysicalRuntime, seed: u8) -> PreparedPhysicalMutation {
+pub(crate) fn prepared_append(
+    serving: &ServingPhysicalRuntime,
+    seed: u8,
+) -> PreparedPhysicalMutation {
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([seed; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([seed; 32]),
+        )
         .unwrap();
-    let worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) =
-        submission
-            .prepare_durable_append(
-                worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"terminal-head-contender".as_slice()]).unwrap(),
-                placement(),
-                worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(key, deadline()),
-            )
-            .into_raw()
+    let worth_proof::TransitionOutcome::Success(
+        worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+    ) = submission
+        .prepare_durable_append(
+            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+                b"terminal-head-contender".as_slice(),
+            ])
+            .unwrap(),
+            placement(),
+            worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
+                key,
+                deadline(),
+            ),
+        )
+        .into_raw()
     else {
         panic!("an ordinary append must prepare beside a settled release");
     };

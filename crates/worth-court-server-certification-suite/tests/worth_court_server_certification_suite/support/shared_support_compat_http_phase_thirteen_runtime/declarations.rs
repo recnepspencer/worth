@@ -1,12 +1,32 @@
 pub(crate) use {std::sync::atomic::AtomicUsize, std::sync::Arc};
 
-pub(crate) use {worth_foundational::facade::DiagnosticRichnessProfile};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-pub(crate) use {worth_server::WorthServer, worth_server::WorthServerBinaryDownload, worth_server::WorthServerCompatibilityExport, worth_server::WorthServerCompatibilityMutation, worth_server::WorthServerCompatibilityRead, worth_server::WorthServerDirectMutation, worth_server::WorthServerDirectRead, worth_server::WorthServerMultipartUpload, worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerStreamCancellationKind, worth_server::WorthServerStreamCancellationReceipt, worth_server::WorthServerStreamingResponse};
+pub(crate) use worth_foundational::facade::DiagnosticRichnessProfile;
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
+pub(crate) use {
+    worth_server::WorthServer, worth_server::WorthServerBinaryDownload,
+    worth_server::WorthServerCompatibilityExport, worth_server::WorthServerCompatibilityMutation,
+    worth_server::WorthServerCompatibilityRead, worth_server::WorthServerDirectMutation,
+    worth_server::WorthServerDirectRead, worth_server::WorthServerMultipartUpload,
+    worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerStreamCancellationKind,
+    worth_server::WorthServerStreamCancellationReceipt, worth_server::WorthServerStreamingResponse,
+};
 
-pub(crate) use {worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::compat_stream_input, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::default_stream_selection, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::streaming_response_success};
-pub(crate) use {worth_testkit_server::shared_support_compat_http_phase_eight_runtime as compat_http_phase_eight_runtime, worth_testkit_server::shared_support_compat_http_phase_four_assertions as compat_http_phase_four_assertions, worth_testkit_server::shared_support_compat_http_phase_nine_runtime as compat_http_phase_nine_runtime, worth_testkit_server::shared_support_compat_http_phase_ten_runtime as compat_http_phase_ten_runtime, worth_testkit_server::shared_support_compat_http_phase_three_runtime as compat_http_phase_three_runtime, worth_testkit_server::shared_support_compat_http_phase_two_runtime as compat_http_phase_two_runtime, worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime, worth_testkit_server::shared_support_worth_native_assertions as worth_native_assertions};
+pub(crate) use {
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime as compat_http_phase_eight_runtime,
+    worth_testkit_server::shared_support_compat_http_phase_four_assertions as compat_http_phase_four_assertions,
+    worth_testkit_server::shared_support_compat_http_phase_nine_runtime as compat_http_phase_nine_runtime,
+    worth_testkit_server::shared_support_compat_http_phase_ten_runtime as compat_http_phase_ten_runtime,
+    worth_testkit_server::shared_support_compat_http_phase_three_runtime as compat_http_phase_three_runtime,
+    worth_testkit_server::shared_support_compat_http_phase_two_runtime as compat_http_phase_two_runtime,
+    worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime,
+    worth_testkit_server::shared_support_worth_native_assertions as worth_native_assertions,
+};
+pub(crate) use {
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::compat_stream_input,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::default_stream_selection,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::streaming_response_success,
+};
 
 pub(crate) fn phase_thirteen_server() -> WorthServer {
     worth_testkit_server::shared_support_compat_http_phase_ten_runtime::runtime_support::server::build_phase_ten_server_with_workspace_provider(
@@ -36,21 +56,23 @@ pub(crate) fn direct_and_compat_read(
     WorthServerCompatibilityRead,
 ) {
     let (session, declaration) =
-        worth_testkit_server::shared_support_compat_http_phase_two_runtime::worth_native_named_read(server, operation_name);
+        worth_testkit_server::shared_support_compat_http_phase_two_runtime::worth_native_named_read(
+            server,
+            operation_name,
+        );
     let direct = match session.direct().read(&declaration) {
         worth_proof::TransitionOutcome::Success(value) => value,
         other => panic!("expected direct read success, got {other:?}"),
     };
-    let compat =
-        match server
-            .compat_http()
-            .read(worth_testkit_server::shared_support_compat_http_phase_two_runtime::compat_execution_input(
-                server,
-                operation_name,
-            )) {
-            worth_proof::TransitionOutcome::Success(value) => value,
-            other => panic!("expected compat read success, got {other:?}"),
-        };
+    let compat = match server.compat_http().read(
+        worth_testkit_server::shared_support_compat_http_phase_two_runtime::compat_execution_input(
+            server,
+            operation_name,
+        ),
+    ) {
+        worth_proof::TransitionOutcome::Success(value) => value,
+        other => panic!("expected compat read success, got {other:?}"),
+    };
     (declaration, direct, compat)
 }
 
@@ -193,11 +215,15 @@ pub(crate) fn cancellation_receipt(
         .expect("cancellation probe chunk should serialize")
         .expect("cancellation probe should emit a chunk");
     match kind {
-        worth_server::WorthServerStreamCancellationKind::ClientDisconnect => stream.abort_due_to_disconnect(),
+        worth_server::WorthServerStreamCancellationKind::ClientDisconnect => {
+            stream.abort_due_to_disconnect()
+        }
         worth_server::WorthServerStreamCancellationKind::DownstreamBackpressure => {
             stream.abort_due_to_backpressure()
         }
-        worth_server::WorthServerStreamCancellationKind::CallerCancelled => stream.cancel_by_caller(),
+        worth_server::WorthServerStreamCancellationKind::CallerCancelled => {
+            stream.cancel_by_caller()
+        }
     }
 }
 
@@ -277,9 +303,10 @@ pub(crate) fn resumed_download_success(server: &WorthServer) -> WorthServerBinar
                 worth_server::WorthServerBinaryDownloadRequest::new(body.clone()),
             )),
     );
-    let resume = worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_resume_success(
-        server.compat_http().plan_binary_resume(first.session()),
-    );
+    let resume =
+        worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_resume_success(
+            server.compat_http().plan_binary_resume(first.session()),
+        );
     worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_download_success(
         server
             .compat_http()

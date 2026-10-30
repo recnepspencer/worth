@@ -1,19 +1,34 @@
-
 #[allow(unused_imports)] use crate::signal_owner_services::ordinary_context::adversarial::operation_control::cancellation_progress::*;
 use {crate::signal_owner_services::ordinary_context::adversarial::operation_control::cancellation_progress::cancellation_custody::capture_result, crate::signal_owner_services::ordinary_context::adversarial::operation_control::cancellation_progress::cancellation_custody::retirement_plan};
 
-use {crate::signal_owner_services::ordinary_context::execution_custody};
-pub(crate) use {std::sync::mpsc};
-pub(crate) use {std::thread};
+use crate::signal_owner_services::ordinary_context::execution_custody;
+pub(crate) use std::sync::mpsc;
+pub(crate) use std::thread;
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::AdmittedSignalBranchSnapshot, worth_signal::facade::branch::SignalBranchForkOperationDenial, worth_signal::facade::branch::SignalBranchRestoreDenial, worth_signal::facade::branch::SignalBranchRetirementDenial, worth_signal::facade::branch::SignalBranchRetirementReason, worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest as BoundaryForTest};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    worth_signal::facade::branch::AdmittedSignalBranchSnapshot,
+    worth_signal::facade::branch::SignalBranchForkOperationDenial,
+    worth_signal::facade::branch::SignalBranchRestoreDenial,
+    worth_signal::facade::branch::SignalBranchRetirementDenial,
+    worth_signal::facade::branch::SignalBranchRetirementReason,
+    worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+    worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest as BoundaryForTest,
+};
 
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, crate::signal_owner_services::ordinary_context::adversarial::world::LifecyclePort, crate::signal_owner_services::ordinary_context::adversarial::world::MutationPort, crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
+    crate::signal_owner_services::ordinary_context::adversarial::world::LifecyclePort,
+    crate::signal_owner_services::ordinary_context::adversarial::world::MutationPort,
+    crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND,
+};
 
 #[test]
 fn pre_movement_fork_cancellation_releases_destination_reservation() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let root_reference = world
         .basis
         .issue_managed_branch_reference(&world.root_basis)
@@ -24,7 +39,9 @@ fn pre_movement_fork_cancellation_releases_destination_reservation() {
         .expect("the owner root remains live")
         .owner_operation_control_for_test()
         .expect("operation control is issued after sealing");
-    let pause = control.arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+    );
     let cancellation = worth_signal::facade::branch::SignalOwnerCancellationSource::new();
     let worker_cancellation = cancellation.clone();
     let mutation = world.mutation.clone();
@@ -49,7 +66,9 @@ fn pre_movement_fork_cancellation_releases_destination_reservation() {
         pause.release();
         assert!(matches!(
             rx.recv_timeout(PROGRESS_BOUND),
-            Ok(Err(worth_signal::facade::branch::SignalBranchForkOperationDenial::CancelledNoMovement))
+            Ok(Err(
+                worth_signal::facade::branch::SignalBranchForkOperationDenial::CancelledNoMovement
+            ))
         ));
     });
 
@@ -71,14 +90,17 @@ fn pre_movement_fork_cancellation_releases_destination_reservation() {
 
 #[test]
 fn pre_movement_snapshot_cancellation_returns_output_custody() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = world
         .runtime
         .as_ref()
         .expect("the owner root remains live")
         .owner_operation_control_for_test()
         .expect("operation control is issued after sealing");
-    let pause = control.arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+    );
     let cancellation = worth_signal::facade::branch::SignalOwnerCancellationSource::new();
     let worker_cancellation = cancellation.clone();
     let mutation = world.mutation.clone();
@@ -123,7 +145,8 @@ fn pre_movement_snapshot_cancellation_returns_output_custody() {
 
 #[test]
 fn pre_movement_restore_cancellation_returns_output_custody() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let (snapshot, captured_basis) = capture_result(&world.mutation, &world.child_basis)
         .expect("restore starts from an owner-issued snapshot");
     let control = world
@@ -132,7 +155,9 @@ fn pre_movement_restore_cancellation_returns_output_custody() {
         .expect("the owner root remains live")
         .owner_operation_control_for_test()
         .expect("operation control is issued after sealing");
-    let pause = control.arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+    );
     let cancellation = worth_signal::facade::branch::SignalOwnerCancellationSource::new();
     let worker_cancellation = cancellation.clone();
     let mutation = world.mutation.clone();
@@ -152,7 +177,9 @@ fn pre_movement_restore_cancellation_returns_output_custody() {
         pause.release();
         assert!(matches!(
             rx.recv_timeout(PROGRESS_BOUND),
-            Ok(Err(worth_signal::facade::branch::SignalBranchRestoreDenial::CancelledNoMovement))
+            Ok(Err(
+                worth_signal::facade::branch::SignalBranchRestoreDenial::CancelledNoMovement
+            ))
         ));
     });
 
@@ -169,7 +196,8 @@ fn pre_movement_restore_cancellation_returns_output_custody() {
 
 #[test]
 fn pre_movement_retirement_cancellation_preserves_a_retryable_branch() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let reference = world
         .basis
         .issue_managed_branch_reference(&world.child_basis)
@@ -186,7 +214,9 @@ fn pre_movement_retirement_cancellation_preserves_a_retryable_branch() {
         .expect("the owner root remains live")
         .owner_operation_control_for_test()
         .expect("operation control is issued after sealing");
-    let pause = control.arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+    );
     let cancellation = worth_signal::facade::branch::SignalOwnerCancellationSource::new();
     let worker_cancellation = cancellation.clone();
     let lifecycle = world.lifecycle.clone();
@@ -215,16 +245,18 @@ fn pre_movement_retirement_cancellation_preserves_a_retryable_branch() {
         .expect("the cancelled retirement leaves the branch current");
     let retry = retirement_plan(&world.lifecycle, retry_basis);
     assert!(matches!(
-        world
-            .lifecycle
-            .retire_exact(retry, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token()),
+        world.lifecycle.retire_exact(
+            retry,
+            &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token()
+        ),
         worth_proof::TransitionOutcome::Success(_)
     ));
 }
 
 #[test]
 fn post_movement_snapshot_cancellation_keeps_the_performed_capture() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let expected = world.child_basis.clone();
     let control = world
         .runtime
@@ -232,7 +264,9 @@ fn post_movement_snapshot_cancellation_keeps_the_performed_capture() {
         .expect("the owner root remains live")
         .owner_operation_control_for_test()
         .expect("operation control is issued after sealing");
-    let pause = control.arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
+    );
     let cancellation = worth_signal::facade::branch::SignalOwnerCancellationSource::new();
     let worker_cancellation = cancellation.clone();
     let mutation = world.mutation.clone();
@@ -266,7 +300,8 @@ fn post_movement_snapshot_cancellation_keeps_the_performed_capture() {
 
 #[test]
 fn post_movement_restore_cancellation_keeps_the_performed_restore() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let (snapshot, captured_basis) = capture_result(&world.mutation, &world.child_basis)
         .expect("restore starts from an owner-issued snapshot");
     let expected = captured_basis.clone();
@@ -276,7 +311,9 @@ fn post_movement_restore_cancellation_keeps_the_performed_restore() {
         .expect("the owner root remains live")
         .owner_operation_control_for_test()
         .expect("operation control is issued after sealing");
-    let pause = control.arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
+    );
     let cancellation = worth_signal::facade::branch::SignalOwnerCancellationSource::new();
     let worker_cancellation = cancellation.clone();
     let mutation = world.mutation.clone();
@@ -308,7 +345,8 @@ fn post_movement_restore_cancellation_keeps_the_performed_restore() {
 
 #[test]
 fn post_movement_retirement_cancellation_keeps_the_performed_receipt() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let reference = world
         .basis
         .issue_managed_branch_reference(&world.child_basis)
@@ -325,7 +363,9 @@ fn post_movement_retirement_cancellation_keeps_the_performed_receipt() {
         .expect("the owner root remains live")
         .owner_operation_control_for_test()
         .expect("operation control is issued after sealing");
-    let pause = control.arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
+    );
     let cancellation = worth_signal::facade::branch::SignalOwnerCancellationSource::new();
     let worker_cancellation = cancellation.clone();
     let lifecycle = world.lifecycle.clone();

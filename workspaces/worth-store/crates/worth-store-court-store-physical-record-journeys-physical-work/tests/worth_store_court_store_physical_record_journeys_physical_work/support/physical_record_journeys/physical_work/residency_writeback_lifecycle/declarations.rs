@@ -1,8 +1,31 @@
-pub(crate) use {worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint, worth_store::physical_runtime::AdmittedDirtyFrame, worth_store::physical_runtime::PhysicalEffectObligation, worth_store::physical_runtime::PhysicalResidencyCertification, worth_store::physical_runtime::PhysicalSignalSettlementOutcome, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkPreEffectDenial, worth_store::physical_runtime::PhysicalWorkRecoveryDisposition, worth_store::physical_runtime::PhysicalWritebackExecution, worth_store::physical_runtime::PhysicalWritebackFailureCause};
-pub(crate) use {worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement, worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
-pub(crate) use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+pub(crate) use {
+    worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint,
+    worth_store::physical_runtime::AdmittedDirtyFrame,
+    worth_store::physical_runtime::PhysicalEffectObligation,
+    worth_store::physical_runtime::PhysicalResidencyCertification,
+    worth_store::physical_runtime::PhysicalSignalSettlementOutcome,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
+    worth_store::physical_runtime::PhysicalWorkRecoveryDisposition,
+    worth_store::physical_runtime::PhysicalWritebackExecution,
+    worth_store::physical_runtime::PhysicalWritebackFailureCause,
+};
+pub(crate) use {
+    worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement,
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole,
+};
+pub(crate) use {
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_open_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_open_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 pub(crate) const WRITEBACK: [u8; 8] = [0x51, 0xc6, 0x7a, 0x19, 0x84, 0x2f, 0xd0, 0x33];
 
@@ -17,7 +40,12 @@ pub(crate) fn dirty_frame(
 }
 
 pub(crate) fn writeback_coordinate() -> RecordFrameCoordinate {
-    worth_store_physical_format::RecordFrameCoordinate::new(worth_store_physical_format::RecordArtifactFile::BootstrapCatalog, 8, 8).unwrap()
+    worth_store_physical_format::RecordFrameCoordinate::new(
+        worth_store_physical_format::RecordArtifactFile::BootstrapCatalog,
+        8,
+        8,
+    )
+    .unwrap()
 }
 
 pub(crate) fn artifact_range(root: &std::path::Path, coordinate: RecordFrameCoordinate) -> Vec<u8> {

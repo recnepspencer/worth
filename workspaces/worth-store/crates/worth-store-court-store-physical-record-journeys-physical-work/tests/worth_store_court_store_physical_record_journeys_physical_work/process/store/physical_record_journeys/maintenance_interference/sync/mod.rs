@@ -1,17 +1,44 @@
-#[allow(unused_imports)] use worth_store_testkit_store::physical_record_journeys::maintenance_interference::sync::*;
+#[allow(unused_imports)]
+use worth_store_testkit_store::physical_record_journeys::maintenance_interference::sync::*;
 use {std::sync::atomic::AtomicBool, std::sync::atomic::Ordering};
 
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalReadProtectionPolicy, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::PhysicalWorkProfileDeclaration, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
-use {worth_store_physical_backend::CertificationMediaFaultActivation, worth_store_physical_backend::MediaPauseGate};
-use {worth_store_physical_backend::FilesystemAccessPosture, worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
+use worth_proof::TransitionOutcome;
+use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalReadProtectionPolicy,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalWalPolicy,
+    worth_store::physical_runtime::PhysicalWorkProfileDeclaration,
+    worth_store::physical_runtime::WalSegmentByteLimit,
+    worth_store::physical_runtime::WalSegmentInventoryLimit,
+};
+use {
+    worth_store_physical_backend::CertificationMediaFaultActivation,
+    worth_store_physical_backend::MediaPauseGate,
+};
+use {
+    worth_store_physical_backend::FilesystemAccessPosture,
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::append, worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize, worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits, worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement};
+use {
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement,
+};
 
 #[test]
 fn unwinding_releases_file_sync_before_joining_the_scoped_worker() {
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::production(worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::production(
+        worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let gate = admission.fault_schedule_authority().pause_gate();
     let completed = std::sync::atomic::AtomicBool::new(false);
     let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -38,8 +65,9 @@ fn paused_file_sync_is_not_a_completed_barrier() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     initialize(&root).close();
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::production(worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::production(
+        worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let authority = admission.fault_schedule_authority();
     let gate = authority.pause_gate();
     let activation = authority.one_shot_activation();
@@ -54,7 +82,10 @@ fn paused_file_sync_is_not_a_completed_barrier() {
                 activation.clone(),
             )])
         .unwrap();
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(worth_store::physical_runtime::PhysicalRuntimeAdmission::new(&root).unwrap()).unwrap();
+    let runtime = worth_store::physical_runtime::PhysicalStore::admit(
+        worth_store::physical_runtime::PhysicalRuntimeAdmission::new(&root).unwrap(),
+    )
+    .unwrap();
     let media = match runtime
         .try_admit_filesystem_media(admission.with_fault_schedule(schedule))
         .into_raw()
@@ -63,13 +94,18 @@ fn paused_file_sync_is_not_a_completed_barrier() {
         _ => panic!("faulted media should admit"),
     };
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
-    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .admit(format)
+        .unwrap();
     let durability = worth_store_testkit_store::physical_record_journeys::durability(&media);
-    let serving = worth_store_testkit_store::physical_record_journeys::success(
-        media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)),
-    );
+    let serving =
+        worth_store_testkit_store::physical_record_journeys::success(media.open_record_store(
+            worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability),
+        ));
     activation.arm().unwrap();
     let finished = std::sync::atomic::AtomicBool::new(false);
     let id = std::thread::scope(|scope| {
@@ -85,13 +121,18 @@ fn paused_file_sync_is_not_a_completed_barrier() {
         let reached = gate.reached_context();
         let unfinished = !finished.load(std::sync::atomic::Ordering::Acquire);
         let counters = serving.media_counters();
-        let attempts_while_held = counters.attempts_for(worth_store_physical_backend::MediaOperationRole::SynchronizeFileState);
-        let barriers_while_held =
-            counters.completed_operations_for(worth_store_physical_backend::MediaOperationRole::SynchronizeFileState);
+        let attempts_while_held = counters
+            .attempts_for(worth_store_physical_backend::MediaOperationRole::SynchronizeFileState);
+        let barriers_while_held = counters.completed_operations_for(
+            worth_store_physical_backend::MediaOperationRole::SynchronizeFileState,
+        );
         gate.release();
         let id = append_thread.join().unwrap();
         let reached = reached.expect("the append must reach a real file-state sync");
-        assert_eq!(reached.role(), worth_store_physical_backend::MediaOperationRole::SynchronizeFileState);
+        assert_eq!(
+            reached.role(),
+            worth_store_physical_backend::MediaOperationRole::SynchronizeFileState
+        );
         assert_eq!(reached.role_ordinal(), attempts_while_held);
         assert_eq!(
             barriers_while_held + 1,
@@ -103,10 +144,9 @@ fn paused_file_sync_is_not_a_completed_barrier() {
             "the append returned while its sync was still paused"
         );
         assert!(
-            serving
-                .media_counters()
-                .completed_operations_for(worth_store_physical_backend::MediaOperationRole::SynchronizeFileState)
-                > barriers_while_held
+            serving.media_counters().completed_operations_for(
+                worth_store_physical_backend::MediaOperationRole::SynchronizeFileState
+            ) > barriers_while_held
         );
         id
     });

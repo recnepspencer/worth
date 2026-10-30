@@ -1,6 +1,18 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::canonicalization::digest_slots::bounded_work::*;
-use {worth_foundational::admit_canonical_sequence_digest_derivation_with_budget, worth_foundational::derive_canonical_digest, worth_foundational::prepare_canonical_basis_sequence, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalDigestAlgorithmId, worth_foundational::CanonicalDigestDerivationDenial, worth_foundational::CanonicalDigestWorkBudget, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalSingleSequenceDigestAlgorithmSlot, worth_foundational::CanonicalizationRuleVersion};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::canonicalization::digest_slots::bounded_work::*;
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::admit_canonical_sequence_digest_derivation_with_budget,
+    worth_foundational::derive_canonical_digest,
+    worth_foundational::prepare_canonical_basis_sequence, worth_foundational::CanonicalBasisDomain,
+    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
+    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue,
+    worth_foundational::CanonicalDigestAlgorithmId,
+    worth_foundational::CanonicalDigestDerivationDenial,
+    worth_foundational::CanonicalDigestWorkBudget, worth_foundational::CanonicalIntegerWidth,
+    worth_foundational::CanonicalSingleSequenceDigestAlgorithmSlot,
+    worth_foundational::CanonicalizationRuleVersion,
+};
 
 #[test]
 fn bounded_digest_admission_denies_entry_and_exact_encoded_byte_overflow() {
@@ -17,13 +29,16 @@ fn bounded_digest_admission_denies_entry_and_exact_encoded_byte_overflow() {
         worth_foundational::CanonicalBasisDomain::Value,
         version.clone(),
     );
-    let entry_budget = worth_foundational::CanonicalDigestWorkBudget::new(1, 4_096).expect("nonzero budget");
+    let entry_budget =
+        worth_foundational::CanonicalDigestWorkBudget::new(1, 4_096).expect("nonzero budget");
     assert!(matches!(
         admit_canonical_sequence_digest_derivation_with_budget(sequence, slot, entry_budget),
-        worth_proof::TransitionOutcome::Denied(worth_foundational::CanonicalDigestDerivationDenial::EntryLimitExceeded {
-            maximum: 1,
-            actual: 2
-        })
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::CanonicalDigestDerivationDenial::EntryLimitExceeded {
+                maximum: 1,
+                actual: 2
+            }
+        )
     ));
 
     let sequence = prepare_canonical_basis_sequence(
@@ -38,13 +53,16 @@ fn bounded_digest_admission_denies_entry_and_exact_encoded_byte_overflow() {
         worth_foundational::CanonicalBasisDomain::Value,
         version,
     );
-    let byte_budget = worth_foundational::CanonicalDigestWorkBudget::new(1, 1).expect("nonzero budget");
+    let byte_budget =
+        worth_foundational::CanonicalDigestWorkBudget::new(1, 1).expect("nonzero budget");
     assert!(matches!(
         admit_canonical_sequence_digest_derivation_with_budget(sequence, slot, byte_budget),
-        worth_proof::TransitionOutcome::Denied(worth_foundational::CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
-            maximum: 1,
-            ..
-        })
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
+                maximum: 1,
+                ..
+            }
+        )
     ));
 }
 
@@ -63,7 +81,8 @@ fn digest_work_separates_canonical_material_from_sha256_compression() {
         worth_foundational::CanonicalBasisDomain::Value,
         version,
     );
-    let budget = worth_foundational::CanonicalDigestWorkBudget::new(1, 4_096).expect("nonzero budget");
+    let budget =
+        worth_foundational::CanonicalDigestWorkBudget::new(1, 4_096).expect("nonzero budget");
     let ready = admit_canonical_sequence_digest_derivation_with_budget(sequence, slot, budget)
         .into_result()
         .expect("bounded digest should admit");

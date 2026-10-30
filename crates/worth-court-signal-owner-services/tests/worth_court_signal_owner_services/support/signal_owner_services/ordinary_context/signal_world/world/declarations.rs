@@ -1,6 +1,18 @@
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::SignalBranchAdvanceDenial, worth_signal::facade::branch::SignalBranchAdvanceOutcome, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerServicePorts};
-pub(crate) use {worth_signal::facade::history::RuntimeBranch};
-pub(crate) use {worth_signal::facade::Aspect, worth_signal::facade::AspectVersion, worth_signal::facade::DependencyEdge, worth_signal::facade::EvaluationContext, worth_signal::facade::NodeEvaluationResult, worth_signal::facade::NodeId, worth_signal::facade::SignalError, worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
+pub(crate) use worth_signal::facade::history::RuntimeBranch;
+pub(crate) use {
+    worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    worth_signal::facade::branch::SignalBranchAdvanceDenial,
+    worth_signal::facade::branch::SignalBranchAdvanceOutcome,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+    worth_signal::facade::branch::SignalOwnerServicePorts,
+};
+pub(crate) use {
+    worth_signal::facade::Aspect, worth_signal::facade::AspectVersion,
+    worth_signal::facade::DependencyEdge, worth_signal::facade::EvaluationContext,
+    worth_signal::facade::NodeEvaluationResult, worth_signal::facade::NodeId,
+    worth_signal::facade::SignalError, worth_signal::facade::SignalGraph,
+    worth_signal::facade::SignalRuntime,
+};
 
 pub(crate) const STORM_SEVERITY: Aspect = worth_signal::facade::Aspect::new(0);
 pub(crate) const BERTH_AVAILABILITY: Aspect = worth_signal::facade::Aspect::new(1);
@@ -233,7 +245,9 @@ impl CargoRoutingWorld {
 }
 
 pub(crate) fn populated_world() -> (CargoRoutingWorld, CargoOutputs) {
-    let mut world = crate::signal_owner_services::ordinary_context::signal_world::world::CargoRoutingWorld::new();
+    let mut world =
+        crate::signal_owner_services::ordinary_context::signal_world::world::CargoRoutingWorld::new(
+        );
     let outputs = world.establish_baseline();
     (world, outputs)
 }
@@ -318,17 +332,26 @@ pub(crate) fn evaluate_cargo_node(
 ) -> Result<NodeEvaluationResult, SignalError> {
     if view.node() == nodes.storm {
         return Ok(worth_signal::facade::NodeEvaluationResult::from_version(
-            worth_signal::facade::AspectVersion::from_updates([(STORM_SEVERITY, view.domain().storm_severity)]),
+            worth_signal::facade::AspectVersion::from_updates([(
+                STORM_SEVERITY,
+                view.domain().storm_severity,
+            )]),
         ));
     }
     if view.node() == nodes.berth {
         return Ok(worth_signal::facade::NodeEvaluationResult::from_version(
-            worth_signal::facade::AspectVersion::from_updates([(BERTH_AVAILABILITY, view.domain().berth_availability)]),
+            worth_signal::facade::AspectVersion::from_updates([(
+                BERTH_AVAILABILITY,
+                view.domain().berth_availability,
+            )]),
         ));
     }
     if view.node() == nodes.manifest {
         return Ok(worth_signal::facade::NodeEvaluationResult::from_version(
-            worth_signal::facade::AspectVersion::from_updates([(MANIFEST_CLEARANCE, view.domain().manifest_clearance)]),
+            worth_signal::facade::AspectVersion::from_updates([(
+                MANIFEST_CLEARANCE,
+                view.domain().manifest_clearance,
+            )]),
         ));
     }
 
@@ -354,5 +377,7 @@ pub(crate) fn evaluate_cargo_node(
         ));
     }
 
-    Err(worth_signal::facade::SignalError::invalid_input("unknown cargo court node"))
+    Err(worth_signal::facade::SignalError::invalid_input(
+        "unknown cargo court node",
+    ))
 }

@@ -1,14 +1,15 @@
 use std::time::Duration;
 
 use worth_signal::facade::branch::{
-    SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest, SignalOwnerOperationPauseForTest,
+    SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest,
+    SignalOwnerOperationPauseForTest,
 };
 use worth_signal::facade::{SignalGraph, SignalRuntime};
 
 fn assert_send_sync_clone<T: Send + Sync + Clone>(_: &T) {}
 fn assert_send_sync<T: Send + Sync>(_: &T) {}
 
-fn main() {
+pub(crate) fn main() {
     std::thread::Builder::new()
         .stack_size(16 * 1024 * 1024)
         .spawn(compile_operation_control_matrix)

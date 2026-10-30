@@ -1,17 +1,37 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation, worth_store::physical_runtime::PhysicalWorkCausalRecord, worth_store::physical_runtime::PhysicalWorkIdentity, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_backend::MediaOperationRole};
-pub(crate) use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+pub(crate) use worth_store_physical_backend::MediaOperationRole;
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation,
+    worth_store::physical_runtime::PhysicalWorkCausalRecord,
+    worth_store::physical_runtime::PhysicalWorkIdentity,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 pub(crate) const FRAME_BYTES: u32 = 8;
 
 pub(crate) fn initialize_store(root: &Path) {
     let (format, placement, access) = configuration();
     let seeded = success(initialize_record_store!(media(root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     assert!(!seeded.close().residency().requires_inspection());
 }
@@ -32,14 +52,13 @@ pub(crate) fn open_store_with_writebehind(
 ) -> ServingPhysicalRuntime {
     let (format, _, access) = configuration();
     success(open_record_store!(media(root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability).with_residency_policy(
-            residency_policy_with_writebehind(
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+            .with_residency_policy(residency_policy_with_writebehind(
                 format,
                 prefetch_frames,
                 read_ahead_frames,
                 writebehind_frames,
-            ),
-        )
+            ))
     },))
 }
 
@@ -72,16 +91,46 @@ pub(crate) fn residency_policy_with_writebehind(
         .dirty_frames(nonzero_count(2))
         .dirty_replacement_bytes(nonzero_bytes(resident_bytes))
         .operation_bytes(nonzero_bytes(operation_bytes))
-        .scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::ForegroundRead, nonzero_bytes(operation_bytes))
-        .scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::ForegroundWrite, nonzero_bytes(operation_bytes))
-        .scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery, nonzero_bytes(operation_bytes))
-        .scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Scrub, nonzero_bytes(operation_bytes))
-        .scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance, nonzero_bytes(operation_bytes))
-        .scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Verification, nonzero_bytes(operation_bytes))
-        .scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob, nonzero_bytes(operation_bytes))
-        .speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::Prefetch, nonzero_count(prefetch_frames))
-        .speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead, nonzero_count(read_ahead_frames))
-        .speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind, nonzero_count(writebehind_frames))
+        .scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::ForegroundRead,
+            nonzero_bytes(operation_bytes),
+        )
+        .scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::ForegroundWrite,
+            nonzero_bytes(operation_bytes),
+        )
+        .scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery,
+            nonzero_bytes(operation_bytes),
+        )
+        .scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Scrub,
+            nonzero_bytes(operation_bytes),
+        )
+        .scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance,
+            nonzero_bytes(operation_bytes),
+        )
+        .scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Verification,
+            nonzero_bytes(operation_bytes),
+        )
+        .scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob,
+            nonzero_bytes(operation_bytes),
+        )
+        .speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::Prefetch,
+            nonzero_count(prefetch_frames),
+        )
+        .speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead,
+            nonzero_count(read_ahead_frames),
+        )
+        .speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind,
+            nonzero_count(writebehind_frames),
+        )
         .admit(format)
         .into_result()
         .unwrap()

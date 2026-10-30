@@ -1,12 +1,7 @@
-pub(crate) use {std::collections::BTreeSet};
+pub(crate) use std::collections::BTreeSet;
 
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::transition::STATE_CHANGING_OPERATIONS};
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::ORACLE_SEED};
-
-
-
-
-
 
 #[test]
 fn every_ordered_state_changing_pair_reaches_real_owner_and_oracle() {

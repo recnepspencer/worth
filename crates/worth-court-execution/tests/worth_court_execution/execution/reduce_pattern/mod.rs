@@ -1,13 +1,29 @@
-#[allow(unused_imports)] use crate::reduce_pattern::ordinary_context::*;
 #[allow(unused_imports)]
-pub(crate) use {crate::test_serialization};
+use crate::reduce_pattern::ordinary_context::*;
+#[allow(unused_imports)]
+pub(crate) use crate::test_serialization;
 
 #[allow(unused_imports)]
-pub(crate) use {crate::reducer_overlap};
-pub(crate) use {std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Mutex, std::sync::OnceLock};
+pub(crate) use crate::reducer_overlap;
+pub(crate) use {
+    std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
+    std::sync::Mutex, std::sync::OnceLock,
+};
 
-pub(crate) use {worth_execution::CancellationToken, worth_execution::CanonicalBits, worth_execution::ChargedBytes, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::ReduceInputDenial, worth_execution::ReductionMetrics, worth_execution::ReductionRunFailure, worth_execution::ReductionRunStop};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    worth_execution::CancellationToken, worth_execution::CanonicalBits,
+    worth_execution::ChargedBytes, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
+    worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome,
+    worth_execution::MapPartition, worth_execution::ReduceInputDenial,
+    worth_execution::ReductionMetrics, worth_execution::ReductionRunFailure,
+    worth_execution::ReductionRunStop,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn no_lease_nested_reduction_charges_its_enclosing_map() {
@@ -25,7 +41,9 @@ fn no_lease_nested_reduction_charges_its_enclosing_map() {
             assert_eq!(values, vec![inner_report.charged_work()]);
             assert_eq!(report.charged_work(), inner_report.charged_work() + 1);
         }
-        worth_execution::MapOutcome::Stopped { .. } => panic!("nested serial reduction must complete"),
+        worth_execution::MapOutcome::Stopped { .. } => {
+            panic!("nested serial reduction must complete")
+        }
     }
 }
 

@@ -1,8 +1,54 @@
-pub(crate) use {worth_foundational::admit_current_basis_boundary_artifact, worth_foundational::admit_current_basis_commit_receipt, worth_foundational::claim_derived_projection_boundary_surface, worth_foundational::foundational_boundary_current_basis_authority, worth_foundational::foundational_commit_receipt_issuance, worth_foundational::foundational_diagnostic_certified_attachment_authority, worth_foundational::foundational_profile_progression_authority, worth_foundational::foundational_transition_current_basis_authority, worth_foundational::materialize_admitted_foundational_profile, worth_foundational::materialize_descriptive_boundary_surface, worth_foundational::request_foundational_profile_set, worth_foundational::BoundaryHandle, worth_foundational::CanonicalizationRuleVersion, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::CurrentBasisBoundaryArtifact, worth_foundational::CurrentBasisCommitReceiptArtifact, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalBoundaryArtifactSurface, worth_foundational::FoundationalBoundaryMaterializationSeam, worth_foundational::FoundationalBoundaryMaterializationSource, worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitReceiptIdentity, worth_foundational::FoundationalDiagnosticAssemblyDebt, worth_foundational::FoundationalDiagnosticAssemblyDebtClass, worth_foundational::FoundationalDiagnosticCertifiedCoverageDenial, worth_foundational::FoundationalDiagnosticCoverageFamilyStatus, worth_foundational::FoundationalDiagnosticCoverageMatrix, worth_foundational::FoundationalDiagnosticExplanationBundle, worth_foundational::FoundationalDiagnosticGapClass, worth_foundational::FoundationalDiagnosticGapClosurePosture, worth_foundational::FoundationalDiagnosticGapTarget, worth_foundational::FoundationalDiagnosticNamedGap, worth_foundational::FoundationalDiagnosticPartiality, worth_foundational::FoundationalDiagnosticSupportClaimStrength, worth_foundational::FoundationalDiagnosticSupportReport, worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::admit_current_basis_boundary_artifact,
+    worth_foundational::admit_current_basis_commit_receipt,
+    worth_foundational::claim_derived_projection_boundary_surface,
+    worth_foundational::foundational_boundary_current_basis_authority,
+    worth_foundational::foundational_commit_receipt_issuance,
+    worth_foundational::foundational_diagnostic_certified_attachment_authority,
+    worth_foundational::foundational_profile_progression_authority,
+    worth_foundational::foundational_transition_current_basis_authority,
+    worth_foundational::materialize_admitted_foundational_profile,
+    worth_foundational::materialize_descriptive_boundary_surface,
+    worth_foundational::request_foundational_profile_set, worth_foundational::BoundaryHandle,
+    worth_foundational::CanonicalizationRuleVersion,
+    worth_foundational::CertificationPostureProfile,
+    worth_foundational::CompatibilityPostureProfile,
+    worth_foundational::CurrentBasisBoundaryArtifact,
+    worth_foundational::CurrentBasisCommitReceiptArtifact,
+    worth_foundational::DiagnosticRichnessProfile,
+    worth_foundational::FoundationalBoundaryArtifactSurface,
+    worth_foundational::FoundationalBoundaryMaterializationSeam,
+    worth_foundational::FoundationalBoundaryMaterializationSource,
+    worth_foundational::FoundationalCommitId,
+    worth_foundational::FoundationalCommitReceiptIdentity,
+    worth_foundational::FoundationalDiagnosticAssemblyDebt,
+    worth_foundational::FoundationalDiagnosticAssemblyDebtClass,
+    worth_foundational::FoundationalDiagnosticCertifiedCoverageDenial,
+    worth_foundational::FoundationalDiagnosticCoverageFamilyStatus,
+    worth_foundational::FoundationalDiagnosticCoverageMatrix,
+    worth_foundational::FoundationalDiagnosticExplanationBundle,
+    worth_foundational::FoundationalDiagnosticGapClass,
+    worth_foundational::FoundationalDiagnosticGapClosurePosture,
+    worth_foundational::FoundationalDiagnosticGapTarget,
+    worth_foundational::FoundationalDiagnosticNamedGap,
+    worth_foundational::FoundationalDiagnosticPartiality,
+    worth_foundational::FoundationalDiagnosticSupportClaimStrength,
+    worth_foundational::FoundationalDiagnosticSupportReport,
+    worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput,
+    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
+};
 
-pub(crate) use {crate::certification::ordinary_context::diagnostics::materialization_support::explanation_input, crate::certification::ordinary_context::diagnostics::materialization_support::subject, crate::certification::ordinary_context::diagnostics::materialization_support::support_input};
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict, crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority, crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input};
+pub(crate) use {
+    crate::certification::ordinary_context::diagnostics::materialization_support::explanation_input,
+    crate::certification::ordinary_context::diagnostics::materialization_support::subject,
+    crate::certification::ordinary_context::diagnostics::materialization_support::support_input,
+};
+pub(crate) use {
+    crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict,
+    crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority,
+    crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input,
+};
 
 pub(crate) fn version(name: &str) -> CanonicalizationRuleVersion {
     worth_foundational::CanonicalizationRuleVersion::new(name).expect("valid version")
@@ -40,13 +86,15 @@ pub(crate) fn certified_support_report_complete() -> FoundationalDiagnosticSuppo
 
 pub(crate) fn partial_explanation_bundle() -> FoundationalDiagnosticExplanationBundle {
     worth_foundational::materialize_diagnostic_explanation_bundle(
-        explanation_input(worth_foundational::FoundationalDiagnosticPartiality::PartialWithNamedGaps(
-            vec![worth_foundational::FoundationalDiagnosticNamedGap::new(
-                worth_foundational::FoundationalDiagnosticGapClass::CoverageOmission,
-                worth_foundational::FoundationalDiagnosticGapTarget::Subject(subject()),
-                worth_foundational::FoundationalDiagnosticGapClosurePosture::Deferred,
-            )],
-        )),
+        explanation_input(
+            worth_foundational::FoundationalDiagnosticPartiality::PartialWithNamedGaps(vec![
+                worth_foundational::FoundationalDiagnosticNamedGap::new(
+                    worth_foundational::FoundationalDiagnosticGapClass::CoverageOmission,
+                    worth_foundational::FoundationalDiagnosticGapTarget::Subject(subject()),
+                    worth_foundational::FoundationalDiagnosticGapClosurePosture::Deferred,
+                ),
+            ]),
+        ),
         production_certified_profile(),
         worth_foundational::FoundationalDiagnosticDeliveryClass::CanDefer,
     )
@@ -58,7 +106,9 @@ pub(crate) fn hostile_support_coverage_matrix() -> FoundationalDiagnosticCoverag
         worth_foundational::FoundationalDiagnosticCoverageFamilyStatus::AbsentFromBundle,
         worth_foundational::FoundationalDiagnosticCoverageFamilyStatus::AbsentFromBundle,
         worth_foundational::FoundationalDiagnosticCoverageFamilyStatus::AbsentFromBundle,
-        worth_foundational::FoundationalDiagnosticCoverageFamilyStatus::HostileRowsPresent { row_count: 2 },
+        worth_foundational::FoundationalDiagnosticCoverageFamilyStatus::HostileRowsPresent {
+            row_count: 2,
+        },
         worth_foundational::FoundationalDiagnosticCoverageFamilyStatus::AbsentFromBundle,
     )
 }
@@ -92,8 +142,12 @@ pub(crate) fn current_basis_receipt_source() -> CurrentBasisCommitReceiptArtifac
         .commit_with(ordinary_commit_input(), committed_authority())
         .expect("committed authority")
         .issue_receipt(
-            worth_foundational::FoundationalCommitReceiptIdentity::new(worth_foundational::BoundaryHandle::new(701)),
-            worth_foundational::FoundationalCommitId::new(worth_foundational::BoundaryHandle::new(700)),
+            worth_foundational::FoundationalCommitReceiptIdentity::new(
+                worth_foundational::BoundaryHandle::new(701),
+            ),
+            worth_foundational::FoundationalCommitId::new(worth_foundational::BoundaryHandle::new(
+                700,
+            )),
             foundational_commit_receipt_issuance(),
         )
         .expect("receipt");
@@ -107,12 +161,18 @@ pub(crate) fn current_basis_receipt_source() -> CurrentBasisCommitReceiptArtifac
         worth_proof::TransitionOutcome::Denied(denial) => {
             panic!("expected current-basis receipt source, denied: {denial:?}")
         }
-        worth_proof::TransitionOutcome::Deferred(_) => panic!("expected current-basis receipt source, deferred"),
-        worth_proof::TransitionOutcome::Stale(_) => panic!("expected current-basis receipt source, stale"),
+        worth_proof::TransitionOutcome::Deferred(_) => {
+            panic!("expected current-basis receipt source, deferred")
+        }
+        worth_proof::TransitionOutcome::Stale(_) => {
+            panic!("expected current-basis receipt source, stale")
+        }
         worth_proof::TransitionOutcome::RebindRequired(_) => {
             panic!("expected current-basis receipt source, rebind required")
         }
-        worth_proof::TransitionOutcome::Failed(_) => panic!("expected current-basis receipt source, failed"),
+        worth_proof::TransitionOutcome::Failed(_) => {
+            panic!("expected current-basis receipt source, failed")
+        }
     }
 }
 
@@ -173,10 +233,9 @@ pub(crate) fn current_basis_boundary_artifact_source(
         }
     };
     let materialized_boundary = materialize_descriptive_boundary_surface(
-        claim_derived_projection_boundary_surface(worth_foundational::FoundationalBoundaryArtifactSurface::new(
-            vec![9_u8, 8, 7],
-            2,
-        )),
+        claim_derived_projection_boundary_surface(
+            worth_foundational::FoundationalBoundaryArtifactSurface::new(vec![9_u8, 8, 7], 2),
+        ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
         materialized_profile,

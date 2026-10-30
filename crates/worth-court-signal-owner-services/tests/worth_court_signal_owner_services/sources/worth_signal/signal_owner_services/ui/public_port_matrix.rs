@@ -10,7 +10,7 @@ type Services = SignalOwnerServicePorts<(), (), (), (), ()>;
 
 fn assert_send_sync_clone<T: Send + Sync + Clone>(_: &T) {}
 
-fn main() {
+pub(crate) fn main() {
     std::thread::Builder::new()
         .stack_size(16 * 1024 * 1024)
         .spawn(compile_public_port_matrix)

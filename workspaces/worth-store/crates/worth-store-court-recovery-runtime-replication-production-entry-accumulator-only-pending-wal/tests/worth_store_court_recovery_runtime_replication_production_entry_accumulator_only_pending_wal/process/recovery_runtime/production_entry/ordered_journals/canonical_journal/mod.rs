@@ -3,15 +3,41 @@
 //! from durable state, and survives a killed process on both sides of the
 //! first checkpoint.
 
-#[allow(unused_imports)] use worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal::*;
-use {std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
+#[allow(unused_imports)]
+use worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal::*;
+use {
+    std::fs, std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio,
+    std::thread, std::time::Duration, std::time::Instant,
+};
 
+use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
 use {sha2::Digest, sha2::Sha256};
-use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint};
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::OrderedJournalPublication, worth_store::physical_runtime::OrderedJournalPublicationFailure, worth_store::physical_runtime::OrderedJournalPublished, worth_store::physical_runtime::OrderedJournalResolution, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::OrderedJournalPublication,
+    worth_store::physical_runtime::OrderedJournalPublicationFailure,
+    worth_store::physical_runtime::OrderedJournalPublished,
+    worth_store::physical_runtime::OrderedJournalResolution,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving};
+use {
+    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+};
 
 #[test]
 fn the_journal_publishes_only_at_the_next_position_and_resolves_retries() {
@@ -21,15 +47,20 @@ fn the_journal_publishes_only_at_the_next_position_and_resolves_retries() {
     assert_journal_holds(serving, 0);
     assert!(matches!(
         publication(serving, world.placement(), 2, payload(2)),
-        Err(worth_store::physical_runtime::OrderedJournalPublicationFailure::PositionGap {
-            head: 0,
-            requested: 2
-        })
+        Err(
+            worth_store::physical_runtime::OrderedJournalPublicationFailure::PositionGap {
+                head: 0,
+                requested: 2
+            }
+        )
     ));
     for position in 1..=ENTRIES {
         let published = publication(serving, world.placement(), position, payload(position))
             .expect("publication");
-        assert!(matches!(published, worth_store::physical_runtime::OrderedJournalPublished::Committed(_)));
+        assert!(matches!(
+            published,
+            worth_store::physical_runtime::OrderedJournalPublished::Committed(_)
+        ));
         assert_eq!(published.entry().position(), position);
     }
     assert_journal_holds(serving, ENTRIES);

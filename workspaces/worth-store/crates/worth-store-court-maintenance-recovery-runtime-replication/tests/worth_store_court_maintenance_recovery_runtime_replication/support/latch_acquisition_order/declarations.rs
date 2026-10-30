@@ -1,7 +1,30 @@
-pub(crate) use {worth_store_test_support::harness::physical_isolation::epoch_scope as support};
+pub(crate) use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
 
-pub(crate) use {worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_segment_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority, worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout};
-pub(crate) use {worth_store_physical_isolation::latch_counter_backed_performance_receipt, worth_store_physical_isolation::lower_latch_acquisition_plan, worth_store_physical_isolation::pre_wait_denial_for_execution_time_latch_discovery, worth_store_physical_isolation::pre_wait_denial_for_hierarchy_inversion, worth_store_physical_isolation::pre_wait_denial_for_unauthorized_latch_upgrade, worth_store_physical_isolation::pre_wait_denial_for_unordered_latch_set, worth_store_physical_isolation::DeadlockPreventionDenial, worth_store_physical_isolation::LatchAcquisitionDenial, worth_store_physical_isolation::LatchAcquisitionRequest, worth_store_physical_isolation::LatchAcquisitionStep, worth_store_physical_isolation::LatchUpgradeAuthority, worth_store_physical_isolation::LatchWaitCounterSnapshot, worth_store_physical_isolation::LatchWaitForGraph, worth_store_physical_isolation::PhysicalLatchClass, worth_store_physical_isolation::PhysicalLatchKey, worth_store_physical_isolation::PhysicalLatchWaitEdge};
+pub(crate) use {
+    worth_store_physical_isolation::latch_counter_backed_performance_receipt,
+    worth_store_physical_isolation::lower_latch_acquisition_plan,
+    worth_store_physical_isolation::pre_wait_denial_for_execution_time_latch_discovery,
+    worth_store_physical_isolation::pre_wait_denial_for_hierarchy_inversion,
+    worth_store_physical_isolation::pre_wait_denial_for_unauthorized_latch_upgrade,
+    worth_store_physical_isolation::pre_wait_denial_for_unordered_latch_set,
+    worth_store_physical_isolation::DeadlockPreventionDenial,
+    worth_store_physical_isolation::LatchAcquisitionDenial,
+    worth_store_physical_isolation::LatchAcquisitionRequest,
+    worth_store_physical_isolation::LatchAcquisitionStep,
+    worth_store_physical_isolation::LatchUpgradeAuthority,
+    worth_store_physical_isolation::LatchWaitCounterSnapshot,
+    worth_store_physical_isolation::LatchWaitForGraph,
+    worth_store_physical_isolation::PhysicalLatchClass,
+    worth_store_physical_isolation::PhysicalLatchKey,
+    worth_store_physical_isolation::PhysicalLatchWaitEdge,
+};
+pub(crate) use {
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_segment_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout,
+};
 
 pub(crate) fn assert_counter_rows(
     receipt: &worth_store_physical_isolation::LatchCounterPerformanceReceipt,
@@ -63,7 +86,10 @@ pub(crate) fn representative_latch_keys() -> RepresentativeLatchKeys {
 
     RepresentativeLatchKeys {
         root: worth_store_physical_isolation::PhysicalLatchKey::root(root_epoch),
-        manifest: worth_store_physical_isolation::PhysicalLatchKey::manifest(root_epoch, root.manifest_epoch()),
+        manifest: worth_store_physical_isolation::PhysicalLatchKey::manifest(
+            root_epoch,
+            root.manifest_epoch(),
+        ),
         segment: worth_store_physical_isolation::PhysicalLatchKey::segment(root_epoch, segment),
         extent: worth_store_physical_isolation::PhysicalLatchKey::extent(root_epoch, extent),
         page: worth_store_physical_isolation::PhysicalLatchKey::page(root_epoch, page),

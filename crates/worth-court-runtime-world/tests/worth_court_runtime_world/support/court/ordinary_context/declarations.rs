@@ -1,50 +1,30 @@
+#[allow(unused_imports)]
+pub(crate) use {};
 
+#[allow(unused_imports)]
+pub(crate) use crate::court::reference_context::cost;
 
-
+#[allow(unused_imports)]
+pub(crate) use crate::court::reference_context::model;
 
 #[allow(unused_imports)]
 pub(crate) use {};
 
-
-
-
-
-#[allow(unused_imports)]
-pub(crate) use {crate::court::reference_context::cost};
-
-
-
-#[allow(unused_imports)]
-pub(crate) use {crate::court::reference_context::model};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#[allow(unused_imports)]
-pub(crate) use {};
-
-pub(crate) use {crate::court::ordinary_context::relational::CargoRecords};
-pub(crate) use {crate::court::ordinary_context::routing::CargoEvent, crate::court::ordinary_context::routing::CargoKey, crate::court::ordinary_context::routing::CourtSignal, crate::court::ordinary_context::routing::RouteDefinition, crate::court::ordinary_context::routing::RouteGraph, crate::court::ordinary_context::routing::RoutingContext};
-pub(crate) use {worth_runtime_bridge::facade::BridgeInstalledSemanticCorrespondence, worth_runtime_bridge::facade::RuntimeBridge};
-pub(crate) use {worth_runtime_world::facade::*};
-pub(crate) use {worth_signal::facade::SignalGraph};
+pub(crate) use crate::court::ordinary_context::relational::CargoRecords;
+pub(crate) use worth_runtime_world::facade::*;
+pub(crate) use worth_signal::facade::SignalGraph;
+pub(crate) use {
+    crate::court::ordinary_context::routing::CargoEvent,
+    crate::court::ordinary_context::routing::CargoKey,
+    crate::court::ordinary_context::routing::CourtSignal,
+    crate::court::ordinary_context::routing::RouteDefinition,
+    crate::court::ordinary_context::routing::RouteGraph,
+    crate::court::ordinary_context::routing::RoutingContext,
+};
+pub(crate) use {
+    worth_runtime_bridge::facade::BridgeInstalledSemanticCorrespondence,
+    worth_runtime_bridge::facade::RuntimeBridge,
+};
 
 pub(crate) struct CompositeSupplyChainCourt {
     pub(crate) world: RuntimeWorldOwner<RouteDefinition, CargoKey, CargoEvent, RoutingContext, u64>,
@@ -60,13 +40,18 @@ impl CompositeSupplyChainCourt {
         Self::compile_with_steel(true)
     }
     pub(crate) fn compile_with_steel(include_steel: bool) -> Self {
-        Self::compile_config(include_steel, crate::court::ordinary_context::budgets::court())
+        Self::compile_config(
+            include_steel,
+            crate::court::ordinary_context::budgets::court(),
+        )
     }
     pub(crate) fn compile_config(include_steel: bool, limits: RuntimeWorldBudgets) -> Self {
-        let records = crate::court::ordinary_context::relational::CargoRecords::install(include_steel);
+        let records =
+            crate::court::ordinary_context::relational::CargoRecords::install(include_steel);
         let mut graph = worth_signal::facade::SignalGraph::new();
         let nodes = crate::court::ordinary_context::routing::RouteGraph::install(&mut graph);
-        let (bridge, installed, _) = crate::court::ordinary_context::correspondence::install(&records, &mut graph, nodes);
+        let (bridge, installed, _) =
+            crate::court::ordinary_context::correspondence::install(&records, &mut graph, nodes);
         Self::from_installed_graph(records, graph, nodes, bridge, installed, limits)
     }
     pub(crate) fn from_installed_graph(
@@ -132,7 +117,9 @@ impl CompositeSupplyChainCourt {
             .with_signal_services(services)
             .with_signal_definition_publication(signal_definition_publication)
             .with_budgets(limits)
-            .with_clock(RuntimeWorldClock::from_source(crate::court::ordinary_context::budgets::CourtClock))
+            .with_clock(RuntimeWorldClock::from_source(
+                crate::court::ordinary_context::budgets::CourtClock,
+            ))
             .build()
             .expect("court declaration: World owner");
         Self {

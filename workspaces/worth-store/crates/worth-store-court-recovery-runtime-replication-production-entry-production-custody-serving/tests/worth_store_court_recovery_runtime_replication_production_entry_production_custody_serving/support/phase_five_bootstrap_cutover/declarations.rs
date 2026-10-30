@@ -1,9 +1,27 @@
-
-
-pub(crate) use {std::path::Path, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery, worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked, worth_store_testkit_recovery_runtime::phase_three_support::initialize_store, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis};
-pub(crate) use {worth_store_physical_format::BootstrapCatalog, worth_store_physical_format::CurrentRootCatalogEntry, worth_store_physical_format::CurrentRootCatalogGeneration, worth_store_physical_format::DurableRootSelector, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::RootSelectorIdentity, worth_store_physical_format::RootSelectorRole};
-pub(crate) use {worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalIntegrityRejection};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryRootProtocolArtifact, worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial, worth_store_recovery_runtime::PhysicalRecoverySourceDenial};
+pub(crate) use {
+    std::path::Path, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
+    worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,
+    worth_store_testkit_recovery_runtime::phase_three_support::initialize_store,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis,
+};
+pub(crate) use {
+    worth_store_physical_format::BootstrapCatalog,
+    worth_store_physical_format::CurrentRootCatalogEntry,
+    worth_store_physical_format::CurrentRootCatalogGeneration,
+    worth_store_physical_format::DurableRootSelector,
+    worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    worth_store_physical_format::RootSelectorIdentity,
+    worth_store_physical_format::RootSelectorRole,
+};
+pub(crate) use {
+    worth_store_physical_integrity::PhysicalDamageCause,
+    worth_store_physical_integrity::PhysicalIntegrityRejection,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolArtifact,
+    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial,
+    worth_store_recovery_runtime::PhysicalRecoverySourceDenial,
+};
 
 pub(crate) fn assert_rejected_before_projection(
     counters: worth_store_recovery_runtime::PhysicalRecoveryDiscoveryCounters,
@@ -36,7 +54,9 @@ pub(crate) fn prepare_previous_fallback(
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
 ) {
     publish_synthetic_genesis(root, store);
-    let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+        .admit()
+        .unwrap();
     let previous = worth_store_physical_format::DurableRootSelector::new(
         store,
         format,
@@ -64,8 +84,12 @@ pub(crate) fn publish_catalog(
 ) {
     let catalog = worth_store_physical_format::BootstrapCatalog::new(
         store,
-        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
-        worth_store_physical_format::CurrentRootCatalogEntry::new(worth_store_physical_format::CurrentRootCatalogGeneration::new(2).unwrap()),
+        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
+        worth_store_physical_format::CurrentRootCatalogEntry::new(
+            worth_store_physical_format::CurrentRootCatalogGeneration::new(2).unwrap(),
+        ),
     );
     std::fs::write(records(root).join("bootstrap.catalog"), catalog.encode()).unwrap();
 }

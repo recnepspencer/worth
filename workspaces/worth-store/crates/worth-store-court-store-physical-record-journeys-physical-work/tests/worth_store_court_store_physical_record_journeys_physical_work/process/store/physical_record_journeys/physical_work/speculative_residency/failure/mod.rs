@@ -1,7 +1,25 @@
-use {worth_store::physical_runtime::PhysicalFrameFaultCause, worth_store::physical_runtime::PhysicalFrameReadFailure, worth_store::physical_runtime::PhysicalFrameWorkFailure, worth_store::physical_runtime::PhysicalReadAheadFrameOutcome, worth_store::physical_runtime::PhysicalReadAheadIntent, worth_store::physical_runtime::PhysicalReadAheadOutcome, worth_store::physical_runtime::PhysicalSpeculativeReadFailure, worth_store::physical_runtime::PhysicalSpeculativeWorkKind};
-use {worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
+use {
+    worth_store::physical_runtime::PhysicalFrameFaultCause,
+    worth_store::physical_runtime::PhysicalFrameReadFailure,
+    worth_store::physical_runtime::PhysicalFrameWorkFailure,
+    worth_store::physical_runtime::PhysicalReadAheadFrameOutcome,
+    worth_store::physical_runtime::PhysicalReadAheadIntent,
+    worth_store::physical_runtime::PhysicalReadAheadOutcome,
+    worth_store::physical_runtime::PhysicalSpeculativeReadFailure,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind,
+};
+use {
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-use {crate::physical_record_journeys::physical_work::speculative_residency::fixture::coordinate, crate::physical_record_journeys::physical_work::speculative_residency::fixture::initialize_store, crate::physical_record_journeys::physical_work::speculative_residency::fixture::open_store, crate::physical_record_journeys::physical_work::speculative_residency::fixture::positioned_reads, crate::physical_record_journeys::physical_work::speculative_residency::fixture::residency_policy};
+use {
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::coordinate,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::initialize_store,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::open_store,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::positioned_reads,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::residency_policy,
+};
 
 #[test]
 fn second_read_ahead_fault_reports_partial_and_releases_every_grant() {
@@ -28,7 +46,9 @@ fn second_read_ahead_fault_reports_partial_and_releases_every_grant() {
     let media_before = positioned_reads(&serving);
     let counters_before = residency.counters();
 
-    let batch = match residency.read_ahead(worth_store::physical_runtime::PhysicalReadAheadIntent::new(&coordinates).unwrap()) {
+    let batch = match residency.read_ahead(
+        worth_store::physical_runtime::PhysicalReadAheadIntent::new(&coordinates).unwrap(),
+    ) {
         worth_store::physical_runtime::PhysicalReadAheadOutcome::Partial(batch) => batch,
         outcome => panic!("second-frame backend failure was not partial: {outcome:?}"),
     };
@@ -40,29 +60,47 @@ fn second_read_ahead_fault_reports_partial_and_releases_every_grant() {
     ));
     assert!(matches!(
         batch.frames()[1].failure(),
-        Some(worth_store::physical_runtime::PhysicalSpeculativeReadFailure::Frame(
-            worth_store::physical_runtime::PhysicalFrameReadFailure::FaultTerminated {
-                cause: worth_store::physical_runtime::PhysicalFrameFaultCause::PhysicalWork(worth_store::physical_runtime::PhysicalFrameWorkFailure::Backend(_)),
-                ..
-            }
-        ))
+        Some(
+            worth_store::physical_runtime::PhysicalSpeculativeReadFailure::Frame(
+                worth_store::physical_runtime::PhysicalFrameReadFailure::FaultTerminated {
+                    cause: worth_store::physical_runtime::PhysicalFrameFaultCause::PhysicalWork(
+                        worth_store::physical_runtime::PhysicalFrameWorkFailure::Backend(_)
+                    ),
+                    ..
+                }
+            )
+        )
     ));
     assert_eq!(positioned_reads(&serving), media_before + 2);
     let after = residency.counters();
     assert_eq!(
-        after.speculative_attempts(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead),
-        counters_before.speculative_attempts(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead) + 1
+        after.speculative_attempts(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead
+        ),
+        counters_before.speculative_attempts(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead
+        ) + 1
     );
     assert_eq!(
-        after.speculative_admissions(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead),
-        counters_before.speculative_admissions(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead) + 1
+        after.speculative_admissions(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead
+        ),
+        counters_before.speculative_admissions(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead
+        ) + 1
     );
     assert_eq!(
-        after.speculative_completions(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead),
-        counters_before.speculative_completions(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead) + 1
+        after.speculative_completions(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead
+        ),
+        counters_before.speculative_completions(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead
+        ) + 1
     );
     assert_eq!(
-        after.active_speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead),
+        after.active_speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead
+        ),
         0
     );
     assert_eq!(after.active_operation_bytes(), 0);

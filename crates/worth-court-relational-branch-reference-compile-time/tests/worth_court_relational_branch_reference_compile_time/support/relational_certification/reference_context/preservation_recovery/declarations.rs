@@ -9,7 +9,7 @@ pub(crate) fn observe_recovered_branch(
     recovered: &worth_relational::facade::runtime::RelationalRuntime,
     identity: &worth_relational::facade::branch::RelationalBranchIdentity,
     label: &str,
-) -> worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison_state::ObservedSupplyChainState {
+) -> worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison_state::ObservedSupplyChainState{
     let snapshot = snapshot_for_supply_chain_identity(recovered, identity);
     observe_supply_chain_snapshot(
         execution,

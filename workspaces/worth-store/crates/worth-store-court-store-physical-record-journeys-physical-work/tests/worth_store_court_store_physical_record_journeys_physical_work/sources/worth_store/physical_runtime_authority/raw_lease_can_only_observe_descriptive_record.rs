@@ -5,4 +5,4 @@ fn observe(lease: &PhysicalFrameLease) {
     let _: Option<PhysicalIntegrityValidationRecord> = lease.integrity_validation();
 }
 
-fn main() {}
+pub(crate) fn main() {}

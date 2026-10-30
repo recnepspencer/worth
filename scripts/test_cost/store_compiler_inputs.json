@@ -1,0 +1,225 @@
+{
+  "schema": 1,
+  "environments": [
+    {
+      "identity": "production",
+      "profile": "diagnostic-test",
+      "dependencies": [
+        {
+          "name": "worth-foundational",
+          "path": "crates/worth-foundational",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-aspect-native",
+          "path": "workspaces/worth-store/crates/worth-store-aspect-native",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-authority",
+          "path": "workspaces/worth-store/crates/worth-store-authority",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-blob-chunks",
+          "path": "workspaces/worth-store/crates/worth-store-blob-chunks",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-budgets",
+          "path": "workspaces/worth-store/crates/worth-store-budgets",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-contracts",
+          "path": "workspaces/worth-store/crates/worth-store-contracts",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-io-scheduler",
+          "path": "workspaces/worth-store/crates/worth-store-io-scheduler",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-layout-indexes",
+          "path": "workspaces/worth-store/crates/worth-store-layout-indexes",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-physical-format",
+          "path": "workspaces/worth-store/crates/worth-store-physical-format",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-physical-isolation",
+          "path": "workspaces/worth-store/crates/worth-store-physical-isolation",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-recovery-physics",
+          "path": "workspaces/worth-store/crates/worth-store-recovery-physics",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-security",
+          "path": "workspaces/worth-store/crates/worth-store-security",
+          "features": [],
+          "default_features": true
+        }
+      ],
+      "sources": [
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/blobs/tier_movement_future_chunk/future_chunk_variant_cannot_be_constructed_directly.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/scheduling/secure_io_authority/identity_provider_claim_cannot_satisfy_secure_io_scope.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/security/security_scope_admission/admission_receipt_cannot_satisfy_key_witness.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/aspect_native_authority/local_diagnostic_payload_cannot_satisfy_store_evidence.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/aspect_native_authority/local_performance_claim_cannot_satisfy_store_evidence.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/aspect_native_authority/raw_aspect_value_cannot_satisfy_boundary_fact.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/aspect_native_authority/raw_string_cannot_satisfy_store_identity.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/aspect_native_authority/raw_struct_cannot_satisfy_authority_input.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/aspect_native_authority/terminal_projection_text_cannot_satisfy_locator.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/authority_projection_readmission/derived_evidence_cannot_satisfy_current_authority.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/authority_projection_readmission/digest_string_cannot_satisfy_current_authority.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/authority_projection_readmission/external_token_cannot_satisfy_current_authority.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/authority_projection_readmission/filename_cannot_satisfy_current_authority.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/authority_projection_readmission/retained_evidence_cannot_satisfy_current_physical_authority.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/authority_projection_readmission/stable_id_cannot_construct_canonical_authority_record.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/authority_projection_readmission/stable_id_cannot_satisfy_canonical_authority_witness.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/authority_projection_readmission/terminal_projection_text_cannot_satisfy_current_authority.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/terminal_projection_quarantine/store_identity_does_not_implement_display.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/terminal_projection_quarantine/store_identity_has_no_neutral_string_accessor.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/terminal_projection_quarantine/store_locator_has_no_neutral_string_accessor.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/terminal_projection_quarantine/terminal_json_document_checksum_cannot_satisfy_digest_authority.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/terminal_projection_quarantine/terminal_json_projection_cannot_satisfy_boundary_fact.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/terminal_projection_quarantine/terminal_json_projection_document_is_not_public.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/terminal_projection_quarantine/terminal_json_projection_has_no_public_document_constructor.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/ui/terminal_projection_quarantine/terminal_projection_text_cannot_satisfy_identity.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_layout_indexes/compile_fail/layout/bootstrap/raw_persisted_layout_cannot_reopen_bootstrap_lane.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_layout_indexes/compile_fail/layout/foundations/raw_physical_reference_cannot_admit_btree_materialization.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_layout_indexes/compile_fail/layout/foundations/recovery_import_shortcut_witness_surface_is_not_public.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_physical_certification/ui/blob_harness/public_boundary/blob_harness_envelope_raw_constructor_is_private.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_physical_certification/ui/blob_harness/public_boundary/blob_harness_execution_authority_is_not_public.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_test_support/ui/harness_authority/platform_physical_runtime_denial_receipt_requires_certification_authority.rs"
+      ]
+    },
+    {
+      "identity": "certification",
+      "profile": "diagnostic-test",
+      "dependencies": [
+        {
+          "name": "worth-store",
+          "path": "workspaces/worth-store/crates/worth-store",
+          "features": [
+            "certification-test-authority"
+          ],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-blob-chunks",
+          "path": "workspaces/worth-store/crates/worth-store-blob-chunks",
+          "features": [
+            "certification-test-authority"
+          ],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-budgets",
+          "path": "workspaces/worth-store/crates/worth-store-budgets",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-contracts",
+          "path": "workspaces/worth-store/crates/worth-store-contracts",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-layout-indexes",
+          "path": "workspaces/worth-store/crates/worth-store-layout-indexes",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-physical-backend",
+          "path": "workspaces/worth-store/crates/worth-store-physical-backend",
+          "features": [
+            "certification-test-authority"
+          ],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-physical-certification",
+          "path": "workspaces/worth-store/crates/worth-store-physical-certification",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-physical-format",
+          "path": "workspaces/worth-store/crates/worth-store-physical-format",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-physical-isolation",
+          "path": "workspaces/worth-store/crates/worth-store-physical-isolation",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-recovery-runtime",
+          "path": "workspaces/worth-store/crates/worth-store-recovery-runtime",
+          "features": [],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-test-support",
+          "path": "workspaces/worth-store/crates/worth-store-test-support",
+          "features": [
+            "physical-isolation-fixtures"
+          ],
+          "default_features": true
+        },
+        {
+          "name": "worth-store-wal",
+          "path": "workspaces/worth-store/crates/worth-store-wal",
+          "features": [
+            "certification-authority"
+          ],
+          "default_features": true
+        }
+      ],
+      "sources": [
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/physical_isolation/recovery_read_authority/local_compaction_completion_cannot_be_byte_receipt.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/physical_isolation/recovery_read_authority/local_publication_cannot_be_completed_root.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/physical_isolation/recovery_read_authority/local_publication_cannot_issue_executed_evidence.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/physical_isolation/recovery_read_authority/recovery_completion_cannot_be_root_basis.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/physical_isolation/recovery_read_authority/recovery_completion_cannot_capture_reader.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/physical_isolation/recovery_read_authority/removed_compaction_recovery_evidence.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/physical_isolation/recovery_read_authority/removed_entry_admission.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/physical_isolation/recovery_read_authority/removed_entry_identity.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/physical_isolation/recovery_read_authority/removed_publication_execution_exports.rs",
+        "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/recovery/driver_contract_boundary/named_yieldpoint_authority_cannot_be_minted.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_layout_indexes/compile_fail/layout/strategy_admission/caller_defined_rule_cannot_open_wal_layout.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_physical_certification/ui/blob_harness/public_boundary/blob_harness_executed_witness_fields_are_private.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_physical_certification/ui/qualification/backend_public_boundary/copied_row_cannot_publish.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_physical_certification/ui/qualification/backend_public_boundary/proof_authority_constructor_is_private.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_physical_certification/ui/qualification/backend_public_boundary/proof_authority_factory_is_private.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_physical_certification/ui/qualification/backend_public_boundary/row_proof_constructor_is_private.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_test_support/ui/harness_authority/harness_reference_cannot_expose_private_reference_lane.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_test_support/ui/harness_authority/harness_reference_is_not_physical_reference.rs",
+        "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_test_support/ui/harness_authority/platform_physical_runtime_receipt_cannot_be_minted.rs"
+      ]
+    }
+  ]
+}

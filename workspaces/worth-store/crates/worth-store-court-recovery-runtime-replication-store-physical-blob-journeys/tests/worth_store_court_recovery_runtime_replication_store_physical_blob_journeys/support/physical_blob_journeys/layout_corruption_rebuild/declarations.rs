@@ -2,30 +2,61 @@
 
 pub(crate) use {std::fs, std::num::NonZeroU64, std::path::Path, std::time::Duration};
 
-pub(crate) use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::DeferredDerivedRetirementCause, worth_store::physical_runtime::LayoutRebuildLimits, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest, worth_store::physical_runtime::PhysicalIndexPointKey, worth_store::physical_runtime::PhysicalLayoutDenial, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_blob_chunks::BlobChunkSize};
-pub(crate) use {worth_store_contracts::DurableArtifactFamilyId};
-pub(crate) use {worth_store_physical_format::PersistedRecordIdentity};
-pub(crate) use {worth_store_physical_integrity::PhysicalIntegrityObservationOutcome, worth_store_physical_integrity::PhysicalIntegrityRejection};
+pub(crate) use worth_store_blob_chunks::BlobChunkSize;
+pub(crate) use worth_store_contracts::DurableArtifactFamilyId;
+pub(crate) use worth_store_physical_format::PersistedRecordIdentity;
+pub(crate) use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::DeferredDerivedRetirementCause,
+    worth_store::physical_runtime::LayoutRebuildLimits,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest,
+    worth_store::physical_runtime::PhysicalIndexPointKey,
+    worth_store::physical_runtime::PhysicalLayoutDenial,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordCountLimit,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanRequest,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_integrity::PhysicalIntegrityObservationOutcome,
+    worth_store_physical_integrity::PhysicalIntegrityRejection,
+};
 
-pub(crate) use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+pub(crate) use {
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 pub(crate) const PAGE_BYTES: usize = 16 * 1024;
 pub(crate) const C5_HEADER: usize = 48;
 
-pub(crate) fn selected_record_ids(serving: &ServingPhysicalRuntime) -> Vec<PersistedRecordIdentity> {
+pub(crate) fn selected_record_ids(
+    serving: &ServingPhysicalRuntime,
+) -> Vec<PersistedRecordIdentity> {
     let mut scan = serving
         .records()
         .unwrap()
         .scan(
             worth_store::physical_runtime::RecordScanRequest::from_start()
                 .with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(64).unwrap())
-                .with_payload_limit(worth_store::physical_runtime::RecordByteLimit::new(1).unwrap()),
+                .with_payload_limit(
+                    worth_store::physical_runtime::RecordByteLimit::new(1).unwrap(),
+                ),
         )
         .unwrap();
     let mut scratch = [0_u8; 4096];
     let mut selected = Vec::new();
-    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) = scan.read_next_into(&mut scratch).unwrap() {
+    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) =
+        scan.read_next_into(&mut scratch).unwrap()
+    {
         selected.extend(batch.records().iter().map(|row| {
             worth_store_physical_format::PersistedRecordIdentity::new(
                 row.record_id().allocation_epoch(),

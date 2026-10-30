@@ -1,6 +1,45 @@
-pub(crate) use {worth_foundational::foundational_diagnostic_code, worth_foundational::foundational_diagnostic_locator_boundary_artifact, worth_foundational::foundational_diagnostic_scope, worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId, worth_foundational::BoundaryArtifactLocator, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalIntegerWidth, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalDiagnosticComparisonRow, worth_foundational::FoundationalDiagnosticDecisionRow, worth_foundational::FoundationalDiagnosticDeliveryClass, worth_foundational::FoundationalDiagnosticEvidencePosture, worth_foundational::FoundationalDiagnosticExplanationBundle, worth_foundational::FoundationalDiagnosticExplanationInput, worth_foundational::FoundationalDiagnosticGapClass, worth_foundational::FoundationalDiagnosticGapClosurePosture, worth_foundational::FoundationalDiagnosticGapTarget, worth_foundational::FoundationalDiagnosticLocalityClaim, worth_foundational::FoundationalDiagnosticNamedGap, worth_foundational::FoundationalDiagnosticOutcomeKind, worth_foundational::FoundationalDiagnosticPartiality, worth_foundational::FoundationalDiagnosticProvenanceReadyRow, worth_foundational::FoundationalDiagnosticRow, worth_foundational::FoundationalDiagnosticSemanticLabelSet, worth_foundational::FoundationalDiagnosticSeverity, worth_foundational::FoundationalDiagnosticSupportClaimStrength, worth_foundational::FoundationalDiagnosticSupportEvidencePosture, worth_foundational::FoundationalDiagnosticSupportInput, worth_foundational::FoundationalDiagnosticSupportReport, worth_foundational::FoundationalDiagnosticSupportRow, worth_foundational::FoundationalDiagnosticSurfaceAvailability, worth_foundational::FoundationalDiagnosticWidenedFalloutPosture, worth_foundational::SupportPostureProfile};
+pub(crate) use {
+    worth_foundational::foundational_diagnostic_code,
+    worth_foundational::foundational_diagnostic_locator_boundary_artifact,
+    worth_foundational::foundational_diagnostic_scope, worth_foundational::BoundaryArtifactField,
+    worth_foundational::BoundaryArtifactId, worth_foundational::BoundaryArtifactLocator,
+    worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry,
+    worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus,
+    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalIntegerWidth,
+    worth_foundational::DiagnosticRichnessProfile,
+    worth_foundational::FoundationalDiagnosticComparisonRow,
+    worth_foundational::FoundationalDiagnosticDecisionRow,
+    worth_foundational::FoundationalDiagnosticDeliveryClass,
+    worth_foundational::FoundationalDiagnosticEvidencePosture,
+    worth_foundational::FoundationalDiagnosticExplanationBundle,
+    worth_foundational::FoundationalDiagnosticExplanationInput,
+    worth_foundational::FoundationalDiagnosticGapClass,
+    worth_foundational::FoundationalDiagnosticGapClosurePosture,
+    worth_foundational::FoundationalDiagnosticGapTarget,
+    worth_foundational::FoundationalDiagnosticLocalityClaim,
+    worth_foundational::FoundationalDiagnosticNamedGap,
+    worth_foundational::FoundationalDiagnosticOutcomeKind,
+    worth_foundational::FoundationalDiagnosticPartiality,
+    worth_foundational::FoundationalDiagnosticProvenanceReadyRow,
+    worth_foundational::FoundationalDiagnosticRow,
+    worth_foundational::FoundationalDiagnosticSemanticLabelSet,
+    worth_foundational::FoundationalDiagnosticSeverity,
+    worth_foundational::FoundationalDiagnosticSupportClaimStrength,
+    worth_foundational::FoundationalDiagnosticSupportEvidencePosture,
+    worth_foundational::FoundationalDiagnosticSupportInput,
+    worth_foundational::FoundationalDiagnosticSupportReport,
+    worth_foundational::FoundationalDiagnosticSupportRow,
+    worth_foundational::FoundationalDiagnosticSurfaceAvailability,
+    worth_foundational::FoundationalDiagnosticWidenedFalloutPosture,
+    worth_foundational::SupportPostureProfile,
+};
 
-pub(crate) use {crate::certification::ordinary_context::diagnostics::materialization_support::counters, crate::certification::ordinary_context::diagnostics::materialization_support::locator, crate::certification::ordinary_context::diagnostics::materialization_support::profile, crate::certification::ordinary_context::diagnostics::materialization_support::subject};
+pub(crate) use {
+    crate::certification::ordinary_context::diagnostics::materialization_support::counters,
+    crate::certification::ordinary_context::diagnostics::materialization_support::locator,
+    crate::certification::ordinary_context::diagnostics::materialization_support::profile,
+    crate::certification::ordinary_context::diagnostics::materialization_support::subject,
+};
 
 pub(crate) fn version() -> worth_foundational::CanonicalizationRuleVersion {
     worth_foundational::CanonicalizationRuleVersion::new("milestone-6-phase-4")
@@ -101,18 +140,20 @@ pub(crate) fn explanation_bundle_with_mixed_rows(
             subject(),
             worth_foundational::FoundationalDiagnosticOutcomeKind::Mismatch,
             vec![
-                worth_foundational::FoundationalDiagnosticRow::Decision(worth_foundational::FoundationalDiagnosticDecisionRow::new(
-                    code("decision.branch"),
-                    scope("diagnostics.decision"),
-                    worth_foundational::FoundationalDiagnosticSeverity::Info,
-                    subject(),
-                    locator(),
-                    worth_foundational::FoundationalDiagnosticOutcomeKind::Accepted,
-                    labels(["decision"]),
-                    None,
-                    worth_foundational::FoundationalDiagnosticLocalityClaim::ExactSubject,
-                    worth_foundational::FoundationalDiagnosticWidenedFalloutPosture::NotWidened,
-                )),
+                worth_foundational::FoundationalDiagnosticRow::Decision(
+                    worth_foundational::FoundationalDiagnosticDecisionRow::new(
+                        code("decision.branch"),
+                        scope("diagnostics.decision"),
+                        worth_foundational::FoundationalDiagnosticSeverity::Info,
+                        subject(),
+                        locator(),
+                        worth_foundational::FoundationalDiagnosticOutcomeKind::Accepted,
+                        labels(["decision"]),
+                        None,
+                        worth_foundational::FoundationalDiagnosticLocalityClaim::ExactSubject,
+                        worth_foundational::FoundationalDiagnosticWidenedFalloutPosture::NotWidened,
+                    ),
+                ),
                 support_row(
                     "support.required",
                     worth_foundational::FoundationalDiagnosticEvidencePosture::RetainedDirect,
@@ -131,24 +172,26 @@ pub(crate) fn explanation_bundle_with_mixed_rows(
                     comparison_posture,
                 ),
             )],
-            vec![worth_foundational::FoundationalDiagnosticRow::ProvenanceReady(
-                worth_foundational::FoundationalDiagnosticProvenanceReadyRow::new(
-                    code("provenance.origin"),
-                    scope("diagnostics.provenance"),
-                    worth_foundational::FoundationalDiagnosticSeverity::Info,
-                    subject(),
-                    locator(),
-                    worth_foundational::FoundationalDiagnosticOutcomeKind::Deferred,
-                    labels(["provenance"]),
-                    foundational_diagnostic_locator_boundary_artifact(
-                        worth_foundational::BoundaryArtifactLocator::new(
-                            worth_foundational::BoundaryArtifactId::new(51),
-                            worth_foundational::BoundaryArtifactField::Proofs,
+            vec![
+                worth_foundational::FoundationalDiagnosticRow::ProvenanceReady(
+                    worth_foundational::FoundationalDiagnosticProvenanceReadyRow::new(
+                        code("provenance.origin"),
+                        scope("diagnostics.provenance"),
+                        worth_foundational::FoundationalDiagnosticSeverity::Info,
+                        subject(),
+                        locator(),
+                        worth_foundational::FoundationalDiagnosticOutcomeKind::Deferred,
+                        labels(["provenance"]),
+                        foundational_diagnostic_locator_boundary_artifact(
+                            worth_foundational::BoundaryArtifactLocator::new(
+                                worth_foundational::BoundaryArtifactId::new(51),
+                                worth_foundational::BoundaryArtifactField::Proofs,
+                            ),
                         ),
+                        worth_foundational::FoundationalDiagnosticEvidencePosture::Reconstructed,
                     ),
-                    worth_foundational::FoundationalDiagnosticEvidencePosture::Reconstructed,
                 ),
-            )],
+            ],
             worth_foundational::FoundationalDiagnosticSurfaceAvailability::deferred_cold(),
             worth_foundational::FoundationalDiagnosticPartiality::PartialWithNamedGaps(vec![
                 worth_foundational::FoundationalDiagnosticNamedGap::new(
@@ -175,28 +218,32 @@ pub(crate) fn explanation_bundle_with_mixed_rows(
 pub(crate) fn explanation_bundle_with_tied_common_rows(
     comparison_rows_reversed: bool,
 ) -> FoundationalDiagnosticExplanationBundle {
-    let first = worth_foundational::FoundationalDiagnosticRow::Comparison(worth_foundational::FoundationalDiagnosticComparisonRow::new(
-        code("comparison.tied"),
-        scope("diagnostics.comparison"),
-        worth_foundational::FoundationalDiagnosticSeverity::Advisory,
-        subject(),
-        locator(),
-        worth_foundational::FoundationalDiagnosticOutcomeKind::Mismatch,
-        labels(["comparison", "tied"]),
-        None,
-        worth_foundational::FoundationalDiagnosticEvidencePosture::RetainedDirect,
-    ));
-    let second = worth_foundational::FoundationalDiagnosticRow::Comparison(worth_foundational::FoundationalDiagnosticComparisonRow::new(
-        code("comparison.tied"),
-        scope("diagnostics.comparison"),
-        worth_foundational::FoundationalDiagnosticSeverity::Advisory,
-        subject(),
-        locator(),
-        worth_foundational::FoundationalDiagnosticOutcomeKind::Mismatch,
-        labels(["comparison", "tied"]),
-        Some(locator()),
-        worth_foundational::FoundationalDiagnosticEvidencePosture::Summarized,
-    ));
+    let first = worth_foundational::FoundationalDiagnosticRow::Comparison(
+        worth_foundational::FoundationalDiagnosticComparisonRow::new(
+            code("comparison.tied"),
+            scope("diagnostics.comparison"),
+            worth_foundational::FoundationalDiagnosticSeverity::Advisory,
+            subject(),
+            locator(),
+            worth_foundational::FoundationalDiagnosticOutcomeKind::Mismatch,
+            labels(["comparison", "tied"]),
+            None,
+            worth_foundational::FoundationalDiagnosticEvidencePosture::RetainedDirect,
+        ),
+    );
+    let second = worth_foundational::FoundationalDiagnosticRow::Comparison(
+        worth_foundational::FoundationalDiagnosticComparisonRow::new(
+            code("comparison.tied"),
+            scope("diagnostics.comparison"),
+            worth_foundational::FoundationalDiagnosticSeverity::Advisory,
+            subject(),
+            locator(),
+            worth_foundational::FoundationalDiagnosticOutcomeKind::Mismatch,
+            labels(["comparison", "tied"]),
+            Some(locator()),
+            worth_foundational::FoundationalDiagnosticEvidencePosture::Summarized,
+        ),
+    );
     let standard_rows = if comparison_rows_reversed {
         vec![second, first]
     } else {
@@ -270,18 +317,20 @@ pub(crate) fn support_row(
     code_value: &str,
     posture: FoundationalDiagnosticEvidencePosture,
 ) -> FoundationalDiagnosticRow {
-    worth_foundational::FoundationalDiagnosticRow::Support(worth_foundational::FoundationalDiagnosticSupportRow::new(
-        code(code_value),
-        scope("diagnostics.support"),
-        worth_foundational::FoundationalDiagnosticSeverity::Advisory,
-        subject(),
-        locator(),
-        worth_foundational::FoundationalDiagnosticOutcomeKind::Accepted,
-        labels([code_value]),
-        worth_foundational::FoundationalDiagnosticSupportEvidencePosture::Present(posture),
-        worth_foundational::FoundationalDiagnosticLocalityClaim::ExactSubject,
-        worth_foundational::FoundationalDiagnosticWidenedFalloutPosture::NotWidened,
-    ))
+    worth_foundational::FoundationalDiagnosticRow::Support(
+        worth_foundational::FoundationalDiagnosticSupportRow::new(
+            code(code_value),
+            scope("diagnostics.support"),
+            worth_foundational::FoundationalDiagnosticSeverity::Advisory,
+            subject(),
+            locator(),
+            worth_foundational::FoundationalDiagnosticOutcomeKind::Accepted,
+            labels([code_value]),
+            worth_foundational::FoundationalDiagnosticSupportEvidencePosture::Present(posture),
+            worth_foundational::FoundationalDiagnosticLocalityClaim::ExactSubject,
+            worth_foundational::FoundationalDiagnosticWidenedFalloutPosture::NotWidened,
+        ),
+    )
 }
 
 pub(crate) fn code(value: &str) -> worth_foundational::FoundationalDiagnosticCodeId {

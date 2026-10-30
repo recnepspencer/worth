@@ -1,9 +1,33 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::residency_writeback_lifecycle::*;
-use {worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint, worth_store::physical_runtime::AdmittedDirtyFrame, worth_store::physical_runtime::PhysicalEffectObligation, worth_store::physical_runtime::PhysicalResidencyCertification, worth_store::physical_runtime::PhysicalSignalSettlementOutcome, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkPreEffectDenial, worth_store::physical_runtime::PhysicalWorkRecoveryDisposition, worth_store::physical_runtime::PhysicalWritebackExecution, worth_store::physical_runtime::PhysicalWritebackFailureCause};
-use {worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement, worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
-use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::residency_writeback_lifecycle::*;
+use {
+    worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint,
+    worth_store::physical_runtime::AdmittedDirtyFrame,
+    worth_store::physical_runtime::PhysicalEffectObligation,
+    worth_store::physical_runtime::PhysicalResidencyCertification,
+    worth_store::physical_runtime::PhysicalSignalSettlementOutcome,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
+    worth_store::physical_runtime::PhysicalWorkRecoveryDisposition,
+    worth_store::physical_runtime::PhysicalWritebackExecution,
+    worth_store::physical_runtime::PhysicalWritebackFailureCause,
+};
+use {
+    worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement,
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole,
+};
+use {
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_open_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_open_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 #[test]
 fn scheduler_admitted_cancellation_cannot_reach_writeback_dispatch() {
@@ -50,7 +74,9 @@ fn scheduler_admitted_cancellation_cannot_reach_writeback_dispatch() {
     };
     assert_eq!(
         failure.cause(),
-        worth_store::physical_runtime::PhysicalWritebackFailureCause::PreEffect(worth_store::physical_runtime::PhysicalWorkPreEffectDenial::ConsumerCancelled),
+        worth_store::physical_runtime::PhysicalWritebackFailureCause::PreEffect(
+            worth_store::physical_runtime::PhysicalWorkPreEffectDenial::ConsumerCancelled
+        ),
         "C5_PREDICATE:predispatch-cancellation-dispatches"
     );
     failure.into_dirty().discard().unwrap();
@@ -135,7 +161,9 @@ fn cancellation_after_writeback_media_preserves_store_settlement() {
 
     let settlement = match execution {
         worth_store::physical_runtime::PhysicalWritebackExecution::Clean(settlement) => settlement,
-        worth_store::physical_runtime::PhysicalWritebackExecution::Retryable(_) => panic!("exact writeback became retryable"),
+        worth_store::physical_runtime::PhysicalWritebackExecution::Retryable(_) => {
+            panic!("exact writeback became retryable")
+        }
         worth_store::physical_runtime::PhysicalWritebackExecution::InspectionRequired(_) => {
             panic!("exact writeback required inspection")
         }
@@ -158,7 +186,9 @@ fn cancellation_after_writeback_media_preserves_store_settlement() {
         serving
             .media_counters()
             .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
-        media_before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite) + 1
+        media_before
+            .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
+            + 1
     );
     let scheduler_after = serving.physical_scheduler_capacity();
     assert!(
@@ -221,7 +251,9 @@ fn predispatch_timeout_returns_dirty_authority_without_a_media_attempt() {
     };
     assert!(matches!(
         failure.cause(),
-        worth_store::physical_runtime::PhysicalWritebackFailureCause::PreEffect(worth_store::physical_runtime::PhysicalWorkPreEffectDenial::ConsumerCancelled)
+        worth_store::physical_runtime::PhysicalWritebackFailureCause::PreEffect(
+            worth_store::physical_runtime::PhysicalWorkPreEffectDenial::ConsumerCancelled
+        )
     ));
     let dirty = failure.into_dirty();
     assert_eq!(dirty.coordinate(), coordinate);
@@ -272,7 +304,9 @@ fn partial_writeback_retains_dirty_truth_and_exact_indeterminate_observation() {
     );
 
     let inspection = match residency.execute_writeback(admitted).unwrap() {
-        worth_store::physical_runtime::PhysicalWritebackExecution::InspectionRequired(inspection) => inspection,
+        worth_store::physical_runtime::PhysicalWritebackExecution::InspectionRequired(
+            inspection,
+        ) => inspection,
         worth_store::physical_runtime::PhysicalWritebackExecution::Clean(_) => {
             panic!("a partial physical writeback cannot publish clean")
         }
@@ -298,7 +332,9 @@ fn partial_writeback_retains_dirty_truth_and_exact_indeterminate_observation() {
         serving
             .media_counters()
             .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
-        media_before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite) + 1
+        media_before
+            .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
+            + 1
     );
     let writeback_after = serving.residency_observation().writebacks();
     assert_eq!(

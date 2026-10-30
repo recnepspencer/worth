@@ -1,10 +1,19 @@
-
-
-use {crate::branch_retention_lifecycle::ordinary_context::retention_support::fork_with_historical_target, crate::branch_retention_lifecycle::ordinary_context::retention_support::runtime};
-use {worth_proof::TransitionOutcome};
-use {worth_signal::facade::branch::SignalBranchBasisReadmissionDenial, worth_signal::facade::branch::SignalBranchRetainedReadmissionDenial, worth_signal::facade::branch::SignalBranchRetentionAcquisitionDenial, worth_signal::facade::branch::SignalBranchRetentionOwnerPosture, worth_signal::facade::branch::SignalBranchRetentionReleaseDenial, worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome, worth_signal::facade::branch::SignalBranchRetentionTerminalOutcome};
-use {worth_signal::facade::runtime::SignalBranchRetirementDenial};
-use {worth_signal::facade::SignalBranchRetirementReason};
+use worth_proof::TransitionOutcome;
+use worth_signal::facade::runtime::SignalBranchRetirementDenial;
+use worth_signal::facade::SignalBranchRetirementReason;
+use {
+    crate::branch_retention_lifecycle::ordinary_context::retention_support::fork_with_historical_target,
+    crate::branch_retention_lifecycle::ordinary_context::retention_support::runtime,
+};
+use {
+    worth_signal::facade::branch::SignalBranchBasisReadmissionDenial,
+    worth_signal::facade::branch::SignalBranchRetainedReadmissionDenial,
+    worth_signal::facade::branch::SignalBranchRetentionAcquisitionDenial,
+    worth_signal::facade::branch::SignalBranchRetentionOwnerPosture,
+    worth_signal::facade::branch::SignalBranchRetentionReleaseDenial,
+    worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome,
+    worth_signal::facade::branch::SignalBranchRetentionTerminalOutcome,
+};
 
 #[test]
 fn an_exact_obligation_pins_a_real_historical_admitted_target() {
@@ -15,7 +24,9 @@ fn an_exact_obligation_pins_a_real_historical_admitted_target() {
     // historical descriptor is legitimately refused there.
     assert!(matches!(
         runtime.readmit_signal_branch_basis(historical.descriptor().clone()),
-        Err(worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::ReferenceMismatch { .. })
+        Err(
+            worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::ReferenceMismatch { .. }
+        )
     ));
 
     // The exact obligation is a different question, and it is answered `yes`.
@@ -68,7 +79,9 @@ fn a_live_obligation_readmits_its_exact_retained_target() {
         .expect("owner observation should succeed");
     assert!(matches!(
         runtime.readmit_retained_signal_branch_basis(other.descriptor().clone(), &lease),
-        Err(worth_signal::facade::branch::SignalBranchRetainedReadmissionDenial::DescriptorMismatch)
+        Err(
+            worth_signal::facade::branch::SignalBranchRetainedReadmissionDenial::DescriptorMismatch
+        )
     ));
 
     // A foreign owner cannot spend another owner's obligation.
@@ -96,7 +109,9 @@ fn explicit_release_returns_governed_exact_target_evidence() {
         .expect("the same exact target may carry more than one obligation");
 
     let receipt = match runtime.release_signal_component_basis(first) {
-        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => receipt,
+        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => {
+            receipt
+        }
         other => panic!("an owner release must succeed: {other:?}"),
     };
     assert_eq!(receipt.released_target(), &retained_target);
@@ -109,7 +124,9 @@ fn explicit_release_returns_governed_exact_target_evidence() {
     assert_eq!(receipt.remaining_branch_leases(), 1);
 
     let receipt = match runtime.release_signal_component_basis(second) {
-        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => receipt,
+        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => {
+            receipt
+        }
         other => panic!("an owner release must succeed: {other:?}"),
     };
     assert_eq!(receipt.remaining_target_leases(), 0);
@@ -138,10 +155,12 @@ fn dropping_an_obligation_is_the_same_terminal_release() {
     );
     assert!(matches!(
         denied,
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::runtime::SignalBranchRetirementDenial::RetainedComponentBasis {
-            active_leases: 1,
-            ..
-        })
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::runtime::SignalBranchRetirementDenial::RetainedComponentBasis {
+                active_leases: 1,
+                ..
+            }
+        )
     ));
 
     drop(lease);
@@ -317,10 +336,12 @@ fn deletion_waits_for_the_exact_obligation_and_then_reclaims_it() {
     );
     assert!(matches!(
         denied,
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::runtime::SignalBranchRetirementDenial::RetainedComponentBasis {
-            active_leases: 1,
-            ..
-        })
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::runtime::SignalBranchRetirementDenial::RetainedComponentBasis {
+                active_leases: 1,
+                ..
+            }
+        )
     ));
 
     // While the obligation lives, the exact historical target is still there.
@@ -330,7 +351,9 @@ fn deletion_waits_for_the_exact_obligation_and_then_reclaims_it() {
         .descriptor();
 
     let receipt = match runtime.release_signal_component_basis(lease) {
-        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => receipt,
+        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => {
+            receipt
+        }
         other => panic!("an owner release must succeed: {other:?}"),
     };
     assert_eq!(receipt.remaining_branch_leases(), 0);

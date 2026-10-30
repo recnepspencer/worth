@@ -1,14 +1,42 @@
-#[allow(unused_imports)] use crate::phase_eight_process::production::writer_crash::successor_candidate_admission::*;
-use {worth_store::physical_runtime::ArtifactDamage, worth_store::physical_runtime::FilesystemObservationBound, worth_store::physical_runtime::RecoveryDiscoveryArtifact, worth_store::physical_runtime::RecoveryDiscoveryFailure};
-use {worth_store_physical_format::RecordArtifactFile};
-use {worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial, worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial, worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateMismatch};
+#[allow(unused_imports)]
+use crate::phase_eight_process::production::writer_crash::successor_candidate_admission::*;
+use worth_store_physical_format::RecordArtifactFile;
+use {
+    worth_store::physical_runtime::ArtifactDamage,
+    worth_store::physical_runtime::FilesystemObservationBound,
+    worth_store::physical_runtime::RecoveryDiscoveryArtifact,
+    worth_store::physical_runtime::RecoveryDiscoveryFailure,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+    worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial,
+    worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateMismatch,
+};
 
-use {crate::history::schedule::in_flight_mutation::MutationCrashWorkload, crate::phase_eight_process::production::harness::ProcessWorld};
-use {crate::production::writer_crash::manifest_entry_cost};
-use {crate::production::writer_crash::persisted_world::copy_directory, crate::production::writer_crash::persisted_world::raw_media_snapshot};
-use {crate::production::writer_crash::recovery_planning::plan_with_limits, crate::production::writer_crash::recovery_planning::plan_with_memory, crate::production::writer_crash::recovery_planning::successor_limits, crate::production::writer_crash::recovery_planning::successor_limits_with_manifest_entries, crate::production::writer_crash::recovery_planning::successor_limits_with_observation};
-use {crate::production::writer_crash::successor_candidate_cost::candidate_cost};
-use {crate::production::writer_crash::successor_candidate_media::candidate_root_path, crate::production::writer_crash::successor_candidate_media::mutate_candidate, crate::production::writer_crash::successor_candidate_media::remove_candidate_topology};
+use crate::production::writer_crash::manifest_entry_cost;
+use crate::production::writer_crash::successor_candidate_cost::candidate_cost;
+use {
+    crate::history::schedule::in_flight_mutation::MutationCrashWorkload,
+    crate::phase_eight_process::production::harness::ProcessWorld,
+};
+use {
+    crate::production::writer_crash::persisted_world::copy_directory,
+    crate::production::writer_crash::persisted_world::raw_media_snapshot,
+};
+use {
+    crate::production::writer_crash::recovery_planning::plan_with_limits,
+    crate::production::writer_crash::recovery_planning::plan_with_memory,
+    crate::production::writer_crash::recovery_planning::successor_limits,
+    crate::production::writer_crash::recovery_planning::successor_limits_with_manifest_entries,
+    crate::production::writer_crash::recovery_planning::successor_limits_with_observation,
+};
+use {
+    crate::production::writer_crash::successor_candidate_media::candidate_root_path,
+    crate::production::writer_crash::successor_candidate_media::mutate_candidate,
+    crate::production::writer_crash::successor_candidate_media::remove_candidate_topology,
+};
 
 #[test]
 fn successor_candidate_denial_is_typed_and_residency_is_admitted_before_allocation() {
@@ -97,8 +125,9 @@ fn successor_candidate_denial_is_typed_and_residency_is_admitted_before_allocati
 fn successor_candidate_uses_one_cumulative_exact_manifest_entry_limit() {
     let world = candidate_world(0xC8_09_00_67, 0xC8_19_00_67);
     let generation = world.writer.history.current_root_generation().unwrap() + 1;
-    let required = crate::production::writer_crash::manifest_entry_cost::required_before_successor(&world.writer.root)
-        + candidate_cost(&world.writer.root, generation).manifest_entries;
+    let required = crate::production::writer_crash::manifest_entry_cost::required_before_successor(
+        &world.writer.root,
+    ) + candidate_cost(&world.writer.root, generation).manifest_entries;
     let exact = plan_with_limits(
         &world.writer.root,
         successor_limits_with_manifest_entries(64 * 1024 * 1024, required),

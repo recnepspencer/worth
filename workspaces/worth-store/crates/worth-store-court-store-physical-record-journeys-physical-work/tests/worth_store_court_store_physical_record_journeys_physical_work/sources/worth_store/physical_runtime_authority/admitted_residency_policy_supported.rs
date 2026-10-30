@@ -9,7 +9,7 @@ use worth_store::physical_runtime::{
 #[path = "support/durability.rs"]
 mod durability;
 
-fn main() {
+pub(crate) fn main() {
     let format = AdmittedPhysicalRecordFormat::admit(
         PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
     );

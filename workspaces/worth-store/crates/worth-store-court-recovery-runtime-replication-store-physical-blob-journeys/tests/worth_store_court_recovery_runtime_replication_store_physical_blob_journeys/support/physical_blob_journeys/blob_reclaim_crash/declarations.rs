@@ -1,9 +1,37 @@
-pub(crate) use {std::fs, std::num::NonZeroU64, std::path::Path, std::thread, std::time::Duration, std::time::Instant};
+pub(crate) use {
+    std::fs, std::num::NonZeroU64, std::path::Path, std::thread, std::time::Duration,
+    std::time::Instant,
+};
 
-pub(crate) use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobResumeToken};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::PersistedRecordIdentity};
+pub(crate) use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReadOpenFailure,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobResumeToken,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
 
-pub(crate) use {crate::physical_blob_journeys::blob_crash::establish_recovery_frontier, crate::physical_blob_journeys::blob_crash::kill_at, crate::physical_blob_journeys::blob_crash::marker_path, crate::blob_crash::recovery::recover_closed_store, crate::physical_blob_journeys::blob_crash::resume_token_path, crate::physical_blob_journeys::blob_crash::write_marker, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, crate::physical_blob_journeys::blob_reclaim::abandoned_prefix, crate::physical_blob_journeys::blob_reclaim::request, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_initialization_with_wal_segment_bytes, worth_store_testkit_store::fixture::serving_from_open, worth_store_testkit_store::fixture::serving_from_open_with_wal_segment_bytes};
+pub(crate) use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
+    crate::physical_blob_journeys::blob_crash::kill_at,
+    crate::physical_blob_journeys::blob_crash::marker_path,
+    crate::physical_blob_journeys::blob_crash::resume_token_path,
+    crate::physical_blob_journeys::blob_crash::write_marker,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    crate::physical_blob_journeys::blob_reclaim::abandoned_prefix,
+    crate::physical_blob_journeys::blob_reclaim::request,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_initialization_with_wal_segment_bytes,
+    worth_store_testkit_store::fixture::serving_from_open,
+    worth_store_testkit_store::fixture::serving_from_open_with_wal_segment_bytes,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 pub(crate) const SCOPE_KEY: &str = "c11.blob.reclaim.failed.scope";
 pub(crate) const AGED_RESERVATION: &str = "crash-reclaim-reservation-aged";
@@ -25,7 +53,9 @@ pub(crate) fn assert_killed_reclaim(role: &'static str, dropped: bool) {
             world.object,
             1,
             &scope,
-            worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap()),
+            worth_store::physical_runtime::BlobReadLimits::new(
+                std::num::NonZeroU64::new(128).unwrap()
+            ),
         ),
         Err(worth_store::physical_runtime::BlobReadOpenFailure::PublicationNotFound)
     ));
@@ -43,18 +73,26 @@ pub(crate) fn assert_killed_reclaim(role: &'static str, dropped: bool) {
             continue;
         }
         match decode_blob_record(bytes).expect("selected blob record must decode") {
-            worth_store_physical_format::BlobRecordV1::SessionDeclared(value) if value.session() == world.session => {
+            worth_store_physical_format::BlobRecordV1::SessionDeclared(value)
+                if value.session() == world.session =>
+            {
                 assert_eq!(value.object(), world.object);
                 declaration += 1;
             }
-            worth_store_physical_format::BlobRecordV1::SessionAbandoned(value) if value.session() == world.session => {
+            worth_store_physical_format::BlobRecordV1::SessionAbandoned(value)
+                if value.session() == world.session =>
+            {
                 terminal += 1;
             }
-            worth_store_physical_format::BlobRecordV1::Chunk(value) if value.occurrence().session() == world.session => {
+            worth_store_physical_format::BlobRecordV1::Chunk(value)
+                if value.occurrence().session() == world.session =>
+            {
                 assert!(value.occurrence().ordinal() < 2);
                 chunks += 1;
             }
-            worth_store_physical_format::BlobRecordV1::SessionFrontier(value) if value.session() == world.session => {
+            worth_store_physical_format::BlobRecordV1::SessionFrontier(value)
+                if value.session() == world.session =>
+            {
                 assert!(frontier.replace(persisted(*record)).is_none());
             }
             worth_store_physical_format::BlobRecordV1::DropSetManifestV2(value)
@@ -62,13 +100,17 @@ pub(crate) fn assert_killed_reclaim(role: &'static str, dropped: bool) {
             {
                 assert!(manifest.replace((*record, value)).is_none());
             }
-            worth_store_physical_format::BlobRecordV1::OriginalDropReserved(value) if value.source_basis_digest() != [0; 32] => {
+            worth_store_physical_format::BlobRecordV1::OriginalDropReserved(value)
+                if value.source_basis_digest() != [0; 32] =>
+            {
                 assert!(reservation.replace((*record, value)).is_none());
             }
             worth_store_physical_format::BlobRecordV1::ReclaimDescriptor(value) => {
                 assert!(descriptor.replace((*record, value)).is_none());
             }
-            worth_store_physical_format::BlobRecordV1::GenerationPublished(value) if value.session() == world.session => {
+            worth_store_physical_format::BlobRecordV1::GenerationPublished(value)
+                if value.session() == world.session =>
+            {
                 panic!("failed ingest cannot publish a generation")
             }
             _ => {}
@@ -143,8 +185,10 @@ pub(crate) fn assert_killed_reclaim(role: &'static str, dropped: bool) {
     if !dropped {
         // Neither a selected NeverReserved manifest nor a recovered no-binding
         // reservation may strand the failed ingest's payload.
-        let token =
-            worth_store::physical_runtime::BlobResumeToken::decode(&std::fs::read(resume_token_path(&world.root)).unwrap()).unwrap();
+        let token = worth_store::physical_runtime::BlobResumeToken::decode(
+            &std::fs::read(resume_token_path(&world.root)).unwrap(),
+        )
+        .unwrap();
         let serving = if aged {
             serving_from_open_with_wal_segment_bytes(&world.root, SHORT_WAL_SEGMENT_BYTES)
         } else {
@@ -172,7 +216,10 @@ pub(crate) fn assert_killed_reclaim(role: &'static str, dropped: bool) {
                 .unwrap()
                 .wait()
                 .unwrap();
-            assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+            assert_eq!(
+                receipt.disposition(),
+                worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+            );
             assert_eq!(receipt.remaining_payload_records(), remaining);
             if aged {
                 assert_eq!(
@@ -209,8 +256,14 @@ pub(crate) fn assert_killed_reclaim(role: &'static str, dropped: bool) {
     }
 }
 
-pub(crate) fn persisted(record: worth_store::physical_runtime::PhysicalRecordId) -> PersistedRecordIdentity {
-    worth_store_physical_format::PersistedRecordIdentity::new(record.allocation_epoch(), record.ordinal()).unwrap()
+pub(crate) fn persisted(
+    record: worth_store::physical_runtime::PhysicalRecordId,
+) -> PersistedRecordIdentity {
+    worth_store_physical_format::PersistedRecordIdentity::new(
+        record.allocation_epoch(),
+        record.ordinal(),
+    )
+    .unwrap()
 }
 
 pub(crate) fn child(root: &Path, role: &str) {
@@ -227,7 +280,9 @@ pub(crate) fn child(root: &Path, role: &str) {
     let object = selected_blob_records(&serving)
         .into_iter()
         .find_map(|(_, bytes)| match decode_blob_record(&bytes) {
-            Ok(worth_store_physical_format::BlobRecordV1::SessionDeclared(value)) if value.session() == session => {
+            Ok(worth_store_physical_format::BlobRecordV1::SessionDeclared(value))
+                if value.session() == session =>
+            {
                 Some(value.object())
             }
             _ => None,

@@ -25,7 +25,9 @@ fn scale_writer_child() {
     let (root, count, capacity) = case_from_env();
     let (format, _, access) = configuration();
     let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
-        .arena_capacity(worth_store::physical_runtime::ExtentArenaCapacity::bytes(capacity).unwrap())
+        .arena_capacity(
+            worth_store::physical_runtime::ExtentArenaCapacity::bytes(capacity).unwrap(),
+        )
         // Each batch reserves its arena ranges before root publication. The
         // default 64 KiB index has 15 slots shared by free ranges and claims,
         // with admission headroom reserved.
@@ -35,9 +37,11 @@ fn scale_writer_child() {
     let media = worth_store_testkit_store::physical_record_journeys::media(&root);
     let durability = large_population_durability(&media);
     let serving = worth_store_testkit_store::physical_record_journeys::success(
-        media.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
-            format, placement, access, durability,
-        )),
+        media.initialize_record_store(
+            worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                format, placement, access, durability,
+            ),
+        ),
     );
     let mut published_records = 0_u64;
     let mut batch_number = 0_u64;
@@ -81,19 +85,26 @@ fn scale_reopener_child() {
     let (format, _, access) = configuration();
     let media = worth_store_testkit_store::physical_record_journeys::media(&root);
     let durability = large_population_durability(&media);
-    let serving = worth_store_testkit_store::physical_record_journeys::success(
-        media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)),
-    );
+    let serving =
+        worth_store_testkit_store::physical_record_journeys::success(media.open_record_store(
+            worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability),
+        ));
     let mut scan = serving
         .records()
         .unwrap()
-        .scan(worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(32).unwrap()))
+        .scan(
+            worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(
+                worth_store::physical_runtime::RecordCountLimit::new(32).unwrap(),
+            ),
+        )
         .unwrap();
     let mut scratch = vec![0_u8; 64 * 1024];
     let mut large = 0_u64;
     let mut small = 0_u64;
     let mut identities = std::collections::HashSet::new();
-    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) = scan.read_next_into(&mut scratch).unwrap() {
+    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) =
+        scan.read_next_into(&mut scratch).unwrap()
+    {
         for record in batch.records() {
             assert!(
                 identities.insert(record.record_id()),
@@ -110,11 +121,17 @@ fn scale_reopener_child() {
                 let session = reader
                     .open(
                         record.record_id(),
-                        worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected as u32).unwrap()),
+                        worth_store::physical_runtime::RecordReadLimits::new(
+                            worth_store::physical_runtime::RecordByteLimit::new(expected as u32)
+                                .unwrap(),
+                        ),
                     )
                     .unwrap();
                 assert_eq!(
-                    worth_store_testkit_store::physical_record_journeys::read_record(session, expected).0,
+                    worth_store_testkit_store::physical_record_journeys::read_record(
+                        session, expected
+                    )
+                    .0,
                     vec![value; expected]
                 );
             }

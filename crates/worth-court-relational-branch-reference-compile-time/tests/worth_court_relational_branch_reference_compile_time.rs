@@ -16,3 +16,6 @@ pub(crate) mod relational;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_relational_branch_reference_compile_time/support/relational_certification/mod.rs"]
 pub(crate) mod relational_certification;
+
+#[path = "worth_court_relational_branch_reference_compile_time/supported_programs/mod.rs"]
+mod supported_programs;

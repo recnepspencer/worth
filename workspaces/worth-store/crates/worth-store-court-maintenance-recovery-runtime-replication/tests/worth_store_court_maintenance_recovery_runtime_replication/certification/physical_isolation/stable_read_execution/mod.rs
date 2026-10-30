@@ -1,17 +1,34 @@
+use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
+use worth_store_test_support::harness::physical_isolation::read_plan as plan_admission;
 
-
-use {worth_store_test_support::harness::physical_isolation::epoch_scope as support};
-use {worth_store_test_support::harness::physical_isolation::read_plan as plan_admission};
-
-use {crate::stable_read_execution::execution_security_scope::logical_decode_entry_for_handle};
-use {crate::stable_read_execution::execution_support::with_record_chunk};
-use {worth_store_test_support::harness::physical_isolation::read_plan::admit_plan, worth_store_test_support::harness::physical_isolation::read_plan::protected_set};
-use {worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority, worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout, worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_operation_digest_closeout};
-use {worth_foundational::FoundationalBoundaryEvidenceReceiptKind, worth_foundational::FoundationalDiagnosticOutcomeKind, worth_foundational::FoundationalDiagnosticRowFamily};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::stability::PhysicalByteGuard, worth_store::physical_runtime::stability::PhysicalByteGuardDenial, worth_store::physical_runtime::stability::PhysicalByteGuardScope, worth_store::physical_runtime::stability::PhysicalReadExecutionDenial, worth_store::physical_runtime::stability::PhysicalReadIoAttempt, worth_store::physical_runtime::stability::StablePhysicalReadExecution};
-use {worth_store_physical_format::PhysicalCellReuseDomain};
-use {worth_store_physical_isolation::PhysicalReadPlanRetryPosture};
+use crate::stable_read_execution::execution_security_scope::logical_decode_entry_for_handle;
+use crate::stable_read_execution::execution_support::with_record_chunk;
+use worth_proof::TransitionOutcome;
+use worth_store_physical_format::PhysicalCellReuseDomain;
+use worth_store_physical_isolation::PhysicalReadPlanRetryPosture;
+use {
+    worth_foundational::FoundationalBoundaryEvidenceReceiptKind,
+    worth_foundational::FoundationalDiagnosticOutcomeKind,
+    worth_foundational::FoundationalDiagnosticRowFamily,
+};
+use {
+    worth_store::physical_runtime::stability::PhysicalByteGuard,
+    worth_store::physical_runtime::stability::PhysicalByteGuardDenial,
+    worth_store::physical_runtime::stability::PhysicalByteGuardScope,
+    worth_store::physical_runtime::stability::PhysicalReadExecutionDenial,
+    worth_store::physical_runtime::stability::PhysicalReadIoAttempt,
+    worth_store::physical_runtime::stability::StablePhysicalReadExecution,
+};
+use {
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_operation_digest_closeout,
+};
+use {
+    worth_store_test_support::harness::physical_isolation::read_plan::admit_plan,
+    worth_store_test_support::harness::physical_isolation::read_plan::protected_set,
+};
 
 #[test]
 fn real_store_chunks_preserve_inline_and_top_level_extent_owners() {
@@ -35,9 +52,11 @@ fn real_store_chunks_preserve_inline_and_top_level_extent_owners() {
             assert!(owner.segment_id().is_none());
             assert!(owner.extent_id().is_some());
             assert_eq!(
-                worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(&chunk)
-                    .reference()
-                    .owner(),
+                worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(
+                    &chunk
+                )
+                .reference()
+                .owner(),
                 owner
             );
         },
@@ -55,13 +74,20 @@ fn execution_consumes_handle_admits_guard_and_releases_plan() {
         let footprint_basis = plan.footprint().declared_footprint_basis();
         let admitted_plan_allocations = plan.counters().allocation_events();
         let handle = plan.into_execution_ready_handle();
-        let scope = worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(&chunk);
+        let scope =
+            worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(
+                &chunk,
+            );
         assert_eq!(scope.reference().owner(), chunk.basis().physical_owner());
         let decode_entry =
             logical_decode_entry_for_handle(&handle, scope, "execution-consumes-handle");
         let mut execution = worth_store::physical_runtime::stability::StablePhysicalReadExecution::from_execution_ready_handle(handle);
         let guard_admission = execution.admit_byte_guard(scope).unwrap();
-        let guard = worth_store::physical_runtime::stability::PhysicalByteGuard::from_record_chunk(guard_admission, chunk).unwrap();
+        let guard = worth_store::physical_runtime::stability::PhysicalByteGuard::from_record_chunk(
+            guard_admission,
+            chunk,
+        )
+        .unwrap();
 
         let guarded = execution
             .read_guarded_bytes_with_security_scope(&guard, decode_entry)
@@ -141,7 +167,10 @@ fn execution_reports_epoch_retry_without_readmission_or_replanning() {
                 receipt.observed_root_epoch().get(),
                 drifted_root.epoch().get()
             );
-            assert_eq!(receipt.retry_posture(), worth_store_physical_isolation::PhysicalReadPlanRetryPosture::Retry);
+            assert_eq!(
+                receipt.retry_posture(),
+                worth_store_physical_isolation::PhysicalReadPlanRetryPosture::Retry
+            );
             assert_eq!(receipt.counters().retry_decisions(), 1);
         }
         worth_proof::TransitionOutcome::RebindRequired(receipt) => {
@@ -184,7 +213,10 @@ fn store_chunk_guard_rejects_mismatched_chunk_basis() {
             let mut execution = worth_store::physical_runtime::stability::StablePhysicalReadExecution::from_execution_ready_handle(
                 plan.into_execution_ready_handle(),
             );
-            let scope = worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(&expected);
+            let scope =
+                worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(
+                    &expected,
+                );
             let admission = execution.admit_byte_guard(scope).unwrap();
 
             with_record_chunk(
@@ -212,7 +244,10 @@ fn execution_denies_reference_discovery_before_guard_construction() {
             let authority = physical_authority_from_complete_closeout();
             let root = current_root_from_authority(&authority);
             let protected = current_generation_page_reference(107);
-            let scope = worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(&chunk);
+            let scope =
+                worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(
+                    &chunk,
+                );
             let plan = admit_plan(&authority, root, protected_set([protected], 4), 8, 4);
             let mut execution = worth_store::physical_runtime::stability::StablePhysicalReadExecution::from_execution_ready_handle(
                 plan.into_execution_ready_handle(),
@@ -238,7 +273,10 @@ fn execution_rejects_guard_admitted_by_different_protected_footprint() {
     with_record_chunk("stable-read-left-footprint", b"left", |_serving, chunk| {
         let authority = physical_authority_from_complete_closeout();
         let root = current_root_from_authority(&authority);
-        let left_scope = worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(&chunk);
+        let left_scope =
+            worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(
+                &chunk,
+            );
         let left = left_scope.reference();
         let right = current_generation_page_reference(112);
         let left_plan = admit_plan(&authority, root, protected_set([left], 4), 8, 4);
@@ -256,7 +294,10 @@ fn execution_rejects_guard_admitted_by_different_protected_footprint() {
         let mut right_execution =
             worth_store::physical_runtime::stability::StablePhysicalReadExecution::from_execution_ready_handle(right_handle);
         let admission = left_execution.admit_byte_guard(left_scope).unwrap();
-        let guard = worth_store::physical_runtime::stability::PhysicalByteGuard::from_record_chunk(admission, chunk).unwrap();
+        let guard = worth_store::physical_runtime::stability::PhysicalByteGuard::from_record_chunk(
+            admission, chunk,
+        )
+        .unwrap();
 
         let denial = right_execution
             .read_guarded_bytes_with_security_scope(&guard, right_decode_entry)
@@ -284,11 +325,17 @@ fn ordinary_execution_denies_hidden_structural_latch_io() {
             worth_store::physical_runtime::stability::current_reference_for_record_chunk(&chunk);
         let plan = admit_plan(&authority, root, protected_set([reference], 4), 8, 4);
         let handle = plan.into_execution_ready_handle();
-        let scope = worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(&chunk);
+        let scope =
+            worth_store::physical_runtime::stability::PhysicalByteGuardScope::for_record_chunk(
+                &chunk,
+            );
         let decode_entry = logical_decode_entry_for_handle(&handle, scope, "blocking-io");
         let mut execution = worth_store::physical_runtime::stability::StablePhysicalReadExecution::from_execution_ready_handle(handle);
         let admission = execution.admit_byte_guard(scope).unwrap();
-        let guard = worth_store::physical_runtime::stability::PhysicalByteGuard::from_record_chunk(admission, chunk).unwrap();
+        let guard = worth_store::physical_runtime::stability::PhysicalByteGuard::from_record_chunk(
+            admission, chunk,
+        )
+        .unwrap();
         let denial = execution
             .read_guarded_bytes_after_io_attempt(
                 worth_store::physical_runtime::stability::PhysicalReadIoAttempt::blocking_storage_io_while_structural_latch_held(),

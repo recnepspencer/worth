@@ -55,3 +55,6 @@ pub(crate) mod vectors;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_physical_integrity/support/wal_frame_validation/mod.rs"]
 pub(crate) mod wal_frame_validation;
+
+#[path = "worth_store_court_physical_integrity/supported_programs/mod.rs"]
+mod supported_programs;

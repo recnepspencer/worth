@@ -1,12 +1,13 @@
 // Callback rollback preserves canonical truth and sibling health.
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld};
-use {crate::signal_owner_services::ordinary_context::execution_custody};
+pub(crate) use crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld;
+use crate::signal_owner_services::ordinary_context::execution_custody;
+pub(crate) use worth_signal::facade::branch::SignalOwnerCancellationSource;
 pub(crate) use {std::panic::catch_unwind, std::panic::AssertUnwindSafe};
-pub(crate) use {worth_signal::facade::branch::SignalOwnerCancellationSource};
 
 #[test]
 fn transaction_callback_panic_rolls_back_and_keeps_source_and_sibling_healthy() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let reference = world
         .basis
         .issue_managed_branch_reference(&world.root_basis)

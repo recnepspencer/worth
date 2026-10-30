@@ -1,6 +1,15 @@
 // Neutral recursive tagged, named, boxed and fixed-product grammar.
-#[allow(unused_imports)] use crate::value_shape::ordinary_context::recursive::*;
-pub(crate) use {worth_foundational::facade::decode_canonical_value, worth_foundational::facade::decode_canonical_value_with_admission, worth_foundational::facade::encode_canonical_value, worth_foundational::facade::CanonicalValue, worth_foundational::facade::ValueCodecDenial as D, worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::ValueShape, worth_foundational::facade::ValueShapeDefinition, worth_foundational::facade::ValueShapeDepth, worth_foundational::facade::WorthValue};
+#[allow(unused_imports)]
+use crate::value_shape::ordinary_context::recursive::*;
+pub(crate) use {
+    worth_foundational::facade::decode_canonical_value,
+    worth_foundational::facade::decode_canonical_value_with_admission,
+    worth_foundational::facade::encode_canonical_value, worth_foundational::facade::CanonicalValue,
+    worth_foundational::facade::ValueCodecDenial as D,
+    worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::ValueShape,
+    worth_foundational::facade::ValueShapeDefinition, worth_foundational::facade::ValueShapeDepth,
+    worth_foundational::facade::WorthValue,
+};
 
 #[test]
 fn ordinary_recursive_wire_passes_retired_depth_and_preserves_deep_refusal() {
@@ -44,7 +53,10 @@ fn ordinary_recursive_wire_passes_retired_depth_and_preserves_deep_refusal() {
             Ok(())
         },
     );
-    assert_eq!(denied, Err(worth_foundational::facade::ValueCodecDenial::Admission));
+    assert_eq!(
+        denied,
+        Err(worth_foundational::facade::ValueCodecDenial::Admission)
+    );
     assert!(stopped, "refusal reached the actual deep string allocation");
     // A complete deep first sibling is dropped on a later malformed member.
     let partial = format!(
@@ -91,7 +103,9 @@ fn recursive_production_seed_preserves_independent_wire_and_original_loan() {
         "boxed payload is admitted before construction"
     );
     assert_eq!(
-        worth_foundational::facade::ValueShapeDefinition::of::<Expression>().inspect().unwrap(),
+        worth_foundational::facade::ValueShapeDefinition::of::<Expression>()
+            .inspect()
+            .unwrap(),
         worth_foundational::facade::ValueShapeDepth::Recursive
     );
     assert!(matches!(
@@ -127,7 +141,10 @@ fn recursive_refusals_keep_cumulative_work_storage_and_fresh_retry() {
             }
             Ok(())
         });
-    assert_eq!(refused, Err(worth_foundational::facade::ValueCodecDenial::Admission));
+    assert_eq!(
+        refused,
+        Err(worth_foundational::facade::ValueCodecDenial::Admission)
+    );
     assert!(stopped);
     assert_eq!(calls_after_stop, 0);
     assert_eq!(
@@ -152,12 +169,17 @@ fn recursive_refusals_keep_cumulative_work_storage_and_fresh_retry() {
         "work-only refusal must occur in the nested boxed seed"
     );
     assert_eq!(
-        decode_canonical_value::<Expression>(RAW, worth_foundational::facade::ValueDecodeBounds::new(RAW.len() - 1, 64, 8, 24)),
+        decode_canonical_value::<Expression>(
+            RAW,
+            worth_foundational::facade::ValueDecodeBounds::new(RAW.len() - 1, 64, 8, 24)
+        ),
         Err(worth_foundational::facade::ValueCodecDenial::WireBytes)
     );
-    assert!(
-        decode_canonical_value::<Expression>(RAW, worth_foundational::facade::ValueDecodeBounds::new(4096, 64, 8, 3)).is_err()
-    );
+    assert!(decode_canonical_value::<Expression>(
+        RAW,
+        worth_foundational::facade::ValueDecodeBounds::new(4096, 64, 8, 3)
+    )
+    .is_err());
 }
 
 #[test]
@@ -197,7 +219,10 @@ fn pair_depth_refusal_keeps_its_cause_before_constructing_children() {
 }
 #[test]
 fn portable_binders_exclude_rust_names_and_local_type_identity() {
-    assert_eq!(crate::value_shape::ordinary_context::recursive::First::value_shape(), crate::value_shape::ordinary_context::recursive::Renamed::value_shape());
+    assert_eq!(
+        crate::value_shape::ordinary_context::recursive::First::value_shape(),
+        crate::value_shape::ordinary_context::recursive::Renamed::value_shape()
+    );
 }
 #[test]
 fn transparent_recursive_cycles_refuse_without_entering_a_seed() {

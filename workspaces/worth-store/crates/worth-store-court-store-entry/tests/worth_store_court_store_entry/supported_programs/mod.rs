@@ -1,0 +1,6 @@
+mod blob_streaming_supported;
+mod operation_scopes_supported;
+mod owner_disposition_observation_supported;
+mod physical_integrity_supported;
+mod physical_isolation_supported;
+mod successor_scoped_allocations_supported;

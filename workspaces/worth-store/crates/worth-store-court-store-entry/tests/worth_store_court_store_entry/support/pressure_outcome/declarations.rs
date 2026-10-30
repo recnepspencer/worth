@@ -1,4 +1,4 @@
-pub(crate) use {worth_store::physical_runtime::ProcessRuntimeCounterSnapshot};
+pub(crate) use worth_store::physical_runtime::ProcessRuntimeCounterSnapshot;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct PressureOutcome {

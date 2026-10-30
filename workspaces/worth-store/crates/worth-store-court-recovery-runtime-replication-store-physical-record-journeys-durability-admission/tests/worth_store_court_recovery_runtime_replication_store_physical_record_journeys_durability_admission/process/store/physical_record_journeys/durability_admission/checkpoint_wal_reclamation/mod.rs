@@ -1,9 +1,32 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::durability_admission::checkpoint_wal_reclamation::*;
-use {worth_proof::TransitionOutcome};
-use {worth_signal::facade::TemporalDuration};
-use {worth_store::physical_runtime::certification::MediaFaultDirective};
-use {worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalMutationAdmissionDisposition, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyKey, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome, worth_store::physical_runtime::PhysicalWalReclamationObservation, worth_store::physical_runtime::PreparedPhysicalMutation, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_physical_backend::CertificationMediaFaultActivation, worth_store_physical_backend::FilesystemAccessPosture, worth_store_physical_backend::MediaOperationRole, worth_store_physical_backend::MediaPauseGate};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::durability_admission::checkpoint_wal_reclamation::*;
+use worth_proof::TransitionOutcome;
+use worth_signal::facade::TemporalDuration;
+use worth_store::physical_runtime::certification::MediaFaultDirective;
+use {
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalMutationAdmissionDisposition,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyKey,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore,
+    worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome,
+    worth_store::physical_runtime::PhysicalWalReclamationObservation,
+    worth_store::physical_runtime::PreparedPhysicalMutation,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+use {
+    worth_store_physical_backend::CertificationMediaFaultActivation,
+    worth_store_physical_backend::FilesystemAccessPosture,
+    worth_store_physical_backend::MediaOperationRole, worth_store_physical_backend::MediaPauseGate,
+};
 
 use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy, worth_store_testkit_store::physical_record_journeys::success};
 use {worth_store_testkit_store::physical_record_journeys::durability_admission::checkpoint_retained_wal_tail::durable_group, worth_store_testkit_store::physical_record_journeys::durability_admission::checkpoint_retained_wal_tail::publish_after_foreground_rotations, worth_store_testkit_store::physical_record_journeys::durability_admission::checkpoint_retained_wal_tail::rotation_world};
@@ -17,7 +40,9 @@ fn reclaimed_wal_prefix_remains_absent_after_fresh_process_reopen() {
     let (serving, placement) = rotation_world(&store_root);
     let submission = serving.certification_record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([51; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([51; 32]),
+        )
         .unwrap();
     let base = prepare_with_key(&submission, placement, key.clone(), b"reopen-base");
     let base_identity = base.mutation_identity();
@@ -47,8 +72,9 @@ fn reclaimed_wal_prefix_remains_absent_after_fresh_process_reopen() {
     let media_owner = worth_store_testkit_store::physical_record_journeys::media(&store_root);
     let durability = durability_with_wal_policy(&media_owner, wal_policy(6));
     let (format, placement, access) = configuration();
-    let reopened =
-        success(media_owner.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)));
+    let reopened = success(media_owner.open_record_store(
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability),
+    ));
     let observation = reopened
         .certification_record_submission()
         .wal_observation()
@@ -98,7 +124,9 @@ fn denied_reclamation_preserves_the_exact_live_inventory_for_retry() {
         publish_after_foreground_rotations(&serving, submission.clone(), placement);
 
     match completed.wal_reclamation() {
-        worth_store::physical_runtime::PhysicalWalReclamationObservation::DeferredBeforeEffect(report) => {
+        worth_store::physical_runtime::PhysicalWalReclamationObservation::DeferredBeforeEffect(
+            report,
+        ) => {
             assert_eq!(report.planned_segments(), 1);
             assert_eq!(report.reclaimed_segments(), 0);
             assert_eq!(report.reclaimed_bytes(), 0);
@@ -144,7 +172,9 @@ fn second_delete_denial_preserves_the_exact_partially_reclaimed_prefix() {
     });
 
     match completed.wal_reclamation() {
-        worth_store::physical_runtime::PhysicalWalReclamationObservation::DeferredBeforeEffect(report) => {
+        worth_store::physical_runtime::PhysicalWalReclamationObservation::DeferredBeforeEffect(
+            report,
+        ) => {
             assert_eq!(report.planned_segments(), 2);
             assert_eq!(report.reclaimed_segments(), 1);
             assert!(report.reclaimed_bytes() > 0);
@@ -171,8 +201,10 @@ fn second_delete_denial_preserves_the_exact_partially_reclaimed_prefix() {
 fn indeterminate_reclamation_seals_without_consuming_inventory_truth() {
     let parent = tempfile::tempdir().unwrap();
     let store_root = parent.path().join("store");
-    let (serving, placement, activation) =
-        fault_rotation_world(&store_root, worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect);
+    let (serving, placement, activation) = fault_rotation_world(
+        &store_root,
+        worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect,
+    );
     let submission = serving.certification_record_submission();
     durable_group(&submission, placement, &[(71, b"indeterminate-base")]);
     activation.arm().unwrap();
@@ -180,7 +212,9 @@ fn indeterminate_reclamation_seals_without_consuming_inventory_truth() {
         publish_after_foreground_rotations(&serving, submission.clone(), placement);
 
     match completed.wal_reclamation() {
-        worth_store::physical_runtime::PhysicalWalReclamationObservation::InspectionRequired(report) => {
+        worth_store::physical_runtime::PhysicalWalReclamationObservation::InspectionRequired(
+            report,
+        ) => {
             assert_eq!(report.planned_segments(), 1);
             assert_eq!(report.reclaimed_segments(), 0);
             assert!(report.first_unreclaimed().is_some());

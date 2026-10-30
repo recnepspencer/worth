@@ -1,16 +1,37 @@
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily, worth_query::facade::runtime::WorthQueryRuntimeFamilySupport, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::WorthServerDirectDeliveryClass, worth_server::WorthServerDirectFreshnessMode, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerQueryRequestedResume, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+use {
+    worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily,
+    worth_query::facade::runtime::WorthQueryRuntimeFamilySupport,
+    worth_query::facade::runtime::WorthQueryRuntimeSupportProfile,
+};
+use {
+    worth_server::WorthServerDirectDeliveryClass, worth_server::WorthServerDirectFreshnessMode,
+    worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerQueryHandoffDenialCode,
+    worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation,
+    worth_server::WorthServerQueryRequestedResume, worth_server::WorthServerSurfaceFamily,
+    worth_server::WorthServerTransportClass,
+};
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture};
+use worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime};
+use worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime;
 
-use {worth_testkit_server::shared_support_query_handoff_fixture::admit_mutation_posture, worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture, worth_testkit_server::shared_support_query_handoff_fixture::denied, worth_testkit_server::shared_support_query_handoff_fixture::request_input, worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context, worth_testkit_server::shared_support_query_handoff_fixture::test_server, worth_testkit_server::shared_support_query_handoff_fixture::test_server_with_middleware};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider, worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider};
+use {
+    worth_testkit_server::shared_support_query_handoff_fixture::admit_mutation_posture,
+    worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture,
+    worth_testkit_server::shared_support_query_handoff_fixture::denied,
+    worth_testkit_server::shared_support_query_handoff_fixture::request_input,
+    worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context,
+    worth_testkit_server::shared_support_query_handoff_fixture::test_server,
+    worth_testkit_server::shared_support_query_handoff_fixture::test_server_with_middleware,
+};
+use {
+    worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider,
+    worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider,
+};
 
 #[test]
 fn prepare_denies_durable_resume_but_admits_runtime_backed_resume() {
@@ -26,30 +47,30 @@ fn prepare_denies_durable_resume_but_admits_runtime_backed_resume() {
         ),
     );
 
-    let durable_denial = denied(
-        server
-            .query_handoff()
-            .prepare(worth_server::WorthServerQueryHandoffInput::new(
-                admission.clone(),
-                worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
-                    "users.profile",
-                    worth_server::WorthServerDirectFreshnessMode::LiveStrict,
-                    worth_server::WorthServerDirectDeliveryClass::AuthoritativeOrdered,
-                    worth_server::WorthServerQueryRequestedResume::durable(),
-                ),
-            )),
-    );
-    let runtime_backed = worth_testkit_server::shared_support_query_handoff_fixture::success(server.query_handoff().prepare(
+    let durable_denial = denied(server.query_handoff().prepare(
         worth_server::WorthServerQueryHandoffInput::new(
-            admission,
+            admission.clone(),
             worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
                 "users.profile",
                 worth_server::WorthServerDirectFreshnessMode::LiveStrict,
                 worth_server::WorthServerDirectDeliveryClass::AuthoritativeOrdered,
-                worth_server::WorthServerQueryRequestedResume::runtime_backed(None::<String>),
+                worth_server::WorthServerQueryRequestedResume::durable(),
             ),
         ),
     ));
+    let runtime_backed = worth_testkit_server::shared_support_query_handoff_fixture::success(
+        server
+            .query_handoff()
+            .prepare(worth_server::WorthServerQueryHandoffInput::new(
+                admission,
+                worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
+                    "users.profile",
+                    worth_server::WorthServerDirectFreshnessMode::LiveStrict,
+                    worth_server::WorthServerDirectDeliveryClass::AuthoritativeOrdered,
+                    worth_server::WorthServerQueryRequestedResume::runtime_backed(None::<String>),
+                ),
+            )),
+    );
 
     assert_eq!(
         durable_denial.code(),
@@ -67,23 +88,21 @@ fn prepare_denies_durable_resume_but_admits_runtime_backed_resume() {
 #[test]
 fn prepare_denies_mismatched_read_intent_before_query_binding() {
     let server = test_server(TestWorkspaceProvider, false);
-    let denial = denied(
-        server
-            .query_handoff()
-            .prepare(worth_server::WorthServerQueryHandoffInput::new(
-                admit_read_posture(
+    let denial = denied(server.query_handoff().prepare(
+        worth_server::WorthServerQueryHandoffInput::new(
+            admit_read_posture(
+                &server,
+                resolve_request_context(
                     &server,
-                    resolve_request_context(
-                        &server,
-                        request_input(
-                            worth_server::WorthServerSurfaceFamily::WorthNative,
-                            worth_server::WorthServerTransportClass::WorthNativeInProcess,
-                        ),
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::WorthNative,
+                        worth_server::WorthServerTransportClass::WorthNativeInProcess,
                     ),
                 ),
-                worth_server::WorthServerQueryHandoffOperation::query_mutation("users.rename"),
-            )),
-    );
+            ),
+            worth_server::WorthServerQueryHandoffOperation::query_mutation("users.rename"),
+        ),
+    ));
 
     assert_eq!(
         denial.code(),
@@ -105,23 +124,21 @@ fn prepare_denies_read_handoff_when_query_workspace_does_not_admit_read_family()
         false,
     );
 
-    let denial = denied(
-        server
-            .query_handoff()
-            .prepare(worth_server::WorthServerQueryHandoffInput::new(
-                admit_read_posture(
+    let denial = denied(server.query_handoff().prepare(
+        worth_server::WorthServerQueryHandoffInput::new(
+            admit_read_posture(
+                &server,
+                resolve_request_context(
                     &server,
-                    resolve_request_context(
-                        &server,
-                        request_input(
-                            worth_server::WorthServerSurfaceFamily::WorthNative,
-                            worth_server::WorthServerTransportClass::WorthNativeInProcess,
-                        ),
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::WorthNative,
+                        worth_server::WorthServerTransportClass::WorthNativeInProcess,
                     ),
                 ),
-                worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
-            )),
-    );
+            ),
+            worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
+        ),
+    ));
 
     assert_eq!(
         denial.code(),
@@ -146,28 +163,26 @@ fn prepare_denies_downstream_delivery_when_query_workspace_does_not_admit_live_f
         false,
     );
 
-    let denial = denied(
-        server
-            .query_handoff()
-            .prepare(worth_server::WorthServerQueryHandoffInput::new(
-                admit_read_posture(
+    let denial = denied(server.query_handoff().prepare(
+        worth_server::WorthServerQueryHandoffInput::new(
+            admit_read_posture(
+                &server,
+                resolve_request_context(
                     &server,
-                    resolve_request_context(
-                        &server,
-                        request_input(
-                            worth_server::WorthServerSurfaceFamily::WorthNative,
-                            worth_server::WorthServerTransportClass::WorthNativeInProcess,
-                        ),
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::WorthNative,
+                        worth_server::WorthServerTransportClass::WorthNativeInProcess,
                     ),
                 ),
-                worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
-                    "users.profile",
-                    worth_server::WorthServerDirectFreshnessMode::LiveStrict,
-                    worth_server::WorthServerDirectDeliveryClass::AuthoritativeOrdered,
-                    worth_server::WorthServerQueryRequestedResume::none(),
-                ),
-            )),
-    );
+            ),
+            worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
+                "users.profile",
+                worth_server::WorthServerDirectFreshnessMode::LiveStrict,
+                worth_server::WorthServerDirectDeliveryClass::AuthoritativeOrdered,
+                worth_server::WorthServerQueryRequestedResume::none(),
+            ),
+        ),
+    ));
 
     assert_eq!(
         denial.code(),
@@ -199,19 +214,17 @@ fn prepare_denies_downstream_delivery_when_middleware_only_admitted_mutation_int
         ),
     );
 
-    let denial = denied(
-        server
-            .query_handoff()
-            .prepare(worth_server::WorthServerQueryHandoffInput::new(
-                mutation_admission,
-                worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
-                    "users.rename",
-                    worth_server::WorthServerDirectFreshnessMode::LiveStrict,
-                    worth_server::WorthServerDirectDeliveryClass::AuthoritativeOrdered,
-                    worth_server::WorthServerQueryRequestedResume::none(),
-                ),
-            )),
-    );
+    let denial = denied(server.query_handoff().prepare(
+        worth_server::WorthServerQueryHandoffInput::new(
+            mutation_admission,
+            worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
+                "users.rename",
+                worth_server::WorthServerDirectFreshnessMode::LiveStrict,
+                worth_server::WorthServerDirectDeliveryClass::AuthoritativeOrdered,
+                worth_server::WorthServerQueryRequestedResume::none(),
+            ),
+        ),
+    ));
 
     assert_eq!(
         denial.code(),

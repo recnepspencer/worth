@@ -1,20 +1,43 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_scrub_issuers::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_scrub_issuers::*;
 use {std::fs, std::num::NonZeroU64, std::path::Path, std::time::Duration};
 
+use worth_store_blob_chunks::BlobChunkSize;
 use {sha2::Digest, sha2::Sha256};
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobScrubTargetFailure, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest, worth_store::physical_runtime::PhysicalIntegrityScrubSource, worth_store::physical_runtime::PhysicalMutationDeadline};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_physical_format::BlobGenerationPublicationV1, worth_store_physical_format::BlobRecordKind, worth_store_physical_format::BlobTreeNodeV1, worth_store_physical_format::PersistedRecordIdentity};
-use {worth_store_physical_integrity::PhysicalIntegrityObservationOutcome, worth_store_physical_integrity::PhysicalIntegrityRejection};
+use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobScrubTargetFailure,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest,
+    worth_store::physical_runtime::PhysicalIntegrityScrubSource,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
+use {
+    worth_store_physical_format::BlobGenerationPublicationV1,
+    worth_store_physical_format::BlobRecordKind, worth_store_physical_format::BlobTreeNodeV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
+use {
+    worth_store_physical_integrity::PhysicalIntegrityObservationOutcome,
+    worth_store_physical_integrity::PhysicalIntegrityRejection,
+};
 
-use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named};
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named;
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
 fn selected_catalog_issues_publication_before_decoding_damaged_target() {
     let directory = tempfile::tempdir().unwrap();
     let scope = admitted_blob_scope("c11.scrub.publication.issuer");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
     let (object, generation, original_record) = {
         let serving = serving_from_initialization(directory.path());
         let blobs = serving.blobs().unwrap();
@@ -25,7 +48,8 @@ fn selected_catalog_issues_publication_before_decoding_damaged_target() {
             (2 * CHUNK_BYTES) as u64,
             &scope,
             worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(64).unwrap(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
         )
         .unwrap();
         let mut ingest = blobs
@@ -88,7 +112,8 @@ fn selected_catalog_issues_publication_before_decoding_damaged_target() {
 fn selected_publication_issues_root_tree_target_before_decoding_wrong_index() {
     let directory = tempfile::tempdir().unwrap();
     let scope = admitted_blob_scope("c11.scrub.tree.issuer");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
     let (published, original_record) = {
         let serving = serving_from_initialization(directory.path());
         let blobs = serving.blobs().unwrap();
@@ -99,7 +124,8 @@ fn selected_publication_issues_root_tree_target_before_decoding_wrong_index() {
             (2 * CHUNK_BYTES) as u64,
             &scope,
             worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(64).unwrap(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
         )
         .unwrap();
         let mut ingest = blobs
@@ -119,11 +145,15 @@ fn selected_publication_issues_root_tree_target_before_decoding_wrong_index() {
         serving.close();
         (published, record)
     };
-    mutate_selected_inner(directory.path(), worth_store_physical_format::BlobRecordKind::TreeNode, |frame| {
-        // C.11 occurrence index is outside the canonical content digest but
-        // inside the encoded frame/root digest.
-        frame[C11_HEADER + 32] ^= 1;
-    });
+    mutate_selected_inner(
+        directory.path(),
+        worth_store_physical_format::BlobRecordKind::TreeNode,
+        |frame| {
+            // C.11 occurrence index is outside the canonical content digest but
+            // inside the encoded frame/root digest.
+            frame[C11_HEADER + 32] ^= 1;
+        },
+    );
     assert_offline_damaged(directory.path(), original_record, "blob_tree_node");
     let serving = serving_from_open(directory.path());
     let blobs = serving.blobs().unwrap();
@@ -134,5 +164,10 @@ fn selected_publication_issues_root_tree_target_before_decoding_wrong_index() {
         target.scope().blob_record_identity().unwrap().0,
         original_record
     );
-    assert_damaged_selected_target(&serving, target, original_record, worth_store_physical_format::BlobRecordKind::TreeNode);
+    assert_damaged_selected_target(
+        &serving,
+        target,
+        original_record,
+        worth_store_physical_format::BlobRecordKind::TreeNode,
+    );
 }

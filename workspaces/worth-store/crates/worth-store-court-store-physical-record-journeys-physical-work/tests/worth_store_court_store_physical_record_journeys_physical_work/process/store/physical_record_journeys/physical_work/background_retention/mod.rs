@@ -1,8 +1,27 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::background_retention::*;
-use {worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::foreground_saturation_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile};
-use {tempfile::tempdir};
-use {worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalStoreCloseOutcome, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::RecordSchedulerReservationDenial};
-use {worth_store_io_scheduler::foreground_reservation::BandwidthToken, worth_store_io_scheduler::foreground_reservation::DirtyPageBudget, worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration, worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope, worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget, worth_store_io_scheduler::foreground_reservation::QueueSlot, worth_store_io_scheduler::foreground_reservation::WorkerPermit, worth_store_io_scheduler::foreground_reservation::WriteBackWindow};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::background_retention::*;
+use tempfile::tempdir;
+use {
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalStoreCloseOutcome,
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::RecordSchedulerReservationDenial,
+};
+use {
+    worth_store_io_scheduler::foreground_reservation::BandwidthToken,
+    worth_store_io_scheduler::foreground_reservation::DirtyPageBudget,
+    worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration,
+    worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope,
+    worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget,
+    worth_store_io_scheduler::foreground_reservation::QueueSlot,
+    worth_store_io_scheduler::foreground_reservation::WorkerPermit,
+    worth_store_io_scheduler::foreground_reservation::WriteBackWindow,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::foreground_saturation_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+};
 
 #[test]
 fn yielded_checkpoint_and_reclamation_heads_block_foreground_until_admit_or_cancel() {
@@ -15,8 +34,11 @@ fn yielded_checkpoint_and_reclamation_heads_block_foreground_until_admit_or_canc
         b"write-02".as_slice(),
         b"write-03".as_slice(),
     ]) {
-        let command =
-            worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted_write(&serving, request), bytes).unwrap();
+        let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+            admitted_write(&serving, request),
+            bytes,
+        )
+        .unwrap();
         serving.execute_physical_work(command).unwrap();
     }
 
@@ -136,7 +158,10 @@ fn denied_synchronous_rebuild_quantum_releases_its_fairness_head() {
         before_work, after_work,
         "denial must precede work declaration"
     );
-    assert_eq!(after_work.total(worth_store::physical_runtime::PhysicalWorkCounterStage::Declared), 0);
+    assert_eq!(
+        after_work.total(worth_store::physical_runtime::PhysicalWorkCounterStage::Declared),
+        0
+    );
     assert_eq!(before_capacity.available(), after_capacity.available());
     assert_eq!(before_capacity.active_reservations(), 0);
     assert_eq!(after_capacity.active_reservations(), 0);

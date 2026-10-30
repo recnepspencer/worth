@@ -1,16 +1,45 @@
+pub(crate) use std::num::NonZeroU64;
 
-
-pub(crate) use {std::num::NonZeroU64};
-
-pub(crate) use {std::path::Path, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits, worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked, worth_store_testkit_recovery_runtime::phase_three_support::initialize_store, worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration, worth_store_testkit_recovery_runtime::phase_three_support::limits, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_covered_wal, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis};
-pub(crate) use {worth_store_physical_format::CheckpointBindingCompactionHeader, worth_store_physical_format::CheckpointDirtyFrameBasis, worth_store_physical_format::CheckpointRootBasis, worth_store_physical_format::CheckpointStreamEncoder, worth_store_physical_format::CheckpointWalSourceRange, worth_store_physical_format::PhysicalCheckpointIdentity, worth_store_physical_format::PhysicalCheckpointSource, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate, worth_store_physical_format::CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, worth_store_physical_format::CHECKPOINT_DIRTY_FRAME_RECORD_BYTES, worth_store_physical_format::CHECKPOINT_STREAM_HEADER_RECORD_BYTES};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryCheckpointIntegrityDenial, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoverySourceDenial};
+pub(crate) use {
+    std::path::Path, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits,
+    worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,
+    worth_store_testkit_recovery_runtime::phase_three_support::initialize_store,
+    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
+    worth_store_testkit_recovery_runtime::phase_three_support::limits,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_covered_wal,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis,
+};
+pub(crate) use {
+    worth_store_physical_format::CheckpointBindingCompactionHeader,
+    worth_store_physical_format::CheckpointDirtyFrameBasis,
+    worth_store_physical_format::CheckpointRootBasis,
+    worth_store_physical_format::CheckpointStreamEncoder,
+    worth_store_physical_format::CheckpointWalSourceRange,
+    worth_store_physical_format::PhysicalCheckpointIdentity,
+    worth_store_physical_format::PhysicalCheckpointSource,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+    worth_store_physical_format::CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES,
+    worth_store_physical_format::CHECKPOINT_DIRTY_FRAME_RECORD_BYTES,
+    worth_store_physical_format::CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
+    worth_store_recovery_runtime::PhysicalRecoveryCheckpointIntegrityDenial,
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_recovery_runtime::PhysicalRecoverySourceDenial,
+};
 
 pub(crate) fn checkpoint_with_dirty_and_bindings(
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     binding_count: usize,
 ) -> (PhysicalCheckpointIdentity, Vec<u8>) {
-    let checkpoint = worth_store_physical_format::PhysicalCheckpointIdentity::new(store, std::num::NonZeroU64::new(1).unwrap());
+    let checkpoint = worth_store_physical_format::PhysicalCheckpointIdentity::new(
+        store,
+        std::num::NonZeroU64::new(1).unwrap(),
+    );
     let source = worth_store_physical_format::PhysicalCheckpointSource::concurrent(
         checkpoint,
         worth_store_physical_format::CheckpointWalSourceRange::new(1, 2).unwrap(),
@@ -18,12 +47,18 @@ pub(crate) fn checkpoint_with_dirty_and_bindings(
         1,
     );
     let (mut encoder, header) = worth_store_physical_format::CheckpointStreamEncoder::begin(source);
-    let coordinate =
-        worth_store_physical_format::RecordFrameCoordinate::new(worth_store_physical_format::RecordArtifactFile::RootManifest { generation: 1 }, 0, 1)
-            .unwrap();
-    let dirty = encoder.encode_dirty_basis(worth_store_physical_format::CheckpointDirtyFrameBasis::new(coordinate, 1));
-    let (mut compaction, compaction_record) =
-        encoder.begin_binding_compaction(worth_store_physical_format::CheckpointBindingCompactionHeader::new(1, 2).unwrap());
+    let coordinate = worth_store_physical_format::RecordFrameCoordinate::new(
+        worth_store_physical_format::RecordArtifactFile::RootManifest { generation: 1 },
+        0,
+        1,
+    )
+    .unwrap();
+    let dirty = encoder.encode_dirty_basis(
+        worth_store_physical_format::CheckpointDirtyFrameBasis::new(coordinate, 1),
+    );
+    let (mut compaction, compaction_record) = encoder.begin_binding_compaction(
+        worth_store_physical_format::CheckpointBindingCompactionHeader::new(1, 2).unwrap(),
+    );
     let mut bindings = Vec::new();
     for index in 0..binding_count {
         bindings.push(

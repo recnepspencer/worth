@@ -50,12 +50,13 @@ def read_tree(source, names=(), active=(), declaration=None, text=None, offset=0
         if item.body:
             start, end = item.body
             child = read_tree(source, names + (item.name,), active, item,
-                              text[start:end], offset + start, ordinary / item.name, depth + 1)
+                              text[start:end], offset + start, ordinary / item.name.removeprefix('r#'), depth + 1)
         else:
             if item.path:
                 target = path_base / item.path
             else:
-                options = [ordinary / (item.name + '.rs'), ordinary / item.name / 'mod.rs']
+                physical_name = item.name.removeprefix('r#')
+                options = [ordinary / (physical_name + '.rs'), ordinary / physical_name / 'mod.rs']
                 found = [p for p in options if filesystem_path(p).is_file()]
                 if len(found) != 1:
                     raise ValueError(f'{source}: module {item.name} has {len(found)} source candidates')
@@ -64,6 +65,7 @@ def read_tree(source, names=(), active=(), declaration=None, text=None, offset=0
             if target in active:
                 raise ValueError('module cycle at ' + str(target))
             child = read_tree(target, names + (item.name,), active + (source,), item,
+                              module_directory=target.parent if item.path else None,
                               depth=depth + 1)
         node.children.append(child)
     return node

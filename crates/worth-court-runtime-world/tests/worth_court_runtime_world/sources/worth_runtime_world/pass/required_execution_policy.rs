@@ -25,4 +25,4 @@ fn construct(
         .build()
         .unwrap();
 }
-fn main() {}
+pub(crate) fn main() {}

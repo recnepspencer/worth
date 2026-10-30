@@ -1,5 +1,12 @@
-pub(crate) fn small_example(durability: worth_store::physical_runtime::AdmittedPhysicalDurabilityPolicy) {
-    use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordOpen};
+pub(crate) fn small_example(
+    durability: worth_store::physical_runtime::AdmittedPhysicalDurabilityPolicy,
+) {
+    use {
+        worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+        worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+        worth_store::physical_runtime::PhysicalRecordOpen,
+    };
 
     let format = AdmittedPhysicalRecordFormat::admit(
         PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
@@ -9,9 +16,21 @@ pub(crate) fn small_example(durability: worth_store::physical_runtime::AdmittedP
     let _ = request;
 }
 
-pub(crate) fn real_example(durability: worth_store::physical_runtime::AdmittedPhysicalDurabilityPolicy) {
+pub(crate) fn real_example(
+    durability: worth_store::physical_runtime::AdmittedPhysicalDurabilityPolicy,
+) {
     use {std::num::NonZeroU32, std::num::NonZeroU64};
-    use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation, worth_store::physical_runtime::RecordReadError, worth_store::physical_runtime::ServingPhysicalRuntime};
+    use {
+        worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+        worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope,
+        worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+        worth_store::physical_runtime::PhysicalRecordOpen,
+        worth_store::physical_runtime::PhysicalRecordResidencyPolicy,
+        worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation,
+        worth_store::physical_runtime::RecordReadError,
+        worth_store::physical_runtime::ServingPhysicalRuntime,
+    };
 
     let bytes = |value| NonZeroU64::new(value).unwrap();
     let frames = |value| NonZeroU32::new(value).unwrap();
@@ -76,7 +95,11 @@ pub(crate) fn real_example(durability: worth_store::physical_runtime::AdmittedPh
 }
 
 pub(crate) fn protected_reader_example() {
-    use {worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::ServingPhysicalRuntime};
+    use {
+        worth_store::physical_runtime::PhysicalRecordId,
+        worth_store::physical_runtime::RecordReadLimits,
+        worth_store::physical_runtime::ServingPhysicalRuntime,
+    };
 
     fn read_across_publication(
         serving: &ServingPhysicalRuntime,
@@ -93,7 +116,10 @@ pub(crate) fn protected_reader_example() {
 }
 
 pub(crate) fn borrowed_chunk_example() {
-    use {worth_store::physical_runtime::RecordReadSession, worth_store::physical_runtime::RecordStreamFailure};
+    use {
+        worth_store::physical_runtime::RecordReadSession,
+        worth_store::physical_runtime::RecordStreamFailure,
+    };
 
     fn consume(mut session: RecordReadSession) -> Result<(), RecordStreamFailure> {
         while let Some(chunk) = session.next_chunk()? {
@@ -110,7 +136,10 @@ pub(crate) fn borrowed_chunk_example() {
 }
 
 pub(crate) fn bounded_copy_example() {
-    use {worth_store::physical_runtime::RecordReadSession, worth_store::physical_runtime::RecordStreamFailure};
+    use {
+        worth_store::physical_runtime::RecordReadSession,
+        worth_store::physical_runtime::RecordStreamFailure,
+    };
 
     fn copy_bounded(
         mut session: RecordReadSession,
@@ -132,8 +161,12 @@ pub(crate) fn bounded_copy_example() {
 }
 
 pub(crate) fn successor_physical_allocation_example() {
-    use {std::num::NonZeroU64};
-    use {worth_store::physical_runtime::PhysicalScopedAllocationFailure, worth_store::physical_runtime::RecoveryPhysicalAllocation, worth_store::physical_runtime::ServingPhysicalRuntime};
+    use std::num::NonZeroU64;
+    use {
+        worth_store::physical_runtime::PhysicalScopedAllocationFailure,
+        worth_store::physical_runtime::RecoveryPhysicalAllocation,
+        worth_store::physical_runtime::ServingPhysicalRuntime,
+    };
 
     fn admit_recovery_bytes<'runtime>(
         runtime: &'runtime ServingPhysicalRuntime,

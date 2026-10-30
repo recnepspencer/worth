@@ -39,6 +39,6 @@ fn dispatch_and_settle_exact_data(
     }
 }
 
-fn main() {
+pub(crate) fn main() {
     let _ = dispatch_and_settle_exact_data;
 }

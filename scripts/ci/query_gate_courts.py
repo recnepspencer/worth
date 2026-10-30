@@ -74,11 +74,17 @@ def courts_only(binary):
     return "-court-" in binary["package"]
 
 
+def root_rest(binary):
+    return not package_of("worth-relational", "worth-signal", "worth-signal-wasm",
+                          "worth-execution")(binary)
+
+
 # suite -> (group, which binaries, tests per process, processes at once)
 TEST_SUITES = {
     "relational": ("root", package_of("worth-relational"), 150, 4),
     "signal": ("root", package_of("worth-signal", "worth-signal-wasm"), 150, 4),
     "execution": ("root", package_of("worth-execution"), 150, 2),
+    "root-rest": ("root", root_rest, 150, 4),
     "query-execution": ("query", lib_of("worth-query-execution"), 80, 4),
     "query-rest": (
         "query", lambda binary: not lib_of("worth-query-execution")(binary), 150, 1,

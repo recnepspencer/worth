@@ -25,11 +25,12 @@ pub(crate) fn prove() {
 pub(crate) fn measured_extent_append(logical_bytes: u64) -> ExtentAllocationObservation {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
-    let output = worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child(
-        "allocation_writer",
-        &root,
-        Some(&logical_bytes.to_string()),
-    );
+    let output =
+        worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child(
+            "allocation_writer",
+            &root,
+            Some(&logical_bytes.to_string()),
+        );
     let row = output
         .lines()
         .find_map(|line| line.strip_prefix("C5_ALLOC "))
@@ -42,7 +43,12 @@ pub(crate) fn measured_extent_append(logical_bytes: u64) -> ExtentAllocationObse
         scratch, 16_384,
         "append scratch remains a bounded mutable frame"
     );
-    let output = worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child("allocation_reader", &root, Some(locator));
+    let output =
+        worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child(
+            "allocation_reader",
+            &root,
+            Some(locator),
+        );
     let row = output
         .lines()
         .find_map(|line| line.strip_prefix("C5_READ_ALLOC "))

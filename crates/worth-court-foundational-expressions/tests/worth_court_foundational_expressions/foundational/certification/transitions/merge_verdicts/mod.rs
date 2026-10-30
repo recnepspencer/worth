@@ -1,8 +1,24 @@
-use {worth_foundational::foundational_merge, worth_foundational::FoundationalBranchBasisDriftKind, worth_foundational::FoundationalMergeAdmissionDenial, worth_foundational::FoundationalMergeConstructionDenial, worth_foundational::FoundationalMergeIntent, worth_foundational::FoundationalMergeVerdictKind};
-use {worth_proof::TransitionOutcome};
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::foundational_merge, worth_foundational::FoundationalBranchBasisDriftKind,
+    worth_foundational::FoundationalMergeAdmissionDenial,
+    worth_foundational::FoundationalMergeConstructionDenial,
+    worth_foundational::FoundationalMergeIntent, worth_foundational::FoundationalMergeVerdictKind,
+};
 
-use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id, crate::certification::ordinary_context::transitions::fixtures::branch::staged_candidate};
-use {crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate, crate::certification::ordinary_context::transitions::fixtures::merge::conflict_locus, crate::certification::ordinary_context::transitions::fixtures::merge::merge_basis, crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary, crate::certification::ordinary_context::transitions::fixtures::merge::projection_shaped_merge_candidate, crate::certification::ordinary_context::transitions::fixtures::merge::stale_target_advanced, crate::certification::ordinary_context::transitions::fixtures::merge::strategy_identity};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::branch::branch_id,
+    crate::certification::ordinary_context::transitions::fixtures::branch::staged_candidate,
+};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::merge::conflict_locus,
+    crate::certification::ordinary_context::transitions::fixtures::merge::merge_basis,
+    crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary,
+    crate::certification::ordinary_context::transitions::fixtures::merge::projection_shaped_merge_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::merge::stale_target_advanced,
+    crate::certification::ordinary_context::transitions::fixtures::merge::strategy_identity,
+};
 
 #[test]
 fn independent_merge_producers_preserve_candidate_meaning() {
@@ -71,15 +87,29 @@ fn merge_admission_preserves_success_denial_and_stale_topology() {
     let failed = authority_first_merge_candidate("mesh-update")
         .fail("merge planner crashed before verdict materialization");
 
-    assert!(matches!(accepted, worth_proof::TransitionOutcome::Success(_)));
-    assert!(matches!(conflict, worth_proof::TransitionOutcome::Success(_)));
+    assert!(matches!(
+        accepted,
+        worth_proof::TransitionOutcome::Success(_)
+    ));
+    assert!(matches!(
+        conflict,
+        worth_proof::TransitionOutcome::Success(_)
+    ));
     assert!(matches!(
         denied,
-        worth_proof::TransitionOutcome::Denied(worth_foundational::FoundationalMergeAdmissionDenial::PolicyDenied { .. })
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::FoundationalMergeAdmissionDenial::PolicyDenied { .. }
+        )
     ));
     assert!(matches!(stale, worth_proof::TransitionOutcome::Stale(_)));
-    assert!(matches!(deferred, worth_proof::TransitionOutcome::Deferred(_)));
-    assert!(matches!(rebind, worth_proof::TransitionOutcome::RebindRequired(_)));
+    assert!(matches!(
+        deferred,
+        worth_proof::TransitionOutcome::Deferred(_)
+    ));
+    assert!(matches!(
+        rebind,
+        worth_proof::TransitionOutcome::RebindRequired(_)
+    ));
     assert!(matches!(failed, worth_proof::TransitionOutcome::Failed(_)));
 }
 
@@ -93,7 +123,10 @@ fn conflict_and_stale_surfaces_remain_blind_consumer_readable() {
     };
     let stale = stale_target_advanced();
 
-    assert_eq!(conflict.kind(), worth_foundational::FoundationalMergeVerdictKind::Conflict);
+    assert_eq!(
+        conflict.kind(),
+        worth_foundational::FoundationalMergeVerdictKind::Conflict
+    );
     assert_eq!(conflict.conflict_loci().len(), 1);
     assert_eq!(conflict.conflict_loci()[0].category(), "geometry-face");
     assert_eq!(conflict.conflict_loci()[0].source_detail(), "source:face-7");
@@ -116,7 +149,10 @@ fn strategy_and_basis_surfaces_remain_visible_on_verdicts() {
         other => panic!("expected success, got {other:?}"),
     };
 
-    assert_eq!(verdict.kind(), worth_foundational::FoundationalMergeVerdictKind::Advisory);
+    assert_eq!(
+        verdict.kind(),
+        worth_foundational::FoundationalMergeVerdictKind::Advisory
+    );
     assert_eq!(verdict.structural_summary(), merge_summary());
     assert_eq!(
         verdict.strategy_identity().family().as_str(),
@@ -163,8 +199,14 @@ fn conflict_verdict_requires_explicit_conflict_loci() {
         other => panic!("expected denial, got {other:?}"),
     };
 
-    assert_eq!(denial, worth_foundational::FoundationalMergeAdmissionDenial::EmptyConflictLoci);
-    assert_eq!(denial.verdict_kind(), worth_foundational::FoundationalMergeVerdictKind::Denied);
+    assert_eq!(
+        denial,
+        worth_foundational::FoundationalMergeAdmissionDenial::EmptyConflictLoci
+    );
+    assert_eq!(
+        denial.verdict_kind(),
+        worth_foundational::FoundationalMergeVerdictKind::Denied
+    );
 }
 
 #[test]

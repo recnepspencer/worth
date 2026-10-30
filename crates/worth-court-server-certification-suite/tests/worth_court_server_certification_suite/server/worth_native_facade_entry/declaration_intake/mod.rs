@@ -1,8 +1,23 @@
-use {worth_proof::TransitionOutcome};
-use {worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily, worth_query::facade::runtime::WorthQueryRuntimeFamilySupport, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::WorthServerDirectDeclaration, worth_server::WorthServerDirectDeclarationDenialCode, worth_server::WorthServerDirectDeclarationSourceKind, worth_server::WorthServerDirectDeclarationSourceSupportStatus, worth_server::WorthServerDirectViewShape, worth_server::WorthServerQueryWorkspaceBindingTarget};
+use worth_proof::TransitionOutcome;
+use {
+    worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily,
+    worth_query::facade::runtime::WorthQueryRuntimeFamilySupport,
+    worth_query::facade::runtime::WorthQueryRuntimeSupportProfile,
+};
+use {
+    worth_server::WorthServerDirectDeclaration,
+    worth_server::WorthServerDirectDeclarationDenialCode,
+    worth_server::WorthServerDirectDeclarationSourceKind,
+    worth_server::WorthServerDirectDeclarationSourceSupportStatus,
+    worth_server::WorthServerDirectViewShape, worth_server::WorthServerQueryWorkspaceBindingTarget,
+};
 
-use {worth_testkit_server::shared_support_worth_native_runtime::build_server, worth_testkit_server::shared_support_worth_native_runtime::build_server_with_capturing_workspace_provider, worth_testkit_server::shared_support_worth_native_runtime::build_server_with_profiled_workspace, worth_testkit_server::shared_support_worth_native_runtime::worth_native_session_input_builder};
+use {
+    worth_testkit_server::shared_support_worth_native_runtime::build_server,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server_with_capturing_workspace_provider,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server_with_profiled_workspace,
+    worth_testkit_server::shared_support_worth_native_runtime::worth_native_session_input_builder,
+};
 
 #[test]
 fn direct_named_read_declaration_preserves_identity_and_support_snapshot() {
@@ -112,12 +127,13 @@ fn direct_saved_query_declaration_fails_closed_with_support_snapshot() {
 #[test]
 fn direct_named_read_declaration_localizes_unsupported_query_family() {
     let server = build_server_with_profiled_workspace(
-        worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile().with_family_support(
-            worth_query::facade::runtime::WorthQueryRuntimeFamilySupport::unsupported(
-                worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily::Read,
-                "read is intentionally denied in this hostile test profile",
+        worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile()
+            .with_family_support(
+                worth_query::facade::runtime::WorthQueryRuntimeFamilySupport::unsupported(
+                    worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily::Read,
+                    "read is intentionally denied in this hostile test profile",
+                ),
             ),
-        ),
     );
 
     let session = match server.worth_native().session(
@@ -132,7 +148,9 @@ fn direct_named_read_declaration_localizes_unsupported_query_family() {
 
     let prepared = session
         .declarations()
-        .read(worth_server::WorthServerDirectDeclaration::named_read("users.profile"))
+        .read(worth_server::WorthServerDirectDeclaration::named_read(
+            "users.profile",
+        ))
         .expect("direct declaration should still prepare support posture");
 
     assert!(prepared.support_snapshot().read_family_contract().is_none());
@@ -231,7 +249,9 @@ fn direct_named_read_declaration_trims_padding_into_canonical_identity() {
 
     let trimmed = session
         .declarations()
-        .read(worth_server::WorthServerDirectDeclaration::named_read("users.profile"))
+        .read(worth_server::WorthServerDirectDeclaration::named_read(
+            "users.profile",
+        ))
         .expect("trimmed declaration should prepare");
     let padded = session
         .declarations()
@@ -261,7 +281,9 @@ fn direct_blank_named_read_declaration_fails_before_workspace_binding() {
 
     let denial = session
         .declarations()
-        .read(worth_server::WorthServerDirectDeclaration::named_read("   "))
+        .read(worth_server::WorthServerDirectDeclaration::named_read(
+            "   ",
+        ))
         .expect_err("blank declaration identity must fail closed before binding");
 
     assert_eq!(
@@ -320,7 +342,9 @@ fn direct_declaration_workspace_binding_preserves_source_kind_without_query_read
 
     session
         .declarations()
-        .read(worth_server::WorthServerDirectDeclaration::named_read("users.profile"))
+        .read(worth_server::WorthServerDirectDeclaration::named_read(
+            "users.profile",
+        ))
         .expect("named-read declaration should prepare");
     session
         .declarations()

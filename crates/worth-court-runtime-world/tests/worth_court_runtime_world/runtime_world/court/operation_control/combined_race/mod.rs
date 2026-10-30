@@ -1,7 +1,18 @@
-#[allow(unused_imports)] use crate::court::ordinary_context::operation_control::combined_race::*;
-pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::CompositeSupplyChainCourt, crate::court::ordinary_context::operation_control::WAIT, crate::court::ordinary_context::operation_control::clean, std::sync::mpsc, crate::court::ordinary_context::operation_control::serial_request, crate::court::ordinary_context::operation_control::signal_prepared};
-pub(crate) use {std::sync::Arc};
-pub(crate) use {worth_relational::facade::mvcc::RelationalOperationControl, worth_relational::facade::mvcc::RelationalPatchPositionReservationGateForTest};
+#[allow(unused_imports)]
+use crate::court::ordinary_context::operation_control::combined_race::*;
+pub(crate) use std::sync::Arc;
+pub(crate) use {
+    crate::court::ordinary_context::operation_control::clean,
+    crate::court::ordinary_context::operation_control::serial_request,
+    crate::court::ordinary_context::operation_control::signal_prepared,
+    crate::court::ordinary_context::operation_control::WAIT,
+    crate::court::ordinary_context::CompositeSupplyChainCourt, std::sync::mpsc,
+    worth_runtime_world::facade::*,
+};
+pub(crate) use {
+    worth_relational::facade::mvcc::RelationalOperationControl,
+    worth_relational::facade::mvcc::RelationalPatchPositionReservationGateForTest,
+};
 
 #[test]
 fn combined_loser_retains_relational_movement_without_calling_signal_after_head_change() {
@@ -18,7 +29,9 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
     let root = court.bootstrap();
     let token = RuntimeWorldCancellationSource::new().token();
     let (reached, received) = std::sync::mpsc::sync_channel(1);
-    let gate = std::sync::Arc::new(worth_relational::facade::mvcc::RelationalPatchPositionReservationGateForTest::default());
+    let gate = std::sync::Arc::new(
+        worth_relational::facade::mvcc::RelationalPatchPositionReservationGateForTest::default(),
+    );
     let candidate = court.records.candidate_with_control(
         request_execution,
         root.basis().relational_basis(),
@@ -54,7 +67,9 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
         let release = ReleaseRelational(gate);
         let worker = scope.spawn(move || {
             port.execute_with_signal(
-                worth_execution::ExecutionRequest::serial(&crate::court::ordinary_context::operation_control::serial_request(policy)),
+                worth_execution::ExecutionRequest::serial(
+                    &crate::court::ordinary_context::operation_control::serial_request(policy),
+                ),
                 combined,
                 &mut context,
                 &token,
@@ -70,7 +85,9 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
         );
         let RuntimeWorldPublicationOutcome::Performed(winner) =
             court.world.publication_port().execute_with_signal(
-                worth_execution::ExecutionRequest::serial(&crate::court::ordinary_context::operation_control::serial_request(policy)),
+                worth_execution::ExecutionRequest::serial(
+                    &crate::court::ordinary_context::operation_control::serial_request(policy),
+                ),
                 single,
                 &mut court.context(request_execution, &root),
                 &RuntimeWorldCancellationSource::new().token(),

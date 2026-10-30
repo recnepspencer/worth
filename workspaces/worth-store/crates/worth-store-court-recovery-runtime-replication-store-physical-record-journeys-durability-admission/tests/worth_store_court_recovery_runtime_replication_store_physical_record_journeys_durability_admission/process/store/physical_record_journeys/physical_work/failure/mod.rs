@@ -1,13 +1,31 @@
-use {worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write, worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture, worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::secure_demand, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::write_demand};
-use {tempfile::tempdir};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalStoreCloseOutcome, worth_store::physical_runtime::PhysicalWorkCapacity, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkPreEffectDenial, worth_store::physical_runtime::PhysicalWorkRecoveryDisposition, worth_store::physical_runtime::PhysicalWorkRetryScheduleOutcome, worth_store::physical_runtime::PhysicalWorkSchedulerPosture, worth_store::physical_runtime::PhysicalWorkSettlementEvidence};
-use {worth_store_physical_backend::MediaFaultDirective};
+use tempfile::tempdir;
+use worth_proof::TransitionOutcome;
+use worth_store_physical_backend::MediaFaultDirective;
+use {
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalStoreCloseOutcome,
+    worth_store::physical_runtime::PhysicalWorkCapacity,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
+    worth_store::physical_runtime::PhysicalWorkRecoveryDisposition,
+    worth_store::physical_runtime::PhysicalWorkRetryScheduleOutcome,
+    worth_store::physical_runtime::PhysicalWorkSchedulerPosture,
+    worth_store::physical_runtime::PhysicalWorkSettlementEvidence,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::secure_demand,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::write_demand,
+    worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt,
+};
 
-
-
-
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::physical_work::failure::recovery::crash_reopener, worth_store_testkit_store::physical_record_journeys::physical_work::failure::recovery::crash_writer};
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::failure::recovery::crash_reopener,
+    worth_store_testkit_store::physical_record_journeys::physical_work::failure::recovery::crash_writer,
+};
 
 #[test]
 fn pre_effect_backend_denial_is_the_only_retryable_physical_failure() {
@@ -24,7 +42,11 @@ fn pre_effect_backend_denial_is_the_only_retryable_physical_failure() {
     );
     let admitted = admitted_write(&serving, mutation_request);
     let consumer = admitted.consumer_handle();
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"retry001".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"retry001".as_slice(),
+    )
+    .unwrap();
 
     let outcome = serving.execute_physical_work(command).unwrap();
 
@@ -135,10 +157,16 @@ fn partial_write_retains_exact_prefix_and_revokes_serving_health() {
     let root = tempdir().unwrap();
     let (profile, read_request, mutation_request) = work_fixture();
     let profile = profile.with_capacity(
-        worth_store::physical_runtime::PhysicalWorkCapacity::new(1, 256, 256, 1024 * 1024, 1024 * 1024)
-            .unwrap()
-            .with_terminal_evidence_capacity(4)
-            .unwrap(),
+        worth_store::physical_runtime::PhysicalWorkCapacity::new(
+            1,
+            256,
+            256,
+            1024 * 1024,
+            1024 * 1024,
+        )
+        .unwrap()
+        .with_terminal_evidence_capacity(4)
+        .unwrap(),
     );
     serving_from_initialization_with_work_profile(root.path(), profile.clone()).close();
     let catalog = root.path().join("families/records/bootstrap.catalog");
@@ -150,16 +178,24 @@ fn partial_write_retains_exact_prefix_and_revokes_serving_health() {
     );
     let admitted = admitted_write(&serving, mutation_request);
     let identity = admitted.intent().identity();
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"partial!".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"partial!".as_slice(),
+    )
+    .unwrap();
 
     let outcome = serving.execute_physical_work(command).unwrap();
 
-    let worth_store::physical_runtime::PhysicalWorkSettlementEvidence::TerminalFailure(failure) = outcome.settled().evidence()
+    let worth_store::physical_runtime::PhysicalWorkSettlementEvidence::TerminalFailure(failure) =
+        outcome.settled().evidence()
     else {
         panic!("partial write must retain terminal failure evidence");
     };
     assert_eq!(failure.identity(), identity);
-    assert_eq!(failure.effect_fate(), worth_store::physical_runtime::PhysicalWorkEffectFate::Indeterminate);
+    assert_eq!(
+        failure.effect_fate(),
+        worth_store::physical_runtime::PhysicalWorkEffectFate::Indeterminate
+    );
     assert_eq!(failure.completed_bytes(), 3);
     assert_eq!(
         failure.recovery(),
@@ -230,7 +266,11 @@ fn panic_after_dispatch_cannot_be_reclassified_as_a_safe_pre_effect_release() {
     );
     let admitted = admitted_write(&serving, mutation_request);
     let identity = admitted.intent().identity();
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"unwound!".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"unwound!".as_slice(),
+    )
+    .unwrap();
 
     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let _ = serving.execute_physical_work(command);

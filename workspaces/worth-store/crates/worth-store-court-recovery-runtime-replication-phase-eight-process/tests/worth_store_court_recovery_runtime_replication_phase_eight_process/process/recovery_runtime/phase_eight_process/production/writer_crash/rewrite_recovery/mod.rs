@@ -1,12 +1,26 @@
-#[allow(unused_imports)] use crate::phase_eight_process::production::writer_crash::rewrite_recovery::*;
-use {std::fs};
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::phase_eight_process::production::writer_crash::rewrite_recovery::*;
+use std::fs;
+use std::path::Path;
 
 use {sha2::Digest, sha2::Sha256};
-use {worth_store_physical_format::DurableFrameKind, worth_store_physical_format::PhysicalRewriteRedo, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::REWRITE_REDO_DOMAIN};
-use {worth_store_recovery_runtime::RecoveryReportEnvelope, worth_store_recovery_runtime::RecoveryReportOutcome};
+use {
+    worth_store_physical_format::DurableFrameKind,
+    worth_store_physical_format::PhysicalRewriteRedo,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::REWRITE_REDO_DOMAIN,
+};
+use {
+    worth_store_recovery_runtime::RecoveryReportEnvelope,
+    worth_store_recovery_runtime::RecoveryReportOutcome,
+};
 
-use {crate::phase_eight_process::production::harness::process::assert_child_succeeded, crate::phase_eight_process::production::harness::process::run_recovery_with_profile, crate::history::schedule::in_flight_mutation::MutationCrashWorkload, crate::phase_eight_process::production::harness::ProcessWorld};
+use {
+    crate::history::schedule::in_flight_mutation::MutationCrashWorkload,
+    crate::phase_eight_process::production::harness::process::assert_child_succeeded,
+    crate::phase_eight_process::production::harness::process::run_recovery_with_profile,
+    crate::phase_eight_process::production::harness::ProcessWorld,
+};
 
 #[test]
 fn fresh_recovery_applies_a_wal_durable_segment_rewrite() {
@@ -32,8 +46,10 @@ fn fresh_recovery_applies_a_wal_durable_segment_rewrite() {
         "c8-phase2-admission-v1",
     );
     assert_child_succeeded("rewrite-after-wal", &output);
-    let report = worth_store_recovery_runtime::RecoveryReportEnvelope::decode(&std::fs::read(&report_path).expect("report bytes"))
-        .expect("report decode");
+    let report = worth_store_recovery_runtime::RecoveryReportEnvelope::decode(
+        &std::fs::read(&report_path).expect("report bytes"),
+    )
+    .expect("report decode");
     assert_eq!(
         report.outcome(),
         worth_store_recovery_runtime::RecoveryReportOutcome::Recovered,
@@ -59,8 +75,10 @@ fn fresh_recovery_applies_a_multi_page_source_rewrite() {
     let (_process_id, output) =
         run_recovery_with_profile(&root, &report_path, parent.path(), "c10-extent-rewrite-v1");
     assert_child_succeeded("rewrite-multi-page", &output);
-    let report = worth_store_recovery_runtime::RecoveryReportEnvelope::decode(&std::fs::read(&report_path).expect("report bytes"))
-        .expect("report decode");
+    let report = worth_store_recovery_runtime::RecoveryReportEnvelope::decode(
+        &std::fs::read(&report_path).expect("report bytes"),
+    )
+    .expect("report decode");
     assert_eq!(
         report.outcome(),
         worth_store_recovery_runtime::RecoveryReportOutcome::Recovered,

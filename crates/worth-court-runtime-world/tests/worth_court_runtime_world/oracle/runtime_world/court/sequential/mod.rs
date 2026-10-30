@@ -1,6 +1,13 @@
-pub(crate) use {crate::court::ordinary_context::oracle::CompositeWorldOracle};
-pub(crate) use {crate::court::ordinary_context::routing::RoutingContext, crate::court::ordinary_context::routing::INPUT, crate::court::ordinary_context::routing::ROUTED};
-pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::CompositeSupplyChainCourt, crate::court::ordinary_context::oracle};
+pub(crate) use crate::court::ordinary_context::oracle::CompositeWorldOracle;
+pub(crate) use {
+    crate::court::ordinary_context::oracle,
+    crate::court::ordinary_context::CompositeSupplyChainCourt, worth_runtime_world::facade::*,
+};
+pub(crate) use {
+    crate::court::ordinary_context::routing::RoutingContext,
+    crate::court::ordinary_context::routing::INPUT,
+    crate::court::ordinary_context::routing::ROUTED,
+};
 
 #[test]
 fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
@@ -209,7 +216,10 @@ fn combined_publication_routes_actual_settled_relational_successor() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for (amount, include_steel) in [("5", true), ("9", true), ("9", false)] {
-        let mut court = crate::court::ordinary_context::CompositeSupplyChainCourt::compile_with_steel(include_steel);
+        let mut court =
+            crate::court::ordinary_context::CompositeSupplyChainCourt::compile_with_steel(
+                include_steel,
+            );
         let policy = match court.world.execution_placement() {
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
             | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {

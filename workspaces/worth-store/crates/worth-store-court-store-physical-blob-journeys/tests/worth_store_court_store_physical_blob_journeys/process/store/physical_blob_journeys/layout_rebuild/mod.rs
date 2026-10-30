@@ -1,12 +1,25 @@
 #![cfg(all())]
 
-use {std::num::NonZeroU64};
+use std::num::NonZeroU64;
 
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::LayoutRebuildFailure, worth_store::physical_runtime::LayoutRebuildLimits, worth_store::physical_runtime::PhysicalIndexPointKey, worth_store::physical_runtime::PhysicalMutationDeadline};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_contracts::DurableArtifactFamilyId};
+use worth_store_blob_chunks::BlobChunkSize;
+use worth_store_contracts::DurableArtifactFamilyId;
+use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::LayoutRebuildFailure,
+    worth_store::physical_runtime::LayoutRebuildLimits,
+    worth_store::physical_runtime::PhysicalIndexPointKey,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
 
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
 fn full_selected_authority_rebuild_restores_catalog_and_dedupe_after_derived_root_drop() {
@@ -14,7 +27,8 @@ fn full_selected_authority_rebuild_restores_catalog_and_dedupe_after_derived_roo
     let root = tempfile::tempdir().unwrap();
     let serving = serving_from_initialization(root.path());
     let scope = admitted_blob_scope("c11.layout.full-authority-rebuild");
-    let read_limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let read_limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let blobs = serving.blobs().unwrap();
     let object = blobs.issue_object_id(read_limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
@@ -23,7 +37,8 @@ fn full_selected_authority_rebuild_restores_catalog_and_dedupe_after_derived_roo
         (2 * CHUNK_BYTES) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -32,8 +47,11 @@ fn full_selected_authority_rebuild_restores_catalog_and_dedupe_after_derived_roo
     ingest.push(&vec![0x31; CHUNK_BYTES]).unwrap();
     ingest.push(&vec![0x72; CHUNK_BYTES]).unwrap();
     let published = ingest.finish().unwrap();
-    let key =
-        worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence()).unwrap();
+    let key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+        object,
+        published.generation().sequence(),
+    )
+    .unwrap();
     let before = serving
         .layouts()
         .unwrap()
@@ -47,7 +65,8 @@ fn full_selected_authority_rebuild_restores_catalog_and_dedupe_after_derived_roo
     let retired = serving
         .certification_drop_blob_derived_roots(
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         )
         .unwrap();
     assert_eq!(
@@ -78,14 +97,17 @@ fn full_selected_authority_rebuild_restores_catalog_and_dedupe_after_derived_roo
             .selected_record(),
         None
     );
-    let insufficient =
-        worth_store::physical_runtime::LayoutRebuildLimits::new(std::num::NonZeroU64::new(1).unwrap(), std::num::NonZeroU64::new(1).unwrap());
+    let insufficient = worth_store::physical_runtime::LayoutRebuildLimits::new(
+        std::num::NonZeroU64::new(1).unwrap(),
+        std::num::NonZeroU64::new(1).unwrap(),
+    );
     assert!(matches!(
         serving.layouts().unwrap().rebuild(
             worth_store_contracts::DurableArtifactFamilyId::BlobCatalog,
             insufficient,
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         ),
         Err(worth_store::physical_runtime::LayoutRebuildFailure::SelectedBoundExhausted)
     ));
@@ -111,7 +133,8 @@ fn full_selected_authority_rebuild_restores_catalog_and_dedupe_after_derived_roo
             worth_store_contracts::DurableArtifactFamilyId::DedupeIndex,
             bounded,
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         )
         .unwrap();
     assert_eq!(rebuilt.validated_chunks(), 2);
@@ -161,9 +184,12 @@ fn held_catalog_root_survives_ordinary_second_publication_cow_and_reopen() {
     let root = tempfile::tempdir().unwrap();
     let serving = serving_from_initialization(root.path());
     let scope = admitted_blob_scope("c11.layout.held-cow-root");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let blobs = serving.blobs().unwrap();
-    let deadline = worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap();
+    let deadline =
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap();
     let first = blobs.issue_object_id(limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         first,
@@ -180,9 +206,11 @@ fn held_catalog_root_survives_ordinary_second_publication_cow_and_reopen() {
     ingest.push(&vec![0x31; CHUNK_BYTES / 2]).unwrap();
     ingest.push(&vec![0x31; CHUNK_BYTES / 2]).unwrap();
     let first_published = ingest.finish().unwrap();
-    let first_key =
-        worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(first, first_published.generation().sequence())
-            .unwrap();
+    let first_key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+        first,
+        first_published.generation().sequence(),
+    )
+    .unwrap();
     let held = serving.layouts().unwrap();
     let first_record = held
         .btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog)
@@ -208,9 +236,11 @@ fn held_catalog_root_survives_ordinary_second_publication_cow_and_reopen() {
     ingest.push(&vec![0x72; CHUNK_BYTES / 2]).unwrap();
     ingest.push(&vec![0x72; CHUNK_BYTES / 2]).unwrap();
     let second_published = ingest.finish().unwrap();
-    let second_key =
-        worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(second, second_published.generation().sequence())
-            .unwrap();
+    let second_key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+        second,
+        second_published.generation().sequence(),
+    )
+    .unwrap();
     assert_eq!(
         held.btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog)
             .unwrap()

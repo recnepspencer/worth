@@ -1,6 +1,13 @@
-use {worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
-use {tempfile::tempdir};
-use {worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalStoreCloseOutcome};
+use tempfile::tempdir;
+use {
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalStoreCloseOutcome,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 #[test]
 fn a_second_pending_work_registry_is_forbidden() {
@@ -28,7 +35,9 @@ fn a_second_physical_lifecycle_is_forbidden() {
     let root = tempdir().unwrap();
     let (profile, read, _) = work_fixture();
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
-    let receipt = crate::physical_record_journeys::physical_work::readiness::success(serving.physical_read_submission().submit(read));
+    let receipt = crate::physical_record_journeys::physical_work::readiness::success(
+        serving.physical_read_submission().submit(read),
+    );
 
     serving.admit_physical_work(receipt).unwrap_or_else(|denial| {
         panic!(

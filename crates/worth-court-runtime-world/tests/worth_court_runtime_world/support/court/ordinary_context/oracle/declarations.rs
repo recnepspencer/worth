@@ -1,6 +1,4 @@
-
-
-pub(crate) use {crate::court::ordinary_context::observation::SupplyChainObservation};
+pub(crate) use crate::court::ordinary_context::observation::SupplyChainObservation;
 
 /// No runtime vocabulary or implementation helpers enter the expected world.
 #[derive(Clone, Debug)]

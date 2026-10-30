@@ -8,10 +8,10 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+"worth-testkit-compiler" = { "path" = "../worth-testkit-compiler" }
 "serde" = { "version" = "^1", "features" = ["derive", "rc"] }
 "serde_json" = { "version" = "^1", "features" = ["unbounded_depth"] }
 "stats_alloc" = { "version" = "=0.1.10" }
-"trybuild" = { "version" = "^1.0" }
 "worth-foundational" = { "path" = "../worth-foundational" }
 "worth-proof" = { "path" = "../worth-proof" }
 "worth-testkit-foundational" = { "path" = "../worth-testkit-foundational" }

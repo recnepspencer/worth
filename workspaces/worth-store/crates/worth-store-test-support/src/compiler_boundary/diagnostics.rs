@@ -11,15 +11,12 @@ pub struct CheckedCompilerDiagnostic {
 }
 
 pub(super) fn checked_diagnostics(
-    stdout: &[u8],
+    messages: &[serde_json::Value],
     workspace_root: &str,
 ) -> Vec<CheckedCompilerDiagnostic> {
-    String::from_utf8_lossy(stdout)
-        .lines()
-        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
-        .filter(|event| event["reason"].as_str() == Some("compiler-message"))
-        .filter_map(|event| {
-            let message = &event["message"];
+    messages
+        .iter()
+        .filter_map(|message| {
             (message["level"].as_str() == Some("error")).then(|| CheckedCompilerDiagnostic {
                 level: "error".to_owned(),
                 code: message["code"]["code"].as_str().map(str::to_owned),

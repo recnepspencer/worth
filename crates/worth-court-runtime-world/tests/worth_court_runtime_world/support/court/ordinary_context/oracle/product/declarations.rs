@@ -1,5 +1,5 @@
 // Pure semantic model. Runtime identities, comparisons and algorithms never enter here.
-pub(crate) use {crate::court::ordinary_context::oracle::CompositeWorldOracle};
+pub(crate) use crate::court::ordinary_context::oracle::CompositeWorldOracle;
 pub(crate) use {std::collections::BTreeMap, std::collections::BTreeSet};
 
 #[derive(Clone, Debug)]

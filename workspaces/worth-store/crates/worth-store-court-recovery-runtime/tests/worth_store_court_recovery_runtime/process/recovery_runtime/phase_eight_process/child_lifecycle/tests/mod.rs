@@ -1,8 +1,12 @@
-#[allow(unused_imports)] use crate::phase_eight_process::child_lifecycle::tests::*;
-use {worth_store_testkit_recovery_runtime::child_lifecycle::output_capture::MAXIMUM_PIPE_BYTES, worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard};
-use {std::io::Write};
+#[allow(unused_imports)]
+use crate::phase_eight_process::child_lifecycle::tests::*;
+use std::io::Write;
+use std::time::Duration;
 use {std::process::Command, std::process::Stdio};
-use {std::time::Duration};
+use {
+    worth_store_testkit_recovery_runtime::child_lifecycle::output_capture::MAXIMUM_PIPE_BYTES,
+    worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard,
+};
 
 #[test]
 fn output_child() {

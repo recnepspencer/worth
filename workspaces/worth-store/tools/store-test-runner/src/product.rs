@@ -80,7 +80,6 @@ pub(crate) struct SmokeCase {
     pub(crate) package: &'static str,
     pub(crate) target: &'static str,
     pub(crate) filter: &'static str,
-    pub(crate) feature: Option<&'static str>,
 }
 
 pub(crate) fn smoke_cases() -> &'static [SmokeCase] {
@@ -88,34 +87,66 @@ pub(crate) fn smoke_cases() -> &'static [SmokeCase] {
 }
 
 const SMOKE_CASES: &[SmokeCase] = &[
-        smoke(
-            "worth-store-certification",
-            "io_scheduling",
-            "access_policy::certification_materializes_successful_execution_receipts",
-        ),
-        smoke(
-            "worth-store-certification",
-            "layout_access",
-            "layout_corruption_rebuild::root_manifest_rebuild_reaches_exact_parity_through_production_owners",
-        ),
-        smoke(
-            "worth-store-certification",
-            "operational_security",
-            "security_scope_propagation::stable_read_scope_survives_protection_observation_and_decode_entry",
-        ),
-        smoke(
-            "worth-store-certification",
-            "physical_isolation",
-            "stable_read_plan_admission::proof_bearing_read_plan_admits_before_execution_handle",
-        ),
-        store_smoke("baseline_admission::empty_bootstrap_create_and_reopen_converge"),
-        store_smoke("scan_journeys::scan_batch_widths_converge_to_one_physical_sequence"),
-        store_smoke("physical_work::failure::indeterminate_write_obligation_survives_orderly_close_and_reopen"),
-        store_smoke("physical_work::serving_frame_residency::pins_distinguish_faults_hits_overpin_and_refault_without_another_runtime"),
-        store_smoke("record_chunk_views::borrowed_access::inline_view_exposes_only_the_record_payload_and_observational_basis"),
-        store_smoke("record_chunk_views::bounded_copy::bounded_copies_and_views_share_one_cursor_with_exact_copy_evidence"),
-        store_smoke("physical_work::residency_writeback_retry::no_effect_writeback_retains_dirty_ownership_through_signal_retry"),
-        store_smoke("physical_work::speculative_residency::outcomes::cold_hot_and_mixed_speculation_reconcile_work_media_and_residency_truth"),
+    smoke(
+        "worth-store-court-maintenance-recovery-runtime-replication",
+        "worth_store_court_maintenance_recovery_runtime_replication",
+        "certification::io_scheduling::access_policy::certification_materializes_successful_execution_receipts",
+    ),
+    smoke(
+        "worth-store-court-maintenance-recovery-runtime-replication",
+        "worth_store_court_maintenance_recovery_runtime_replication",
+        "certification::layout_access::layout_corruption_rebuild::root_manifest_rebuild_reaches_exact_parity_through_production_owners",
+    ),
+    smoke(
+        "worth-store-court-maintenance-recovery-runtime-replication",
+        "worth_store_court_maintenance_recovery_runtime_replication",
+        "certification::operational_security::security_scope_propagation::stable_read_scope_survives_protection_observation_and_decode_entry",
+    ),
+    smoke(
+        "worth-store-court-maintenance-recovery-runtime-replication",
+        "worth_store_court_maintenance_recovery_runtime_replication",
+        "certification::physical_isolation::stable_read_plan_admission::proof_bearing_read_plan_admits_before_execution_handle",
+    ),
+    smoke(
+        "worth-store-court-store-physical-blob-journeys",
+        "worth_store_court_store_physical_blob_journeys",
+        "process::store::physical_record_journeys::baseline_admission::empty_bootstrap_create_and_reopen_converge",
+    ),
+    smoke(
+        "worth-store-court-store-physical-blob-journeys",
+        "worth_store_court_store_physical_blob_journeys",
+        "process::store::physical_record_journeys::scan_journeys::scan_batch_widths_converge_to_one_physical_sequence",
+    ),
+    smoke(
+        "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-durability-admission",
+        "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_durability_admission",
+        "process::store::physical_record_journeys::physical_work::failure::indeterminate_write_obligation_survives_orderly_close_and_reopen",
+    ),
+    smoke(
+        "worth-store-court-store-physical-record-journeys-physical-work",
+        "worth_store_court_store_physical_record_journeys_physical_work",
+        "process::store::physical_record_journeys::physical_work::serving_frame_residency::pins_distinguish_faults_hits_overpin_and_refault_without_another_runtime",
+    ),
+    smoke(
+        "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views",
+        "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_record_chunk_views",
+        "process::store::physical_record_journeys::record_chunk_views::borrowed_access::inline_view_exposes_only_the_record_payload_and_observational_basis",
+    ),
+    smoke(
+        "worth-store-court-store-physical-blob-journeys",
+        "worth_store_court_store_physical_blob_journeys",
+        "process::store::physical_record_journeys::record_chunk_views::bounded_copy::bounded_copies_and_views_share_one_cursor_with_exact_copy_evidence",
+    ),
+    smoke(
+        "worth-store-court-store-physical-record-journeys-physical-work",
+        "worth_store_court_store_physical_record_journeys_physical_work",
+        "process::store::physical_record_journeys::physical_work::residency_writeback_retry::no_effect_writeback_retains_dirty_ownership_through_signal_retry",
+    ),
+    smoke(
+        "worth-store-court-store-physical-record-journeys-physical-work",
+        "worth_store_court_store_physical_record_journeys_physical_work",
+        "process::store::physical_record_journeys::physical_work::speculative_residency::outcomes::cold_hot_and_mixed_speculation_reconcile_work_media_and_residency_truth",
+    ),
 ];
 
 const fn smoke(package: &'static str, target: &'static str, filter: &'static str) -> SmokeCase {
@@ -123,15 +154,5 @@ const fn smoke(package: &'static str, target: &'static str, filter: &'static str
         package,
         target,
         filter,
-        feature: None,
-    }
-}
-
-const fn store_smoke(filter: &'static str) -> SmokeCase {
-    SmokeCase {
-        package: "worth-store",
-        target: "physical_record_journeys",
-        filter,
-        feature: Some("worth-store/certification-test-authority"),
     }
 }

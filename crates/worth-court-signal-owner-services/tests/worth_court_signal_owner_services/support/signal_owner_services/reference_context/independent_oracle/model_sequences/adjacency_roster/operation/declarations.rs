@@ -1,6 +1,10 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome};
-pub(crate) use {worth_signal::facade::branch::validate_signal_branch_name, worth_signal::facade::branch::SignalBranchRetirementReason, worth_signal::facade::branch::SignalOwnerCancellationSource};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome;
+pub(crate) use {
+    worth_signal::facade::branch::validate_signal_branch_name,
+    worth_signal::facade::branch::SignalBranchRetirementReason,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+};
 
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::comparison::advance_denial, crate::signal_owner_services::reference_context::independent_oracle::comparison::capture_denial, crate::signal_owner_services::reference_context::independent_oracle::comparison::fork_denial, crate::signal_owner_services::reference_context::independent_oracle::comparison::neutral_basis, crate::signal_owner_services::reference_context::independent_oracle::comparison::neutral_snapshot, crate::signal_owner_services::reference_context::independent_oracle::comparison::release_denial, crate::signal_owner_services::reference_context::independent_oracle::comparison::restore_denial, crate::signal_owner_services::reference_context::independent_oracle::comparison::retention_denial};
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::transition::ModelAction, crate::signal_owner_services::reference_context::independent_oracle::transition::ModelDenial, crate::signal_owner_services::reference_context::independent_oracle::transition::ModelResult, crate::signal_owner_services::reference_context::independent_oracle::transition::ModelSuccess, crate::signal_owner_services::reference_context::independent_oracle::transition::OperationKind};

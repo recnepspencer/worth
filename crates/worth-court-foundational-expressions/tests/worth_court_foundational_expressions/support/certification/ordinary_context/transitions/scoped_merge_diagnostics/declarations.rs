@@ -1,8 +1,42 @@
-pub(crate) use {worth_foundational::materialize_diagnostic_explanation_bundle, worth_foundational::prepare_canonical_comparison, worth_foundational::prepare_locator_for_canonical_basis, worth_foundational::prepare_scoped_merge_diagnostic_explanation, worth_foundational::AdmissionReadinessProfile, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalLocatorInput, worth_foundational::CanonicalizationRuleVersion, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalAdmittedMergeScopeEvidence, worth_foundational::FoundationalDiagnosticDeliveryClass, worth_foundational::FoundationalDiagnosticLocator, worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalMergeScopeFamily, worth_foundational::FoundationalMergeScopeLocator, worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput, worth_foundational::FoundationalScopeAdmissionBasis, worth_foundational::FoundationalScopedMergeDenialEvidence, worth_foundational::FoundationalScopedMergeDenialKind, worth_foundational::FoundationalScopedMergeDiagnosticInput, worth_foundational::FoundationalScopedMergeUnavailablePosture, worth_foundational::FoundationalScopedMergeUnavailableReason, worth_foundational::FoundationalSelectedAspectScopeLocator, worth_foundational::FoundationalSelectedScopeNoOpCause, worth_foundational::FoundationalSkippedOutOfScopeEvidence, worth_foundational::FoundationalTransitionLocator, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::materialize_diagnostic_explanation_bundle,
+    worth_foundational::prepare_canonical_comparison,
+    worth_foundational::prepare_locator_for_canonical_basis,
+    worth_foundational::prepare_scoped_merge_diagnostic_explanation,
+    worth_foundational::AdmissionReadinessProfile, worth_foundational::CanonicalBasisDomain,
+    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
+    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact,
+    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome,
+    worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalLocatorInput,
+    worth_foundational::CanonicalizationRuleVersion,
+    worth_foundational::CertificationPostureProfile,
+    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
+    worth_foundational::FoundationalAdmittedMergeScopeEvidence,
+    worth_foundational::FoundationalDiagnosticDeliveryClass,
+    worth_foundational::FoundationalDiagnosticLocator, worth_foundational::FoundationalMergeScope,
+    worth_foundational::FoundationalMergeScopeFamily,
+    worth_foundational::FoundationalMergeScopeLocator, worth_foundational::FoundationalProfileSet,
+    worth_foundational::FoundationalProfileSetInput,
+    worth_foundational::FoundationalScopeAdmissionBasis,
+    worth_foundational::FoundationalScopedMergeDenialEvidence,
+    worth_foundational::FoundationalScopedMergeDenialKind,
+    worth_foundational::FoundationalScopedMergeDiagnosticInput,
+    worth_foundational::FoundationalScopedMergeUnavailablePosture,
+    worth_foundational::FoundationalScopedMergeUnavailableReason,
+    worth_foundational::FoundationalSelectedAspectScopeLocator,
+    worth_foundational::FoundationalSelectedScopeNoOpCause,
+    worth_foundational::FoundationalSkippedOutOfScopeEvidence,
+    worth_foundational::FoundationalTransitionLocator,
+    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
+};
 
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id};
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node};
+pub(crate) use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
+pub(crate) use {
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node,
+};
 
 pub(crate) fn aspect_scope() -> FoundationalMergeScope {
     worth_foundational::FoundationalMergeScope::selected_aspects([
@@ -47,8 +81,10 @@ pub(crate) fn locator_entries(locator: FoundationalTransitionLocator) -> Vec<Can
 }
 
 pub(crate) fn ready_locator(locator: FoundationalTransitionLocator) -> CanonicalBasisReadyArtifact {
-    match prepare_locator_for_canonical_basis(version(), worth_foundational::CanonicalLocatorInput::Transition(locator))
-    {
+    match prepare_locator_for_canonical_basis(
+        version(),
+        worth_foundational::CanonicalLocatorInput::Transition(locator),
+    ) {
         worth_proof::TransitionOutcome::Success(ready) => ready,
         _ => panic!("expected ready transition locator"),
     }

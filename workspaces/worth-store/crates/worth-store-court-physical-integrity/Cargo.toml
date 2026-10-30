@@ -8,8 +8,8 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+"worth-testkit-compiler" = { "path" = "../../../../crates/worth-testkit-compiler" }
 "sha2" = { "version" = "^0.10" }
-"trybuild" = { "version" = "^1.0" }
 "worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
 "worth-store-physical-integrity" = { "path" = "../worth-store-physical-integrity" }
 "worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }

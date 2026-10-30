@@ -1,21 +1,24 @@
-
-
-#[allow(unused_imports)] use crate::court::ordinary_context::record_history::*;
 #[allow(unused_imports)]
-pub(crate) use {crate::court::reference_context::record_history::growth};
+use crate::court::ordinary_context::record_history::*;
+#[allow(unused_imports)]
+pub(crate) use crate::court::reference_context::record_history::growth;
 
-
-
-pub(crate) use {crate::court::ordinary_context::record_history::fixture::NativeHistoryCourt};
-pub(crate) use {std::num::NonZeroUsize};
-pub(crate) use {worth_foundational::facade::AspectKey};
-pub(crate) use {worth_relational::facade::history::*, worth_relational::facade::identity::EntityId, worth_relational::facade::transactions::*};
+pub(crate) use crate::court::ordinary_context::record_history::fixture::NativeHistoryCourt;
+pub(crate) use std::num::NonZeroUsize;
+pub(crate) use worth_foundational::facade::AspectKey;
+pub(crate) use {
+    worth_relational::facade::history::*, worth_relational::facade::identity::EntityId,
+    worth_relational::facade::transactions::*,
+};
 
 #[test]
 fn canonical_history_pages_stop_inside_a_commit_and_keep_all_grammar_ranks() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let court = crate::court::ordinary_context::record_history::fixture::NativeHistoryCourt::install(execution);
+    let court =
+        crate::court::ordinary_context::record_history::fixture::NativeHistoryCourt::install(
+            execution,
+        );
     let original = court.basis();
     let leases_before = court.runtime.branch_basis_cost_counters();
     let mut subjects: Vec<_> = court
@@ -32,7 +35,9 @@ fn canonical_history_pages_stop_inside_a_commit_and_keep_all_grammar_ranks() {
     subjects.push(subjects[0].clone());
     court.update_all(execution);
     let updated = court.basis();
-    crate::court::ordinary_context::record_history::memory::assert_retained_memory(&court, &updated);
+    crate::court::ordinary_context::record_history::memory::assert_retained_memory(
+        &court, &updated,
+    );
     let earlier = court
         .runtime
         .select_reachable_commit(
@@ -150,7 +155,8 @@ fn canonical_history_pages_stop_inside_a_commit_and_keep_all_grammar_ranks() {
             .entries()
             .all(|event| event.changed_aspects().eq(std::iter::once(key))));
     }
-    let missing = worth_foundational::facade::AspectKey::new("not-in-canonical-operations").unwrap();
+    let missing =
+        worth_foundational::facade::AspectKey::new("not-in-canonical-operations").unwrap();
     let mut filtered = court.cursor(execution, &updated, &subjects, &[missing]);
     let empty = filtered
         .next_page(&court.runtime, execution, limits(1, 1))
@@ -187,7 +193,10 @@ fn canonical_history_pages_stop_inside_a_commit_and_keep_all_grammar_ranks() {
 fn history_subjects_keep_exact_generation_tombstones_and_native_owner_custody() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let court = crate::court::ordinary_context::record_history::fixture::NativeHistoryCourt::install(execution);
+    let court =
+        crate::court::ordinary_context::record_history::fixture::NativeHistoryCourt::install(
+            execution,
+        );
     let basis = court.basis();
     let entity = court.entities[4];
     let subject = court
@@ -198,7 +207,11 @@ fn history_subjects_keep_exact_generation_tombstones_and_native_owner_custody() 
         .runtime
         .retain_record_history_subject(execution, &basis, RecordRef::Relation(court.relation))
         .unwrap();
-    let wildcard = worth_relational::facade::identity::EntityId::new(entity.partition_id, entity.local_slot_value(), 0);
+    let wildcard = worth_relational::facade::identity::EntityId::new(
+        entity.partition_id,
+        entity.local_slot_value(),
+        0,
+    );
     let wrong_generation = worth_relational::facade::identity::EntityId::new(
         entity.partition_id,
         entity.local_slot_value(),
@@ -278,7 +291,10 @@ fn history_subjects_keep_exact_generation_tombstones_and_native_owner_custody() 
         .retain_record_history_subject(execution, &deleted, relation.record().clone())
         .unwrap();
     assert_eq!(edge_tombstone.record(), relation.record());
-    let foreign = crate::court::ordinary_context::record_history::fixture::NativeHistoryCourt::install(execution);
+    let foreign =
+        crate::court::ordinary_context::record_history::fixture::NativeHistoryCourt::install(
+            execution,
+        );
     assert!(matches!(
         foreign
             .runtime

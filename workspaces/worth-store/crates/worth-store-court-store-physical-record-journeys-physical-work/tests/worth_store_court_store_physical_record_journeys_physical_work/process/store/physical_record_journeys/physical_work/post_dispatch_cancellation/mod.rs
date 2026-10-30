@@ -1,9 +1,19 @@
 use {std::time::Duration, std::time::Instant};
 
-use {worth_store::physical_runtime::PhysicalEffectObligation, worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalSignalSettlementOutcome, worth_store::physical_runtime::PhysicalWorkEffectFate};
-use {worth_store_physical_backend::MediaOperationRole};
+use worth_store_physical_backend::MediaOperationRole;
+use {
+    worth_store::physical_runtime::PhysicalEffectObligation,
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalSignalSettlementOutcome,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write, worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_one_write_pause_and_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_one_write_pause_and_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 #[test]
 fn cancellation_after_backend_dispatch_retains_terminal_settlement_obligation() {
@@ -14,7 +24,11 @@ fn cancellation_after_backend_dispatch_retains_terminal_settlement_obligation() 
     let admitted = admitted_write(&serving, request);
     let identity = admitted.intent().identity();
     let consumer = admitted.consumer_handle();
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"retained".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"retained".as_slice(),
+    )
+    .unwrap();
     let before = serving.media_counters();
 
     let settled = std::thread::scope(|scope| {
@@ -51,7 +65,8 @@ fn cancellation_after_backend_dispatch_retains_terminal_settlement_obligation() 
         serving
             .media_counters()
             .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
         1
     );
     let closed = serving.close();

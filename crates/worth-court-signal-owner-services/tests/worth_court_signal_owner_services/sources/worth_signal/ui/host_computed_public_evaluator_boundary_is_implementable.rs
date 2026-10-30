@@ -26,4 +26,4 @@ impl HostComputedEvaluator for ExternalEvaluator {
     }
 }
 
-fn main() {}
+pub(crate) fn main() {}

@@ -59,3 +59,6 @@ pub(crate) mod store_recovery_runtime_context;
 
 #[path = "worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal/oracle/mod.rs"]
 pub(crate) mod oracle;
+
+#[path = "worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal/setup_observation.rs"]
+mod setup_observation;

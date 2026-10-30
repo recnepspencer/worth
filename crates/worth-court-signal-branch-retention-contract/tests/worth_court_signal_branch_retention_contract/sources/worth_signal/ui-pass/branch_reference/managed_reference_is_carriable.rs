@@ -6,7 +6,7 @@ fn carry(reference: &ManagedSignalBranchReference) -> ManagedSignalBranchReferen
 
 fn assert_send_sync<T: Send + Sync>() {}
 
-fn main() {
+pub(crate) fn main() {
     assert_send_sync::<ManagedSignalBranchReference>();
     let _valid_carriage = carry;
 }

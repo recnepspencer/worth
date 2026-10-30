@@ -1,8 +1,12 @@
 // A retained subset pays before cloning and uses a stable two-pass predicate.
-#[allow(unused_imports)] use crate::keyed_kept_admission::ordinary_context::*;
+#[allow(unused_imports)]
+use crate::keyed_kept_admission::ordinary_context::*;
+use worth_foundational::PartitionIdentity;
 use {std::cell::Cell, std::cmp::Ordering, std::rc::Rc};
-use {worth_execution::ChargedBytes, worth_execution::KeyedEditDenial, worth_execution::KeyedItem, worth_execution::KeyedPartitioner, worth_execution::PartitionItemId};
-use {worth_foundational::PartitionIdentity};
+use {
+    worth_execution::ChargedBytes, worth_execution::KeyedEditDenial, worth_execution::KeyedItem,
+    worth_execution::KeyedPartitioner, worth_execution::PartitionItemId,
+};
 
 #[test]
 fn kept_refuses_before_key_clones_and_rechecks_the_stable_predicate_only_after_admission() {
@@ -32,7 +36,10 @@ fn kept_refuses_before_key_clones_and_rechecks_the_stable_predicate_only_after_a
             Err(bound)
         },
     );
-    assert!(matches!(refused, Err(worth_execution::KeyedEditDenial::Admission(_))));
+    assert!(matches!(
+        refused,
+        Err(worth_execution::KeyedEditDenial::Admission(_))
+    ));
     assert_eq!(clones.get(), 0);
     assert_eq!(
         calls.get(),

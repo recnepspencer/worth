@@ -12,11 +12,21 @@
 //! beside it is unchanged; the replacement then publishes or answers
 //! `AlreadyPublished`; and a second recovery agrees.
 
-#[allow(unused_imports)] use crate::production_entry::anchored_record_members::oracle::*;
-use {std::num::NonZeroU64};
+#[allow(unused_imports)]
+use crate::production_entry::anchored_record_members::oracle::*;
+use std::num::NonZeroU64;
 
-use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-use {worth_store::physical_runtime::AnchoredRecordMember, worth_store::physical_runtime::AnchoredRecordMemberLocator, worth_store::physical_runtime::AnchoredRecordPublicationFailure, worth_store::physical_runtime::AnchoredRecordPublished, worth_store::physical_runtime::ServingPhysicalRuntime};
+use {
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+};
+use {
+    worth_store::physical_runtime::AnchoredRecordMember,
+    worth_store::physical_runtime::AnchoredRecordMemberLocator,
+    worth_store::physical_runtime::AnchoredRecordPublicationFailure,
+    worth_store::physical_runtime::AnchoredRecordPublished,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
 use {crate::production_entry::anchored_record_members::assert_value, crate::production_entry::anchored_record_members::carried, crate::production_entry::anchored_record_members::content, crate::production_entry::anchored_record_members::new_member, crate::production_entry::anchored_record_members::publish_with_members};
 use {worth_store_testkit_recovery_runtime::production_entry::anchored_records::assert_journal, worth_store_testkit_recovery_runtime::production_entry::anchored_records::name, worth_store_testkit_recovery_runtime::production_entry::anchored_records::publish_journal_entry, worth_store_testkit_recovery_runtime::production_entry::anchored_records::value, worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT};
@@ -30,7 +40,7 @@ fn every_media_operation_of_a_member_carrying_replacement_recovers_to_one_whole_
         !counts.is_empty(),
         "the replacement performed media operations"
     );
-    let mut answers = crate::production_entry::anchored_record_members::oracle::Answers::default();
+    let mut cases = Vec::new();
     for (role, count) in counts {
         for nth in 1..=count {
             let nth = std::num::NonZeroU64::new(nth).unwrap();
@@ -41,10 +51,27 @@ fn every_media_operation_of_a_member_carrying_replacement_recovers_to_one_whole_
                 },
                 worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect,
             ] {
-                run_case(role, nth, directive, &mut answers);
+                cases.push((role, nth, directive));
             }
         }
     }
+    let scheduled = cases.len();
+    let outcomes = worth_store_test_support::sweep::run(cases, |(role, nth, directive)| {
+        run_case(role, nth, directive)
+    });
+    assert_eq!(
+        outcomes.len(),
+        scheduled,
+        "scheduled member replacement cases were lost"
+    );
+    let answers = outcomes.into_iter().fold(
+        crate::production_entry::anchored_record_members::oracle::Answers::default(),
+        |mut answers, case| {
+            answers.member_batch_refusals += case.member_batch_refusals;
+            answers.anchor_batch_failures += case.anchor_batch_failures;
+            answers
+        },
+    );
     assert!(
         answers.member_batch_refusals > 0 && answers.anchor_batch_failures > 0,
         "the sweep stopped publications in both the member batch and the anchor batch"

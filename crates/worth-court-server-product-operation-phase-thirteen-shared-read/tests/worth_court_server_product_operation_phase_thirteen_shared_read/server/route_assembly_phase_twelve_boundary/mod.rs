@@ -1,15 +1,15 @@
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {axum::http::StatusCode};
+use axum::http::StatusCode;
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_route_assembly_phase_twelve_fixture as fixture};
+use worth_testkit_server::shared_support_route_assembly_phase_twelve_fixture as fixture;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_route_assembly_phase_twelve_request_driver as request_driver};
+use worth_testkit_server::shared_support_route_assembly_phase_twelve_request_driver as request_driver;
 
-use {worth_testkit_server::shared_support_route_assembly_phase_twelve_fixture::build_server};
-use {worth_testkit_server::shared_support_route_assembly_phase_twelve_request_driver::WorthServerRouteHttpTestDriver};
+use worth_testkit_server::shared_support_route_assembly_phase_twelve_fixture::build_server;
+use worth_testkit_server::shared_support_route_assembly_phase_twelve_request_driver::WorthServerRouteHttpTestDriver;
 
 #[tokio::test]
 async fn transport_errors_shape_without_product_semantics() {
@@ -74,7 +74,10 @@ async fn transport_errors_shape_without_product_semantics() {
             format!("{{\"title\":\"{}\"}}", "a".repeat(1024 * 1024)).into_bytes(),
         )
         .await;
-    assert_eq!(oversized.status(), axum::http::StatusCode::PAYLOAD_TOO_LARGE);
+    assert_eq!(
+        oversized.status(),
+        axum::http::StatusCode::PAYLOAD_TOO_LARGE
+    );
     assert_eq!(oversized.route_kind(), Some("transport_denial"));
     assert_eq!(oversized.semantic_runtime_entered(), Some(false));
     assert_eq!(oversized.transport_denial_code(), Some("OversizedBody"));

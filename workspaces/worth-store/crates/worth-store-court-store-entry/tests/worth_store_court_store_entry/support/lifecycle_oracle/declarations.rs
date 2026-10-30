@@ -1,4 +1,9 @@
-pub(crate) use {worth_store::physical_runtime::LifecycleGeneration, worth_store::physical_runtime::ObservationError, worth_store::physical_runtime::RuntimeIdentity, worth_store::physical_runtime::RuntimeObservation};
+pub(crate) use {
+    worth_store::physical_runtime::LifecycleGeneration,
+    worth_store::physical_runtime::ObservationError,
+    worth_store::physical_runtime::RuntimeIdentity,
+    worth_store::physical_runtime::RuntimeObservation,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LifecycleAction {
@@ -64,7 +69,8 @@ pub(crate) fn assert_terminal_observation(
     let transition = LIFECYCLE_TRANSITIONS
         .iter()
         .find(|transition| {
-            transition.source == crate::lifecycle_oracle::OracleLifecyclePhase::Admitted && transition.action == action
+            transition.source == crate::lifecycle_oracle::OracleLifecyclePhase::Admitted
+                && transition.action == action
         })
         .expect("the independent C.3 lifecycle table must cover every exercised action");
     let expected_terminal_generation = admitted_generation.get() + 2;

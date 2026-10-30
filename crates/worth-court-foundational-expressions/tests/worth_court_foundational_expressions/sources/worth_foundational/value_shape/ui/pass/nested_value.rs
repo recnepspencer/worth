@@ -38,7 +38,7 @@ struct SavedValue {
     note: Option<String>,
 }
 
-fn main() {
+pub(crate) fn main() {
     assert_eq!(
         worth_foundational::facade::ValueShapeDefinition::of::<Identifier>()
             .inspect()

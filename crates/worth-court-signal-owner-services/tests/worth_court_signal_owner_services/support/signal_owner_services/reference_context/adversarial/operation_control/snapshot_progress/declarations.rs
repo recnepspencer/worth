@@ -1,10 +1,18 @@
-pub(crate) use {crate::signal_owner_services::ordinary_context::execution_custody};
-pub(crate) use {std::sync::mpsc};
-pub(crate) use {std::thread};
+pub(crate) use crate::signal_owner_services::ordinary_context::execution_custody;
+pub(crate) use std::sync::mpsc;
+pub(crate) use std::thread;
 
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::AdmittedSignalBranchSnapshot, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest};
+pub(crate) use {
+    worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    worth_signal::facade::branch::AdmittedSignalBranchSnapshot,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+    worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest,
+};
 
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
+    crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND,
+};
 
 pub(crate) fn advance_result(
     mutation: &crate::signal_owner_services::ordinary_context::adversarial::world::MutationPort,
@@ -42,7 +50,10 @@ pub(crate) fn capture_result(
     basis: &AdmittedSignalBranchBasis,
 ) -> Result<(AdmittedSignalBranchSnapshot, AdmittedSignalBranchBasis), String> {
     mutation
-        .capture_exact(basis, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token())
+        .capture_exact(
+            basis,
+            &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+        )
         .map(|outcome| outcome.into_parts())
         .map_err(|denial| format!("{denial:?}"))
 }
@@ -62,7 +73,8 @@ pub(crate) fn restore_result(
 }
 
 pub(crate) fn exercise_capture_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = world
         .runtime
         .as_ref()
@@ -106,7 +118,8 @@ pub(crate) fn exercise_capture_boundary(boundary: SignalOwnerOperationBoundaryFo
 }
 
 pub(crate) fn exercise_restore_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let (snapshot, captured_basis) = capture_result(&world.mutation, &world.child_basis)
         .expect("restore starts from an owner-issued snapshot");
     let expected_restored = captured_basis.clone();

@@ -1,7 +1,17 @@
-#[allow(unused_imports)] use crate::branch_operation_contract::ordinary_context::*;
-use {worth_foundational::FoundationalBranchReferenceMismatchAxis};
-use {worth_signal::facade::branch::SignalBranchForkOperationDenial, worth_signal::facade::branch::SignalBranchMergeDenial, worth_signal::facade::branch::SignalBranchRestoreDenial, worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial};
-use {worth_signal::facade::Aspect, worth_signal::facade::AspectVersion, worth_signal::facade::DependencyEdge, worth_signal::facade::NodeEvaluationResult, worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
+#[allow(unused_imports)]
+use crate::branch_operation_contract::ordinary_context::*;
+use worth_foundational::FoundationalBranchReferenceMismatchAxis;
+use {
+    worth_signal::facade::branch::SignalBranchForkOperationDenial,
+    worth_signal::facade::branch::SignalBranchMergeDenial,
+    worth_signal::facade::branch::SignalBranchRestoreDenial,
+    worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial,
+};
+use {
+    worth_signal::facade::Aspect, worth_signal::facade::AspectVersion,
+    worth_signal::facade::DependencyEdge, worth_signal::facade::NodeEvaluationResult,
+    worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime,
+};
 
 #[test]
 fn documented_advance_then_read_flow_compiles_through_the_public_facade() {
@@ -20,7 +30,10 @@ fn documented_advance_then_read_flow_compiles_through_the_public_facade() {
     let source = graph.node().build();
     let derived = graph.node().on_demand().build();
     graph
-        .set_dependencies(derived, [worth_signal::facade::DependencyEdge::new(source, PRICE)])
+        .set_dependencies(
+            derived,
+            [worth_signal::facade::DependencyEdge::new(source, PRICE)],
+        )
         .unwrap();
     let mut runtime = worth_signal::facade::SignalRuntime::build_for::<()>(graph);
     let basis = runtime
@@ -37,7 +50,9 @@ fn documented_advance_then_read_flow_compiles_through_the_public_facade() {
                     ))
                 } else {
                     let version = view.read_aspect_version(source, PRICE)?;
-                    view.finish(worth_signal::facade::NodeEvaluationResult::from_version(version))
+                    view.finish(worth_signal::facade::NodeEvaluationResult::from_version(
+                        version,
+                    ))
                 };
                 Ok(result)
             })?;
@@ -50,10 +65,17 @@ fn documented_advance_then_read_flow_compiles_through_the_public_facade() {
         .target(derived)
         .read(&(), &|view| {
             let version = view.read_aspect_version(source, PRICE)?;
-            Ok(view.finish(worth_signal::facade::NodeEvaluationResult::from_version(version)))
+            Ok(
+                view.finish(worth_signal::facade::NodeEvaluationResult::from_version(
+                    version,
+                )),
+            )
         })
         .unwrap();
-    assert_eq!(read_result, worth_signal::facade::AspectVersion::from_updates([(PRICE, 1)]));
+    assert_eq!(
+        read_result,
+        worth_signal::facade::AspectVersion::from_updates([(PRICE, 1)])
+    );
 }
 
 #[test]

@@ -1,20 +1,28 @@
-#[allow(unused_imports)] use crate::product_result_artifact::ordinary_context::*;
+#[allow(unused_imports)]
+use crate::product_result_artifact::ordinary_context::*;
 use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
 
+use serde_json::json;
 use {serde::ser::SerializeSeq, serde::Serialize, serde::Serializer};
-use {serde_json::json};
-use {worth_server::WorthServerProductResultArtifact, worth_server::WorthServerProductResultArtifactErrorCode, worth_server::WorthServerProductResultContract, worth_server::WorthServerProductResultValue};
+use {
+    worth_server::WorthServerProductResultArtifact,
+    worth_server::WorthServerProductResultArtifactErrorCode,
+    worth_server::WorthServerProductResultContract, worth_server::WorthServerProductResultValue,
+};
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_product_result_schema_bound_json as schema_bound_json};
+use worth_testkit_server::shared_support_product_result_schema_bound_json as schema_bound_json;
 
-use {worth_testkit_server::shared_support_product_result_schema_bound_json::SchemaBoundJsonResult};
+use worth_testkit_server::shared_support_product_result_schema_bound_json::SchemaBoundJsonResult;
 
 #[test]
 fn canonical_json_order_and_semantic_change_have_exact_identity_behavior() {
-    let contract =
-        worth_server::WorthServerProductResultContract::canonical_json("product.connection.result.v1", 1, 1024)
-            .expect("result contract should validate");
+    let contract = worth_server::WorthServerProductResultContract::canonical_json(
+        "product.connection.result.v1",
+        1,
+        1024,
+    )
+    .expect("result contract should validate");
     let left = publish(
         &contract,
         json!({ "connection": { "state": "ready", "id": "host-7" }, "version": 1 }),
@@ -41,15 +49,19 @@ fn canonical_json_order_and_semantic_change_have_exact_identity_behavior() {
 
 #[test]
 fn typed_result_schema_must_match_the_declared_contract_before_publication() {
-    let contract =
-        worth_server::WorthServerProductResultContract::canonical_json("product.connection.result.v1", 1, 1024)
-            .expect("result contract should validate");
+    let contract = worth_server::WorthServerProductResultContract::canonical_json(
+        "product.connection.result.v1",
+        1,
+        1024,
+    )
+    .expect("result contract should validate");
     let wrong_schema = worth_testkit_server::shared_support_product_result_schema_bound_json::SchemaBoundJsonResult::v1(
         "product.deployment.result.v1",
         json!({ "connection_id": "host-7" }),
     );
-    let error = worth_server::WorthServerProductResultArtifact::publish_json(&contract, &wrong_schema)
-        .expect_err("typed schema mismatch must fail before artifact construction");
+    let error =
+        worth_server::WorthServerProductResultArtifact::publish_json(&contract, &wrong_schema)
+            .expect_err("typed schema mismatch must fail before artifact construction");
 
     assert_eq!(
         error.code(),
@@ -59,9 +71,12 @@ fn typed_result_schema_must_match_the_declared_contract_before_publication() {
 
 #[test]
 fn declared_inline_budget_rejects_oversized_result_bodies() {
-    let contract =
-        worth_server::WorthServerProductResultContract::canonical_json("product.connection.result.v1", 1, 16)
-            .expect("result contract should validate");
+    let contract = worth_server::WorthServerProductResultContract::canonical_json(
+        "product.connection.result.v1",
+        1,
+        16,
+    )
+    .expect("result contract should validate");
     let result = worth_testkit_server::shared_support_product_result_schema_bound_json::SchemaBoundJsonResult::v1(
         "product.connection.result.v1",
         json!({ "body": "this result is intentionally too large" }),
@@ -77,9 +92,12 @@ fn declared_inline_budget_rejects_oversized_result_bodies() {
 
 #[test]
 fn inline_budget_stops_serialization_before_unbounded_materialization() {
-    let contract =
-        worth_server::WorthServerProductResultContract::canonical_json("product.connection.result.v1", 1, 64)
-            .expect("result contract should validate");
+    let contract = worth_server::WorthServerProductResultContract::canonical_json(
+        "product.connection.result.v1",
+        1,
+        64,
+    )
+    .expect("result contract should validate");
     let visited_items = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let result = CountingOversizedResult {
         item_count: 1_000_000,
@@ -101,8 +119,9 @@ fn inline_budget_stops_serialization_before_unbounded_materialization() {
 
 #[test]
 fn canonical_contract_digest_frames_delimiter_bearing_schema_identity() {
-    let left = worth_server::WorthServerProductResultContract::canonical_json("schema|version=2", 1, 1024)
-        .expect("delimiter-bearing identity should remain representable");
+    let left =
+        worth_server::WorthServerProductResultContract::canonical_json("schema|version=2", 1, 1024)
+            .expect("delimiter-bearing identity should remain representable");
     let right = worth_server::WorthServerProductResultContract::canonical_json("schema", 2, 1024)
         .expect("neighboring schema should validate");
 

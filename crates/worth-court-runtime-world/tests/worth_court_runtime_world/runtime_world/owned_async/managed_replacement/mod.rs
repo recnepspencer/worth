@@ -1,12 +1,28 @@
-use {crate::owned_async::ordinary_context::fixture::admit_managed, crate::owned_async::ordinary_context::fixture::completion, crate::owned_async::ordinary_context::fixture::selected_fork, crate::owned_async::ordinary_context::fixture::source_commit, crate::owned_async::ordinary_context::fixture::AsyncSourceCourt};
-use {std::num::NonZeroU64};
-use {worth_runtime_bridge::facade::BridgeAsyncCompletionRejectionKind, worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial as Denial, worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRevalidation, worth_runtime_bridge::facade::TruthCommitIdentity};
-use {worth_runtime_world::facade::RuntimeWorldOwnedAsyncManagedRevalidationDenial};
-use {worth_signal::facade::branch::SignalOwnedAsyncManagedReport, worth_signal::facade::branch::SignalOwnedAsyncQueueDenial};
+use std::num::NonZeroU64;
+use worth_runtime_world::facade::RuntimeWorldOwnedAsyncManagedRevalidationDenial;
+use {
+    crate::owned_async::ordinary_context::fixture::admit_managed,
+    crate::owned_async::ordinary_context::fixture::completion,
+    crate::owned_async::ordinary_context::fixture::selected_fork,
+    crate::owned_async::ordinary_context::fixture::source_commit,
+    crate::owned_async::ordinary_context::fixture::AsyncSourceCourt,
+};
+use {
+    worth_runtime_bridge::facade::BridgeAsyncCompletionRejectionKind,
+    worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial as Denial,
+    worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRevalidation,
+    worth_runtime_bridge::facade::TruthCommitIdentity,
+};
+use {
+    worth_signal::facade::branch::SignalOwnedAsyncManagedReport,
+    worth_signal::facade::branch::SignalOwnedAsyncQueueDenial,
+};
 
 #[test]
 fn managed_retry_retains_queued_refusal_and_continues_after_real_before_due_progress() {
-    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(std::num::NonZeroU64::MIN);
+    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(
+        std::num::NonZeroU64::MIN,
+    );
     let selected = selected_fork(&court);
     let mut owner = admit_managed(&court, &selected);
     let prior = owner.request_handle();
@@ -29,9 +45,13 @@ fn managed_retry_retains_queued_refusal_and_continues_after_real_before_due_prog
         court
             .bridge
             .advance_managed_owned_async_retry(&mut owner, &schedule, 7),
-        Err(worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial::Signal(
-            worth_signal::facade::branch::SignalOwnedAsyncQueueDenial::QueueNotDrained { depth: 1 }
-        ))
+        Err(
+            worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial::Signal(
+                worth_signal::facade::branch::SignalOwnedAsyncQueueDenial::QueueNotDrained {
+                    depth: 1
+                }
+            )
+        )
     ));
     assert_eq!(owner.request_handle(), prior);
     assert_eq!(
@@ -55,7 +75,9 @@ fn managed_retry_retains_queued_refusal_and_continues_after_real_before_due_prog
             worth_signal::facade::branch::SignalConditionalServiceExecutionDenial::SlotAdmission(_)
         )))
     ));
-    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::TemporalDeferred(clock) = owner.native_report() else {
+    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::TemporalDeferred(clock) =
+        owner.native_report()
+    else {
         panic!("the actual partial clock advance is retained without a retry report");
     };
     assert_eq!(clock.current_tick().get(), 6);
@@ -110,7 +132,9 @@ fn managed_retry_retains_queued_refusal_and_continues_after_real_before_due_prog
 
 #[test]
 fn managed_revalidation_preserves_source_and_queue_when_native_coalesces() {
-    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(std::num::NonZeroU64::MIN);
+    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(
+        std::num::NonZeroU64::MIN,
+    );
     let selected = selected_fork(&court);
     let mut owner = admit_managed(&court, &selected);
     let prior = owner.request_handle();
@@ -129,9 +153,15 @@ fn managed_revalidation_preserves_source_and_queue_when_native_coalesces() {
             &newer,
             &court.lease(&newer)
         ),
-        Err(worth_runtime_world::facade::RuntimeWorldOwnedAsyncManagedRevalidationDenial::Bridge(
-            worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial::Signal(worth_signal::facade::branch::SignalOwnedAsyncQueueDenial::QueueNotDrained { depth: 1 })
-        ))
+        Err(
+            worth_runtime_world::facade::RuntimeWorldOwnedAsyncManagedRevalidationDenial::Bridge(
+                worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial::Signal(
+                    worth_signal::facade::branch::SignalOwnedAsyncQueueDenial::QueueNotDrained {
+                        depth: 1
+                    }
+                )
+            )
+        )
     ));
     assert_eq!(owner.request_handle(), prior);
     assert_eq!(source_commit(owner.request().unwrap()), &original_source);
@@ -158,7 +188,8 @@ fn managed_revalidation_preserves_source_and_queue_when_native_coalesces() {
         .observation()
         .commit_id()
         .unwrap();
-    let admitted_source = worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(commit.0);
+    let admitted_source =
+        worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(commit.0);
     assert_eq!(source_commit(owner.request().unwrap()), &admitted_source);
     let winner = owner.request_handle();
     let newest = court.publish(execution, &newer);
@@ -180,7 +211,9 @@ fn managed_revalidation_preserves_source_and_queue_when_native_coalesces() {
         &admitted_source,
         "coalescing retains the original business source and performs no new read"
     );
-    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Revalidation(report) = owner.native_report() else {
+    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Revalidation(report) =
+        owner.native_report()
+    else {
         panic!("native revalidation report")
     };
     assert!(report

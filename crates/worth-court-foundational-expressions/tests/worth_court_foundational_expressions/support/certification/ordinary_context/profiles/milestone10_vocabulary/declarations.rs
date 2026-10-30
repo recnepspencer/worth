@@ -1,7 +1,18 @@
-pub(crate) use {worth_foundational::derive_foundational_profile_identity, worth_foundational::foundational_profile_progression_authority, worth_foundational::request_foundational_profile_set, worth_foundational::FoundationalProfileResolutionFamily, worth_foundational::FoundationalProfileResolutionLedger, worth_foundational::FoundationalProfileResolutionRecord, worth_foundational::FoundationalProfileResolutionRelation};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::derive_foundational_profile_identity,
+    worth_foundational::foundational_profile_progression_authority,
+    worth_foundational::request_foundational_profile_set,
+    worth_foundational::FoundationalProfileResolutionFamily,
+    worth_foundational::FoundationalProfileResolutionLedger,
+    worth_foundational::FoundationalProfileResolutionRecord,
+    worth_foundational::FoundationalProfileResolutionRelation,
+};
 
-pub(crate) use {crate::certification::ordinary_context::profiles::support::admit_same_profile, crate::certification::ordinary_context::profiles::support::profile};
+pub(crate) use {
+    crate::certification::ordinary_context::profiles::support::admit_same_profile,
+    crate::certification::ordinary_context::profiles::support::profile,
+};
 
 pub(crate) fn profile_identity(
     admitted: &worth_foundational::AdmittedFoundationalProfileArtifact,

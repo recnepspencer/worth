@@ -14,3 +14,6 @@ pub(crate) mod physical_record_journeys;
 pub(crate) mod physical_runtime_authority_ui;
 #[path = "worth_store_court_store_physical_record_journeys_physical_work/process/mod.rs"]
 pub(crate) mod process;
+
+#[path = "worth_store_court_store_physical_record_journeys_physical_work/supported_programs/mod.rs"]
+mod supported_programs;

@@ -1,11 +1,27 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationDenial, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendDenial, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_backend::MediaOperationRole};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store_physical_backend::MediaOperationRole;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationDenial,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::RecordAppendDenial,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {crate::physical_record_journeys::maintenance_interference::rewrite_scope::open_wide, crate::physical_record_journeys::maintenance_interference::rewrite_scope::publish_span, crate::physical_record_journeys::maintenance_interference::rewrite_scope::reopen_wide, crate::physical_record_journeys::maintenance_interference::rewrite_scope::rewrite, crate::physical_record_journeys::maintenance_interference::rewrite_scope::wide_placement, crate::physical_record_journeys::maintenance_interference::rewrite_scope::RECORD_BYTES};
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files};
+pub(crate) use worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files;
+pub(crate) use {
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::open_wide,
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::publish_span,
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::reopen_wide,
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::rewrite,
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::wide_placement,
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::RECORD_BYTES,
+};
 
 pub(crate) const PAGE_BYTES: u64 = 16 * 1024;
 
@@ -13,7 +29,9 @@ pub(crate) fn read_all(
     serving: &ServingPhysicalRuntime,
     ids: &[worth_store::physical_runtime::PhysicalRecordId],
 ) {
-    let limits = worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(RECORD_BYTES as u32).unwrap());
+    let limits = worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(RECORD_BYTES as u32).unwrap(),
+    );
     let reader = serving.records().unwrap();
     for (ordinal, id) in ids.iter().copied().enumerate() {
         let mut session = reader.open(id, limits).unwrap();
@@ -28,14 +46,17 @@ pub(crate) fn denied_rewrite(
 ) -> PhysicalMutationPreparationDenial {
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x7D; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x7D; 32]),
+        )
         .unwrap();
     match submission
         .rewrite_selected_inline_pages(
             wide_placement(),
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
             ),
             pages,
         )
@@ -45,7 +66,9 @@ pub(crate) fn denied_rewrite(
         worth_proof::TransitionOutcome::Success(_) => panic!("{pages} pages were admitted"),
         worth_proof::TransitionOutcome::Deferred(_) => panic!("{pages} pages were deferred"),
         worth_proof::TransitionOutcome::Stale(_) => panic!("{pages} pages were stale"),
-        worth_proof::TransitionOutcome::RebindRequired(_) => panic!("{pages} pages required rebind"),
+        worth_proof::TransitionOutcome::RebindRequired(_) => {
+            panic!("{pages} pages required rebind")
+        }
         worth_proof::TransitionOutcome::Failed(_) => panic!("{pages} pages failed closed"),
     }
 }

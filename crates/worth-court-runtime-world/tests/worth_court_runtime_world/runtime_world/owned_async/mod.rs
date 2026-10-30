@@ -1,26 +1,13 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-use {crate::owned_async::ordinary_context::fixture::completion, crate::owned_async::ordinary_context::fixture::source_commit, crate::owned_async::ordinary_context::fixture::AsyncSourceCourt};
-use {worth_runtime_bridge::facade::TruthCommitIdentity};
-use {worth_runtime_world::facade::RuntimeWorldOwnedAsyncManagedRevalidationDenial, worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial};
+use worth_runtime_bridge::facade::TruthCommitIdentity;
+use {
+    crate::owned_async::ordinary_context::fixture::completion,
+    crate::owned_async::ordinary_context::fixture::source_commit,
+    crate::owned_async::ordinary_context::fixture::AsyncSourceCourt,
+};
+use {
+    worth_runtime_world::facade::RuntimeWorldOwnedAsyncManagedRevalidationDenial,
+    worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+};
 
 #[test]
 fn populated_zero_version_fork_keeps_native_commit_through_completion_and_revalidation() {
@@ -60,7 +47,8 @@ fn populated_zero_version_fork_keeps_native_commit_through_completion_and_revali
         .admit_unqueued_owned_async_request(&court.bridge, &court.declaration, &fork, &lease)
         .expect("populated fork reaches the real Signal admission");
     let request = owner.retained_request().unwrap();
-    let expected = worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(selected.0);
+    let expected =
+        worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(selected.0);
     assert_eq!(
         source_commit(&request),
         &expected,
@@ -105,7 +93,9 @@ fn populated_zero_version_fork_keeps_native_commit_through_completion_and_revali
     let replacement = owner.request().unwrap();
     assert_eq!(
         source_commit(replacement),
-        &worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(sibling_commit.0)
+        &worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(
+            sibling_commit.0
+        )
     );
     assert_eq!(
         source_commit(&request),
@@ -213,7 +203,9 @@ fn empty_source_refuses_before_signal_and_preserves_original_request_custody() {
     );
     assert!(matches!(
         foreign_denial,
-        Err(worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial::ForeignOwner)
+        Err(
+            worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial::ForeignOwner
+        )
     ));
     court.bridge.retire_owned_async_request(&request).unwrap();
     assert_eq!(

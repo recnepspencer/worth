@@ -2,14 +2,32 @@
 
 pub use {std::fs, std::num::NonZeroU64, std::path::Path};
 
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::RecordAppendBatch};
-pub use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::RecordAppendBatch,
+};
+pub use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
-pub fn rotate_completed_wal(
-    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
-) {
-    let format = worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+pub fn rotate_completed_wal(serving: &worth_store::physical_runtime::ServingPhysicalRuntime) {
+    let format = worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+        .admit()
+        .unwrap();
     let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(64).unwrap())
         .admit(worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(format))
@@ -17,22 +35,31 @@ pub fn rotate_completed_wal(
     let submission = serving.record_submission();
     for ordinal in 0..24_u8 {
         let key = submission
-            .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(
-                [0xe0 + ordinal; 32],
-            ))
+            .issue_idempotency_key(
+                worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(
+                    [0xe0 + ordinal; 32],
+                ),
+            )
             .unwrap();
         let payload = vec![ordinal; 64 * 1024];
-        let worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) =
-            submission
-                .prepare_durable_append(
-                    worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload.as_slice()]).unwrap(),
-                    placement,
-                    worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
-                        key,
-                        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-                    ),
-                )
-                .into_raw()
+        let worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) = submission
+            .prepare_durable_append(
+                worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+                    payload.as_slice()
+                ])
+                .unwrap(),
+                placement,
+                worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
+                    key,
+                    worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(
+                        30_000,
+                    )
+                    .unwrap(),
+                ),
+            )
+            .into_raw()
         else {
             panic!("completed ordinary WAL rotation {ordinal} must prepare")
         };

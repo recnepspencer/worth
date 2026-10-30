@@ -1,14 +1,43 @@
 //! Production terminal head retired, in one process. No world here reopens:
 //! recovery of the retirement member belongs to the recovery slice.
 
-#[allow(unused_imports)] use crate::physical_blob_journeys::terminal_head_retirement::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::terminal_head_retirement::*;
 use {std::num::NonZeroU16, std::num::NonZeroU32, std::num::NonZeroU64};
 
 use {worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::certification::CertificationReleaseHeadObservation, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimReceipt, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::BlobReclaimRetirementBudget, worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial, worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure, worth_store::physical_runtime::BlobTerminalHeadRetirementReceipt, worth_store::physical_runtime::BlobTerminalHeadRetirementRequest, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalWalObservation, worth_store::physical_runtime::ServingPhysicalRuntime};
+use {
+    worth_store::physical_runtime::certification::CertificationReleaseHeadObservation,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimReceipt,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::BlobReclaimRetirementBudget,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementReceipt,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementRequest,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalWalObservation,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-use {worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
-use {crate::physical_blob_journeys::terminal_head_retirement::publication::again, crate::physical_blob_journeys::terminal_head_retirement::publication::begin, crate::physical_blob_journeys::terminal_head_retirement::publication::publish_chunks, crate::physical_blob_journeys::terminal_head_retirement::publication::publish_resumable, crate::physical_blob_journeys::terminal_head_retirement::publication::Published};
+use {
+    crate::physical_blob_journeys::terminal_head_retirement::publication::again,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::begin,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::publish_chunks,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::publish_resumable,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::Published,
+};
+use {
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+};
 
 #[test]
 fn retirement_removes_exactly_the_attested_head_and_the_next_checkpoint_ratchets_the_roster() {

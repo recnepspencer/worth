@@ -1,9 +1,21 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::record_read_cancellation::*;
-use {worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::record_read_cancellation::*;
+use {
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+};
 
-use {worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::read_record, worth_store_testkit_store::physical_record_journeys::serving_from_open};
-use {worth_store_testkit_store::physical_work::record_read_signal_cleanup::await_read_signal_cleanup};
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use worth_store_testkit_store::physical_work::record_read_signal_cleanup::await_read_signal_cleanup;
+use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::read_record,
+    worth_store_testkit_store::physical_record_journeys::serving_from_open,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+};
 
 #[test]
 fn cancelling_a_read_session_reports_unread_delivery_and_releases_its_leases() {
@@ -14,7 +26,10 @@ fn cancelling_a_read_session_reports_unread_delivery_and_releases_its_leases() {
     let publication = worth_store_testkit_store::durable_publication::root::publish_single(
         &initial,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("physical-work-read-cancellation", 1),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "physical-work-read-cancellation",
+            1,
+        ),
         worth_store::physical_runtime::RecordAppendBatch::try_from_iter([PAYLOAD]).unwrap(),
     );
     let record = publication.settled_members()[0].record_id(0).unwrap();
@@ -22,7 +37,9 @@ fn cancelling_a_read_session_reports_unread_delivery_and_releases_its_leases() {
 
     let serving = serving_from_open(&root);
     let observer = serving.observer();
-    let limits = worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap());
+    let limits = worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap(),
+    );
     let mut session = serving
         .records()
         .expect("read protection admission")

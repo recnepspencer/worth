@@ -1,5 +1,17 @@
-#[allow(unused_imports)] use crate::phase_two_certification_repair::isolated_context::retained_captures::*;
-use {std::sync::atomic::AtomicUsize, worth_execution::DecomposeCertificationFailure, worth_execution::DecomposeKernelEditions, worth_foundational::DeterminismContract, worth_execution::ExecutionDecompose, worth_execution::ExecutionMap, worth_execution::InterfaceSolution, worth_execution::InteriorResult, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::OracleMismatch, std::sync::atomic::Ordering, worth_foundational::PartitionIdentity, crate::phase_two_certification_repair::isolated_context::TEST_LOCK, crate::phase_two_certification_repair::isolated_context::lease, crate::phase_two_certification_repair::isolated_context::map};
+#[allow(unused_imports)]
+use crate::phase_two_certification_repair::isolated_context::retained_captures::*;
+use {
+    crate::phase_two_certification_repair::isolated_context::lease,
+    crate::phase_two_certification_repair::isolated_context::map,
+    crate::phase_two_certification_repair::isolated_context::TEST_LOCK,
+    std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
+    worth_execution::DecomposeCertificationFailure, worth_execution::DecomposeKernelEditions,
+    worth_execution::ExecutionDecompose, worth_execution::ExecutionMap,
+    worth_execution::InterfaceSolution, worth_execution::InteriorResult,
+    worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition,
+    worth_execution::OracleMismatch, worth_foundational::DeterminismContract,
+    worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn warm_decomposition_admits_both_captured_reducer_copies_before_clone() {
@@ -34,7 +46,11 @@ fn warm_decomposition_admits_both_captured_reducer_copies_before_clone() {
         .expect("serial warm-up");
     let before = CAPTURE_CLONES.load(std::sync::atomic::Ordering::SeqCst);
     assert!(before > 0, "warm-up must clone the captured reducer");
-    let tight = lease(100, 150_000, worth_foundational::DeterminismContract::CanonicalBitwise);
+    let tight = lease(
+        100,
+        150_000,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+    );
     let result = decomposition.certify(&tight, 1, &map(1), editions, interior, interface, back);
     assert!(matches!(
         result,
@@ -42,7 +58,10 @@ fn warm_decomposition_admits_both_captured_reducer_copies_before_clone() {
             worth_execution::OracleMismatch::Stop
         ))
     ));
-    assert_eq!(CAPTURE_CLONES.load(std::sync::atomic::Ordering::SeqCst), before);
+    assert_eq!(
+        CAPTURE_CLONES.load(std::sync::atomic::Ordering::SeqCst),
+        before
+    );
 }
 
 #[test]
@@ -52,19 +71,24 @@ fn reduction_peak_includes_reference_capture_during_selected_nested_work() {
     }
 
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
-    let lease = lease(1_000, 1 << 20, worth_foundational::DeterminismContract::CanonicalBitwise);
-    let inner: ExecutionMap<u64, u64> = worth_execution::ExecutionMap::try_from_declared_partitions(
-        vec![worth_foundational::PartitionIdentity::new(9)],
-        vec![MapPartition {
-            identity: worth_foundational::PartitionIdentity::new(9),
-            value: 9_u64,
-            read_keys: Vec::new(),
-            write_keys: Vec::new(),
-            kernel_scratch_bytes: 60_000,
-            max_result_bytes: 8,
-        }],
-    )
-    .unwrap();
+    let lease = lease(
+        1_000,
+        1 << 20,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+    );
+    let inner: ExecutionMap<u64, u64> =
+        worth_execution::ExecutionMap::try_from_declared_partitions(
+            vec![worth_foundational::PartitionIdentity::new(9)],
+            vec![MapPartition {
+                identity: worth_foundational::PartitionIdentity::new(9),
+                value: 9_u64,
+                read_keys: Vec::new(),
+                write_keys: Vec::new(),
+                kernel_scratch_bytes: 60_000,
+                max_result_bytes: 8,
+            }],
+        )
+        .unwrap();
     let capture = TrackedCapture(vec![0; 100_000]);
     let (_, report, _) = map(1)
         .certify_reduce(

@@ -5,10 +5,10 @@
 
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
-pub(crate) use {worth_execution::ExecutionRequest};
+pub(crate) use worth_execution::ExecutionRequest;
 
+pub(crate) use crate::workload::Step;
 pub(crate) use {crate::durable_run::apply, crate::durable_run::open};
-pub(crate) use {crate::workload::Step};
 
 /// A closed home after a prefix; removed when dropped.
 pub(crate) struct PreparedHome {

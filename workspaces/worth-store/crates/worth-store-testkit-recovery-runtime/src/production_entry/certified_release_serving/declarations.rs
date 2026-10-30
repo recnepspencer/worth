@@ -1,30 +1,55 @@
 //! The certification pause path uses a genuinely selected C8 claim and the
 //! same Store media rejoin used by production construction.
 
-pub use {std::num::NonZeroU64, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome, crate::production_entry::release_reopen};
-pub use {std::path::Path};
-pub use {std::sync::atomic::AtomicBool, std::sync::atomic::Ordering, std::sync::Arc, std::sync::Mutex};
-pub use {worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial};
-pub use {worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration, worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryOpenRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority, worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration, worth_store_recovery_runtime::WorthStoreRecovery};
+use super::durability_policy::serving_durability;
 
+pub use std::path::Path;
+pub use worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial;
+pub use {
+    crate::production_entry::release_reopen, std::num::NonZeroU64, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
+pub use {
+    std::sync::atomic::AtomicBool, std::sync::atomic::Ordering, std::sync::Arc, std::sync::Mutex,
+};
+pub use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration,
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority,
+    worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
-pub use {crate::certified_release_serving::tamper::alter_selected_checkpoint, crate::certified_release_serving::tamper::alter_selected_control, crate::certified_release_serving::tamper::alter_selected_file, crate::certified_release_serving::tamper::alter_selected_routing_root};
+pub use {
+    crate::certified_release_serving::tamper::alter_selected_checkpoint,
+    crate::certified_release_serving::tamper::alter_selected_control,
+    crate::certified_release_serving::tamper::alter_selected_file,
+    crate::certified_release_serving::tamper::alter_selected_routing_root,
+};
 
-pub use {crate::production_entry::certified_release_serving::recovery_request::request, crate::production_entry::certified_release_serving::recovery_request::request_for_long_ingest, crate::production_entry::certified_release_serving::recovery_request::request_for_long_ingest_with_manifest_entries, crate::production_entry::certified_release_serving::recovery_request::request_narrowing, crate::production_entry::certified_release_serving::recovery_request::request_with_configuration, crate::production_entry::certified_release_serving::recovery_request::request_with_manifest_entries, crate::production_entry::certified_release_serving::recovery_request::request_with_memory, crate::production_entry::certified_release_serving::recovery_request::request_with_memory_and_format, crate::production_entry::certified_release_serving::recovery_request::ADMITTED_BYTES};
+pub use {
+    crate::production_entry::certified_release_serving::recovery_request::request,
+    crate::production_entry::certified_release_serving::recovery_request::request_for_long_ingest,
+    crate::production_entry::certified_release_serving::recovery_request::request_for_long_ingest_with_manifest_entries,
+    crate::production_entry::certified_release_serving::recovery_request::request_narrowing,
+    crate::production_entry::certified_release_serving::recovery_request::request_with_configuration,
+    crate::production_entry::certified_release_serving::recovery_request::request_with_manifest_entries,
+    crate::production_entry::certified_release_serving::recovery_request::request_with_memory,
+    crate::production_entry::certified_release_serving::recovery_request::request_with_memory_and_format,
+    crate::production_entry::certified_release_serving::recovery_request::ADMITTED_BYTES,
+};
 
-pub use {crate::production_entry::certified_release_serving::plain_serving::assert_plain_serving_denied};
+pub use crate::production_entry::certified_release_serving::plain_serving::assert_plain_serving_denied;
 
-pub use {crate::production_entry::certified_release_serving::empty_no_release::run_empty_no_release};
+pub use crate::production_entry::certified_release_serving::empty_no_release::run_empty_no_release;
 
-
-
-
-
-
-
-
-
-pub use {crate::production_entry::certified_release_serving::recovery::recover};
+pub use crate::production_entry::certified_release_serving::recovery::recover;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Mutation {
@@ -39,11 +64,17 @@ pub enum Mutation {
 }
 
 pub fn run(mutation: Mutation) {
-    run_world(crate::production_entry::release_reopen::released_world(1024), mutation);
+    run_world(
+        crate::production_entry::release_reopen::released_world(1024),
+        mutation,
+    );
 }
 
 pub fn run_tier_and_release() {
-    run_world(crate::production_entry::release_reopen::released_tier_world(1024), crate::production_entry::certified_release_serving::Mutation::None);
+    run_world(
+        crate::production_entry::release_reopen::released_tier_world(1024),
+        crate::production_entry::certified_release_serving::Mutation::None,
+    );
 }
 
 pub fn run_world(
@@ -57,7 +88,8 @@ pub fn run_world(
     assert_eq!(receipt.remaining_payload_records(), 0);
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x7a; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -66,7 +98,10 @@ pub fn run_world(
     };
     let outcome = handle.wait();
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "checkpoint after recovered Serving: {outcome:?}"
     );
     let retained = world.retained_root();
@@ -169,8 +204,7 @@ pub fn open_serving_with_seal_expect_denial(
     );
 }
 
-pub type ExpectedServingDenial =
-    fn(&worth_store::physical_runtime::RecordBootstrapDenial) -> bool;
+pub type ExpectedServingDenial = fn(&worth_store::physical_runtime::RecordBootstrapDenial) -> bool;
 
 /// Which Serving denial an open must end in, if any.
 pub type ServingDenialCheck<'check> =
@@ -201,7 +235,10 @@ pub fn open_serving_inner_with_wal_segment_bytes(
     require_checkpoint: bool,
     wal_segment_bytes: NonZeroU64,
 ) -> Option<worth_store::physical_runtime::ServingPhysicalRuntime> {
-    use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::PhysicalRecordFormatDeclaration};
+    use {
+        worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    };
     let format = AdmittedPhysicalRecordFormat::admit(
         PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
     );
@@ -216,34 +253,6 @@ pub fn open_serving_inner_with_wal_segment_bytes(
     )
 }
 
-/// The durability policy these worlds serve under, which recovery before the
-/// first checkpoint must be configured with.
-pub fn serving_durability(
-    wal_segment_bytes: NonZeroU64,
-) -> worth_store::physical_runtime::ConfiguredPhysicalDurabilityDeclaration {
-    use {std::num::NonZeroU32};
-    use {worth_store::physical_runtime::CheckpointMemoryLimit, worth_store::physical_runtime::GroupCommitDelay, worth_store::physical_runtime::GroupCommitLimit, worth_store::physical_runtime::IdempotencyRetentionGenerations, worth_store::physical_runtime::LiveIdempotencyBindingLimit, worth_store::physical_runtime::PendingUnresolvedMutationLimit, worth_store::physical_runtime::PhysicalCheckpointPolicy, worth_store::physical_runtime::PhysicalDurabilityDeclaration, worth_store::physical_runtime::PhysicalIdempotencyPolicy, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::RetainedWalTailLimit, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
-
-    PhysicalDurabilityDeclaration::builder()
-        .group_commit(
-            GroupCommitLimit::new(NonZeroU32::new(32).unwrap()),
-            GroupCommitDelay::new(std::num::NonZeroU64::new(1).unwrap()),
-        )
-        .wal(PhysicalWalPolicy::segmented(
-            WalSegmentByteLimit::new(wal_segment_bytes),
-            WalSegmentInventoryLimit::new(NonZeroU32::new(1024).unwrap()),
-        ))
-        .idempotency(PhysicalIdempotencyPolicy::new(
-            IdempotencyRetentionGenerations::new(std::num::NonZeroU64::new(4).unwrap()),
-            PendingUnresolvedMutationLimit::new(NonZeroU32::new(1024).unwrap()),
-            LiveIdempotencyBindingLimit::new(NonZeroU32::new(4096).unwrap()),
-        ))
-        .checkpoint(PhysicalCheckpointPolicy::fuzzy(
-            CheckpointMemoryLimit::new(std::num::NonZeroU64::new(16 << 20).unwrap()),
-            RetainedWalTailLimit::new(std::num::NonZeroU64::new(64 << 20).unwrap()),
-        ))
-}
-
 pub fn open_serving_inner_with_format(
     root: &Path,
     seal: Option<worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody>,
@@ -253,7 +262,14 @@ pub fn open_serving_inner_with_format(
     format: worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
     policy: Option<worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy>,
 ) -> Option<worth_store::physical_runtime::ServingPhysicalRuntime> {
-    use {worth_store::physical_runtime::FilesystemAccessPosture, worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore};
+    use {
+        worth_store::physical_runtime::FilesystemAccessPosture,
+        worth_store::physical_runtime::FilesystemMediaAdmission,
+        worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+        worth_store::physical_runtime::PhysicalRecordOpen,
+        worth_store::physical_runtime::PhysicalRuntimeAdmission,
+        worth_store::physical_runtime::PhysicalStore,
+    };
 
     let access = PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
     let runtime = PhysicalStore::admit(PhysicalRuntimeAdmission::new(root).unwrap()).unwrap();
@@ -326,15 +342,20 @@ pub fn open_serving_inner_with_format(
     }
     let checkpoint = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x7b; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(checkpoint).into_raw()
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(checkpoint).into_raw()
     else {
         panic!("checkpoint on recovered Serving must admit")
     };
     let outcome = handle.wait();
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "checkpoint after recovered Serving: {outcome:?}"
     );
     serving.close();

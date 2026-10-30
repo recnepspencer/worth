@@ -20,3 +20,6 @@ pub(crate) mod process;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_foundational_expressions/support/value_shape/mod.rs"]
 pub(crate) mod value_shape;
+
+#[path = "worth_court_foundational_expressions/supported_programs/mod.rs"]
+mod supported_programs;

@@ -3,12 +3,15 @@
 import argparse
 from collections import Counter
 import json
+import os
 from pathlib import Path
 import sys
 
 from coverage import prove
+from cargo_capture import instrument
 from evidence import run
 from logs import llvm_lines, read_lane
+from ratchet import source_violations
 from source_scan import scan_workspace
 from telemetry import setup_counts, slot_use, timing_summary
 from workspace import WORKSPACES, repository_root
@@ -59,14 +62,36 @@ def markdown(result):
         lines.append(f'| {name} | {lane["build_observation"]} | {duplicate_count} | '
                      f'{timing["pass"]} / {timing["fail"]} / {timing["ignored"]} | '
                      f'{timing.get("wall_seconds", "unknown")} |')
+    for name, lane in result['lanes'].items():
+        timing = lane['timing_telemetry']
         lines += ['', f'### {name}', '', f'Log: `{lane["log"]}`', '',
+                  f'Build telemetry: {timing["build_seconds"]} s; run telemetry: {timing["run_seconds"]} s.', '',
                   'Slowest observed tests (summed work is not lane wall time):', '']
         lines += [f'- {r["seconds"]:.3f}s: `{r["name"]}` ({r["event"]})' for r in timing['slowest']]
+        lines += ['', 'Duplicate graphs (target kinds and executables remain visible):', '']
+        lines += [f'- `{row["package"]}`: {row["compiles"]} artifacts; causes: {", ".join(row["causes"])}.'
+                  for row in lane['duplicate_graphs']]
+        slots, setup = lane['slot_use_telemetry'], lane['repeated_setup']
+        lines += ['', f'CPU/slots: **{slots["status"]}**; complete observations: {len(slots["tests"])}.', '']
+        lines += [f'- `{row["binary"]}::{row["test"]}` reserves {row["reserved_slots"]}, '
+                  f'observed CPU/wall {row["measured_parallelism"]:.2f}, recommends {row["recommended_slots"]}.'
+                  for row in slots['tests'] if row['over_reserved']]
+        lines += ['', f'Recorded construction attempts: **{setup["status"]}**.', '']
+        lines += [f'- `{row["builder"]}` / `{row["fingerprint"]}`: {row["count"]} observed attempts across this lane.'
+                  for row in sorted(setup['per_lane'], key=lambda row: -row['count'])[:40]]
     lines += ['', '## Lane coverage', '', f'Status: **{result["coverage"]["status"]}**.', '',
               'Ignored tests are scheduled-only; this tool never executes them.', '',
               '## Source locations', '']
     lines += [f'- `{s["path"]}:{s["line"]}`: {s["kind"]} ({s["function"]})'
               for s in result['source_sites']]
+    lines += ['', '## LLVM IR size', '']
+    if not result['llvm_lines']:
+        lines.append('Unmeasured: no cargo llvm-lines input supplied.')
+    for name, rows in result['llvm_lines'].items():
+        lines += ['', f'### {name}', '', '| IR lines | Copies | Function | Testkit attribution |',
+                  '|---:|---:|---|---|']
+        lines += [f'| {row["lines"]} | {row["copies"]} | `{row["name"]}` | '
+                  f'{", ".join(row["testkit_helpers"])} |' for row in rows[:30]]
     return '\n'.join(lines) + '\n'
 
 
@@ -81,6 +106,8 @@ def main():
     parser.add_argument('--selection', type=named_path, action='append', default=[])
     parser.add_argument('--llvm', type=named_path, action='append', default=[])
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--check-sources', action='store_true',
+                        help='refuse cargo, cargo_metadata and trybuild inside tests or testkits')
     parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     repository = repository_root(Path.cwd())
@@ -89,6 +116,7 @@ def main():
         args.manifest.resolve().parent.name), args.manifest)]
     if args.all and (args.log or args.inventory or args.selection or args.llvm or args.command):
         parser.error('--all is a source census; supply measured inputs separately per workspace')
+    result_code = 0
     for name, path in manifests:
         manifest = (repository / path).resolve()
         destination = args.output or repository / 'target/test-cost' / name
@@ -101,13 +129,15 @@ def main():
                     for i, a in enumerate(command)):
                 parser.error('ignored tests are scheduled-only and cannot be measured here')
             if command[0] == 'cargo':
-                if command[1:2] in (['test'], ['check'], ['build']):
-                    command.insert(2, '--message-format=json')
-                elif command[1:2] == ['nextest']:
-                    command.insert(3, '--cargo-message-format=json')
+                command = instrument(command)
             path = destination / 'lane.log'
-            code = run(command, path)
+            capture_index = destination / 'capture-index.jsonl'
+            capture_index.write_text('', encoding='utf-8')
+            environment = dict(os.environ, WORTH_TEST_COST_CAPTURE_INDEX=str(capture_index.resolve()))
+            code = run(command, path, environment=environment)
             logs.append(('command', path))
+            for index, line in enumerate(capture_index.read_text(encoding='utf-8').splitlines()):
+                logs.append((f'nested-{index}', Path(json.loads(line)['log'])))
         else:
             code = 0
         result = collect(manifest, repository, logs,
@@ -116,9 +146,12 @@ def main():
         (destination / 'census.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n', encoding='utf-8')
         (destination / 'census.md').write_text(markdown(result), encoding='utf-8')
         print(f'{name}: {result["source_counts"]}; coverage={result["coverage"]["status"]}; {destination}')
-        if code:
-            return code
-    return 0
+        if args.check_sources and source_violations(result['source_sites']):
+            for site in source_violations(result['source_sites']):
+                print(f'{site["path"]}:{site["line"]}: forbidden {site["kind"]}', file=sys.stderr)
+            code = code or 1
+        result_code = result_code or code
+    return result_code
 
 
 if __name__ == '__main__':

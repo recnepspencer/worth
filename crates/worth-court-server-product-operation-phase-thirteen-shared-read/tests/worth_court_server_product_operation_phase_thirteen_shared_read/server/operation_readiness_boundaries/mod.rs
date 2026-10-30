@@ -1,23 +1,43 @@
-#[allow(unused_imports)] use crate::operation_readiness_boundaries::ordinary_context::*;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use crate::operation_readiness_boundaries::ordinary_context::*;
+#[allow(unused_imports)]
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {worth_proof::TransitionOutcome};
-use {worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationReadinessDenialCode, worth_server::WorthServerOperationRequestInput, worth_server::WorthServerPipelineInput, worth_server::WorthServerPipelineIntent, worth_server::WorthServerQueryHandoffDenialFamily, worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation};
+use worth_proof::TransitionOutcome;
+use {
+    worth_server::WorthServerOperationFamily,
+    worth_server::WorthServerOperationReadinessDenialCode,
+    worth_server::WorthServerOperationRequestInput, worth_server::WorthServerPipelineInput,
+    worth_server::WorthServerPipelineIntent, worth_server::WorthServerQueryHandoffDenialFamily,
+    worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation,
+};
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_compat_http_phase_three_runtime as compat_http_phase_three_runtime};
+use worth_testkit_server::shared_support_compat_http_phase_three_runtime as compat_http_phase_three_runtime;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_operation_request_runtime as operation_request_runtime};
+use worth_testkit_server::shared_support_operation_request_runtime as operation_request_runtime;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture};
+use worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime};
+use worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime;
 
-use {worth_testkit_server::shared_support_compat_http_phase_three_runtime::build_phase_three_server, worth_testkit_server::shared_support_compat_http_phase_three_runtime::compat_mutation_denied, worth_testkit_server::shared_support_compat_http_phase_three_runtime::mutation_input, worth_testkit_server::shared_support_compat_http_phase_three_runtime::prepared_mutation_request, worth_testkit_server::shared_support_compat_http_phase_three_runtime::single_insert_body};
-use {worth_testkit_server::shared_support_operation_request_runtime::operation_request_test_server, worth_testkit_server::shared_support_operation_request_runtime::worth_native_resolved_context};
-use {worth_testkit_server::shared_support_query_handoff_fixture::request_input, worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context, worth_testkit_server::shared_support_query_handoff_fixture::test_server};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider};
+use worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider;
+use {
+    worth_testkit_server::shared_support_compat_http_phase_three_runtime::build_phase_three_server,
+    worth_testkit_server::shared_support_compat_http_phase_three_runtime::compat_mutation_denied,
+    worth_testkit_server::shared_support_compat_http_phase_three_runtime::mutation_input,
+    worth_testkit_server::shared_support_compat_http_phase_three_runtime::prepared_mutation_request,
+    worth_testkit_server::shared_support_compat_http_phase_three_runtime::single_insert_body,
+};
+use {
+    worth_testkit_server::shared_support_operation_request_runtime::operation_request_test_server,
+    worth_testkit_server::shared_support_operation_request_runtime::worth_native_resolved_context,
+};
+use {
+    worth_testkit_server::shared_support_query_handoff_fixture::request_input,
+    worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context,
+    worth_testkit_server::shared_support_query_handoff_fixture::test_server,
+};
 
 #[test]
 fn support_and_precondition_denials_do_not_fall_back_to_serialization() {
@@ -60,9 +80,8 @@ fn support_and_precondition_denials_do_not_fall_back_to_serialization() {
         ),
         false,
     );
-    let denial = match handoff_server
-        .query_handoff()
-        .prepare(worth_server::WorthServerQueryHandoffInput::new(
+    let denial = match handoff_server.query_handoff().prepare(
+        worth_server::WorthServerQueryHandoffInput::new(
             worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture(
                 &handoff_server,
                 resolve_request_context(
@@ -74,7 +93,8 @@ fn support_and_precondition_denials_do_not_fall_back_to_serialization() {
                 ),
             ),
             worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
-        )) {
+        ),
+    ) {
         worth_proof::TransitionOutcome::Denied(value) => value,
         other => panic!("expected denied query handoff, got {other:?}"),
     };

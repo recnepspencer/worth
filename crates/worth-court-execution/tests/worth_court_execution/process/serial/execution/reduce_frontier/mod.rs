@@ -1,13 +1,28 @@
-#[allow(unused_imports)] use crate::reduce_frontier::isolated_context::*;
 #[allow(unused_imports)]
-pub(crate) use {crate::test_serialization};
+use crate::reduce_frontier::isolated_context::*;
+#[allow(unused_imports)]
+pub(crate) use crate::test_serialization;
 
 #[allow(unused_imports)]
-pub(crate) use {crate::reducer_overlap};
-use {std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Mutex, std::sync::OnceLock};
+pub(crate) use crate::reducer_overlap;
+use {
+    std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
+    std::sync::Mutex, std::sync::OnceLock,
+};
 
-use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapPartition, worth_execution::ReduceInputDenial, worth_execution::ReductionPlan, worth_execution::ReductionRunStop, worth_execution::ReductionTree};
-use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+use {
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
+    worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
+    worth_execution::MapPartition, worth_execution::ReduceInputDenial,
+    worth_execution::ReductionPlan, worth_execution::ReductionRunStop,
+    worth_execution::ReductionTree,
+};
+use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn frontier_concatenation_preserves_partition_identity_order_at_every_width() {
@@ -32,7 +47,8 @@ fn frontier_concatenation_preserves_partition_identity_order_at_every_width() {
             &vec![1, 2, 3, 4, 5, 6, 7, 8],
             "frontier reduction must combine in partition identity order after build"
         );
-        tree.update(worth_foundational::PartitionIdentity::new(4), vec![40]).unwrap();
+        tree.update(worth_foundational::PartitionIdentity::new(4), vec![40])
+            .unwrap();
         assert_eq!(
             tree.result(),
             &vec![1, 2, 3, 40, 5, 6, 7, 8],
@@ -73,11 +89,15 @@ fn earlier_join_capacity_failure_precedes_later_task_panic_at_every_width() {
         )
     };
     let (serial_failure, serial_report) = match stopped(1) {
-        Err(worth_execution::ReduceInputDenial::ReductionStopped { failure, report }) => (failure, report),
+        Err(worth_execution::ReduceInputDenial::ReductionStopped { failure, report }) => {
+            (failure, report)
+        }
         _ => panic!("expected serial reduction failure"),
     };
     let (native_failure, native_report) = match stopped(4) {
-        Err(worth_execution::ReduceInputDenial::ReductionStopped { failure, report }) => (failure, report),
+        Err(worth_execution::ReduceInputDenial::ReductionStopped { failure, report }) => {
+            (failure, report)
+        }
         _ => panic!("expected native reduction failure"),
     };
     assert_eq!(
@@ -115,7 +135,9 @@ fn work_ceiling_settles_identical_partial_tree_prefix_at_every_width() {
         Err(worth_execution::ReduceInputDenial::ReductionStopped { failure, .. }) => failure,
         _ => panic!("expected n=11 reduction ceiling"),
     };
-    let identities: Vec<_> = (1..=11).map(worth_foundational::PartitionIdentity::new).collect();
+    let identities: Vec<_> = (1..=11)
+        .map(worth_foundational::PartitionIdentity::new)
+        .collect();
     let entries: Vec<_> = identities
         .iter()
         .copied()
@@ -123,17 +145,23 @@ fn work_ceiling_settles_identical_partial_tree_prefix_at_every_width() {
         .collect();
     let plan = worth_execution::ReductionPlan::try_from_sorted_unique(identities).unwrap();
     let mut accepted = 0_u64;
-    let oracle_failure =
-        match worth_execution::ReductionTree::try_from_declared_checked(plan, entries, 0_u64, sum_u64, 8, || {
+    let oracle_failure = match worth_execution::ReductionTree::try_from_declared_checked(
+        plan,
+        entries,
+        0_u64,
+        sum_u64,
+        8,
+        || {
             if accepted == 81 {
                 return Err(());
             }
             accepted += 1;
             Ok(())
-        }) {
-            Err(failure) => failure,
-            Ok(_) => panic!("expected checked serial oracle ceiling"),
-        };
+        },
+    ) {
+        Err(failure) => failure,
+        Ok(_) => panic!("expected checked serial oracle ceiling"),
+    };
     assert_eq!(leased_failure.metrics, oracle_failure.metrics);
 }
 

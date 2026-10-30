@@ -1,12 +1,29 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::maintenance_interference::span_layout::*;
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::maintenance_interference::span_layout::*;
+use std::path::Path;
 
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationDenial, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendDenial, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_physical_backend::MediaOperationRole};
+use worth_proof::TransitionOutcome;
+use worth_store_physical_backend::MediaOperationRole;
+use {
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationDenial,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::RecordAppendDenial,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-use {crate::physical_record_journeys::maintenance_interference::rewrite_scope::open_wide, crate::physical_record_journeys::maintenance_interference::rewrite_scope::publish_span, crate::physical_record_journeys::maintenance_interference::rewrite_scope::reopen_wide, crate::physical_record_journeys::maintenance_interference::rewrite_scope::rewrite, crate::physical_record_journeys::maintenance_interference::rewrite_scope::wide_placement, crate::physical_record_journeys::maintenance_interference::rewrite_scope::RECORD_BYTES};
-use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files};
+use worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files;
+use {
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::open_wide,
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::publish_span,
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::reopen_wide,
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::rewrite,
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::wide_placement,
+    crate::physical_record_journeys::maintenance_interference::rewrite_scope::RECORD_BYTES,
+};
 
 #[test]
 fn a_span_after_a_live_prefix_becomes_a_compact_generation_beside_it() {
@@ -53,7 +70,9 @@ fn a_span_after_a_live_prefix_becomes_a_compact_generation_beside_it() {
     assert!(
         matches!(
             denial,
-            worth_store::physical_runtime::PhysicalMutationPreparationDenial::RecordAppend(worth_store::physical_runtime::RecordAppendDenial::RewriteSpanNotLive)
+            worth_store::physical_runtime::PhysicalMutationPreparationDenial::RecordAppend(
+                worth_store::physical_runtime::RecordAppendDenial::RewriteSpanNotLive
+            )
         ),
         "eight pages reach past the four-frame destination generation: {denial:?}"
     );

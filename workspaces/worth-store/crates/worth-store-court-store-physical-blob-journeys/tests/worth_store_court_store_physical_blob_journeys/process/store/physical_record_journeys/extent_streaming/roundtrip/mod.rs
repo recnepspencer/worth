@@ -1,7 +1,27 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::extent_streaming::roundtrip::*;
-use {worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalWorkCounterSnapshot, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkSignalFamily, worth_store::physical_runtime::PhysicalWritebackCounterSnapshot, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::ServingPhysicalRuntime};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::extent_streaming::roundtrip::*;
+use {
+    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalWorkCounterSnapshot,
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkSignalFamily,
+    worth_store::physical_runtime::PhysicalWritebackCounterSnapshot,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-use {worth_store_testkit_store::durable_publication::root::publish_single, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration, worth_store_testkit_store::stream_fixture::hex, worth_store_testkit_store::stream_fixture::pattern_digest, worth_store_testkit_store::stream_fixture::PatternSource, worth_store_testkit_store::physical_record_journeys::success};
+use {
+    worth_store_testkit_store::durable_publication::root::publish_single,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration,
+    worth_store_testkit_store::physical_record_journeys::success,
+    worth_store_testkit_store::stream_fixture::hex,
+    worth_store_testkit_store::stream_fixture::pattern_digest,
+    worth_store_testkit_store::stream_fixture::PatternSource,
+};
 
 #[test]
 fn mixed_batch_streams_extent_and_a_fresh_process_reads_with_seventeen_widths() {
@@ -9,7 +29,9 @@ fn mixed_batch_streams_extent_and_a_fresh_process_reads_with_seventeen_widths() 
     let root = parent.path().join("store");
     let (format, placement, access) = dense_configuration(4);
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let logical_bytes = 1_048_613_u64;
     let batch = worth_store::physical_runtime::RecordAppendBatch::builder()

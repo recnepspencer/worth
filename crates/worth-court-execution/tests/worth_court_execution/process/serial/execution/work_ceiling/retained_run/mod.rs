@@ -1,8 +1,21 @@
-#[allow(unused_imports)] use crate::work_ceiling::isolated_context::retained_run::*;
-pub(crate) use {std::collections::BTreeMap, std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionMap, worth_execution::ExecutionRequest, worth_execution::ExecutionWorkCeiling, worth_execution::KeylessPartition, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::RetainedRunOutcome};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
-pub(crate) use {worth_proof::CanonicalUniqueVec};
+#[allow(unused_imports)]
+use crate::work_ceiling::isolated_context::retained_run::*;
+pub(crate) use worth_proof::CanonicalUniqueVec;
+pub(crate) use {
+    std::collections::BTreeMap, std::num::NonZeroUsize, std::sync::atomic::AtomicUsize,
+    std::sync::atomic::Ordering,
+};
+pub(crate) use {
+    worth_execution::CancellationToken, worth_execution::ExecutionMap,
+    worth_execution::ExecutionRequest, worth_execution::ExecutionWorkCeiling,
+    worth_execution::KeylessPartition, worth_execution::LeaseRequest,
+    worth_execution::MapKernelFailure, worth_execution::RetainedRunOutcome,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn automatic_sparse_frontier_uses_existing_workers_and_joins_native_settlement() {
@@ -16,7 +29,11 @@ fn automatic_sparse_frontier_uses_existing_workers_and_joins_native_settlement()
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Automatic,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(2).unwrap(), Some(1 << 20), Some(100_000)),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::new(2).unwrap(),
+                    Some(1 << 20),
+                    Some(100_000),
+                ),
             ),
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),
@@ -80,7 +97,10 @@ fn automatic_sparse_frontier_uses_existing_workers_and_joins_native_settlement()
         "{metrics:?}"
     );
     assert_eq!(
-        *next.result(worth_foundational::PartitionIdentity::new(99)).unwrap().value(),
+        *next
+            .result(worth_foundational::PartitionIdentity::new(99))
+            .unwrap()
+            .value(),
         990
     );
 }

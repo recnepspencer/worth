@@ -1,9 +1,20 @@
-pub(crate) use {std::fmt::Debug};
-pub(crate) use {worth_foundational::FoundationalMergeAdmissionDenial, worth_foundational::FoundationalMergeConstructionDenial, worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalScopedMergeUnavailableOutcomeCategory, worth_foundational::FoundationalScopedMergeUnavailablePosture, worth_foundational::FoundationalScopedMergeUnavailableReason};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use std::fmt::Debug;
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::FoundationalMergeAdmissionDenial,
+    worth_foundational::FoundationalMergeConstructionDenial,
+    worth_foundational::FoundationalMergeScope,
+    worth_foundational::FoundationalScopedMergeUnavailableOutcomeCategory,
+    worth_foundational::FoundationalScopedMergeUnavailablePosture,
+    worth_foundational::FoundationalScopedMergeUnavailableReason,
+};
 
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id};
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node};
+pub(crate) use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
+pub(crate) use {
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node,
+};
 
 pub(crate) fn assert_deferred_unavailable(
     scope: FoundationalMergeScope,

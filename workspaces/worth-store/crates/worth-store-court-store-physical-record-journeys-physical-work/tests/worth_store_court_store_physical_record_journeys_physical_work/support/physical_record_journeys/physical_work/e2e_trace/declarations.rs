@@ -1,13 +1,42 @@
-pub(crate) use {tempfile::tempdir};
-pub(crate) use {worth_foundational::FoundationalPerformanceWorkClass};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalSchedulerDemand, worth_store::physical_runtime::PhysicalSchedulerDenial, worth_store::physical_runtime::PhysicalSignalSettlementOutcome, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalWorkCapacity, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkPressureClass, worth_store::physical_runtime::PhysicalWorkRecoveryDisposition};
-pub(crate) use {worth_store_io_scheduler::QueueExecutionAdmissionDenial};
-pub(crate) use {worth_store_physical_backend::FilesystemAccessPosture, worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
+pub(crate) use tempfile::tempdir;
+pub(crate) use worth_foundational::FoundationalPerformanceWorkClass;
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store_io_scheduler::QueueExecutionAdmissionDenial;
+pub(crate) use {
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalSchedulerDemand,
+    worth_store::physical_runtime::PhysicalSchedulerDenial,
+    worth_store::physical_runtime::PhysicalSignalSettlementOutcome,
+    worth_store::physical_runtime::PhysicalStore,
+    worth_store::physical_runtime::PhysicalWorkCapacity,
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkPressureClass,
+    worth_store::physical_runtime::PhysicalWorkRecoveryDisposition,
+};
+pub(crate) use {
+    worth_store_physical_backend::FilesystemAccessPosture,
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write, crate::physical_record_journeys::physical_work::fixture::io_pressure::disjoint_io_pressure_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_work::scheduler::policy_evidence::exhausted_policy_receipt, worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt_for, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::ready_read_work, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::secure_demand};
+pub(crate) use {
+    crate::physical_record_journeys::physical_work::fixture::io_pressure::disjoint_io_pressure_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::ready_read_work,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::secure_demand,
+    worth_store_testkit_store::physical_work::scheduler::policy_evidence::exhausted_policy_receipt,
+    worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt_for,
+};
 
-pub(crate) fn assert_causal_trace(causal: &[worth_store::physical_runtime::PhysicalWorkCausalRecord]) {
+pub(crate) fn assert_causal_trace(
+    causal: &[worth_store::physical_runtime::PhysicalWorkCausalRecord],
+) {
     assert_eq!(causal.len(), 4);
     let mut terminal_totals = causal
         .iter()
@@ -109,9 +138,17 @@ pub(crate) fn admitted_read(
         .unwrap()
 }
 
-pub(crate) fn assert_queued_mix(counters: worth_store::physical_runtime::PhysicalWorkCounterSnapshot) {
-    assert_eq!(counters.total(worth_store::physical_runtime::PhysicalWorkCounterStage::Queued), 4);
-    assert_eq!(counters.total(worth_store::physical_runtime::PhysicalWorkCounterStage::Terminal), 1);
+pub(crate) fn assert_queued_mix(
+    counters: worth_store::physical_runtime::PhysicalWorkCounterSnapshot,
+) {
+    assert_eq!(
+        counters.total(worth_store::physical_runtime::PhysicalWorkCounterStage::Queued),
+        4
+    );
+    assert_eq!(
+        counters.total(worth_store::physical_runtime::PhysicalWorkCounterStage::Terminal),
+        1
+    );
     assert_eq!(
         counters.count_under_pressure(
             worth_store::physical_runtime::PhysicalWorkOperationFamily::ArtifactRangeRead,

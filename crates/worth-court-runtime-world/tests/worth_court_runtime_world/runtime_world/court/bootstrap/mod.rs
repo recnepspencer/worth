@@ -1,4 +1,7 @@
-pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::CompositeSupplyChainCourt, crate::court::ordinary_context::budgets, crate::court::ordinary_context::relational};
+pub(crate) use {
+    crate::court::ordinary_context::budgets, crate::court::ordinary_context::relational,
+    crate::court::ordinary_context::CompositeSupplyChainCourt, worth_runtime_world::facade::*,
+};
 
 #[test]
 fn cancelled_duplicate_foreign_and_capacity_bootstrap_are_exact_no_effect() {
@@ -88,7 +91,10 @@ fn cancelled_duplicate_foreign_and_capacity_bootstrap_are_exact_no_effect() {
     other.finish();
     drop(root);
     court.finish();
-    let mut limited = crate::court::ordinary_context::CompositeSupplyChainCourt::compile_config(true, crate::court::ordinary_context::budgets::limited(1, 1));
+    let mut limited = crate::court::ordinary_context::CompositeSupplyChainCourt::compile_config(
+        true,
+        crate::court::ordinary_context::budgets::limited(1, 1),
+    );
     let rejected = limited
         .world
         .lifecycle_port()

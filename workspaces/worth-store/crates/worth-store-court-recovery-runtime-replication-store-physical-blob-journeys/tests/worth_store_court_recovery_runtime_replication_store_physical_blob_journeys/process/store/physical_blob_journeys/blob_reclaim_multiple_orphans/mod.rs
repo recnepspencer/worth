@@ -1,12 +1,36 @@
 //! Two independently terminal custody attempts must clean one at a time.
 
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_reclaim_multiple_orphans::*;
-use {std::num::NonZeroU16, std::num::NonZeroU64, std::thread, std::time::Duration, std::time::Instant};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_reclaim_multiple_orphans::*;
+use {
+    std::num::NonZeroU16, std::num::NonZeroU64, std::thread, std::time::Duration,
+    std::time::Instant,
+};
 
-use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::production::PhysicalMutationPauseGate, worth_store::physical_runtime::BlobAppendFailure, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimFailure, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::PersistedRecordIdentity};
+use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::production::PhysicalMutationPauseGate,
+    worth_store::physical_runtime::BlobAppendFailure,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimFailure,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause,
+};
+use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
 
-use {worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_reclaim::abandoned_prefix, crate::physical_blob_journeys::blob_reclaim::request, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+use {
+    crate::physical_blob_journeys::blob_reclaim::abandoned_prefix,
+    crate::physical_blob_journeys::blob_reclaim::request,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn two_terminal_orphans_clean_in_two_bounded_reclaims() {
@@ -20,18 +44,23 @@ fn two_terminal_orphans_clean_in_two_bounded_reclaims() {
         let first = serving
             .blobs()
             .unwrap()
-            .reclaim(worth_store::physical_runtime::BlobReclaimRequest::abandoned(
-                token,
-                &scope,
-                placement(),
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds((iteration + 1) * 5_000).unwrap(),
-                worth_store::physical_runtime::BlobReclaimLimits::new(
-                    std::num::NonZeroU64::new(128).unwrap(),
-                    std::num::NonZeroU64::new(8 << 20).unwrap(),
-                    std::num::NonZeroU16::new(1).unwrap(),
-                )
-                .unwrap(),
-            ))
+            .reclaim(
+                worth_store::physical_runtime::BlobReclaimRequest::abandoned(
+                    token,
+                    &scope,
+                    placement(),
+                    worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(
+                        (iteration + 1) * 5_000,
+                    )
+                    .unwrap(),
+                    worth_store::physical_runtime::BlobReclaimLimits::new(
+                        std::num::NonZeroU64::new(128).unwrap(),
+                        std::num::NonZeroU64::new(8 << 20).unwrap(),
+                        std::num::NonZeroU16::new(1).unwrap(),
+                    )
+                    .unwrap(),
+                ),
+            )
             .unwrap();
         let manifest_gate = serving
             .pause_physical_mutation_at(worth_store::physical_runtime::production::PhysicalMutationCheckpoint::BeforeTerminalFinalization);
@@ -88,7 +117,10 @@ fn two_terminal_orphans_clean_in_two_bounded_reclaims() {
                 Ok(worth_store_physical_format::BlobRecordV1::OriginalDropReserved(value))
                     if value.manifest_record() == manifest =>
                 {
-                    worth_store_physical_format::PersistedRecordIdentity::new(record.allocation_epoch(), record.ordinal())
+                    worth_store_physical_format::PersistedRecordIdentity::new(
+                        record.allocation_epoch(),
+                        record.ordinal(),
+                    )
                 }
                 _ => None,
             })
@@ -105,7 +137,10 @@ fn two_terminal_orphans_clean_in_two_bounded_reclaims() {
             .unwrap()
             .wait()
             .unwrap();
-        assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+        assert_eq!(
+            receipt.disposition(),
+            worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+        );
         assert_eq!(receipt.remaining_payload_records(), remaining);
     }
     // With payload gone, admission scans the same selected C.5 roster twice
@@ -128,7 +163,10 @@ fn two_terminal_orphans_clean_in_two_bounded_reclaims() {
         expected_inspected
     );
     assert_eq!(observed.observation().inspected_records(), expected_records);
-    assert_eq!(observed.cancel(), worth_store::physical_runtime::BlobReclaimDisposition::ProvenNoEffect);
+    assert_eq!(
+        observed.cancel(),
+        worth_store::physical_runtime::BlobReclaimDisposition::ProvenNoEffect
+    );
     let root_before = serving.records().unwrap().protected_root().root();
     let appends_before = serving.media_counters().append_attempts();
     let writes_before = serving.media_counters().positioned_write_attempts();
@@ -136,7 +174,8 @@ fn two_terminal_orphans_clean_in_two_bounded_reclaims() {
         token,
         &scope,
         placement(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(128).unwrap(),
             std::num::NonZeroU64::new(expected_inspected - 1).unwrap(),
@@ -166,14 +205,20 @@ fn two_terminal_orphans_clean_in_two_bounded_reclaims() {
             .unwrap()
             .wait()
             .unwrap();
-        assert_eq!(cleanup.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+        assert_eq!(
+            cleanup.disposition(),
+            worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+        );
         assert_eq!(cleanup.remaining_payload_records(), 0);
         assert_eq!(cleanup.dropped_records().len(), 2);
         assert!(cleanup.dropped_records().contains(&manifest));
         assert!(cleanup.dropped_records().contains(&reserved));
         assert!(!selected_blob_records(&serving).iter().any(|(record, _)| {
-            let selected =
-                worth_store_physical_format::PersistedRecordIdentity::new(record.allocation_epoch(), record.ordinal()).unwrap();
+            let selected = worth_store_physical_format::PersistedRecordIdentity::new(
+                record.allocation_epoch(),
+                record.ordinal(),
+            )
+            .unwrap();
             selected == manifest || selected == reserved
         }));
     }

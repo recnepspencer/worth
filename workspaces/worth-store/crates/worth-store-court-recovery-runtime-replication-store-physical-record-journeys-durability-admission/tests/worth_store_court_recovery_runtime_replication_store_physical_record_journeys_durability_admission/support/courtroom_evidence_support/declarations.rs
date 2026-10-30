@@ -1,4 +1,4 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
 pub(crate) struct OfflineCompletion {
     pub(crate) root_generation: u64,

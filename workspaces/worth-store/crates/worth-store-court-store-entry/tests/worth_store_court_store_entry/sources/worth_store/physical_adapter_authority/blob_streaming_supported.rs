@@ -19,4 +19,4 @@ fn stream_blob_chunks(
     Ok(())
 }
 
-fn main() {}
+pub(crate) fn main() {}

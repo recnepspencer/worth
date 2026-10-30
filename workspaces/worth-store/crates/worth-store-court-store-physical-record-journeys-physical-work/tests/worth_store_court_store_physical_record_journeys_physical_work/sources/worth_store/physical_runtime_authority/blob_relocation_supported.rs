@@ -30,6 +30,6 @@ fn move_selected_chunk(
     assert!(receipt.logical_chunk_bytes() > 0);
 }
 
-fn main() {
+pub(crate) fn main() {
     std::hint::black_box(move_selected_chunk);
 }

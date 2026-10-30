@@ -1,7 +1,8 @@
-#[allow(unused_imports)] use crate::phase_eight_process::checkpoint_crash::case::oracle::tests::*;
+#[allow(unused_imports)]
+use crate::phase_eight_process::checkpoint_crash::case::oracle::tests::*;
 use {sha2::Digest, sha2::Sha256};
 
-use {crate::phase_eight_process::checkpoint_crash::case::oracle::fate_from_files, crate::history};
+use {crate::history, crate::phase_eight_process::checkpoint_crash::case::oracle::fate_from_files};
 
 #[test]
 fn unselected_arena_payload_is_not_a_durable_effect() {
@@ -25,7 +26,9 @@ fn unselected_arena_payload_is_not_a_durable_effect() {
         "families/checkpoint.current".to_owned(),
         checkpoint_current(1),
     ));
-    let selected = crate::phase_eight_process::history::parent_oracle::selected_basis::select(&selected_files).unwrap();
+    let selected =
+        crate::phase_eight_process::history::parent_oracle::selected_basis::select(&selected_files)
+            .unwrap();
     assert_eq!(
         crate::history::parent_oracle::in_flight::classify(&selected, &[7; 32], payload).unwrap(),
         (false, false),
@@ -117,9 +120,11 @@ fn authenticated_canonical_redo_binding_proves_payload() {
         fate_from_files(&files, &idempotency, payload),
         crate::phase_eight_process::history::raw_in_flight::InFlightMutationFate::DurableEffect
     );
-    let selected = crate::phase_eight_process::history::parent_oracle::selected_basis::select(&files).unwrap();
+    let selected =
+        crate::phase_eight_process::history::parent_oracle::selected_basis::select(&files).unwrap();
     assert_eq!(
-        crate::history::parent_oracle::in_flight::classify(&selected, &idempotency, payload).unwrap(),
+        crate::history::parent_oracle::in_flight::classify(&selected, &idempotency, payload)
+            .unwrap(),
         (true, true),
         "selected canonical WAL binds the persisted idempotency to the exact payload",
     );

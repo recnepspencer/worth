@@ -1,9 +1,23 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::locality::route_backpressure::*;
-use {tempfile::tempdir};
-use {worth_store::physical_runtime::PhysicalSignalAspectBindingSet, worth_store::physical_runtime::PhysicalWorkCapacity, worth_store::physical_runtime::PhysicalWorkProfileDeclaration, worth_store::physical_runtime::PhysicalWorkReadiness};
-use {worth_store_physical_format::RecordArtifactFile};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::locality::route_backpressure::*;
+use tempfile::tempdir;
+use worth_store_physical_format::RecordArtifactFile;
+use {
+    worth_store::physical_runtime::PhysicalSignalAspectBindingSet,
+    worth_store::physical_runtime::PhysicalWorkCapacity,
+    worth_store::physical_runtime::PhysicalWorkProfileDeclaration,
+    worth_store::physical_runtime::PhysicalWorkReadiness,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::admitted_named_contract, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::security_scope, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, crate::physical_record_journeys::physical_work::locality::admit_read, crate::physical_record_journeys::physical_work::locality::projection_fact, crate::physical_record_journeys::physical_work::locality::read_dependency, crate::physical_record_journeys::physical_work::locality::request};
+use {
+    crate::physical_record_journeys::physical_work::locality::admit_read,
+    crate::physical_record_journeys::physical_work::locality::projection_fact,
+    crate::physical_record_journeys::physical_work::locality::read_dependency,
+    crate::physical_record_journeys::physical_work::locality::request,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::admitted_named_contract,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::security_scope,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+};
 
 #[test]
 fn saturated_signal_route_does_not_capture_an_independent_route() {
@@ -12,17 +26,27 @@ fn saturated_signal_route_does_not_capture_an_independent_route() {
         admitted_named_contract("store.physical.work.saturated-left", 917, 1);
     let (right_contract, right_identity, right_admission, _) =
         admitted_named_contract("store.physical.work.independent-right", 918, 1);
-    let capacity = worth_store::physical_runtime::PhysicalWorkCapacity::new(16, 1, 16, 1024 * 1024, 16 * 1024 * 1024).unwrap();
-    let profile = worth_store::physical_runtime::PhysicalWorkProfileDeclaration::from_signal_aspects(
-        security_scope(witness),
-        [
-            read_dependency(left_admission.clone()),
-            read_dependency(right_admission.clone()),
-        ],
+    let capacity = worth_store::physical_runtime::PhysicalWorkCapacity::new(
+        16,
+        1,
+        16,
+        1024 * 1024,
+        16 * 1024 * 1024,
     )
-    .unwrap()
-    .with_capacity(capacity);
-    let bindings = worth_store::physical_runtime::PhysicalSignalAspectBindingSet::from_profile(profile.clone());
+    .unwrap();
+    let profile =
+        worth_store::physical_runtime::PhysicalWorkProfileDeclaration::from_signal_aspects(
+            security_scope(witness),
+            [
+                read_dependency(left_admission.clone()),
+                read_dependency(right_admission.clone()),
+            ],
+        )
+        .unwrap()
+        .with_capacity(capacity);
+    let bindings = worth_store::physical_runtime::PhysicalSignalAspectBindingSet::from_profile(
+        profile.clone(),
+    );
     let left_route = bindings
         .binding_for_identity(&left_identity)
         .unwrap()
@@ -127,9 +151,10 @@ fn saturated_signal_route_does_not_capture_an_independent_route() {
             .collect::<Vec<_>>()
     });
 
-    assert!(readiness
-        .iter()
-        .all(|result| matches!(result, worth_store::physical_runtime::PhysicalWorkReadiness::Ready(_))));
+    assert!(readiness.iter().all(|result| matches!(
+        result,
+        worth_store::physical_runtime::PhysicalWorkReadiness::Ready(_)
+    )));
     drop(readiness);
     assert!(await_signal_cleanup(&serving));
     assert_eq!(serving.media_counters(), before);

@@ -1,5 +1,14 @@
-pub(crate) use {worth_foundational::compare_canonical_basis, worth_foundational::prepare_branch_candidate_for_canonical_basis, worth_foundational::prepare_canonical_comparison, worth_foundational::prepare_commit_receipt_for_canonical_basis, worth_foundational::prepare_committed_authority_for_canonical_basis, worth_foundational::prepare_merge_verdict_for_canonical_basis, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalizationRuleVersion};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::compare_canonical_basis,
+    worth_foundational::prepare_branch_candidate_for_canonical_basis,
+    worth_foundational::prepare_canonical_comparison,
+    worth_foundational::prepare_commit_receipt_for_canonical_basis,
+    worth_foundational::prepare_committed_authority_for_canonical_basis,
+    worth_foundational::prepare_merge_verdict_for_canonical_basis,
+    worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis,
+    worth_foundational::CanonicalizationRuleVersion,
+};
 
 pub(crate) fn version() -> CanonicalizationRuleVersion {
     worth_foundational::CanonicalizationRuleVersion::new("milestone-5-phase-5").expect("version")

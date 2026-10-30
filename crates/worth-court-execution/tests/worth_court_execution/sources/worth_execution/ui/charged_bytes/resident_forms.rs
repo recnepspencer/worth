@@ -37,7 +37,7 @@ struct WithSkippedStorage {
     #[serde(skip)]
     resident: Vec<String>,
 }
-fn main() {
+pub(crate) fn main() {
     assert_eq!(Unit.additional_charged_bytes(), 0);
     assert_eq!(Resident::Unit.additional_charged_bytes(), 0);
     let _ = Resident::Tuple(String::new(), vec![]).additional_charged_bytes();

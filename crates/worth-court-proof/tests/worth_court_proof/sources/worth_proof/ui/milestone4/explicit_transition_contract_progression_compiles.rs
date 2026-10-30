@@ -26,19 +26,13 @@ fn explicit_transition_contract_progression_compiles(
     );
     let resolved = resolved.into_value();
 
-    let lowered = apply_transition(
-        &LowerRecipeTransition::new(lowering_capability),
-        resolved,
-    );
+    let lowered = apply_transition(&LowerRecipeTransition::new(lowering_capability), resolved);
     let lowered = lowered.into_value();
 
-    let admitted = apply_transition(
-        &AdmitRecipeTransition::new(admission_authority),
-        lowered,
-    );
+    let admitted = apply_transition(&AdmitRecipeTransition::new(admission_authority), lowered);
     let admitted = admitted.into_value();
 
     let _ = admitted.strong_basis();
 }
 
-fn main() {}
+pub(crate) fn main() {}

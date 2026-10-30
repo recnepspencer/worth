@@ -39,7 +39,7 @@ fn execution_flow(
     let _ = executed.strong_basis().value();
 }
 
-fn main() {
+pub(crate) fn main() {
     let _ = admitted_flow;
     let _ = execution_flow;
 }

@@ -1,11 +1,35 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::serving_frame_residency::*;
-use {worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint, worth_store::physical_runtime::CertificationFrameReadFailure, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordResidencyFailureKind, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalSpeculativeWorkKind, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits};
-use {worth_store_buffer_pool::PhysicalResidencyDenial};
-use {worth_store_physical_backend::ArtifactTreeFailureKind, worth_store_physical_backend::MediaOperationRole};
-use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::serving_frame_residency::*;
+use worth_store_buffer_pool::PhysicalResidencyDenial;
+use {
+    worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint,
+    worth_store::physical_runtime::CertificationFrameReadFailure,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordResidencyFailureKind,
+    worth_store::physical_runtime::PhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordReadLimits,
+};
+use {
+    worth_store_physical_backend::ArtifactTreeFailureKind,
+    worth_store_physical_backend::MediaOperationRole,
+};
+use {
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
-use {worth_store_testkit_store::durable_publication};
+use worth_store_testkit_store::durable_publication;
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn pins_distinguish_faults_hits_overpin_and_refault_without_another_runtime() {
@@ -13,12 +37,15 @@ fn pins_distinguish_faults_hits_overpin_and_refault_without_another_runtime() {
     let root = parent.path().join("pin-inheritance");
     let (format, placement, access) = configuration();
     let seeded = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     assert!(!seeded.close().residency().requires_inspection());
     let policy = admitted_policy(format);
     let serving = success(open_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability).with_residency_policy(policy)
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+            .with_residency_policy(policy)
     },));
     serving
         .certification_physical_residency()
@@ -79,7 +106,9 @@ fn overlapping_pin_coalesces_without_second_media_work_or_signal_authority() {
     let root = parent.path().join("coalesced-pin");
     let (format, placement, access) = configuration();
     let seeded = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     assert!(!seeded.close().residency().requires_inspection());
     let serving = success(open_record_store!(media(&root), |durability| {
@@ -137,7 +166,8 @@ fn overlapping_pin_coalesces_without_second_media_work_or_signal_authority() {
     assert_eq!(waiter.physical_work_count(), 0);
     assert_eq!(
         positioned_reads(&serving),
-        media_before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead) + 1
+        media_before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
+            + 1
     );
     let counters = residency.counters();
     assert_eq!(counters.faults(), residency_before.faults() + 1);
@@ -157,11 +187,15 @@ fn coalesced_transient_read_preserves_terminal_truth_and_store_health() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("coalesced-transient-read");
     let (_, placement, _) = configuration();
-    let initial = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(&root);
+    let initial =
+        worth_store_testkit_store::physical_record_journeys::serving_from_initialization(&root);
     let publication = worth_store_testkit_store::durable_publication::root::publish_single(
         &initial,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("serving-frame-coalesced-transient", 1),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "serving-frame-coalesced-transient",
+            1,
+        ),
         worth_store::physical_runtime::RecordAppendBatch::try_from_iter([PAYLOAD]).unwrap(),
     );
     let record = publication.settled_members()[0].record_id(0).unwrap();
@@ -179,7 +213,9 @@ fn coalesced_transient_read_preserves_terminal_truth_and_store_health() {
         .certification_physical_residency()
         .drain_unpinned_clean_frames();
 
-    let limits = worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap());
+    let limits = worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap(),
+    );
     let media_before = serving.media_counters();
     let residency = serving.certification_physical_residency();
     let residency_before = residency.counters();
@@ -239,12 +275,14 @@ fn coalesced_transient_read_preserves_terminal_truth_and_store_health() {
     let media_after = serving.media_counters();
     assert_eq!(
         media_after.attempts_for(worth_store_physical_backend::MediaOperationRole::ReadMetadata),
-        media_before.attempts_for(worth_store_physical_backend::MediaOperationRole::ReadMetadata) + 2,
+        media_before.attempts_for(worth_store_physical_backend::MediaOperationRole::ReadMetadata)
+            + 2,
         "one bounded length discovery and one exact-read bounds probe reach metadata"
     );
     assert_eq!(
         media_after.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
-        media_before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead) + 1
+        media_before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
+            + 1
     );
     assert_eq!(residency_after.faults(), residency_before.faults() + 1);
     assert_eq!(
@@ -290,13 +328,17 @@ fn coalesced_transient_read_preserves_terminal_truth_and_store_health() {
     drop(hot);
     let hot_media_after = serving.media_counters();
     assert_eq!(
-        hot_media_after.attempts_for(worth_store_physical_backend::MediaOperationRole::ReadMetadata),
-        hot_media_before.attempts_for(worth_store_physical_backend::MediaOperationRole::ReadMetadata),
+        hot_media_after
+            .attempts_for(worth_store_physical_backend::MediaOperationRole::ReadMetadata),
+        hot_media_before
+            .attempts_for(worth_store_physical_backend::MediaOperationRole::ReadMetadata),
         "the bounded hit must add neither discovery nor segment-completeness media work"
     );
     assert_eq!(
-        hot_media_after.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
-        hot_media_before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
+        hot_media_after
+            .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
+        hot_media_before
+            .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
     );
     assert!(!serving.close().residency().requires_inspection());
 }

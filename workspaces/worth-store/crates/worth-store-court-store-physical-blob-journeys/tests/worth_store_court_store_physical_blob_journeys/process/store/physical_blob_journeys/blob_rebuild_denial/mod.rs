@@ -1,17 +1,42 @@
-use {std::num::NonZeroU64};
+use std::num::NonZeroU64;
 
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::LayoutRebuildFailure, worth_store::physical_runtime::LayoutRebuildLimits, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadWorkDenial, worth_store::physical_runtime::RecordScanDenial};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_contracts::DurableArtifactFamilyId};
-use {worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration, worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope, worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget, worth_store_io_scheduler::foreground_reservation::QueueSlot, worth_store_io_scheduler::foreground_reservation::WorkerPermit};
+use worth_store_blob_chunks::BlobChunkSize;
+use worth_store_contracts::DurableArtifactFamilyId;
+use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::LayoutRebuildFailure,
+    worth_store::physical_runtime::LayoutRebuildLimits,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalResidencyDimension,
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordReadWorkDenial,
+    worth_store::physical_runtime::RecordScanDenial,
+};
+use {
+    worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration,
+    worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope,
+    worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget,
+    worth_store_io_scheduler::foreground_reservation::QueueSlot,
+    worth_store_io_scheduler::foreground_reservation::WorkerPermit,
+};
 
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
 fn denied_cold_blob_rebuild_releases_maintenance_allocation_and_scheduler_capacity() {
     let directory = tempfile::tempdir().unwrap();
     let scope = admitted_blob_scope("c11.blob.rebuild.denial.scope");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(64).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(64).unwrap());
     let serving = serving_from_initialization(directory.path());
     let blobs = serving.blobs().unwrap();
     let object = blobs.issue_object_id(limits).unwrap();
@@ -21,7 +46,8 @@ fn denied_cold_blob_rebuild_releases_maintenance_allocation_and_scheduler_capaci
         2,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(64).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -63,7 +89,8 @@ fn denied_cold_blob_rebuild_releases_maintenance_allocation_and_scheduler_capaci
         worth_store_contracts::DurableArtifactFamilyId::BlobCatalog,
         rebuild_limits,
         placement(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     assert!(
         matches!(
@@ -97,15 +124,20 @@ fn denied_cold_blob_rebuild_releases_maintenance_allocation_and_scheduler_capaci
         worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob,
         worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance,
     ] {
-        let dimension = worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(scope);
+        let dimension =
+            worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(scope);
         let before = allocation_before.for_dimension(dimension);
         let after = allocation_after.allocations().for_dimension(dimension);
         // C11 rebuild owns Maintenance scratch, not a foreground Blob read
         // allocation. Every admitted charge must be released on denial.
         let admitted = after.admissions() - before.admissions();
         match scope {
-            worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob => assert_eq!(admitted, 0),
-            worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance => assert!(admitted > 0),
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob => {
+                assert_eq!(admitted, 0)
+            }
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance => {
+                assert!(admitted > 0)
+            }
             _ => unreachable!("only the asserted scopes are iterated"),
         }
         assert_eq!(after.releases(), before.releases() + admitted, "{scope:?}");
@@ -133,7 +165,8 @@ fn denied_cold_blob_rebuild_releases_maintenance_allocation_and_scheduler_capaci
         worth_store_contracts::DurableArtifactFamilyId::BlobCatalog,
         rebuild_limits,
         placement(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     assert!(
         rebuilt.is_ok(),

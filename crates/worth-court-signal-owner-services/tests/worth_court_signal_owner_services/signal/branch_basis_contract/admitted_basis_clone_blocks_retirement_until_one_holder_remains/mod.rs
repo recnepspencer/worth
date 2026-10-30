@@ -1,6 +1,10 @@
 // Admitted basis clone blocks retirement until one holder remains.
 
-use {worth_signal::facade::runtime::SignalBranchRetirementDenial, worth_signal::facade::SignalBranchRetirementReason, worth_proof::TransitionOutcome, crate::branch_basis_contract::ordinary_context::runtime};
+use {
+    crate::branch_basis_contract::ordinary_context::runtime, worth_proof::TransitionOutcome,
+    worth_signal::facade::runtime::SignalBranchRetirementDenial,
+    worth_signal::facade::SignalBranchRetirementReason,
+};
 
 #[test]
 fn admitted_basis_clone_blocks_retirement_until_one_holder_remains() {
@@ -21,10 +25,12 @@ fn admitted_basis_clone_blocks_retirement_until_one_holder_remains() {
     );
     assert!(matches!(
         denied,
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::runtime::SignalBranchRetirementDenial::SharedAdmittedBasis {
-            shared_holders: 2,
-            ..
-        })
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::runtime::SignalBranchRetirementDenial::SharedAdmittedBasis {
+                shared_holders: 2,
+                ..
+            }
+        )
     ));
 
     let plan = runtime.plan_signal_branch_retirement(

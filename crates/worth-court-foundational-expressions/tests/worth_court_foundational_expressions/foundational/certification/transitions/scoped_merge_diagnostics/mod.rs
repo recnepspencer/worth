@@ -1,9 +1,44 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::transitions::scoped_merge_diagnostics::*;
-use {worth_foundational::materialize_diagnostic_explanation_bundle, worth_foundational::prepare_canonical_comparison, worth_foundational::prepare_locator_for_canonical_basis, worth_foundational::prepare_scoped_merge_diagnostic_explanation, worth_foundational::AdmissionReadinessProfile, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalLocatorInput, worth_foundational::CanonicalizationRuleVersion, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalAdmittedMergeScopeEvidence, worth_foundational::FoundationalDiagnosticDeliveryClass, worth_foundational::FoundationalDiagnosticLocator, worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalMergeScopeFamily, worth_foundational::FoundationalMergeScopeLocator, worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput, worth_foundational::FoundationalScopeAdmissionBasis, worth_foundational::FoundationalScopedMergeDenialEvidence, worth_foundational::FoundationalScopedMergeDenialKind, worth_foundational::FoundationalScopedMergeDiagnosticInput, worth_foundational::FoundationalScopedMergeUnavailablePosture, worth_foundational::FoundationalScopedMergeUnavailableReason, worth_foundational::FoundationalSelectedAspectScopeLocator, worth_foundational::FoundationalSelectedScopeNoOpCause, worth_foundational::FoundationalSkippedOutOfScopeEvidence, worth_foundational::FoundationalTransitionLocator, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::transitions::scoped_merge_diagnostics::*;
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::materialize_diagnostic_explanation_bundle,
+    worth_foundational::prepare_canonical_comparison,
+    worth_foundational::prepare_locator_for_canonical_basis,
+    worth_foundational::prepare_scoped_merge_diagnostic_explanation,
+    worth_foundational::AdmissionReadinessProfile, worth_foundational::CanonicalBasisDomain,
+    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
+    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact,
+    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome,
+    worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalLocatorInput,
+    worth_foundational::CanonicalizationRuleVersion,
+    worth_foundational::CertificationPostureProfile,
+    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
+    worth_foundational::FoundationalAdmittedMergeScopeEvidence,
+    worth_foundational::FoundationalDiagnosticDeliveryClass,
+    worth_foundational::FoundationalDiagnosticLocator, worth_foundational::FoundationalMergeScope,
+    worth_foundational::FoundationalMergeScopeFamily,
+    worth_foundational::FoundationalMergeScopeLocator, worth_foundational::FoundationalProfileSet,
+    worth_foundational::FoundationalProfileSetInput,
+    worth_foundational::FoundationalScopeAdmissionBasis,
+    worth_foundational::FoundationalScopedMergeDenialEvidence,
+    worth_foundational::FoundationalScopedMergeDenialKind,
+    worth_foundational::FoundationalScopedMergeDiagnosticInput,
+    worth_foundational::FoundationalScopedMergeUnavailablePosture,
+    worth_foundational::FoundationalScopedMergeUnavailableReason,
+    worth_foundational::FoundationalSelectedAspectScopeLocator,
+    worth_foundational::FoundationalSelectedScopeNoOpCause,
+    worth_foundational::FoundationalSkippedOutOfScopeEvidence,
+    worth_foundational::FoundationalTransitionLocator,
+    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
+};
 
-use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id};
-use {crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node};
+use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
+use {
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node,
+};
 
 #[test]
 fn scope_request_explanation_keeps_compact_request_and_elides_loci_when_minimal() {
@@ -16,7 +51,10 @@ fn scope_request_explanation_keeps_compact_request_and_elides_loci_when_minimal(
         },
     );
 
-    let minimal = materialize(input, worth_foundational::DiagnosticRichnessProfile::OperationalMinimal);
+    let minimal = materialize(
+        input,
+        worth_foundational::DiagnosticRichnessProfile::OperationalMinimal,
+    );
 
     assert_eq!(row_codes(minimal.rows()), vec!["merge-scope.requested"]);
     assert_eq!(minimal.counter_snapshot().retained_evidence_count(), 2);
@@ -44,8 +82,14 @@ fn admitted_scope_explanation_names_skipped_no_op_and_locus_details_by_profile()
     let input = prepare_scoped_merge_diagnostic_explanation(
         worth_foundational::FoundationalScopedMergeDiagnosticInput::AdmittedScope(evidence),
     );
-    let standard = materialize(input.clone(), worth_foundational::DiagnosticRichnessProfile::Standard);
-    let forensic = materialize(input, worth_foundational::DiagnosticRichnessProfile::Forensic);
+    let standard = materialize(
+        input.clone(),
+        worth_foundational::DiagnosticRichnessProfile::Standard,
+    );
+    let forensic = materialize(
+        input,
+        worth_foundational::DiagnosticRichnessProfile::Forensic,
+    );
 
     assert!(row_codes(standard.rows()).contains(&"merge-scope.admitted"));
     assert!(row_codes(standard.rows()).contains(&"merge-scope.skipped"));
@@ -65,7 +109,8 @@ fn denial_and_unavailable_explanations_attach_provenance_ready_scope_rows() {
     let denied = worth_foundational::FoundationalScopedMergeDenialEvidence::new(
         branch_id("feature/gear"),
         branch_id("main"),
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("scope"),
+        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+            .expect("scope"),
         worth_foundational::FoundationalScopedMergeDenialKind::UnknownSelectedNode,
         worth_foundational::FoundationalDeniedScopeLocus::Node(selected_node("gear")),
     )
@@ -86,7 +131,9 @@ fn denial_and_unavailable_explanations_attach_provenance_ready_scope_rows() {
     );
     let unavailable_bundle = materialize(
         prepare_scoped_merge_diagnostic_explanation(
-            worth_foundational::FoundationalScopedMergeDiagnosticInput::UnavailableScope(unavailable),
+            worth_foundational::FoundationalScopedMergeDiagnosticInput::UnavailableScope(
+                unavailable,
+            ),
         ),
         worth_foundational::DiagnosticRichnessProfile::Forensic,
     );
@@ -105,13 +152,15 @@ fn denial_and_unavailable_explanations_attach_provenance_ready_scope_rows() {
 
 #[test]
 fn merge_scope_locator_has_canonical_basis_and_safe_diagnostic_fragments() {
-    let entries = locator_entries(worth_foundational::FoundationalTransitionLocator::MergeScope(
-        worth_foundational::FoundationalMergeScopeLocator::new(
-            branch_id("feature/gear"),
-            branch_id("main"),
-            worth_foundational::FoundationalMergeScopeFamily::SelectedAspects,
+    let entries = locator_entries(
+        worth_foundational::FoundationalTransitionLocator::MergeScope(
+            worth_foundational::FoundationalMergeScopeLocator::new(
+                branch_id("feature/gear"),
+                branch_id("main"),
+                worth_foundational::FoundationalMergeScopeFamily::SelectedAspects,
+            ),
         ),
-    ));
+    );
 
     assert_eq!(
         entries,
@@ -124,18 +173,22 @@ fn merge_scope_locator_has_canonical_basis_and_safe_diagnostic_fragments() {
     );
 
     let left = worth_foundational::FoundationalDiagnosticLocator::Transition(
-        worth_foundational::FoundationalTransitionLocator::MergeScope(worth_foundational::FoundationalMergeScopeLocator::new(
-            branch_id("feature:gear"),
-            branch_id("main"),
-            worth_foundational::FoundationalMergeScopeFamily::SelectedAspects,
-        )),
+        worth_foundational::FoundationalTransitionLocator::MergeScope(
+            worth_foundational::FoundationalMergeScopeLocator::new(
+                branch_id("feature:gear"),
+                branch_id("main"),
+                worth_foundational::FoundationalMergeScopeFamily::SelectedAspects,
+            ),
+        ),
     );
     let right = worth_foundational::FoundationalDiagnosticLocator::Transition(
-        worth_foundational::FoundationalTransitionLocator::MergeScope(worth_foundational::FoundationalMergeScopeLocator::new(
-            branch_id("feature"),
-            branch_id("gear:main"),
-            worth_foundational::FoundationalMergeScopeFamily::SelectedAspects,
-        )),
+        worth_foundational::FoundationalTransitionLocator::MergeScope(
+            worth_foundational::FoundationalMergeScopeLocator::new(
+                branch_id("feature"),
+                branch_id("gear:main"),
+                worth_foundational::FoundationalMergeScopeFamily::SelectedAspects,
+            ),
+        ),
     );
     assert_ne!(
         left.canonical_key_fragment(),
@@ -152,12 +205,13 @@ fn selected_locus_diagnostics_remain_boundary_attachment_compatible() {
             selected_aspect("gear", "teeth"),
         ),
     );
-    let scope_request =
-        worth_foundational::FoundationalTransitionLocator::MergeScope(worth_foundational::FoundationalMergeScopeLocator::new(
+    let scope_request = worth_foundational::FoundationalTransitionLocator::MergeScope(
+        worth_foundational::FoundationalMergeScopeLocator::new(
             branch_id("feature/gear"),
             branch_id("main"),
             worth_foundational::FoundationalMergeScopeFamily::SelectedAspects,
-        ));
+        ),
+    );
 
     let selected_ready = ready_locator(selected_locus);
     let scope_ready = ready_locator(scope_request);

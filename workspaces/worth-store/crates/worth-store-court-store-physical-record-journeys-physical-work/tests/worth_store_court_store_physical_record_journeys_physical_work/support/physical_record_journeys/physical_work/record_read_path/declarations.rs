@@ -1,13 +1,31 @@
-pub(crate) use {worth_store::physical_runtime::PhysicalWorkCounterSnapshot, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordReadObservation};
-pub(crate) use {worth_store_physical_backend::MediaOperationRole};
+pub(crate) use worth_store_physical_backend::MediaOperationRole;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalWorkCounterSnapshot,
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordReadObservation,
+};
 
-pub(crate) use {worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::read_record, worth_store_testkit_store::physical_record_journeys::serving_from_open};
-pub(crate) use {worth_store_testkit_store::physical_work::record_read_signal_cleanup::await_read_signal_cleanup};
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+pub(crate) use worth_store_testkit_store::physical_work::record_read_signal_cleanup::await_read_signal_cleanup;
+pub(crate) use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::read_record,
+    worth_store_testkit_store::physical_record_journeys::serving_from_open,
+};
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+};
 
 pub(crate) const PAYLOAD: &[u8] = b"canonical cold and hot record read";
 
-pub(crate) fn assert_same_semantic_observation(left: RecordReadObservation, right: RecordReadObservation) {
+pub(crate) fn assert_same_semantic_observation(
+    left: RecordReadObservation,
+    right: RecordReadObservation,
+) {
     assert_eq!(left.touched_segments(), right.touched_segments());
     assert_eq!(left.touched_pages(), right.touched_pages());
     assert_eq!(left.touched_extents(), right.touched_extents());
@@ -29,7 +47,11 @@ pub(crate) fn media_delta(
     before: worth_store_physical_backend::MediaCounterSnapshot,
     after: worth_store_physical_backend::MediaCounterSnapshot,
 ) -> u64 {
-    media_role_delta(before, after, worth_store_physical_backend::MediaOperationRole::PositionedRead)
+    media_role_delta(
+        before,
+        after,
+        worth_store_physical_backend::MediaOperationRole::PositionedRead,
+    )
 }
 
 pub(crate) fn media_role_delta(

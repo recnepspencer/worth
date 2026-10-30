@@ -1,12 +1,28 @@
-use {worth_server::WorthServerProductIdempotencyKey, worth_server::WorthServerProductOperationBaseDigest, worth_server::WorthServerProductOperationInput, worth_server::WorthServerProductOperationSurfaceDenialCode, worth_server::WorthServerProductSessionCreationRequest, worth_server::WorthServerProductSnapshotPrecondition};
+use {
+    worth_server::WorthServerProductIdempotencyKey,
+    worth_server::WorthServerProductOperationBaseDigest,
+    worth_server::WorthServerProductOperationInput,
+    worth_server::WorthServerProductOperationSurfaceDenialCode,
+    worth_server::WorthServerProductSessionCreationRequest,
+    worth_server::WorthServerProductSnapshotPrecondition,
+};
 
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_product_operation_phase_eleven_backend as backend};
+pub(crate) use worth_testkit_server::shared_support_product_operation_phase_eleven_backend as backend;
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_product_session_phase_ten_fixture as fixture};
+pub(crate) use worth_testkit_server::shared_support_product_session_phase_ten_fixture as fixture;
 
-use {worth_testkit_server::shared_support_product_operation_phase_eleven_backend::stateful_editor_registration, worth_testkit_server::shared_support_product_operation_phase_eleven_backend::StatefulProductEditorBackend};
-use {worth_testkit_server::shared_support_product_session_phase_ten_fixture::apply_payload, worth_testkit_server::shared_support_product_session_phase_ten_fixture::build_server, worth_testkit_server::shared_support_product_session_phase_ten_fixture::prepared_product_mutation_request, worth_testkit_server::shared_support_product_session_phase_ten_fixture::prepared_product_mutation_request_with_basis_and_header, worth_testkit_server::shared_support_product_session_phase_ten_fixture::prepared_session_request};
+use {
+    worth_testkit_server::shared_support_product_operation_phase_eleven_backend::stateful_editor_registration,
+    worth_testkit_server::shared_support_product_operation_phase_eleven_backend::StatefulProductEditorBackend,
+};
+use {
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::apply_payload,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::build_server,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::prepared_product_mutation_request,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::prepared_product_mutation_request_with_basis_and_header,
+    worth_testkit_server::shared_support_product_session_phase_ten_fixture::prepared_session_request,
+};
 
 #[test]
 fn compat_product_operation_rejects_basis_override_against_request_authority() {
@@ -31,9 +47,11 @@ fn compat_product_operation_rejects_basis_override_against_request_authority() {
         .product_sessions()
         .open_mutation_for_product_operation(
             &session_request,
-            worth_server::WorthServerProductSessionCreationRequest::for_operation("product_editor.apply")
-                .with_basis_digest(initial_basis.as_str())
-                .with_expiry_seconds(300),
+            worth_server::WorthServerProductSessionCreationRequest::for_operation(
+                "product_editor.apply",
+            )
+            .with_basis_digest(initial_basis.as_str())
+            .with_expiry_seconds(300),
         )
         .expect("compat mutation session should open");
 
@@ -42,14 +60,17 @@ fn compat_product_operation_rejects_basis_override_against_request_authority() {
         .product_operations()
         .execute(
             &prepared_request,
-            worth_server::WorthServerProductOperationInput::new("product_editor.apply", apply_payload())
-                .with_product_session_identity(opened.continuation().product_session_identity())
-                .with_snapshot_precondition(
-                    worth_server::WorthServerProductSnapshotPrecondition::at_base_digest(
-                        worth_server::WorthServerProductOperationBaseDigest::new("basis:input")
-                            .expect("valid base digest"),
-                    ),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.apply",
+                apply_payload(),
+            )
+            .with_product_session_identity(opened.continuation().product_session_identity())
+            .with_snapshot_precondition(
+                worth_server::WorthServerProductSnapshotPrecondition::at_base_digest(
+                    worth_server::WorthServerProductOperationBaseDigest::new("basis:input")
+                        .expect("valid base digest"),
                 ),
+            ),
         )
         .expect_err("compat path should not allow typed basis override");
 
@@ -85,9 +106,11 @@ fn compat_product_operation_rejects_idempotency_key_override_against_request_aut
         .product_sessions()
         .open_mutation_for_product_operation(
             &session_request,
-            worth_server::WorthServerProductSessionCreationRequest::for_operation("product_editor.apply")
-                .with_basis_digest(initial_basis.as_str())
-                .with_expiry_seconds(300),
+            worth_server::WorthServerProductSessionCreationRequest::for_operation(
+                "product_editor.apply",
+            )
+            .with_basis_digest(initial_basis.as_str())
+            .with_expiry_seconds(300),
         )
         .expect("compat mutation session should open");
 
@@ -96,16 +119,23 @@ fn compat_product_operation_rejects_idempotency_key_override_against_request_aut
         .product_operations()
         .execute(
             &prepared_request,
-            worth_server::WorthServerProductOperationInput::new("product_editor.apply", apply_payload())
-                .with_product_session_identity(opened.continuation().product_session_identity())
-                .with_snapshot_precondition(worth_server::WorthServerProductSnapshotPrecondition::at_base_digest(
-                    worth_server::WorthServerProductOperationBaseDigest::new(initial_basis.as_str())
-                        .expect("valid base digest"),
-                ))
-                .with_idempotency_key(
-                    worth_server::WorthServerProductIdempotencyKey::new("different-input-key")
-                        .expect("valid key"),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.apply",
+                apply_payload(),
+            )
+            .with_product_session_identity(opened.continuation().product_session_identity())
+            .with_snapshot_precondition(
+                worth_server::WorthServerProductSnapshotPrecondition::at_base_digest(
+                    worth_server::WorthServerProductOperationBaseDigest::new(
+                        initial_basis.as_str(),
+                    )
+                    .expect("valid base digest"),
                 ),
+            )
+            .with_idempotency_key(
+                worth_server::WorthServerProductIdempotencyKey::new("different-input-key")
+                    .expect("valid key"),
+            ),
         )
         .expect_err("compat path should not allow typed idempotency override");
 

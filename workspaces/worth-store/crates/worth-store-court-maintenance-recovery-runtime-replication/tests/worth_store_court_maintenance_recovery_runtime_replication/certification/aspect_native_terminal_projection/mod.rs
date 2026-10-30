@@ -1,9 +1,36 @@
-#[allow(unused_imports)] use crate::aspect_native_terminal_projection::*;
+#[allow(unused_imports)]
+use crate::aspect_native_terminal_projection::*;
+use worth_proof::TransitionOutcome;
 use {serde_json::Map, serde_json::Number, serde_json::Value};
-use {worth_foundational::aspects, worth_foundational::AspectContract, worth_foundational::AspectKey, worth_foundational::AspectLocator, worth_foundational::AspectValue, worth_foundational::BoundarySourceLocator, worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalDigestAlgorithmId, worth_foundational::CanonicalizationRuleVersion, worth_foundational::InternedString, worth_foundational::LocatorAuthority, worth_foundational::ScalarAspectType};
-use {worth_proof::TransitionOutcome};
-use {worth_store_aspect_native::project_store_boundary_fact_to_terminal_json, worth_store_aspect_native::readmit_external_terminal_projection_document_as_store_aspect_state, worth_store_aspect_native::readmit_terminal_json_projection_as_store_aspect_state, worth_store_aspect_native::StoreAspectAuthorityInput, worth_store_aspect_native::StoreAspectBoundaryFact, worth_store_aspect_native::StoreAspectIdentity, worth_store_aspect_native::StoreCanonicalBasisConstruction, worth_store_aspect_native::StoreCanonicalBasisFamily, worth_store_aspect_native::StoreDigestAuthority, worth_store_aspect_native::StoreDigestEvidence, worth_store_aspect_native::StorePhysicalBoundaryWitness, worth_store_aspect_native::StoreTerminalDocumentChecksum, worth_store_aspect_native::StoreTerminalProjectionDenial, worth_store_aspect_native::StoreTerminalProjectionDisplayLabel, worth_store_aspect_native::StoreTerminalProjectionDocumentBytes};
-use {worth_store_contracts::StorePhysicalAuthorityWitness, worth_store_contracts::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE};
+use {
+    worth_foundational::aspects, worth_foundational::AspectContract, worth_foundational::AspectKey,
+    worth_foundational::AspectLocator, worth_foundational::AspectValue,
+    worth_foundational::BoundarySourceLocator, worth_foundational::CanonicalBasisReadyArtifact,
+    worth_foundational::CanonicalDigestAlgorithmId,
+    worth_foundational::CanonicalizationRuleVersion, worth_foundational::InternedString,
+    worth_foundational::LocatorAuthority, worth_foundational::ScalarAspectType,
+};
+use {
+    worth_store_aspect_native::project_store_boundary_fact_to_terminal_json,
+    worth_store_aspect_native::readmit_external_terminal_projection_document_as_store_aspect_state,
+    worth_store_aspect_native::readmit_terminal_json_projection_as_store_aspect_state,
+    worth_store_aspect_native::StoreAspectAuthorityInput,
+    worth_store_aspect_native::StoreAspectBoundaryFact,
+    worth_store_aspect_native::StoreAspectIdentity,
+    worth_store_aspect_native::StoreCanonicalBasisConstruction,
+    worth_store_aspect_native::StoreCanonicalBasisFamily,
+    worth_store_aspect_native::StoreDigestAuthority,
+    worth_store_aspect_native::StoreDigestEvidence,
+    worth_store_aspect_native::StorePhysicalBoundaryWitness,
+    worth_store_aspect_native::StoreTerminalDocumentChecksum,
+    worth_store_aspect_native::StoreTerminalProjectionDenial,
+    worth_store_aspect_native::StoreTerminalProjectionDisplayLabel,
+    worth_store_aspect_native::StoreTerminalProjectionDocumentBytes,
+};
+use {
+    worth_store_contracts::StorePhysicalAuthorityWitness,
+    worth_store_contracts::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
+};
 
 #[test]
 fn terminal_json_projection_is_one_way_until_readmission() {
@@ -38,7 +65,8 @@ fn terminal_json_projection_is_one_way_until_readmission() {
 #[test]
 fn external_terminal_json_ingress_must_use_store_readmission() {
     let aspect_key = aspect_key("store.physical.segment.identity");
-    let identity = worth_store_aspect_native::StoreAspectIdentity::from_aspect_key(aspect_key.clone());
+    let identity =
+        worth_store_aspect_native::StoreAspectIdentity::from_aspect_key(aspect_key.clone());
     let contract = scalar_string_contract(aspect_key.clone());
 
     let readmission = match readmit_external_terminal_projection_document_as_store_aspect_state(
@@ -58,7 +86,8 @@ fn external_terminal_json_ingress_must_use_store_readmission() {
 #[test]
 fn external_terminal_json_ingress_rejects_type_incompatible_projection_document() {
     let aspect_key = aspect_key("store.physical.segment.identity");
-    let identity = worth_store_aspect_native::StoreAspectIdentity::from_aspect_key(aspect_key.clone());
+    let identity =
+        worth_store_aspect_native::StoreAspectIdentity::from_aspect_key(aspect_key.clone());
     let contract = scalar_string_contract(aspect_key.clone());
 
     let outcome = readmit_external_terminal_projection_document_as_store_aspect_state(
@@ -71,7 +100,9 @@ fn external_terminal_json_ingress_rejects_type_incompatible_projection_document(
 
     assert!(matches!(
         outcome,
-        worth_proof::TransitionOutcome::Denied(worth_store_aspect_native::StoreTerminalProjectionDenial::JsonCompatibilityDenied(_))
+        worth_proof::TransitionOutcome::Denied(
+            worth_store_aspect_native::StoreTerminalProjectionDenial::JsonCompatibilityDenied(_)
+        )
     ));
 }
 
@@ -94,7 +125,9 @@ fn terminal_json_readmission_rejects_mismatched_contract_identity() {
 
     assert_eq!(
         outcome,
-        worth_proof::TransitionOutcome::Denied(worth_store_aspect_native::StoreTerminalProjectionDenial::ContractIdentityMismatch)
+        worth_proof::TransitionOutcome::Denied(
+            worth_store_aspect_native::StoreTerminalProjectionDenial::ContractIdentityMismatch
+        )
     );
 }
 
@@ -112,7 +145,10 @@ fn terminal_json_projection_round_trips_validated_struct_state() {
         physical_witness(),
     );
 
-    assert!(matches!(outcome, worth_proof::TransitionOutcome::Success(_)));
+    assert!(matches!(
+        outcome,
+        worth_proof::TransitionOutcome::Success(_)
+    ));
 }
 
 #[test]
@@ -130,8 +166,12 @@ fn terminal_json_rendering_changes_checksum_not_store_digest_authority() {
     );
     let pretty_checksum =
         terminal_checksum(projection.to_pretty_terminal_json_document_bytes().unwrap());
-    let first_label = worth_store_aspect_native::StoreTerminalProjectionDisplayLabel::new("Operator segment").unwrap();
-    let second_label = worth_store_aspect_native::StoreTerminalProjectionDisplayLabel::new("Review segment").unwrap();
+    let first_label =
+        worth_store_aspect_native::StoreTerminalProjectionDisplayLabel::new("Operator segment")
+            .unwrap();
+    let second_label =
+        worth_store_aspect_native::StoreTerminalProjectionDisplayLabel::new("Review segment")
+            .unwrap();
     let first_labelled_checksum = terminal_checksum(
         projection
             .to_labelled_terminal_json_document_bytes(&first_label)
@@ -170,7 +210,8 @@ fn terminal_json_rendering_changes_checksum_not_store_digest_authority() {
 #[test]
 fn terminal_json_field_order_changes_do_not_change_readmitted_native_digest() {
     let aspect_key = aspect_key("store.physical.segment.header");
-    let identity = worth_store_aspect_native::StoreAspectIdentity::from_aspect_key(aspect_key.clone());
+    let identity =
+        worth_store_aspect_native::StoreAspectIdentity::from_aspect_key(aspect_key.clone());
     let first_contract = segment_header_contract(aspect_key.clone());
     let second_contract = segment_header_contract(aspect_key.clone());
 
@@ -178,7 +219,10 @@ fn terminal_json_field_order_changes_do_not_change_readmitted_native_digest() {
         identity.clone(),
         first_contract,
         [
-            ("segment", serde_json::Value::String("segment-0012".to_string())),
+            (
+                "segment",
+                serde_json::Value::String("segment-0012".to_string()),
+            ),
             ("generation", serde_json::Number::from(12).into()),
         ],
     );
@@ -187,7 +231,10 @@ fn terminal_json_field_order_changes_do_not_change_readmitted_native_digest() {
         second_contract,
         [
             ("generation", serde_json::Number::from(12).into()),
-            ("segment", serde_json::Value::String("segment-0012".to_string())),
+            (
+                "segment",
+                serde_json::Value::String("segment-0012".to_string()),
+            ),
         ],
     );
 

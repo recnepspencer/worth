@@ -1,10 +1,26 @@
-pub(crate) use {std::fmt::Debug};
-pub(crate) use {worth_foundational::FoundationalAdmittedMergeScopeEvidence, worth_foundational::FoundationalDeniedScopeLocus, worth_foundational::FoundationalMergeAdmissionDenial, worth_foundational::FoundationalMergeConstructionDenial, worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalMergeScopeFamily, worth_foundational::FoundationalScopeAdmissionBasis, worth_foundational::FoundationalScopedMergeDenialEvidence, worth_foundational::FoundationalScopedMergeDenialKind, worth_foundational::FoundationalSelectedScopeNoOpCause, worth_foundational::FoundationalSkippedOutOfScopeEvidence};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use std::fmt::Debug;
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::FoundationalAdmittedMergeScopeEvidence,
+    worth_foundational::FoundationalDeniedScopeLocus,
+    worth_foundational::FoundationalMergeAdmissionDenial,
+    worth_foundational::FoundationalMergeConstructionDenial,
+    worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalMergeScopeFamily,
+    worth_foundational::FoundationalScopeAdmissionBasis,
+    worth_foundational::FoundationalScopedMergeDenialEvidence,
+    worth_foundational::FoundationalScopedMergeDenialKind,
+    worth_foundational::FoundationalSelectedScopeNoOpCause,
+    worth_foundational::FoundationalSkippedOutOfScopeEvidence,
+};
 
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id};
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary};
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_node, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node};
+pub(crate) use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
+pub(crate) use crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary;
+pub(crate) use {
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_node,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node,
+};
 
 pub(crate) fn assert_admission_denial<T: Debug>(
     actual: worth_foundational::FoundationalMergeAdmissionOutcome<T>,

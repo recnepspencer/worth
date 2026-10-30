@@ -1,14 +1,28 @@
 //! Publishing one generation and admitting its release, as the fixture
 //! issuer does for every world of this family.
 
-pub(crate) use {std::num::NonZeroU64};
+pub(crate) use std::num::NonZeroU64;
 
-pub(crate) use {worth_proof::AdmittedBlobReleaseProof};
-pub(crate) use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobIngestSession, worth_store::physical_runtime::BlobObjectId, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobResumeToken, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_blob_chunks::BlobChunkSize};
+pub(crate) use worth_proof::AdmittedBlobReleaseProof;
+pub(crate) use worth_store_blob_chunks::BlobChunkSize;
+pub(crate) use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobIngestFailure,
+    worth_store::physical_runtime::BlobIngestSession, worth_store::physical_runtime::BlobObjectId,
+    worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobResumeToken,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {crate::physical_blob_journeys::terminal_head_retirement::deadline, crate::physical_blob_journeys::terminal_head_retirement::CHUNK, crate::physical_blob_journeys::terminal_head_retirement::SCOPE};
-pub(crate) use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement};
+pub(crate) use {
+    crate::physical_blob_journeys::terminal_head_retirement::deadline,
+    crate::physical_blob_journeys::terminal_head_retirement::CHUNK,
+    crate::physical_blob_journeys::terminal_head_retirement::SCOPE,
+};
+pub(crate) use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+};
 
 /// One published generation: its admitted release, and what its ended
 /// session and its object can still be asked.

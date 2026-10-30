@@ -29,7 +29,9 @@ fn contract_canonical_basis_is_ready_and_declaration_order_stable() {
     assert!(left.payload().entries().iter().any(|entry| {
         entry.kind() == worth_foundational::CanonicalBasisEntryKind::Field
             && entry.locus()
-                == &worth_foundational::CanonicalBasisLocus::Named("task.summary.field.done.value_type".into())
+                == &worth_foundational::CanonicalBasisLocus::Named(
+                    "task.summary.field.done.value_type".into(),
+                )
     }));
 }
 
@@ -46,11 +48,16 @@ fn mask_canonical_basis_preserves_mode_and_uses_ready_basis_artifact() {
             _ => panic!("mask basis should be ready"),
         };
 
-    assert_eq!(ready.payload().domain(), worth_foundational::CanonicalBasisDomain::AspectMask);
+    assert_eq!(
+        ready.payload().domain(),
+        worth_foundational::CanonicalBasisDomain::AspectMask
+    );
     assert_eq!(ready.payload().cost().entry_count(), 2);
     assert_eq!(
         ready.payload().entries()[0].locus(),
-        &worth_foundational::CanonicalBasisLocus::Named("task.summary.projection.field.alpha".into())
+        &worth_foundational::CanonicalBasisLocus::Named(
+            "task.summary.projection.field.alpha".into()
+        )
     );
     assert_eq!(
         ready.basis().basis().value().as_str(),
@@ -60,7 +67,12 @@ fn mask_canonical_basis_preserves_mode_and_uses_ready_basis_artifact() {
 
 #[test]
 fn state_canonical_basis_keeps_numeric_widths_distinct() {
-    let signed = validated_scalar("number", 1, worth_foundational::ScalarAspectType::Int64, worth_foundational::AspectValue::Int64(1));
+    let signed = validated_scalar(
+        "number",
+        1,
+        worth_foundational::ScalarAspectType::Int64,
+        worth_foundational::AspectValue::Int64(1),
+    );
     let unsigned = validated_scalar(
         "number",
         1,
@@ -103,7 +115,10 @@ fn state_canonical_basis_keeps_numeric_widths_distinct() {
 fn state_canonical_basis_matches_compatibility_equivalent_struct_truth() {
     let contract = task_summary_contract();
     let value = worth_foundational::StructAspectValue::new([
-        (field("title"), worth_foundational::AspectValue::String("Ship it".into())),
+        (
+            field("title"),
+            worth_foundational::AspectValue::String("Ship it".into()),
+        ),
         (field("done"), worth_foundational::AspectValue::Bool(true)),
     ])
     .expect("unique fields");
@@ -112,7 +127,9 @@ fn state_canonical_basis_matches_compatibility_equivalent_struct_truth() {
     else {
         panic!("expected validation");
     };
-    let worth_proof::TransitionOutcome::Success(state) = admit_authoritative_record_aspect_state([entry]) else {
+    let worth_proof::TransitionOutcome::Success(state) =
+        admit_authoritative_record_aspect_state([entry])
+    else {
         panic!("expected admitted state");
     };
 
@@ -120,14 +137,17 @@ fn state_canonical_basis_matches_compatibility_equivalent_struct_truth() {
         worth_proof::TransitionOutcome::Success(ready) => ready,
         _ => panic!("state basis should be ready"),
     };
-    let json_state = lower_json_record_aspect_state([worth_foundational::JsonCompatibilityAspectInput::new(
-        contract,
-        worth_foundational::BoundarySourceLocator::aspect(worth_foundational::AspectLocator::new(
-            worth_foundational::LocatorAuthority::SupportOnly,
-            key("task.summary"),
-        )),
-        json!({ "done": true, "title": "Ship it" }),
-    )]);
+    let json_state =
+        lower_json_record_aspect_state([worth_foundational::JsonCompatibilityAspectInput::new(
+            contract,
+            worth_foundational::BoundarySourceLocator::aspect(
+                worth_foundational::AspectLocator::new(
+                    worth_foundational::LocatorAuthority::SupportOnly,
+                    key("task.summary"),
+                ),
+            ),
+            json!({ "done": true, "title": "Ship it" }),
+        )]);
     let worth_proof::TransitionOutcome::Success(json_state) = json_state else {
         panic!("expected compatibility lowering");
     };
@@ -138,12 +158,15 @@ fn state_canonical_basis_matches_compatibility_equivalent_struct_truth() {
 
     assert_eq!(ready.payload().entries(), json_ready.payload().entries());
     assert!(ready.payload().entries().iter().any(|entry| {
-        entry.locus() == &worth_foundational::CanonicalBasisLocus::Named("task.summary.field.done".into())
+        entry.locus()
+            == &worth_foundational::CanonicalBasisLocus::Named("task.summary.field.done".into())
             && entry.value() == &worth_foundational::CanonicalBasisValue::Bool(true)
     }));
     assert!(ready.payload().entries().iter().any(|entry| {
-        entry.locus() == &worth_foundational::CanonicalBasisLocus::Named("task.summary.field.title".into())
-            && entry.value() == &worth_foundational::CanonicalBasisValue::ExactText("Ship it".into())
+        entry.locus()
+            == &worth_foundational::CanonicalBasisLocus::Named("task.summary.field.title".into())
+            && entry.value()
+                == &worth_foundational::CanonicalBasisValue::ExactText("Ship it".into())
     }));
 }
 
@@ -177,21 +200,22 @@ fn state_canonical_basis_preserves_adjacent_value_families_without_text_prefixes
         decimal_ready.payload().entries(),
         text_ready.payload().entries()
     );
-    assert!(decimal_ready
-        .payload()
-        .entries()
-        .iter()
-        .any(|entry| { entry.value() == &worth_foundational::CanonicalBasisValue::DecimalText("1.0".into()) }));
-    assert!(text_ready
-        .payload()
-        .entries()
-        .iter()
-        .any(|entry| { entry.value() == &worth_foundational::CanonicalBasisValue::ExactText("decimal:1.0".into()) }));
+    assert!(decimal_ready.payload().entries().iter().any(|entry| {
+        entry.value() == &worth_foundational::CanonicalBasisValue::DecimalText("1.0".into())
+    }));
+    assert!(text_ready.payload().entries().iter().any(|entry| {
+        entry.value() == &worth_foundational::CanonicalBasisValue::ExactText("decimal:1.0".into())
+    }));
 }
 
 #[test]
 fn patch_canonical_basis_is_ordered_and_distinguishes_clear_from_set() {
-    let count = validated_scalar("count", 1, worth_foundational::ScalarAspectType::Int64, worth_foundational::AspectValue::Int64(2));
+    let count = validated_scalar(
+        "count",
+        1,
+        worth_foundational::ScalarAspectType::Int64,
+        worth_foundational::AspectValue::Int64(2),
+    );
     let name = validated_scalar(
         "name",
         2,
@@ -204,14 +228,19 @@ fn patch_canonical_basis_is_ordered_and_distinguishes_clear_from_set() {
         revision(1),
         worth_foundational::ScalarAspectType::Bool,
     );
-    let worth_proof::TransitionOutcome::Success(left_patch) = worth_foundational::AuthoritativeRecordAspectPatch::whole_aspect(
-        [count.clone(), name.clone()],
-        [done_contract.clone()],
-    ) else {
+    let worth_proof::TransitionOutcome::Success(left_patch) =
+        worth_foundational::AuthoritativeRecordAspectPatch::whole_aspect(
+            [count.clone(), name.clone()],
+            [done_contract.clone()],
+        )
+    else {
         panic!("expected left patch");
     };
     let worth_proof::TransitionOutcome::Success(right_patch) =
-        worth_foundational::AuthoritativeRecordAspectPatch::whole_aspect([name, count], [done_contract])
+        worth_foundational::AuthoritativeRecordAspectPatch::whole_aspect(
+            [name, count],
+            [done_contract],
+        )
     else {
         panic!("expected right patch");
     };
@@ -235,7 +264,8 @@ fn patch_canonical_basis_is_ordered_and_distinguishes_clear_from_set() {
             && entry.value() == &worth_foundational::CanonicalBasisValue::ExactText("clear".into())
     }));
     assert!(left.payload().entries().iter().any(|entry| {
-        entry.locus() == &worth_foundational::CanonicalBasisLocus::Named("count.whole.set.value".into())
+        entry.locus()
+            == &worth_foundational::CanonicalBasisLocus::Named("count.whole.set.value".into())
             && entry.value()
                 == &worth_foundational::CanonicalBasisValue::SignedInteger {
                     width: worth_foundational::CanonicalIntegerWidth::Bits64,

@@ -1,12 +1,33 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_resume_admission::*;
-use {std::num::NonZeroU64};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_resume_admission::*;
+use std::num::NonZeroU64;
 
-use {worth_proof::TransitionOutcome};
-use {worth_signal::facade::TemporalDuration};
-use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobResumeFailure, worth_store::physical_runtime::BlobResumeLimits, worth_store::physical_runtime::BlobResumeToken, worth_store::physical_runtime::CompletedPhysicalCheckpoint, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_blob_chunks::BlobChunkSize};
+use worth_proof::TransitionOutcome;
+use worth_signal::facade::TemporalDuration;
+use worth_store_blob_chunks::BlobChunkSize;
+use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobResumeFailure,
+    worth_store::physical_runtime::BlobResumeLimits,
+    worth_store::physical_runtime::BlobResumeToken,
+    worth_store::physical_runtime::CompletedPhysicalCheckpoint,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-use {worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn completed_checkpoint_crossing_original_horizon_denies_unchanged_token_without_blob_write() {
@@ -42,7 +63,8 @@ fn completed_checkpoint_crossing_original_horizon_denies_unchanged_token_without
             &scope,
             placement(),
             CHUNK as u64,
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
             adequate_limits(),
         ),
         Err(worth_store::physical_runtime::BlobResumeFailure::Expired)
@@ -72,7 +94,8 @@ fn exact_scan_bound_denies_without_write_and_releases_session_claim() {
             &scope,
             placement(),
             CHUNK as u64,
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
             worth_store::physical_runtime::BlobResumeLimits::new(
                 std::num::NonZeroU64::new(1).unwrap(),
                 std::num::NonZeroU64::new(1024 * 1024).unwrap(),
@@ -89,7 +112,8 @@ fn exact_scan_bound_denies_without_write_and_releases_session_claim() {
             &scope,
             placement(),
             CHUNK as u64,
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
             adequate_limits(),
         )
         .expect("exhausted inspection must release its live session claim");

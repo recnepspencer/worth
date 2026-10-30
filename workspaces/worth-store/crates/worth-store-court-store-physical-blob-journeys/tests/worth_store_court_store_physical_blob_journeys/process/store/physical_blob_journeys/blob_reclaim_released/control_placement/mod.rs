@@ -4,11 +4,33 @@
 
 use {std::num::NonZeroU16, std::num::NonZeroU64};
 
+use worth_store_blob_chunks::BlobChunkSize;
 use {worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::ArenaAllocationDenial, worth_store::physical_runtime::BlobAppendFailure, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimFailure, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimPublicationStage, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationPreparationDenial, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::RecordAppendDenial, worth_store::physical_runtime::RecordByteLimit};
-use {worth_store_blob_chunks::BlobChunkSize};
+use {
+    worth_store::physical_runtime::ArenaAllocationDenial,
+    worth_store::physical_runtime::BlobAppendFailure,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimFailure,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimPublicationStage,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationPreparationDenial,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::RecordAppendDenial,
+    worth_store::physical_runtime::RecordByteLimit,
+};
 
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::configuration, worth_store_testkit_store::fixture::serving_from_initialization_with_placement};
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::configuration,
+    worth_store_testkit_store::fixture::serving_from_initialization_with_placement,
+};
 
 #[test]
 fn released_control_arena_window_denies_before_effect_and_completes_when_admitted() {
@@ -18,14 +40,21 @@ fn released_control_arena_window_denies_before_effect_and_completes_when_admitte
         let directory = tempfile::tempdir().unwrap();
         let (format, _, _) = configuration();
         let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
-            .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(64).unwrap())
+            .manifest_capacity(
+                worth_store::physical_runtime::ManifestEntryCapacity::new(64).unwrap(),
+            )
             // Existing owner charges 1KiB base + 4KiB per index entry.
-            .arena_index_bytes(worth_store::physical_runtime::RecordByteLimit::new(1024 + 4096 * maximum_ranges).unwrap())
+            .arena_index_bytes(
+                worth_store::physical_runtime::RecordByteLimit::new(1024 + 4096 * maximum_ranges)
+                    .unwrap(),
+            )
             .admit(format)
             .unwrap();
         let serving = serving_from_initialization_with_placement(directory.path(), placement);
         let scope = admitted_blob_scope("c11.blob.release.control-window.scope");
-        let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+        let limits = worth_store::physical_runtime::BlobReadLimits::new(
+            std::num::NonZeroU64::new(128).unwrap(),
+        );
         let blobs = serving.blobs().unwrap();
         let object = blobs.issue_object_id(limits).unwrap();
         let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
@@ -34,7 +63,8 @@ fn released_control_arena_window_denies_before_effect_and_completes_when_admitte
             64 << 10,
             &scope,
             worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         )
         .unwrap();
         let mut ingest = blobs
@@ -70,7 +100,8 @@ fn released_control_arena_window_denies_before_effect_and_completes_when_admitte
             .reclaim(worth_store::physical_runtime::BlobReclaimRequest::released(
                 proof,
                 placement,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
                 worth_store::physical_runtime::BlobReclaimLimits::new(
                     std::num::NonZeroU64::new(256).unwrap(),
                     std::num::NonZeroU64::new(64 << 20).unwrap(),
@@ -121,10 +152,16 @@ fn released_control_arena_window_denies_before_effect_and_completes_when_admitte
         } else {
             let receipt =
                 result.expect("the exact five-entry window must complete the genuine drop");
-            assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+            assert_eq!(
+                receipt.disposition(),
+                worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+            );
             assert_eq!(receipt.dropped_records(), &[marker.record()]);
             assert_eq!(receipt.remaining_payload_records(), 2);
-            assert_eq!(receipt.retirement(), worth_store::physical_runtime::BlobReclaimRetirement::Completed);
+            assert_eq!(
+                receipt.retirement(),
+                worth_store::physical_runtime::BlobReclaimRetirement::Completed
+            );
             assert_eq!(receipt.displaced_extents().len(), 1);
             assert_eq!(
                 receipt.bytes_released(),

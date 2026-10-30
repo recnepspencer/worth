@@ -14,4 +14,4 @@ fn borrow_product_capabilities(serving: &ServingPhysicalRuntime) {
     );
 }
 
-fn main() {}
+pub(crate) fn main() {}

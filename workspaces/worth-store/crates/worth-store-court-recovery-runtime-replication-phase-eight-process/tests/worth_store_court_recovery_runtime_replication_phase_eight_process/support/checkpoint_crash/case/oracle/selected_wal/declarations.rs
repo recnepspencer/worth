@@ -217,7 +217,12 @@ pub(crate) fn scan_segment(bytes: &[u8], segment: u64, generation: u64) -> Vec<F
     frames
 }
 
-pub(crate) fn wal_frame(bytes: &[u8], offset: usize, segment: u64, generation: u64) -> Option<Frame> {
+pub(crate) fn wal_frame(
+    bytes: &[u8],
+    offset: usize,
+    segment: u64,
+    generation: u64,
+) -> Option<Frame> {
     let header = bytes.get(offset..offset.checked_add(WAL_HEADER_BYTES)?)?;
     let start = read_u64(header, 28)?;
     let end = read_u64(header, 36)?;

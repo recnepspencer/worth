@@ -1,10 +1,8 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
 pub(crate) use {sha2::Digest, sha2::Sha256};
 
-pub(crate) use {crate::history};
-
-
+pub(crate) use crate::history;
 
 pub(crate) fn independently_classify_in_flight(
     root: &Path,
@@ -29,10 +27,11 @@ pub(crate) fn fate_from_files(
         && crate::phase_eight_process::history::parent_oracle::canonical_membership::current_root_payloads(files)
             .expect("selected root must have a valid, fully routed record set")
             .contains(payload);
-    let bound_wal = crate::checkpoint_crash::case::oracle::selected_wal::tail(files).is_some_and(|tail| {
-        tail.into_iter()
-            .any(|(path, bytes)| wal_contains_bound_payload(path, bytes, idempotency, payload))
-    });
+    let bound_wal =
+        crate::checkpoint_crash::case::oracle::selected_wal::tail(files).is_some_and(|tail| {
+            tail.into_iter()
+                .any(|(path, bytes)| wal_contains_bound_payload(path, bytes, idempotency, payload))
+        });
     if selected_root || bound_wal {
         crate::phase_eight_process::history::raw_in_flight::InFlightMutationFate::DurableEffect
     } else {

@@ -1,11 +1,14 @@
-pub(crate) use {std::io::Read};
-pub(crate) use {std::path::Path};
+pub(crate) use std::io::Read;
+pub(crate) use std::path::Path;
 pub(crate) use {std::process::Command, std::process::Stdio};
 pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard};
-pub(crate) use {crate::phase_eight_process::history::writer_process::c8_writer_binary_path, crate::phase_eight_process::history::writer_history::submitted_program::SubmittedOperationProgram};
-pub(crate) use {crate::checkpoint_crash::CheckpointCrashStage};
+pub(crate) use crate::checkpoint_crash::CheckpointCrashStage;
+pub(crate) use worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard;
+pub(crate) use {
+    crate::phase_eight_process::history::writer_history::submitted_program::SubmittedOperationProgram,
+    crate::phase_eight_process::history::writer_process::c8_writer_binary_path,
+};
 
 pub(crate) fn spawn_writer(
     stage: CheckpointCrashStage,
@@ -52,7 +55,10 @@ pub(crate) fn wait_for_writer_ready(
 pub(crate) fn wait_for_marker(child: &mut ProcessChildGuard, marker: &Path, label: &str) {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
     while !marker.exists() {
-        assert!(std::time::Instant::now() < deadline, "{label} marker timeout");
+        assert!(
+            std::time::Instant::now() < deadline,
+            "{label} marker timeout"
+        );
         if let Some(status) = child.child_mut().try_wait().expect("poll checkpoint child") {
             let (stdout, stderr) = exited_output(child);
             panic!(

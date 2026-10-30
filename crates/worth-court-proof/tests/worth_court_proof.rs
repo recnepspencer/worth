@@ -19,3 +19,6 @@ pub(crate) mod supported_public_workflows;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_proof/support/upfront_contract_vocabulary_certification/mod.rs"]
 pub(crate) mod upfront_contract_vocabulary_certification;
+
+#[path = "worth_court_proof/supported_programs/mod.rs"]
+mod supported_programs;

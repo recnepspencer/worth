@@ -1,16 +1,37 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_reclaim_released::shared_reuse::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_reclaim_released::shared_reuse::*;
 use {std::num::NonZeroU16, std::num::NonZeroU64};
 
-use {worth_proof::AdmittedBlobReleaseProof};
-use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimReceipt, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PublishedBlobGeneration, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::IndexedThroughBlobPublication};
+use worth_proof::AdmittedBlobReleaseProof;
+use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReadOpenFailure,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimReceipt,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PublishedBlobGeneration,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::IndexedThroughBlobPublication,
+};
 
-
-
-
-
-use {crate::physical_blob_journeys::blob_reclaim_released::publish_one, crate::physical_blob_journeys::blob_reclaim_released::shared_format, crate::physical_blob_journeys::blob_reclaim_released::shared_placement, crate::physical_blob_journeys::blob_reclaim_released::SHARED_CHUNK as CHUNK};
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::serving_from_initialization_with_format_and_placement};
+use {
+    crate::physical_blob_journeys::blob_reclaim_released::publish_one,
+    crate::physical_blob_journeys::blob_reclaim_released::shared_format,
+    crate::physical_blob_journeys::blob_reclaim_released::shared_placement,
+    crate::physical_blob_journeys::blob_reclaim_released::SHARED_CHUNK as CHUNK,
+};
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::serving_from_initialization_with_format_and_placement,
+};
 
 #[test]
 fn retired_tail_slot_does_not_block_selected_successor_reuse() {
@@ -59,11 +80,13 @@ fn destination_first_release_drops_claim_then_source_without_stranded_custody() 
     assert_eq!(destination.remaining_payload_records(), 0);
     assert_invisible(&serving, &scope, reused);
     assert!(
-        worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(&serving)
-            .iter()
-            .any(|(record, _)| record.allocation_epoch()
-                == original_marker.record().allocation_epoch()
-                && record.ordinal() == original_marker.record().ordinal()),
+        worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(
+            &serving
+        )
+        .iter()
+        .any(|(record, _)| record.allocation_epoch()
+            == original_marker.record().allocation_epoch()
+            && record.ordinal() == original_marker.record().ordinal()),
         "destination release must preserve the original publication's authoritative route",
     );
     assert_bytes_exact(&serving, &scope, original, &payload);

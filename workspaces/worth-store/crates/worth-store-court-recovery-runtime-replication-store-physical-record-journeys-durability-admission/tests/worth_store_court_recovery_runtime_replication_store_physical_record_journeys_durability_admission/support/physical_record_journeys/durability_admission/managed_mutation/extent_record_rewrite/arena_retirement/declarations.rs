@@ -14,7 +14,9 @@ pub(crate) fn reopen_with_copy_policy(root: &std::path::Path) -> ServingPhysical
     let (format, _, access) = configuration();
     let media = worth_store_testkit_store::physical_record_journeys::media(root);
     let durability = crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::evacuation::fill_durability(&media);
-    worth_store_testkit_store::physical_record_journeys::success(media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)))
+    worth_store_testkit_store::physical_record_journeys::success(media.open_record_store(
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability),
+    ))
 }
 
 pub(crate) fn reopen_with_small_copy_wal(root: &std::path::Path) -> ServingPhysicalRuntime {
@@ -24,5 +26,7 @@ pub(crate) fn reopen_with_small_copy_wal(root: &std::path::Path) -> ServingPhysi
         &media,
         crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::arena_retirement_crash::small_wal_policy(),
     );
-    worth_store_testkit_store::physical_record_journeys::success(media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)))
+    worth_store_testkit_store::physical_record_journeys::success(media.open_record_store(
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability),
+    ))
 }

@@ -1,4 +1,8 @@
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u16, crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u32, crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64};
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u16,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u32,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64,
+};
 
 pub(crate) const FRAME_BYTES: usize = 48;
 pub(crate) const ROOT_ROUTING_KIND: u8 = 8;

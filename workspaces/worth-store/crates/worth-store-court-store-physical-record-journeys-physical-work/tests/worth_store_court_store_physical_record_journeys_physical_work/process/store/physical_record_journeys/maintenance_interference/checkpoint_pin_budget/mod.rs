@@ -1,10 +1,41 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::maintenance_interference::checkpoint_pin_budget::*;
+#[allow(unused_imports)]
+use crate::physical_record_journeys::maintenance_interference::checkpoint_pin_budget::*;
 use {std::fs, std::num::NonZeroU32, std::num::NonZeroU64, std::path::Path};
 
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::CheckpointMemoryLimit, worth_store::physical_runtime::GroupCommitDelay, worth_store::physical_runtime::GroupCommitLimit, worth_store::physical_runtime::IdempotencyRetentionGenerations, worth_store::physical_runtime::LiveIdempotencyBindingLimit, worth_store::physical_runtime::PendingUnresolvedMutationLimit, worth_store::physical_runtime::PhysicalCheckpointCaptureFailureKind, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointPolicy, worth_store::physical_runtime::PhysicalCheckpointProvenNoEffectCause, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalDurabilityDeclaration, worth_store::physical_runtime::PhysicalIdempotencyPolicy, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::RetainedWalTailLimit, worth_store::physical_runtime::ServingPhysicalRuntime, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
+use worth_proof::TransitionOutcome;
+use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::CheckpointMemoryLimit,
+    worth_store::physical_runtime::GroupCommitDelay,
+    worth_store::physical_runtime::GroupCommitLimit,
+    worth_store::physical_runtime::IdempotencyRetentionGenerations,
+    worth_store::physical_runtime::LiveIdempotencyBindingLimit,
+    worth_store::physical_runtime::PendingUnresolvedMutationLimit,
+    worth_store::physical_runtime::PhysicalCheckpointCaptureFailureKind,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointPolicy,
+    worth_store::physical_runtime::PhysicalCheckpointProvenNoEffectCause,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalDurabilityDeclaration,
+    worth_store::physical_runtime::PhysicalIdempotencyPolicy,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalWalPolicy,
+    worth_store::physical_runtime::RetainedWalTailLimit,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+    worth_store::physical_runtime::WalSegmentByteLimit,
+    worth_store::physical_runtime::WalSegmentInventoryLimit,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::append, worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint, worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize, worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement};
+use {
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement,
+};
 
 #[test]
 fn ordinary_record_checkpoint_preserves_nested_scan_headroom() {
@@ -29,7 +60,10 @@ fn ordinary_record_checkpoint_preserves_nested_scan_headroom() {
     let mut session = serving
         .records()
         .unwrap()
-        .open(first, worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits())
+        .open(
+            first,
+            worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits(),
+        )
         .unwrap();
     assert_eq!(
         session.next_chunk().unwrap().unwrap().bytes(),

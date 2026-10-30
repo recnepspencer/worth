@@ -1,15 +1,40 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::TemporalDuration};
-pub(crate) use {worth_store::physical_runtime::certification::MediaFaultDirective};
-pub(crate) use {worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalMutationAdmissionDisposition, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyKey, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome, worth_store::physical_runtime::PhysicalWalReclamationObservation, worth_store::physical_runtime::PreparedPhysicalMutation, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_backend::CertificationMediaFaultActivation, worth_store_physical_backend::FilesystemAccessPosture, worth_store_physical_backend::MediaOperationRole, worth_store_physical_backend::MediaPauseGate};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_signal::facade::TemporalDuration;
+pub(crate) use worth_store::physical_runtime::certification::MediaFaultDirective;
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalMutationAdmissionDisposition,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyKey,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore,
+    worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome,
+    worth_store::physical_runtime::PhysicalWalReclamationObservation,
+    worth_store::physical_runtime::PreparedPhysicalMutation,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_backend::CertificationMediaFaultActivation,
+    worth_store_physical_backend::FilesystemAccessPosture,
+    worth_store_physical_backend::MediaOperationRole, worth_store_physical_backend::MediaPauseGate,
+};
 
 pub(crate) use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy, worth_store_testkit_store::physical_record_journeys::success};
 pub(crate) use {worth_store_testkit_store::physical_record_journeys::durability_admission::checkpoint_retained_wal_tail::durable_group, worth_store_testkit_store::physical_record_journeys::durability_admission::checkpoint_retained_wal_tail::publish_after_foreground_rotations, worth_store_testkit_store::physical_record_journeys::durability_admission::checkpoint_retained_wal_tail::rotation_world};
 pub(crate) use {worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::segment_inventory::inspect_wal_inventory};
 pub(crate) use {worth_store_testkit_store::physical_record_journeys::durability_admission::wal_rotation::append_group, worth_store_testkit_store::physical_record_journeys::durability_admission::wal_rotation::wal_policy};
 
-pub(crate) fn assert_unmaterialized_candidates(root: &std::path::Path, serving: &ServingPhysicalRuntime) {
+pub(crate) fn assert_unmaterialized_candidates(
+    root: &std::path::Path,
+    serving: &ServingPhysicalRuntime,
+) {
     assert!(std::fs::read_dir(root.join("families/records/segments"))
         .unwrap()
         .next()
@@ -32,7 +57,9 @@ pub(crate) fn prepare_with_key(
 ) -> PreparedPhysicalMutation {
     let request = worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
         key,
-        worth_store::physical_runtime::PhysicalMutationDeadline::at(worth_signal::facade::TemporalDuration::temporal_duration(1_000).unwrap()),
+        worth_store::physical_runtime::PhysicalMutationDeadline::at(
+            worth_signal::facade::TemporalDuration::temporal_duration(1_000).unwrap(),
+        ),
     );
     match submission
         .prepare_durable_append(
@@ -42,9 +69,9 @@ pub(crate) fn prepare_with_key(
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
         _ => panic!("exact-key reclamation replay was not admitted"),
     }
 }
@@ -57,13 +84,18 @@ pub(crate) fn fault_rotation_world(
     AdmittedRecordPlacementPolicy,
     CertificationMediaFaultActivation,
 ) {
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::certification(worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::certification(
+        worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let authority = admission.fault_schedule_authority();
     let activation = authority.one_shot_activation();
     let schedule = authority
         .schedule(vec![authority
-            .rule(worth_store_physical_backend::MediaOperationRole::Delete, 1, directive)
+            .rule(
+                worth_store_physical_backend::MediaOperationRole::Delete,
+                1,
+                directive,
+            )
             .for_next_identified_operation_after_activation(
                 activation.clone(),
             )])
@@ -85,8 +117,9 @@ pub(crate) fn second_delete_fault_rotation_world(
     store_root: &std::path::Path,
     directive: MediaFaultDirective,
 ) -> SecondDeleteFaultRotationWorld {
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::certification(worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::certification(
+        worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let authority = admission.fault_schedule_authority();
     let first_delete_gate = authority.pause_gate();
     let pause_activation = authority.one_shot_activation();
@@ -94,13 +127,19 @@ pub(crate) fn second_delete_fault_rotation_world(
     let schedule = authority
         .schedule(vec![
             authority
-                .rule(worth_store_physical_backend::MediaOperationRole::Delete, 1, directive)
+                .rule(
+                    worth_store_physical_backend::MediaOperationRole::Delete,
+                    1,
+                    directive,
+                )
                 .for_next_identified_operation_after_activation(fail_activation.clone()),
             authority
                 .rule(
                     worth_store_physical_backend::MediaOperationRole::Delete,
                     1,
-                    worth_store::physical_runtime::certification::MediaFaultDirective::PauseBefore(first_delete_gate.clone()),
+                    worth_store::physical_runtime::certification::MediaFaultDirective::PauseBefore(
+                        first_delete_gate.clone(),
+                    ),
                 )
                 .for_next_identified_operation_after_activation(pause_activation.clone()),
         ])
@@ -120,18 +159,21 @@ pub(crate) fn admit_fault_rotation_world(
     store_root: &std::path::Path,
     admission: FilesystemMediaAdmission,
 ) -> (ServingPhysicalRuntime, AdmittedRecordPlacementPolicy) {
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(worth_store::physical_runtime::PhysicalRuntimeAdmission::new(store_root).unwrap()).unwrap();
+    let runtime = worth_store::physical_runtime::PhysicalStore::admit(
+        worth_store::physical_runtime::PhysicalRuntimeAdmission::new(store_root).unwrap(),
+    )
+    .unwrap();
     let media_owner = match runtime.try_admit_filesystem_media(admission).into_raw() {
         worth_proof::TransitionOutcome::Success(media) => media,
         _ => panic!("fault-scheduled WAL reclamation media was not admitted"),
     };
     let durability = durability_with_wal_policy(&media_owner, wal_policy(6));
     let (format, placement, access) = configuration();
-    let serving = success(
-        media_owner.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
+    let serving = success(media_owner.initialize_record_store(
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
             format, placement, access, durability,
-        )),
-    );
+        ),
+    ));
     (serving, placement)
 }
 

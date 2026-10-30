@@ -1,3 +1,6 @@
+mod durability_policy;
+pub use self::durability_policy::serving_durability;
+
 #[path = "declarations.rs"]
 mod declarations;
 pub use self::declarations::*;

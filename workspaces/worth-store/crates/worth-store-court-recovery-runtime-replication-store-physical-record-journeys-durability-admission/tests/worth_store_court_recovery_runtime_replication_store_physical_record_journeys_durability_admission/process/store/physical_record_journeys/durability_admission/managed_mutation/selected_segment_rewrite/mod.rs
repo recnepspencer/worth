@@ -34,7 +34,9 @@ fn selected_segment_rewrite_preserves_record_bytes_and_writes_rewrite_redo() {
     let mut session = reader
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
     let mut bytes = vec![0_u8; payload.len()];
@@ -108,20 +110,24 @@ fn a_completed_rewrite_retries_as_the_same_request() {
     completed(prepare(&serving, placement, [44; 32], b"retry-source").execute());
     let key = serving
         .record_submission()
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([45; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([45; 32]),
+        )
         .unwrap();
     let request = worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
         key.clone(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::at(worth_signal::facade::TemporalDuration::temporal_duration(1_000).unwrap()),
+        worth_store::physical_runtime::PhysicalMutationDeadline::at(
+            worth_signal::facade::TemporalDuration::temporal_duration(1_000).unwrap(),
+        ),
     );
     match serving
         .record_submission()
         .rewrite_selected_inline_segment(placement, request)
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(
-            prepared,
-        )) => {
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => {
             completed(prepared.execute());
         }
         _ => panic!("the first rewrite must prepare"),
@@ -131,16 +137,18 @@ fn a_completed_rewrite_retries_as_the_same_request() {
         .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite);
     let retry = worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
         key,
-        worth_store::physical_runtime::PhysicalMutationDeadline::at(worth_signal::facade::TemporalDuration::temporal_duration(1_000).unwrap()),
+        worth_store::physical_runtime::PhysicalMutationDeadline::at(
+            worth_signal::facade::TemporalDuration::temporal_duration(1_000).unwrap(),
+        ),
     );
     match serving
         .record_submission()
         .rewrite_selected_inline_segment(placement, retry)
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Completed(
-            _,
-        )) => {}
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Completed(_),
+        ) => {}
         worth_proof::TransitionOutcome::Denied(_) => {
             panic!("the same rewrite request must return its completed fate")
         }
@@ -220,7 +228,9 @@ fn a_wal_durable_append_blocks_rewrite_without_a_second_reservation() {
                 worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause::ScopeConflict
             );
         }
-        worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_) => panic!("rewrite must not pass a pending append"),
+        worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_) => {
+            panic!("rewrite must not pass a pending append")
+        }
         worth_store::physical_runtime::PhysicalMutationOutcome::Indeterminate(_) => {
             panic!("rewrite must be refused before its WAL effect")
         }

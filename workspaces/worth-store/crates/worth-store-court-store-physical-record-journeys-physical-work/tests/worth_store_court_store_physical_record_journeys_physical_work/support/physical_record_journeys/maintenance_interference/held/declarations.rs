@@ -1,11 +1,28 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRetirementDenial, worth_store::physical_runtime::RecordReadDenial};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRetirementDenial,
+    worth_store::physical_runtime::RecordReadDenial,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::append, worth_store_testkit_store::physical_record_journeys::maintenance_interference::append_copies, worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint, worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize, worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits, worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement, worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files, worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_ids};
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append_copies,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_ids,
+};
 
 pub(crate) fn retirement_examination(roots: u32) -> u64 {
-    use {std::num::NonZeroU32};
-    use {worth_store::physical_runtime::PhysicalReadProtectionPolicy};
+    use std::num::NonZeroU32;
+    use worth_store::physical_runtime::PhysicalReadProtectionPolicy;
     let parent = tempfile::tempdir().unwrap();
     let serving = worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize_protection(
         &parent.path().join("store"),
@@ -58,22 +75,27 @@ pub(crate) fn rewrite_current(
     material[..8].copy_from_slice(&ordinal.to_le_bytes());
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material),
+        )
         .unwrap();
     let prepared = match submission
         .rewrite_selected_inline_segment(
             policy,
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
             ),
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
+        worth_proof::TransitionOutcome::Success(_) => {
+            panic!("rewrite {ordinal} did not stay prepared")
         }
-        worth_proof::TransitionOutcome::Success(_) => panic!("rewrite {ordinal} did not stay prepared"),
         worth_proof::TransitionOutcome::Denied(_) => panic!("rewrite {ordinal} denied"),
         worth_proof::TransitionOutcome::Deferred(_) => panic!("rewrite {ordinal} deferred"),
         worth_proof::TransitionOutcome::Stale(_) => panic!("rewrite {ordinal} stale"),
@@ -82,12 +104,18 @@ pub(crate) fn rewrite_current(
     };
     match prepared.execute() {
         worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_) => {}
-        worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(_) => panic!("rewrite {ordinal} had no effect"),
-        worth_store::physical_runtime::PhysicalMutationOutcome::Indeterminate(_) => panic!("rewrite {ordinal} indeterminate"),
+        worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(_) => {
+            panic!("rewrite {ordinal} had no effect")
+        }
+        worth_store::physical_runtime::PhysicalMutationOutcome::Indeterminate(_) => {
+            panic!("rewrite {ordinal} indeterminate")
+        }
     }
 }
 
-pub(crate) fn wal_rotations(serving: &worth_store::physical_runtime::ServingPhysicalRuntime) -> u64 {
+pub(crate) fn wal_rotations(
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+) -> u64 {
     serving
         .record_submission()
         .wal_observation()

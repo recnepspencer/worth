@@ -7,7 +7,9 @@ import subprocess
 import sys
 
 
-def run(command, log, cwd=None):
+def run(command, log, cwd=None, environment=None):
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     cwd = Path(cwd or Path.cwd()).resolve()
     head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=cwd, text=True).strip()
     clean = not subprocess.check_output(['git', 'status', '--short'], cwd=cwd, text=True).strip()
@@ -19,7 +21,7 @@ def run(command, log, cwd=None):
                      f'HEAD: {head}\nGit status --short empty: {clean}\nStart: {start}\n\n')
         stream.flush()
         try:
-            child = subprocess.Popen(command, cwd=cwd, stdout=subprocess.PIPE,
+            child = subprocess.Popen(command, cwd=cwd, env=environment, stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
             for line in child.stdout:
                 value = line.decode('utf-8', errors='replace')

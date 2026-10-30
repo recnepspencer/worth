@@ -3,6 +3,17 @@ from collections import Counter
 import json
 
 
+def lane_budget(configuration, workspace, lanes, profile):
+    governed = configuration[workspace]
+    if profile not in governed['declared_cargo_profiles']:
+        raise ValueError(f'undeclared {workspace} build profile: {profile}')
+    names = list(lanes) or ['selection']
+    missing = sorted(set(names) - set(governed['lanes']))
+    if missing:
+        raise ValueError(f'undeclared {workspace} landing lanes: {missing}')
+    return {'max_compiles_per_unit': min(governed['lanes'][name]['max_compiles_per_unit'] for name in names)}
+
+
 def build_violations(lane, budget):
     if lane['build_observation'] != 'json':
         return [{'kind': 'unmeasured-build', 'log': lane['log']}]

@@ -21,4 +21,4 @@ fn detached_session(
     Ok(session)
 }
 
-fn main() {}
+pub(crate) fn main() {}

@@ -1,9 +1,22 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::readiness::*;
-use {tempfile::tempdir};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalWorkPreEffectDenial, worth_store::physical_runtime::PhysicalWorkReadiness, worth_store::physical_runtime::PhysicalWorkSubmissionOutcome, worth_store::physical_runtime::PhysicalWorkSubmissionReceipt};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::readiness::*;
+use tempfile::tempdir;
+use worth_proof::TransitionOutcome;
+use {
+    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
+    worth_store::physical_runtime::PhysicalWorkReadiness,
+    worth_store::physical_runtime::PhysicalWorkSubmissionOutcome,
+    worth_store::physical_runtime::PhysicalWorkSubmissionReceipt,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::family_locality_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::matching_aspect_delta, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_open_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::EXPECTED_NATIVE_RECORD_BINDING_COUNT};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_open_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::family_locality_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::matching_aspect_delta,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::EXPECTED_NATIVE_RECORD_BINDING_COUNT,
+};
 
 #[test]
 fn store_admission_precedes_signal_lineage_and_both_are_effect_free() {
@@ -185,7 +198,10 @@ fn changed_declared_dependency_is_evaluated_before_readiness_without_media() {
     let before = serving.media_counters();
 
     let readiness = serving.request_physical_work(admitted).unwrap();
-    assert!(matches!(readiness, worth_store::physical_runtime::PhysicalWorkReadiness::Ready(_)));
+    assert!(matches!(
+        readiness,
+        worth_store::physical_runtime::PhysicalWorkReadiness::Ready(_)
+    ));
     assert_eq!(serving.media_counters(), before);
     serving.close();
 }
@@ -243,7 +259,9 @@ fn changed_dependency_revalidation_refreshes_the_exact_active_lineage_without_me
 
     let refreshed = match serving.revalidate_physical_work(ready).unwrap() {
         worth_store::physical_runtime::PhysicalWorkReadiness::Ready(ready) => ready,
-        worth_store::physical_runtime::PhysicalWorkReadiness::Blocked(_) => panic!("evaluated dependency must become ready"),
+        worth_store::physical_runtime::PhysicalWorkReadiness::Blocked(_) => {
+            panic!("evaluated dependency must become ready")
+        }
     };
     assert_eq!(refreshed.intent().identity().operation().get(), 1);
     assert_ne!(

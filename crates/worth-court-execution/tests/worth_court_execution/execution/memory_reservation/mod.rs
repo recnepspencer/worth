@@ -1,13 +1,29 @@
-#[allow(unused_imports)] use crate::memory_reservation::ordinary_context::*;
 #[allow(unused_imports)]
-pub(crate) use {crate::test_serialization};
-
-pub(crate) use {std::collections::BTreeMap, std::num::NonZeroUsize, std::sync::Mutex, std::sync::OnceLock};
-
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::ExecutionResourceLease, worth_execution::ExecutionWorkCeiling, worth_execution::KeylessPartition, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelContext, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop, worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel, worth_execution::SerialMemoryBudget, worth_execution::SerialRequest};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+use crate::memory_reservation::ordinary_context::*;
 #[allow(unused_imports)]
-pub(crate) use {crate::memory_reservation::isolated_context::payload_custody};
+pub(crate) use crate::test_serialization;
+
+pub(crate) use {
+    std::collections::BTreeMap, std::num::NonZeroUsize, std::sync::Mutex, std::sync::OnceLock,
+};
+
+#[allow(unused_imports)]
+pub(crate) use crate::memory_reservation::isolated_context::payload_custody;
+pub(crate) use {
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
+    worth_execution::ExecutionResourceLease, worth_execution::ExecutionWorkCeiling,
+    worth_execution::KeylessPartition, worth_execution::LeaseDenial, worth_execution::LeaseRequest,
+    worth_execution::MapKernelContext, worth_execution::MapKernelFailure,
+    worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop,
+    worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel,
+    worth_execution::SerialMemoryBudget, worth_execution::SerialRequest,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 #[allow(unused_imports)]
 pub(crate) use {};
@@ -60,10 +76,15 @@ fn a_serial_run_with_a_policy_refuses_at_its_own_memory_boundary() {
     assert_eq!(serial_run(admitted), Some(true));
 
     let funded = worth_execution::ExecutionWorkCeiling::new(Some(u64::MAX)).run_serial(
-        &serial_request(worth_execution::SerialMemoryBudget::from_policy(&policy(1 << 20))),
+        &serial_request(worth_execution::SerialMemoryBudget::from_policy(&policy(
+            1 << 20,
+        ))),
         || one_partition_map().run(None, |value, _| Ok::<_, MapKernelFailure<()>>(*value)),
     );
-    assert!(matches!(funded, Ok((worth_execution::MapOutcome::Complete { .. }, _))));
+    assert!(matches!(
+        funded,
+        Ok((worth_execution::MapOutcome::Complete { .. }, _))
+    ));
 }
 
 /// The same on a serial budget: the scope's framework bytes and the hold fit

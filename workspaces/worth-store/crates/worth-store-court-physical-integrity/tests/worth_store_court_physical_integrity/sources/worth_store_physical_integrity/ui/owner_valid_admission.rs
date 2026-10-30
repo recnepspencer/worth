@@ -7,14 +7,14 @@ use worth_store_physical_integrity::{
     CheckpointFooterValidationBasis, IntegrityValidatedCheckpointBinding,
     IntegrityValidatedCheckpointBindingCompaction, IntegrityValidatedCheckpointDirtyBasis,
     IntegrityValidatedCheckpointFooter, IntegrityValidatedCheckpointStreamHeader,
-    IntegrityValidatedCurrentRootSelector, IntegrityValidatedPhysicalWorkObligation,
-    IntegrityValidatedPreviousRootSelector, IntegrityValidatedRootManifest, PhysicalArtifactScope,
-    IntegrityValidatedExtentChunkFrame, IntegrityValidatedExtentManifest,
-    IntegrityValidatedPageFrame, IntegrityValidatedWalFrame, PhysicalByteRange,
-    PhysicalIntegrityValidationRecord, UntrustedPhysicalArtifact,
+    IntegrityValidatedCurrentRootSelector, IntegrityValidatedExtentChunkFrame,
+    IntegrityValidatedExtentManifest, IntegrityValidatedPageFrame,
+    IntegrityValidatedPhysicalWorkObligation, IntegrityValidatedPreviousRootSelector,
+    IntegrityValidatedRootManifest, IntegrityValidatedWalFrame, PhysicalArtifactScope,
+    PhysicalByteRange, PhysicalIntegrityValidationRecord, UntrustedPhysicalArtifact,
 };
 
-fn main() {
+pub(crate) fn main() {
     let _input = UntrustedPhysicalArtifact::from_bounded_bytes(b"untrusted");
 }
 

@@ -1,8 +1,12 @@
-use {std::num::NonZeroU64};
+use std::num::NonZeroU64;
 
-use {worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::CapabilityAvailability, worth_store::physical_runtime::PhysicalCapability};
+use {
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::CapabilityAvailability,
+    worth_store::physical_runtime::PhysicalCapability,
+};
 
-use {worth_store_testkit_store::fixture::serving_from_initialization};
+use worth_store_testkit_store::fixture::serving_from_initialization;
 
 #[test]
 fn constructed_serving_blob_facade_reports_only_installed_owners() {
@@ -30,7 +34,9 @@ fn constructed_serving_blob_facade_reports_only_installed_owners() {
         .blobs()
         .expect("constructed healthy Store has a blob owner");
     let object = blobs
-        .issue_object_id(worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(1).unwrap()))
+        .issue_object_id(worth_store::physical_runtime::BlobReadLimits::new(
+            std::num::NonZeroU64::new(1).unwrap(),
+        ))
         .unwrap_or_else(|_| panic!("an empty selected root must permit bounded issuance"));
     assert_eq!(object.store(), serving.store_identity());
     assert_ne!(object.bytes(), [0; 16]);

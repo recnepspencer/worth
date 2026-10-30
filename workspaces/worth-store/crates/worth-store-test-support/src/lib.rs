@@ -30,11 +30,13 @@ mod terminal_projection_json_fixtures;
 
 pub mod compiler_boundary;
 pub mod harness;
-mod independent_executable;
+mod prebuilt_executable;
+pub mod sweep;
 mod test_directory;
 
-pub use independent_executable::{
-    IndependentExecutable, FRESH_PROCESS_RECOVERY, OFFLINE_RECOVERY_OBSERVER, OFFLINE_ROOT_OBSERVER,
+pub use prebuilt_executable::{
+    IndependentExecutable, PrebuiltExecutableRefusal, FRESH_PROCESS_RECOVERY,
+    OFFLINE_RECOVERY_OBSERVER, OFFLINE_ROOT_OBSERVER,
 };
 pub use test_directory::TemporaryDirectory;
 

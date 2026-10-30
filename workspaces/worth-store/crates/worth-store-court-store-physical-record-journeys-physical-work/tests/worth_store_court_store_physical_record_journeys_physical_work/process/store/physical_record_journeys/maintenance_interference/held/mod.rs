@@ -1,8 +1,26 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::maintenance_interference::held::*;
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRetirementDenial, worth_store::physical_runtime::RecordReadDenial};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::maintenance_interference::held::*;
+use worth_proof::TransitionOutcome;
+use {
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRetirementDenial,
+    worth_store::physical_runtime::RecordReadDenial,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::append, worth_store_testkit_store::physical_record_journeys::maintenance_interference::append_copies, worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint, worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize, worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits, worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement, worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files, worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_ids};
+use {
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append_copies,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_ids,
+};
 
 #[test]
 fn held_readers_block_retirement_without_scanning_every_root() {
@@ -87,28 +105,35 @@ fn held_readers_block_retirement_without_scanning_every_root() {
     let mut material = [0x6B; 32];
     material[..8].copy_from_slice(&ordinal.to_le_bytes());
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material),
+        )
         .unwrap();
     let prepared = match submission
         .rewrite_selected_inline_segment(
             policy,
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
             ),
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
         worth_proof::TransitionOutcome::Success(_) => {
             panic!("the first rewrite must still perform its publication")
         }
         worth_proof::TransitionOutcome::Denied(denial) => panic!("rewrite denied: {denial:?}"),
-        worth_proof::TransitionOutcome::Deferred(deferred) => panic!("rewrite deferred: {deferred:?}"),
+        worth_proof::TransitionOutcome::Deferred(deferred) => {
+            panic!("rewrite deferred: {deferred:?}")
+        }
         worth_proof::TransitionOutcome::Stale(stale) => panic!("rewrite stale: {stale:?}"),
-        worth_proof::TransitionOutcome::RebindRequired(rebind) => panic!("rewrite rebind: {rebind:?}"),
+        worth_proof::TransitionOutcome::RebindRequired(rebind) => {
+            panic!("rewrite rebind: {rebind:?}")
+        }
         worth_proof::TransitionOutcome::Failed(failure) => panic!("rewrite failed: {failure:?}"),
     };
     match prepared.execute() {

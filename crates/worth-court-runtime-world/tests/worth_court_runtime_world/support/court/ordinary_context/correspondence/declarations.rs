@@ -1,7 +1,12 @@
-pub(crate) use {crate::court::ordinary_context::relational, crate::court::ordinary_context::relational::CargoRecords, crate::court::ordinary_context::routing::RouteGraph, crate::court::ordinary_context::routing::INPUT};
-pub(crate) use {worth_foundational::facade::*};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_runtime_bridge::facade::*};
+pub(crate) use worth_foundational::facade::*;
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_runtime_bridge::facade::*;
+pub(crate) use {
+    crate::court::ordinary_context::relational,
+    crate::court::ordinary_context::relational::CargoRecords,
+    crate::court::ordinary_context::routing::RouteGraph,
+    crate::court::ordinary_context::routing::INPUT,
+};
 pub(crate) use {worth_signal::facade::PartitionToken, worth_signal::facade::SignalGraph};
 
 pub(crate) struct UnboundDelivery;
@@ -67,10 +72,13 @@ pub(crate) fn install(
     );
     let read = SnapshotReadContract::new(crate::court::ordinary_context::relational::contract());
     let aspect = BridgeAspectRegistrationId::from_stable_name("cargo-tonnes");
-    let worth_proof::TransitionOutcome::Success(node) = graph.admit_installed_node(nodes.source) else {
+    let worth_proof::TransitionOutcome::Success(node) = graph.admit_installed_node(nodes.source)
+    else {
         panic!("court declaration: source node")
     };
-    let worth_proof::TransitionOutcome::Success(slot) = graph.admit_installed_aspect(nodes.source, INPUT) else {
+    let worth_proof::TransitionOutcome::Success(slot) =
+        graph.admit_installed_aspect(nodes.source, INPUT)
+    else {
         panic!("court declaration: source aspect")
     };
     let target = BridgeSignalAspectTargetDeclaration::exact(

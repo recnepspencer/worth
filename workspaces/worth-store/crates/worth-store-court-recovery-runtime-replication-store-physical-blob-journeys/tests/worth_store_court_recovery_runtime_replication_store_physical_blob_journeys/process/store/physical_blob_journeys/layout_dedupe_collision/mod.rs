@@ -1,29 +1,48 @@
 #![cfg(all())]
 
-#[allow(unused_imports)] use crate::physical_blob_journeys::layout_dedupe_collision::*;
-use {std::num::NonZeroU64};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::layout_dedupe_collision::*;
+use worth_store_physical_format::decode_blob_record;
 
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobDedupeFailure, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimDeferral, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimFailure, worth_store::physical_runtime::LayoutRebuildLimits, worth_store::physical_runtime::PhysicalLayoutDenial, worth_store::physical_runtime::PhysicalMutationDeadline};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_contracts::DurableArtifactFamilyId};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobChunkFrameV1, worth_store_physical_format::BlobChunkOccurrenceV1, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::DecodedBlobChunkFrameV1};
+mod closed_store_evidence;
 
+use {
+    crate::layout_dedupe_collision::selected_evidence::persisted,
+    crate::layout_dedupe_collision::selected_evidence::selected_chunk,
+};
 
-use {crate::layout_dedupe_collision::selected_evidence::persisted, crate::layout_dedupe_collision::selected_evidence::selected_chunk};
-
-use {crate::physical_blob_journeys::blob_abort::limits as terminal_limits, crate::physical_blob_journeys::blob_crash::establish_recovery_frontier, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, crate::physical_blob_journeys::blob_reclaim::request as reclaim_request, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    crate::physical_blob_journeys::blob_abort::limits as terminal_limits,
+    crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    crate::physical_blob_journeys::blob_reclaim::request as reclaim_request,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn forced_unequal_candidate_is_durably_quarantined_and_rebuild_never_reuses_its_key() {
     let root = tempfile::tempdir().unwrap();
     let scope = admitted_blob_scope("c11.layout.dedupe.collision");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
-    let deadline = worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap();
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
+    let deadline =
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap();
     let original = vec![0x31; CHUNK_BYTES];
     let different = vec![0x72; CHUNK_BYTES];
     let digest = {
-        let occurrence = worth_store_physical_format::BlobChunkOccurrenceV1::new([1; 16], [2; 16], 0).unwrap();
-        let frame = worth_store_physical_format::BlobChunkFrameV1::encode(occurrence, CHUNK_BYTES as u32, &original).unwrap();
+        let occurrence =
+            worth_store_physical_format::BlobChunkOccurrenceV1::new([1; 16], [2; 16], 0).unwrap();
+        let frame = worth_store_physical_format::BlobChunkFrameV1::encode(
+            occurrence,
+            CHUNK_BYTES as u32,
+            &original,
+        )
+        .unwrap();
         worth_store_physical_format::DecodedBlobChunkFrameV1::decode(&frame)
             .unwrap()
             .stored_digest()
@@ -127,7 +146,9 @@ fn forced_unequal_candidate_is_durably_quarantined_and_rebuild_never_reuses_its_
         .any(|(record, _)| persisted(*record) == quarantine.conflicting_chunk()));
     assert!(after_reclaim.iter().any(|(_, frame)| matches!(
         decode_blob_record(frame),
-        Ok(worth_store_physical_format::BlobRecordV1::DedupeQuarantine(_))
+        Ok(worth_store_physical_format::BlobRecordV1::DedupeQuarantine(
+            _
+        ))
     )));
     assert!(matches!(
         serving
@@ -190,7 +211,8 @@ fn forced_unequal_candidate_is_durably_quarantined_and_rebuild_never_reuses_its_
         selected
             .iter()
             .filter(|(_, bytes)| match decode_blob_record(bytes) {
-                Ok(worth_store_physical_format::BlobRecordV1::Chunk(chunk)) => chunk.occurrence().session() == third_session,
+                Ok(worth_store_physical_format::BlobRecordV1::Chunk(chunk)) =>
+                    chunk.occurrence().session() == third_session,
                 _ => false,
             })
             .count(),
@@ -211,27 +233,18 @@ fn forced_unequal_candidate_is_durably_quarantined_and_rebuild_never_reuses_its_
     );
     reopened.close();
 
-    let report = observe_closed_store_named(
-        root.path(),
-        "c11-dedupe-quarantine",
-        "forced-unequal-candidate-reopen-rebuild",
-    );
-    let quarantines = report["artifacts"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .filter(|artifact| artifact["family"] == "blob_dedupe_quarantine")
-        .collect::<Vec<_>>();
-    assert_eq!(quarantines.len(), 1, "{report}");
-    assert_eq!(quarantines[0]["outcome"]["posture"], "intact", "{report}");
+    closed_store_evidence::assert_selected_quarantine_is_intact(root.path());
 }
 
 #[test]
 fn crash_gap_before_quarantine_leaves_reclaimable_orphan_and_original_reuse() {
     let root = tempfile::tempdir().unwrap();
     let scope = admitted_blob_scope("c11.layout.dedupe.quarantine-gap");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
-    let deadline = worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap();
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
+    let deadline =
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap();
     let original = vec![0x31; CHUNK_BYTES];
     let different = vec![0x72; CHUNK_BYTES];
     let serving = serving_from_initialization(root.path());
@@ -256,7 +269,9 @@ fn crash_gap_before_quarantine_leaves_reclaimable_orphan_and_original_reuse() {
     let source = selected
         .iter()
         .find_map(|(id, frame)| match decode_blob_record(frame) {
-            Ok(worth_store_physical_format::BlobRecordV1::Chunk(chunk)) => Some((persisted(*id), chunk.stored_digest())),
+            Ok(worth_store_physical_format::BlobRecordV1::Chunk(chunk)) => {
+                Some((persisted(*id), chunk.stored_digest()))
+            }
             _ => None,
         })
         .unwrap();
@@ -288,7 +303,9 @@ fn crash_gap_before_quarantine_leaves_reclaimable_orphan_and_original_reuse() {
     let orphan = selected
         .iter()
         .find_map(|(id, frame)| match decode_blob_record(frame) {
-            Ok(worth_store_physical_format::BlobRecordV1::Chunk(chunk)) if chunk.occurrence().session() == conflict_session => {
+            Ok(worth_store_physical_format::BlobRecordV1::Chunk(chunk))
+                if chunk.occurrence().session() == conflict_session =>
+            {
                 Some(persisted(*id))
             }
             _ => None,
@@ -296,7 +313,9 @@ fn crash_gap_before_quarantine_leaves_reclaimable_orphan_and_original_reuse() {
         .expect("conflicting original was selected before the fault");
     assert!(selected.iter().all(|(_, frame)| !matches!(
         decode_blob_record(frame),
-        Ok(worth_store_physical_format::BlobRecordV1::DedupeQuarantine(_))
+        Ok(worth_store_physical_format::BlobRecordV1::DedupeQuarantine(
+            _
+        ))
     )));
     serving.close();
 
@@ -344,7 +363,10 @@ fn crash_gap_before_quarantine_leaves_reclaimable_orphan_and_original_reuse() {
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert!(receipt.dropped_records().contains(&orphan));
     let selected = selected_blob_records(&reopened);
     assert!(!selected.iter().any(|(id, _)| persisted(*id) == orphan));
@@ -354,19 +376,11 @@ fn crash_gap_before_quarantine_leaves_reclaimable_orphan_and_original_reuse() {
     );
     assert!(selected.iter().all(|(_, frame)| !matches!(
         decode_blob_record(frame),
-        Ok(worth_store_physical_format::BlobRecordV1::DedupeQuarantine(_))
+        Ok(worth_store_physical_format::BlobRecordV1::DedupeQuarantine(
+            _
+        ))
     )));
     reopened.close();
 
-    let report = observe_closed_store_named(
-        root.path(),
-        "c11-dedupe-quarantine-gap",
-        "orphan-reclaimed-without-marker",
-    );
-    assert_eq!(report["completeness"], "complete", "{report}");
-    assert!(!report["artifacts"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .any(|artifact| artifact["family"] == "blob_dedupe_quarantine"));
+    closed_store_evidence::assert_reclaimed_orphan_has_no_quarantine(root.path());
 }

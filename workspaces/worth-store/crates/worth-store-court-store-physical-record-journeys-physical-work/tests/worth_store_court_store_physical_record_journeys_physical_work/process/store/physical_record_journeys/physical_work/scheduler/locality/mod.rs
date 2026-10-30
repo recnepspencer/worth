@@ -1,12 +1,32 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::scheduler::locality::*;
-use {tempfile::tempdir};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::scheduler::locality::*;
+use tempfile::tempdir;
+use worth_proof::TransitionOutcome;
+use worth_store_io_scheduler::QueueLocalityRelation;
 use {worth_foundational::aspects, worth_foundational::FoundationalPerformanceWorkClass};
-use {worth_proof::TransitionOutcome};
-use {worth_store::aspect_native::StoreAspectAuthorityInput, worth_store::aspect_native::StoreAspectBoundaryFact, worth_store::physical_runtime::PhysicalReadWorkRequest, worth_store::physical_runtime::PhysicalSchedulerDemand, worth_store::physical_runtime::PhysicalWorkProfileDeclaration, worth_store::physical_runtime::PhysicalWorkScope, worth_store::physical_runtime::PhysicalWorkSemanticBasis};
-use {worth_store_io_scheduler::QueueLocalityRelation};
-use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+use {
+    worth_store::aspect_native::StoreAspectAuthorityInput,
+    worth_store::aspect_native::StoreAspectBoundaryFact,
+    worth_store::physical_runtime::PhysicalReadWorkRequest,
+    worth_store::physical_runtime::PhysicalSchedulerDemand,
+    worth_store::physical_runtime::PhysicalWorkProfileDeclaration,
+    worth_store::physical_runtime::PhysicalWorkScope,
+    worth_store::physical_runtime::PhysicalWorkSemanticBasis,
+};
+use {
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::admitted_contract, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::security_scope, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::validated_value, worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt_for, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::ready_read_work, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::secure_demand};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::admitted_contract,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::security_scope,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::validated_value,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::ready_read_work,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::secure_demand,
+    worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt_for,
+};
 
 #[test]
 fn multi_artifact_store_scope_reaches_scheduler_with_exact_structural_relations() {
@@ -24,9 +44,15 @@ fn multi_artifact_store_scope_reaches_scheduler_with_exact_structural_relations(
         worth_store::aspect_native::StoreAspectAuthorityInput::new(state, witness),
     )
     .unwrap();
-    let basis = worth_store::physical_runtime::PhysicalWorkSemanticBasis::projection(fact, admission.clone()).unwrap();
+    let basis = worth_store::physical_runtime::PhysicalWorkSemanticBasis::projection(
+        fact,
+        admission.clone(),
+    )
+    .unwrap();
     let security = security_scope(witness);
-    let profile = worth_store::physical_runtime::PhysicalWorkProfileDeclaration::new(security, [admission]).unwrap();
+    let profile =
+        worth_store::physical_runtime::PhysicalWorkProfileDeclaration::new(security, [admission])
+            .unwrap();
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
     let before = serving.media_counters();
 
@@ -34,8 +60,16 @@ fn multi_artifact_store_scope_reaches_scheduler_with_exact_structural_relations(
         &serving,
         worth_store::physical_runtime::PhysicalReadWorkRequest::new(
             worth_store::physical_runtime::PhysicalWorkScope::batch([
-                coordinate(worth_store_physical_format::RecordArtifactFile::BootstrapCatalog, 0, 8),
-                coordinate(worth_store_physical_format::RecordArtifactFile::RootManifest { generation: 1 }, 32, 8),
+                coordinate(
+                    worth_store_physical_format::RecordArtifactFile::BootstrapCatalog,
+                    0,
+                    8,
+                ),
+                coordinate(
+                    worth_store_physical_format::RecordArtifactFile::RootManifest { generation: 1 },
+                    32,
+                    8,
+                ),
             ])
             .unwrap(),
             basis.clone(),
@@ -60,7 +94,11 @@ fn multi_artifact_store_scope_reaches_scheduler_with_exact_structural_relations(
         &serving,
         worth_store::physical_runtime::PhysicalReadWorkRequest::new(
             worth_store::physical_runtime::PhysicalWorkScope::batch([
-                coordinate(worth_store_physical_format::RecordArtifactFile::BootstrapCatalog, 8, 8),
+                coordinate(
+                    worth_store_physical_format::RecordArtifactFile::BootstrapCatalog,
+                    8,
+                    8,
+                ),
                 coordinate(
                     worth_store_physical_format::RecordArtifactFile::Segment {
                         segment: 3,

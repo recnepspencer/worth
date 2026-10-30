@@ -1,12 +1,20 @@
-#[allow(unused_imports)] use crate::signal_owner_services::ordinary_context::signal_world::facade::*;
-pub(crate) use {worth_signal::facade::branch::SignalBranchBasisReadmissionDenial, worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerLifecycleObservation};
+#[allow(unused_imports)]
+use crate::signal_owner_services::ordinary_context::signal_world::facade::*;
+pub(crate) use {
+    worth_signal::facade::branch::SignalBranchBasisReadmissionDenial,
+    worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+    worth_signal::facade::branch::SignalOwnerLifecycleObservation,
+};
 
-pub(crate) use {crate::signal_owner_services::ordinary_context::signal_world::observation::neutral_basis};
-pub(crate) use {crate::signal_owner_services::ordinary_context::signal_world::world::CargoRoutingWorld};
+pub(crate) use crate::signal_owner_services::ordinary_context::signal_world::observation::neutral_basis;
+pub(crate) use crate::signal_owner_services::ordinary_context::signal_world::world::CargoRoutingWorld;
 
 #[test]
 fn concrete_facade_ports_compile_and_cover_the_owner_method_shapes() {
-    let world = crate::signal_owner_services::ordinary_context::signal_world::world::CargoRoutingWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::signal_world::world::CargoRoutingWorld::new(
+        );
     let bundle = world.services.clone();
     assert_send_sync_clone(&bundle);
 
@@ -52,7 +60,10 @@ fn concrete_facade_ports_compile_and_cover_the_owner_method_shapes() {
         .expect("the concrete mutation facade issues a real fork");
     let (_, child_basis) = fork.into_parts();
     let captured = mutation
-        .capture_exact(&child_basis, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token())
+        .capture_exact(
+            &child_basis,
+            &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+        )
         .expect("the concrete mutation facade captures a real snapshot");
     let (snapshot, captured_basis) = captured.into_parts();
     let restored = mutation
@@ -67,7 +78,9 @@ fn concrete_facade_ports_compile_and_cover_the_owner_method_shapes() {
         neutral_basis(&captured_basis).generation + 1
     );
 
-    let foreign = crate::signal_owner_services::ordinary_context::signal_world::world::CargoRoutingWorld::new();
+    let foreign =
+        crate::signal_owner_services::ordinary_context::signal_world::world::CargoRoutingWorld::new(
+        );
     assert!(matches!(
         basis.readmit_exact(&reference, foreign.main_basis.descriptor()),
         Err(worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::OwnerMismatch { .. })

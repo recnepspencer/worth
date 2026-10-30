@@ -17,6 +17,7 @@
 "worth-store" = { "path" = "../worth-store" }
 "worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
 "worth-store-relational" = { "path" = "../worth-store-relational", "features" = ["certification-test-authority"] }
+"worth-store-test-support" = { "path" = "../worth-store-test-support", "default-features" = false }
 "worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
 
 [[test]]

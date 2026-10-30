@@ -23,10 +23,6 @@ fn smoke_package(package: &str, cases: &[&SmokeCase], workspace_root: &Path) -> 
         .iter()
         .map(|case| case.target)
         .collect::<BTreeSet<_>>();
-    let features = cases
-        .iter()
-        .filter_map(|case| case.feature)
-        .collect::<BTreeSet<_>>();
     let selectors = cases
         .iter()
         .map(|case| {
@@ -40,16 +36,11 @@ fn smoke_package(package: &str, cases: &[&SmokeCase], workspace_root: &Path) -> 
     TestExecutionUnit::cargo(
         format!("smoke::{package}"),
         workspace_root,
-        smoke_arguments(package, targets, features, selectors),
+        smoke_arguments(package, targets, selectors),
     )
 }
 
-fn smoke_arguments(
-    package: &str,
-    targets: BTreeSet<&str>,
-    features: BTreeSet<&str>,
-    selectors: Vec<String>,
-) -> Vec<String> {
+fn smoke_arguments(package: &str, targets: BTreeSet<&str>, selectors: Vec<String>) -> Vec<String> {
     let mut arguments = vec![
         "nextest".into(),
         "run".into(),
@@ -60,9 +51,6 @@ fn smoke_arguments(
     ];
     for target in targets {
         arguments.extend(["--test".into(), target.into()]);
-    }
-    for feature in features {
-        arguments.extend(["--features".into(), feature.into()]);
     }
     arguments.extend(["--filterset".into(), selectors.join(" + ")]);
     arguments

@@ -1,7 +1,23 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::speculative_residency::outcomes::*;
-use {worth_store::physical_runtime::PhysicalPrefetchIntent, worth_store::physical_runtime::PhysicalPrefetchOutcome, worth_store::physical_runtime::PhysicalReadAheadFrameOutcome, worth_store::physical_runtime::PhysicalReadAheadIntent, worth_store::physical_runtime::PhysicalReadAheadOutcome, worth_store::physical_runtime::PhysicalSpeculativeWorkKind, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkSignalFamily};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::speculative_residency::outcomes::*;
+use {
+    worth_store::physical_runtime::PhysicalPrefetchIntent,
+    worth_store::physical_runtime::PhysicalPrefetchOutcome,
+    worth_store::physical_runtime::PhysicalReadAheadFrameOutcome,
+    worth_store::physical_runtime::PhysicalReadAheadIntent,
+    worth_store::physical_runtime::PhysicalReadAheadOutcome,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkSignalFamily,
+};
 
-use {crate::physical_record_journeys::physical_work::speculative_residency::fixture::causal_record, crate::physical_record_journeys::physical_work::speculative_residency::fixture::coordinate, crate::physical_record_journeys::physical_work::speculative_residency::fixture::initialize_store, crate::physical_record_journeys::physical_work::speculative_residency::fixture::open_store, crate::physical_record_journeys::physical_work::speculative_residency::fixture::positioned_reads};
+use {
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::causal_record,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::coordinate,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::initialize_store,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::open_store,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::positioned_reads,
+};
 
 #[test]
 fn cold_hot_and_mixed_speculation_reconcile_work_media_and_residency_truth() {
@@ -16,7 +32,9 @@ fn cold_hot_and_mixed_speculation_reconcile_work_media_and_residency_truth() {
     let media_before = positioned_reads(&serving);
     let causal_before = serving.physical_work_observer().causal().records().len();
     let counters_before = residency.counters();
-    let cold_work = match residency.prefetch(worth_store::physical_runtime::PhysicalPrefetchIntent::new(first)) {
+    let cold_work = match residency.prefetch(
+        worth_store::physical_runtime::PhysicalPrefetchIntent::new(first),
+    ) {
         worth_store::physical_runtime::PhysicalPrefetchOutcome::Loaded { coordinate, work } => {
             assert_eq!(coordinate, first);
             work
@@ -49,7 +67,9 @@ fn cold_hot_and_mixed_speculation_reconcile_work_media_and_residency_truth() {
     let hot_work = serving.physical_work_counters();
     let hot_causal = serving.physical_work_observer().causal().records().len();
     assert_eq!(
-        residency.prefetch(worth_store::physical_runtime::PhysicalPrefetchIntent::new(first)),
+        residency.prefetch(worth_store::physical_runtime::PhysicalPrefetchIntent::new(
+            first
+        )),
         worth_store::physical_runtime::PhysicalPrefetchOutcome::Hit { coordinate: first }
     );
     assert_eq!(serving.media_counters(), hot_media);
@@ -63,7 +83,9 @@ fn cold_hot_and_mixed_speculation_reconcile_work_media_and_residency_truth() {
     let read_ahead_before = residency.counters();
     let mixed_media = positioned_reads(&serving);
     let coordinates = [first, second];
-    let batch = match residency.read_ahead(worth_store::physical_runtime::PhysicalReadAheadIntent::new(&coordinates).unwrap()) {
+    let batch = match residency.read_ahead(
+        worth_store::physical_runtime::PhysicalReadAheadIntent::new(&coordinates).unwrap(),
+    ) {
         worth_store::physical_runtime::PhysicalReadAheadOutcome::Complete(batch) => batch,
         outcome => panic!("mixed read-ahead did not complete exactly: {outcome:?}"),
     };

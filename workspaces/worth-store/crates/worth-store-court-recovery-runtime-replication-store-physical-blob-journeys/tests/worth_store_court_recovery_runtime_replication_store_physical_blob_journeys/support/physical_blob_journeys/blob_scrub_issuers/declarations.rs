@@ -1,13 +1,34 @@
 pub(crate) use {std::fs, std::num::NonZeroU64, std::path::Path, std::time::Duration};
 
+pub(crate) use worth_store_blob_chunks::BlobChunkSize;
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobScrubTargetFailure, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest, worth_store::physical_runtime::PhysicalIntegrityScrubSource, worth_store::physical_runtime::PhysicalMutationDeadline};
-pub(crate) use {worth_store_blob_chunks::BlobChunkSize};
-pub(crate) use {worth_store_physical_format::BlobGenerationPublicationV1, worth_store_physical_format::BlobRecordKind, worth_store_physical_format::BlobTreeNodeV1, worth_store_physical_format::PersistedRecordIdentity};
-pub(crate) use {worth_store_physical_integrity::PhysicalIntegrityObservationOutcome, worth_store_physical_integrity::PhysicalIntegrityRejection};
+pub(crate) use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobScrubTargetFailure,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest,
+    worth_store::physical_runtime::PhysicalIntegrityScrubSource,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
+pub(crate) use {
+    worth_store_physical_format::BlobGenerationPublicationV1,
+    worth_store_physical_format::BlobRecordKind, worth_store_physical_format::BlobTreeNodeV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
+pub(crate) use {
+    worth_store_physical_integrity::PhysicalIntegrityObservationOutcome,
+    worth_store_physical_integrity::PhysicalIntegrityRejection,
+};
 
-pub(crate) use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named};
-pub(crate) use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+pub(crate) use crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named;
+pub(crate) use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 pub(crate) const CHUNK_BYTES: usize = 64 * 1024;
 pub(crate) const C5_HEADER: usize = 48;
@@ -49,14 +70,19 @@ pub(crate) fn assert_damaged_selected_target(
     )
     .unwrap();
     let mut scrub = serving.start_physical_integrity_scrub(request).unwrap();
-    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(window) = scrub.next_window() else {
+    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(
+        window,
+    ) = scrub.next_window()
+    else {
         panic!("selected target must inspect one bounded window")
     };
     assert_eq!(window.scope.blob_record_identity().unwrap().0, record);
     assert_eq!(window.scope.blob_record_identity().unwrap().1, kind);
     assert!(matches!(
         window.outcome,
-        worth_store_physical_integrity::PhysicalIntegrityObservationOutcome::Rejected(worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(_))
+        worth_store_physical_integrity::PhysicalIntegrityObservationOutcome::Rejected(
+            worth_store_physical_integrity::PhysicalIntegrityRejection::Damaged(_)
+        )
     ));
 }
 
@@ -122,7 +148,8 @@ pub(crate) fn mutate_selected_inner(root: &Path, kind: BlobRecordKind, mutate: i
                 .expect("resealed publication remains C.11-valid");
         }
         worth_store_physical_format::BlobRecordKind::TreeNode => {
-            worth_store_physical_format::BlobTreeNodeV1::decode(frame).expect("resealed tree node remains C.11-valid");
+            worth_store_physical_format::BlobTreeNodeV1::decode(frame)
+                .expect("resealed tree node remains C.11-valid");
         }
         _ => unreachable!("fixture only mutates publication or tree node"),
     }

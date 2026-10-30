@@ -1,9 +1,13 @@
 //! Open identity, incarnation, pre-effect refusals and independent OS contention.
-#[allow(unused_imports)] use crate::incarnation::*;
+#[allow(unused_imports)]
+use crate::incarnation::*;
+use worth_execution::ExecutionRequest;
 use {crate::durable_run::open, crate::workload};
 use {std::fs, std::path::Path, std::process::Command};
-use {worth_execution::ExecutionRequest};
-use {worth_store_relational::RelationalStoreHomeOpenRefusal as Refusal, worth_store_relational::RelationalStorePhysicalRefusalKind as Kind};
+use {
+    worth_store_relational::RelationalStoreHomeOpenRefusal as Refusal,
+    worth_store_relational::RelationalStorePhysicalRefusalKind as Kind,
+};
 
 #[test]
 fn contention_observer_child() {
@@ -75,8 +79,12 @@ fn schema_eleven_refuses_before_any_media_effect() {
 
 #[test]
 fn retired_descriptor_versions_and_the_retired_anchor_refuse_without_advancing() {
-    use {worth_store::physical_runtime::AnchoredRecordName, worth_store::physical_runtime::AnchoredRecordPublication, worth_store::physical_runtime::PhysicalMutationDeadline};
-    use {worth_store_relational::RelationalStoreHomeDescriptorRefusal as Descriptor};
+    use worth_store_relational::RelationalStoreHomeDescriptorRefusal as Descriptor;
+    use {
+        worth_store::physical_runtime::AnchoredRecordName,
+        worth_store::physical_runtime::AnchoredRecordPublication,
+        worth_store::physical_runtime::PhysicalMutationDeadline,
+    };
     let request = crate::workload::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&request);
     for retired_anchor in [false, true] {
@@ -107,9 +115,11 @@ fn retired_descriptor_versions_and_the_retired_anchor_refuse_without_advancing()
         home.close();
         assert!(matches!(
             open(&location, &execution),
-            Err(worth_store_relational::RelationalStoreHomeOpenRefusal::Descriptor(
-                Descriptor::UnsupportedDescriptorVersion { observed: 1 }
-            ))
+            Err(
+                worth_store_relational::RelationalStoreHomeOpenRefusal::Descriptor(
+                    Descriptor::UnsupportedDescriptorVersion { observed: 1 }
+                )
+            )
         ));
     }
 }

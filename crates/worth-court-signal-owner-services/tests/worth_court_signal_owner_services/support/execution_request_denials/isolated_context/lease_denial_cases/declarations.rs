@@ -1,8 +1,18 @@
 // Authority-owned admission cases shared by downstream conversion tests.
 //! Authority-owned admission cases shared by downstream conversion tests.
 pub(crate) use {std::num::NonZeroUsize, std::sync::OnceLock};
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionResourceLease, worth_execution::ExecutionScan, worth_execution::ExecutionWorkCeiling, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapStop, worth_execution::ScanOutcome};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::EquivalenceContractId, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionResourceLease,
+    worth_execution::ExecutionScan, worth_execution::ExecutionWorkCeiling,
+    worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
+    worth_execution::MapStop, worth_execution::ScanOutcome,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::EquivalenceContractId,
+    worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture,
+    worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity,
+};
 
 pub(crate) fn authority() -> &'static ExecutionAuthority {
     static OWNER: OnceLock<ExecutionAuthority> = std::sync::OnceLock::new();
@@ -38,7 +48,11 @@ pub(crate) fn scan() -> ExecutionScan<()> {
     let key = worth_foundational::PartitionIdentity::new(1);
     worth_execution::ExecutionScan::try_from_ordered(vec![key], vec![(key, ())]).unwrap()
 }
-pub(crate) fn refused(lease: Option<&ExecutionResourceLease<'_>>, state: u64, scratch: u64) -> LeaseDenial {
+pub(crate) fn refused(
+    lease: Option<&ExecutionResourceLease<'_>>,
+    state: u64,
+    scratch: u64,
+) -> LeaseDenial {
     let result = scan().run(lease, (), state, 0, 0, scratch, |_, _, _| {
         Ok::<_, MapKernelFailure<()>>(((), ()))
     });

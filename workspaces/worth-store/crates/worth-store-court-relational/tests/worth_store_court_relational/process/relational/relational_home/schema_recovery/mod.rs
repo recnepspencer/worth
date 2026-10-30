@@ -6,16 +6,34 @@
 //! boundary its own commits recorded. A registry with other kind contracts
 //! refuses before service.
 
-#[allow(unused_imports)] use crate::schema_recovery::*;
-use {worth_execution::ExecutionRequest};
-use {worth_relational::facade::history::BranchId};
-use {worth_relational::facade::identity::KindId};
-use {worth_relational::facade::runtime::RelationalRuntimeApi};
-use {worth_relational::facade::schema::EntityKindRegistration, worth_relational::facade::schema::KindAspectContractDeclarations, worth_relational::facade::schema::RelationalSchemaRegistry, worth_relational::facade::schema::SchemaId, worth_relational::facade::schema::SchemaVersionId};
-use {worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeOpenRefusal, worth_store_relational::RelationalStoreHomeRequest};
+#[allow(unused_imports)]
+use crate::schema_recovery::*;
+use worth_execution::ExecutionRequest;
+use worth_relational::facade::history::BranchId;
+use worth_relational::facade::identity::KindId;
+use worth_relational::facade::runtime::RelationalRuntimeApi;
+use {
+    worth_relational::facade::schema::EntityKindRegistration,
+    worth_relational::facade::schema::KindAspectContractDeclarations,
+    worth_relational::facade::schema::RelationalSchemaRegistry,
+    worth_relational::facade::schema::SchemaId, worth_relational::facade::schema::SchemaVersionId,
+};
+use {
+    worth_store_relational::RelationalStoreHome,
+    worth_store_relational::RelationalStoreHomeOpenRefusal,
+    worth_store_relational::RelationalStoreHomeRequest,
+};
 
-use {crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::open, crate::durable_run::open_declaring, crate::durable_run::recorded_schema, crate::durable_run::served_schema, crate::durable_run::steps_after, crate::durable_run::steps_before};
-use {crate::schema_transition::basis_of, crate::schema_transition::SOURCE, crate::schema_transition::TARGET};
+use {
+    crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::open,
+    crate::durable_run::open_declaring, crate::durable_run::recorded_schema,
+    crate::durable_run::served_schema, crate::durable_run::steps_after,
+    crate::durable_run::steps_before,
+};
+use {
+    crate::schema_transition::basis_of, crate::schema_transition::SOURCE,
+    crate::schema_transition::TARGET,
+};
 use {crate::workload, crate::workload::Script};
 
 #[test]
@@ -99,7 +117,10 @@ fn a_registry_with_other_kind_contracts_refuses_before_service() {
         &execution,
     );
     assert!(
-        matches!(refused, Err(worth_store_relational::RelationalStoreHomeOpenRefusal::Readmission(_))),
+        matches!(
+            refused,
+            Err(worth_store_relational::RelationalStoreHomeOpenRefusal::Readmission(_))
+        ),
         "{:?}",
         refused.map(|_| ())
     );

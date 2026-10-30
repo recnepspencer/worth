@@ -1,5 +1,31 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::identities::authority_identity_boundaries::*;
-use {worth_foundational::admit_canonical_sequence_digest_derivation, worth_foundational::admit_foundational_authority_identity, worth_foundational::admit_foundational_external_identity_token, worth_foundational::derive_canonical_digest, worth_foundational::derive_foundational_digest_identity_evidence, worth_foundational::prepare_canonical_basis_sequence, worth_foundational::project_foundational_identity, worth_foundational::readmit_foundational_authority_identity, worth_foundational::readmit_revalidated_foundational_authority_identity, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalDigestAlgorithmId, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalSingleSequenceDigestAlgorithmSlot, worth_foundational::CanonicalizationRuleVersion, worth_foundational::FoundationalAdmittedIdentityValue, worth_foundational::FoundationalAuthorityIdentity, worth_foundational::FoundationalDigestIdentityEvidence, worth_foundational::FoundationalExternalIdentityToken, worth_foundational::FoundationalIdentityBasis, worth_foundational::FoundationalIdentityDigestDerivationEvidence, worth_foundational::FoundationalIdentityKind, worth_foundational::FoundationalIdentityProjectionEvidence, worth_foundational::FoundationalProjectionIdentity};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::identities::authority_identity_boundaries::*;
+use {
+    worth_foundational::admit_canonical_sequence_digest_derivation,
+    worth_foundational::admit_foundational_authority_identity,
+    worth_foundational::admit_foundational_external_identity_token,
+    worth_foundational::derive_canonical_digest,
+    worth_foundational::derive_foundational_digest_identity_evidence,
+    worth_foundational::prepare_canonical_basis_sequence,
+    worth_foundational::project_foundational_identity,
+    worth_foundational::readmit_foundational_authority_identity,
+    worth_foundational::readmit_revalidated_foundational_authority_identity,
+    worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry,
+    worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus,
+    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalDigestAlgorithmId,
+    worth_foundational::CanonicalIntegerWidth,
+    worth_foundational::CanonicalSingleSequenceDigestAlgorithmSlot,
+    worth_foundational::CanonicalizationRuleVersion,
+    worth_foundational::FoundationalAdmittedIdentityValue,
+    worth_foundational::FoundationalAuthorityIdentity,
+    worth_foundational::FoundationalDigestIdentityEvidence,
+    worth_foundational::FoundationalExternalIdentityToken,
+    worth_foundational::FoundationalIdentityBasis,
+    worth_foundational::FoundationalIdentityDigestDerivationEvidence,
+    worth_foundational::FoundationalIdentityKind,
+    worth_foundational::FoundationalIdentityProjectionEvidence,
+    worth_foundational::FoundationalProjectionIdentity,
+};
 use {worth_proof::AuthorityMarker, worth_proof::AuthorityWitness, worth_proof::TransitionOutcome};
 
 #[test]
@@ -30,7 +56,9 @@ fn authority_identity_projects_without_losing_authority_type() {
             authority(),
         );
     let projection: FoundationalProjectionIdentity<String, QueryCommitIdentityKind> =
-        worth_foundational::FoundationalProjectionIdentity::from_projection_evidence(projection_evidence);
+        worth_foundational::FoundationalProjectionIdentity::from_projection_evidence(
+            projection_evidence,
+        );
 
     assert_eq!(projection.label(), "query:commit:42");
     assert_eq!(identity.value(), &42);
@@ -70,7 +98,9 @@ fn digest_evidence_stays_evidence_not_authority() {
             authority(),
         );
     let evidence: QueryCommitDigestEvidence =
-        worth_foundational::FoundationalDigestIdentityEvidence::from_derivation_evidence(derivation_evidence);
+        worth_foundational::FoundationalDigestIdentityEvidence::from_derivation_evidence(
+            derivation_evidence,
+        );
 
     assert_eq!(evidence.digest().metadata().entry_count(), 1);
 }

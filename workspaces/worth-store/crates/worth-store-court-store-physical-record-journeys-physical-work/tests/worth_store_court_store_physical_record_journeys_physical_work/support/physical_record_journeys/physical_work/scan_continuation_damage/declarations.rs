@@ -1,11 +1,35 @@
 pub(crate) use {std::path::Path, std::time::Duration, std::time::Instant};
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::PhysicalManifestCapacityTransition, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationDenial, worth_store::physical_runtime::PhysicalSignalAspectBindingDigest, worth_store::physical_runtime::PhysicalSignalAspectBindingObservation, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkRecoveryDisposition, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordAppendDenial, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordScanDenial, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_backend::MediaCounterSnapshot, worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationDenial,
+    worth_store::physical_runtime::PhysicalSignalAspectBindingDigest,
+    worth_store::physical_runtime::PhysicalSignalAspectBindingObservation,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkRecoveryDisposition,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordAppendDenial,
+    worth_store::physical_runtime::RecordCountLimit,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordScanDenial,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanRequest,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_backend::MediaCounterSnapshot,
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-pub(crate) use {worth_store_testkit_store::durable_publication};
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+pub(crate) use worth_store_testkit_store::durable_publication;
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+};
 
 pub(crate) const PAYLOAD: &[u8] = b"scan continuation damage";
 pub(crate) const SCAN_PARTITION: &str = "store.physical.record.scan";
@@ -16,7 +40,9 @@ pub(crate) struct ScanCalibration {
     pub(crate) after_scan_admission: u64,
 }
 
-pub(crate) fn open_faulted(calibration: ScanCalibration) -> (tempfile::TempDir, ServingPhysicalRuntime) {
+pub(crate) fn open_faulted(
+    calibration: ScanCalibration,
+) -> (tempfile::TempDir, ServingPhysicalRuntime) {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("faulted");
     seed(&root);
@@ -40,7 +66,10 @@ pub(crate) fn fail_first_continuation(
     let mut scan = serving
         .records()
         .expect("read protection admission")
-        .scan(worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(1).unwrap()))
+        .scan(
+            worth_store::physical_runtime::RecordScanRequest::from_start()
+                .with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(1).unwrap()),
+        )
         .expect("the fault must occur after scan admission");
     assert_eq!(
         identified_reads(serving),
@@ -57,7 +86,9 @@ pub(crate) fn fail_first_continuation(
     };
     assert_eq!(
         error.denial(),
-        worth_store::physical_runtime::RecordScanDenial::RecordRead(worth_store::physical_runtime::RecordReadDenial::ArtifactDamaged)
+        worth_store::physical_runtime::RecordScanDenial::RecordRead(
+            worth_store::physical_runtime::RecordReadDenial::ArtifactDamaged
+        )
     );
     assert!(
         error.observation().physical_work_count() > 0,
@@ -105,8 +136,10 @@ pub(crate) fn assert_failed_scan_route(serving: &ServingPhysicalRuntime, causal_
     let failed = records[causal_start..]
         .iter()
         .filter(|record| {
-            record.operation() == worth_store::physical_runtime::PhysicalWorkOperationFamily::ArtifactRangeRead
-                && record.effect_fate() == worth_store::physical_runtime::PhysicalWorkEffectFate::ReadIncomplete
+            record.operation()
+                == worth_store::physical_runtime::PhysicalWorkOperationFamily::ArtifactRangeRead
+                && record.effect_fate()
+                    == worth_store::physical_runtime::PhysicalWorkEffectFate::ReadIncomplete
         })
         .collect::<Vec<_>>();
     assert_eq!(failed.len(), 1);
@@ -130,12 +163,17 @@ pub(crate) fn assert_mutation_fenced(serving: &ServingPhysicalRuntime) {
             placement,
             worth_store::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
             worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([215; 32]),
-            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"must remain unfired"]).unwrap(),
+            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+                b"must remain unfired"
+            ])
+            .unwrap(),
         )
         .into_raw(),
-        worth_proof::TransitionOutcome::Denied(worth_store::physical_runtime::PhysicalMutationPreparationDenial::RecordAppend(
-            worth_store::physical_runtime::RecordAppendDenial::ServingRequiresInspection
-        ))
+        worth_proof::TransitionOutcome::Denied(
+            worth_store::physical_runtime::PhysicalMutationPreparationDenial::RecordAppend(
+                worth_store::physical_runtime::RecordAppendDenial::ServingRequiresInspection
+            )
+        )
     ));
     assert_eq!(
         serving.media_counters(),
@@ -153,7 +191,10 @@ pub(crate) fn calibrate() -> ScanCalibration {
     let mut scan = serving
         .records()
         .expect("read protection admission")
-        .scan(worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(1).unwrap()))
+        .scan(
+            worth_store::physical_runtime::RecordScanRequest::from_start()
+                .with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(1).unwrap()),
+        )
         .unwrap();
     let after_scan_admission = identified_reads(&serving);
     let mut scratch = vec![0_u8; PAYLOAD.len()];
@@ -180,16 +221,19 @@ pub(crate) fn seed(root: &Path) {
     worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("scan-continuation-damage", 1),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "scan-continuation-damage",
+            1,
+        ),
         worth_store::physical_runtime::RecordAppendBatch::try_from_iter([PAYLOAD]).unwrap(),
     );
     serving.close();
 }
 
 pub(crate) fn identified_reads(serving: &ServingPhysicalRuntime) -> u64 {
-    serving
-        .media_counters()
-        .identified_operation_attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
+    serving.media_counters().identified_operation_attempts_for(
+        worth_store_physical_backend::MediaOperationRole::PositionedRead,
+    )
 }
 
 pub(crate) fn signal(

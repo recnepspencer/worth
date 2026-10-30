@@ -1,6 +1,17 @@
-use {worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::PhysicalRetirementDenial};
+use {
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::PhysicalRetirementDenial,
+};
 
-use {crate::physical_blob_journeys::blob_crash::establish_recovery_frontier, crate::physical_blob_journeys::blob_reclaim::abandoned_prefix, crate::physical_blob_journeys::blob_reclaim::request, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
+    crate::physical_blob_journeys::blob_reclaim::abandoned_prefix,
+    crate::physical_blob_journeys::blob_reclaim::request,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
 fn selected_payload_drop_reopens_with_its_unretired_native_extent() {
@@ -16,7 +27,10 @@ fn selected_payload_drop_reopens_with_its_unretired_native_extent() {
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(frontier.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        frontier.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert_eq!(frontier.remaining_payload_records(), 2);
 
     serving.certification_owe_before_retirement_barrier();
@@ -27,12 +41,17 @@ fn selected_payload_drop_reopens_with_its_unretired_native_extent() {
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(payload.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        payload.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert_eq!(payload.dropped_records().len(), 1);
     assert_eq!(payload.displaced_extents().len(), 1);
     assert_eq!(
         payload.retirement(),
-        worth_store::physical_runtime::BlobReclaimRetirement::Pending(worth_store::physical_runtime::PhysicalRetirementDenial::Waiting)
+        worth_store::physical_runtime::BlobReclaimRetirement::Pending(
+            worth_store::physical_runtime::PhysicalRetirementDenial::Waiting
+        )
     );
     assert_eq!(payload.bytes_released(), 0);
     let displaced_range = payload.displaced_extents()[0].range();

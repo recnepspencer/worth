@@ -1,5 +1,8 @@
-#[allow(unused_imports)] use crate::court::ordinary_context::exact_history::*;
-pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::CompositeSupplyChainCourt};
+#[allow(unused_imports)]
+use crate::court::ordinary_context::exact_history::*;
+pub(crate) use {
+    crate::court::ordinary_context::CompositeSupplyChainCourt, worth_runtime_world::facade::*,
+};
 
 #[test]
 fn exact_product_pages_keep_the_pinned_fork_ancestry_and_stage_owner_positions() {

@@ -1,4 +1,7 @@
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::observe_artifact_at_path, crate::history::parent_oracle::evidence_digest::DigestBuilder};
+pub(crate) use {
+    crate::history::parent_oracle::evidence_digest::DigestBuilder,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::observe_artifact_at_path,
+};
 
 pub(crate) struct CheckpointEvidence {
     pub(crate) count: u64,
@@ -19,7 +22,9 @@ pub(crate) fn derive(files: &[(String, Vec<u8>)]) -> CheckpointEvidence {
     let mut covered_end = None;
     let mut redo_lsn = None;
     let mut durable_lsn = None;
-    let mut digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.checkpoint-coverage.v1");
+    let mut digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.checkpoint-coverage.v1",
+    );
     for (path, bytes) in files {
         if let Some(value) = observe_artifact_at_path(path, bytes).checkpoint {
             count += 1;

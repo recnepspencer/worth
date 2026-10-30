@@ -22,7 +22,7 @@ fn obtain_independent_ports(
     )
 }
 
-fn main() {
+pub(crate) fn main() {
     assert_clone_send_sync::<RelationalPreparationPort>();
     assert_clone_send_sync::<RelationalForkPort>();
     assert_clone_send_sync::<RelationalPublicationPort>();

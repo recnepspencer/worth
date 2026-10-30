@@ -1,13 +1,17 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PreparedPhysicalMutation};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryLimits};
-pub(crate) use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store_recovery_runtime::PhysicalRecoveryLimits;
+pub(crate) use worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PreparedPhysicalMutation,
+};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration};
-
-
+pub(crate) use worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration;
 
 pub(crate) fn prepare_rewrite(
     world: &PhysicalResidencyStoreWorld,
@@ -15,21 +19,24 @@ pub(crate) fn prepare_rewrite(
 ) -> PreparedPhysicalMutation {
     let submission = world.serving().record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material),
+        )
         .unwrap();
     match submission
         .rewrite_selected_inline_segment(
             world.placement(),
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(1_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(1_000)
+                    .unwrap(),
             ),
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
         _ => panic!("rewrite preparation must succeed"),
     }
 }

@@ -13,7 +13,10 @@ fn equivalence_golden_artifact_fixes_exact_basis_semantics_for_reordered_entries
                 equivalent.equivalence_basis(),
                 worth_foundational::CanonicalEquivalenceBasis::ExactCanonicalBasis
             );
-            assert_eq!(equivalent.domain(), worth_foundational::CanonicalBasisDomain::Value);
+            assert_eq!(
+                equivalent.domain(),
+                worth_foundational::CanonicalBasisDomain::Value
+            );
             assert_eq!(equivalent.entry_count(), 2);
         }
         other => panic!("golden equivalence fixture changed unexpectedly: {other:?}"),
@@ -35,17 +38,30 @@ fn mismatch_golden_artifact_fixes_first_locus_and_kind_semantics() {
         ]),
     ) {
         worth_foundational::CanonicalComparisonOutcome::Mismatched(mismatch) => {
-            assert_eq!(mismatch.kind(), worth_foundational::CanonicalMismatchKind::ValueMismatch);
+            assert_eq!(
+                mismatch.kind(),
+                worth_foundational::CanonicalMismatchKind::ValueMismatch
+            );
             assert_eq!(
                 mismatch.left_locus(),
-                Some(&worth_foundational::CanonicalBasisLocus::Named("beta".into()))
+                Some(&worth_foundational::CanonicalBasisLocus::Named(
+                    "beta".into()
+                ))
             );
             assert_eq!(
                 mismatch.right_locus(),
-                Some(&worth_foundational::CanonicalBasisLocus::Named("beta".into()))
+                Some(&worth_foundational::CanonicalBasisLocus::Named(
+                    "beta".into()
+                ))
             );
-            assert_eq!(mismatch.left_domain(), worth_foundational::CanonicalBasisDomain::Value);
-            assert_eq!(mismatch.right_domain(), worth_foundational::CanonicalBasisDomain::Value);
+            assert_eq!(
+                mismatch.left_domain(),
+                worth_foundational::CanonicalBasisDomain::Value
+            );
+            assert_eq!(
+                mismatch.right_domain(),
+                worth_foundational::CanonicalBasisDomain::Value
+            );
             assert_eq!(
                 mismatch.equivalence_basis(),
                 worth_foundational::CanonicalEquivalenceBasis::ExactCanonicalBasis

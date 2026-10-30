@@ -1,9 +1,18 @@
-use {std::num::NonZeroU64};
+use std::num::NonZeroU64;
 
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::PhysicalMutationDeadline};
-use {worth_store_blob_chunks::BlobChunkSize};
+use worth_store_blob_chunks::BlobChunkSize;
+use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
 
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+};
 
 #[test]
 fn tier_epoch_maintenance_creates_a_wal_segment_for_the_next_blob_declaration() {
@@ -23,7 +32,8 @@ fn tier_epoch_maintenance_creates_a_wal_segment_for_the_next_blob_declaration() 
 
     let blobs = serving.blobs().unwrap();
     let scope = admitted_blob_scope("c11.blob.tier-epoch.wal-append");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let object = blobs.issue_object_id(limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         object,
@@ -31,7 +41,8 @@ fn tier_epoch_maintenance_creates_a_wal_segment_for_the_next_blob_declaration() 
         CHUNK,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
     )
     .unwrap();
     let ingest = blobs

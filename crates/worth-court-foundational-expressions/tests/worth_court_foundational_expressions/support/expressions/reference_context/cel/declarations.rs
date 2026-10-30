@@ -7,16 +7,25 @@
 // expects to fail also pins the Worth denial family. Set
 // `WORTH_CEL_CLASSIFICATION=overwrite` to rewrite the table from the current
 // outcomes; hand-written rules are kept.
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::fmt::Write as _};
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use std::fmt::Write as _;
 
-pub(crate) use {worth_foundational::expression_api::expressions, worth_foundational::expression_api::ExpressionInputs, worth_foundational::expression_api::ExpressionProfile, worth_foundational::expression_api::ExpressionSchema, worth_foundational::expression_api::ExpressionType, worth_foundational::expression_api::ExpressionValue};
-pub(crate) use {worth_foundational::CanonicalF64};
+pub(crate) use worth_foundational::CanonicalF64;
+pub(crate) use {
+    worth_foundational::expression_api::expressions,
+    worth_foundational::expression_api::ExpressionInputs,
+    worth_foundational::expression_api::ExpressionProfile,
+    worth_foundational::expression_api::ExpressionSchema,
+    worth_foundational::expression_api::ExpressionType,
+    worth_foundational::expression_api::ExpressionValue,
+};
 
-pub(crate) use {crate::expressions::ordinary_context::empty_catalog};
+pub(crate) use crate::expressions::ordinary_context::empty_catalog;
 
-
-pub(crate) use {crate::expressions::reference_context::cel::textproto::Message, crate::expressions::reference_context::cel::textproto::Node};
+pub(crate) use {
+    crate::expressions::reference_context::cel::textproto::Message,
+    crate::expressions::reference_context::cel::textproto::Node,
+};
 
 pub(crate) const FILES: [(&str, &str); 9] = [
     (
@@ -25,11 +34,15 @@ pub(crate) const FILES: [(&str, &str); 9] = [
     ),
     (
         "comparisons",
-        include_str!("../../../../sources/worth_foundational/expressions/cel/comparisons.textproto"),
+        include_str!(
+            "../../../../sources/worth_foundational/expressions/cel/comparisons.textproto"
+        ),
     ),
     (
         "conversions",
-        include_str!("../../../../sources/worth_foundational/expressions/cel/conversions.textproto"),
+        include_str!(
+            "../../../../sources/worth_foundational/expressions/cel/conversions.textproto"
+        ),
     ),
     (
         "fp_math",
@@ -37,7 +50,9 @@ pub(crate) const FILES: [(&str, &str); 9] = [
     ),
     (
         "integer_math",
-        include_str!("../../../../sources/worth_foundational/expressions/cel/integer_math.textproto"),
+        include_str!(
+            "../../../../sources/worth_foundational/expressions/cel/integer_math.textproto"
+        ),
     ),
     (
         "lists",
@@ -57,7 +72,8 @@ pub(crate) const FILES: [(&str, &str); 9] = [
     ),
 ];
 
-pub(crate) const TABLE: &str = include_str!("../../../../sources/worth_foundational/expressions/cel/classification.tsv");
+pub(crate) const TABLE: &str =
+    include_str!("../../../../sources/worth_foundational/expressions/cel/classification.tsv");
 pub(crate) const TABLE_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_foundational_expressions/sources/worth_foundational/expressions/cel/classification.tsv");
 
 pub(crate) const RULES: [(&str, &str); 3] = [
@@ -103,28 +119,46 @@ pub(crate) fn expected(value: &Message) -> Expected {
         other => panic!("{field} is not text: {other:?}"),
     };
     let message = || match node {
-        crate::expressions::reference_context::cel::textproto::Node::Message(message) => message.clone(),
+        crate::expressions::reference_context::cel::textproto::Node::Message(message) => {
+            message.clone()
+        }
         other => panic!("{field} is not a message: {other:?}"),
     };
     let value = match field {
-        "int64_value" => worth_foundational::expression_api::ExpressionValue::integer(word().parse().expect("int64")),
+        "int64_value" => worth_foundational::expression_api::ExpressionValue::integer(
+            word().parse().expect("int64"),
+        ),
         "bool_value" => worth_foundational::expression_api::ExpressionValue::bool(word() == "true"),
-        "string_value" => worth_foundational::expression_api::ExpressionValue::string(String::from_utf8(text()).expect("UTF-8")),
+        "string_value" => worth_foundational::expression_api::ExpressionValue::string(
+            String::from_utf8(text()).expect("UTF-8"),
+        ),
         "bytes_value" => worth_foundational::expression_api::ExpressionValue::bytes(text()),
         "double_value" => match word().parse::<f64>() {
             Ok(number) if number.is_finite() => {
-                worth_foundational::expression_api::ExpressionValue::float64(worth_foundational::CanonicalF64::from_f64(number)).expect("finite")
+                worth_foundational::expression_api::ExpressionValue::float64(
+                    worth_foundational::CanonicalF64::from_f64(number),
+                )
+                .expect("finite")
             }
-            _ => return crate::expressions::reference_context::cel::Expected::Foreign(format!("double {}", word())),
+            _ => {
+                return crate::expressions::reference_context::cel::Expected::Foreign(format!(
+                    "double {}",
+                    word()
+                ))
+            }
         },
         "list_value" => {
             let mut items = Vec::new();
             for node in message().all("values") {
-                let crate::expressions::reference_context::cel::textproto::Node::Message(item) = node else {
+                let crate::expressions::reference_context::cel::textproto::Node::Message(item) =
+                    node
+                else {
                     panic!("list item")
                 };
                 match expected(item) {
-                    crate::expressions::reference_context::cel::Expected::Value(value) => items.push(value),
+                    crate::expressions::reference_context::cel::Expected::Value(value) => {
+                        items.push(value)
+                    }
                     other => return other,
                 }
             }
@@ -133,22 +167,39 @@ pub(crate) fn expected(value: &Message) -> Expected {
         "map_value" => {
             let mut entries = Vec::new();
             for node in message().all("entries") {
-                let crate::expressions::reference_context::cel::textproto::Node::Message(entry) = node else {
+                let crate::expressions::reference_context::cel::textproto::Node::Message(entry) =
+                    node
+                else {
                     panic!("map entry")
                 };
                 let key = entry.message("key").expect("entry key");
                 let value = entry.message("value").expect("entry value");
                 match (expected(key), expected(value)) {
-                    (crate::expressions::reference_context::cel::Expected::Value(key), crate::expressions::reference_context::cel::Expected::Value(value)) => entries.push((key, value)),
-                    _ => return crate::expressions::reference_context::cel::Expected::Foreign("map".to_string()),
+                    (
+                        crate::expressions::reference_context::cel::Expected::Value(key),
+                        crate::expressions::reference_context::cel::Expected::Value(value),
+                    ) => entries.push((key, value)),
+                    _ => {
+                        return crate::expressions::reference_context::cel::Expected::Foreign(
+                            "map".to_string(),
+                        )
+                    }
                 }
             }
             match worth_foundational::expression_api::ExpressionValue::map(entries) {
                 Ok(map) => map,
-                Err(_) => return crate::expressions::reference_context::cel::Expected::Foreign("map".to_string()),
+                Err(_) => {
+                    return crate::expressions::reference_context::cel::Expected::Foreign(
+                        "map".to_string(),
+                    )
+                }
             }
         }
-        other => return crate::expressions::reference_context::cel::Expected::Foreign(other.trim_end_matches("_value").to_string()),
+        other => {
+            return crate::expressions::reference_context::cel::Expected::Foreign(
+                other.trim_end_matches("_value").to_string(),
+            )
+        }
     };
     crate::expressions::reference_context::cel::Expected::Value(value)
 }
@@ -165,16 +216,21 @@ pub(crate) fn primitive(ident: &Message) -> Option<ExpressionType> {
 }
 
 pub(crate) fn run(case: &Message) -> Outcome {
-    let refused =
-        |stage: &str, detail: &dyn std::fmt::Debug| crate::expressions::reference_context::cel::Outcome::Refused(format!("{stage}:{detail:?}"));
+    let refused = |stage: &str, detail: &dyn std::fmt::Debug| {
+        crate::expressions::reference_context::cel::Outcome::Refused(format!("{stage}:{detail:?}"))
+    };
     let mut schema = worth_foundational::expression_api::ExpressionSchema::builder();
     for declaration in case.all("type_env") {
-        let crate::expressions::reference_context::cel::textproto::Node::Message(declaration) = declaration else {
+        let crate::expressions::reference_context::cel::textproto::Node::Message(declaration) =
+            declaration
+        else {
             panic!("declaration")
         };
         let name = declaration.text("name").expect("declared name");
         let Some(ty) = declaration.message("ident").and_then(primitive) else {
-            return crate::expressions::reference_context::cel::Outcome::Refused("environment:Type".to_string());
+            return crate::expressions::reference_context::cel::Outcome::Refused(
+                "environment:Type".to_string(),
+            );
         };
         schema = match schema.operand(&name, ty) {
             Ok(schema) => schema,
@@ -184,15 +240,20 @@ pub(crate) fn run(case: &Message) -> Outcome {
     let schema = schema.build();
     let mut inputs = worth_foundational::expression_api::ExpressionInputs::builder(&schema);
     for binding in case.all("bindings") {
-        let crate::expressions::reference_context::cel::textproto::Node::Message(binding) = binding else {
+        let crate::expressions::reference_context::cel::textproto::Node::Message(binding) = binding
+        else {
             panic!("binding")
         };
         let name = binding.text("key").expect("binding key");
         let value = binding
             .message("value")
             .and_then(|value| value.message("value"));
-        let Some(crate::expressions::reference_context::cel::Expected::Value(value)) = value.map(expected) else {
-            return crate::expressions::reference_context::cel::Outcome::Refused("environment:Value".to_string());
+        let Some(crate::expressions::reference_context::cel::Expected::Value(value)) =
+            value.map(expected)
+        else {
+            return crate::expressions::reference_context::cel::Outcome::Refused(
+                "environment:Value".to_string(),
+            );
         };
         inputs = match inputs.bind(&name, value) {
             Ok(inputs) => inputs,
@@ -215,7 +276,10 @@ pub(crate) fn run(case: &Message) -> Outcome {
         .into_result()
     {
         Ok(value) => crate::expressions::reference_context::cel::Outcome::Value(value),
-        Err(denial) => crate::expressions::reference_context::cel::Outcome::Denied(format!("{:?}", denial.family())),
+        Err(denial) => crate::expressions::reference_context::cel::Outcome::Denied(format!(
+            "{:?}",
+            denial.family()
+        )),
     }
 }
 
@@ -226,7 +290,9 @@ pub(crate) fn expectation(case: &Message) -> Expected {
     } else if let Some(value) = case.message("value") {
         expected(value)
     } else {
-        crate::expressions::reference_context::cel::Expected::Value(worth_foundational::expression_api::ExpressionValue::bool(true))
+        crate::expressions::reference_context::cel::Expected::Value(
+            worth_foundational::expression_api::ExpressionValue::bool(true),
+        )
     }
 }
 
@@ -237,11 +303,17 @@ pub(crate) fn classify(case: &Message) -> (&'static str, String, String) {
     let cel = expectation(case);
     let context = cel.describe();
     let (disposition, worth) = match (run(case), cel) {
-        (crate::expressions::reference_context::cel::Outcome::Refused(refusal), _) => return ("unsupported", refusal, context),
-        (crate::expressions::reference_context::cel::Outcome::Value(worth), crate::expressions::reference_context::cel::Expected::Value(cel)) if worth == cel => {
-            return ("equivalent", String::new(), context)
+        (crate::expressions::reference_context::cel::Outcome::Refused(refusal), _) => {
+            return ("unsupported", refusal, context)
         }
-        (worth @ crate::expressions::reference_context::cel::Outcome::Denied(_), crate::expressions::reference_context::cel::Expected::Error) => ("equivalent", worth),
+        (
+            crate::expressions::reference_context::cel::Outcome::Value(worth),
+            crate::expressions::reference_context::cel::Expected::Value(cel),
+        ) if worth == cel => return ("equivalent", String::new(), context),
+        (
+            worth @ crate::expressions::reference_context::cel::Outcome::Denied(_),
+            crate::expressions::reference_context::cel::Expected::Error,
+        ) => ("equivalent", worth),
         (worth, _) => ("divergent", worth),
     };
     (disposition, describe(&worth), context)
@@ -249,9 +321,13 @@ pub(crate) fn classify(case: &Message) -> (&'static str, String, String) {
 
 pub(crate) fn describe(outcome: &Outcome) -> String {
     match outcome {
-        crate::expressions::reference_context::cel::Outcome::Refused(refusal) => format!("refused {refusal}"),
+        crate::expressions::reference_context::cel::Outcome::Refused(refusal) => {
+            format!("refused {refusal}")
+        }
         crate::expressions::reference_context::cel::Outcome::Value(value) => format!("{value:?}"),
-        crate::expressions::reference_context::cel::Outcome::Denied(family) => format!("denied {family}"),
+        crate::expressions::reference_context::cel::Outcome::Denied(family) => {
+            format!("denied {family}")
+        }
     }
 }
 
@@ -271,12 +347,16 @@ pub(crate) fn cases() -> Vec<(String, Message)> {
     for (file, source) in FILES {
         let root = crate::expressions::reference_context::cel::textproto::parse(source);
         for section in root.all("section") {
-            let crate::expressions::reference_context::cel::textproto::Node::Message(section) = section else {
+            let crate::expressions::reference_context::cel::textproto::Node::Message(section) =
+                section
+            else {
                 panic!("section")
             };
             let section_name = section.text("name").expect("section name");
             for case in section.all("test") {
-                let crate::expressions::reference_context::cel::textproto::Node::Message(case) = case else {
+                let crate::expressions::reference_context::cel::textproto::Node::Message(case) =
+                    case
+                else {
                     panic!("test")
                 };
                 let name = case.text("name").expect("test name");

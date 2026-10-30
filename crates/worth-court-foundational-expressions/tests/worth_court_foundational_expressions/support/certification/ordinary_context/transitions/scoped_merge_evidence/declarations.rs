@@ -1,9 +1,23 @@
-pub(crate) use {worth_foundational::CanonicalDigestId, worth_foundational::FoundationalAdmittedMergeScopeEvidence, worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalScopeAdmissionBasis, worth_foundational::FoundationalSelectedAspectRequestEntry, worth_foundational::FoundationalSelectedScopeLocus, worth_foundational::FoundationalSelectedScopeNoOpCause, worth_foundational::FoundationalSelectedScopeNoOpEvidence, worth_foundational::FoundationalSkippedOutOfScopeEvidence};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::CanonicalDigestId,
+    worth_foundational::FoundationalAdmittedMergeScopeEvidence,
+    worth_foundational::FoundationalMergeScope,
+    worth_foundational::FoundationalScopeAdmissionBasis,
+    worth_foundational::FoundationalSelectedAspectRequestEntry,
+    worth_foundational::FoundationalSelectedScopeLocus,
+    worth_foundational::FoundationalSelectedScopeNoOpCause,
+    worth_foundational::FoundationalSelectedScopeNoOpEvidence,
+    worth_foundational::FoundationalSkippedOutOfScopeEvidence,
+};
 
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id};
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary};
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect};
+pub(crate) use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
+pub(crate) use crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary;
+pub(crate) use {
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect,
+};
 
 pub(crate) fn assert_exact_admitted_aspects(
     actual: &[FoundationalSelectedAspectRequestEntry],

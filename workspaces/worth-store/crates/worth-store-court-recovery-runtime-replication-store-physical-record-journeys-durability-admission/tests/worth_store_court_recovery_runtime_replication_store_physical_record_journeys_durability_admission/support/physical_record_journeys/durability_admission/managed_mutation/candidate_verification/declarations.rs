@@ -1,9 +1,24 @@
-pub(crate) use {std::collections::BTreeSet};
+pub(crate) use std::collections::BTreeSet;
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalMutationIndeterminateStage, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_backend::FilesystemAccessPosture, worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole, worth_store_physical_backend::MediaPauseGate};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalMutationIndeterminateStage,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalRecordId,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_backend::FilesystemAccessPosture,
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole, worth_store_physical_backend::MediaPauseGate,
+};
 
 pub(crate) use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::selected_segment_rewrite::prepare_rewrite};
 pub(crate) use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
@@ -31,8 +46,9 @@ pub(crate) fn serving_paused_after_write(
     root: &Path,
     ordinal: u64,
 ) -> (ServingPhysicalRuntime, MediaPauseGate) {
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::production(worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::production(
+        worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let authority = admission.fault_schedule_authority();
     let gate = authority.pause_gate();
     let schedule = authority
@@ -42,7 +58,10 @@ pub(crate) fn serving_paused_after_write(
             worth_store_physical_backend::MediaFaultDirective::PauseAfter(gate.clone()),
         )])
         .unwrap();
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).unwrap()).unwrap();
+    let runtime = worth_store::physical_runtime::PhysicalStore::admit(
+        worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).unwrap(),
+    )
+    .unwrap();
     let media = match runtime
         .try_admit_filesystem_media(admission.with_fault_schedule(schedule))
         .into_raw()
@@ -51,9 +70,12 @@ pub(crate) fn serving_paused_after_write(
         _ => panic!("paused media should admit"),
     };
     let (format, _, access) = configuration();
-    let serving = worth_store_testkit_store::physical_record_journeys::success(open_record_store!(media, |durability| {
-        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
-    }));
+    let serving = worth_store_testkit_store::physical_record_journeys::success(open_record_store!(
+        media,
+        |durability| {
+            worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+        }
+    ));
     (serving, gate)
 }
 
@@ -77,7 +99,9 @@ pub(crate) fn read_record(serving: &ServingPhysicalRuntime, record: PhysicalReco
     let mut session = reader
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
     let mut bytes = vec![0_u8; PAYLOAD.len()];

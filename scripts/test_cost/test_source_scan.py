@@ -23,6 +23,16 @@ class SourceCostTests(unittest.TestCase):
     def test_comments_cannot_create_cost_sites(self):
         self.assertEqual(scan_text('// trybuild::TestCases\n/* thread::sleep( */'), [])
 
+    def test_domain_pass_methods_are_not_mislabeled_as_compiler_sessions(self):
+        self.assertEqual(scan_text('fn claim() { answer.pass(value); }'), [])
+        sites = scan_text('fn claim(cases: &trybuild::TestCases) { cases.pass("yes.rs"); }')
+        self.assertIn('trybuild-pass', [site['kind'] for site in sites])
+
+    def test_named_executable_and_imported_command_alias_cannot_bypass_the_rule(self):
+        for text in ['fn proof() { let executable="cargo"; Command::new(executable); }',
+                     'use std::process::Command as Process; fn proof() { Process::new("cargo.exe"); }']:
+            self.assertIn('cargo-command', [site['kind'] for site in scan_text(text)])
+
     def test_async_sleeps_are_found_and_literals_cannot_impersonate_calls(self):
         self.assertEqual([s['kind'] for s in scan_text('tokio::time::sleep(delay).await;')], ['sleep'])
         self.assertEqual(scan_text('let text = "Command::new(\\\"cargo\\\")";'), [])

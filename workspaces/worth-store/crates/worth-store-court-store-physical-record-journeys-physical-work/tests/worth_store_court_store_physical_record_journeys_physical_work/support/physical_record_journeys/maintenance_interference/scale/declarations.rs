@@ -1,4 +1,9 @@
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::append_copies, worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint, worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize, worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement};
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append_copies,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement,
+};
 
 pub(crate) fn persist(multiple: u64, require_reclaim: bool) {
     let parent = tempfile::tempdir().unwrap();

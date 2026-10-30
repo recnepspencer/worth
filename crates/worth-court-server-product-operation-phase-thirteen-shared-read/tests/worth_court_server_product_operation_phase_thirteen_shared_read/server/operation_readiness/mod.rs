@@ -1,18 +1,32 @@
-#[allow(unused_imports)] use crate::operation_readiness::ordinary_context::*;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
-use {serde_json::json};
-use {worth_proof::TransitionOutcome};
-use {worth_server::WorthServerOperationAuthorityDeclaration, worth_server::WorthServerOperationAuthorizationPolicy, worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationInputEnvelope, worth_server::WorthServerOperationReadinessDenialCode, worth_server::WorthServerOperationRegistration, worth_server::WorthServerOperationRequestInput, worth_server::WorthServerPipelineInput, worth_server::WorthServerPipelineIntent, worth_server::WorthServerProductSupportPosture, worth_server::WorthServerSharedReadBasisKind, worth_server::WorthServerSurfaceFamily};
+use crate::operation_readiness::ordinary_context::*;
+use serde_json::json;
+use worth_proof::TransitionOutcome;
+#[allow(unused_imports)]
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
+use {
+    worth_server::WorthServerOperationAuthorityDeclaration,
+    worth_server::WorthServerOperationAuthorizationPolicy,
+    worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationInputEnvelope,
+    worth_server::WorthServerOperationReadinessDenialCode,
+    worth_server::WorthServerOperationRegistration, worth_server::WorthServerOperationRequestInput,
+    worth_server::WorthServerPipelineInput, worth_server::WorthServerPipelineIntent,
+    worth_server::WorthServerProductSupportPosture, worth_server::WorthServerSharedReadBasisKind,
+    worth_server::WorthServerSurfaceFamily,
+};
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_operation_request_runtime as operation_request_runtime};
+use worth_testkit_server::shared_support_operation_request_runtime as operation_request_runtime;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture};
+use worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime};
+use worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime;
 
-use {worth_testkit_server::shared_support_operation_request_runtime::operation_request_test_server, worth_testkit_server::shared_support_operation_request_runtime::operation_request_test_server_with_operations, worth_testkit_server::shared_support_operation_request_runtime::worth_native_resolved_context};
+use {
+    worth_testkit_server::shared_support_operation_request_runtime::operation_request_test_server,
+    worth_testkit_server::shared_support_operation_request_runtime::operation_request_test_server_with_operations,
+    worth_testkit_server::shared_support_operation_request_runtime::worth_native_resolved_context,
+};
 
 #[test]
 fn query_and_product_support_compose_without_meaning_merge() {
@@ -115,19 +129,24 @@ fn concurrency_class_requires_support_and_precondition_closure() {
         worth_server::WorthServerOperationConcurrencyClass::ConcurrentSharedRead
     );
 
-    let mutation_admission = match server.middleware().admit(worth_server::WorthServerPipelineInput::new(
-        worth_native_resolved_context(&server, None),
-        worth_server::WorthServerPipelineIntent::query_mutation("editor.apply"),
-    )) {
-        worth_proof::TransitionOutcome::Success(value) => value,
-        other => panic!("expected mutation admission, got {other:?}"),
-    };
+    let mutation_admission =
+        match server
+            .middleware()
+            .admit(worth_server::WorthServerPipelineInput::new(
+                worth_native_resolved_context(&server, None),
+                worth_server::WorthServerPipelineIntent::query_mutation("editor.apply"),
+            )) {
+            worth_proof::TransitionOutcome::Success(value) => value,
+            other => panic!("expected mutation admission, got {other:?}"),
+        };
     let mutation_request = server
         .operation_requests()
         .admit_from_worth_native_admission(
             &mutation_admission,
             worth_server::WorthServerOperationRequestInput::builder()
-                .with_operation_family(worth_server::WorthServerOperationFamily::ProductApplicationMutation)
+                .with_operation_family(
+                    worth_server::WorthServerOperationFamily::ProductApplicationMutation,
+                )
                 .with_operation_name("editor.apply")
                 .with_basis_digest("basis-editor")
                 .with_idempotency_key("idem-editor")
@@ -153,19 +172,24 @@ fn concurrency_class_requires_support_and_precondition_closure() {
         worth_server::WorthServerOperationConcurrencyClass::SerializeDeterministically
     );
 
-    let coordination_admission = match server.middleware().admit(worth_server::WorthServerPipelineInput::new(
-        worth_native_resolved_context(&server, None),
-        worth_server::WorthServerPipelineIntent::worth_native_session("editor.apply"),
-    )) {
-        worth_proof::TransitionOutcome::Success(value) => value,
-        other => panic!("expected Worth-native session admission, got {other:?}"),
-    };
+    let coordination_admission =
+        match server
+            .middleware()
+            .admit(worth_server::WorthServerPipelineInput::new(
+                worth_native_resolved_context(&server, None),
+                worth_server::WorthServerPipelineIntent::worth_native_session("editor.apply"),
+            )) {
+            worth_proof::TransitionOutcome::Success(value) => value,
+            other => panic!("expected Worth-native session admission, got {other:?}"),
+        };
     let coordination_request = server
         .operation_requests()
         .admit_from_worth_native_admission(
             &coordination_admission,
             worth_server::WorthServerOperationRequestInput::builder()
-                .with_operation_family(worth_server::WorthServerOperationFamily::ProductSessionCoordination)
+                .with_operation_family(
+                    worth_server::WorthServerOperationFamily::ProductSessionCoordination,
+                )
                 .with_operation_name("editor.apply")
                 .with_product_session_identity("session-1")
                 .build(),

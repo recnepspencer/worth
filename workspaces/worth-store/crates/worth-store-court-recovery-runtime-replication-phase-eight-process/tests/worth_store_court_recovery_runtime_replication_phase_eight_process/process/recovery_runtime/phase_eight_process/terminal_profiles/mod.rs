@@ -1,6 +1,14 @@
-use {worth_store_recovery_runtime::RecoveryReportDenialCause, worth_store_recovery_runtime::RecoveryReportEnvelope, worth_store_recovery_runtime::RecoveryReportOutcome, worth_store_recovery_runtime::RecoveryReportRefusalCause};
+use {
+    worth_store_recovery_runtime::RecoveryReportDenialCause,
+    worth_store_recovery_runtime::RecoveryReportEnvelope,
+    worth_store_recovery_runtime::RecoveryReportOutcome,
+    worth_store_recovery_runtime::RecoveryReportRefusalCause,
+};
 
-use {crate::production::terminal_fixture::certification_persisted_root, crate::phase_eight_process::production::harness::process::run_recovery_with_profile};
+use {
+    crate::phase_eight_process::production::harness::process::run_recovery_with_profile,
+    crate::production::terminal_fixture::certification_persisted_root,
+};
 
 #[test]
 fn certification_refusal_profile_emits_a_typed_terminal_report() {
@@ -21,7 +29,10 @@ fn certification_refusal_profile_emits_a_typed_terminal_report() {
         &std::fs::read(&report_path).expect("refusal process report bytes"),
     )
     .expect("refusal process report");
-    assert_eq!(report.outcome(), worth_store_recovery_runtime::RecoveryReportOutcome::Refused);
+    assert_eq!(
+        report.outcome(),
+        worth_store_recovery_runtime::RecoveryReportOutcome::Refused
+    );
     assert_eq!(
         report.denial_cause(),
         Some(worth_store_recovery_runtime::RecoveryReportDenialCause::Refused(

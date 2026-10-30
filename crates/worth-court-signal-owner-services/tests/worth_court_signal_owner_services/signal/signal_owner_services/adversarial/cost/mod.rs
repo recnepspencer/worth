@@ -1,7 +1,11 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome, worth_signal::facade::branch::SignalBranchRetirementReason, worth_signal::facade::branch::SignalOwnerCancellationSource};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome,
+    worth_signal::facade::branch::SignalBranchRetirementReason,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+};
 
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld};
+pub(crate) use crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld;
 
 #[test]
 fn public_advances_report_actual_diagnostic_retention_and_eviction() {
@@ -15,7 +19,10 @@ fn public_advances_report_actual_diagnostic_retention_and_eviction() {
     );
     let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    use {worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime, worth_signal::facade::SignalRuntimePolicy};
+    use {
+        worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime,
+        worth_signal::facade::SignalRuntimePolicy,
+    };
     for capture in [false, true] {
         let policy = if capture {
             SignalRuntimePolicy::forensic()
@@ -74,7 +81,8 @@ fn one_public_advance_reports_one_local_structural_delta() {
     );
     let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let before = world
         .basis
         .owner_service_cost_snapshot()
@@ -119,16 +127,17 @@ fn one_public_advance_reports_one_local_structural_delta() {
 
 #[test]
 fn lifecycle_operations_report_exact_structural_deltas() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let child_id = world.child_basis.branch_id();
     let before = world
         .basis
         .owner_service_cost_snapshot()
         .expect("the owner is open");
-    let plan = match world
-        .lifecycle
-        .plan_retirement_exact(world.child_basis, worth_signal::facade::branch::SignalBranchRetirementReason::Superseded)
-    {
+    let plan = match world.lifecycle.plan_retirement_exact(
+        world.child_basis,
+        worth_signal::facade::branch::SignalBranchRetirementReason::Superseded,
+    ) {
         worth_proof::TransitionOutcome::Success(plan) => plan,
         other => panic!("the owner issues a linear retirement plan: {other:?}"),
     };
@@ -157,10 +166,10 @@ fn lifecycle_operations_report_exact_structural_deltas() {
         "planning is pre-effect"
     );
 
-    let receipt = match world
-        .lifecycle
-        .retire_exact(plan, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token())
-    {
+    let receipt = match world.lifecycle.retire_exact(
+        plan,
+        &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+    ) {
         worth_proof::TransitionOutcome::Success(receipt) => receipt,
         other => panic!("the owner-issued plan performs retirement: {other:?}"),
     };
@@ -188,7 +197,8 @@ fn lifecycle_operations_report_exact_structural_deltas() {
 
 #[test]
 fn closed_basis_port_reports_owner_unavailable() {
-    let mut world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let mut world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     world.close_root();
     assert!(
         world.basis.owner_service_cost_snapshot().is_err(),
@@ -198,7 +208,8 @@ fn closed_basis_port_reports_owner_unavailable() {
 
 #[test]
 fn closed_lifecycle_port_reports_owner_unavailable() {
-    let mut world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let mut world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     world.close_root();
     assert!(
         world.lifecycle.owner_service_cost_snapshot().is_err(),
@@ -208,7 +219,8 @@ fn closed_lifecycle_port_reports_owner_unavailable() {
 
 #[test]
 fn fork_and_exact_retention_report_their_owned_work_once() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let before = world
         .basis
         .owner_service_cost_snapshot()
@@ -284,7 +296,8 @@ fn target_work_cost_is_independent_of_unrelated_live_branch_count() {
     );
     let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let small = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let small =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let small_before = small
         .basis
         .owner_service_cost_snapshot()
@@ -304,7 +317,8 @@ fn target_work_cost_is_independent_of_unrelated_live_branch_count() {
         .owner_service_cost_snapshot()
         .expect("the small owner remains open");
 
-    let large = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let large =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let mut unrelated = Vec::new();
     for ordinal in 0..8 {
         unrelated.push(

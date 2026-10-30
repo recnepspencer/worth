@@ -1,6 +1,7 @@
-
-
-pub(crate) use {crate::shared_support::compile_fail::bundle::CompileFailBundle, crate::shared_support::compile_fail::bundle::CompileFailCase};
+pub(crate) use {
+    crate::shared_support::compile_fail::bundle::CompileFailBundle,
+    crate::shared_support::compile_fail::bundle::CompileFailCase,
+};
 
 pub(crate) fn run_compile_fail_bundle(bundle: &CompileFailBundle) {
     assert!(
@@ -8,9 +9,9 @@ pub(crate) fn run_compile_fail_bundle(bundle: &CompileFailBundle) {
         "compile-fail bundle for suite '{}' must not be empty",
         bundle.suite()
     );
-    let cases = trybuild::TestCases::new();
+
     for case in bundle.cases() {
-        cases.compile_fail(case.path());
+        worth_testkit_compiler::denied(case.path()).expect("prebuilt compiler denial");
     }
 }
 

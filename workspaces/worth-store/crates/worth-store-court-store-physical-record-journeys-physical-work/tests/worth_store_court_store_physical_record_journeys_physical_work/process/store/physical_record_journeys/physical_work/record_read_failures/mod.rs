@@ -1,10 +1,27 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::record_read_failures::*;
-use {worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits};
-use {worth_store_physical_backend::ArtifactTreeFailureKind, worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::record_read_failures::*;
+use {
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordReadLimits,
+};
+use {
+    worth_store_physical_backend::ArtifactTreeFailureKind,
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-use {worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::serving_from_open};
-use {worth_store_testkit_store::physical_work::record_read_signal_cleanup::await_read_signal_cleanup};
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use worth_store_testkit_store::physical_work::record_read_signal_cleanup::await_read_signal_cleanup;
+use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::serving_from_open,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+};
 
 #[test]
 fn denied_before_effect_read_releases_work_and_allows_same_runtime_retry() {
@@ -15,7 +32,10 @@ fn denied_before_effect_read_releases_work_and_allows_same_runtime_retry() {
     let publication = worth_store_testkit_store::durable_publication::root::publish_single(
         &initial,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("record-read-failure-cleanup", 1),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "record-read-failure-cleanup",
+            1,
+        ),
         worth_store::physical_runtime::RecordAppendBatch::try_from_iter([PAYLOAD]).unwrap(),
     );
     let record = publication.settled_members()[0].record_id(0).unwrap();
@@ -35,7 +55,9 @@ fn denied_before_effect_read_releases_work_and_allows_same_runtime_retry() {
             raw_os_error: None,
         },
     );
-    let limits = worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap());
+    let limits = worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap(),
+    );
     let before_media = serving.media_counters();
     let before_terminal = serving
         .physical_work_counters()
@@ -71,12 +93,16 @@ fn denied_before_effect_read_releases_work_and_allows_same_runtime_retry() {
     );
     assert_eq!(
         after_media.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-            - before_media.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
+            - before_media
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
         1
     );
     assert_eq!(
-        after_media.completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-            - before_media.completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
+        after_media
+            .completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
+            - before_media.completed_bytes_for(
+                worth_store_physical_backend::MediaOperationRole::PositionedRead
+            ),
         0
     );
     assert!(

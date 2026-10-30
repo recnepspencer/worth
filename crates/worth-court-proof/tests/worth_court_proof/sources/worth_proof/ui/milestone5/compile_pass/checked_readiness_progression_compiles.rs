@@ -1,9 +1,8 @@
 use worth_proof::{
-    AuthorityMarker, AuthorityWitness, CapabilityMarker, CapabilityWitness,
-    CheckedAdmitExecutionReadyRecipeTransition, ContextualTransition,
+    checked_admit_ready_and_execute_recipe, AuthorityMarker, AuthorityWitness, CapabilityMarker,
+    CapabilityWitness, CheckedAdmitExecutionReadyRecipeTransition, ContextualTransition,
     ExecutionReadinessContext, ExecutionReadyAdmissionReadiness, LowerRecipeTransition, Recipe,
     RecipeResolutionContext, ResolveRecipeTransition, Transition, Unresolved,
-    checked_admit_ready_and_execute_recipe,
 };
 
 struct ResolutionAuthority;
@@ -33,17 +32,11 @@ type CurrentResolvedRecipe = worth_proof::Recipe<
     >,
 >;
 
-type StaleLoweredRecipe = worth_proof::Recipe<
-    worth_proof::Lowered,
-    &'static str,
-    worth_proof::StaleReadableBasis<u8>,
->;
+type StaleLoweredRecipe =
+    worth_proof::Recipe<worth_proof::Lowered, &'static str, worth_proof::StaleReadableBasis<u8>>;
 
-type RebindResolvedRecipe = worth_proof::Recipe<
-    worth_proof::Resolved,
-    &'static str,
-    worth_proof::RebindRequiredBasis<u8>,
->;
+type RebindResolvedRecipe =
+    worth_proof::Recipe<worth_proof::Resolved, &'static str, worth_proof::RebindRequiredBasis<u8>>;
 
 type CheckedReadiness = ExecutionReadyAdmissionReadiness<
     &'static str,
@@ -132,10 +125,8 @@ fn checked_stale_progression_compiles(
     )
     .downgrade_to_stale_readable();
 
-    let stale = CheckedAdmitExecutionReadyRecipeTransition.transition(
-        lowered,
-        CheckedReadiness::stale(stale_lowered),
-    );
+    let stale = CheckedAdmitExecutionReadyRecipeTransition
+        .transition(lowered, CheckedReadiness::stale(stale_lowered));
 
     let _ = stale;
 }
@@ -152,12 +143,10 @@ fn checked_rebind_progression_compiles(
     let rebind_resolved: RebindResolvedRecipe =
         resolve_recipe(resolution_authority_for_rebind).downgrade_to_rebind_required();
 
-    let rebind = CheckedAdmitExecutionReadyRecipeTransition.transition(
-        lowered,
-        CheckedReadiness::rebind_required(rebind_resolved),
-    );
+    let rebind = CheckedAdmitExecutionReadyRecipeTransition
+        .transition(lowered, CheckedReadiness::rebind_required(rebind_resolved));
 
     let _ = rebind;
 }
 
-fn main() {}
+pub(crate) fn main() {}

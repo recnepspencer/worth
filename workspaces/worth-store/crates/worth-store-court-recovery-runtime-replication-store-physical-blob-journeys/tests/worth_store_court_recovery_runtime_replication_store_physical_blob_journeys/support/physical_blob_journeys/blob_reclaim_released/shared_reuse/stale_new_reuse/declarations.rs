@@ -1,9 +1,20 @@
-pub(crate) use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::PhysicalIndexPointKey, worth_store::physical_runtime::PublishedBlobGeneration, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_contracts::DurableArtifactFamilyId};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::PersistedRecordIdentity};
+pub(crate) use worth_store_contracts::DurableArtifactFamilyId;
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::PhysicalIndexPointKey,
+    worth_store::physical_runtime::PublishedBlobGeneration,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
 
-pub(crate) use {crate::physical_blob_journeys::blob_reclaim_released::publish_one};
-pub(crate) use {crate::physical_blob_journeys::blob_reclaim_released::shared_reuse::assert_bytes_exact, crate::physical_blob_journeys::blob_reclaim_released::shared_reuse::marker};
+pub(crate) use crate::physical_blob_journeys::blob_reclaim_released::publish_one;
+pub(crate) use {
+    crate::physical_blob_journeys::blob_reclaim_released::shared_reuse::assert_bytes_exact,
+    crate::physical_blob_journeys::blob_reclaim_released::shared_reuse::marker,
+};
 
 /// A release retains the dedupe cells naming the released source. A fresh
 /// ingest of the same bytes must miss those stale cells, publish its own
@@ -34,9 +45,11 @@ pub(crate) fn assert_catalog_selects(
     published: PublishedBlobGeneration,
     expected: PersistedRecordIdentity,
 ) {
-    let key =
-        worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(published.object(), published.generation().sequence())
-            .unwrap();
+    let key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+        published.object(),
+        published.generation().sequence(),
+    )
+    .unwrap();
     let point = serving
         .layouts()
         .unwrap()
@@ -47,7 +60,10 @@ pub(crate) fn assert_catalog_selects(
     assert_eq!(point.selected_record(), Some(expected));
 }
 
-pub(crate) fn claims_sourced_from(serving: &ServingPhysicalRuntime, source: PersistedRecordIdentity) -> usize {
+pub(crate) fn claims_sourced_from(
+    serving: &ServingPhysicalRuntime,
+    source: PersistedRecordIdentity,
+) -> usize {
     worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(serving)
         .iter()
         .filter(|(_, bytes)| match decode_blob_record(bytes) {

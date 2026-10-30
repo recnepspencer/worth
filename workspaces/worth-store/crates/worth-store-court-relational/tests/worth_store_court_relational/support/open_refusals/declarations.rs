@@ -3,17 +3,35 @@
 //! damaged all refuse before service, with a typed refusal, and none of them
 //! is treated as an empty home.
 
-pub(crate) use {std::fs};
+pub(crate) use std::fs;
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::runtime::RelationalRuntimeApi};
-pub(crate) use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::AnchoredRecordName, worth_store::physical_runtime::AnchoredRecordPublication, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::OrderedJournalPublication, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordPlacementPolicy};
-pub(crate) use {worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeOpenRefusal, worth_store_relational::RelationalStoreHomeRequest, worth_store_relational::RelationalStoreJournalRefusal};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_relational::facade::runtime::RelationalRuntimeApi;
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::AnchoredRecordName,
+    worth_store::physical_runtime::AnchoredRecordPublication,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::OrderedJournalPublication,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+};
+pub(crate) use {
+    worth_store_relational::RelationalStoreHome,
+    worth_store_relational::RelationalStoreHomeOpenRefusal,
+    worth_store_relational::RelationalStoreHomeRequest,
+    worth_store_relational::RelationalStoreJournalRefusal,
+};
 
-pub(crate) use {crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::open, crate::durable_run::steps_before};
-pub(crate) use {crate::schema_transition};
-pub(crate) use {crate::selected_checkpoint};
+pub(crate) use crate::schema_transition;
+pub(crate) use crate::selected_checkpoint;
+pub(crate) use {
+    crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::open,
+    crate::durable_run::steps_before,
+};
 pub(crate) use {crate::workload, crate::workload::Script};
 
 pub(crate) const SEED: u64 = 0x5eed_0501;
@@ -81,7 +99,10 @@ pub(crate) fn flip_after(
     flipped
 }
 
-pub(crate) fn assert_refuses_before_service(location: &Path, case: &str) -> RelationalStoreHomeOpenRefusal {
+pub(crate) fn assert_refuses_before_service(
+    location: &Path,
+    case: &str,
+) -> RelationalStoreHomeOpenRefusal {
     let request = crate::workload::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&request);
     match open(location, &execution) {
@@ -98,9 +119,13 @@ pub(crate) fn assert_refuses_before_service(location: &Path, case: &str) -> Rela
 pub(crate) fn home_placement() -> AdmittedRecordPlacementPolicy {
     worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(64).unwrap())
-        .admit(worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-            worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
-        ))
+        .admit(
+            worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
+                worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+                    .admit()
+                    .unwrap(),
+            ),
+        )
         .unwrap()
 }
 

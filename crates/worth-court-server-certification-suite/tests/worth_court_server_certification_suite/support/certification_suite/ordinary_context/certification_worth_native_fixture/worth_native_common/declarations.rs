@@ -1,30 +1,59 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily, worth_query::facade::runtime::WorthQueryRuntimeFamilySupport, worth_query::facade::runtime::WorthQueryRuntimeRemaskProjection, worth_query::facade::runtime::WorthQueryRuntimeRemaskReasonKind, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-pub(crate) use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServer, worth_server::WorthServerDirectProjectionRequest, worth_server::WorthServerQuerySupportPosture, worth_server::WorthServerRequestContext, worth_server::WorthServerResponseEnvelope, worth_server::WorthServerWorthNativeSession};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily,
+    worth_query::facade::runtime::WorthQueryRuntimeFamilySupport,
+    worth_query::facade::runtime::WorthQueryRuntimeRemaskProjection,
+    worth_query::facade::runtime::WorthQueryRuntimeRemaskReasonKind,
+    worth_query::facade::runtime::WorthQueryRuntimeSupportProfile,
+};
+pub(crate) use {
+    worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServer,
+    worth_server::WorthServerDirectProjectionRequest, worth_server::WorthServerQuerySupportPosture,
+    worth_server::WorthServerRequestContext, worth_server::WorthServerResponseEnvelope,
+    worth_server::WorthServerWorthNativeSession,
+};
 
-pub(crate) use {worth_testkit_server::shared_support_direct_context_runtime::RemaskWorkspaceProvider, worth_testkit_server::shared_support_worth_native_assertions::operator_evidence_record, worth_testkit_server::shared_support_worth_native_runtime::build_server, worth_testkit_server::shared_support_worth_native_runtime::build_server_with_profiled_workspace, worth_testkit_server::shared_support_worth_native_runtime::build_server_with_workspace_provider, worth_testkit_server::shared_support_worth_native_runtime::server_with_request_context_default, worth_testkit_server::shared_support_worth_native_runtime::worth_native_session_input_builder};
+pub(crate) use {
+    worth_testkit_server::shared_support_direct_context_runtime::RemaskWorkspaceProvider,
+    worth_testkit_server::shared_support_worth_native_assertions::operator_evidence_record,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server_with_profiled_workspace,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server_with_workspace_provider,
+    worth_testkit_server::shared_support_worth_native_runtime::server_with_request_context_default,
+    worth_testkit_server::shared_support_worth_native_runtime::worth_native_session_input_builder,
+};
 
-pub(crate) use {crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle};
+pub(crate) use crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle;
 
 pub(crate) fn standard_server() -> WorthServer {
     build_server(true)
 }
 
 pub(crate) fn forensic_server() -> WorthServer {
-    server_with_request_context_default(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+    server_with_request_context_default(
+        worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+    )
 }
 
 pub(crate) fn remask_server() -> WorthServer {
-    build_server_with_workspace_provider(worth_testkit_server::shared_support_direct_context_runtime::RemaskWorkspaceProvider::new(projection_remask()), true)
+    build_server_with_workspace_provider(
+        worth_testkit_server::shared_support_direct_context_runtime::RemaskWorkspaceProvider::new(
+            projection_remask(),
+        ),
+        true,
+    )
 }
 
 pub(crate) fn runtime_backed_server() -> WorthServer {
-    build_server_with_profiled_workspace(worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile())
+    build_server_with_profiled_workspace(
+        worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),
+    )
 }
 
 pub(crate) fn durable_later_server() -> WorthServer {
     build_server_with_profiled_workspace(
-        worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile().with_family_support(
+        worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile()
+            .with_family_support(
             worth_query::facade::runtime::WorthQueryRuntimeFamilySupport::unsupported(
                 worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily::DurableArtifacts,
                 "durable restart and artifact reload stay deferred for direct certification lanes",
@@ -91,7 +120,9 @@ pub(crate) fn support_posture_digest(posture: &WorthServerQuerySupportPosture) -
         worth_server::WorthServerQuerySupportPosture::ProductIndependent { label } => {
             format!("product-independent:{label}")
         }
-        worth_server::WorthServerQuerySupportPosture::PrimaryGraphApplicationSupported { basis_token } => {
+        worth_server::WorthServerQuerySupportPosture::PrimaryGraphApplicationSupported {
+            basis_token,
+        } => {
             format!("primary-graph-application-supported:{basis_token}")
         }
         worth_server::WorthServerQuerySupportPosture::QueryReadSupported { family_contract } => {
@@ -109,25 +140,33 @@ pub(crate) fn support_posture_digest(posture: &WorthServerQuerySupportPosture) -
                 family_contract.contract_digest()
             )
         }
-        worth_server::WorthServerQuerySupportPosture::DirectInspectionSupported { family_contract } => {
+        worth_server::WorthServerQuerySupportPosture::DirectInspectionSupported {
+            family_contract,
+        } => {
             format!(
                 "direct-inspection-supported:{}",
                 family_contract.contract_digest()
             )
         }
-        worth_server::WorthServerQuerySupportPosture::DirectProjectionSupported { family_contract } => {
+        worth_server::WorthServerQuerySupportPosture::DirectProjectionSupported {
+            family_contract,
+        } => {
             format!(
                 "direct-projection-supported:{}",
                 family_contract.contract_digest()
             )
         }
-        worth_server::WorthServerQuerySupportPosture::DirectMutationSupported { family_contract } => {
+        worth_server::WorthServerQuerySupportPosture::DirectMutationSupported {
+            family_contract,
+        } => {
             format!(
                 "direct-mutation-supported:{}",
                 family_contract.contract_digest()
             )
         }
-        worth_server::WorthServerQuerySupportPosture::QueryMutationSupported { family_contract } => {
+        worth_server::WorthServerQuerySupportPosture::QueryMutationSupported {
+            family_contract,
+        } => {
             format!(
                 "query-mutation-supported:{}",
                 family_contract.contract_digest()

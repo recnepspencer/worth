@@ -1,13 +1,41 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_reclaim::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_reclaim::*;
 use {std::num::NonZeroU16, std::num::NonZeroU64};
 
-use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimDeferral, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimFailure, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimReceipt, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::BlobResumeToken, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkPressureClass, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_blob_chunks::BlobChunkSize};
+use worth_store_blob_chunks::BlobChunkSize;
+use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReclaimDeferral,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimFailure,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimReceipt,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::BlobResumeToken,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkPressureClass,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1};
 
-use {crate::physical_blob_journeys::blob_abort::deadline, crate::physical_blob_journeys::blob_abort::limits as terminal_limits, crate::physical_blob_journeys::blob_crash::establish_recovery_frontier, crate::blob_crash::recovery::recover_closed_store, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
-
-
+use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_abort::deadline,
+    crate::physical_blob_journeys::blob_abort::limits as terminal_limits,
+    crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn held_reader_defers_failed_ingest_reclaim_and_one_record_batches_preserve_frontier() {
@@ -36,7 +64,10 @@ fn held_reader_defers_failed_ingest_reclaim_and_one_record_batches_preserve_fron
         .unwrap()
         .reclaim(request(token, &scope))
         .unwrap();
-    assert_eq!(cancelled.cancel(), worth_store::physical_runtime::BlobReclaimDisposition::ProvenNoEffect);
+    assert_eq!(
+        cancelled.cancel(),
+        worth_store::physical_runtime::BlobReclaimDisposition::ProvenNoEffect
+    );
     assert_eq!(
         selected_blob_records(&serving),
         before,
@@ -49,7 +80,10 @@ fn held_reader_defers_failed_ingest_reclaim_and_one_record_batches_preserve_fron
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert_eq!(receipt.dropped_records().len(), 1);
     assert_eq!(receipt.remaining_payload_records(), 2);
     assert_completed_retirement(&receipt);
@@ -95,7 +129,10 @@ fn held_reader_defers_failed_ingest_reclaim_and_one_record_batches_preserve_fron
             .unwrap()
             .wait()
             .unwrap();
-        assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+        assert_eq!(
+            receipt.disposition(),
+            worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+        );
         assert_eq!(receipt.dropped_records().len(), 1);
         assert_eq!(receipt.remaining_payload_records(), remaining);
         assert_completed_retirement(&receipt);
@@ -170,7 +207,10 @@ fn reclaim_inspection_bounds_and_nonterminal_custody_deny_before_effects() {
         let result = serving.blobs().unwrap().reclaim(request);
         match (records, result) {
             (1, Err(worth_store::physical_runtime::BlobReclaimFailure::ScanBoundExhausted)) => {}
-            (128, Err(worth_store::physical_runtime::BlobReclaimFailure::InspectedByteBoundExhausted)) => {}
+            (
+                128,
+                Err(worth_store::physical_runtime::BlobReclaimFailure::InspectedByteBoundExhausted),
+            ) => {}
             (_, Err(cause)) => panic!("wrong inspection denial: {cause:?}"),
             (_, Ok(_)) => panic!("exhausted inspection must not admit a handle"),
         }

@@ -1,12 +1,28 @@
 use {std::num::NonZeroU16, std::num::NonZeroU64};
 
-use {worth_proof::AdmittedBlobReleaseProof};
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::PhysicalIndexPointKey, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::RecordReadDenial};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_contracts::DurableArtifactFamilyId};
+use worth_proof::AdmittedBlobReleaseProof;
+use worth_store_blob_chunks::BlobChunkSize;
+use worth_store_contracts::DurableArtifactFamilyId;
+use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReadOpenFailure,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalIndexPointKey,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::RecordReadDenial,
+};
 
-use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named};
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named;
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
 fn published_blob_catalog_point_uses_one_protected_leaf_after_fresh_reopen() {
@@ -14,7 +30,8 @@ fn published_blob_catalog_point_uses_one_protected_leaf_after_fresh_reopen() {
     let root = tempfile::tempdir().unwrap();
     let serving = serving_from_initialization(root.path());
     let scope = admitted_blob_scope("c11.layout.catalog.point");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let blobs = serving.blobs().unwrap();
     let object = blobs.issue_object_id(limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
@@ -23,7 +40,8 @@ fn published_blob_catalog_point_uses_one_protected_leaf_after_fresh_reopen() {
         (2 * CHUNK_BYTES) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -33,8 +51,11 @@ fn published_blob_catalog_point_uses_one_protected_leaf_after_fresh_reopen() {
     ingest.push(&vec![0x72; CHUNK_BYTES]).unwrap();
     let published = ingest.finish().unwrap();
 
-    let key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence())
-        .expect("Store-issued blob identity is an admitted catalog key");
+    let key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+        object,
+        published.generation().sequence(),
+    )
+    .expect("Store-issued blob identity is an admitted catalog key");
     let before_close = serving
         .layouts()
         .unwrap()
@@ -119,7 +140,8 @@ fn released_indexed_publication_invalidates_selected_catalog_directory() {
     let root = tempfile::tempdir().unwrap();
     let serving = serving_from_initialization(root.path());
     let scope = admitted_blob_scope("c11.layout.catalog.released");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let blobs = serving.blobs().unwrap();
     let object = blobs.issue_object_id(limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
@@ -128,7 +150,8 @@ fn released_indexed_publication_invalidates_selected_catalog_directory() {
         (2 * CHUNK_BYTES) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -138,8 +161,11 @@ fn released_indexed_publication_invalidates_selected_catalog_directory() {
     ingest.push(&vec![0x72; CHUNK_BYTES]).unwrap();
     let published = ingest.finish().unwrap();
 
-    let key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence())
-        .expect("Store-issued catalog key");
+    let key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+        object,
+        published.generation().sequence(),
+    )
+    .expect("Store-issued catalog key");
     assert!(serving
         .layouts()
         .unwrap()
@@ -169,7 +195,8 @@ fn released_indexed_publication_invalidates_selected_catalog_directory() {
         .reclaim(worth_store::physical_runtime::BlobReclaimRequest::released(
             proof,
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
             worth_store::physical_runtime::BlobReclaimLimits::new(
                 std::num::NonZeroU64::new(256).unwrap(),
                 std::num::NonZeroU64::new(64 << 20).unwrap(),
@@ -180,7 +207,10 @@ fn released_indexed_publication_invalidates_selected_catalog_directory() {
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert!(receipt.dropped_records().contains(&selected.record()));
     assert!(serving
         .certification_selected_latest_blob_publication()

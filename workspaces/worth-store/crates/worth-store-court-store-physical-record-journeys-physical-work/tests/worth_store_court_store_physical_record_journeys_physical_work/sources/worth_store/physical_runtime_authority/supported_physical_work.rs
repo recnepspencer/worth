@@ -22,4 +22,4 @@ fn request_admitted_work(
     serving.request_physical_work(admitted)
 }
 
-fn main() {}
+pub(crate) fn main() {}

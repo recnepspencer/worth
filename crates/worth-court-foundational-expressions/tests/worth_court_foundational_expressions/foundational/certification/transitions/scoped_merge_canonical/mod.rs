@@ -1,19 +1,53 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::transitions::scoped_merge_canonical::*;
-use {worth_foundational::compare_canonical_basis, worth_foundational::prepare_admitted_merge_scope_for_canonical_basis, worth_foundational::prepare_canonical_comparison, worth_foundational::prepare_merge_scope_for_canonical_basis, worth_foundational::prepare_merge_verdict_for_canonical_basis, worth_foundational::prepare_scoped_merge_denial_for_canonical_basis, worth_foundational::prepare_scoped_merge_unavailable_for_canonical_basis, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalizationRuleVersion, worth_foundational::FoundationalAdmittedMergeScopeEvidence, worth_foundational::FoundationalDeniedScopeLocus, worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalScopeAdmissionBasis, worth_foundational::FoundationalScopedMergeDenialEvidence, worth_foundational::FoundationalScopedMergeDenialKind, worth_foundational::FoundationalScopedMergeUnavailablePosture, worth_foundational::FoundationalScopedMergeUnavailableReason, worth_foundational::FoundationalSelectedScopeLocus, worth_foundational::FoundationalSelectedScopeNoOpCause, worth_foundational::FoundationalSelectedScopeNoOpEvidence, worth_foundational::FoundationalSkippedOutOfScopeEvidence, worth_foundational::InternedString};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::transitions::scoped_merge_canonical::*;
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::compare_canonical_basis,
+    worth_foundational::prepare_admitted_merge_scope_for_canonical_basis,
+    worth_foundational::prepare_canonical_comparison,
+    worth_foundational::prepare_merge_scope_for_canonical_basis,
+    worth_foundational::prepare_merge_verdict_for_canonical_basis,
+    worth_foundational::prepare_scoped_merge_denial_for_canonical_basis,
+    worth_foundational::prepare_scoped_merge_unavailable_for_canonical_basis,
+    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisLocus,
+    worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue,
+    worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis,
+    worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalizationRuleVersion,
+    worth_foundational::FoundationalAdmittedMergeScopeEvidence,
+    worth_foundational::FoundationalDeniedScopeLocus, worth_foundational::FoundationalMergeScope,
+    worth_foundational::FoundationalScopeAdmissionBasis,
+    worth_foundational::FoundationalScopedMergeDenialEvidence,
+    worth_foundational::FoundationalScopedMergeDenialKind,
+    worth_foundational::FoundationalScopedMergeUnavailablePosture,
+    worth_foundational::FoundationalScopedMergeUnavailableReason,
+    worth_foundational::FoundationalSelectedScopeLocus,
+    worth_foundational::FoundationalSelectedScopeNoOpCause,
+    worth_foundational::FoundationalSelectedScopeNoOpEvidence,
+    worth_foundational::FoundationalSkippedOutOfScopeEvidence, worth_foundational::InternedString,
+};
 
-use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id};
-use {crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node};
+use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
+use {
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node,
+};
 
 #[test]
 fn selected_node_scope_canonical_basis_is_order_independent() {
     let left = ready_scope(
-        &worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear"), selected_node("material")])
-            .expect("left scope"),
+        &worth_foundational::FoundationalMergeScope::selected_nodes([
+            selected_node("gear"),
+            selected_node("material"),
+        ])
+        .expect("left scope"),
     );
     let right = ready_scope(
-        &worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("material"), selected_node("gear")])
-            .expect("right scope"),
+        &worth_foundational::FoundationalMergeScope::selected_nodes([
+            selected_node("material"),
+            selected_node("gear"),
+        ])
+        .expect("right scope"),
     );
 
     assert_equivalent(left, right);
@@ -49,8 +83,8 @@ fn selected_aspect_scope_and_admitted_evidence_canonicalize_by_node_then_aspect(
 
 #[test]
 fn merge_verdict_canonical_basis_carries_admitted_scope_evidence() {
-    let scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope");
+    let scope = worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+        .expect("node scope");
     let evidence = worth_foundational::FoundationalAdmittedMergeScopeEvidence::new(
         branch_id("feature/geometry"),
         branch_id("main"),
@@ -83,8 +117,8 @@ fn merge_verdict_canonical_basis_carries_admitted_scope_evidence() {
 
 #[test]
 fn scoped_denial_and_unavailable_posture_have_distinct_canonical_basis() {
-    let scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")]).expect("node scope");
+    let scope = worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear")])
+        .expect("node scope");
     let denial = worth_foundational::FoundationalScopedMergeDenialEvidence::new(
         branch_id("feature/geometry"),
         branch_id("main"),

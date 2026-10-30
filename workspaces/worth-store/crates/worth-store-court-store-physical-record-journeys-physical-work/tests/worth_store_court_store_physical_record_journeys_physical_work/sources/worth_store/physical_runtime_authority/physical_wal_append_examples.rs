@@ -94,10 +94,7 @@ fn inspect_wal_append(
     let settlement = appended.settlement();
 
     assert_eq!(settlement.range(), declaration.artifact_range());
-    assert_eq!(
-        settlement.payload_digest(),
-        declaration.payload_digest(),
-    );
+    assert_eq!(settlement.payload_digest(), declaration.payload_digest(),);
 
     let wal = submission
         .wal_observation()
@@ -112,7 +109,7 @@ fn inspect_wal_append(
     Ok(())
 }
 
-fn main() {
+pub(crate) fn main() {
     let _ = (
         append_wal_group,
         synchronize_wal_group,

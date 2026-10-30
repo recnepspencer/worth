@@ -1,10 +1,29 @@
 //! Genuine Store activation and selected C8 checkpoint ancestry. Serving
 //! remains sealed until Store's same-media tier rejoin is installed.
 
-#[allow(unused_imports)] use crate::production_entry::tier_epoch_reopen::*;
-use {std::path::Path, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, worth_store_testkit_recovery_runtime::production_entry::initialized_recovery_world, worth_store_testkit_recovery_runtime::production_entry::run_entry};
+#[allow(unused_imports)]
+use crate::production_entry::tier_epoch_reopen::*;
 use {sha2::Digest, sha2::Sha256};
-use {worth_store_physical_format::checkpoint_certificate_frame_bytes, worth_store_physical_format::decode_checkpoint_certificate, worth_store_physical_format::CheckpointCertificateKind, worth_store_physical_format::CheckpointStreamFooter, worth_store_physical_format::ReleaseCheckpointCertificateV1, worth_store_physical_format::ReleaseCheckpointNoReleaseV1, worth_store_physical_format::CHECKPOINT_CERTIFICATE_PREFIX_BYTES, worth_store_physical_format::CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES};
+use {
+    std::path::Path, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::initialized_recovery_world,
+    worth_store_testkit_recovery_runtime::production_entry::run_entry,
+};
+use {
+    worth_store_physical_format::checkpoint_certificate_frame_bytes,
+    worth_store_physical_format::decode_checkpoint_certificate,
+    worth_store_physical_format::CheckpointCertificateKind,
+    worth_store_physical_format::CheckpointStreamFooter,
+    worth_store_physical_format::ReleaseCheckpointCertificateV1,
+    worth_store_physical_format::ReleaseCheckpointNoReleaseV1,
+    worth_store_physical_format::CHECKPOINT_CERTIFICATE_PREFIX_BYTES,
+    worth_store_physical_format::CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES,
+};
 
 #[test]
 fn selected_tier_epoch_reopens_with_positive_no_release_checkpoint_ancestry() {
@@ -22,7 +41,8 @@ fn selected_tier_epoch_reopens_with_positive_no_release_checkpoint_ancestry() {
     assert!(epoch > 0);
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x6e; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -56,7 +76,10 @@ fn selected_tier_epoch_reopens_with_positive_no_release_checkpoint_ancestry() {
 
 #[test]
 fn selected_tier_epoch_opens_serving_with_genuine_no_release_custody() {
-    use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+    use {
+        worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+        worth_store_recovery_runtime::WorthStoreRecovery,
+    };
 
     let world = initialized_recovery_world("tier-no-release-serving");
     world
@@ -65,7 +88,8 @@ fn selected_tier_epoch_opens_serving_with_genuine_no_release_custody() {
         .expect("typed one-time tier activation");
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x6f; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()

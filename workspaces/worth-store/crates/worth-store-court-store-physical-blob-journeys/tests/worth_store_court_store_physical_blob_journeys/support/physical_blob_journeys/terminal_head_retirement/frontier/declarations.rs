@@ -2,13 +2,30 @@
 //! residue of the released session: it leaves with the release, before any
 //! chunk, so the head still becomes terminal and retires.
 
-pub(crate) use {worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1};
+pub(crate) use worth_store::physical_runtime::ServingPhysicalRuntime;
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+};
 
-pub(crate) use {crate::physical_blob_journeys::terminal_head_retirement::non_reissue::assert_release_is_the_sessions_fate, crate::physical_blob_journeys::terminal_head_retirement::non_reissue::assert_retired_identity_stays_ended, crate::physical_blob_journeys::terminal_head_retirement::non_reissue::retire_once_expired};
-pub(crate) use {crate::physical_blob_journeys::terminal_head_retirement::checkpoint, crate::physical_blob_journeys::terminal_head_retirement::denied, crate::physical_blob_journeys::terminal_head_retirement::observe, crate::physical_blob_journeys::terminal_head_retirement::publication::publish_chunks, crate::physical_blob_journeys::terminal_head_retirement::release_batch, crate::physical_blob_journeys::terminal_head_retirement::settle, worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial, worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure, crate::physical_blob_journeys::terminal_head_retirement::publication::Published, crate::physical_blob_journeys::terminal_head_retirement::CHUNK};
-pub(crate) use {worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records};
-pub(crate) use {worth_store_testkit_store::fixture::serving_from_initialization};
+pub(crate) use worth_store_testkit_store::fixture::serving_from_initialization;
+pub(crate) use worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records;
+pub(crate) use {
+    crate::physical_blob_journeys::terminal_head_retirement::checkpoint,
+    crate::physical_blob_journeys::terminal_head_retirement::denied,
+    crate::physical_blob_journeys::terminal_head_retirement::observe,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::publish_chunks,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::Published,
+    crate::physical_blob_journeys::terminal_head_retirement::release_batch,
+    crate::physical_blob_journeys::terminal_head_retirement::settle,
+    crate::physical_blob_journeys::terminal_head_retirement::CHUNK,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure,
+};
+pub(crate) use {
+    crate::physical_blob_journeys::terminal_head_retirement::non_reissue::assert_release_is_the_sessions_fate,
+    crate::physical_blob_journeys::terminal_head_retirement::non_reissue::assert_retired_identity_stays_ended,
+    crate::physical_blob_journeys::terminal_head_retirement::non_reissue::retire_once_expired,
+};
 
 /// One ingest that leaves resume frontiers selected under its publication.
 pub(crate) struct Ingest {
@@ -50,7 +67,10 @@ pub(crate) struct SessionRecords {
     pub(crate) trees: usize,
 }
 
-pub(crate) fn session_records(serving: &ServingPhysicalRuntime, published: &Published) -> SessionRecords {
+pub(crate) fn session_records(
+    serving: &ServingPhysicalRuntime,
+    published: &Published,
+) -> SessionRecords {
     let object = published.object.bytes();
     let selected = selected_blob_records(serving);
     let records = || {
@@ -60,28 +80,42 @@ pub(crate) fn session_records(serving: &ServingPhysicalRuntime, published: &Publ
     };
     let session = records()
         .find_map(|record| match record {
-            worth_store_physical_format::BlobRecordV1::SessionDeclared(declared) if declared.object() == object => {
+            worth_store_physical_format::BlobRecordV1::SessionDeclared(declared)
+                if declared.object() == object =>
+            {
                 Some(declared.session())
             }
             _ => None,
         })
         .expect("the declaration of the object stays selected");
-    let mut counted = crate::physical_blob_journeys::terminal_head_retirement::frontier::SessionRecords::default();
+    let mut counted =
+        crate::physical_blob_journeys::terminal_head_retirement::frontier::SessionRecords::default(
+        );
     for record in records() {
         match record {
-            worth_store_physical_format::BlobRecordV1::SessionDeclared(value) if value.session() == session => {
+            worth_store_physical_format::BlobRecordV1::SessionDeclared(value)
+                if value.session() == session =>
+            {
                 counted.declarations += 1;
             }
-            worth_store_physical_format::BlobRecordV1::GenerationPublished(value) if value.session() == session => {
+            worth_store_physical_format::BlobRecordV1::GenerationPublished(value)
+                if value.session() == session =>
+            {
                 counted.publications += 1;
             }
-            worth_store_physical_format::BlobRecordV1::SessionFrontier(value) if value.session() == session => {
+            worth_store_physical_format::BlobRecordV1::SessionFrontier(value)
+                if value.session() == session =>
+            {
                 counted.frontiers += 1;
             }
-            worth_store_physical_format::BlobRecordV1::Chunk(value) if value.occurrence().session() == session => {
+            worth_store_physical_format::BlobRecordV1::Chunk(value)
+                if value.occurrence().session() == session =>
+            {
                 counted.chunks += 1;
             }
-            worth_store_physical_format::BlobRecordV1::TreeNode(value) if value.occurrence().session() == session => {
+            worth_store_physical_format::BlobRecordV1::TreeNode(value)
+                if value.occurrence().session() == session =>
+            {
                 counted.trees += 1;
             }
             _ => {}

@@ -1,19 +1,48 @@
-#[allow(unused_imports)] use worth_store_testkit_store::physical_record_journeys::maintenance_interference::scheduler::*;
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalReadWorkRequest, worth_store::physical_runtime::PhysicalWorkCapacity, worth_store::physical_runtime::PhysicalWorkCapacityDimension, worth_store::physical_runtime::PhysicalWorkReadiness, worth_store::physical_runtime::RecordSchedulerReservationDenial, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_io_scheduler::foreground_reservation::BandwidthToken, worth_store_io_scheduler::foreground_reservation::DirtyPageBudget, worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration, worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope, worth_store_io_scheduler::foreground_reservation::ForegroundReservationAdmissionDenial, worth_store_io_scheduler::foreground_reservation::ForegroundReservationResourceShortfall, worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget, worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundAdmissionDenial, worth_store_io_scheduler::foreground_reservation::QueueSlot, worth_store_io_scheduler::foreground_reservation::WorkerPermit, worth_store_io_scheduler::foreground_reservation::WriteBackWindow};
-use {worth_store_physical_backend::MediaOperationRole};
+use worth_proof::TransitionOutcome;
+use worth_store_physical_backend::MediaOperationRole;
+#[allow(unused_imports)]
+use worth_store_testkit_store::physical_record_journeys::maintenance_interference::scheduler::*;
+use {
+    worth_store::physical_runtime::PhysicalReadWorkRequest,
+    worth_store::physical_runtime::PhysicalWorkCapacity,
+    worth_store::physical_runtime::PhysicalWorkCapacityDimension,
+    worth_store::physical_runtime::PhysicalWorkReadiness,
+    worth_store::physical_runtime::RecordSchedulerReservationDenial,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+use {
+    worth_store_io_scheduler::foreground_reservation::BandwidthToken,
+    worth_store_io_scheduler::foreground_reservation::DirtyPageBudget,
+    worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration,
+    worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope,
+    worth_store_io_scheduler::foreground_reservation::ForegroundReservationAdmissionDenial,
+    worth_store_io_scheduler::foreground_reservation::ForegroundReservationResourceShortfall,
+    worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget,
+    worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundAdmissionDenial,
+    worth_store_io_scheduler::foreground_reservation::QueueSlot,
+    worth_store_io_scheduler::foreground_reservation::WorkerPermit,
+    worth_store_io_scheduler::foreground_reservation::WriteBackWindow,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 #[test]
 fn canonical_profile_keeps_eight_ready_slots_and_two_background_dispatches() {
     let parent = tempfile::tempdir().unwrap();
     let (profile, request, _) = work_fixture();
-    let capacity = worth_store::physical_runtime::PhysicalWorkCapacity::new(8, 1, 1_024, 1024 * 1024, 4 * 1024 * 1024)
-        .unwrap()
-        .with_dispatch_permits(4)
-        .unwrap();
+    let capacity = worth_store::physical_runtime::PhysicalWorkCapacity::new(
+        8,
+        1,
+        1_024,
+        1024 * 1024,
+        4 * 1024 * 1024,
+    )
+    .unwrap()
+    .with_dispatch_permits(4)
+    .unwrap();
     let serving = serving_from_initialization_with_work_profile(
         &parent.path().join("store"),
         profile.with_capacity(capacity),

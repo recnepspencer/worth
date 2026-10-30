@@ -1,8 +1,8 @@
+pub(crate) use std::time::Duration;
 pub(crate) use {std::path::Path, std::path::PathBuf};
 pub(crate) use {std::process::Command, std::process::Output, std::process::Stdio};
-pub(crate) use {std::time::Duration};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::child_lifecycle};
+pub(crate) use worth_store_testkit_recovery_runtime::child_lifecycle;
 
 pub(crate) fn run_observer(root: &Path, output: PathBuf, temporary_root: &Path) -> (u32, Output) {
     let mut command = std::process::Command::new(
@@ -99,7 +99,9 @@ pub(crate) fn spawn_recovery_at_yieldpoint_with_deadline(
 }
 
 pub(crate) fn run_process(mut command: Command) -> (u32, Output) {
-    command.stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
+    command
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
     let child = command
         .spawn()
         .map(worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard::new)

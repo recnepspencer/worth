@@ -1,7 +1,8 @@
 // Caller-level contracts for the bounded workflows worth-proof promises to support.
 
-#[allow(unused_imports)] use crate::supported_public_workflows::ordinary_context::*;
-use {worth_proof::prelude::*};
+#[allow(unused_imports)]
+use crate::supported_public_workflows::ordinary_context::*;
+use worth_proof::prelude::*;
 use {worth_proof::with_brand, worth_proof::DisjointPair};
 
 #[test]

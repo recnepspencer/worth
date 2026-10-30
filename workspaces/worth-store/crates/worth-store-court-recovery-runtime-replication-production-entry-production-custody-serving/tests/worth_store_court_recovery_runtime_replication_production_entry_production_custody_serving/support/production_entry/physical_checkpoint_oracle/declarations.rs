@@ -11,11 +11,18 @@
 //! recovery is also killed just before it discharges them, and the next one
 //! must settle to the same result.
 
-pub(crate) use {std::num::NonZeroU64};
-pub(crate) use {std::path::Path};
+pub(crate) use std::num::NonZeroU64;
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-pub(crate) use {worth_store::physical_runtime::OrderedJournalPublication, worth_store::physical_runtime::PhysicalRecoveryYieldpointStage, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub(crate) use {
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+};
+pub(crate) use {
+    worth_store::physical_runtime::OrderedJournalPublication,
+    worth_store::physical_runtime::PhysicalRecoveryYieldpointStage,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
 pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal::recovery_interruption::kill_recovery_at};
 pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::open_with_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
@@ -45,19 +52,26 @@ pub(crate) fn publish(serving: &ServingPhysicalRuntime, position: u64) {
     serving
         .canonical_commits()
         .expect("journal access")
-        .publish(worth_store::physical_runtime::OrderedJournalPublication::new(
-            position,
-            payload(position),
-            placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-        ))
+        .publish(
+            worth_store::physical_runtime::OrderedJournalPublication::new(
+                position,
+                payload(position),
+                placement(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
+            ),
+        )
         .unwrap_or_else(|failure| panic!("entry {position}: {failure:?}"));
 }
 
-pub(crate) fn checkpoint(serving: &ServingPhysicalRuntime, key: u8) -> Option<PhysicalCheckpointOutcome> {
+pub(crate) fn checkpoint(
+    serving: &ServingPhysicalRuntime,
+    key: u8,
+) -> Option<PhysicalCheckpointOutcome> {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     match serving.checkpoints().start(request).into_raw() {
         worth_proof::TransitionOutcome::Success(handle) => Some(handle.wait()),
@@ -68,11 +82,36 @@ pub(crate) fn checkpoint(serving: &ServingPhysicalRuntime, key: u8) -> Option<Ph
 /// A cleanly closed store holding every entry, with the first half covered
 /// by a selected checkpoint when the target replaces one.
 pub(crate) fn prepared_store(target: Target) -> worth_store_test_support::TemporaryDirectory {
+    let _ = worth_store_testkit_recovery_runtime::setup_observation::record(
+        "physical-checkpoint-prefix",
+        &|inputs| {
+            inputs.boolean(
+                "replaces-checkpoint",
+                match target {
+                    Target::First => false,
+                    Target::Replacement => true,
+                },
+            );
+            inputs.unsigned("entries", ENTRIES);
+            for position in 1..=ENTRIES {
+                inputs.unsigned("journal-position", position);
+                inputs.bytes("journal-payload", &payload(position));
+            }
+            if matches!(target, Target::Replacement) {
+                inputs.unsigned("checkpoint-after-position", ENTRIES / 2);
+                inputs.bytes("checkpoint-key", &[0xa1; 32]);
+            }
+        },
+    );
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery("checkpoint-oracle")
         .expect("oracle store");
     for position in 1..=ENTRIES {
         publish(world.serving(), position);
-        if matches!(target, crate::production_entry::physical_checkpoint_oracle::Target::Replacement) && position == ENTRIES / 2 {
+        if matches!(
+            target,
+            crate::production_entry::physical_checkpoint_oracle::Target::Replacement
+        ) && position == ENTRIES / 2
+        {
             assert!(matches!(
                 checkpoint(world.serving(), 0xa1),
                 Some(worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_))
@@ -136,12 +175,18 @@ pub(crate) fn measure(target: Target) -> Vec<(MediaOperationRole, u64)> {
 /// Whether the case also kills recovery before it discharges obligations:
 /// an interrupted candidate synchronization (an unselected candidate) and an
 /// interrupted replacement (the selected checkpoint's publication).
-pub(crate) fn interrupts_recovery(role: MediaOperationRole, directive: &MediaFaultDirective) -> bool {
-    matches!(directive, worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect)
-        && matches!(
-            role,
-            worth_store::physical_runtime::certification::MediaOperationRole::SynchronizeFileState | worth_store::physical_runtime::certification::MediaOperationRole::AtomicReplace
-        )
+pub(crate) fn interrupts_recovery(
+    role: MediaOperationRole,
+    directive: &MediaFaultDirective,
+) -> bool {
+    matches!(
+        directive,
+        worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect
+    ) && matches!(
+        role,
+        worth_store::physical_runtime::certification::MediaOperationRole::SynchronizeFileState
+            | worth_store::physical_runtime::certification::MediaOperationRole::AtomicReplace
+    )
 }
 
 /// One faulted checkpoint, then production recovery. Returns whether a
@@ -167,7 +212,10 @@ pub(crate) fn run_case(
     );
     let _ = serving.abort();
     let killed = interrupts_recovery(role, &directive)
-        && kill_recovery_at(root, worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::ObligationDischarge);
+        && kill_recovery_at(
+            root,
+            worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::ObligationDischarge,
+        );
     assert_recovers(root, &case);
     killed
 }
@@ -190,8 +238,7 @@ pub(crate) fn sweep(target: Target) {
         !counts.is_empty(),
         "the checkpoint performed media operations"
     );
-    let mut cases = 0;
-    let mut killed = 0;
+    let mut cases = Vec::new();
     for (role, count) in counts {
         for nth in 1..=count {
             let nth = std::num::NonZeroU64::new(nth).unwrap();
@@ -202,11 +249,17 @@ pub(crate) fn sweep(target: Target) {
                 },
                 worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect,
             ] {
-                cases += 1;
-                killed += usize::from(run_case(target, role, nth, directive));
+                cases.push((role, nth, directive));
             }
         }
     }
+    let scheduled = cases.len();
+    let outcomes = worth_store_test_support::sweep::run(cases, |(role, nth, directive)| {
+        run_case(target, role, nth, directive)
+    });
+    let cases = outcomes.len();
+    assert_eq!(cases, scheduled, "scheduled checkpoint cases were lost");
+    let killed: usize = outcomes.into_iter().map(usize::from).sum();
     eprintln!("checkpoint oracle {target:?}: {cases} cases, {killed} recoveries killed");
     assert!(
         killed > 0,

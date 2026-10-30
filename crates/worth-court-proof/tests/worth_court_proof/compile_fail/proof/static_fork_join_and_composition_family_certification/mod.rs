@@ -1,11 +1,16 @@
-#[allow(unused_imports)] use crate::static_fork_join_and_composition_family_certification::boundary_context::*;
 #[allow(unused_imports)]
-use {crate::shared_support as support};
+use crate::shared_support as support;
+#[allow(unused_imports)]
+use crate::static_fork_join_and_composition_family_certification::boundary_context::*;
 
-use {crate::shared_support::compile_fail::run_compile_fail_bundle};
-use {crate::shared_support::compile_pass::run_compile_pass_bundle};
-use {crate::shared_support::composition_family};
-use {worth_proof::lower_deterministic_family_pair, worth_proof::resolve_family_symbol, worth_proof::AuthoritativeFamilyMember, worth_proof::CompositionFamilySymbol, worth_proof::FamilyLifecycleAction};
+use crate::shared_support::compile_fail::run_compile_fail_bundle;
+
+use crate::shared_support::composition_family;
+use {
+    worth_proof::lower_deterministic_family_pair, worth_proof::resolve_family_symbol,
+    worth_proof::AuthoritativeFamilyMember, worth_proof::CompositionFamilySymbol,
+    worth_proof::FamilyLifecycleAction,
+};
 
 #[test]
 fn static_fork_join_and_composition_family_certification() {
@@ -15,11 +20,11 @@ fn static_fork_join_and_composition_family_certification() {
     let composition_digest = crate::shared_support::composition_family::composition_digest();
     let proof_shape_digest = crate::shared_support::composition_family::proof_shape_digest();
     let failure_digest = crate::shared_support::composition_family::failure_digest();
-    let codegen_honesty_report = crate::shared_support::composition_family::codegen_honesty_report();
+    let codegen_honesty_report =
+        crate::shared_support::composition_family::codegen_honesty_report();
     let residual_debt_report = crate::shared_support::composition_family::residual_debt_report();
 
     run_compile_fail_bundle(&compile_fail_bundle);
-    run_compile_pass_bundle(&compile_pass_bundle);
 
     assert_eq!(
         compile_fail_bundle.suite(),

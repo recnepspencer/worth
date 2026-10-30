@@ -12,7 +12,10 @@ fn cancellation_before_observation_or_transaction_acquires_no_obligation() {
     let source = worth_relational::facade::mvcc::RelationalCancellationSource::new();
     source.cancel();
     let control: RelationalOperationControl = source.token().into();
-    let cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![identity.clone()]);
+    let cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![identity.clone()],
+    );
 
     assert_eq!(
         world
@@ -84,7 +87,10 @@ fn cancellation_during_preparation_releases_the_transaction_once() {
             source.token().into(),
         )
         .unwrap();
-    let cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
+    let cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![identity],
+    );
     source.cancel();
 
     let error = world
@@ -148,10 +154,16 @@ fn cancellation_after_candidate_creation_wins_before_branch_movement() {
     let stream_before = world
         .runtime
         .publication()
-        .read_patch_stream(execution, worth_relational::facade::publication::PatchStreamRequest::default())
+        .read_patch_stream(
+            execution,
+            worth_relational::facade::publication::PatchStreamRequest::default(),
+        )
         .unwrap();
     let retention_before = world.runtime.retention().inspect_plan(execution).unwrap();
-    let cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
+    let cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![identity],
+    );
     source.cancel();
 
     assert!(matches!(
@@ -176,7 +188,10 @@ fn cancellation_after_candidate_creation_wins_before_branch_movement() {
         world
             .runtime
             .publication()
-            .read_patch_stream(execution, worth_relational::facade::publication::PatchStreamRequest::default())
+            .read_patch_stream(
+                execution,
+                worth_relational::facade::publication::PatchStreamRequest::default()
+            )
             .unwrap(),
         stream_before
     );
@@ -268,7 +283,9 @@ fn cancellation_after_linearization_preserves_performed_commit_and_settles_once(
         .publication_port()
         .compare_and_publish(execution, candidate)
     {
-        worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
+        worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {
+            performed
+        }
         outcome => panic!("uncancelled Supply Chain publication performs: {outcome:?}"),
     };
     assert_ne!(

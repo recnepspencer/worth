@@ -1,7 +1,16 @@
-#[allow(unused_imports)] use crate::serial_lineage::ordinary_context::*;
-use {std::num::NonZeroUsize};
-use {worth_execution::CancellationToken, worth_execution::ExecutionMemoryReservation, worth_execution::ExecutionRequest, worth_execution::LeaseDenial, worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel, worth_execution::SerialRequest};
-use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy};
+#[allow(unused_imports)]
+use crate::serial_lineage::ordinary_context::*;
+use std::num::NonZeroUsize;
+use {
+    worth_execution::CancellationToken, worth_execution::ExecutionMemoryReservation,
+    worth_execution::ExecutionRequest, worth_execution::LeaseDenial,
+    worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel,
+    worth_execution::SerialRequest,
+};
+use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+};
 
 #[test]
 fn nested_serial_scope_cannot_replace_parent_memory() {
@@ -10,18 +19,22 @@ fn nested_serial_scope_cannot_replace_parent_memory() {
     let mut entered = false;
     worth_execution::ExecutionRequest::serial(&parent)
         .in_scope(|lease| {
-            let _held = worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, 2_048).unwrap();
+            let _held = worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, 2_048)
+                .unwrap();
             worth_execution::ExecutionRequest::serial(&child)
                 .in_scope(|lease| {
                     entered = true;
                     let denial =
-                        worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, 4_096).unwrap_err();
+                        worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, 4_096)
+                            .unwrap_err();
                     assert!(matches!(
                         denial,
-                        worth_execution::LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
-                            level: worth_execution::MemoryLimitLevel::Policy { ancestor: 1 },
-                            ..
-                        })
+                        worth_execution::LeaseDenial::MemoryExhausted(
+                            worth_execution::MemoryLimitDenial::Capacity {
+                                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 1 },
+                                ..
+                            }
+                        )
                     ));
                 })
                 .unwrap();
@@ -52,10 +65,12 @@ fn nested_serial_scope_keeps_the_child_limit() {
                 .in_scope(|lease| {
                     assert!(matches!(
                         worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, 1_024),
-                        Err(worth_execution::LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
-                            level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
-                            ..
-                        }))
+                        Err(worth_execution::LeaseDenial::MemoryExhausted(
+                            worth_execution::MemoryLimitDenial::Capacity {
+                                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+                                ..
+                            }
+                        ))
                     ));
                 })
                 .unwrap();

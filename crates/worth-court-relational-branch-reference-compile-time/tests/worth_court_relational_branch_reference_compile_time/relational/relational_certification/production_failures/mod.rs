@@ -43,7 +43,13 @@ fn production_transaction_failure_is_typed_before_handle_binding() {
 
     let mut program = court_program();
     program.relation_specs_mut_for_test()[0].source =
-        worth_relational::facade::transactions::EntityReference::Existing(worth_relational::facade::identity::EntityId::new(worth_relational::facade::identity::PartitionId::main(), u64::MAX, 0));
+        worth_relational::facade::transactions::EntityReference::Existing(
+            worth_relational::facade::identity::EntityId::new(
+                worth_relational::facade::identity::PartitionId::main(),
+                u64::MAX,
+                0,
+            ),
+        );
 
     let error = match compile_supply_chain_baseline(execution, program) {
         Ok(_) => panic!("a relation with an unknown endpoint must fail the commit"),
@@ -254,8 +260,6 @@ fn semantic_relation_binding_rejects_wrong_kind_and_endpoint_intent() {
         worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::handles::HandleBindingError::WrongRelationEndpoints { .. }
     ));
 }
-
-
 
 #[path = "correspondence/mod.rs"]
 pub(crate) mod correspondence;

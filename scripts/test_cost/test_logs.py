@@ -4,6 +4,7 @@ import tempfile
 import unittest
 
 from logs import duplicates, llvm_lines, read_lane
+from telemetry import timing_summary
 
 
 def compiled(**changes):
@@ -43,11 +44,26 @@ class ArtifactObservationTests(unittest.TestCase):
             path.write_text('   Compiling owner v1\n')
             self.assertEqual(read_lane(path)['build_observation'], 'unmeasured')
 
+    def test_formal_build_and_run_telemetry_are_distinct_from_summed_test_work(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'formal.log'
+            path.write_text('Finished `ci-test` profile [unoptimized] target(s) in 26m 39s\n'
+                            'Summary [   0.265s] 2 tests run: 2 passed\n')
+            observation = read_lane(path)
+            self.assertEqual(observation['telemetry']['build_seconds'], 1599)
+            self.assertEqual(observation['telemetry']['run_seconds'], .265)
+            self.assertEqual(observation['build_observation'], 'unmeasured')
+
     def test_cargo_json_inside_test_output_is_also_observed(self):
         result = self.lane([dict(type='test', event='failed', name='compiler',
                                  stdout=json.dumps(compiled()), exec_time=900)])
         self.assertEqual(len(result['artifacts']), 1)
         self.assertEqual(result['telemetry']['test_work_seconds'], 900)
+
+    def test_nextest_ignored_inventory_counts_do_not_require_an_executed_test_event(self):
+        result = self.lane([dict(type='suite', event='ok', passed=1, failed=0, ignored=1)])
+        self.assertEqual(timing_summary(result)['ignored'], 1)
+        self.assertEqual(timing_summary(result)['pass'], 0)
 
     def test_llvm_totals_and_generic_helper_families_are_retained(self):
         rows = llvm_lines('1000 (100%) 30 (100%) TOTAL\n500 (50%) 4 (10%) kit::world<T>',

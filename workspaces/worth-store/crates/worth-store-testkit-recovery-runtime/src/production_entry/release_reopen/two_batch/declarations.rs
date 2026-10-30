@@ -1,19 +1,36 @@
 //! Two genuine Store releases retain an older selected V3 descriptor when
 //! the accumulator tip advances, including after Batch carryforward.
 
-pub use {worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, std::num::NonZeroU16, std::num::NonZeroU64, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_proof::TransitionOutcome, crate::production_entry::certified_release_serving, crate::production_entry::release_reopen::reissue_proof, crate::production_entry::release_reopen::released_world_in_tier, crate::release_reopen::selected_head_oracle, crate::production_entry::release_reopen::selected_release_certificates};
+pub use {
+    crate::production_entry::certified_release_serving,
+    crate::production_entry::release_reopen::reissue_proof,
+    crate::production_entry::release_reopen::released_world_in_tier,
+    crate::production_entry::release_reopen::selected_release_certificates,
+    crate::release_reopen::selected_head_oracle, std::num::NonZeroU16, std::num::NonZeroU64,
+    worth_proof::TransitionOutcome, worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
 
 pub fn run(carryforward: bool) {
     let (world, first, _, proof) = released_world_in_tier(1, false, None);
     assert!(first.remaining_payload_records() > 0);
     let (first_batches, first_accumulator) = selected_release_certificates(&world);
     assert_eq!(first_batches.len(), 1);
-    let first_heads =
-        crate::release_reopen::selected_head_oracle::selected_heads(world.retained_root().path(), first_accumulator);
+    let first_heads = crate::release_reopen::selected_head_oracle::selected_heads(
+        world.retained_root().path(),
+        first_accumulator,
+    );
     let continuation = worth_store::physical_runtime::BlobReclaimRequest::released(
         reissue_proof(&proof),
         world.placement(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(1024).unwrap(),
             std::num::NonZeroU64::new(64 << 20).unwrap(),
@@ -29,7 +46,10 @@ pub fn run(carryforward: bool) {
         .expect("same released publication continuation")
         .wait()
         .expect("second release completed");
-    assert_eq!(second.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        second.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert_eq!(second.dropped_records().len(), 1);
     assert!(second.remaining_payload_records() < first.remaining_payload_records());
     let (batches, accumulator) = selected_release_certificates(&world);
@@ -47,8 +67,10 @@ pub fn run(carryforward: bool) {
     assert!(
         accumulator.base().cumulative_dropped() > first_accumulator.base().cumulative_dropped()
     );
-    let current_heads =
-        crate::release_reopen::selected_head_oracle::selected_heads(world.retained_root().path(), accumulator);
+    let current_heads = crate::release_reopen::selected_head_oracle::selected_heads(
+        world.retained_root().path(),
+        accumulator,
+    );
     assert_eq!(first_heads.len(), 1);
     assert_eq!(current_heads.len(), 1);
     assert_eq!(current_heads[0].key(), first_heads[0].key());
@@ -56,7 +78,8 @@ pub fn run(carryforward: bool) {
     if carryforward {
         let checkpoint = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
             worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x74; 32]),
-            worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+                .unwrap(),
         );
         let worth_proof::TransitionOutcome::Success(handle) =
             world.serving().checkpoints().start(checkpoint).into_raw()

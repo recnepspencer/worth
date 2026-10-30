@@ -1,12 +1,27 @@
-#[allow(unused_imports)] use crate::owned_async::ordinary_context::managed::*;
-use {crate::owned_async::ordinary_context::fixture::admit_managed, crate::owned_async::ordinary_context::fixture::completion, crate::owned_async::ordinary_context::fixture::selected_fork, crate::owned_async::ordinary_context::fixture::source_commit, crate::owned_async::ordinary_context::fixture::AsyncSourceCourt};
-use {std::num::NonZeroU64};
-use {worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial, worth_runtime_bridge::facade::TruthCommitIdentity};
-use {worth_signal::facade::ResourceManagedQueueDenialClass, worth_signal::facade::ResourceManagedQueueMutationReport};
+#[allow(unused_imports)]
+use crate::owned_async::ordinary_context::managed::*;
+use std::num::NonZeroU64;
+use {
+    crate::owned_async::ordinary_context::fixture::admit_managed,
+    crate::owned_async::ordinary_context::fixture::completion,
+    crate::owned_async::ordinary_context::fixture::selected_fork,
+    crate::owned_async::ordinary_context::fixture::source_commit,
+    crate::owned_async::ordinary_context::fixture::AsyncSourceCourt,
+};
+use {
+    worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial,
+    worth_runtime_bridge::facade::TruthCommitIdentity,
+};
+use {
+    worth_signal::facade::ResourceManagedQueueDenialClass,
+    worth_signal::facade::ResourceManagedQueueMutationReport,
+};
 
 #[test]
 fn managed_queue_saturates_and_cancellation_leaves_exact_drain_custody() {
-    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(std::num::NonZeroU64::MIN);
+    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(
+        std::num::NonZeroU64::MIN,
+    );
     let selected = selected_fork(&court);
     let owner = admit_managed(&court, &selected);
     let request = owner.request().unwrap();
@@ -109,7 +124,9 @@ fn managed_queue_saturates_and_cancellation_leaves_exact_drain_custody() {
 
 #[test]
 fn actual_completion_commit_releases_active_index_and_old_cleanup_cannot_cancel_reused_node() {
-    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(std::num::NonZeroU64::MIN);
+    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(
+        std::num::NonZeroU64::MIN,
+    );
     let selected = selected_fork(&court);
     let owner = admit_managed(&court, &selected);
     let request = owner.request().unwrap();
@@ -192,7 +209,9 @@ fn actual_completion_commit_releases_active_index_and_old_cleanup_cannot_cancel_
 
 #[test]
 fn queued_replacement_refusal_retains_the_exact_current_custodian() {
-    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(std::num::NonZeroU64::MIN);
+    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(
+        std::num::NonZeroU64::MIN,
+    );
     let selected = selected_fork(&court);
     let mut owner = admit_managed(&court, &selected);
     let request = owner.retained_request().unwrap();
@@ -241,9 +260,13 @@ fn queued_replacement_refusal_retains_the_exact_current_custodian() {
         court
             .bridge
             .advance_managed_owned_async_retry(&mut owner, &scheduled, 7),
-        Err(worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial::Signal(
-            worth_signal::facade::branch::SignalOwnedAsyncQueueDenial::QueueNotDrained { depth: 1 }
-        ))
+        Err(
+            worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial::Signal(
+                worth_signal::facade::branch::SignalOwnedAsyncQueueDenial::QueueNotDrained {
+                    depth: 1
+                }
+            )
+        )
     ));
     assert_eq!(owner.request_handle(), original);
     assert_eq!(
@@ -272,7 +295,9 @@ fn queued_replacement_refusal_retains_the_exact_current_custodian() {
 
 #[test]
 fn foreign_and_effect_indeterminate_admissions_cannot_fulfill_an_ordinary_resource() {
-    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(std::num::NonZeroU64::MIN);
+    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(
+        std::num::NonZeroU64::MIN,
+    );
     let selected = selected_fork(&court);
     let owner = admit_managed(&court, &selected);
     let request = owner.request().unwrap();
@@ -300,7 +325,9 @@ fn foreign_and_effect_indeterminate_admissions_cannot_fulfill_an_ordinary_resour
         .bridge
         .admit_owned_async_completion(request, &validated)
         .unwrap();
-    let foreign = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(std::num::NonZeroU64::MIN);
+    let foreign = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::managed(
+        std::num::NonZeroU64::MIN,
+    );
     assert!(admitted.report().admitted_completion().is_some());
     assert!(foreign
         .bridge

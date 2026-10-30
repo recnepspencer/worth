@@ -1,8 +1,20 @@
-#[allow(unused_imports)] use crate::equivalence_contracts::isolated_context::*;
+#[allow(unused_imports)]
+use crate::equivalence_contracts::isolated_context::*;
 use {std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
 
-use {worth_execution::compare_canonical_values, worth_execution::CancellationSource, worth_execution::CancellationToken, worth_execution::ConstructionDenial, worth_execution::EquivalencePredicate, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::OracleMismatch};
-use {worth_foundational::DeterminismContract, worth_foundational::EquivalenceContractId, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+use {
+    worth_execution::compare_canonical_values, worth_execution::CancellationSource,
+    worth_execution::CancellationToken, worth_execution::ConstructionDenial,
+    worth_execution::EquivalencePredicate, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
+    worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
+    worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::OracleMismatch,
+};
+use {
+    worth_foundational::DeterminismContract, worth_foundational::EquivalenceContractId,
+    worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture,
+    worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn predicates_install_once_and_leases_carry_exact_contract_to_children() {
@@ -20,7 +32,9 @@ fn predicates_install_once_and_leases_carry_exact_contract_to_children() {
             [predicate(1, 1), predicate(1, 2)],
         )
         .unwrap_err(),
-        worth_execution::ConstructionDenial::DuplicateEquivalenceContract(worth_foundational::EquivalenceContractId::new(1)),
+        worth_execution::ConstructionDenial::DuplicateEquivalenceContract(
+            worth_foundational::EquivalenceContractId::new(1)
+        ),
     );
     assert_eq!(
         worth_execution::ExecutionAuthority::try_construct_with_equivalences(
@@ -31,8 +45,10 @@ fn predicates_install_once_and_leases_carry_exact_contract_to_children() {
         worth_execution::ConstructionDenial::DuplicateEquivalenceIdentity([1; 32]),
     );
 
-    let predicate =
-        worth_execution::EquivalencePredicate::new(worth_foundational::EquivalenceContractId::new(1), [1; 32], |left, right| {
+    let predicate = worth_execution::EquivalencePredicate::new(
+        worth_foundational::EquivalenceContractId::new(1),
+        [1; 32],
+        |left, right| {
             let Ok(left): Result<[u8; 8], _> = left.try_into() else {
                 return false;
             };
@@ -40,14 +56,23 @@ fn predicates_install_once_and_leases_carry_exact_contract_to_children() {
                 return false;
             };
             (f64::from_le_bytes(left) - f64::from_le_bytes(right)).abs() <= 0.01
-        });
-    assert_eq!(predicate.id(), worth_foundational::EquivalenceContractId::new(1));
+        },
+    );
+    assert_eq!(
+        predicate.id(),
+        worth_foundational::EquivalenceContractId::new(1)
+    );
     assert_eq!(predicate.identity(), [1; 32]);
-    let authority = worth_execution::ExecutionAuthority::try_construct_with_equivalences(config, [predicate])
-        .expect("invalid installation must not consume process authority");
+    let authority =
+        worth_execution::ExecutionAuthority::try_construct_with_equivalences(config, [predicate])
+            .expect("invalid installation must not consume process authority");
 
-    let installed = worth_foundational::DeterminismContract::ContractEquivalent(worth_foundational::EquivalenceContractId::new(1));
-    let unknown = worth_foundational::DeterminismContract::ContractEquivalent(worth_foundational::EquivalenceContractId::new(2));
+    let installed = worth_foundational::DeterminismContract::ContractEquivalent(
+        worth_foundational::EquivalenceContractId::new(1),
+    );
+    let unknown = worth_foundational::DeterminismContract::ContractEquivalent(
+        worth_foundational::EquivalenceContractId::new(2),
+    );
     assert_eq!(
         authority.request_lease(request(unknown)).unwrap_err(),
         worth_execution::LeaseDenial::EquivalenceContractUnavailable,
@@ -61,7 +86,9 @@ fn predicates_install_once_and_leases_carry_exact_contract_to_children() {
     );
     assert_eq!(
         parent
-            .child(request(worth_foundational::DeterminismContract::CanonicalBitwise))
+            .child(request(
+                worth_foundational::DeterminismContract::CanonicalBitwise
+            ))
             .unwrap_err(),
         worth_execution::LeaseDenial::EquivalenceContractUnavailable,
     );
@@ -88,10 +115,14 @@ fn predicates_install_once_and_leases_carry_exact_contract_to_children() {
         };
         Ok::<_, MapKernelFailure<()>>(value)
     });
-    assert!(matches!(equivalent, Ok(worth_execution::MapOutcome::Complete { values, .. }) if values == vec![1.001]));
+    assert!(
+        matches!(equivalent, Ok(worth_execution::MapOutcome::Complete { values, .. }) if values == vec![1.001])
+    );
 
     let bitwise = authority
-        .request_lease(request(worth_foundational::DeterminismContract::CanonicalBitwise))
+        .request_lease(request(
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+        ))
         .unwrap();
     let calls = std::sync::atomic::AtomicUsize::new(0);
     assert!(matches!(
@@ -111,8 +142,14 @@ fn predicates_install_once_and_leases_carry_exact_contract_to_children() {
         *comparison.lock().unwrap() = Some(compare_canonical_values(&bitwise, &1_u64, &1_u64));
         Ok::<_, MapKernelFailure<()>>(())
     });
-    assert_eq!(*comparison.lock().unwrap(), Some(Err(worth_execution::OracleMismatch::Stop)));
-    assert!(matches!(outcome, worth_execution::MapOutcome::Stopped { .. }));
+    assert_eq!(
+        *comparison.lock().unwrap(),
+        Some(Err(worth_execution::OracleMismatch::Stop))
+    );
+    assert!(matches!(
+        outcome,
+        worth_execution::MapOutcome::Stopped { .. }
+    ));
 
     let cancellation = worth_execution::CancellationSource::new();
     cancellation.cancel();

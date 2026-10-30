@@ -100,7 +100,7 @@ fn continue_reclaim_retirement(
         .continue_reclaim_retirement(receipt, budget)
 }
 
-fn main() {
+pub(crate) fn main() {
     std::hint::black_box(begin);
     std::hint::black_box(resume);
     std::hint::black_box(abort);

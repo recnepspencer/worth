@@ -1,8 +1,10 @@
-pub(crate) use {std::path::Path};
-pub(crate) use {std::process::Command};
+pub(crate) use std::path::Path;
+pub(crate) use std::process::Command;
 
 pub(crate) fn assert_evacuated_arena_offline(root: &Path, directory: &Path) {
-    let executable = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();
+    let executable = worth_store_test_support::OFFLINE_ROOT_OBSERVER
+        .path()
+        .expect("runner must prebuild the independent executable");
     let report_path = directory.join("evacuated-arena-offline.json");
     let output = std::process::Command::new(executable)
         .args(["observe", "--store-root"])

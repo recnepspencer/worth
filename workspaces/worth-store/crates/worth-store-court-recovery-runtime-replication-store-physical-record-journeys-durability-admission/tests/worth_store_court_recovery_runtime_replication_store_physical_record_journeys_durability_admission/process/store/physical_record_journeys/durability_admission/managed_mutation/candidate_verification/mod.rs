@@ -2,9 +2,24 @@
 use {std::collections::BTreeSet};
 use {std::path::Path, std::path::PathBuf};
 
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalMutationIndeterminateStage, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_physical_backend::FilesystemAccessPosture, worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole, worth_store_physical_backend::MediaPauseGate};
+use worth_proof::TransitionOutcome;
+use {
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalMutationIndeterminateStage,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalRecordId,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+use {
+    worth_store_physical_backend::FilesystemAccessPosture,
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole, worth_store_physical_backend::MediaPauseGate,
+};
 
 use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::selected_segment_rewrite::prepare_rewrite};
 use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
@@ -51,7 +66,9 @@ fn a_candidate_corrupted_before_publication_is_never_published() {
             fate.stage(),
             worth_store::physical_runtime::PhysicalMutationIndeterminateStage::DataDispatch
         ),
-        worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_) => panic!("an unchecked candidate was published"),
+        worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_) => {
+            panic!("an unchecked candidate was published")
+        }
         worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(fate) => {
             panic!("the sealed rewrite claimed no effect: {:?}", fate.cause())
         }
@@ -77,7 +94,10 @@ fn a_candidate_corrupted_before_publication_is_never_published() {
             .unwrap()
             .open(
                 record,
-                worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap()),
+                worth_store::physical_runtime::RecordReadLimits::new(
+                    worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32)
+                        .unwrap()
+                ),
             )
             .err()
             .map(|error| error.denial()),

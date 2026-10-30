@@ -12,11 +12,17 @@ pub(super) fn evacuation_reader_child() {
     let mut scan = reopened
         .records()
         .unwrap()
-        .scan(worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(32).unwrap()))
+        .scan(
+            worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(
+                worth_store::physical_runtime::RecordCountLimit::new(32).unwrap(),
+            ),
+        )
         .unwrap();
     let mut scratch = vec![0; 64 * 1024];
     let mut selected = None;
-    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) = scan.read_next_into(&mut scratch).unwrap() {
+    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) =
+        scan.read_next_into(&mut scratch).unwrap()
+    {
         for record in batch.records() {
             let id = record.record_id();
             if id.allocation_epoch().as_slice() == &identity[..16]
@@ -32,11 +38,18 @@ pub(super) fn evacuation_reader_child() {
     let session = reader
         .open(
             selected.expect("fresh-process scan finds the exact stable id"),
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(LIVE_PAYLOAD_BYTES as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(LIVE_PAYLOAD_BYTES as u32)
+                    .unwrap(),
+            ),
         )
         .unwrap();
     assert_eq!(
-        worth_store_testkit_store::physical_record_journeys::read_record(session, LIVE_PAYLOAD_BYTES).0,
+        worth_store_testkit_store::physical_record_journeys::read_record(
+            session,
+            LIVE_PAYLOAD_BYTES
+        )
+        .0,
         vec![77; LIVE_PAYLOAD_BYTES]
     );
     drop(reader);

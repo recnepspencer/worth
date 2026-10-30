@@ -1,6 +1,10 @@
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportDenialCause, worth_store_recovery_runtime::RecoveryReportEnvelope, worth_store_recovery_runtime::RecoveryReportOutcome};
+pub(crate) use {
+    worth_store_recovery_runtime::RecoveryReportDenialCause,
+    worth_store_recovery_runtime::RecoveryReportEnvelope,
+    worth_store_recovery_runtime::RecoveryReportOutcome,
+};
 
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::process::recovery_process::fresh_recovery_raw};
+pub(crate) use crate::phase_eight_process::checkpoint_crash::process::recovery_process::fresh_recovery_raw;
 
 pub(crate) fn fresh_recovery(
     parent: &tempfile::TempDir,
@@ -8,7 +12,10 @@ pub(crate) fn fresh_recovery(
     label: &str,
     expected: &crate::phase_eight_process::history::writer_history::expected_history::ExpectedWriterHistory,
 ) -> RecoveryReportEnvelope {
-    let persisted_fates = crate::phase_eight_process::history::persisted_fates::classify_persisted_fates(expected, root)
+    let persisted_fates =
+        crate::phase_eight_process::history::persisted_fates::classify_persisted_fates(
+            expected, root,
+        )
         .expect("checkpoint persisted-fate oracle");
     let (output, report) = fresh_recovery_raw(parent, root, label);
     let report = report.expect("recovery report missing at checkpoint case");
@@ -23,7 +30,10 @@ pub(crate) fn fresh_recovery(
         String::from_utf8_lossy(&output.stdout),
         stderr
     );
-    let recovered = matches!(report.outcome(), worth_store_recovery_runtime::RecoveryReportOutcome::Recovered);
+    let recovered = matches!(
+        report.outcome(),
+        worth_store_recovery_runtime::RecoveryReportOutcome::Recovered
+    );
     assert_eq!(
         output.status.success(),
         recovered,

@@ -1,5 +1,5 @@
-pub(crate) use {worth_foundational::facade::FoundationalBoundaryEvidenceSupportTruthKind};
-pub(crate) use {worth_server::WorthServerDirectDeclarationDenialCode};
+pub(crate) use worth_foundational::facade::FoundationalBoundaryEvidenceSupportTruthKind;
+pub(crate) use worth_server::WorthServerDirectDeclarationDenialCode;
 
 pub(crate) use {crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationOutputDigest as Output};
 pub(crate) use {crate::certification_suite::ordinary_context::certification_counter_assertions::assert_counter_exact, crate::certification_suite::ordinary_context::certification_counter_assertions::assert_counters_zero};
@@ -7,20 +7,12 @@ pub(crate) use {crate::certification_suite::ordinary_context::certification_wort
 
 #[test]
 fn worth_native_sabotage_suite_blocks_direct_surface_shortcuts_and_leaves_zero_residue() {
-    let compile_fail = trybuild::TestCases::new();
-    compile_fail
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_prepared_session_constructor.rs"));
-    compile_fail.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_session_constructor.rs"));
-    compile_fail
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_direct_facade_constructor.rs"));
-    compile_fail
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_raw_query_workspace_access.rs"));
-    compile_fail.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_direct_delivery_contract_constructor.rs"),
-    );
-    compile_fail.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_direct_lease_declaration_constructor.rs"),
-    );
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_prepared_session_constructor.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_session_constructor.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_direct_facade_constructor.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_raw_query_workspace_access.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_direct_delivery_contract_constructor.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/worth_native/private_direct_lease_declaration_constructor.rs")).expect("prebuilt compiler denial");
 
     let server = standard_server();
     let retained_denial_lane = retained_artifact_denial_bundle(&server, "users.profile.missing");

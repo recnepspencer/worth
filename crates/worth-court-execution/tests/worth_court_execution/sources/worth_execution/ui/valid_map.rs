@@ -3,7 +3,7 @@ use std::cell::Cell;
 use worth_execution::{ChargedBytes, ExecutionMap, MapKernelFailure, MapOutcome, MapPartition};
 use worth_foundational::PartitionIdentity;
 
-fn main() {
+pub(crate) fn main() {
     owned_send_only_map();
     let map = ExecutionMap::try_from_declared_partitions(
         vec![PartitionIdentity::new(1)],

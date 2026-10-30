@@ -1,14 +1,21 @@
 //! Resolution and continuation evidence for a transition interrupted in Store.
 
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::branch::RelationalBranchTransitionSequence};
-pub(crate) use {worth_relational::facade::durability::RelationalBranchTransitionArtifact, worth_relational::facade::durability::RelationalDurabilityUnresolvedSubject};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreTransitionFate, worth_store_relational::RelationalStoreTransitionJournalRefusal};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_relational::facade::branch::RelationalBranchTransitionSequence;
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use {
+    worth_relational::facade::durability::RelationalBranchTransitionArtifact,
+    worth_relational::facade::durability::RelationalDurabilityUnresolvedSubject,
+};
+pub(crate) use {
+    worth_store_relational::RelationalStoreHome,
+    worth_store_relational::RelationalStoreTransitionFate,
+    worth_store_relational::RelationalStoreTransitionJournalRefusal,
+};
 
+pub(crate) use crate::crash_oracle::InFlight;
+pub(crate) use crate::media_case::Ended;
 pub(crate) use {crate::branch_lifecycle, crate::branch_lifecycle::LifecycleStop};
-pub(crate) use {crate::crash_oracle::InFlight};
-pub(crate) use {crate::media_case::Ended};
 pub(crate) use {crate::workload, crate::workload::Step};
 
 pub(crate) fn outcome(
@@ -26,12 +33,20 @@ pub(crate) fn outcome(
                 before.len() + 1,
                 "{case}: acknowledged transition not live"
             );
-            (crate::media_case::Ended::Acknowledged, now, crate::crash_oracle::InFlight::Nothing)
+            (
+                crate::media_case::Ended::Acknowledged,
+                now,
+                crate::crash_oracle::InFlight::Nothing,
+            )
         }
         Err(crate::branch_lifecycle::LifecycleStop::Denied(denial)) => {
             assert!(denial.publication_refused(), "{case}: {denial:?}");
             assert_eq!(now, before, "{case}: refused transition was live");
-            (crate::media_case::Ended::Refused, before.to_vec(), crate::crash_oracle::InFlight::Refused)
+            (
+                crate::media_case::Ended::Refused,
+                before.to_vec(),
+                crate::crash_oracle::InFlight::Refused,
+            )
         }
         Err(crate::branch_lifecycle::LifecycleStop::Unresolved(fate)) => {
             assert_eq!(now, before, "{case}: unresolved transition was live");
@@ -126,7 +141,9 @@ pub(crate) fn assert_recovered(
         assert_eq!(resolution, expected, "{case}: resolve transition");
     }
     match flight {
-        crate::crash_oracle::InFlight::Nothing | crate::crash_oracle::InFlight::Refused | crate::crash_oracle::InFlight::NotDurable => {
+        crate::crash_oracle::InFlight::Nothing
+        | crate::crash_oracle::InFlight::Refused
+        | crate::crash_oracle::InFlight::NotDurable => {
             assert_eq!(extra, 0, "{case}")
         }
         crate::crash_oracle::InFlight::Durable => assert_eq!(extra, 1, "{case}"),

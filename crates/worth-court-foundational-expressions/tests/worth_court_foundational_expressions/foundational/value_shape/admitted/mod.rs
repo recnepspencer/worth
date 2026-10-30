@@ -1,7 +1,17 @@
 // Representation bounds do not replace cumulative borrowed request authority.
-#[allow(unused_imports)] use crate::value_shape::ordinary_context::admitted::*;
-pub(crate) use {crate::value_shape::ordinary_context::packet, crate::value_shape::ordinary_context::Packet, crate::value_shape::ordinary_context::BOUNDS, crate::value_shape::ordinary_context::RAW};
-pub(crate) use {worth_foundational::facade::decode_canonical_value_with_admission, worth_foundational::facade::CanonicalValue, worth_foundational::facade::ValueCodecDenial as D, worth_foundational::facade::ValueDecodeAdmission, worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::ValueShapeBody, worth_foundational::facade::WorthValue};
+#[allow(unused_imports)]
+use crate::value_shape::ordinary_context::admitted::*;
+pub(crate) use {
+    crate::value_shape::ordinary_context::packet, crate::value_shape::ordinary_context::Packet,
+    crate::value_shape::ordinary_context::BOUNDS, crate::value_shape::ordinary_context::RAW,
+};
+pub(crate) use {
+    worth_foundational::facade::decode_canonical_value_with_admission,
+    worth_foundational::facade::CanonicalValue, worth_foundational::facade::ValueCodecDenial as D,
+    worth_foundational::facade::ValueDecodeAdmission,
+    worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::ValueShapeBody,
+    worth_foundational::facade::WorthValue,
+};
 
 #[test]
 fn one_loan_visits_nested_values_and_owned_allocations_without_parser_quotes() {
@@ -70,8 +80,15 @@ fn swallowed_seed_refusal_wins_and_new_funded_loan_succeeds() {
 fn generated_grammar_diagnostics_never_render_static_names_or_lists() {
     for raw in ["{}", r#"{"unknown":true}"#] {
         let mut decoder = serde_json::Deserializer::from_str(raw);
-        let error = crate::value_shape::ordinary_context::admitted::LongGrammar::deserialize_bounded(&mut decoder, BOUNDS).unwrap_err();
-        assert!(error.to_string().starts_with(&worth_foundational::facade::ValueCodecDenial::Malformed.to_string()));
+        let error =
+            crate::value_shape::ordinary_context::admitted::LongGrammar::deserialize_bounded(
+                &mut decoder,
+                BOUNDS,
+            )
+            .unwrap_err();
+        assert!(error
+            .to_string()
+            .starts_with(&worth_foundational::facade::ValueCodecDenial::Malformed.to_string()));
     }
 }
 

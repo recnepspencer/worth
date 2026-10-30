@@ -1,22 +1,32 @@
-use {crate::signal_owner_services::ordinary_context::execution_custody};
-pub(crate) use {std::sync::mpsc};
-pub(crate) use {std::thread};
+use crate::signal_owner_services::ordinary_context::execution_custody;
+pub(crate) use std::sync::mpsc;
+pub(crate) use std::thread;
 
-pub(crate) use {worth_signal::facade::branch::SignalBranchAdvanceDenial, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerLifecycleObservation, worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest};
+pub(crate) use {
+    worth_signal::facade::branch::SignalBranchAdvanceDenial,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+    worth_signal::facade::branch::SignalOwnerLifecycleObservation,
+    worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest,
+};
 
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
+    crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND,
+};
 
 #[test]
 fn close_fences_new_work_but_releases_an_already_admitted_operation() {
-    let mut world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let mut world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = world
         .runtime
         .as_ref()
         .expect("the root remains live until the close request")
         .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    let pause = control
-        .arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+    );
     let mutation = world.mutation.clone();
     let basis = world.child_basis.clone();
     let (in_flight_tx, in_flight_rx) = std::sync::mpsc::sync_channel(1);
@@ -72,15 +82,17 @@ fn close_fences_new_work_but_releases_an_already_admitted_operation() {
 
 #[test]
 fn dropping_a_public_pause_is_a_release_guard() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = world
         .runtime
         .as_ref()
         .expect("the root remains live")
         .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    let pause = control
-        .arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+    );
     let mutation = world.mutation.clone();
     let basis = world.child_basis.clone();
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
@@ -109,15 +121,17 @@ fn dropping_a_public_pause_is_a_release_guard() {
 
 #[test]
 fn close_batch_pause_is_releasable_and_cannot_admit_new_work() {
-    let mut world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let mut world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = world
         .runtime
         .as_ref()
         .expect("the strong root remains until the close thread takes it")
         .owner_operation_control_for_test()
         .expect("the sealed owner issues operation control");
-    let pause =
-        control.arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::OwnerCloseBatch);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::OwnerCloseBatch,
+    );
     let runtime = world
         .runtime
         .take()

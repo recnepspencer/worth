@@ -1,23 +1,38 @@
-use {crate::signal_owner_services::ordinary_context::execution_custody};
-pub(crate) use {std::sync::mpsc};
-pub(crate) use {std::thread};
+use crate::signal_owner_services::ordinary_context::execution_custody;
+pub(crate) use std::sync::mpsc;
+pub(crate) use std::thread;
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchSnapshot, worth_signal::facade::branch::SignalBranchAdvanceDenial, worth_signal::facade::branch::SignalBranchForkOperationDenial, worth_signal::facade::branch::SignalBranchRestoreDenial, worth_signal::facade::branch::SignalBranchRetirementDenial, worth_signal::facade::branch::SignalBranchRetirementReason, worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_signal::facade::branch::AdmittedSignalBranchSnapshot,
+    worth_signal::facade::branch::SignalBranchAdvanceDenial,
+    worth_signal::facade::branch::SignalBranchForkOperationDenial,
+    worth_signal::facade::branch::SignalBranchRestoreDenial,
+    worth_signal::facade::branch::SignalBranchRetirementDenial,
+    worth_signal::facade::branch::SignalBranchRetirementReason,
+    worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+    worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest,
+};
 
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
+    crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND,
+};
 
 #[test]
 fn cancellation_at_the_pre_movement_park_is_still_effect_free() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = world
         .runtime
         .as_ref()
         .expect("the owner root stays live")
         .owner_operation_control_for_test()
         .expect("operation control is available after sealing");
-    let pause = control
-        .arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+    );
     let cancellation = worth_signal::facade::branch::SignalOwnerCancellationSource::new();
     let mutation = world.mutation.clone();
     let basis = world.child_basis.clone();
@@ -65,15 +80,17 @@ fn cancellation_at_the_pre_movement_park_is_still_effect_free() {
 
 #[test]
 fn cancellation_after_canonical_movement_keeps_the_performed_advance() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = world
         .runtime
         .as_ref()
         .expect("the owner root stays live")
         .owner_operation_control_for_test()
         .expect("operation control is available after sealing");
-    let pause = control
-        .arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
+    );
     let cancellation = worth_signal::facade::branch::SignalOwnerCancellationSource::new();
     let mutation = world.mutation.clone();
     let basis = world.child_basis.clone();
@@ -105,15 +122,17 @@ fn cancellation_after_canonical_movement_keeps_the_performed_advance() {
 
 #[test]
 fn cancellation_after_fork_movement_keeps_the_owner_issued_child() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = world
         .runtime
         .as_ref()
         .expect("the owner root stays live")
         .owner_operation_control_for_test()
         .expect("operation control is available after sealing");
-    let pause = control
-        .arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
+    );
     let cancellation = worth_signal::facade::branch::SignalOwnerCancellationSource::new();
     let mutation = world.mutation.clone();
     let basis = world.root_basis.clone();

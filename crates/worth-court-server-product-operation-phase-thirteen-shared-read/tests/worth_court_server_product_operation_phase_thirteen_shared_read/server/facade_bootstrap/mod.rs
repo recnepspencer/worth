@@ -1,4 +1,8 @@
-use {worth_server::facade::WorthServer, worth_server::facade::WorthServerBuildError, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServerConfig, worth_server::WorthServerSurfaceFamily};
+use {
+    worth_server::facade::WorthServer, worth_server::facade::WorthServerBuildError,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServerConfig, worth_server::WorthServerSurfaceFamily,
+};
 
 #[test]
 fn build_preserves_explicit_surface_inventory_and_counter_snapshot() {
@@ -36,7 +40,10 @@ fn build_requires_validated_config_before_runtime_assembly() {
         .build()
         .expect_err("server must reject missing config");
 
-    assert_eq!(build_error, worth_server::facade::WorthServerBuildError::MissingConfig);
+    assert_eq!(
+        build_error,
+        worth_server::facade::WorthServerBuildError::MissingConfig
+    );
 }
 
 #[test]

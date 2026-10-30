@@ -1,4 +1,4 @@
-use {crate::phase_eight_process::production::harness};
+use crate::phase_eight_process::production::harness;
 
 #[test]
 fn observer_missing_root_fails_without_emitting_a_report() {

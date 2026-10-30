@@ -1,7 +1,11 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {crate::phase_eight_process::history::schedule::create_cleanup_rotation_operation_program_with_operation_count};
-pub(crate) use {crate::phase_eight_process::history::process::lifecycle::launch, crate::phase_eight_process::history::process::lifecycle::KilledProductionWriter, crate::phase_eight_process::history::process::lifecycle::WriterLaunch};
+pub(crate) use crate::phase_eight_process::history::schedule::create_cleanup_rotation_operation_program_with_operation_count;
+pub(crate) use {
+    crate::phase_eight_process::history::process::lifecycle::launch,
+    crate::phase_eight_process::history::process::lifecycle::KilledProductionWriter,
+    crate::phase_eight_process::history::process::lifecycle::WriterLaunch,
+};
 
 pub(crate) fn launch_killed_cleanup_writer_with_operation_count(
     parent: &Path,

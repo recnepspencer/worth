@@ -1,9 +1,33 @@
-#[allow(unused_imports)] use crate::worth_native_facade_entry::ordinary_context::direct_runtime::*;
-use {worth_proof::TransitionOutcome};
-use {worth_query::facade::runtime::WorthQueryAuthorityLane, worth_query::facade::runtime::WorthQueryInspection, worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily, worth_query::facade::runtime::WorthQueryRuntimeFamilySupport, worth_query::facade::runtime::WorthQueryRuntimeStateKind, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::WorthServerDirectInspectionOutcome, worth_server::WorthServerDirectReadOutcome, worth_server::WorthServerDirectStateOutcome, worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerSuccessKind, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+#[allow(unused_imports)]
+use crate::worth_native_facade_entry::ordinary_context::direct_runtime::*;
+use worth_proof::TransitionOutcome;
+use {
+    worth_query::facade::runtime::WorthQueryAuthorityLane,
+    worth_query::facade::runtime::WorthQueryInspection,
+    worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily,
+    worth_query::facade::runtime::WorthQueryRuntimeFamilySupport,
+    worth_query::facade::runtime::WorthQueryRuntimeStateKind,
+    worth_query::facade::runtime::WorthQueryRuntimeSupportProfile,
+};
+use {
+    worth_server::WorthServerDirectInspectionOutcome, worth_server::WorthServerDirectReadOutcome,
+    worth_server::WorthServerDirectStateOutcome, worth_server::WorthServerQueryHandoffDenialCode,
+    worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation,
+    worth_server::WorthServerSuccessKind, worth_server::WorthServerSurfaceFamily,
+    worth_server::WorthServerTransportClass,
+};
 
-use {worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture, worth_testkit_server::shared_support_query_handoff_fixture::request_input, worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context, worth_testkit_server::shared_support_query_handoff_fixture::success, worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read, worth_testkit_server::shared_support_worth_native_assertions::family_contract_digest, worth_testkit_server::shared_support_worth_native_assertions::worth_native_session, worth_testkit_server::shared_support_worth_native_runtime::build_server, worth_testkit_server::shared_support_worth_native_runtime::build_server_with_profiled_workspace};
+use {
+    worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture,
+    worth_testkit_server::shared_support_query_handoff_fixture::request_input,
+    worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context,
+    worth_testkit_server::shared_support_query_handoff_fixture::success,
+    worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read,
+    worth_testkit_server::shared_support_worth_native_assertions::family_contract_digest,
+    worth_testkit_server::shared_support_worth_native_assertions::worth_native_session,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server_with_profiled_workspace,
+};
 
 #[test]
 fn direct_read_preserves_read_family_parity_with_compatibility_handoff() {
@@ -12,23 +36,21 @@ fn direct_read_preserves_read_family_parity_with_compatibility_handoff() {
     let declaration = admitted_named_read(&session, "users.profile");
 
     let direct = direct_read_success(session.direct().read(&declaration));
-    let compat = success(
-        server
-            .query_handoff()
-            .prepare(worth_server::WorthServerQueryHandoffInput::new(
-                admit_read_posture(
+    let compat = success(server.query_handoff().prepare(
+        worth_server::WorthServerQueryHandoffInput::new(
+            admit_read_posture(
+                &server,
+                resolve_request_context(
                     &server,
-                    resolve_request_context(
-                        &server,
-                        request_input(
-                            worth_server::WorthServerSurfaceFamily::CompatHttp,
-                            worth_server::WorthServerTransportClass::CompatHttp,
-                        ),
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::CompatHttp,
+                        worth_server::WorthServerTransportClass::CompatHttp,
                     ),
                 ),
-                worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
-            )),
-    );
+            ),
+            worth_server::WorthServerQueryHandoffOperation::query_read("users.profile"),
+        ),
+    ));
 
     assert_eq!(
         family_contract_digest(direct.support_posture()),
@@ -167,12 +189,13 @@ fn direct_state_denies_missing_retained_named_read_artifact() {
 #[test]
 fn direct_inspection_fails_closed_when_inspect_family_is_not_admitted() {
     let server = build_server_with_profiled_workspace(
-        worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile().with_family_support(
-            worth_query::facade::runtime::WorthQueryRuntimeFamilySupport::unsupported(
-                worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily::Inspect,
-                "inspect is intentionally denied in this hostile test profile",
+        worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile()
+            .with_family_support(
+                worth_query::facade::runtime::WorthQueryRuntimeFamilySupport::unsupported(
+                    worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily::Inspect,
+                    "inspect is intentionally denied in this hostile test profile",
+                ),
             ),
-        ),
     );
     let session = worth_native_session(&server);
     let declaration = admitted_named_read(&session, "users.profile");

@@ -1,11 +1,41 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_resume_tree::*;
-use {std::fs, std::num::NonZeroU64, std::path::Path, std::thread, std::time::Duration, std::time::Instant};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_resume_tree::*;
+use {
+    std::fs, std::num::NonZeroU64, std::path::Path, std::thread, std::time::Duration,
+    std::time::Instant,
+};
 
 use {sha2::Digest, sha2::Sha256};
-use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::BlobIngestSession, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobResumeFailure, worth_store::physical_runtime::BlobResumeLimits, worth_store::physical_runtime::BlobResumeToken, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::BlobTreeNodeKind, worth_store_physical_format::BlobTreeNodeV1, worth_store_physical_format::PersistedRecordIdentity};
+use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::BlobIngestSession,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobResumeFailure,
+    worth_store::physical_runtime::BlobResumeLimits,
+    worth_store::physical_runtime::BlobResumeToken,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalRecordId,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::BlobTreeNodeKind, worth_store_physical_format::BlobTreeNodeV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
 
-use {crate::physical_blob_journeys::blob_crash::kill_at, crate::physical_blob_journeys::blob_crash::marker_path, crate::blob_crash::recovery::recover_closed_store, crate::physical_blob_journeys::blob_crash::resume_token_path, crate::physical_blob_journeys::blob_crash::write_marker, crate::physical_blob_journeys::blob_crash::SCOPE_KEY, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_crash::kill_at,
+    crate::physical_blob_journeys::blob_crash::marker_path,
+    crate::physical_blob_journeys::blob_crash::resume_token_path,
+    crate::physical_blob_journeys::blob_crash::write_marker,
+    crate::physical_blob_journeys::blob_crash::SCOPE_KEY,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_open,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn killed_partial_finish_leaf_is_reused_as_published_root() {
@@ -15,7 +45,10 @@ fn killed_partial_finish_leaf_is_reused_as_published_root() {
     let serving = serving_from_open(&world.root);
     let before = selected_nodes(&serving, world.session);
     assert_eq!(before.len(), 1, "C8 must select exactly the partial leaf");
-    assert_eq!(before[0].1.occurrence().kind(), worth_store_physical_format::BlobTreeNodeKind::Leaf);
+    assert_eq!(
+        before[0].1.occurrence().kind(),
+        worth_store_physical_format::BlobTreeNodeKind::Leaf
+    );
     assert_eq!(before[0].1.occurrence().index(), 0);
     assert_eq!(before[0].1.entries().len(), 2);
     let scope = admitted_blob_scope(SCOPE_KEY);
@@ -26,7 +59,8 @@ fn killed_partial_finish_leaf_is_reused_as_published_root() {
             &scope,
             placement(),
             CHUNK as u64,
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
             resume_limits(),
         )
         .unwrap_or_else(|error| panic!("selected partial leaf must readmit: {error:?}"));
@@ -41,7 +75,9 @@ fn killed_partial_finish_leaf_is_reused_as_published_root() {
     let selected_publications = selected_blob_records(&serving)
         .into_iter()
         .filter_map(|(_, bytes)| match decode_blob_record(&bytes) {
-            Ok(worth_store_physical_format::BlobRecordV1::GenerationPublished(value)) if value.session() == world.session => {
+            Ok(worth_store_physical_format::BlobRecordV1::GenerationPublished(value))
+                if value.session() == world.session =>
+            {
                 Some(value)
             }
             _ => None,
@@ -55,7 +91,8 @@ fn killed_partial_finish_leaf_is_reused_as_published_root() {
 
     let reopened = serving_from_open(&world.root);
     let blobs = reopened.blobs().unwrap();
-    let read_limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let read_limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let resolved = blobs
         .resolve_publication(world.object, 1, &scope, read_limits)
         .unwrap();
@@ -143,7 +180,8 @@ fn non_prefix_selected_node_denies_before_any_resumed_write() {
             &scope,
             placement(),
             CHUNK as u64,
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
             resume_limits(),
         ),
         Err(worth_store::physical_runtime::BlobResumeFailure::TreeConflict)

@@ -1,10 +1,30 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::scheduled_reopen_admission::*;
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::scheduled_reopen_admission::*;
+use std::path::Path;
 
-use {worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalRecoveryCoordination, worth_store::physical_runtime::PhysicalRecoveryCoordinationCapacity, worth_store::physical_runtime::PhysicalRecoveryFreshReopenCommand, worth_store::physical_runtime::PhysicalRecoveryFreshReopenOutcome, worth_store::physical_runtime::PhysicalRecoveryFreshnessPort, worth_store::physical_runtime::PhysicalRootProtocolRoute, worth_store::physical_runtime::QualifiedRecoveryFilesystemMedia, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RootProtocolAdmissionDenial};
-use {worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::DurableRootSelector, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RootSelectorRole};
+use {
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalRecoveryCoordination,
+    worth_store::physical_runtime::PhysicalRecoveryCoordinationCapacity,
+    worth_store::physical_runtime::PhysicalRecoveryFreshReopenCommand,
+    worth_store::physical_runtime::PhysicalRecoveryFreshReopenOutcome,
+    worth_store::physical_runtime::PhysicalRecoveryFreshnessPort,
+    worth_store::physical_runtime::PhysicalRootProtocolRoute,
+    worth_store::physical_runtime::QualifiedRecoveryFilesystemMedia,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RootProtocolAdmissionDenial,
+};
+use {
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::DurableRootSelector,
+    worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RootSelectorRole,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+};
 
 #[test]
 fn scheduled_reopen_enters_selector_and_root_only_after_admission() {
@@ -20,11 +40,15 @@ fn scheduled_reopen_enters_selector_and_root_only_after_admission() {
     ));
     let counters = coordination.root_protocol_counters();
     assert_eq!(
-        counters.selector_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen),
+        counters.selector_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen
+        ),
         1,
     );
     assert_eq!(
-        counters.root_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen),
+        counters.root_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen
+        ),
         1,
     );
     assert!(coordination.shutdown_is_quiescent());
@@ -49,7 +73,8 @@ fn previous_role_substitution_cannot_enter_current_selector_interpretation() {
     let (coordination, media) = recovery_coordination(&root);
     let outcome =
         coordination.execute_fresh_reopen(&media, command(expected_root, expected_selector));
-    let worth_store::physical_runtime::PhysicalRecoveryFreshReopenOutcome::Denied(denial) = outcome else {
+    let worth_store::physical_runtime::PhysicalRecoveryFreshReopenOutcome::Denied(denial) = outcome
+    else {
         panic!("a previous-role substitution in the current slot must be denied")
     };
     let Some(worth_store::physical_runtime::RootProtocolAdmissionDenial::Validation(
@@ -80,15 +105,21 @@ fn previous_role_substitution_cannot_enter_current_selector_interpretation() {
     );
     let counters = coordination.root_protocol_counters();
     assert_eq!(
-        counters.selector_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen),
+        counters.selector_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen
+        ),
         0,
     );
     assert_eq!(
-        counters.root_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen),
+        counters.root_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen
+        ),
         0,
     );
     assert_eq!(
-        counters.publications(worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen),
+        counters.publications(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen
+        ),
         0,
     );
     assert!(coordination.shutdown_is_quiescent());
@@ -113,7 +144,8 @@ fn admitted_unexpected_selector_cannot_address_a_root() {
     let (coordination, media) = recovery_coordination(&root);
     let outcome =
         coordination.execute_fresh_reopen(&media, command(expected_root, expected_selector));
-    let worth_store::physical_runtime::PhysicalRecoveryFreshReopenOutcome::Denied(denial) = outcome else {
+    let worth_store::physical_runtime::PhysicalRecoveryFreshReopenOutcome::Denied(denial) = outcome
+    else {
         panic!("an admitted selector outside the planned binding must be denied")
     };
     assert_eq!(
@@ -124,15 +156,21 @@ fn admitted_unexpected_selector_cannot_address_a_root() {
     assert!(denial.root().is_none());
     let counters = coordination.root_protocol_counters();
     assert_eq!(
-        counters.selector_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen),
+        counters.selector_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen
+        ),
         1,
     );
     assert_eq!(
-        counters.root_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen),
+        counters.root_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen
+        ),
         0,
     );
     assert_eq!(
-        counters.publications(worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen),
+        counters.publications(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen
+        ),
         0,
     );
     assert!(coordination.shutdown_is_quiescent());
@@ -151,7 +189,8 @@ fn wrong_generation_root_cannot_enter_reopen_root_interpretation_or_publication(
     let (coordination, media) = recovery_coordination(&root);
     let outcome =
         coordination.execute_fresh_reopen(&media, command(expected_root, expected_selector));
-    let worth_store::physical_runtime::PhysicalRecoveryFreshReopenOutcome::Denied(denial) = outcome else {
+    let worth_store::physical_runtime::PhysicalRecoveryFreshReopenOutcome::Denied(denial) = outcome
+    else {
         panic!("a checksum-valid root for another generation must be denied")
     };
     assert!(matches!(
@@ -160,15 +199,21 @@ fn wrong_generation_root_cannot_enter_reopen_root_interpretation_or_publication(
     ));
     let counters = coordination.root_protocol_counters();
     assert_eq!(
-        counters.selector_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen),
+        counters.selector_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen
+        ),
         1,
     );
     assert_eq!(
-        counters.root_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen),
+        counters.root_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen
+        ),
         0,
     );
     assert_eq!(
-        counters.publications(worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen),
+        counters.publications(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::ScheduledReopen
+        ),
         0,
     );
     assert!(coordination.shutdown_is_quiescent());

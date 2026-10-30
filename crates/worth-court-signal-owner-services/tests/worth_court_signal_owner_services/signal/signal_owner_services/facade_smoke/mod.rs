@@ -1,5 +1,17 @@
-#[allow(unused_imports)] use crate::signal_owner_services::ordinary_context::facade_smoke::*;
-pub(crate) use {worth_signal::facade::branch::validate_signal_branch_name, worth_signal::facade::branch::SignalBranchBasisPort, worth_signal::facade::branch::SignalBranchLifecyclePort, worth_signal::facade::branch::SignalBranchMutationPort, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerLifecycleObservation, worth_signal::facade::branch::SignalOwnerServiceIssuanceDenial, worth_signal::facade::branch::SignalOwnerServicePorts, worth_signal::facade::branch::SignalOwnerUnavailable, worth_signal::facade::branch::ValidatedSignalBranchName};
+#[allow(unused_imports)]
+use crate::signal_owner_services::ordinary_context::facade_smoke::*;
+pub(crate) use {
+    worth_signal::facade::branch::validate_signal_branch_name,
+    worth_signal::facade::branch::SignalBranchBasisPort,
+    worth_signal::facade::branch::SignalBranchLifecyclePort,
+    worth_signal::facade::branch::SignalBranchMutationPort,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+    worth_signal::facade::branch::SignalOwnerLifecycleObservation,
+    worth_signal::facade::branch::SignalOwnerServiceIssuanceDenial,
+    worth_signal::facade::branch::SignalOwnerServicePorts,
+    worth_signal::facade::branch::SignalOwnerUnavailable,
+    worth_signal::facade::branch::ValidatedSignalBranchName,
+};
 pub(crate) use {worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
 
 #[test]
@@ -66,7 +78,11 @@ fn public_facade_issues_weak_ports_over_the_canonical_owner() {
 
 #[test]
 fn public_facade_issues_drop_safe_control_for_real_owner_boundaries() {
-    use {worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest, worth_signal::facade::branch::SignalOwnerOperationControlForTest, worth_signal::facade::branch::SignalOwnerOperationPauseForTest};
+    use {
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest,
+        worth_signal::facade::branch::SignalOwnerOperationControlForTest,
+        worth_signal::facade::branch::SignalOwnerOperationPauseForTest,
+    };
 
     let mut runtime = runtime();
     runtime

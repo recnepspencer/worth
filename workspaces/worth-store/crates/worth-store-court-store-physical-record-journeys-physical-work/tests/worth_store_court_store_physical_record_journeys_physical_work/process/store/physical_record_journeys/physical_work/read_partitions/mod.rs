@@ -1,11 +1,27 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::read_partitions::*;
-use {std::collections::BTreeSet};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::read_partitions::*;
+use std::collections::BTreeSet;
 
-use {worth_store::physical_runtime::PhysicalSignalAspectBindingObservation, worth_store::physical_runtime::PhysicalWorkCausalRecord, worth_store::physical_runtime::PhysicalWorkSignalFamily, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits};
-use {worth_store_physical_format::BootstrapCatalog};
+use worth_store_physical_format::BootstrapCatalog;
+use {
+    worth_store::physical_runtime::PhysicalSignalAspectBindingObservation,
+    worth_store::physical_runtime::PhysicalWorkCausalRecord,
+    worth_store::physical_runtime::PhysicalWorkSignalFamily,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+};
 
-use {worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::read_record, worth_store_testkit_store::physical_record_journeys::scan_journeys::collect_scan, worth_store_testkit_store::physical_record_journeys::serving_from_open};
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::read_record,
+    worth_store_testkit_store::physical_record_journeys::scan_journeys::collect_scan,
+    worth_store_testkit_store::physical_record_journeys::serving_from_open,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+};
 
 #[test]
 fn ordinary_read_and_scan_select_their_exact_store_native_signal_partitions() {
@@ -16,7 +32,10 @@ fn ordinary_read_and_scan_select_their_exact_store_native_signal_partitions() {
     let publication = worth_store_testkit_store::durable_publication::root::publish_single(
         &initial,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("physical-work-read-partitions", 1),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "physical-work-read-partitions",
+            1,
+        ),
         worth_store::physical_runtime::RecordAppendBatch::try_from_iter([PAYLOAD]).unwrap(),
     );
     let record = publication.settled_members()[0].record_id(0).unwrap();
@@ -40,7 +59,9 @@ fn ordinary_read_and_scan_select_their_exact_store_native_signal_partitions() {
         .causal()
         .records()
         .len();
-    let limits = worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap());
+    let limits = worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap(),
+    );
     let reader = read_serving.records().expect("read protection admission");
     let protected = reader.protected_root();
     assert_eq!(protected.runtime(), read_serving.runtime_identity());

@@ -27,7 +27,7 @@ fn observe(chunk: PhysicalRecordChunkView<'_>) {
     let _ = basis.frame_coordinate();
 }
 
-fn main() {
+pub(crate) fn main() {
     let _ = consume_inline;
     let _ = consume_extent;
 }

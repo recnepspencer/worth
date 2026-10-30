@@ -1,9 +1,16 @@
 // Genuine service slots, original results and finite host refusal.
-pub(crate) use {worth_proof::ConditionalEvaluationSource, worth_signal::facade::specialist::DefaultComparatorResolver, crate::signal_owner_services::ordinary_context::conditional_nested_reuse::NoPredicate, worth_signal::facade::branch::SignalConditionalServiceExecutionRequest as Request, crate::signal_owner_services::ordinary_context::conditional_nested_reuse::output, crate::signal_owner_services::ordinary_context::conditional_nested_reuse::runtime_with_contract};
-pub(crate) use {std::sync::Arc};
-pub(crate) use {worth_signal::facade::branch::SignalConditionalServiceExecutionDenial as Denial};
-pub(crate) use {worth_signal::facade::runtime::SignalConditionalEvaluationBudget};
-pub(crate) use {worth_signal::facade::SignalRuntimePolicy};
+pub(crate) use std::sync::Arc;
+pub(crate) use worth_signal::facade::branch::SignalConditionalServiceExecutionDenial as Denial;
+pub(crate) use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
+pub(crate) use worth_signal::facade::SignalRuntimePolicy;
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::conditional_nested_reuse::output,
+    crate::signal_owner_services::ordinary_context::conditional_nested_reuse::runtime_with_contract,
+    crate::signal_owner_services::ordinary_context::conditional_nested_reuse::NoPredicate,
+    worth_proof::ConditionalEvaluationSource,
+    worth_signal::facade::branch::SignalConditionalServiceExecutionRequest as Request,
+    worth_signal::facade::specialist::DefaultComparatorResolver,
+};
 
 #[test]
 fn absent_owner_policy_keeps_192_original_admissions_and_results_until_release() {
@@ -38,7 +45,9 @@ fn absent_owner_policy_keeps_192_original_admissions_and_results_until_release()
             .execute(
                 execution,
                 &admitted,
-                worth_signal::facade::branch::SignalConditionalServiceExecutionRequest::new(ordinal),
+                worth_signal::facade::branch::SignalConditionalServiceExecutionRequest::new(
+                    ordinal,
+                ),
                 &mut NoPredicate,
                 &mut worth_signal::facade::specialist::DefaultComparatorResolver::default(),
                 || Ok(output(7)),
@@ -70,13 +79,12 @@ fn absent_owner_policy_keeps_192_original_admissions_and_results_until_release()
 fn explicit_single_slot_policy_refuses_before_second_admission_and_refunds() {
     let (mut runtime, claimant, contract, source_owner) = runtime_with_contract();
     runtime.set_runtime_policy(
-        worth_signal::facade::SignalRuntimePolicy::development().with_conditional_evaluation_budget(
-            SignalConditionalEvaluationBudget {
+        worth_signal::facade::SignalRuntimePolicy::development()
+            .with_conditional_evaluation_budget(SignalConditionalEvaluationBudget {
                 maximum_retained_slots: Some(1),
                 maximum_retained_bytes: Some(512 * 1024 * 1024),
                 maximum_attempt_visits: None,
-            },
-        ),
+            }),
     );
     let basis = runtime
         .observe_signal_branch_basis(runtime.current_branch())
@@ -88,7 +96,9 @@ fn explicit_single_slot_policy_refuses_before_second_admission_and_refunds() {
     let first = service
         .admit_evaluation(
             &contract,
-            worth_proof::ConditionalEvaluationSource::AdmittedRelationalSource(source_owner.admit("first")),
+            worth_proof::ConditionalEvaluationSource::AdmittedRelationalSource(
+                source_owner.admit("first"),
+            ),
         )
         .unwrap();
     let held = service.retention_observation().unwrap();
@@ -105,7 +115,9 @@ fn explicit_single_slot_policy_refuses_before_second_admission_and_refunds() {
     let next = service
         .admit_evaluation(
             &contract,
-            worth_proof::ConditionalEvaluationSource::AdmittedRelationalSource(source_owner.admit("next")),
+            worth_proof::ConditionalEvaluationSource::AdmittedRelationalSource(
+                source_owner.admit("next"),
+            ),
         )
         .unwrap();
     drop(next);
@@ -116,13 +128,12 @@ fn explicit_single_slot_policy_refuses_before_second_admission_and_refunds() {
 fn explicit_byte_policy_refuses_basis_capture_before_service_admission() {
     let (mut runtime, claimant, _contract, source_owner) = runtime_with_contract();
     runtime.set_runtime_policy(
-        worth_signal::facade::SignalRuntimePolicy::development().with_conditional_evaluation_budget(
-            SignalConditionalEvaluationBudget {
+        worth_signal::facade::SignalRuntimePolicy::development()
+            .with_conditional_evaluation_budget(SignalConditionalEvaluationBudget {
                 maximum_retained_slots: None,
                 maximum_retained_bytes: Some(1),
                 maximum_attempt_visits: None,
-            },
-        ),
+            }),
     );
     let basis = runtime
         .observe_signal_branch_basis(runtime.current_branch())

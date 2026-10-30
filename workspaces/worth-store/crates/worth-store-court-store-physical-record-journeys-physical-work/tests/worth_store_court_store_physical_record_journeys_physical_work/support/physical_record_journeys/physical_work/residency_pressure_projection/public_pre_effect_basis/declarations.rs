@@ -1,14 +1,37 @@
-pub(crate) use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalResidencyAllocationSnapshot, worth_store::physical_runtime::PhysicalResidencyCounterSnapshot, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::PhysicalResidencyRetryPosture, worth_store::physical_runtime::PhysicalSpeculativeWorkKind, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits};
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::PhysicalResidencyAllocationSnapshot,
+    worth_store::physical_runtime::PhysicalResidencyCounterSnapshot,
+    worth_store::physical_runtime::PhysicalResidencyDimension,
+    worth_store::physical_runtime::PhysicalResidencyRetryPosture,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordReadLimits,
+};
 
-pub(crate) use {worth_store_testkit_store::durable_publication};
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
-pub(crate) use {crate::physical_record_journeys::physical_work::residency_pressure_projection::nonzero, crate::physical_record_journeys::physical_work::residency_pressure_projection::nonzero_count};
+pub(crate) use worth_store_testkit_store::durable_publication;
+pub(crate) use {
+    crate::physical_record_journeys::physical_work::residency_pressure_projection::nonzero,
+    crate::physical_record_journeys::physical_work::residency_pressure_projection::nonzero_count,
+};
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 pub(crate) fn one_page_foreground_read_policy(
     format: AdmittedPhysicalRecordFormat,
 ) -> AdmittedPhysicalRecordResidencyPolicy {
-    use {worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope};
-    use {worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Kind};
+    use worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope;
+    use worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Kind;
 
     let page = u64::from(format.declaration().page_size().bytes());
     // Reopen authenticates C11 routing/free-space metadata before the read

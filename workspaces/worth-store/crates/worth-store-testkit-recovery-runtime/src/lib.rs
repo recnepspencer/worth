@@ -37,6 +37,7 @@ pub mod release_reopen;
 #[allow(dead_code, unused_imports)]
 #[path = "selected_tag7_pruned_wal/mod.rs"]
 pub mod selected_tag7_pruned_wal;
+pub mod setup_observation;
 #[allow(dead_code, unused_imports)]
 #[path = "support/mod.rs"]
 pub mod support;

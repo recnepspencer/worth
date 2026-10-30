@@ -1,16 +1,36 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::maintenance_interference::retention::*;
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalReadProtectionPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::RecordReadDenial};
-use {worth_store_physical_backend::MediaOperationRole};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::maintenance_interference::retention::*;
+use worth_proof::TransitionOutcome;
+use worth_store_physical_backend::MediaOperationRole;
+use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalReadProtectionPolicy,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordId,
+    worth_store::physical_runtime::RecordReadDenial,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint, worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize_with_wal, worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits, worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement};
+use {
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize_with_wal,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement,
+};
 
 #[test]
 fn pinned_reader_rejects_one_over_growth_then_retries_after_reclaim() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
     let serving = initialize_with_wal(
         &root,
@@ -42,7 +62,9 @@ fn pinned_reader_rejects_one_over_growth_then_retries_after_reclaim() {
     let charged = serving.certification_charged_growth_bytes();
     assert!(charged <= GROWTH, "charged {charged} exceeded {GROWTH}");
     match attempt(&serving, policy, published + 1, b"still-over") {
-        crate::physical_record_journeys::maintenance_interference::retention::Attempt::NoEffect(worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause::RetentionPressure) => {}
+        crate::physical_record_journeys::maintenance_interference::retention::Attempt::NoEffect(
+            worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause::RetentionPressure,
+        ) => {}
         other => panic!("the same ceiling must deny again: {other:?}"),
     }
     assert_eq!(

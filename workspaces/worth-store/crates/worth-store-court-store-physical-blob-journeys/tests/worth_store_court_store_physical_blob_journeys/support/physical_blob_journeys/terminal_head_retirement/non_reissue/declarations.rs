@@ -4,15 +4,50 @@
 //! durably expired, and the declaration stays selected: its object is never
 //! declared again.
 
-pub(crate) use {std::num::NonZeroU64};
+pub(crate) use std::num::NonZeroU64;
 
-pub(crate) use {worth_proof::AdmittedBlobReleaseProof};
-pub(crate) use {worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobIngestSession, worth_store::physical_runtime::BlobResumeFailure, worth_store::physical_runtime::BlobResumeLimits, worth_store::physical_runtime::BlobResumeToken, worth_store::physical_runtime::BlobTerminalFailure, worth_store::physical_runtime::BlobTerminalHeadRetirementReceipt, worth_store::physical_runtime::BlobTerminalLimits, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1};
+pub(crate) use worth_proof::AdmittedBlobReleaseProof;
+pub(crate) use {
+    worth_store::physical_runtime::BlobIngestFailure,
+    worth_store::physical_runtime::BlobIngestSession,
+    worth_store::physical_runtime::BlobResumeFailure,
+    worth_store::physical_runtime::BlobResumeLimits,
+    worth_store::physical_runtime::BlobResumeToken,
+    worth_store::physical_runtime::BlobTerminalFailure,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementReceipt,
+    worth_store::physical_runtime::BlobTerminalLimits,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+};
 
-pub(crate) use {crate::physical_blob_journeys::terminal_head_retirement::assert_settled_absence, crate::physical_blob_journeys::terminal_head_retirement::publication::begin, crate::physical_blob_journeys::terminal_head_retirement::checkpoint, crate::physical_blob_journeys::terminal_head_retirement::deadline, crate::physical_blob_journeys::terminal_head_retirement::denied, crate::physical_blob_journeys::terminal_head_retirement::fixed, crate::physical_blob_journeys::terminal_head_retirement::observe, crate::physical_blob_journeys::terminal_head_retirement::publication::publish_resumable, crate::physical_blob_journeys::terminal_head_retirement::release_batch, crate::physical_blob_journeys::terminal_head_retirement::release_to_terminal, crate::physical_blob_journeys::terminal_head_retirement::retire, crate::physical_blob_journeys::terminal_head_retirement::settle, worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial, worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure, crate::physical_blob_journeys::terminal_head_retirement::publication::Published, crate::physical_blob_journeys::terminal_head_retirement::CHUNK, crate::physical_blob_journeys::terminal_head_retirement::SCOPE, crate::physical_blob_journeys::terminal_head_retirement::WHOLE_GENERATION};
-pub(crate) use {worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records};
-pub(crate) use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+pub(crate) use worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records;
+pub(crate) use {
+    crate::physical_blob_journeys::terminal_head_retirement::assert_settled_absence,
+    crate::physical_blob_journeys::terminal_head_retirement::checkpoint,
+    crate::physical_blob_journeys::terminal_head_retirement::deadline,
+    crate::physical_blob_journeys::terminal_head_retirement::denied,
+    crate::physical_blob_journeys::terminal_head_retirement::fixed,
+    crate::physical_blob_journeys::terminal_head_retirement::observe,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::begin,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::publish_resumable,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::Published,
+    crate::physical_blob_journeys::terminal_head_retirement::release_batch,
+    crate::physical_blob_journeys::terminal_head_retirement::release_to_terminal,
+    crate::physical_blob_journeys::terminal_head_retirement::retire,
+    crate::physical_blob_journeys::terminal_head_retirement::settle,
+    crate::physical_blob_journeys::terminal_head_retirement::CHUNK,
+    crate::physical_blob_journeys::terminal_head_retirement::SCOPE,
+    crate::physical_blob_journeys::terminal_head_retirement::WHOLE_GENERATION,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure,
+};
+pub(crate) use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+};
 
 /// Longer than the checkpoints one release completes, so the released
 /// session is still inside its resume horizon when its head becomes terminal.
@@ -77,18 +112,28 @@ pub(crate) fn assert_release_is_the_sessions_fate(
     let scope = admitted_blob_scope(SCOPE);
     let resumed = resume(serving, token).err();
     assert!(
-        matches!(resumed, Some(worth_store::physical_runtime::BlobResumeFailure::AlreadyReleased)),
+        matches!(
+            resumed,
+            Some(worth_store::physical_runtime::BlobResumeFailure::AlreadyReleased)
+        ),
         "a released session resumed: {resumed:?}"
     );
     let blobs = serving.blobs().unwrap();
-    let limits = || worth_store::physical_runtime::BlobTerminalLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits = || {
+        worth_store::physical_runtime::BlobTerminalLimits::new(
+            std::num::NonZeroU64::new(128).unwrap(),
+        )
+    };
     for abandoned in [
         blobs.abort_ingest(token, &scope, placement(), deadline(), limits()),
         blobs.expire_ingest(token, &scope, placement(), deadline(), limits()),
     ] {
         let abandoned = abandoned.err();
         assert!(
-            matches!(abandoned, Some(worth_store::physical_runtime::BlobTerminalFailure::AlreadyReleased)),
+            matches!(
+                abandoned,
+                Some(worth_store::physical_runtime::BlobTerminalFailure::AlreadyReleased)
+            ),
             "a released session was abandoned: {abandoned:?}"
         );
     }
@@ -101,7 +146,10 @@ pub(crate) fn assert_release_is_the_sessions_fate(
 
 /// The selected publications of the identity: of its object, or by the
 /// session its still selected declaration names.
-pub(crate) fn selected_publications(serving: &ServingPhysicalRuntime, published: &Published) -> usize {
+pub(crate) fn selected_publications(
+    serving: &ServingPhysicalRuntime,
+    published: &Published,
+) -> usize {
     let object = published.object.bytes();
     let selected = selected_blob_records(serving);
     let records = || {
@@ -111,7 +159,9 @@ pub(crate) fn selected_publications(serving: &ServingPhysicalRuntime, published:
     };
     let session = records()
         .find_map(|record| match record {
-            worth_store_physical_format::BlobRecordV1::SessionDeclared(declared) if declared.object() == object => {
+            worth_store_physical_format::BlobRecordV1::SessionDeclared(declared)
+                if declared.object() == object =>
+            {
                 Some(declared.session())
             }
             _ => None,
@@ -140,7 +190,10 @@ pub(crate) fn assert_retired_identity_stays_ended(
     let before = fixed(serving);
     let begun = begin(serving, published.object, 2, LONG_HORIZON).err();
     assert!(
-        matches!(begun, Some(worth_store::physical_runtime::BlobIngestFailure::ObjectAlreadyDeclared)),
+        matches!(
+            begun,
+            Some(worth_store::physical_runtime::BlobIngestFailure::ObjectAlreadyDeclared)
+        ),
         "the retired object was declared again: {begun:?}"
     );
     assert_eq!(

@@ -1,18 +1,27 @@
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_compat_http_phase_seven_assertions as compat_http_phase_seven_assertions};
+use worth_testkit_server::shared_support_compat_http_phase_seven_assertions as compat_http_phase_seven_assertions;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_compat_http_phase_seven_runtime as compat_http_phase_seven_runtime};
+use worth_testkit_server::shared_support_compat_http_phase_seven_runtime as compat_http_phase_seven_runtime;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime};
+use worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerQueryHandoffDenialCode};
+use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
+use {
+    worth_server::WorthServerBinaryDownloadRequest,
+    worth_server::WorthServerCompatibilityRequestInput,
+    worth_server::WorthServerQueryHandoffDenialCode,
+};
 
-use {worth_testkit_server::shared_support_compat_http_phase_seven_assertions::assert_download_denial};
-use {worth_testkit_server::shared_support_compat_http_phase_seven_runtime::build_phase_seven_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_seven_runtime::compat_download_denied, worth_testkit_server::shared_support_compat_http_phase_seven_runtime::download_input, worth_testkit_server::shared_support_compat_http_phase_seven_runtime::prepared_request};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider};
+use worth_testkit_server::shared_support_compat_http_phase_seven_assertions::assert_download_denial;
+use worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider;
+use {
+    worth_testkit_server::shared_support_compat_http_phase_seven_runtime::build_phase_seven_server_with_workspace_provider,
+    worth_testkit_server::shared_support_compat_http_phase_seven_runtime::compat_download_denied,
+    worth_testkit_server::shared_support_compat_http_phase_seven_runtime::download_input,
+    worth_testkit_server::shared_support_compat_http_phase_seven_runtime::prepared_request,
+};
 
 #[test]
 fn compat_http_binary_download_identity_changes_when_equal_length_payload_bytes_change() {
@@ -80,7 +89,9 @@ fn compat_http_range_parser_denies_repeated_headers_and_unsupported_units() {
                     .expect("repeated range request should validate structurally"),
                 ),
                 "files.asset.download",
-                worth_server::WorthServerBinaryDownloadRequest::new(b"phase-seven-download-body".to_vec()),
+                worth_server::WorthServerBinaryDownloadRequest::new(
+                    b"phase-seven-download-body".to_vec(),
+                ),
             )),
     );
     let unsupported_unit = compat_download_denied(
@@ -100,7 +111,9 @@ fn compat_http_range_parser_denies_repeated_headers_and_unsupported_units() {
                     .expect("unsupported-unit request should validate structurally"),
                 ),
                 "files.asset.download",
-                worth_server::WorthServerBinaryDownloadRequest::new(b"phase-seven-download-body".to_vec()),
+                worth_server::WorthServerBinaryDownloadRequest::new(
+                    b"phase-seven-download-body".to_vec(),
+                ),
             )),
     );
 

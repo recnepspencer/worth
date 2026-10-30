@@ -1,7 +1,15 @@
+pub(crate) use crate::phase_eight_process::history::parent_oracle::evidence::report_comparison::ParentSemanticMismatch;
 
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::evidence::report_comparison::ParentSemanticMismatch};
-
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::checkpoint_evidence::CheckpointEvidence, crate::history::parent_oracle::evidence_digest::DigestBuilder, crate::phase_eight_process::history::parent_oracle::identity_evidence::IdentityEvidence, crate::phase_eight_process::history::parent_oracle::manifest_evidence::ManifestEvidence, crate::phase_eight_process::history::parent_oracle::page_evidence::PageEvidence, crate::phase_eight_process::history::parent_oracle::residue_evidence::ResidueEvidence, crate::phase_eight_process::history::parent_oracle::selector_evidence::SelectorEvidence, crate::phase_eight_process::history::parent_oracle::wal_evidence::WalEvidence};
+pub(crate) use {
+    crate::history::parent_oracle::evidence_digest::DigestBuilder,
+    crate::phase_eight_process::history::parent_oracle::checkpoint_evidence::CheckpointEvidence,
+    crate::phase_eight_process::history::parent_oracle::identity_evidence::IdentityEvidence,
+    crate::phase_eight_process::history::parent_oracle::manifest_evidence::ManifestEvidence,
+    crate::phase_eight_process::history::parent_oracle::page_evidence::PageEvidence,
+    crate::phase_eight_process::history::parent_oracle::residue_evidence::ResidueEvidence,
+    crate::phase_eight_process::history::parent_oracle::selector_evidence::SelectorEvidence,
+    crate::phase_eight_process::history::parent_oracle::wal_evidence::WalEvidence,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ParentPhysicalEvidence {
@@ -111,7 +119,9 @@ impl ParentPhysicalEvidence {
     }
 
     pub(crate) fn publication_digest(&self, unresolved_payload: bool) -> [u8; 32] {
-        let mut digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.publication.v1");
+        let mut digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+            b"worth.store.recovery-observer.publication.v1",
+        );
         record_u64(&mut digest, self.generation_link_count);
         digest.record(&self.generation_link_digest);
         record_u64(&mut digest, self.selector_count);

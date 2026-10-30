@@ -1,7 +1,29 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::PhysicalWalPolicy};
-pub(crate) use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::InlineArtifactRewritePlanDenial, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalReadProtectionPolicy, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PlannedInlineRewriteArtifact, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::SegmentPageCount, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
-pub(crate) use {worth_store_physical_backend::MediaOperationRole};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store::physical_runtime::PhysicalWalPolicy;
+pub(crate) use worth_store_physical_backend::MediaOperationRole;
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::InlineArtifactRewritePlanDenial,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalReadProtectionPolicy,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordId,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::PlannedInlineRewriteArtifact,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::SegmentPageCount,
+    worth_store::physical_runtime::WalSegmentByteLimit,
+    worth_store::physical_runtime::WalSegmentInventoryLimit,
+};
 
 pub(crate) const RECORD_BYTES: usize = 7_500;
 pub(crate) const PUBLISHED_ARTIFACTS: u32 = 16;
@@ -13,7 +35,10 @@ pub(crate) fn select_and_rewrite(count: u32) {
     let policy = one_page_placement();
     let ids = publish_one_record_per_segment(&serving, &policy, PUBLISHED_ARTIFACTS);
     assert_eq!(
-        worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_ids(&root).len(),
+        worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_ids(
+            &root
+        )
+        .len(),
         PUBLISHED_ARTIFACTS as usize,
         "each record must seal its own segment artifact"
     );
@@ -99,7 +124,12 @@ pub(crate) fn publish_one_record_per_segment(
         .map(|ordinal| {
             let mut bytes = vec![ordinal as u8; RECORD_BYTES];
             bytes[0] = ordinal as u8;
-            worth_store_testkit_store::physical_record_journeys::maintenance_interference::append(serving, *policy, u64::from(ordinal) + 1, &bytes)
+            worth_store_testkit_store::physical_record_journeys::maintenance_interference::append(
+                serving,
+                *policy,
+                u64::from(ordinal) + 1,
+                &bytes,
+            )
         })
         .collect()
 }
@@ -114,32 +144,43 @@ pub(crate) fn rewrite_one(
     material[..8].copy_from_slice(&ordinal.to_le_bytes());
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material),
+        )
         .unwrap();
     let prepared = match submission
         .rewrite_planned_inline_artifact(
             *policy,
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
             ),
             artifact,
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
+        worth_proof::TransitionOutcome::Success(_) => {
+            panic!("artifact {ordinal} did not stay prepared")
         }
-        worth_proof::TransitionOutcome::Success(_) => panic!("artifact {ordinal} did not stay prepared"),
-        worth_proof::TransitionOutcome::Denied(denial) => panic!("artifact {ordinal} denied: {denial:?}"),
+        worth_proof::TransitionOutcome::Denied(denial) => {
+            panic!("artifact {ordinal} denied: {denial:?}")
+        }
         worth_proof::TransitionOutcome::Deferred(deferred) => {
             panic!("artifact {ordinal} deferred: {deferred:?}")
         }
-        worth_proof::TransitionOutcome::Stale(stale) => panic!("artifact {ordinal} stale: {stale:?}"),
+        worth_proof::TransitionOutcome::Stale(stale) => {
+            panic!("artifact {ordinal} stale: {stale:?}")
+        }
         worth_proof::TransitionOutcome::RebindRequired(rebind) => {
             panic!("artifact {ordinal} rebind: {rebind:?}")
         }
-        worth_proof::TransitionOutcome::Failed(failure) => panic!("artifact {ordinal} failed: {failure:?}"),
+        worth_proof::TransitionOutcome::Failed(failure) => {
+            panic!("artifact {ordinal} failed: {failure:?}")
+        }
     };
     match prepared.execute() {
         worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_) => {}
@@ -159,7 +200,9 @@ pub(crate) fn read_back(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
     ids: &[PhysicalRecordId],
 ) {
-    let limits = worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(RECORD_BYTES as u32).unwrap());
+    let limits = worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(RECORD_BYTES as u32).unwrap(),
+    );
     let reader = serving.records().unwrap();
     for (ordinal, id) in ids.iter().copied().enumerate() {
         let mut session = reader.open(id, limits).unwrap();
@@ -171,7 +214,9 @@ pub(crate) fn read_back(
 
 pub(crate) fn one_page_placement() -> worth_store::physical_runtime::AdmittedRecordPlacementPolicy {
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
     worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(4).unwrap())
@@ -197,24 +242,40 @@ pub(crate) fn open_store(
     initialize: bool,
 ) -> worth_store::physical_runtime::ServingPhysicalRuntime {
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
-    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .admit(format)
+        .unwrap();
     let media = worth_store_testkit_store::physical_record_journeys::media(root);
-    let durability = worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy(
-        &media,
-        worth_store::physical_runtime::PhysicalWalPolicy::segmented(
-            worth_store::physical_runtime::WalSegmentByteLimit::new(std::num::NonZeroU64::new(512 * 1024).unwrap()),
-            worth_store::physical_runtime::WalSegmentInventoryLimit::new(std::num::NonZeroU32::new(64).unwrap()),
-        ),
-    );
+    let durability =
+        worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy(
+            &media,
+            worth_store::physical_runtime::PhysicalWalPolicy::segmented(
+                worth_store::physical_runtime::WalSegmentByteLimit::new(
+                    std::num::NonZeroU64::new(512 * 1024).unwrap(),
+                ),
+                worth_store::physical_runtime::WalSegmentInventoryLimit::new(
+                    std::num::NonZeroU32::new(64).unwrap(),
+                ),
+            ),
+        );
     let residency = worth_store_testkit_store::physical_record_journeys::maintenance_interference::rewrite_axis_residency(format, 1024 * 1024);
     if initialize {
         worth_store_testkit_store::physical_record_journeys::success(
             media.initialize_record_store(
-                worth_store::physical_runtime::PhysicalRecordInitialization::new(format, one_page_placement(), access, durability)
-                    .with_residency_policy(residency)
-                    .with_read_protection_policy(worth_store::physical_runtime::PhysicalReadProtectionPolicy::default()),
+                worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                    format,
+                    one_page_placement(),
+                    access,
+                    durability,
+                )
+                .with_residency_policy(residency)
+                .with_read_protection_policy(
+                    worth_store::physical_runtime::PhysicalReadProtectionPolicy::default(),
+                ),
             ),
         )
     } else {
@@ -222,7 +283,9 @@ pub(crate) fn open_store(
             media.open_record_store(
                 worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
                     .with_residency_policy(residency)
-                    .with_read_protection_policy(worth_store::physical_runtime::PhysicalReadProtectionPolicy::default()),
+                    .with_read_protection_policy(
+                        worth_store::physical_runtime::PhysicalReadProtectionPolicy::default(),
+                    ),
             ),
         )
     }

@@ -1,10 +1,29 @@
-use {worth_proof::NonEmpty};
-use {worth_store::physical_runtime::certification::CertificationDurableMutationInput, worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint, worth_store::physical_runtime::PhysicalDataDispatchFailureCause, worth_store::physical_runtime::PhysicalDataDispatchOutcome, worth_store::physical_runtime::PhysicalManifestCapacityTransition, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::PhysicalResidencyRetryPosture, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits};
-use {worth_store_physical_backend::MediaOperationRole};
-use {worth_store_physical_format::RecordFrameCoordinate};
+use worth_proof::NonEmpty;
+use worth_store_physical_backend::MediaOperationRole;
+use worth_store_physical_format::RecordFrameCoordinate;
+use {
+    worth_store::physical_runtime::certification::CertificationDurableMutationInput,
+    worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint,
+    worth_store::physical_runtime::PhysicalDataDispatchFailureCause,
+    worth_store::physical_runtime::PhysicalDataDispatchOutcome,
+    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalResidencyDimension,
+    worth_store::physical_runtime::PhysicalResidencyRetryPosture,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success, crate::physical_record_journeys::physical_work::residency_pressure_projection::two_append_writebehind_policy};
-use {worth_store_testkit_store::durable_publication};
+use worth_store_testkit_store::durable_publication;
+use {
+    crate::physical_record_journeys::physical_work::residency_pressure_projection::two_append_writebehind_policy,
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn arena_pin_pressure_repeatedly_preserves_prefix_and_neighbour_without_deletion() {
@@ -13,16 +32,21 @@ fn arena_pin_pressure_repeatedly_preserves_prefix_and_neighbour_without_deletion
     let (format, placement, access) = configuration();
     let payload = vec![0x71; format.declaration().page_size().bytes() as usize * 3];
     let seeded = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let neighbour = worth_store_testkit_store::durable_publication::root::publish_single(
         &seeded,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0xB1; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload.as_slice()])
+            .unwrap(),
     );
     let record = neighbour.settled_members()[0].record_id(0).unwrap();
-    let limits = worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap());
+    let limits = worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap(),
+    );
     let coordinate = {
         let reader = seeded.records().unwrap();
         let mut stream = reader.open(record, limits).unwrap();
@@ -49,7 +73,10 @@ fn arena_pin_pressure_repeatedly_preserves_prefix_and_neighbour_without_deletion
         worth_proof::NonEmpty::new(
             worth_store::physical_runtime::certification::CertificationDurableMutationInput::new(
                 worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0xB2; 32]),
-                worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload.as_slice()]).unwrap(),
+                worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+                    payload.as_slice()
+                ])
+                .unwrap(),
             ),
             vec![],
         ),
@@ -87,14 +114,18 @@ fn arena_pin_pressure_repeatedly_preserves_prefix_and_neighbour_without_deletion
     let before_denial = serving.media_counters();
     gate.release();
     let suspended = match dispatch.join().unwrap() {
-        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Suspended(suspended) => suspended,
+        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Suspended(suspended) => {
+            suspended
+        }
         _ => panic!("pressure after a settled arena frame must suspend, not lose its prefix"),
     };
     assert_eq!(suspended.completed_effects().len(), 1);
     let first = suspended.completed_effects()[0].clone();
     assert_eq!(first.coordinate().artifact(), coordinate.artifact());
     assert!(first.coordinate().offset() >= neighbour_bytes.len() as u64);
-    let worth_store::physical_runtime::PhysicalDataDispatchFailureCause::PhysicalPressure(pressure) = suspended.cause() else {
+    let worth_store::physical_runtime::PhysicalDataDispatchFailureCause::PhysicalPressure(pressure) =
+        suspended.cause()
+    else {
         panic!("the denial must be actual residency contention");
     };
     assert_eq!(
@@ -127,9 +158,15 @@ fn arena_pin_pressure_repeatedly_preserves_prefix_and_neighbour_without_deletion
             }
             worth_store::physical_runtime::PhysicalDataDispatchOutcome::NotStarted {
                 durable,
-                cause: worth_store::physical_runtime::PhysicalDataDispatchFailureCause::PhysicalPressure(pressure),
+                cause:
+                    worth_store::physical_runtime::PhysicalDataDispatchFailureCause::PhysicalPressure(
+                        pressure,
+                    ),
             } => (durable, pressure),
-            worth_store::physical_runtime::PhysicalDataDispatchOutcome::NotStarted { cause, .. } => {
+            worth_store::physical_runtime::PhysicalDataDispatchOutcome::NotStarted {
+                cause,
+                ..
+            } => {
                 panic!("unexpected repeat denial: {cause:?}")
             }
             worth_store::physical_runtime::PhysicalDataDispatchOutcome::Indeterminate(failure) => {
@@ -156,7 +193,9 @@ fn arena_pin_pressure_repeatedly_preserves_prefix_and_neighbour_without_deletion
         .certification_record_submission()
         .dispatch_wal_durable_data(durable)
     {
-        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Dispatched(dispatched) => dispatched,
+        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Dispatched(dispatched) => {
+            dispatched
+        }
         _ => panic!("releasing real pins must permit the remaining arena frames"),
     };
     assert_eq!(dispatched.effects()[0], first);
@@ -164,7 +203,8 @@ fn arena_pin_pressure_repeatedly_preserves_prefix_and_neighbour_without_deletion
         serving
             .media_counters()
             .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before_resume.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before_resume
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
         dispatched.effects().len() as u64 - 1,
         "the completed prefix must never be written again",
     );
@@ -180,8 +220,10 @@ fn arena_pin_pressure_repeatedly_preserves_prefix_and_neighbour_without_deletion
         &std::fs::read(&arena_path).unwrap()[..neighbour_bytes.len()],
         &neighbour_bytes
     );
-    let completed =
-        serving.certification_complete_dispatched_group(group, worth_proof::NonEmpty::new(dispatched, vec![]));
+    let completed = serving.certification_complete_dispatched_group(
+        group,
+        worth_proof::NonEmpty::new(dispatched, vec![]),
+    );
     assert_eq!(completed.settled_members().len(), 1);
     let reader = serving.records().unwrap();
     let mut stream = reader.open(record, limits).unwrap();

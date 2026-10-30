@@ -28,4 +28,4 @@ fn explicit_readmission_progression_compiles(
     let _basis = readmitted.strong_basis();
 }
 
-fn main() {}
+pub(crate) fn main() {}

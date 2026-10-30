@@ -1,9 +1,25 @@
-use {std::num::NonZeroU64};
+use std::num::NonZeroU64;
 
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkPressureClass};
-use {worth_store_blob_chunks::BlobChunkSize};
+use worth_store_blob_chunks::BlobChunkSize;
+use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReadOpenFailure,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkPressureClass,
+};
 
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::admitted_blob_scope_for_replay_boundary, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::admitted_blob_scope_for_replay_boundary,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
 fn protected_blob_range_crosses_chunk_boundary_and_rejects_foreign_scope() {
@@ -19,7 +35,9 @@ fn protected_blob_range_crosses_chunk_boundary_and_rejects_foreign_scope() {
         .collect::<Vec<_>>();
     let selected_limit = std::num::NonZeroU64::new(128).unwrap();
     let object = blobs
-        .issue_object_id(worth_store::physical_runtime::BlobReadLimits::new(selected_limit))
+        .issue_object_id(worth_store::physical_runtime::BlobReadLimits::new(
+            selected_limit,
+        ))
         .unwrap_or_else(|_| panic!("Store-issued object identity must admit"));
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         object,
@@ -27,7 +45,8 @@ fn protected_blob_range_crosses_chunk_boundary_and_rejects_foreign_scope() {
         payload.len() as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -56,7 +75,9 @@ fn protected_blob_range_crosses_chunk_boundary_and_rejects_foreign_scope() {
                 object.bytes(),
                 published.generation().sequence(),
                 &scope,
-                worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(1).unwrap()),
+                worth_store::physical_runtime::BlobReadLimits::new(
+                    std::num::NonZeroU64::new(1).unwrap()
+                ),
             )
             .unwrap(),
         published,
@@ -101,9 +122,9 @@ fn protected_blob_range_crosses_chunk_boundary_and_rejects_foreign_scope() {
     let length = CHUNK_BYTES as u64 + 41;
     let allocation_before = serving.residency_observation();
     assert_eq!(
-        allocation_before
-            .counters()
-            .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob),
+        allocation_before.counters().active_operation_bytes_for(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob
+        ),
         0
     );
     let mut read = blobs
@@ -117,9 +138,9 @@ fn protected_blob_range_crosses_chunk_boundary_and_rejects_foreign_scope() {
         .unwrap();
     let allocation_during = serving.residency_observation();
     assert_eq!(
-        allocation_during
-            .counters()
-            .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance),
+        allocation_during.counters().active_operation_bytes_for(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance
+        ),
         0,
         "completed catalog selection releases the maintenance operation"
     );
@@ -140,9 +161,9 @@ fn protected_blob_range_crosses_chunk_boundary_and_rejects_foreign_scope() {
         allocation_during.allocations().pool_incarnation(),
         allocation_before.allocations().pool_incarnation()
     );
-    let read_charge = allocation_during
-        .counters()
-        .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob);
+    let read_charge = allocation_during.counters().active_operation_bytes_for(
+        worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob,
+    );
     assert!(
         read_charge > 0,
         "protected read must retain its Store allocation"
@@ -176,7 +197,9 @@ fn protected_blob_range_crosses_chunk_boundary_and_rejects_foreign_scope() {
         serving
             .residency_observation()
             .counters()
-            .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob),
+            .active_operation_bytes_for(
+                worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob
+            ),
         read_charge,
         "completed streaming retains authority until the session is dropped"
     );
@@ -185,7 +208,9 @@ fn protected_blob_range_crosses_chunk_boundary_and_rejects_foreign_scope() {
         serving
             .residency_observation()
             .counters()
-            .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob),
+            .active_operation_bytes_for(
+                worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob
+            ),
         0
     );
 

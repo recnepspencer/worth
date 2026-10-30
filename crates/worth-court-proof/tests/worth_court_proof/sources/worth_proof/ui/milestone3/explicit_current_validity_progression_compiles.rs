@@ -22,4 +22,4 @@ fn explicit_current_validity_progression_compiles(
     let _basis = admitted.strong_basis();
 }
 
-fn main() {}
+pub(crate) fn main() {}

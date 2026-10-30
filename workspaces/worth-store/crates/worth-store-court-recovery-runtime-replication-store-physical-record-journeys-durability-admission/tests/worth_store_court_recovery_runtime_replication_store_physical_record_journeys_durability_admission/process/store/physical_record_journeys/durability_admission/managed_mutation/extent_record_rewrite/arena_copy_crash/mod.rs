@@ -31,7 +31,9 @@ fn copy_bytes_before_final_child() {
     .unwrap();
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([242; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([242; 32]),
+        )
         .unwrap();
     let Ok(mut progress) = submission
         .certification_begin_selected_extent_copy(placement, request(key), identity)
@@ -47,7 +49,10 @@ fn copy_bytes_before_final_child() {
         {
             break;
         }
-        if seam == "ready" && progress.phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption {
+        if seam == "ready"
+            && progress.phase
+                == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+        {
             break;
         }
     }
@@ -57,7 +62,10 @@ fn copy_bytes_before_final_child() {
                 && progress.completed_payload_bytes > 0
                 && progress.completed_payload_bytes < payload.len() as u64
         ),
-        "ready" => assert_eq!(progress.phase, worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption),
+        "ready" => assert_eq!(
+            progress.phase,
+            worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+        ),
         _ => panic!("unknown crash seam"),
     }
     std::fs::write(directory.join("reached"), b"durable-intent-and-bytes").unwrap();

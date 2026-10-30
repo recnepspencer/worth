@@ -1,5 +1,11 @@
-pub(crate) use {crate::shared_support::compile_fail::bundle::CompileFailBundle, crate::shared_support::compile_fail::bundle::CompileFailCase};
-pub(crate) use {crate::shared_support::compile_pass::bundle::CompilePassBundle, crate::shared_support::compile_pass::bundle::CompilePassCase};
+pub(crate) use {
+    crate::shared_support::compile_fail::bundle::CompileFailBundle,
+    crate::shared_support::compile_fail::bundle::CompileFailCase,
+};
+pub(crate) use {
+    crate::shared_support::compile_pass::bundle::CompilePassBundle,
+    crate::shared_support::compile_pass::bundle::CompilePassCase,
+};
 
 pub(crate) fn compile_fail_bundle() -> CompileFailBundle {
     crate::shared_support::compile_fail::bundle::CompileFailBundle::new(

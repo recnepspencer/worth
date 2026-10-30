@@ -2,27 +2,21 @@
 
 #[test]
 fn owner_services_public_facade_and_negative_fences_are_current() {
-    let tests = trybuild::TestCases::new();
-    tests.pass(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/public_port_matrix.rs"));
-    tests.pass(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/conditional_claimant_issuance.rs"));
-    tests.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/component_bundle_has_no_conditional_issuer.rs"),
-    );
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/conditional_issuance_is_owner_private.rs"));
-    tests.pass(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/operation_control_matrix.rs"));
-    tests
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/operation_control_constructor_is_private.rs"));
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/local_only_owner_issuance.rs"));
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/descriptor_is_not_basis_authority.rs"));
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/raw_branch_id_is_not_basis_authority.rs"));
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/basis_port_cannot_mutate.rs"));
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/retirement_requires_linear_plan.rs"));
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/consumed_outcome_cannot_reuse.rs"));
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/generic_marker_cannot_issue_basis.rs"));
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/forged_basis_is_not_public.rs"));
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/private_cell_is_not_facade.rs"));
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/component_bundle_has_no_conditional_issuer.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/conditional_issuance_is_owner_private.rs")).expect("prebuilt compiler denial");
+
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/operation_control_constructor_is_private.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/local_only_owner_issuance.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/descriptor_is_not_basis_authority.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/raw_branch_id_is_not_basis_authority.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/basis_port_cannot_mutate.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/retirement_requires_linear_plan.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/consumed_outcome_cannot_reuse.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/generic_marker_cannot_issue_basis.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/forged_basis_is_not_public.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/private_cell_is_not_facade.rs")).expect("prebuilt compiler denial");
     // Law 1, reach: boundary-check control_seal tests replace the retired
     // default_build_has_no_operation_control feature-absence contract.
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/unavailable_is_not_constructible.rs"));
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/ports_are_not_constructible.rs"));
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/unavailable_is_not_constructible.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/ports_are_not_constructible.rs")).expect("prebuilt compiler denial");
 }

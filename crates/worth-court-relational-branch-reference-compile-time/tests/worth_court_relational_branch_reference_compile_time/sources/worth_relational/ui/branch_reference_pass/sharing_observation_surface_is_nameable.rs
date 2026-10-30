@@ -132,7 +132,7 @@ fn declared_scopes() {
     let _ = RelationalSharingByteMetricScope::AuthoritativePartitionPayloadsOnly;
 }
 
-fn main() {
+pub(crate) fn main() {
     assert_eq!(DECLARED_VERSION, RELATIONAL_SHARING_INSPECTION_VERSION);
     require_evidence_derives::<RelationalBranchSharingObservation>();
     require_evidence_derives::<RelationalBranchSharingInspectionDenial>();

@@ -39,7 +39,8 @@ impl CustomInvariantRule for BranchVersionProbeRule {
                 rule_id: worth_relational::facade::runtime::CustomInvariantRuleId::new(
                     Self::RULE_ID,
                 ),
-                semantic_version: worth_relational::facade::runtime::CustomInvariantSemanticVersion::new(1, 0),
+                semantic_version:
+                    worth_relational::facade::runtime::CustomInvariantSemanticVersion::new(1, 0),
             },
             display_name: std::sync::Arc::from("Supply Chain branch-selected version probe"),
             operational: CustomInvariantOperationalMetadata {
@@ -52,10 +53,14 @@ impl CustomInvariantRule for BranchVersionProbeRule {
                     include_relation_endpoint_entity_touches: true,
                 }
                 .canonicalize(),
-                execution_point: worth_relational::facade::runtime::InvariantExecutionPoint::CommitBoundary,
-                groups: worth_relational::facade::runtime::InvariantGroupSet::of(worth_relational::facade::runtime::InvariantGroup::RelationIntegrity),
+                execution_point:
+                    worth_relational::facade::runtime::InvariantExecutionPoint::CommitBoundary,
+                groups: worth_relational::facade::runtime::InvariantGroupSet::of(
+                    worth_relational::facade::runtime::InvariantGroup::RelationIntegrity,
+                ),
                 cost_class: worth_relational::facade::runtime::InvariantCostClass::Touched,
-                failure_effect: worth_relational::facade::runtime::InvariantFailureEffect::BlockCommit,
+                failure_effect:
+                    worth_relational::facade::runtime::InvariantFailureEffect::BlockCommit,
             },
         }
     }

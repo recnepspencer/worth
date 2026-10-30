@@ -1,16 +1,53 @@
-pub(crate) use {std::fs, std::num::NonZeroU64, std::path::Path, std::sync::mpsc, std::sync::Arc, std::sync::Barrier, std::thread, std::time::Duration, std::time::Instant};
+pub(crate) use {
+    std::fs, std::num::NonZeroU64, std::path::Path, std::sync::mpsc, std::sync::Arc,
+    std::sync::Barrier, std::thread, std::time::Duration, std::time::Instant,
+};
 
-pub(crate) use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::BlobIngestClaimDenial, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::BlobResumeFailure, worth_store::physical_runtime::BlobResumeLimits, worth_store::physical_runtime::BlobResumeToken, worth_store::physical_runtime::BlobTerminalDisposition, worth_store::physical_runtime::BlobTerminalFailure, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::PersistedRecordIdentity};
+pub(crate) use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::BlobIngestClaimDenial,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReadOpenFailure,
+    worth_store::physical_runtime::BlobResumeFailure,
+    worth_store::physical_runtime::BlobResumeLimits,
+    worth_store::physical_runtime::BlobResumeToken,
+    worth_store::physical_runtime::BlobTerminalDisposition,
+    worth_store::physical_runtime::BlobTerminalFailure,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
 
-pub(crate) use {crate::physical_blob_journeys::blob_abort::assert_resume_abandoned, crate::physical_blob_journeys::blob_abort::deadline, crate::physical_blob_journeys::blob_abort::limits, crate::physical_blob_journeys::blob_abort::unfinished, crate::physical_blob_journeys::blob_crash::establish_recovery_frontier, crate::physical_blob_journeys::blob_crash::kill_at, crate::physical_blob_journeys::blob_crash::marker_path, crate::blob_crash::recovery::recover_closed_store, crate::physical_blob_journeys::blob_crash::resume_token_path, crate::physical_blob_journeys::blob_crash::write_marker, crate::physical_blob_journeys::blob_crash::SCOPE_KEY, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+pub(crate) use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_abort::assert_resume_abandoned,
+    crate::physical_blob_journeys::blob_abort::deadline,
+    crate::physical_blob_journeys::blob_abort::limits,
+    crate::physical_blob_journeys::blob_abort::unfinished,
+    crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
+    crate::physical_blob_journeys::blob_crash::kill_at,
+    crate::physical_blob_journeys::blob_crash::marker_path,
+    crate::physical_blob_journeys::blob_crash::resume_token_path,
+    crate::physical_blob_journeys::blob_crash::write_marker,
+    crate::physical_blob_journeys::blob_crash::SCOPE_KEY,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 pub(crate) const CHUNK: usize = 64 * 1024;
 
 pub(crate) fn assert_killed_terminal(role: &'static str) {
     let world = kill_at(role, std::time::Duration::from_secs(180));
-    let token = worth_store::physical_runtime::BlobResumeToken::decode(&std::fs::read(resume_token_path(&world.root)).unwrap())
-        .expect("child wrote one syntactically valid token before abort");
+    let token = worth_store::physical_runtime::BlobResumeToken::decode(
+        &std::fs::read(resume_token_path(&world.root)).unwrap(),
+    )
+    .expect("child wrote one syntactically valid token before abort");
     assert_eq!(&token.encode()[24..40], world.session.as_slice());
     recover_closed_store(&world.root);
 
@@ -22,7 +59,9 @@ pub(crate) fn assert_killed_terminal(role: &'static str) {
             world.object,
             1,
             &scope,
-            worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap())
+            worth_store::physical_runtime::BlobReadLimits::new(
+                std::num::NonZeroU64::new(128).unwrap()
+            )
         ),
         Err(worth_store::physical_runtime::BlobReadOpenFailure::PublicationNotFound)
     ));
@@ -35,19 +74,27 @@ pub(crate) fn assert_killed_terminal(role: &'static str) {
             continue;
         }
         match decode_blob_record(&bytes).expect("selected blob control/frame must decode") {
-            worth_store_physical_format::BlobRecordV1::SessionDeclared(value) if value.session() == world.session => {
+            worth_store_physical_format::BlobRecordV1::SessionDeclared(value)
+                if value.session() == world.session =>
+            {
                 assert!(declaration.replace(record).is_none());
                 assert_eq!(value.object(), world.object);
             }
-            worth_store_physical_format::BlobRecordV1::Chunk(value) if value.occurrence().session() == world.session => {
+            worth_store_physical_format::BlobRecordV1::Chunk(value)
+                if value.occurrence().session() == world.session =>
+            {
                 assert!(chunk.replace(record).is_none());
                 assert_eq!(value.occurrence().ordinal(), 0);
                 assert_eq!(value.bytes(), &[0x5a; CHUNK]);
             }
-            worth_store_physical_format::BlobRecordV1::SessionAbandoned(value) if value.session() == world.session => {
+            worth_store_physical_format::BlobRecordV1::SessionAbandoned(value)
+                if value.session() == world.session =>
+            {
                 assert!(terminal.replace((record, value)).is_none());
             }
-            worth_store_physical_format::BlobRecordV1::GenerationPublished(value) if value.session() == world.session => {
+            worth_store_physical_format::BlobRecordV1::GenerationPublished(value)
+                if value.session() == world.session =>
+            {
                 panic!("aborted session cannot publish a generation")
             }
             _ => {}
@@ -91,8 +138,14 @@ pub(crate) fn assert_killed_terminal(role: &'static str) {
     }
 }
 
-pub(crate) fn persisted(record: worth_store::physical_runtime::PhysicalRecordId) -> PersistedRecordIdentity {
-    worth_store_physical_format::PersistedRecordIdentity::new(record.allocation_epoch(), record.ordinal()).unwrap()
+pub(crate) fn persisted(
+    record: worth_store::physical_runtime::PhysicalRecordId,
+) -> PersistedRecordIdentity {
+    worth_store_physical_format::PersistedRecordIdentity::new(
+        record.allocation_epoch(),
+        record.ordinal(),
+    )
+    .unwrap()
 }
 
 pub(crate) fn child(root: &Path, role: &str) {
@@ -140,7 +193,9 @@ pub(crate) fn selected_object(serving: &ServingPhysicalRuntime, session: [u8; 16
     selected_blob_records(serving)
         .into_iter()
         .find_map(|(_, bytes)| match decode_blob_record(&bytes) {
-            Ok(worth_store_physical_format::BlobRecordV1::SessionDeclared(value)) if value.session() == session => {
+            Ok(worth_store_physical_format::BlobRecordV1::SessionDeclared(value))
+                if value.session() == session =>
+            {
                 Some(value.object())
             }
             _ => None,

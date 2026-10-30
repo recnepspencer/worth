@@ -1,5 +1,22 @@
-pub(crate) use {worth_foundational::admit_requested_foundational_profile_with_resolutions, worth_foundational::foundational_profile_progression_authority, worth_foundational::materialize_admitted_foundational_profile_with_resolutions, worth_foundational::request_foundational_profile_set, worth_foundational::AdmissionReadinessProfile, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::ExecutionObjectiveProfile, worth_foundational::FoundationalProfileProgressionDenial, worth_foundational::FoundationalProfileResolutionFamily, worth_foundational::FoundationalProfileResolutionLedger, worth_foundational::FoundationalProfileResolutionLedgerDenial, worth_foundational::FoundationalProfileResolutionRecord, worth_foundational::FoundationalProfileResolutionRelation, worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput, worth_foundational::ObservationActivationProfile, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::admit_requested_foundational_profile_with_resolutions,
+    worth_foundational::foundational_profile_progression_authority,
+    worth_foundational::materialize_admitted_foundational_profile_with_resolutions,
+    worth_foundational::request_foundational_profile_set,
+    worth_foundational::AdmissionReadinessProfile, worth_foundational::CertificationPostureProfile,
+    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
+    worth_foundational::ExecutionObjectiveProfile,
+    worth_foundational::FoundationalProfileProgressionDenial,
+    worth_foundational::FoundationalProfileResolutionFamily,
+    worth_foundational::FoundationalProfileResolutionLedger,
+    worth_foundational::FoundationalProfileResolutionLedgerDenial,
+    worth_foundational::FoundationalProfileResolutionRecord,
+    worth_foundational::FoundationalProfileResolutionRelation,
+    worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput,
+    worth_foundational::ObservationActivationProfile, worth_foundational::RetentionDeliveryProfile,
+    worth_foundational::SupportPostureProfile,
+};
 
 pub(crate) fn base_profile(
     objective: ExecutionObjectiveProfile,
@@ -36,24 +53,31 @@ pub(crate) fn profile_with_axes(
     .expect("phase 2 profile axes remain coherent")
 }
 
-pub(crate) fn resolution_ledger(objective: bool, activation: bool) -> FoundationalProfileResolutionLedger {
+pub(crate) fn resolution_ledger(
+    objective: bool,
+    activation: bool,
+) -> FoundationalProfileResolutionLedger {
     let mut ledger = worth_foundational::FoundationalProfileResolutionLedger::empty();
     if objective {
         ledger
-            .insert(worth_foundational::FoundationalProfileResolutionRecord::new(
-                worth_foundational::FoundationalProfileResolutionFamily::ExecutionObjective,
-                worth_foundational::FoundationalProfileResolutionRelation::ObjectiveSelection,
-                "objective selected",
-            ))
+            .insert(
+                worth_foundational::FoundationalProfileResolutionRecord::new(
+                    worth_foundational::FoundationalProfileResolutionFamily::ExecutionObjective,
+                    worth_foundational::FoundationalProfileResolutionRelation::ObjectiveSelection,
+                    "objective selected",
+                ),
+            )
             .expect("objective family is unique");
     }
     if activation {
         ledger
-            .insert(worth_foundational::FoundationalProfileResolutionRecord::new(
-                worth_foundational::FoundationalProfileResolutionFamily::ObservationActivation,
-                worth_foundational::FoundationalProfileResolutionRelation::ActivationSelection,
-                "activation selected",
-            ))
+            .insert(
+                worth_foundational::FoundationalProfileResolutionRecord::new(
+                    worth_foundational::FoundationalProfileResolutionFamily::ObservationActivation,
+                    worth_foundational::FoundationalProfileResolutionRelation::ActivationSelection,
+                    "activation selected",
+                ),
+            )
             .expect("activation family is unique");
     }
     ledger

@@ -1,9 +1,27 @@
-use {worth_foundational::foundational_merge, worth_foundational::FoundationalMergeConstructionDenial, worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalMergeScopeFamily, worth_foundational::FoundationalScopeAdmissionBasis, worth_foundational::FoundationalSelectedAspectLocus, worth_foundational::FoundationalSelectedNodeLocus};
-use {worth_proof::TransitionOutcome};
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::foundational_merge,
+    worth_foundational::FoundationalMergeConstructionDenial,
+    worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalMergeScopeFamily,
+    worth_foundational::FoundationalScopeAdmissionBasis,
+    worth_foundational::FoundationalSelectedAspectLocus,
+    worth_foundational::FoundationalSelectedNodeLocus,
+};
 
-use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id, crate::certification::ordinary_context::transitions::fixtures::branch::staged_candidate};
-use {crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate, crate::certification::ordinary_context::transitions::fixtures::merge::merge_basis, crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary, crate::certification::ordinary_context::transitions::fixtures::merge::strategy_identity};
-use {crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::branch::branch_id,
+    crate::certification::ordinary_context::transitions::fixtures::branch::staged_candidate,
+};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::merge::merge_basis,
+    crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary,
+    crate::certification::ordinary_context::transitions::fixtures::merge::strategy_identity,
+};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node,
+};
 
 #[test]
 fn legacy_merge_candidates_lower_to_explicit_full_branch_scope() {
@@ -58,7 +76,10 @@ fn selected_node_scope_is_canonical_across_producer_ordering() {
     .expect("reverse selected node scope");
 
     assert_eq!(scope, reverse);
-    assert_eq!(scope.family(), worth_foundational::FoundationalMergeScopeFamily::SelectedNodes);
+    assert_eq!(
+        scope.family(),
+        worth_foundational::FoundationalMergeScopeFamily::SelectedNodes
+    );
     assert_eq!(scope.selected_nodes_loci()[0].as_str(), "gear:teeth");
     assert_eq!(scope.selected_nodes_loci()[1].as_str(), "gear:thickness");
 }
@@ -135,13 +156,15 @@ fn scoped_merge_candidate_exposes_scope_to_blind_consumers() {
 
 #[test]
 fn scoped_merge_request_denies_empty_and_duplicate_selection() {
-    let empty_node_scope =
-        worth_foundational::FoundationalMergeScope::selected_nodes([]).expect_err("empty node scope must deny");
-    let empty_aspect_scope =
-        worth_foundational::FoundationalMergeScope::selected_aspects([]).expect_err("empty aspect scope must deny");
-    let duplicate_node =
-        worth_foundational::FoundationalMergeScope::selected_nodes([selected_node("gear"), selected_node("gear")])
-            .expect_err("duplicate node scope must deny");
+    let empty_node_scope = worth_foundational::FoundationalMergeScope::selected_nodes([])
+        .expect_err("empty node scope must deny");
+    let empty_aspect_scope = worth_foundational::FoundationalMergeScope::selected_aspects([])
+        .expect_err("empty aspect scope must deny");
+    let duplicate_node = worth_foundational::FoundationalMergeScope::selected_nodes([
+        selected_node("gear"),
+        selected_node("gear"),
+    ])
+    .expect_err("duplicate node scope must deny");
     let duplicate_aspect = worth_foundational::FoundationalMergeScope::selected_aspects([
         selected_aspect("gear", "teeth"),
         selected_aspect("gear", "teeth"),
@@ -153,7 +176,8 @@ fn scoped_merge_request_denies_empty_and_duplicate_selection() {
         worth_foundational::FoundationalMergeConstructionDenial::EmptySelectedNodeLocus
     );
     assert_eq!(
-        worth_foundational::FoundationalSelectedAspectLocus::new("").expect_err("empty aspect locus"),
+        worth_foundational::FoundationalSelectedAspectLocus::new("")
+            .expect_err("empty aspect locus"),
         worth_foundational::FoundationalMergeConstructionDenial::EmptySelectedAspectLocus
     );
     assert_eq!(

@@ -1,4 +1,9 @@
-use {worth_foundational::profiles, worth_foundational::profiles_api::common_path, worth_foundational::profiles_api::lower_lane::materialization as lower_materialization, worth_foundational::FoundationalDescriptiveSurface, worth_foundational::FoundationalObservationDisposition};
+use {
+    worth_foundational::profiles, worth_foundational::profiles_api::common_path,
+    worth_foundational::profiles_api::lower_lane::materialization as lower_materialization,
+    worth_foundational::FoundationalDescriptiveSurface,
+    worth_foundational::FoundationalObservationDisposition,
+};
 
 #[test]
 fn lower_lane_materialization_matches_root_and_common_paths() {

@@ -1,5 +1,6 @@
-#[allow(unused_imports)] use crate::relational_certification::ordinary_context::invariant_proposed_state::*;
-pub(crate) use {std::collections::BTreeMap};
+#[allow(unused_imports)]
+use crate::relational_certification::ordinary_context::invariant_proposed_state::*;
+pub(crate) use std::collections::BTreeMap;
 pub(crate) use {std::sync::Arc, std::sync::Mutex};
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline_with_custom_invariant, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::snapshot_for_supply_chain_identity, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition};
@@ -20,10 +21,12 @@ fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_s
     let program = worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram::compile(definition)
         .expect("Court Supply Chain program compiles");
     let evidence = crate::relational_certification::ordinary_context::invariant_proposed_state::ProbeEvidence::default();
-    let registration = worth_relational::facade::runtime::CustomInvariantRegistration::new(ProposedAspectStateProbe {
-        evidence: evidence.clone(),
-        verdict: worth_relational::facade::runtime::CustomInvariantVerdict::Pass,
-    })
+    let registration = worth_relational::facade::runtime::CustomInvariantRegistration::new(
+        ProposedAspectStateProbe {
+            evidence: evidence.clone(),
+            verdict: worth_relational::facade::runtime::CustomInvariantVerdict::Pass,
+        },
+    )
     .expect("proposed-state probe registers");
     let world =
         compile_supply_chain_baseline_with_custom_invariant(execution, program, registration)
@@ -71,7 +74,10 @@ fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_s
         receipt.execution_point(),
         worth_relational::facade::runtime::InvariantExecutionPoint::CommitBoundary
     );
-    assert_eq!(receipt.verdict(), worth_relational::facade::runtime::InvariantDecisionKind::Passed);
+    assert_eq!(
+        receipt.verdict(),
+        worth_relational::facade::runtime::InvariantDecisionKind::Passed
+    );
     assert_eq!(
         receipt.provenance().version_id,
         proposal.invariant_evidence().proposed_version()
@@ -103,10 +109,14 @@ fn malformed_proposal_denial_preserves_custom_rule_identity() {
     let program = worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram::compile(definition)
         .expect("Court Supply Chain program compiles");
     let evidence = crate::relational_certification::ordinary_context::invariant_proposed_state::ProbeEvidence::default();
-    let registration = worth_relational::facade::runtime::CustomInvariantRegistration::new(ProposedAspectStateProbe {
-        evidence: evidence.clone(),
-        verdict: worth_relational::facade::runtime::CustomInvariantVerdict::Violation(worth_relational::facade::runtime::CustomInvariantRefusal::Empty),
-    })
+    let registration = worth_relational::facade::runtime::CustomInvariantRegistration::new(
+        ProposedAspectStateProbe {
+            evidence: evidence.clone(),
+            verdict: worth_relational::facade::runtime::CustomInvariantVerdict::Violation(
+                worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+            ),
+        },
+    )
     .expect("proposed-state denial rule registers");
     let world =
         compile_supply_chain_baseline_with_custom_invariant(execution, program, registration)
@@ -122,7 +132,9 @@ fn malformed_proposal_denial_preserves_custom_rule_identity() {
     )
     .expect_err("the malformed proposed status must be denied");
 
-    let worth_relational::facade::transactions::TransactionCommitError::Conflict { error, .. } = denial else {
+    let worth_relational::facade::transactions::TransactionCommitError::Conflict { error, .. } =
+        denial
+    else {
         panic!("custom violation must deny as a typed conflict");
     };
     let worth_relational::facade::transactions::ConflictClass::InvariantViolation {
@@ -137,7 +149,10 @@ fn malformed_proposal_denial_preserves_custom_rule_identity() {
         panic!("custom violation must preserve its semantic identity");
     };
     assert_eq!(identity.rule_id.as_str(), RULE_ID);
-    assert_eq!(refusal, worth_relational::facade::runtime::CustomInvariantRefusal::Empty);
+    assert_eq!(
+        refusal,
+        worth_relational::facade::runtime::CustomInvariantRefusal::Empty
+    );
     assert_eq!(
         identity.semantic_version,
         worth_relational::facade::runtime::CustomInvariantSemanticVersion::new(1, 0)

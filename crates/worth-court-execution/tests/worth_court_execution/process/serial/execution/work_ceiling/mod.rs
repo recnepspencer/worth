@@ -1,7 +1,13 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_execution::CancellationToken, worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_execution::LeaseRequest, std::num::NonZeroUsize, crate::work_ceiling::ordinary_context::PARTITION_WORK, crate::work_ceiling::ordinary_context::authority, crate::work_ceiling::ordinary_context::exhausted_at, crate::work_ceiling::ordinary_context::reduce};
-
-
+pub(crate) use {
+    crate::work_ceiling::ordinary_context::authority,
+    crate::work_ceiling::ordinary_context::exhausted_at,
+    crate::work_ceiling::ordinary_context::reduce,
+    crate::work_ceiling::ordinary_context::PARTITION_WORK, std::num::NonZeroUsize,
+    worth_execution::CancellationToken, worth_execution::LeaseRequest,
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+};
 
 #[test]
 fn the_narrower_of_the_lease_and_the_declared_ceiling_binds() {
@@ -16,7 +22,11 @@ fn the_narrower_of_the_lease_and_the_declared_ceiling_binds() {
                 policy: worth_foundational::ExecutionRequestPolicy::new(
                     worth_foundational::ExecutionPosture::Automatic,
                     worth_foundational::DeterminismContract::CanonicalBitwise,
-                    worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(2).unwrap(), None, Some(work)),
+                    worth_foundational::ExecutionBudget::new(
+                        std::num::NonZeroUsize::new(2).unwrap(),
+                        None,
+                        Some(work),
+                    ),
                 ),
                 deadline: None,
                 cancellation: worth_execution::CancellationToken::new(),

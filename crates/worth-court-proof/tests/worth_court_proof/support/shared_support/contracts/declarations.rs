@@ -5,8 +5,14 @@
 // have: the guard needs a guard against finding nothing. Naming every case
 // here means removing one is a suite failure, not a silent shrink.
 
-pub(crate) use {crate::shared_support::compile_fail::bundle::CompileFailBundle, crate::shared_support::compile_fail::bundle::CompileFailCase};
-pub(crate) use {crate::shared_support::compile_pass::bundle::CompilePassBundle, crate::shared_support::compile_pass::bundle::CompilePassCase};
+pub(crate) use {
+    crate::shared_support::compile_fail::bundle::CompileFailBundle,
+    crate::shared_support::compile_fail::bundle::CompileFailCase,
+};
+pub(crate) use {
+    crate::shared_support::compile_pass::bundle::CompilePassBundle,
+    crate::shared_support::compile_pass::bundle::CompilePassCase,
+};
 
 pub(crate) fn compile_fail_bundle() -> CompileFailBundle {
     crate::shared_support::compile_fail::bundle::CompileFailBundle::new(

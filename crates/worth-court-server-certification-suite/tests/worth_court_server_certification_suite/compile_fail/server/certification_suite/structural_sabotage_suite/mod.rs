@@ -1,23 +1,23 @@
-pub(crate) use {worth_foundational::facade::FoundationalBoundaryEvidenceSupportTruthKind};
+pub(crate) use worth_foundational::facade::FoundationalBoundaryEvidenceSupportTruthKind;
 
-pub(crate) use {crate::certification_suite::ordinary_context::certification_counter_assertions::assert_counter_exact, crate::certification_suite::ordinary_context::certification_counter_assertions::assert_counters_zero};
-pub(crate) use {crate::certification_suite::ordinary_context::certification_fixture::certification_server, crate::certification_suite::ordinary_context::certification_fixture::durable_resume_denial_bundle, crate::certification_suite::ordinary_context::certification_fixture::malformed_identity_bundle};
+pub(crate) use {
+    crate::certification_suite::ordinary_context::certification_counter_assertions::assert_counter_exact,
+    crate::certification_suite::ordinary_context::certification_counter_assertions::assert_counters_zero,
+};
+pub(crate) use {
+    crate::certification_suite::ordinary_context::certification_fixture::certification_server,
+    crate::certification_suite::ordinary_context::certification_fixture::durable_resume_denial_bundle,
+    crate::certification_suite::ordinary_context::certification_fixture::malformed_identity_bundle,
+};
 
 #[test]
 fn structural_sabotage_suite_proves_non_bypass_and_forbidden_zero_artifacts() {
-    let compile_fail = trybuild::TestCases::new();
-    compile_fail.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/private_middleware_admission_constructor.rs"));
-    compile_fail.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/query_handoff/private_prepared_query_handoff_constructor.rs"),
-    );
-    compile_fail
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/query_handoff/private_query_handoff_constructor.rs"));
-    compile_fail
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/response/private_evidence_record_constructor.rs"));
-    compile_fail
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/cross_family/compat_http_cannot_import_worth_native_internal.rs"));
-    compile_fail
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/cross_family/worth_native_cannot_import_compat_http_internal.rs"));
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/private_middleware_admission_constructor.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/query_handoff/private_prepared_query_handoff_constructor.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/query_handoff/private_query_handoff_constructor.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/response/private_evidence_record_constructor.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/cross_family/compat_http_cannot_import_worth_native_internal.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/cross_family/worth_native_cannot_import_compat_http_internal.rs")).expect("prebuilt compiler denial");
 
     let server = certification_server(
         worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal,

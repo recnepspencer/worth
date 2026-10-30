@@ -1,6 +1,8 @@
 pub(crate) use {sha2::Digest, sha2::Sha256};
 
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::case::oracle::fate_from_files, crate::history};
+pub(crate) use {
+    crate::history, crate::phase_eight_process::checkpoint_crash::case::oracle::fate_from_files,
+};
 
 pub(crate) fn checkpoint_current(frontier: u64) -> Vec<u8> {
     checkpoint_current_schema(frontier, 1)

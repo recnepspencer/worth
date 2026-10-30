@@ -1,11 +1,37 @@
-#[allow(unused_imports)] use worth_store_testkit_store::physical_record_journeys::physical_work::executor::*;
-use {tempfile::tempdir};
-use {worth_foundational::FoundationalPerformanceWorkClass};
-use {worth_store::physical_runtime::PhysicalEffectObligation, worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalSchedulerDemand, worth_store::physical_runtime::PhysicalSignalSettlementOutcome, worth_store::physical_runtime::PhysicalStoreCloseOutcome, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkPreEffectDenial, worth_store::physical_runtime::PhysicalWorkPressureClass};
-use {worth_store_physical_backend::MediaOperationRole};
+mod settlement_order;
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_mutation_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::family_locality_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
-use {worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt, worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt_for, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::ready_read_work, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::ready_work, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::secure_demand, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::write_demand};
+use tempfile::tempdir;
+use worth_foundational::FoundationalPerformanceWorkClass;
+use worth_store_physical_backend::MediaOperationRole;
+#[allow(unused_imports)]
+use worth_store_testkit_store::physical_record_journeys::physical_work::executor::*;
+use {
+    worth_store::physical_runtime::PhysicalEffectObligation,
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalSchedulerDemand,
+    worth_store::physical_runtime::PhysicalSignalSettlementOutcome,
+    worth_store::physical_runtime::PhysicalStoreCloseOutcome,
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
+    worth_store::physical_runtime::PhysicalWorkPressureClass,
+};
+
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_mutation_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::family_locality_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::ready_read_work,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::ready_work,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::secure_demand,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::write_demand,
+    worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt,
+    worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt_for,
+};
 
 #[test]
 fn write_settles_physical_truth_before_signal_completion() {
@@ -25,7 +51,11 @@ fn write_settles_physical_truth_before_signal_completion() {
         .unwrap();
     let consumer = admitted.consumer_handle();
     let before = serving.media_counters();
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"executed".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"executed".as_slice(),
+    )
+    .unwrap();
 
     let outcome = serving.execute_physical_work(command).unwrap();
 
@@ -33,12 +63,16 @@ fn write_settles_physical_truth_before_signal_completion() {
         outcome.settled().evidence().fate(),
         worth_store::physical_runtime::PhysicalWorkEffectFate::WriteCompleted
     );
-    assert_eq!(outcome.signal(), worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed);
+    assert_eq!(
+        outcome.signal(),
+        worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed
+    );
     assert_eq!(outcome.settled().intent().identity(), consumer.identity());
     let after = serving.media_counters();
     assert_eq!(
         after.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
         1
     );
     serving.close();
@@ -46,41 +80,16 @@ fn write_settles_physical_truth_before_signal_completion() {
 
 #[test]
 fn exact_write_checkpoint_precedes_scheduler_and_signal_settlement() {
-    use {worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint};
-
     let root = tempdir().unwrap();
     let (profile, _, mutation_request) = work_fixture();
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
     let admitted = admitted_write(&serving, mutation_request);
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"executed".as_slice()).unwrap();
-    let checkpoint = serving.certification_pause_physical_execution_at(
-        CertificationPhysicalExecutionCheckpoint::AfterExactWriteBeforeSchedulerSettlement,
-    );
-    let settled_before = serving.physical_work_observer().causal().records().len();
-    let writes_before = serving
-        .media_counters()
-        .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite);
-
-    std::thread::scope(|scope| {
-        let execution = scope.spawn(|| serving.execute_physical_work(command));
-        assert!(checkpoint.await_arrival());
-        assert_eq!(
-            serving
-                .media_counters()
-                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
-            writes_before + 1
-        );
-        assert_eq!(
-            serving.physical_work_observer().causal().records().len(),
-            settled_before
-        );
-        checkpoint.release();
-        assert!(execution.join().unwrap().is_ok());
-    });
-    assert_eq!(
-        serving.physical_work_observer().causal().records().len(),
-        settled_before + 1
-    );
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"executed".as_slice(),
+    )
+    .unwrap();
+    settlement_order::assert_exact_write_settlement_order(&serving, command);
     serving.close();
 }
 
@@ -122,7 +131,10 @@ fn read_returns_the_exact_bounded_destination() {
         worth_store::physical_runtime::PhysicalWorkEffectFate::ReadCompleted
     );
     assert_eq!(outcome.settled().evidence().completed_payload_bytes(), 8);
-    assert_eq!(outcome.signal(), worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed);
+    assert_eq!(
+        outcome.signal(),
+        worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed
+    );
     serving.close();
 }
 
@@ -133,7 +145,11 @@ fn cancellation_before_dispatch_revokes_the_command_without_an_effect() {
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
     let admitted = admitted_write(&serving, mutation_request);
     let consumer = admitted.consumer_handle();
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"cancelld".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"cancelld".as_slice(),
+    )
+    .unwrap();
     let before = serving.media_counters();
 
     let cancellation = serving.cancel_physical_work(consumer).unwrap();
@@ -162,7 +178,11 @@ fn signal_timeout_uses_deterministic_clock_and_proves_no_dispatch() {
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
     let admitted = admitted_write(&serving, mutation_request);
     let consumer = admitted.consumer_handle();
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, b"timedout".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        admitted,
+        b"timedout".as_slice(),
+    )
+    .unwrap();
     let before = serving.media_counters();
     serving
         .advance_physical_signal_clock(
@@ -204,8 +224,16 @@ fn bounded_completion_batch_preserves_each_physical_identity() {
     let identities = [first.intent().identity(), second.intent().identity()];
     let before = serving.media_counters();
     let commands = vec![
-        worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(first, b"first001".as_slice()).unwrap(),
-        worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(second, b"second02".as_slice()).unwrap(),
+        worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+            first,
+            b"first001".as_slice(),
+        )
+        .unwrap(),
+        worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+            second,
+            b"second02".as_slice(),
+        )
+        .unwrap(),
     ]
     .into_boxed_slice();
 
@@ -227,7 +255,8 @@ fn bounded_completion_batch_preserves_each_physical_identity() {
     assert_eq!(
         signal_outcomes
             .iter()
-            .filter(|outcome| **outcome == worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed)
+            .filter(|outcome| **outcome
+                == worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed)
             .count(),
         1
     );
@@ -252,7 +281,8 @@ fn bounded_completion_batch_preserves_each_physical_identity() {
         serving
             .media_counters()
             .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
         2
     );
     assert_eq!(
@@ -330,7 +360,11 @@ fn mixed_route_batch_completes_each_settlement_on_its_admitted_signal_route() {
     let batch = serving.execute_physical_work_batch(
         vec![
             worth_store::physical_runtime::PhysicalExecutorCommand::read(read).unwrap(),
-            worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(write, b"routes!!".as_slice()).unwrap(),
+            worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+                write,
+                b"routes!!".as_slice(),
+            )
+            .unwrap(),
         ]
         .into_boxed_slice(),
     );
@@ -345,12 +379,13 @@ fn mixed_route_batch_completes_each_settlement_on_its_admitted_signal_route() {
             .collect::<Vec<_>>(),
         identities
     );
-    assert!(batch
-        .executions()
-        .iter()
-        .all(|execution| execution.signal() == worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed));
+    assert!(batch.executions().iter().all(|execution| execution.signal()
+        == worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed));
     let closed = serving.close_plan().execute();
-    assert!(matches!(closed, worth_store::physical_runtime::PhysicalStoreCloseOutcome::Closed { .. }));
+    assert!(matches!(
+        closed,
+        worth_store::physical_runtime::PhysicalStoreCloseOutcome::Closed { .. }
+    ));
     let signal = closed.shutdown().signal_summary().unwrap();
     assert_eq!(signal.active_in_flight_node_count(), 0);
 }

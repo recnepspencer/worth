@@ -5,4 +5,4 @@ fn bounded_observation(media: &QualifiedFilesystemMedia) {
     assert_eq!(observation.store_identity(), media.store_identity());
 }
 
-fn main() {}
+pub(crate) fn main() {}

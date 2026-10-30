@@ -1,7 +1,14 @@
-use {worth_store::physical_runtime::RecordAppendBatch};
+use worth_store::physical_runtime::RecordAppendBatch;
 
-use {worth_store_testkit_store::child_process::locator_codec::decode_locator, worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child};
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::durable_publication::root::publish_single, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use {
+    worth_store_testkit_store::child_process::locator_codec::decode_locator,
+    worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child,
+};
+use {
+    worth_store_testkit_store::durable_publication::root::publish_single,
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+};
 
 #[test]
 fn admission_denials_have_no_effect_and_successors_receive_fresh_identity() {
@@ -21,11 +28,14 @@ fn admission_denials_have_no_effect_and_successors_receive_fresh_identity() {
     };
     let first_publication = publish(
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([165; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"first".as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"first".as_slice()])
+            .unwrap(),
     );
     let first = first_publication.settled_members()[0].record_id(0).unwrap();
-    let excessive_batch =
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter((0..65).map(|_| b"x".as_slice())).unwrap();
+    let excessive_batch = worth_store::physical_runtime::RecordAppendBatch::try_from_iter(
+        (0..65).map(|_| b"x".as_slice()),
+    )
+    .unwrap();
     let fanout_crossing = publish(
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([166; 32]),
         excessive_batch,
@@ -34,7 +44,8 @@ fn admission_denials_have_no_effect_and_successors_receive_fresh_identity() {
     assert_eq!(observation.records(), 65);
     let second_publication = publish(
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([167; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"second".as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"second".as_slice()])
+            .unwrap(),
     );
     let second = second_publication.settled_members()[0]
         .record_id(0)

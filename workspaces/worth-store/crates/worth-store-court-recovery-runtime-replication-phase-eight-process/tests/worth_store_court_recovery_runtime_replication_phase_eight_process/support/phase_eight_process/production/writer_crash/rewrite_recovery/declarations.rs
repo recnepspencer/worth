@@ -1,11 +1,24 @@
-pub(crate) use {std::fs};
-pub(crate) use {std::path::Path};
+pub(crate) use std::fs;
+pub(crate) use std::path::Path;
 
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store_physical_format::DurableFrameKind, worth_store_physical_format::PhysicalRewriteRedo, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::REWRITE_REDO_DOMAIN};
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportEnvelope, worth_store_recovery_runtime::RecoveryReportOutcome};
+pub(crate) use {
+    worth_store_physical_format::DurableFrameKind,
+    worth_store_physical_format::PhysicalRewriteRedo,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::REWRITE_REDO_DOMAIN,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::RecoveryReportEnvelope,
+    worth_store_recovery_runtime::RecoveryReportOutcome,
+};
 
-pub(crate) use {crate::phase_eight_process::production::harness::process::assert_child_succeeded, crate::phase_eight_process::production::harness::process::run_recovery_with_profile, crate::history::schedule::in_flight_mutation::MutationCrashWorkload, crate::phase_eight_process::production::harness::ProcessWorld};
+pub(crate) use {
+    crate::history::schedule::in_flight_mutation::MutationCrashWorkload,
+    crate::phase_eight_process::production::harness::process::assert_child_succeeded,
+    crate::phase_eight_process::production::harness::process::run_recovery_with_profile,
+    crate::phase_eight_process::production::harness::ProcessWorld,
+};
 
 pub(crate) fn wal_rewrite(root: &Path) -> Option<PhysicalRewriteRedo> {
     let domain = REWRITE_REDO_DOMAIN;
@@ -35,7 +48,9 @@ pub(crate) fn wal_rewrite(root: &Path) -> Option<PhysicalRewriteRedo> {
                 let Some(encoded) = bytes.get(start..start + 8 + domain.len() + 280) else {
                     continue;
                 };
-                if let Ok(redo) = worth_store_physical_format::PhysicalRewriteRedo::decode(encoded, u64::MAX) {
+                if let Ok(redo) =
+                    worth_store_physical_format::PhysicalRewriteRedo::decode(encoded, u64::MAX)
+                {
                     return Some(redo);
                 }
             }

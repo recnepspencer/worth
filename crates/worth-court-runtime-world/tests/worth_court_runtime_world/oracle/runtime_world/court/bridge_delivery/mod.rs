@@ -1,8 +1,18 @@
-pub(crate) use {crate::court::ordinary_context::routing::ROUTED};
-pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::relational::CargoRecords, crate::court::ordinary_context::CompositeSupplyChainCourt, crate::court::ordinary_context::routing::RouteGraph, worth_signal::facade::SignalGraph, crate::court::ordinary_context::budgets, crate::court::ordinary_context::correspondence, crate::court::ordinary_context::oracle};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_relational::facade::mvcc::RelationalPublicationOutcome};
-pub(crate) use {worth_runtime_bridge::facade::RelationalCommittedPatchRequest, worth_runtime_bridge::facade::TruthCommitIdentity};
+pub(crate) use crate::court::ordinary_context::routing::ROUTED;
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_relational::facade::mvcc::RelationalPublicationOutcome;
+pub(crate) use {
+    crate::court::ordinary_context::budgets, crate::court::ordinary_context::correspondence,
+    crate::court::ordinary_context::oracle,
+    crate::court::ordinary_context::relational::CargoRecords,
+    crate::court::ordinary_context::routing::RouteGraph,
+    crate::court::ordinary_context::CompositeSupplyChainCourt, worth_runtime_world::facade::*,
+    worth_signal::facade::SignalGraph,
+};
+pub(crate) use {
+    worth_runtime_bridge::facade::RelationalCommittedPatchRequest,
+    worth_runtime_bridge::facade::TruthCommitIdentity,
+};
 
 #[test]
 fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
@@ -12,7 +22,8 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
     let records = crate::court::ordinary_context::relational::CargoRecords::install(true);
     let mut graph = worth_signal::facade::SignalGraph::new();
     let nodes = crate::court::ordinary_context::routing::RouteGraph::install(&mut graph);
-    let (bridge, installed, source) = crate::court::ordinary_context::correspondence::install(&records, &mut graph, nodes);
+    let (bridge, installed, source) =
+        crate::court::ordinary_context::correspondence::install(&records, &mut graph, nodes);
     let mut oracle = crate::court::ordinary_context::oracle::CompositeWorldOracle::bootstrap();
     // Both commits are real FieldSet patches in the same owner and contract.
     // Only grain matches the installed record correspondence.
@@ -23,11 +34,12 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
             .unwrap()
             .1;
         let candidate = records.candidate(request_execution, &basis, name, amount);
-        let worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) = records
-            .runtime
-            .owner_component_services()
-            .publication_port()
-            .compare_and_publish(request_execution, candidate)
+        let worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) =
+            records
+                .runtime
+                .owner_component_services()
+                .publication_port()
+                .compare_and_publish(request_execution, candidate)
         else {
             panic!("real source commit must perform")
         };
@@ -45,7 +57,9 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
         let before = graph.node_aspect_version(nodes.source).unwrap();
         let route_before = graph.node_aspect_version(nodes.route).unwrap();
         let request = worth_runtime_bridge::facade::RelationalCommittedPatchRequest::new(
-            worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(commit.outcome().commit.commit_id.0),
+            worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(
+                commit.outcome().commit.commit_id.0,
+            ),
         );
         let delivery = bridge
             .bind_signal_graph(&mut graph)

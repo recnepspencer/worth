@@ -1,7 +1,23 @@
-pub(crate) use {worth_foundational::foundational_merge, worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalSelectedAspectLocus, worth_foundational::FoundationalSelectedAspectRequestEntry, worth_foundational::FoundationalSelectedNodeLocus, worth_foundational::FoundationalSelectedScopeLocus, worth_foundational::FoundationalSelectedScopeNoOpCause, worth_foundational::FoundationalSelectedScopeNoOpEvidence};
+pub(crate) use {
+    worth_foundational::foundational_merge, worth_foundational::FoundationalMergeScope,
+    worth_foundational::FoundationalSelectedAspectLocus,
+    worth_foundational::FoundationalSelectedAspectRequestEntry,
+    worth_foundational::FoundationalSelectedNodeLocus,
+    worth_foundational::FoundationalSelectedScopeLocus,
+    worth_foundational::FoundationalSelectedScopeNoOpCause,
+    worth_foundational::FoundationalSelectedScopeNoOpEvidence,
+};
 
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id, crate::certification::ordinary_context::transitions::fixtures::branch::staged_candidate};
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate, crate::certification::ordinary_context::transitions::fixtures::merge::merge_basis, crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary, crate::certification::ordinary_context::transitions::fixtures::merge::strategy_identity};
+pub(crate) use {
+    crate::certification::ordinary_context::transitions::fixtures::branch::branch_id,
+    crate::certification::ordinary_context::transitions::fixtures::branch::staged_candidate,
+};
+pub(crate) use {
+    crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::merge::merge_basis,
+    crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary,
+    crate::certification::ordinary_context::transitions::fixtures::merge::strategy_identity,
+};
 
 pub(crate) fn selected_node(value: &str) -> FoundationalSelectedNodeLocus {
     worth_foundational::FoundationalSelectedNodeLocus::new(value).expect("selected node")

@@ -20,12 +20,16 @@ fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
     )
     .expect("Supply Chain program compiles");
     let catalog = InvariantCatalog {
-        registrations: vec![worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
-            worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
-                worth_foundational::facade::AspectKey::new("call_sign").expect("call-sign aspect"),
-                worth_foundational::facade::FieldKey::new("call_sign").expect("call-sign field"),
+        registrations: vec![
+            worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
+                worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
+                    worth_foundational::facade::AspectKey::new("call_sign")
+                        .expect("call-sign aspect"),
+                    worth_foundational::facade::FieldKey::new("call_sign")
+                        .expect("call-sign field"),
+                ),
             ),
-        )],
+        ],
     };
     let world = compile_supply_chain_baseline_with_invariant_catalog(execution, program, catalog)
         .expect("Court world with native uniqueness compiles");
@@ -92,12 +96,16 @@ fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_resid
     )
     .expect("Supply Chain program compiles");
     let catalog = InvariantCatalog {
-        registrations: vec![worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
-            worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
-                worth_foundational::facade::AspectKey::new("call_sign").expect("call-sign aspect"),
-                worth_foundational::facade::FieldKey::new("call_sign").expect("call-sign field"),
+        registrations: vec![
+            worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
+                worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
+                    worth_foundational::facade::AspectKey::new("call_sign")
+                        .expect("call-sign aspect"),
+                    worth_foundational::facade::FieldKey::new("call_sign")
+                        .expect("call-sign field"),
+                ),
             ),
-        )],
+        ],
     };
     let world = compile_supply_chain_baseline_with_invariant_catalog(execution, program, catalog)
         .expect("Court world with native uniqueness compiles");
@@ -134,7 +142,6 @@ fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_resid
         before_snapshot
     );
 }
-
 
 #[allow(unused_imports)]
 pub(crate) use {};

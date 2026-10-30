@@ -1,11 +1,24 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::lifecycle::*;
-use {std::collections::BTreeSet};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::lifecycle::*;
+use std::collections::BTreeSet;
 
-use {tempfile::tempdir};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalSignalShutdownOutcome, worth_store::physical_runtime::PhysicalWorkSubmissionDenial, worth_store::physical_runtime::PhysicalWorkSubmissionOutcome, worth_store::physical_runtime::PhysicalWorkSubmissionStale, worth_store::physical_runtime::PhysicalWorkTerminalDisposition, worth_store::physical_runtime::PhysicalWorkTerminalStage};
+use tempfile::tempdir;
+use worth_proof::TransitionOutcome;
+use {
+    worth_store::physical_runtime::PhysicalSignalShutdownOutcome,
+    worth_store::physical_runtime::PhysicalWorkSubmissionDenial,
+    worth_store::physical_runtime::PhysicalWorkSubmissionOutcome,
+    worth_store::physical_runtime::PhysicalWorkSubmissionStale,
+    worth_store::physical_runtime::PhysicalWorkTerminalDisposition,
+    worth_store::physical_runtime::PhysicalWorkTerminalStage,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_mutation_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_open_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_mutation_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_open_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 #[test]
 fn retained_submission_handles_stale_and_shutdown_classifies_every_identity() {
@@ -38,20 +51,30 @@ fn retained_submission_handles_stale_and_shutdown_classifies_every_identity() {
         .windows(2)
         .all(|pair| pair[0].identity().operation() < pair[1].identity().operation()));
     for terminal in closed.work().terminal() {
-        assert_eq!(terminal.stage(), worth_store::physical_runtime::PhysicalWorkTerminalStage::Declared);
+        assert_eq!(
+            terminal.stage(),
+            worth_store::physical_runtime::PhysicalWorkTerminalStage::Declared
+        );
         assert_eq!(
             terminal.disposition(),
             worth_store::physical_runtime::PhysicalWorkTerminalDisposition::ClosedBeforeReadiness
         );
     }
-    assert_eq!(closed.signal(), worth_store::physical_runtime::PhysicalSignalShutdownOutcome::Disposed);
+    assert_eq!(
+        closed.signal(),
+        worth_store::physical_runtime::PhysicalSignalShutdownOutcome::Disposed
+    );
     assert!(matches!(
         read.submit(read_request.clone()).into_raw(),
-        worth_proof::TransitionOutcome::Stale(worth_store::physical_runtime::PhysicalWorkSubmissionStale::OwnerReleased)
+        worth_proof::TransitionOutcome::Stale(
+            worth_store::physical_runtime::PhysicalWorkSubmissionStale::OwnerReleased
+        )
     ));
     assert!(matches!(
         mutation.submit(mutation_request.clone()).into_raw(),
-        worth_proof::TransitionOutcome::Stale(worth_store::physical_runtime::PhysicalWorkSubmissionStale::OwnerReleased)
+        worth_proof::TransitionOutcome::Stale(
+            worth_store::physical_runtime::PhysicalWorkSubmissionStale::OwnerReleased
+        )
     ));
 
     let reopened = serving_from_open_with_work_profile(root.path(), profile);
@@ -76,7 +99,9 @@ fn lifecycle_generation_advance_revokes_submission_before_owner_release() {
 
     assert!(matches!(
         submission.submit(request).into_raw(),
-        worth_proof::TransitionOutcome::Stale(worth_store::physical_runtime::PhysicalWorkSubmissionStale::LifecycleGenerationAdvanced)
+        worth_proof::TransitionOutcome::Stale(
+            worth_store::physical_runtime::PhysicalWorkSubmissionStale::LifecycleGenerationAdvanced
+        )
     ));
     assert_eq!(serving.close().work().declared(), 0);
 }
@@ -137,7 +162,9 @@ fn unexpected_drop_publishes_terminal_work_without_retaining_authority() {
     );
     assert!(matches!(
         submission.submit(request).into_raw(),
-        worth_proof::TransitionOutcome::Stale(worth_store::physical_runtime::PhysicalWorkSubmissionStale::OwnerReleased)
+        worth_proof::TransitionOutcome::Stale(
+            worth_store::physical_runtime::PhysicalWorkSubmissionStale::OwnerReleased
+        )
     ));
 }
 
@@ -160,7 +187,9 @@ fn abort_classifies_declared_work_and_revokes_retained_submission() {
     );
     assert!(matches!(
         submission.submit(request).into_raw(),
-        worth_proof::TransitionOutcome::Stale(worth_store::physical_runtime::PhysicalWorkSubmissionStale::OwnerReleased)
+        worth_proof::TransitionOutcome::Stale(
+            worth_store::physical_runtime::PhysicalWorkSubmissionStale::OwnerReleased
+        )
     ));
 }
 
@@ -202,8 +231,12 @@ fn close_race_accounts_every_success_and_stales_every_loser() {
     assert!(outcomes.iter().all(|outcome| matches!(
         outcome,
         worth_proof::TransitionOutcome::Success(_)
-            | worth_proof::TransitionOutcome::Stale(worth_store::physical_runtime::PhysicalWorkSubmissionStale::AdmissionStopped)
-            | worth_proof::TransitionOutcome::Stale(worth_store::physical_runtime::PhysicalWorkSubmissionStale::OwnerReleased)
+            | worth_proof::TransitionOutcome::Stale(
+                worth_store::physical_runtime::PhysicalWorkSubmissionStale::AdmissionStopped
+            )
+            | worth_proof::TransitionOutcome::Stale(
+                worth_store::physical_runtime::PhysicalWorkSubmissionStale::OwnerReleased
+            )
     )));
     assert_eq!(closed.work().declared(), succeeded as u64);
     assert_eq!(closed.work().terminal().len(), succeeded);
@@ -213,7 +246,9 @@ fn close_race_accounts_every_success_and_stales_every_loser() {
 fn uninstalled_contract_is_denied_before_command_admission() {
     let root = tempdir().unwrap();
     let (_, request, _) = work_fixture();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(root.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        root.path(),
+    );
     assert!(matches!(
         serving
             .physical_read_submission()

@@ -3,7 +3,7 @@ use worth_signal::facade::{SignalGraph, SignalRuntime};
 
 fn assert_type<T>() {}
 
-fn main() {
+pub(crate) fn main() {
     assert_type::<surface::InvalidationPlanningEstimate>();
     assert_type::<surface::SignalInvalidationExecutionReceipt>();
     assert_type::<surface::SignalInvalidationRealizedCounters>();
@@ -22,8 +22,10 @@ fn main() {
         .expect("observation admission should succeed for the sample runtime");
     let _ = runtime.finish_invalidation_execution_observation(&observation);
     let _ = runtime.observe_invalidation_execution(|_| Ok(()));
-    let _: Option<&surface::InvalidationPlanningEstimate> =
-        runtime.graph().observe().latest_invalidation_planning_estimate();
+    let _: Option<&surface::InvalidationPlanningEstimate> = runtime
+        .graph()
+        .observe()
+        .latest_invalidation_planning_estimate();
 
     fn inspect(receipt: surface::SignalInvalidationExecutionReceipt) {
         let summary = receipt.summary();

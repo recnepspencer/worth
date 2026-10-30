@@ -1,5 +1,13 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_foundational::expression_api::ExpressionValue, crate::expressions::ordinary_context::reference::Seeded, crate::expressions::ordinary_context::reference::boolean, crate::expressions::ordinary_context::reference::check, crate::expressions::ordinary_context::reference::int, crate::expressions::ordinary_context::reference::render_bool, crate::expressions::ordinary_context::reference::render_int};
+pub(crate) use {
+    crate::expressions::ordinary_context::reference::boolean,
+    crate::expressions::ordinary_context::reference::check,
+    crate::expressions::ordinary_context::reference::int,
+    crate::expressions::ordinary_context::reference::render_bool,
+    crate::expressions::ordinary_context::reference::render_int,
+    crate::expressions::ordinary_context::reference::Seeded,
+    worth_foundational::expression_api::ExpressionValue,
+};
 
 #[test]
 fn generated_integer_and_boolean_trees_match_the_reference() {
@@ -9,7 +17,8 @@ fn generated_integer_and_boolean_trees_match_the_reference() {
         let depth = 1 + random.below(4) as u32;
         if random.below(2) == 0 {
             let tree = random.int(depth);
-            let expected = int(&tree).map(worth_foundational::expression_api::ExpressionValue::integer);
+            let expected =
+                int(&tree).map(worth_foundational::expression_api::ExpressionValue::integer);
             *(if expected.is_ok() {
                 &mut values
             } else {
@@ -18,7 +27,8 @@ fn generated_integer_and_boolean_trees_match_the_reference() {
             check(&render_int(&tree), expected);
         } else {
             let tree = random.boolean(depth);
-            let expected = boolean(&tree).map(worth_foundational::expression_api::ExpressionValue::bool);
+            let expected =
+                boolean(&tree).map(worth_foundational::expression_api::ExpressionValue::bool);
             *(if expected.is_ok() {
                 &mut values
             } else {

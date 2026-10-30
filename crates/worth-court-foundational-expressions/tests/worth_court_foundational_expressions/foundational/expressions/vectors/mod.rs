@@ -2,10 +2,14 @@
 // IEEE 754 binary64 with one nearest-even rounding per declared operation,
 // so the same vectors pass unchanged on every supported target; a target
 // that fused, reassociated, flushed, or widened would fail here.
-#[allow(unused_imports)] use crate::expressions::ordinary_context::vectors::*;
-pub(crate) use {worth_foundational::expression_api::ExpressionDenialFamily as Family};
+#[allow(unused_imports)]
+use crate::expressions::ordinary_context::vectors::*;
+pub(crate) use worth_foundational::expression_api::ExpressionDenialFamily as Family;
 
-pub(crate) use {crate::expressions::ordinary_context::evaluation_denial, crate::expressions::ordinary_context::value};
+pub(crate) use {
+    crate::expressions::ordinary_context::evaluation_denial,
+    crate::expressions::ordinary_context::value,
+};
 
 #[test]
 fn float_results_have_fixed_bytes() {
@@ -44,10 +48,22 @@ fn quantities_round_once_into_canonical_units() {
 #[test]
 fn nonfinite_results_deny_identically() {
     let cases = [
-        ("1e308 * 10.0", worth_foundational::expression_api::ExpressionDenialFamily::ArithmeticOverflow),
-        ("-1e308 - 1e308", worth_foundational::expression_api::ExpressionDenialFamily::ArithmeticOverflow),
-        ("0.0 / 0.0", worth_foundational::expression_api::ExpressionDenialFamily::DivisionByZero),
-        ("sqrt(-4.9e-324)", worth_foundational::expression_api::ExpressionDenialFamily::ArithmeticDomain),
+        (
+            "1e308 * 10.0",
+            worth_foundational::expression_api::ExpressionDenialFamily::ArithmeticOverflow,
+        ),
+        (
+            "-1e308 - 1e308",
+            worth_foundational::expression_api::ExpressionDenialFamily::ArithmeticOverflow,
+        ),
+        (
+            "0.0 / 0.0",
+            worth_foundational::expression_api::ExpressionDenialFamily::DivisionByZero,
+        ),
+        (
+            "sqrt(-4.9e-324)",
+            worth_foundational::expression_api::ExpressionDenialFamily::ArithmeticDomain,
+        ),
     ];
     for (source, family) in cases {
         assert_eq!(evaluation_denial(source).family(), family, "{source}");

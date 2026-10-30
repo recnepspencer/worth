@@ -1,17 +1,30 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_outer_corruption::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_outer_corruption::*;
 use {std::fs, std::num::NonZeroU64, std::path::Path, std::path::PathBuf};
 
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PublishedBlobGeneration};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_physical_format::PersistedRecordIdentity};
+use worth_store_blob_chunks::BlobChunkSize;
+use worth_store_physical_format::PersistedRecordIdentity;
+use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PublishedBlobGeneration,
+};
 
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
 fn outer_crc_damage_is_one_selected_chunk_not_store_wide_health() {
     let directory = tempfile::tempdir().unwrap();
     let scope = admitted_blob_scope("c11.blob.outer-crc.scope");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(512).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(512).unwrap());
     let (published, object) = {
         let serving = serving_from_initialization(directory.path());
         let blobs = serving.blobs().unwrap();
@@ -22,7 +35,8 @@ fn outer_crc_damage_is_one_selected_chunk_not_store_wide_health() {
             (3 * CHUNK_BYTES) as u64,
             &scope,
             worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(64).unwrap(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
         )
         .unwrap();
         let mut ingest = blobs
@@ -87,7 +101,8 @@ fn outer_crc_damage_is_one_selected_chunk_not_store_wide_health() {
 fn resealed_selected_chunk_record_identity_mismatch_still_revokes_global_health() {
     let directory = tempfile::tempdir().unwrap();
     let scope = admitted_blob_scope("c11.blob.outer-identity.scope");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(512).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(512).unwrap());
     let (published, object) = {
         let serving = serving_from_initialization(directory.path());
         let blobs = serving.blobs().unwrap();
@@ -98,7 +113,8 @@ fn resealed_selected_chunk_record_identity_mismatch_still_revokes_global_health(
             (3 * CHUNK_BYTES) as u64,
             &scope,
             worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(64).unwrap(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
         )
         .unwrap();
         let mut ingest = blobs
@@ -128,7 +144,10 @@ fn resealed_selected_chunk_record_identity_mismatch_still_revokes_global_health(
         .unwrap();
     let error = damaged.read_next(&mut [0_u8; 1]).unwrap_err();
     assert!(
-        !matches!(error, worth_store::physical_runtime::BlobReadFailure::ChunkOuterCorruption { .. }),
+        !matches!(
+            error,
+            worth_store::physical_runtime::BlobReadFailure::ChunkOuterCorruption { .. }
+        ),
         "identity damage cannot claim selected-data-frame checksum provenance"
     );
     drop(damaged);

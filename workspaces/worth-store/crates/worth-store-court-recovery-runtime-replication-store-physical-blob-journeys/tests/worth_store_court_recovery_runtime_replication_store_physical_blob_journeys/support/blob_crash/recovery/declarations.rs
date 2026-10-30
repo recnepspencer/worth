@@ -5,7 +5,9 @@ pub(crate) fn recover_closed_store(root: &Path) {
 }
 
 pub(crate) fn recover_closed_store_with_profile(root: &Path, profile: &str) {
-    let binary = worth_store_test_support::FRESH_PROCESS_RECOVERY.path();
+    let binary = worth_store_test_support::FRESH_PROCESS_RECOVERY
+        .path()
+        .expect("runner must prebuild the independent executable");
     let output = std::process::Command::new(binary)
         .arg(root)
         .arg(format!("--bounded-profile={profile}"))

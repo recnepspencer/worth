@@ -1,11 +1,18 @@
-pub(crate) use {crate::signal_owner_services::ordinary_context::execution_custody};
-pub(crate) use {std::sync::mpsc};
-pub(crate) use {std::thread};
+pub(crate) use crate::signal_owner_services::ordinary_context::execution_custody;
+pub(crate) use std::sync::mpsc;
+pub(crate) use std::thread;
 
-pub(crate) use {worth_signal::facade::branch::validate_signal_branch_name, worth_signal::facade::branch::SignalBranchRetirementReason, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest};
+pub(crate) use {
+    worth_signal::facade::branch::validate_signal_branch_name,
+    worth_signal::facade::branch::SignalBranchRetirementReason,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+    worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest,
+};
 
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
-
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
+    crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND,
+};
 
 pub(crate) fn control(
     world: &AdversarialWorld,
@@ -50,7 +57,8 @@ pub(crate) fn assert_advanced(
 }
 
 pub(crate) fn exercise_advance_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = control(&world);
     let pause = control.arm_pause_once_for_test(boundary);
     let (a_tx, a_rx) = std::sync::mpsc::sync_channel(1);
@@ -82,7 +90,8 @@ pub(crate) fn exercise_advance_boundary(boundary: SignalOwnerOperationBoundaryFo
 }
 
 pub(crate) fn exercise_fork_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = control(&world);
     let pause = control.arm_pause_once_for_test(boundary);
     let (fork_tx, fork_rx) = std::sync::mpsc::sync_channel(1);
@@ -125,7 +134,8 @@ pub(crate) fn exercise_fork_boundary(boundary: SignalOwnerOperationBoundaryForTe
 }
 
 pub(crate) fn exercise_fork_post_capture_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = control(&world);
     let pause = control.arm_pause_once_for_test(boundary);
     let before = world
@@ -190,7 +200,8 @@ pub(crate) fn exercise_fork_post_capture_boundary(boundary: SignalOwnerOperation
 }
 
 pub(crate) fn exercise_retirement_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let reference = world
         .basis
         .issue_managed_branch_reference(&world.child_basis)
@@ -208,7 +219,9 @@ pub(crate) fn exercise_retirement_boundary(boundary: SignalOwnerOperationBoundar
         ..
     } = world;
     drop(child_basis);
-    if boundary == worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::ExactBasisPreflight {
+    if boundary
+        == worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::ExactBasisPreflight
+    {
         return crate::signal_owner_services::ordinary_context::adversarial::operation_control::independent_progress::retirement_planning::exercise(
             runtime,
             lifecycle,
@@ -217,9 +230,10 @@ pub(crate) fn exercise_retirement_boundary(boundary: SignalOwnerOperationBoundar
             retirement_basis,
         );
     }
-    let plan = match lifecycle
-        .plan_retirement_exact(retirement_basis, worth_signal::facade::branch::SignalBranchRetirementReason::Superseded)
-    {
+    let plan = match lifecycle.plan_retirement_exact(
+        retirement_basis,
+        worth_signal::facade::branch::SignalBranchRetirementReason::Superseded,
+    ) {
         worth_proof::TransitionOutcome::Success(plan) => plan,
         other => panic!("the child plan must be owner-issued: {other:?}"),
     };
@@ -238,7 +252,10 @@ pub(crate) fn exercise_retirement_boundary(boundary: SignalOwnerOperationBoundar
     std::thread::scope(|scope| {
         scope.spawn(move || {
             let result = worker_lifecycle
-                .retire_exact(plan, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token())
+                .retire_exact(
+                    plan,
+                    &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+                )
                 .into_result()
                 .map(|_| ())
                 .map_err(|denial| format!("{denial:?}"));

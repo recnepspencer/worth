@@ -1,5 +1,8 @@
-pub(crate) use {worth_store::physical_runtime::PhysicalRecordChunkView, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalRecordChunkView,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
 pub(crate) fn with_record_chunk<R>(
     label: &str,

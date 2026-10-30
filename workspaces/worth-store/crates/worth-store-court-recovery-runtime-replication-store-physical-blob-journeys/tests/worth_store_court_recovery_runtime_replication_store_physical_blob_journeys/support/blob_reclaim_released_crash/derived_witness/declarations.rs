@@ -5,7 +5,19 @@
 pub(crate) use {std::fs, std::path::Path, std::path::PathBuf};
 
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store_physical_format::decode_canonical_redo_v3, worth_store_physical_format::decode_inline_record, worth_store_physical_format::inspect_inline_page, worth_store_physical_format::BTreeNodeV1, worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DerivedFamilyRootDirectoryV1, worth_store_physical_format::PageGenerationCell, worth_store_physical_format::PersistedPhysicalDataFrameSubject, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::PhysicalRecoveryProjectionDecodeLimits, worth_store_physical_format::SlotGenerationCell};
+pub(crate) use {
+    worth_store_physical_format::decode_canonical_redo_v3,
+    worth_store_physical_format::decode_inline_record,
+    worth_store_physical_format::inspect_inline_page, worth_store_physical_format::BTreeNodeV1,
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DerivedFamilyRootDirectoryV1,
+    worth_store_physical_format::PageGenerationCell,
+    worth_store_physical_format::PersistedPhysicalDataFrameSubject,
+    worth_store_physical_format::PersistedRecordIdentity,
+    worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    worth_store_physical_format::PhysicalRecoveryProjectionDecodeLimits,
+    worth_store_physical_format::SlotGenerationCell,
+};
 
 pub(crate) const HEADER: usize = 116;
 pub(crate) const FOOTER: usize = 32;
@@ -94,7 +106,9 @@ pub(crate) fn inspect_member(
         return None;
     };
     for page_frame in projection.frames()? {
-        let worth_store_physical_format::PersistedPhysicalDataFrameSubject::InlinePage(page) = page_frame.subject() else {
+        let worth_store_physical_format::PersistedPhysicalDataFrameSubject::InlinePage(page) =
+            page_frame.subject()
+        else {
             continue;
         };
         let geometry = inspect_inline_page(format, page_frame.bytes()).ok()?;
@@ -105,7 +119,9 @@ pub(crate) fn inspect_member(
             .placements()
             .iter()
             .filter_map(|placement| match placement {
-                worth_store_physical_format::CurrentPhysicalRecordPlacement::Inline(value) if value.page_cell() == page => {
+                worth_store_physical_format::CurrentPhysicalRecordPlacement::Inline(value)
+                    if value.page_cell() == page =>
+                {
                     Some(value.record())
                 }
                 _ => None,
@@ -125,10 +141,11 @@ pub(crate) fn inspect_member(
                 4,
                 "five physical slots, exactly four final-live routes"
             );
-            let worth_store_physical_format::CurrentPhysicalRecordPlacement::Inline(witness) = projection
-                .placements()
-                .iter()
-                .find(|placement| placement.record() == retired[0])?
+            let worth_store_physical_format::CurrentPhysicalRecordPlacement::Inline(witness) =
+                projection
+                    .placements()
+                    .iter()
+                    .find(|placement| placement.record() == retired[0])?
             else {
                 return None;
             };

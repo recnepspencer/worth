@@ -1,9 +1,14 @@
 //! Court selections generated from the applied court plan. Categories are prefixes.
-use std::path::Path;
 use super::TestExecutionUnit;
+use std::path::Path;
 
 pub(super) fn scenario(shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutionUnit> {
-    units("scenario", &["ordinary", "process", "determinism"], shard, root)
+    units(
+        "scenario",
+        &["ordinary", "process", "determinism"],
+        shard,
+        root,
+    )
 }
 pub(super) fn ui(shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutionUnit> {
     units("ui", &["compile_fail"], shard, root)
@@ -11,13 +16,30 @@ pub(super) fn ui(shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutio
 pub(super) fn formal(shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutionUnit> {
     units("formal", &["oracle"], shard, root)
 }
-fn units(lane: &str, categories: &[&str], shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutionUnit> {
-    let mut args: Vec<String> = ["nextest", "run", "--workspace", "--tests", "--no-fail-fast", "--no-tests=fail", "--filterset"]
-        .into_iter().map(str::to_owned).collect();
+fn units(
+    lane: &str,
+    categories: &[&str],
+    shard: Option<(usize, usize)>,
+    root: &Path,
+) -> Vec<TestExecutionUnit> {
+    let mut args: Vec<String> = [
+        "nextest",
+        "run",
+        "--workspace",
+        "--tests",
+        "--no-fail-fast",
+        "--no-tests=fail",
+        "--filterset",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect();
     let mut filters = Vec::new();
     for &(package, binary, present) in COURTS {
         for &category in categories {
-            if !present.contains(&category) { continue; }
+            if category != "ordinary" && !present.contains(&category) {
+                continue;
+            }
             let prefix = match category {
                 "ordinary" => "not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))".to_owned(),
                 "process" | "oracle" | "cost" | "determinism" | "compile_fail" => format!("test(/^{category}::/)"),
@@ -28,9 +50,16 @@ fn units(lane: &str, categories: &[&str], shard: Option<(usize, usize)>, root: &
     }
     args.push(filters.join(" + "));
     if let Some((index, count)) = shard {
-        args.extend(["--partition".into(), format!("hash:{}/{}", index + 1, count)]);
+        args.extend([
+            "--partition".into(),
+            format!("hash:{}/{}", index + 1, count),
+        ]);
     }
-    vec![TestExecutionUnit::cargo(format!("{lane}::executables"), root, vec!["build".into(), "--bins".into(), "-p".into(), "store-test-runner".into(), "-p".into(), "worth-store".into(), "-p".into(), "worth-store-offline-integrity-observer".into(), "-p".into(), "worth-store-offline-verifier".into(), "-p".into(), "worth-store-recovery-runtime".into()]), TestExecutionUnit::cargo(format!("{lane}::nextest"), root, args)]
+    vec![TestExecutionUnit::cargo(
+        format!("{lane}::nextest"),
+        root,
+        args,
+    )]
 }
 const COURTS: &[(&str, &str, &[&str])] = &[
     ("worth-store-court-source", "worth_store_court_source", &["process"]),

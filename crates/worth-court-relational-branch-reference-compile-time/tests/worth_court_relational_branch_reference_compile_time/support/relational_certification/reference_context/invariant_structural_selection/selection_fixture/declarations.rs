@@ -6,7 +6,7 @@ pub(crate) fn observe_branch_snapshot(
     runtime: &RelationalRuntime,
     handles: &worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::handles::SupplyChainSemanticHandles,
     branch: &str,
-) -> worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison_state::ObservedSupplyChainState {
+) -> worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison_state::ObservedSupplyChainState{
     let identity = runtime
         .branch_identity(&BranchId(branch.to_owned()))
         .expect("branch identity is owner-issued");

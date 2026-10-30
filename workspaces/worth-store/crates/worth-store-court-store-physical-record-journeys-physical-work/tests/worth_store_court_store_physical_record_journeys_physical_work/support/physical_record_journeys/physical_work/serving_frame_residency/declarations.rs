@@ -1,18 +1,41 @@
-pub(crate) use {worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint, worth_store::physical_runtime::CertificationFrameReadFailure, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordResidencyFailureKind, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalSpeculativeWorkKind, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits};
-pub(crate) use {worth_store_buffer_pool::PhysicalResidencyDenial};
-pub(crate) use {worth_store_physical_backend::ArtifactTreeFailureKind, worth_store_physical_backend::MediaOperationRole};
-pub(crate) use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+pub(crate) use worth_store_buffer_pool::PhysicalResidencyDenial;
+pub(crate) use {
+    worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint,
+    worth_store::physical_runtime::CertificationFrameReadFailure,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordResidencyFailureKind,
+    worth_store::physical_runtime::PhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecordReadLimits,
+};
+pub(crate) use {
+    worth_store_physical_backend::ArtifactTreeFailureKind,
+    worth_store_physical_backend::MediaOperationRole,
+};
+pub(crate) use {
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
-pub(crate) use {worth_store_testkit_store::durable_publication};
+pub(crate) use worth_store_testkit_store::durable_publication;
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 pub(crate) const FRAME_BYTES: u32 = 8;
 
 pub(crate) fn admitted_policy(
     format: worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
 ) -> worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy {
-    use {worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope};
-    use {worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation};
+    use worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope;
+    use worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation;
 
     let resident_bytes = 64 * 1024;
     let metadata_bytes = 16 * 1024;
@@ -53,7 +76,12 @@ pub(crate) fn nonzero_count(value: u32) -> std::num::NonZeroU32 {
 }
 
 pub(crate) fn coordinate(offset: u64) -> RecordFrameCoordinate {
-    worth_store_physical_format::RecordFrameCoordinate::new(worth_store_physical_format::RecordArtifactFile::BootstrapCatalog, offset, FRAME_BYTES).unwrap()
+    worth_store_physical_format::RecordFrameCoordinate::new(
+        worth_store_physical_format::RecordArtifactFile::BootstrapCatalog,
+        offset,
+        FRAME_BYTES,
+    )
+    .unwrap()
 }
 
 pub(crate) fn pin_and_release(
@@ -65,7 +93,9 @@ pub(crate) fn pin_and_release(
     drop(frame);
 }
 
-pub(crate) fn positioned_reads(serving: &worth_store::physical_runtime::ServingPhysicalRuntime) -> u64 {
+pub(crate) fn positioned_reads(
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+) -> u64 {
     serving
         .media_counters()
         .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)

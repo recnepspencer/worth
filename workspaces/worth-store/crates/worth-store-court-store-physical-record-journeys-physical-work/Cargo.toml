@@ -8,9 +8,9 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+"worth-testkit-compiler" = { "path" = "../../../../crates/worth-testkit-compiler" }
 "sha2" = { "version" = "^0.10" }
 "tempfile" = { "version" = "^3" }
-"trybuild" = { "version" = "^1.0" }
 "worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
 "worth-proof" = { "path" = "../../../../crates/worth-proof" }
 "worth-signal" = { "path" = "../../../../crates/worth-signal" }

@@ -2,7 +2,7 @@ use worth_store::physical_runtime::{
     AdmissionError, ObservationError, PhysicalRuntimeAdmission, PhysicalStore,
 };
 
-fn main() {
+pub(crate) fn main() {
     assert_standard_error::<AdmissionError>();
 
     let admission = PhysicalRuntimeAdmission::new(

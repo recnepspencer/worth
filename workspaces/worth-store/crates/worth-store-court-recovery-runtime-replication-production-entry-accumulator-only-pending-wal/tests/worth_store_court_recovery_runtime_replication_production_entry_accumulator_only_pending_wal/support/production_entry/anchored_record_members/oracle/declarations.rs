@@ -12,10 +12,19 @@
 //! beside it is unchanged; the replacement then publishes or answers
 //! `AlreadyPublished`; and a second recovery agrees.
 
-pub(crate) use {std::num::NonZeroU64};
+pub(crate) use std::num::NonZeroU64;
 
-pub(crate) use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-pub(crate) use {worth_store::physical_runtime::AnchoredRecordMember, worth_store::physical_runtime::AnchoredRecordMemberLocator, worth_store::physical_runtime::AnchoredRecordPublicationFailure, worth_store::physical_runtime::AnchoredRecordPublished, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub(crate) use {
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+};
+pub(crate) use {
+    worth_store::physical_runtime::AnchoredRecordMember,
+    worth_store::physical_runtime::AnchoredRecordMemberLocator,
+    worth_store::physical_runtime::AnchoredRecordPublicationFailure,
+    worth_store::physical_runtime::AnchoredRecordPublished,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
 pub(crate) use {crate::production_entry::anchored_record_members::assert_value, crate::production_entry::anchored_record_members::carried, crate::production_entry::anchored_record_members::content, crate::production_entry::anchored_record_members::new_member, crate::production_entry::anchored_record_members::publish_with_members};
 pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::anchored_records::assert_journal, worth_store_testkit_recovery_runtime::production_entry::anchored_records::name, worth_store_testkit_recovery_runtime::production_entry::anchored_records::publish_journal_entry, worth_store_testkit_recovery_runtime::production_entry::anchored_records::value, worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT};
@@ -56,6 +65,25 @@ pub(crate) fn prepared_store() -> (
     worth_store_test_support::TemporaryDirectory,
     Vec<AnchoredRecordMemberLocator>,
 ) {
+    let _ = worth_store_testkit_recovery_runtime::setup_observation::record(
+        "anchored-member-prefix",
+        &|inputs| {
+            inputs.unsigned("journal-head", JOURNAL_HEAD);
+            for position in 1..=JOURNAL_HEAD {
+                inputs.unsigned("journal-position", position);
+                inputs.bytes(
+                    "journal-payload",
+                    &anchored_records::journal_payload(position),
+                );
+            }
+            inputs.bytes("anchor-name", CHECKPOINT.as_bytes());
+            inputs.unsigned("expected-generation", 0);
+            inputs.bytes("anchor-value", &value(1, 500));
+            for member in first_contents() {
+                inputs.bytes("member-payload", &member);
+            }
+        },
+    );
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery("anchored-members-oracle")
         .expect("oracle store");
     for position in 1..=JOURNAL_HEAD {
@@ -172,13 +200,13 @@ pub(crate) fn run_case(
     role: MediaOperationRole,
     nth: NonZeroU64,
     directive: MediaFaultDirective,
-    answers: &mut Answers,
-) {
+) -> Answers {
+    let mut answers = Answers::default();
     let (store, first) = prepared_store();
     let Some((serving, activations)) =
         open_with_faults(store.path(), &[(role, nth, directive.clone())])
     else {
-        return;
+        return answers;
     };
     activations[0].arm().unwrap();
     let outcome = publish_replacement(&serving, &first);
@@ -202,8 +230,14 @@ pub(crate) fn run_case(
     let recovered = serve(store.path(), &case);
     let held = held(&recovered);
     match &outcome {
-        Ok(_) => assert_eq!(held, crate::production_entry::anchored_record_members::oracle::Held::New, "{case}: acknowledged value lost"),
-        Err(worth_store::physical_runtime::AnchoredRecordPublicationFailure::MemberWrite { .. }) => {
+        Ok(_) => assert_eq!(
+            held,
+            crate::production_entry::anchored_record_members::oracle::Held::New,
+            "{case}: acknowledged value lost"
+        ),
+        Err(worth_store::physical_runtime::AnchoredRecordPublicationFailure::MemberWrite {
+            ..
+        }) => {
             answers.member_batch_refusals += 1;
             assert_eq!(
                 held,
@@ -213,7 +247,11 @@ pub(crate) fn run_case(
         }
         Err(worth_store::physical_runtime::AnchoredRecordPublicationFailure::ProvenNoEffect(_)) => {
             answers.anchor_batch_failures += 1;
-            assert_eq!(held, crate::production_entry::anchored_record_members::oracle::Held::Old, "{case}: a no-effect value appeared");
+            assert_eq!(
+                held,
+                crate::production_entry::anchored_record_members::oracle::Held::Old,
+                "{case}: a no-effect value appeared"
+            );
         }
         Err(_) => answers.anchor_batch_failures += 1,
     }
@@ -221,7 +259,10 @@ pub(crate) fn run_case(
     let republished = publish_replacement(&recovered, &first)
         .unwrap_or_else(|failure| panic!("{case}: republication: {failure:?}"));
     assert_eq!(
-        matches!(republished, worth_store::physical_runtime::AnchoredRecordPublished::AlreadyPublished(_)),
+        matches!(
+            republished,
+            worth_store::physical_runtime::AnchoredRecordPublished::AlreadyPublished(_)
+        ),
         held == crate::production_entry::anchored_record_members::oracle::Held::New,
         "{case}: republication answer"
     );
@@ -232,7 +273,12 @@ pub(crate) fn run_case(
     );
     let _ = recovered.close();
     let again = serve(store.path(), &format!("{case} second recovery"));
-    assert_eq!(crate::production_entry::anchored_record_members::oracle::held(&again), crate::production_entry::anchored_record_members::oracle::Held::New, "{case}: second recovery");
+    assert_eq!(
+        crate::production_entry::anchored_record_members::oracle::held(&again),
+        crate::production_entry::anchored_record_members::oracle::Held::New,
+        "{case}: second recovery"
+    );
     assert_journal(&again, JOURNAL_HEAD);
     let _ = again.close();
+    answers
 }

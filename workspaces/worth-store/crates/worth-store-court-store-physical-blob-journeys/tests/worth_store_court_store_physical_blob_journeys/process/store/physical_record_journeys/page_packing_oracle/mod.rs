@@ -1,6 +1,18 @@
-use {worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits};
+use {
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+};
 
-use {worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::read_record, worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration, worth_store_testkit_store::stream_fixture::PatternSource, worth_store_testkit_store::physical_record_journeys::success};
+use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::read_record,
+    worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration,
+    worth_store_testkit_store::physical_record_journeys::success,
+    worth_store_testkit_store::stream_fixture::PatternSource,
+};
 
 #[test]
 fn batch_packing_matches_an_independent_page_oracle() {
@@ -8,13 +20,18 @@ fn batch_packing_matches_an_independent_page_oracle() {
     let root = parent.path().join("store");
     let (format, placement, access) = dense_configuration(4);
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let payloads = [b"abc".as_slice(), b"12345".as_slice(), b"".as_slice()];
     let completed = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("page-packing-independent-oracle", 0),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "page-packing-independent-oracle",
+            0,
+        ),
         worth_store::physical_runtime::RecordAppendBatch::try_from_iter(payloads).unwrap(),
     );
     let published = &completed.settled_members()[0];
@@ -120,14 +137,21 @@ fn inline_source_and_delivery_copies_are_counted_at_the_actual_copy_seams() {
     let root = parent.path().join("store");
     let (format, placement, access) = dense_configuration(4);
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let published = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("page-packing-copy-seams", 0),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "page-packing-copy-seams",
+            0,
+        ),
         worth_store::physical_runtime::RecordAppendBatch::builder()
-            .push_source(worth_store_testkit_store::stream_fixture::PatternSource::fragmented(13, 4))
+            .push_source(
+                worth_store_testkit_store::stream_fixture::PatternSource::fragmented(13, 4),
+            )
             .build()
             .unwrap(),
     );
@@ -140,7 +164,9 @@ fn inline_source_and_delivery_copies_are_counted_at_the_actual_copy_seams() {
         .expect("read protection admission")
         .open(
             member.record_id(0).unwrap(),
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(13).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(13).unwrap(),
+            ),
         )
         .unwrap();
     let (_, observation) = read_record(session, 13);

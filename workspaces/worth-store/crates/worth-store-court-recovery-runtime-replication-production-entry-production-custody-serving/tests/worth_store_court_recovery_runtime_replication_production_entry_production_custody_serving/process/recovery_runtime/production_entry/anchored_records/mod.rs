@@ -3,9 +3,22 @@
 //! requests before any effect, coexist with the canonical commit journal and
 //! survive an abandoned runtime through production recovery.
 
-#[allow(unused_imports)] use worth_store_testkit_recovery_runtime::production_entry::anchored_records::*;
+#[allow(unused_imports)]
+use worth_store_testkit_recovery_runtime::production_entry::anchored_records::*;
 use {sha2::Digest, sha2::Sha256};
-use {worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::AnchoredRecordName, worth_store::physical_runtime::AnchoredRecordNameDenial, worth_store::physical_runtime::AnchoredRecordPublication, worth_store::physical_runtime::AnchoredRecordPublicationFailure, worth_store::physical_runtime::AnchoredRecordPublished, worth_store::physical_runtime::AnchoredRecordReadFailure, worth_store::physical_runtime::OrderedJournalPublication, worth_store::physical_runtime::ServingPhysicalRuntime, worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS, worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS};
+use {
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::AnchoredRecordName,
+    worth_store::physical_runtime::AnchoredRecordNameDenial,
+    worth_store::physical_runtime::AnchoredRecordPublication,
+    worth_store::physical_runtime::AnchoredRecordPublicationFailure,
+    worth_store::physical_runtime::AnchoredRecordPublished,
+    worth_store::physical_runtime::AnchoredRecordReadFailure,
+    worth_store::physical_runtime::OrderedJournalPublication,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+    worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS,
+    worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS,
+};
 
 use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
 use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_store_testkit_recovery_runtime::production_entry::anchored_records};
@@ -46,7 +59,10 @@ fn an_anchored_record_is_replaced_one_generation_at_a_time() {
     ));
 
     let first = publish(serving, world.placement(), checkpoint, 0, value(1, 700)).unwrap();
-    assert!(matches!(first, worth_store::physical_runtime::AnchoredRecordPublished::Published(_)));
+    assert!(matches!(
+        first,
+        worth_store::physical_runtime::AnchoredRecordPublished::Published(_)
+    ));
     assert_eq!(first.version().generation(), 1);
     assert_eq!(current(serving, checkpoint), Some((1, value(1, 700))));
 
@@ -54,11 +70,17 @@ fn an_anchored_record_is_replaced_one_generation_at_a_time() {
     let retry = publish(serving, world.placement(), checkpoint, 0, value(1, 700)).unwrap();
     assert_eq!(
         retry,
-        worth_store::physical_runtime::AnchoredRecordPublished::AlreadyPublished(first.membership().clone())
+        worth_store::physical_runtime::AnchoredRecordPublished::AlreadyPublished(
+            first.membership().clone()
+        )
     );
     assert!(matches!(
         publish(serving, world.placement(), checkpoint, 0, value(2, 700)),
-        Err(worth_store::physical_runtime::AnchoredRecordPublicationFailure::GenerationConflict { current: 1 })
+        Err(
+            worth_store::physical_runtime::AnchoredRecordPublicationFailure::GenerationConflict {
+                current: 1
+            }
+        )
     ));
     assert_eq!(
         serving.physical_mutation_observation(),
@@ -67,7 +89,10 @@ fn an_anchored_record_is_replaced_one_generation_at_a_time() {
     );
 
     let second = publish(serving, world.placement(), checkpoint, 1, value(2, 900)).unwrap();
-    assert!(matches!(second, worth_store::physical_runtime::AnchoredRecordPublished::Published(_)));
+    assert!(matches!(
+        second,
+        worth_store::physical_runtime::AnchoredRecordPublished::Published(_)
+    ));
     assert_eq!(second.version().generation(), 2);
     assert_ne!(second.version().record(), first.version().record());
     assert_eq!(current(serving, checkpoint), Some((2, value(2, 900))));
@@ -82,7 +107,11 @@ fn an_anchored_record_is_replaced_one_generation_at_a_time() {
     let records = serving.anchored_records().unwrap();
     assert!(matches!(
         records.read(checkpoint, 899),
-        Err(worth_store::physical_runtime::AnchoredRecordReadFailure::LimitExceeded { payload_bytes: 900 })
+        Err(
+            worth_store::physical_runtime::AnchoredRecordReadFailure::LimitExceeded {
+                payload_bytes: 900
+            }
+        )
     ));
     assert_eq!(
         serving.physical_mutation_observation(),
@@ -117,7 +146,10 @@ fn the_anchor_table_bounds_the_number_of_anchored_records() {
         ),
         Err(worth_store::physical_runtime::AnchoredRecordPublicationFailure::AnchorTableFull)
     ));
-    crate::production_entry::anchored_records::capacity::rewrite(world.serving(), world.placement());
+    crate::production_entry::anchored_records::capacity::rewrite(
+        world.serving(),
+        world.placement(),
+    );
     let retained = world.retained_root();
     drop(world);
     let serving = serve(retained.path(), "32 anchors through maintenance");
@@ -180,5 +212,3 @@ fn anchored_records_and_the_journal_survive_an_abandoned_runtime() {
     assert_eq!(current(&again, home), Some((1, value(7, 120))));
     let _ = again.close();
 }
-
-

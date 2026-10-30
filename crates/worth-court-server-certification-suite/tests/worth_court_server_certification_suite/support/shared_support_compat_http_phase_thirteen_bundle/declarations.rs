@@ -1,4 +1,4 @@
-pub(crate) use {std::collections::BTreeMap};
+pub(crate) use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct WorthServerPhaseThirteenBundle {

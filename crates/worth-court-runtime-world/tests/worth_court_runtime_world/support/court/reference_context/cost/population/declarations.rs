@@ -1,6 +1,10 @@
-pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::CompositeSupplyChainCourt, crate::court::reference_context::cost::population, crate::court::ordinary_context::relational};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_signal::facade::branch::validate_signal_branch_name};
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use worth_signal::facade::branch::validate_signal_branch_name;
+pub(crate) use {
+    crate::court::ordinary_context::relational,
+    crate::court::ordinary_context::CompositeSupplyChainCourt,
+    crate::court::reference_context::cost::population, worth_runtime_world::facade::*,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum Axis {
@@ -80,14 +84,16 @@ impl Population {
         for index in 1..size {
             let name = format!("population-{index}");
             match axis {
-                crate::court::reference_context::cost::population::Axis::B => population.branches.push(child(
-                    request_execution,
-                    &population.court,
-                    &population.root,
-                    &name,
-                    false,
-                    false,
-                )),
+                crate::court::reference_context::cost::population::Axis::B => {
+                    population.branches.push(child(
+                        request_execution,
+                        &population.court,
+                        &population.root,
+                        &name,
+                        false,
+                        false,
+                    ))
+                }
                 crate::court::reference_context::cost::population::Axis::H => {
                     let receipt = population
                         .court
@@ -116,11 +122,13 @@ impl Population {
                     // Retained history keeps each distinct exact Relational
                     // pin live. H co-varies with U; B returns to one.
                 }
-                crate::court::reference_context::cost::population::Axis::A => population.attempts.push(population.court.prepare_cargo(
-                    request_execution,
-                    &population.root,
-                    "5",
-                )),
+                crate::court::reference_context::cost::population::Axis::A => {
+                    population.attempts.push(population.court.prepare_cargo(
+                        request_execution,
+                        &population.root,
+                        "5",
+                    ))
+                }
                 crate::court::reference_context::cost::population::Axis::P => {
                     let head = child(
                         request_execution,
@@ -142,7 +150,13 @@ impl Population {
                     .push(population.court.observe(&population.root)),
             }
         }
-        if matches!(axis, crate::court::reference_context::cost::population::Axis::B | crate::court::reference_context::cost::population::Axis::H | crate::court::reference_context::cost::population::Axis::U | crate::court::reference_context::cost::population::Axis::O) {
+        if matches!(
+            axis,
+            crate::court::reference_context::cost::population::Axis::B
+                | crate::court::reference_context::cost::population::Axis::H
+                | crate::court::reference_context::cost::population::Axis::U
+                | crate::court::reference_context::cost::population::Axis::O
+        ) {
             assert_eq!(
                 population
                     .court

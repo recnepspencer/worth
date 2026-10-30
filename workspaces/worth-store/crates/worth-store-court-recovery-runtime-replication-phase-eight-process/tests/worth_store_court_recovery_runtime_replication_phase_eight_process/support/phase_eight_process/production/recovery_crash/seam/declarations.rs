@@ -1,19 +1,27 @@
 pub(crate) use {std::path::Path, std::path::PathBuf};
 pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {worth_store::physical_runtime::PhysicalRecoveryYieldpointStage};
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportOutcome};
+pub(crate) use worth_store::physical_runtime::PhysicalRecoveryYieldpointStage;
+pub(crate) use worth_store_recovery_runtime::RecoveryReportOutcome;
 
-pub(crate) use {worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard};
-pub(crate) use {crate::phase_eight_process::comparison};
-pub(crate) use {crate::phase_eight_process::history::physical_history::ParentPhysicalHistory};
-pub(crate) use {crate::phase_eight_process::production::harness::process::spawn_recovery_at_yieldpoint, crate::phase_eight_process::production::harness::ObserverProcess, crate::phase_eight_process::production::harness::ProcessWorld, crate::phase_eight_process::production::harness::RuntimeProcess};
+pub(crate) use crate::phase_eight_process::comparison;
+pub(crate) use crate::phase_eight_process::history::physical_history::ParentPhysicalHistory;
+pub(crate) use worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard;
+pub(crate) use {
+    crate::phase_eight_process::production::harness::process::spawn_recovery_at_yieldpoint,
+    crate::phase_eight_process::production::harness::ObserverProcess,
+    crate::phase_eight_process::production::harness::ProcessWorld,
+    crate::phase_eight_process::production::harness::RuntimeProcess,
+};
 
 pub(crate) const RECOVERY_SEAM_PROFILE: &str = "c8-phase8-fate-coverage-v1";
 pub(crate) const RECOVERY_SEAM_MEMORY_BUDGET_BYTES: u64 = 4 * 1024 * 1024;
 
 pub(crate) fn run(world: &ProcessWorld, index: usize, stage: PhysicalRecoveryYieldpointStage) {
-    let mut seam = crate::phase_eight_process::production::recovery_crash::seam::InterruptedSeam::prepare(world, index, stage);
+    let mut seam =
+        crate::phase_eight_process::production::recovery_crash::seam::InterruptedSeam::prepare(
+            world, index, stage,
+        );
     seam.interrupt();
     let recoveries = seam.recover_independently();
     seam.assert_recovery(recoveries);
@@ -217,7 +225,10 @@ impl<'a> InterruptedSeam<'a> {
             &format!("recovery-{}-converged-observer", self.index),
         );
         let converged_history = self.world.parent_history_after_recovery(&self.root);
-        assert_eq!(converged.report.outcome(), worth_store_recovery_runtime::RecoveryReportOutcome::Recovered);
+        assert_eq!(
+            converged.report.outcome(),
+            worth_store_recovery_runtime::RecoveryReportOutcome::Recovered
+        );
         assert_eq!(settled_history, converged_history);
         crate::phase_eight_process::comparison::compare_independent_physical_evidence(
             &settled_observer.report,
@@ -303,7 +314,11 @@ pub(crate) fn is_cleanup_stage(stage: PhysicalRecoveryYieldpointStage) -> bool {
     )
 }
 
-pub(crate) fn remove_recovered_roots(root: &Path, second_root: &Path, stage: PhysicalRecoveryYieldpointStage) {
+pub(crate) fn remove_recovered_roots(
+    root: &Path,
+    second_root: &Path,
+    stage: PhysicalRecoveryYieldpointStage,
+) {
     std::fs::remove_dir_all(root)
         .unwrap_or_else(|error| panic!("remove exact killed-writer root at {:?}: {error}", stage));
     std::fs::remove_dir_all(second_root).unwrap_or_else(|error| {

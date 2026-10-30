@@ -1,9 +1,8 @@
 use worth_proof::{
-    AuthorityMarker, AuthorityWitness, CapabilityMarker, CapabilityWitness,
-    CheckedReadmitLoweredForExecutionReadyTransition, ContextualTransition,
+    checked_readmit_ready_and_execute_recipe, AuthorityMarker, AuthorityWitness, CapabilityMarker,
+    CapabilityWitness, CheckedReadmitLoweredForExecutionReadyTransition, ContextualTransition,
     LowerRecipeTransition, LoweredReadmissionContext, LoweredReadmissionReadiness, Recipe,
     RecipeResolutionContext, ResolveRecipeTransition, Transition, Unresolved,
-    checked_readmit_ready_and_execute_recipe,
 };
 
 struct ResolutionAuthority;
@@ -86,4 +85,4 @@ fn shifted_basis_runtime_readmission_execute_progression_compiles(
     let _ = executed;
 }
 
-fn main() {}
+pub(crate) fn main() {}

@@ -1,8 +1,22 @@
-#[allow(unused_imports)] use crate::public_nested_regressions::isolated_context::*;
-use {std::num::NonZeroUsize, std::sync::atomic::AtomicU64, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Mutex, std::sync::OnceLock};
+#[allow(unused_imports)]
+use crate::public_nested_regressions::isolated_context::*;
+use {
+    std::num::NonZeroUsize, std::sync::atomic::AtomicU64, std::sync::atomic::AtomicUsize,
+    std::sync::atomic::Ordering, std::sync::Mutex, std::sync::OnceLock,
+};
 
-use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapKernelStop, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop};
-use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+use {
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
+    worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
+    worth_execution::MapKernelStop, worth_execution::MapOutcome, worth_execution::MapPartition,
+    worth_execution::MapStop,
+};
+use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn ignored_checkpoint_rejection_still_stops_public_map() {
@@ -17,7 +31,10 @@ fn ignored_checkpoint_rejection_still_stops_public_map() {
     let calls = std::sync::atomic::AtomicUsize::new(0);
     let outcome = map(7).run(Some(&lease), |value, context| {
         calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        assert_eq!(context.checkpoint(2), Err(worth_execution::MapKernelStop::WorkCeiling));
+        assert_eq!(
+            context.checkpoint(2),
+            Err(worth_execution::MapKernelStop::WorkCeiling)
+        );
         Ok::<_, MapKernelFailure<()>>(*value)
     });
 
@@ -52,7 +69,9 @@ fn lease_free_nested_run_is_denied_and_stops_its_parent() {
         if matches!(
             nested,
             worth_execution::MapOutcome::Stopped {
-                reason: worth_execution::MapStop::Admission(worth_execution::LeaseDenial::UnrelatedNestedLease),
+                reason: worth_execution::MapStop::Admission(
+                    worth_execution::LeaseDenial::UnrelatedNestedLease
+                ),
                 ..
             }
         ) {
@@ -104,7 +123,9 @@ fn nested_certification_charges_one_actual_unit_to_one_unit_parent() {
     });
 
     assert_eq!(child_calls.load(std::sync::atomic::Ordering::SeqCst), 2);
-    assert!(matches!(&outcome, worth_execution::MapOutcome::Complete { values, .. } if values == &vec![9]));
+    assert!(
+        matches!(&outcome, worth_execution::MapOutcome::Complete { values, .. } if values == &vec![9])
+    );
     assert_eq!(outcome.report().charged_work(), 1);
     assert_eq!(outcome.report().charged_span(), 1);
 }
@@ -128,8 +149,14 @@ fn nested_run_reports_overlapping_parent_and_child_memory() {
     let standalone_child = inner.run(Some(&child), |value, _| {
         Ok::<_, MapKernelFailure<()>>(*value)
     });
-    assert!(matches!(standalone_parent, worth_execution::MapOutcome::Complete { .. }));
-    assert!(matches!(standalone_child, worth_execution::MapOutcome::Complete { .. }));
+    assert!(matches!(
+        standalone_parent,
+        worth_execution::MapOutcome::Complete { .. }
+    ));
+    assert!(matches!(
+        standalone_child,
+        worth_execution::MapOutcome::Complete { .. }
+    ));
     let standalone_peak = standalone_parent
         .report()
         .physical()
@@ -145,11 +172,17 @@ fn nested_run_reports_overlapping_parent_and_child_memory() {
         match inner.run(Some(&child), |value, _| {
             Ok::<_, MapKernelFailure<()>>(*value)
         }) {
-            worth_execution::MapOutcome::Complete { values, .. } => Ok::<_, MapKernelFailure<()>>(values[0]),
-            worth_execution::MapOutcome::Stopped { reason, .. } => panic!("nested run stopped: {reason:?}"),
+            worth_execution::MapOutcome::Complete { values, .. } => {
+                Ok::<_, MapKernelFailure<()>>(values[0])
+            }
+            worth_execution::MapOutcome::Stopped { reason, .. } => {
+                panic!("nested run stopped: {reason:?}")
+            }
         }
     });
-    assert!(matches!(&outcome, worth_execution::MapOutcome::Complete { values, .. } if values == &vec![9]));
+    assert!(
+        matches!(&outcome, worth_execution::MapOutcome::Complete { values, .. } if values == &vec![9])
+    );
     assert!(
         outcome.report().physical().peak_charged_memory_bytes() > standalone_peak,
         "overlapping parent and child reservations must exceed either standalone peak"
@@ -209,7 +242,9 @@ fn nested_discarded_work_reaches_parent_physical_report() {
         &outcome,
         worth_execution::MapOutcome::Stopped {
             reason: worth_execution::MapStop::Failure {
-                cause: worth_execution::MapKernelFailure::Stop(worth_execution::MapKernelStop::NestedStopped),
+                cause: worth_execution::MapKernelFailure::Stop(
+                    worth_execution::MapKernelStop::NestedStopped
+                ),
                 ..
             },
             ..
@@ -257,8 +292,13 @@ fn serial_oracle_keeps_its_nested_descendant_serial() {
     });
 
     assert_eq!(outer_calls.load(std::sync::atomic::Ordering::SeqCst), 2);
-    assert_eq!(first_child_workers.load(std::sync::atomic::Ordering::SeqCst), 1);
-    assert!(matches!(outcome, Ok(worth_execution::MapOutcome::Complete { values, .. }) if values == vec![3]));
+    assert_eq!(
+        first_child_workers.load(std::sync::atomic::Ordering::SeqCst),
+        1
+    );
+    assert!(
+        matches!(outcome, Ok(worth_execution::MapOutcome::Complete { values, .. }) if values == vec![3])
+    );
 }
 #[path = "decompose_scope/mod.rs"]
 pub(crate) mod decompose_scope;

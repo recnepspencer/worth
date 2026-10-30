@@ -1,8 +1,19 @@
 pub(crate) use {std::collections::BTreeMap, std::collections::BTreeSet};
 
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::decode_frame, crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::find_file};
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::parse_placement, crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::read_placement, crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::Placement, crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity};
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u16, crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64};
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u16,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64,
+};
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::decode_frame,
+    crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::find_file,
+};
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::parse_placement,
+    crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::read_placement,
+    crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::Placement,
+    crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity,
+};
 
 pub(crate) const ROOT_SELECTOR_KIND: u8 = 11;
 pub(crate) const ROOT_MANIFEST_KIND: u8 = 2;

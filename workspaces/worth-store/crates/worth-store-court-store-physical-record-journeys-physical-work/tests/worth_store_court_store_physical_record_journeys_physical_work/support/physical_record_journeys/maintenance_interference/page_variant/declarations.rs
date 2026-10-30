@@ -1,6 +1,15 @@
-pub(crate) use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::PhysicalPageSizeClass, worth_store::physical_runtime::PhysicalRecordFormatDeclaration};
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::PhysicalPageSizeClass,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::append, worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize_with_format, worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits, worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement_for};
+pub(crate) use {
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize_with_format,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::limits,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement_for,
+};
 
 pub(crate) fn publish(page: PhysicalPageSizeClass) {
     let parent = tempfile::tempdir().unwrap();

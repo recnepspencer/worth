@@ -1,6 +1,6 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store_test_support::compiler_boundary::cargo_dependency_manifest, worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite};
+pub(crate) use worth_store_test_support::compiler_boundary::read_ui_fixture_suite;
 
 pub(crate) const PHYSICAL_FIXTURES: &[(&str, &[&str])] = &[
     (
@@ -22,55 +22,8 @@ pub(crate) const PRODUCTION_FIXTURES: &[(&str, &[&str])] = &[(
     &["from_append_hidden_scan_denial", "not found"],
 )];
 
-pub(crate) fn physical_environment(root: &Path) -> String {
-    cargo_dependency_manifest(
-        &[
-            (
-                "worth-store-contracts",
-                root.join("crates/worth-store-contracts").as_path(),
-                &[],
-            ),
-            (
-                "worth-store-physical-format",
-                root.join("crates/worth-store-physical-format").as_path(),
-                &[],
-            ),
-            (
-                "worth-store-test-support",
-                root.join("crates/worth-store-test-support").as_path(),
-                &["physical-isolation-fixtures"],
-            ),
-            (
-                "worth-store-physical-certification",
-                root.join("crates/worth-store-physical-certification")
-                    .as_path(),
-                &[],
-            ),
-        ],
-        &[],
-    )
-}
-
-pub(crate) fn production_environment(root: &Path) -> String {
-    cargo_dependency_manifest(
-        &[
-            (
-                "worth-store-contracts",
-                root.join("crates/worth-store-contracts").as_path(),
-                &[],
-            ),
-            (
-                "worth-store-physical-format",
-                root.join("crates/worth-store-physical-format").as_path(),
-                &[],
-            ),
-        ],
-        &[],
-    )
-}
-
 pub(crate) fn store_workspace_root() -> &'static Path {
-    std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-store-test-support"))
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
         .nth(2)
         .expect("test-support crate lives under the Store workspace")

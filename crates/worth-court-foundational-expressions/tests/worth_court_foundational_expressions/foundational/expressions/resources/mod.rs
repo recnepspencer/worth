@@ -1,16 +1,33 @@
 // Resource ceilings: every phase denies before unbounded work, and a draft
 // read under wide ceilings is re-checked against the admitting profile.
-#[allow(unused_imports)] use crate::expressions::ordinary_context::resources::*;
-pub(crate) use {worth_foundational::expression_api::expressions, worth_foundational::expression_api::ExpressionBuilder, worth_foundational::expression_api::ExpressionDenial, worth_foundational::expression_api::ExpressionDenialDetail, worth_foundational::expression_api::ExpressionFunctionCatalog, worth_foundational::expression_api::ExpressionProfile, worth_foundational::expression_api::ExpressionResource, worth_foundational::expression_api::ExpressionSchema, worth_foundational::expression_api::ExpressionType};
+#[allow(unused_imports)]
+use crate::expressions::ordinary_context::resources::*;
+pub(crate) use {
+    worth_foundational::expression_api::expressions,
+    worth_foundational::expression_api::ExpressionBuilder,
+    worth_foundational::expression_api::ExpressionDenial,
+    worth_foundational::expression_api::ExpressionDenialDetail,
+    worth_foundational::expression_api::ExpressionFunctionCatalog,
+    worth_foundational::expression_api::ExpressionProfile,
+    worth_foundational::expression_api::ExpressionResource,
+    worth_foundational::expression_api::ExpressionSchema,
+    worth_foundational::expression_api::ExpressionType,
+};
 
-pub(crate) use {crate::expressions::ordinary_context::draft, crate::expressions::ordinary_context::empty_catalog, crate::expressions::ordinary_context::function, crate::expressions::ordinary_context::schema};
+pub(crate) use {
+    crate::expressions::ordinary_context::draft,
+    crate::expressions::ordinary_context::empty_catalog,
+    crate::expressions::ordinary_context::function, crate::expressions::ordinary_context::schema,
+};
 
 #[test]
 fn profiles_only_narrow() {
     let interactive = worth_foundational::expression_api::ExpressionProfile::interactive();
     for (resource, limit) in interactive.limits() {
         assert!(
-            limit <= worth_foundational::expression_api::ExpressionProfile::engineering().limit(resource),
+            limit
+                <= worth_foundational::expression_api::ExpressionProfile::engineering()
+                    .limit(resource),
             "{resource:?}"
         );
         assert!(interactive.narrowed(resource, limit + 1).is_err());
@@ -22,18 +39,33 @@ fn profiles_only_narrow() {
 fn parsing_is_bounded_by_the_reading_profile() {
     let reading = |profile| expressions().reading_within(profile);
     let long = "width + ".repeat(20) + "width";
-    let denial = reading(narrowed(worth_foundational::expression_api::ExpressionResource::SourceBytes, 16))
-        .parse(&long)
-        .unwrap_err();
-    assert_eq!(exceeded(&denial), worth_foundational::expression_api::ExpressionResource::SourceBytes);
-    let denial = reading(narrowed(worth_foundational::expression_api::ExpressionResource::SyntaxNodes, 8))
-        .parse(&long)
-        .unwrap_err();
-    assert_eq!(exceeded(&denial), worth_foundational::expression_api::ExpressionResource::SyntaxNodes);
+    let denial = reading(narrowed(
+        worth_foundational::expression_api::ExpressionResource::SourceBytes,
+        16,
+    ))
+    .parse(&long)
+    .unwrap_err();
+    assert_eq!(
+        exceeded(&denial),
+        worth_foundational::expression_api::ExpressionResource::SourceBytes
+    );
+    let denial = reading(narrowed(
+        worth_foundational::expression_api::ExpressionResource::SyntaxNodes,
+        8,
+    ))
+    .parse(&long)
+    .unwrap_err();
+    assert_eq!(
+        exceeded(&denial),
+        worth_foundational::expression_api::ExpressionResource::SyntaxNodes
+    );
 
     let deep = "(".repeat(200) + "width" + &")".repeat(200);
     let denial = expressions().parse(&deep).unwrap_err();
-    assert_eq!(exceeded(&denial), worth_foundational::expression_api::ExpressionResource::SyntaxDepth);
+    assert_eq!(
+        exceeded(&denial),
+        worth_foundational::expression_api::ExpressionResource::SyntaxDepth
+    );
     let nested = "-".repeat(10_000) + "1.0";
     assert_eq!(
         exceeded(&expressions().parse(&nested).unwrap_err()),
@@ -51,29 +83,51 @@ fn admission_rechecks_drafts_read_under_wider_ceilings() {
         .admit(
             &schema,
             &catalog,
-            narrowed(worth_foundational::expression_api::ExpressionResource::SourceBytes, 16),
+            narrowed(
+                worth_foundational::expression_api::ExpressionResource::SourceBytes,
+                16,
+            ),
         )
         .unwrap_err();
-    assert_eq!(exceeded(&denial), worth_foundational::expression_api::ExpressionResource::SourceBytes);
+    assert_eq!(
+        exceeded(&denial),
+        worth_foundational::expression_api::ExpressionResource::SourceBytes
+    );
     let denial = draft
         .admit(
             &schema,
             &catalog,
-            narrowed(worth_foundational::expression_api::ExpressionResource::SyntaxNodes, 8),
+            narrowed(
+                worth_foundational::expression_api::ExpressionResource::SyntaxNodes,
+                8,
+            ),
         )
         .unwrap_err();
-    assert_eq!(exceeded(&denial), worth_foundational::expression_api::ExpressionResource::SyntaxNodes);
+    assert_eq!(
+        exceeded(&denial),
+        worth_foundational::expression_api::ExpressionResource::SyntaxNodes
+    );
     let decoded = expressions().decode(&draft.encode()).expect("decodes");
     let denial = decoded
         .admit(
             &schema,
             &catalog,
-            narrowed(worth_foundational::expression_api::ExpressionResource::DecodedBytes, 16),
+            narrowed(
+                worth_foundational::expression_api::ExpressionResource::DecodedBytes,
+                16,
+            ),
         )
         .unwrap_err();
-    assert_eq!(exceeded(&denial), worth_foundational::expression_api::ExpressionResource::DecodedBytes);
+    assert_eq!(
+        exceeded(&denial),
+        worth_foundational::expression_api::ExpressionResource::DecodedBytes
+    );
     assert!(decoded
-        .admit(&schema, &catalog, worth_foundational::expression_api::ExpressionProfile::interactive())
+        .admit(
+            &schema,
+            &catalog,
+            worth_foundational::expression_api::ExpressionProfile::interactive()
+        )
         .is_ok());
 }
 
@@ -91,7 +145,8 @@ fn decoding_checks_counts_against_input_before_allocating() {
     ));
 
     let huge = vec![0_u8; 2 * 1024 * 1024];
-    let reading = expressions().reading_within(worth_foundational::expression_api::ExpressionProfile::interactive());
+    let reading = expressions()
+        .reading_within(worth_foundational::expression_api::ExpressionProfile::interactive());
     assert_eq!(
         exceeded(&reading.decode(&huge).unwrap_err()),
         worth_foundational::expression_api::ExpressionResource::DecodedBytes
@@ -119,14 +174,19 @@ fn builder_expansion_is_bounded() {
         builder.finish(mixed).is_err(),
         "terms belong to one builder"
     );
-    assert!(worth_foundational::expression_api::ExpressionBuilder::new().finish(foreign).is_err());
+    assert!(worth_foundational::expression_api::ExpressionBuilder::new()
+        .finish(foreign)
+        .is_err());
 }
 
 #[test]
 fn function_expansion_and_call_depth_are_bounded() {
     let schema = schema();
     let float = worth_foundational::expression_api::ExpressionType::Float64;
-    let mut builder = worth_foundational::expression_api::ExpressionFunctionCatalog::builder(&schema, worth_foundational::expression_api::ExpressionProfile::interactive());
+    let mut builder = worth_foundational::expression_api::ExpressionFunctionCatalog::builder(
+        &schema,
+        worth_foundational::expression_api::ExpressionProfile::interactive(),
+    );
     builder
         .install(function(
             "bomb::f0",
@@ -153,9 +213,15 @@ fn function_expansion_and_call_depth_are_bounded() {
         }
     }
     let denial = denial.expect("doubling expansion reaches the ceiling");
-    assert_eq!(exceeded(&denial), worth_foundational::expression_api::ExpressionResource::ExpandedInstructions);
+    assert_eq!(
+        exceeded(&denial),
+        worth_foundational::expression_api::ExpressionResource::ExpandedInstructions
+    );
 
-    let mut builder = worth_foundational::expression_api::ExpressionFunctionCatalog::builder(&schema, worth_foundational::expression_api::ExpressionProfile::interactive());
+    let mut builder = worth_foundational::expression_api::ExpressionFunctionCatalog::builder(
+        &schema,
+        worth_foundational::expression_api::ExpressionProfile::interactive(),
+    );
     builder
         .install(function(
             "chain::f0",
@@ -187,8 +253,12 @@ fn function_expansion_and_call_depth_are_bounded() {
 #[test]
 fn catalog_entries_and_bit_widths_are_bounded() {
     let schema = schema();
-    let profile = narrowed(worth_foundational::expression_api::ExpressionResource::CatalogEntries, 1);
-    let mut builder = worth_foundational::expression_api::ExpressionFunctionCatalog::builder(&schema, profile);
+    let profile = narrowed(
+        worth_foundational::expression_api::ExpressionResource::CatalogEntries,
+        1,
+    );
+    let mut builder =
+        worth_foundational::expression_api::ExpressionFunctionCatalog::builder(&schema, profile);
     let float = worth_foundational::expression_api::ExpressionType::Float64;
     builder
         .install(function("limits::a", &[], float.clone(), "1.0"))
@@ -196,7 +266,10 @@ fn catalog_entries_and_bit_widths_are_bounded() {
     let denial = builder
         .install(function("limits::b", &[], float.clone(), "2.0"))
         .unwrap_err();
-    assert_eq!(exceeded(&denial), worth_foundational::expression_api::ExpressionResource::CatalogEntries);
+    assert_eq!(
+        exceeded(&denial),
+        worth_foundational::expression_api::ExpressionResource::CatalogEntries
+    );
     assert_eq!(
         builder.build().functions().len(),
         1,
@@ -207,9 +280,19 @@ fn catalog_entries_and_bit_widths_are_bounded() {
     let catalog = empty_catalog(&wide);
     let draft = draft("concat(concat(bus, bus), bus)");
     let denial = draft
-        .admit(&wide, &catalog, narrowed(worth_foundational::expression_api::ExpressionResource::BitWidth, 16))
+        .admit(
+            &wide,
+            &catalog,
+            narrowed(
+                worth_foundational::expression_api::ExpressionResource::BitWidth,
+                16,
+            ),
+        )
         .unwrap_err();
-    assert_eq!(exceeded(&denial), worth_foundational::expression_api::ExpressionResource::BitWidth);
+    assert_eq!(
+        exceeded(&denial),
+        worth_foundational::expression_api::ExpressionResource::BitWidth
+    );
 }
 
 #[test]
@@ -218,7 +301,10 @@ fn operand_lookups_charge_logarithmic_probes() {
         let mut builder = worth_foundational::expression_api::ExpressionSchema::builder();
         for index in 0..operands {
             builder = builder
-                .operand(&format!("x{index:04}"), worth_foundational::expression_api::ExpressionType::Float64)
+                .operand(
+                    &format!("x{index:04}"),
+                    worth_foundational::expression_api::ExpressionType::Float64,
+                )
                 .expect("fixture operands are valid");
         }
         let schema = builder.build();
@@ -244,8 +330,10 @@ fn operand_lookups_charge_logarithmic_probes() {
 fn installed_overload_resolution_is_metered() {
     let schema = schema();
     let work = |overloads: u32| {
-        let mut builder =
-            worth_foundational::expression_api::ExpressionFunctionCatalog::builder(&schema, worth_foundational::expression_api::ExpressionProfile::engineering());
+        let mut builder = worth_foundational::expression_api::ExpressionFunctionCatalog::builder(
+            &schema,
+            worth_foundational::expression_api::ExpressionProfile::engineering(),
+        );
         for width in 1..=overloads {
             let bus = worth_foundational::expression_api::ExpressionType::Bits(width);
             let declaration = function(
@@ -264,7 +352,11 @@ fn installed_overload_resolution_is_metered() {
             "digital::same(bus, bus), ".repeat(9)
         );
         draft(&source)
-            .admit(&schema, &catalog, worth_foundational::expression_api::ExpressionProfile::engineering())
+            .admit(
+                &schema,
+                &catalog,
+                worth_foundational::expression_api::ExpressionProfile::engineering(),
+            )
             .expect("admits")
             .admission_work()
     };

@@ -29,7 +29,8 @@ pub(crate) fn control(
 }
 
 pub(crate) fn run_advance_advance(left_parked: bool) {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = control(&world);
     let left_mutation = world.mutation.clone();
     let right_mutation = world.mutation.clone();
@@ -46,7 +47,8 @@ pub(crate) fn run_advance_advance(left_parked: bool) {
 }
 
 pub(crate) fn run_advance_restore(left_parked: bool) {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let (snapshot, current) = capture(&world.mutation, &world.child_basis)
         .expect("the race has a real admitted snapshot");
     let control = control(&world);
@@ -66,7 +68,8 @@ pub(crate) fn run_advance_restore(left_parked: bool) {
 }
 
 pub(crate) fn run_restore_restore(left_parked: bool) {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let (snapshot, current) = capture(&world.mutation, &world.child_basis)
         .expect("the race has a real admitted snapshot");
     let control = control(&world);
@@ -87,7 +90,8 @@ pub(crate) fn run_restore_restore(left_parked: bool) {
 }
 
 pub(crate) fn run_snapshot_advance(left_parked: bool) {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let control = control(&world);
     let left_mutation = world.mutation.clone();
     let right_mutation = world.mutation.clone();

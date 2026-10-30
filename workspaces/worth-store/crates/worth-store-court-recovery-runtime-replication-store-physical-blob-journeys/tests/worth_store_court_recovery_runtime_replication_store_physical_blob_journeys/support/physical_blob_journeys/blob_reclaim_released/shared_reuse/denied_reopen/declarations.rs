@@ -2,8 +2,8 @@
 
 pub(crate) use {std::fs, std::path::Path, std::path::PathBuf};
 
-pub(crate) use {crate::physical_blob_journeys::blob_reclaim_released::shared_format};
-pub(crate) use {worth_store_testkit_store::fixture::assert_released_open_requires_recovered_custody};
+pub(crate) use crate::physical_blob_journeys::blob_reclaim_released::shared_format;
+pub(crate) use worth_store_testkit_store::fixture::assert_released_open_requires_recovered_custody;
 
 pub(crate) fn assert_open_requires_c8_custody(root: &Path) {
     let before = selected_artifacts(root);

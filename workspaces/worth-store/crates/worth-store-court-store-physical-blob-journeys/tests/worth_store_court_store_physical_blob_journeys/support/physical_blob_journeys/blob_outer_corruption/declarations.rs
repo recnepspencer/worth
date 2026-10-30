@@ -1,10 +1,21 @@
 pub(crate) use {std::fs, std::num::NonZeroU64, std::path::Path, std::path::PathBuf};
 
-pub(crate) use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PublishedBlobGeneration};
-pub(crate) use {worth_store_blob_chunks::BlobChunkSize};
-pub(crate) use {worth_store_physical_format::PersistedRecordIdentity};
+pub(crate) use worth_store_blob_chunks::BlobChunkSize;
+pub(crate) use worth_store_physical_format::PersistedRecordIdentity;
+pub(crate) use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PublishedBlobGeneration,
+};
 
-pub(crate) use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+pub(crate) use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 pub(crate) const CHUNK_BYTES: usize = 64 * 1024;
 pub(crate) const C5_HEADER: usize = 48;
@@ -47,7 +58,9 @@ pub(crate) fn corrupt_middle_chunk_record_identity_reseal_outer(root: &Path) {
     std::fs::write(path, media).unwrap();
 }
 
-pub(crate) fn locate_middle_chunk(root: &Path) -> (PathBuf, usize, usize, usize, PersistedRecordIdentity) {
+pub(crate) fn locate_middle_chunk(
+    root: &Path,
+) -> (PathBuf, usize, usize, usize, PersistedRecordIdentity) {
     let mut candidates = Vec::new();
     for entry in std::fs::read_dir(root.join("families/records/arenas")).unwrap() {
         let path = entry.unwrap().path();

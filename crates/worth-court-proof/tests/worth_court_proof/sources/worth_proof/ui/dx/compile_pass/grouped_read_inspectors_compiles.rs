@@ -68,6 +68,6 @@ fn family_action_key(
     }
 }
 
-fn main() {
+pub(crate) fn main() {
     let _ = grouped_reads;
 }

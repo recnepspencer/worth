@@ -1,9 +1,19 @@
-#[allow(unused_imports)] use crate::signal_owner_services::ordinary_context::legacy_cutover::*;
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::branch::SignalBranchBasisReadmissionDenial, worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome, worth_signal::facade::branch::SignalBranchRetirementBatchDenial};
-pub(crate) use {worth_signal::facade::history::RuntimeBranch, worth_signal::facade::history::RuntimeBranchId};
-pub(crate) use {worth_signal::facade::runtime::SignalBranchRetirementDenial};
-pub(crate) use {worth_signal::facade::SignalBranchRetirementReason, worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
+#[allow(unused_imports)]
+use crate::signal_owner_services::ordinary_context::legacy_cutover::*;
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_signal::facade::runtime::SignalBranchRetirementDenial;
+pub(crate) use {
+    worth_signal::facade::branch::SignalBranchBasisReadmissionDenial,
+    worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome,
+    worth_signal::facade::branch::SignalBranchRetirementBatchDenial,
+};
+pub(crate) use {
+    worth_signal::facade::history::RuntimeBranch, worth_signal::facade::history::RuntimeBranchId,
+};
+pub(crate) use {
+    worth_signal::facade::SignalBranchRetirementReason, worth_signal::facade::SignalGraph,
+    worth_signal::facade::SignalRuntime,
+};
 
 #[test]
 fn legacy_root_calls_cross_issuance_without_a_second_branch_state_lane() {
@@ -59,7 +69,9 @@ fn legacy_root_calls_cross_issuance_without_a_second_branch_state_lane() {
         serde_json::from_value(unavailable).expect("the hostile descriptor remains structural");
     assert!(matches!(
         runtime.readmit_signal_branch_basis(unavailable),
-        Err(worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::UnavailableSnapshot { .. })
+        Err(
+            worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::UnavailableSnapshot { .. }
+        )
     ));
 
     let advanced = runtime
@@ -67,7 +79,9 @@ fn legacy_root_calls_cross_issuance_without_a_second_branch_state_lane() {
         .expect("the legacy mutation delegates to the canonical target cell");
     assert!(matches!(
         runtime.readmit_signal_branch_basis(initial.descriptor().clone()),
-        Err(worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::ReferenceMismatch { .. })
+        Err(
+            worth_signal::facade::branch::SignalBranchBasisReadmissionDenial::ReferenceMismatch { .. }
+        )
     ));
 
     let post_issuance_lease = runtime
@@ -108,7 +122,9 @@ fn sealed_legacy_retirement_preserves_unknown_before_basis_mismatch() {
             child_basis.clone(),
             worth_signal::facade::SignalBranchRetirementReason::Superseded,
         ),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::runtime::SignalBranchRetirementDenial::UnknownBranch { .. })
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::runtime::SignalBranchRetirementDenial::UnknownBranch { .. }
+        )
     ));
     assert!(matches!(
         runtime.plan_signal_branch_retirement(
@@ -116,7 +132,9 @@ fn sealed_legacy_retirement_preserves_unknown_before_basis_mismatch() {
             child_basis.clone(),
             worth_signal::facade::SignalBranchRetirementReason::Superseded,
         ),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::runtime::SignalBranchRetirementDenial::CanonicalBasisMismatch)
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::runtime::SignalBranchRetirementDenial::CanonicalBasisMismatch
+        )
     ));
     assert!(matches!(
         runtime.plan_signal_branch_retirement_releasing_snapshots(
@@ -125,7 +143,9 @@ fn sealed_legacy_retirement_preserves_unknown_before_basis_mismatch() {
             &[],
             worth_signal::facade::SignalBranchRetirementReason::Superseded,
         ),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::runtime::SignalBranchRetirementDenial::CanonicalBasisMismatch)
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::runtime::SignalBranchRetirementDenial::CanonicalBasisMismatch
+        )
     ));
 
     let _services = runtime
@@ -138,7 +158,9 @@ fn sealed_legacy_retirement_preserves_unknown_before_basis_mismatch() {
             child_basis.clone(),
             worth_signal::facade::SignalBranchRetirementReason::Superseded,
         ),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::runtime::SignalBranchRetirementDenial::UnknownBranch { .. })
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::runtime::SignalBranchRetirementDenial::UnknownBranch { .. }
+        )
     ));
     assert!(matches!(
         runtime.plan_signal_branch_retirement(
@@ -146,7 +168,9 @@ fn sealed_legacy_retirement_preserves_unknown_before_basis_mismatch() {
             child_basis.clone(),
             worth_signal::facade::SignalBranchRetirementReason::Superseded,
         ),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::runtime::SignalBranchRetirementDenial::CanonicalBasisMismatch)
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::runtime::SignalBranchRetirementDenial::CanonicalBasisMismatch
+        )
     ));
     assert!(matches!(
         runtime.plan_signal_branch_retirement_releasing_snapshots(
@@ -155,7 +179,9 @@ fn sealed_legacy_retirement_preserves_unknown_before_basis_mismatch() {
             &[],
             worth_signal::facade::SignalBranchRetirementReason::Superseded,
         ),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::runtime::SignalBranchRetirementDenial::CanonicalBasisMismatch)
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::runtime::SignalBranchRetirementDenial::CanonicalBasisMismatch
+        )
     ));
 
     let plan = runtime
@@ -201,11 +227,15 @@ fn sealed_legacy_batch_fences_child_before_parent_and_retains_receipts() {
 
     assert!(matches!(
         runtime.plan_signal_branch_retirement_batch(Vec::new()),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Empty)
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Empty
+        )
     ));
     assert!(matches!(
         runtime.plan_signal_branch_retirement_batch_releasing_snapshots(Vec::new()),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Empty)
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Empty
+        )
     ));
     assert!(matches!(
         runtime.plan_signal_branch_retirement_batch(vec![(
@@ -213,10 +243,13 @@ fn sealed_legacy_batch_fences_child_before_parent_and_retains_receipts() {
             child_basis.clone(),
             worth_signal::facade::SignalBranchRetirementReason::Superseded,
         )]),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Retirement {
-            position: 0,
-            denial: worth_signal::facade::runtime::SignalBranchRetirementDenial::UnknownBranch { .. },
-        })
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Retirement {
+                position: 0,
+                denial:
+                    worth_signal::facade::runtime::SignalBranchRetirementDenial::UnknownBranch { .. },
+            }
+        )
     ));
     assert!(matches!(
         runtime.plan_signal_branch_retirement_batch(vec![(
@@ -235,10 +268,12 @@ fn sealed_legacy_batch_fences_child_before_parent_and_retains_receipts() {
             parent_basis.clone(),
             worth_signal::facade::SignalBranchRetirementReason::Superseded,
         )]),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Retirement {
-            position: 0,
-            denial: worth_signal::facade::runtime::SignalBranchRetirementDenial::LiveChildren { .. },
-        })
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Retirement {
+                position: 0,
+                denial: worth_signal::facade::runtime::SignalBranchRetirementDenial::LiveChildren { .. },
+            }
+        )
     ));
 
     let _services = runtime
@@ -247,11 +282,15 @@ fn sealed_legacy_batch_fences_child_before_parent_and_retains_receipts() {
 
     assert!(matches!(
         runtime.plan_signal_branch_retirement_batch(Vec::new()),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Empty)
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Empty
+        )
     ));
     assert!(matches!(
         runtime.plan_signal_branch_retirement_batch_releasing_snapshots(Vec::new()),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Empty)
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Empty
+        )
     ));
     assert!(matches!(
         runtime.plan_signal_branch_retirement_batch(vec![(
@@ -259,10 +298,13 @@ fn sealed_legacy_batch_fences_child_before_parent_and_retains_receipts() {
             child_basis.clone(),
             worth_signal::facade::SignalBranchRetirementReason::Superseded,
         )]),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Retirement {
-            position: 0,
-            denial: worth_signal::facade::runtime::SignalBranchRetirementDenial::UnknownBranch { .. },
-        })
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Retirement {
+                position: 0,
+                denial:
+                    worth_signal::facade::runtime::SignalBranchRetirementDenial::UnknownBranch { .. },
+            }
+        )
     ));
     assert!(matches!(
         runtime.plan_signal_branch_retirement_batch(vec![(
@@ -281,10 +323,12 @@ fn sealed_legacy_batch_fences_child_before_parent_and_retains_receipts() {
             parent_basis.clone(),
             worth_signal::facade::SignalBranchRetirementReason::Superseded,
         )]),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Retirement {
-            position: 0,
-            denial: worth_signal::facade::runtime::SignalBranchRetirementDenial::LiveChildren { .. },
-        })
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::branch::SignalBranchRetirementBatchDenial::Retirement {
+                position: 0,
+                denial: worth_signal::facade::runtime::SignalBranchRetirementDenial::LiveChildren { .. },
+            }
+        )
     ));
 
     let plan = runtime

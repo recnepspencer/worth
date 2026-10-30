@@ -1,7 +1,14 @@
 // Actual array aliases, platform indices and named enum payloads share one wire grammar.
-#[allow(unused_imports)] use crate::value_shape::ordinary_context::boolean_grammar::*;
+#[allow(unused_imports)]
+use crate::value_shape::ordinary_context::boolean_grammar::*;
 pub(crate) use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
-pub(crate) use {worth_foundational::facade::decode_canonical_value, worth_foundational::facade::decode_canonical_value_with_admission, worth_foundational::facade::encode_canonical_value, worth_foundational::facade::CanonicalValue, worth_foundational::facade::ValueCodecDenial as D, worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::WorthValue};
+pub(crate) use {
+    worth_foundational::facade::decode_canonical_value,
+    worth_foundational::facade::decode_canonical_value_with_admission,
+    worth_foundational::facade::encode_canonical_value, worth_foundational::facade::CanonicalValue,
+    worth_foundational::facade::ValueCodecDenial as D,
+    worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::WorthValue,
+};
 
 #[test]
 fn named_variant_and_nested_arrays_change_actual_wire_and_admitted_value() {
@@ -22,7 +29,10 @@ fn named_variant_and_nested_arrays_change_actual_wire_and_admitted_value() {
         calls > 6,
         "the nested array/payload seeds use the original loan"
     );
-    let shape = format!("{:?}", crate::value_shape::ordinary_context::boolean_grammar::Meaning::value_shape());
+    let shape = format!(
+        "{:?}",
+        crate::value_shape::ordinary_context::boolean_grammar::Meaning::value_shape()
+    );
     assert!(shape.contains("source"));
     assert!(shape.contains("Tuple"));
     for changed in [
@@ -76,7 +86,8 @@ fn partial_fixed_array_refusal_drops_only_its_original_decoded_elements() {
 #[test]
 fn explicit_domain_field_delegate_preserves_wire_constructor_and_original_refusal() {
     let value = Delegated {
-        chosen: crate::value_shape::ordinary_context::boolean_grammar::DomainValue::try_new(17).unwrap(),
+        chosen: crate::value_shape::ordinary_context::boolean_grammar::DomainValue::try_new(17)
+            .unwrap(),
     };
     let raw = r#"{"chosen":17}"#;
     assert_eq!(encode_canonical_value(&value, BOUNDS).unwrap(), raw);

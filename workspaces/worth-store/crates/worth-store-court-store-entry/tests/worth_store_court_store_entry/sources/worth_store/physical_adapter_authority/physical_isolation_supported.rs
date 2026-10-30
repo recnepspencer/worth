@@ -27,4 +27,4 @@ fn observe_stable_read_inputs(
 fn observe<A, B, C, D>(_: A, _: B, _: C, _: D) {}
 fn observe_pressure<A, B, C, D>(_: A, _: B, _: C, _: D) {}
 
-fn main() {}
+pub(crate) fn main() {}

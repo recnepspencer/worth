@@ -1,9 +1,18 @@
 import unittest
 
-from ratchet import build_violations, source_violations
+from ratchet import build_violations, lane_budget, source_violations
 
 
 class StructuralBudgetTests(unittest.TestCase):
+    def test_new_lane_or_profile_requires_a_committed_budget_declaration(self):
+        configuration = {'store': {'declared_cargo_profiles': ['ci-test'],
+                                    'lanes': {'process': {'max_compiles_per_unit': 1}}}}
+        self.assertEqual(lane_budget(configuration, 'store', ['process'], 'ci-test'),
+                         {'max_compiles_per_unit': 1})
+        for lanes, profile in [(['new-lane'], 'ci-test'), (['process'], 'release')]:
+            with self.assertRaises(ValueError):
+                lane_budget(configuration, 'store', lanes, profile)
+
     def test_same_unit_recompiled_in_another_directory_exceeds_budget(self):
         unit = dict(package='owner', target='owner', kind=['lib'], features=[],
                     profile={'test': False}, check_mode='build', target_dir='target')

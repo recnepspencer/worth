@@ -1,8 +1,8 @@
 #[allow(unused_imports)]
-use {crate::shared_support as support};
+use crate::shared_support as support;
 
-use {crate::shared_support::compile_fail::run_compile_fail_bundle};
-use {crate::shared_support::sealed_minting};
+use crate::shared_support::compile_fail::run_compile_fail_bundle;
+use crate::shared_support::sealed_minting;
 
 #[test]
 fn sealed_minting_and_witness_authority_certification() {

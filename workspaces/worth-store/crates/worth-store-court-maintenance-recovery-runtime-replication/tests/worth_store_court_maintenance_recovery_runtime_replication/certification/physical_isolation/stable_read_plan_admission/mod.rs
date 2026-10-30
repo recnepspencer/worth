@@ -1,9 +1,31 @@
-#[allow(unused_imports)] use crate::stable_read_plan_admission::*;
-use {worth_store_test_support::harness::physical_isolation::epoch_scope as support};
+#[allow(unused_imports)]
+use crate::stable_read_plan_admission::*;
+use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
 
-use {worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_segment_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority, worth_store_test_support::harness::physical_isolation::epoch_scope::generation_counted_page_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout, worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_operation_digest_closeout};
-use {worth_store_physical_format::PhysicalGeneration};
-use {worth_store_physical_isolation::admit_seed_stable_read_plan, worth_store_physical_isolation::CurrentGenerationPhysicalReference, worth_store_physical_isolation::PhysicalReadPlanAdmissionDenial, worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics, worth_store_physical_isolation::PhysicalReadPlanRetryPosture, worth_store_physical_isolation::PostProtectionPhysicalReadObservation, worth_store_physical_isolation::ProtectedPhysicalReferenceSet, worth_store_physical_isolation::PublishedReaderHazard, worth_store_physical_isolation::ReadPlanAdmissionScratchArena, worth_store_physical_isolation::StablePhysicalReadPlan, worth_store_physical_isolation::TraversalAdmissionGuard, worth_store_physical_isolation::UnprotectedReadIntent};
+use worth_store_physical_format::PhysicalGeneration;
+use {
+    worth_store_physical_isolation::admit_seed_stable_read_plan,
+    worth_store_physical_isolation::CurrentGenerationPhysicalReference,
+    worth_store_physical_isolation::PhysicalReadPlanAdmissionDenial,
+    worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics,
+    worth_store_physical_isolation::PhysicalReadPlanRetryPosture,
+    worth_store_physical_isolation::PostProtectionPhysicalReadObservation,
+    worth_store_physical_isolation::ProtectedPhysicalReferenceSet,
+    worth_store_physical_isolation::PublishedReaderHazard,
+    worth_store_physical_isolation::ReadPlanAdmissionScratchArena,
+    worth_store_physical_isolation::StablePhysicalReadPlan,
+    worth_store_physical_isolation::TraversalAdmissionGuard,
+    worth_store_physical_isolation::UnprotectedReadIntent,
+};
+use {
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_segment_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::generation_counted_page_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_operation_digest_closeout,
+};
 
 #[test]
 fn proof_bearing_read_plan_admits_before_execution_handle() {
@@ -30,7 +52,10 @@ fn proof_bearing_read_plan_admits_before_execution_handle() {
     assert_eq!(plan.counters().release_obligations(), 3);
     assert_eq!(plan.counters().reachability_barriers(), 1);
     assert_eq!(plan.counters().resident_bytes(), 8192);
-    assert_eq!(plan.retry_posture(), worth_store_physical_isolation::PhysicalReadPlanRetryPosture::Current);
+    assert_eq!(
+        plan.retry_posture(),
+        worth_store_physical_isolation::PhysicalReadPlanRetryPosture::Current
+    );
     assert_eq!(plan.counters().retry_decisions(), 0);
     assert_eq!(plan.counters().scratch_capacity(), 8);
     assert_eq!(plan.counters().scratch_allocations(), 2);
@@ -91,16 +116,23 @@ fn missing_release_stale_generation_and_unbounded_footprints_deny_before_handle(
     let authority = physical_authority_from_complete_closeout();
     let root = current_root_from_authority(&authority);
     let references = protected_set([current_generation_page_reference(31)], 1);
-    let missing_release = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(root, references, 4096);
+    let missing_release =
+        worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(
+            root, references, 4096,
+        );
     assert_eq!(
-        worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, missing_release).unwrap_err(),
+        worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, missing_release)
+            .unwrap_err(),
         worth_store_physical_isolation::PhysicalReadPlanAdmissionDenial::MissingReleaseSemantics
     );
 
-    let stale = worth_store_physical_isolation::ProtectedPhysicalReferenceSet::from_generation_counted_refs([(
-        generation_counted_page_reference(37),
-        worth_store_physical_format::PhysicalGeneration::from_raw(38).unwrap(),
-    )]);
+    let stale =
+        worth_store_physical_isolation::ProtectedPhysicalReferenceSet::from_generation_counted_refs(
+            [(
+                generation_counted_page_reference(37),
+                worth_store_physical_format::PhysicalGeneration::from_raw(38).unwrap(),
+            )],
+        );
     assert!(matches!(
         stale,
         Err(worth_store_physical_isolation::PhysicalReadPlanAdmissionDenial::StaleGeneration(_))
@@ -114,9 +146,14 @@ fn missing_release_stale_generation_and_unbounded_footprints_deny_before_handle(
         2,
     );
     let observed_references = broad.clone();
-    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(root, broad, 4096)
-        .with_release_semantics(worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all());
-    let hazard = worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap();
+    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(
+        root, broad, 4096,
+    )
+    .with_release_semantics(
+        worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all(),
+    );
+    let hazard =
+        worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap();
     let observed = post_protection_observation(&authority, &hazard, root, observed_references);
     let validated = hazard
         .observe_authority_after_publication(&authority, observed)
@@ -145,9 +182,14 @@ fn compatibility_footprint_constructor_cannot_reach_execution_handle() {
     ])
     .unwrap();
     let observed_references = references.clone();
-    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(root, references, 4096)
-        .with_release_semantics(worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all());
-    let hazard = worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap();
+    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(
+        root, references, 4096,
+    )
+    .with_release_semantics(
+        worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all(),
+    );
+    let hazard =
+        worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap();
     let observed = post_protection_observation(&authority, &hazard, root, observed_references);
     let validated = hazard
         .observe_authority_after_publication(&authority, observed)
@@ -173,9 +215,14 @@ fn hazard_publication_rejects_root_from_different_store_authority() {
     let other_authority = physical_authority_from_operation_digest_closeout("other-root");
     let root = current_root_from_authority(&other_authority);
     let references = protected_set([current_generation_page_reference(61)], 1);
-    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(root, references, 4096)
-        .with_release_semantics(worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all());
-    let denial = worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap_err();
+    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(
+        root, references, 4096,
+    )
+    .with_release_semantics(
+        worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all(),
+    );
+    let denial = worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent)
+        .unwrap_err();
 
     assert!(matches!(
         denial,
@@ -191,9 +238,14 @@ fn post_publication_root_drift_denies_before_traversal_admission() {
     let references = protected_set([current_generation_page_reference(53)], 1);
     let observed_root = current_root_from_authority(&other_authority);
     let observed_references = references.clone();
-    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(root, references, 4096)
-        .with_release_semantics(worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all());
-    let hazard = worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap();
+    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(
+        root, references, 4096,
+    )
+    .with_release_semantics(
+        worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all(),
+    );
+    let hazard =
+        worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap();
     let observed = post_protection_observation(
         &other_authority,
         &hazard,
@@ -217,9 +269,16 @@ fn post_publication_reference_drift_denies_before_traversal_admission() {
     let root = current_root_from_authority(&authority);
     let protected_before_hazard = protected_set([current_generation_page_reference(53)], 1);
     let observed_after_hazard = protected_set([current_generation_page_reference(59)], 1);
-    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(root, protected_before_hazard, 4096)
-        .with_release_semantics(worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all());
-    let hazard = worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap();
+    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(
+        root,
+        protected_before_hazard,
+        4096,
+    )
+    .with_release_semantics(
+        worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all(),
+    );
+    let hazard =
+        worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap();
     let observed = post_protection_observation(&authority, &hazard, root, observed_after_hazard);
 
     assert!(matches!(
@@ -244,12 +303,28 @@ fn observation_from_different_hazard_denies_before_epoch_validation() {
         ],
         2,
     );
-    let first_intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(root, first_references, 4096)
-        .with_release_semantics(worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all());
-    let second_intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(root, second_references, 4096)
-        .with_release_semantics(worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all());
-    let first_hazard = worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, first_intent).unwrap();
-    let second_hazard = worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, second_intent).unwrap();
+    let first_intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(
+        root,
+        first_references,
+        4096,
+    )
+    .with_release_semantics(
+        worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all(),
+    );
+    let second_intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(
+        root,
+        second_references,
+        4096,
+    )
+    .with_release_semantics(
+        worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all(),
+    );
+    let first_hazard =
+        worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, first_intent)
+            .unwrap();
+    let second_hazard =
+        worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, second_intent)
+            .unwrap();
     let observed = post_protection_observation(
         &authority,
         &second_hazard,

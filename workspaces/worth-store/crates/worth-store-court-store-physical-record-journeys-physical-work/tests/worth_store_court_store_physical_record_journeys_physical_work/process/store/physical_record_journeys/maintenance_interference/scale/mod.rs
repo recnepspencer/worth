@@ -1,5 +1,11 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::maintenance_interference::scale::*;
-use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::append_copies, worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint, worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize, worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::maintenance_interference::scale::*;
+use {
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append_copies,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement,
+};
 
 #[test]
 fn persisted_payload_reaches_eight_resident_budgets() {

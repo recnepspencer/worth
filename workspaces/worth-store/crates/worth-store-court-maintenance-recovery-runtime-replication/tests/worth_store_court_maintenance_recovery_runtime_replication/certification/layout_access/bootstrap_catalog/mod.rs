@@ -1,8 +1,35 @@
-#[allow(unused_imports)] use crate::bootstrap_catalog::*;
-use {worth_store_contracts::AcceptedHandoffReadiness, worth_store_contracts::DurableArtifactFamilyId, worth_store_contracts::HandoffEvidenceDigestSet, worth_store_contracts::StableDigest, worth_store_contracts::ROADMAP_2_S1_SCOPE};
-use {worth_store_layout_indexes::bootstrap_catalog, worth_store_layout_indexes::declarations::layout_declarations, worth_store_layout_indexes::BootstrapOnlyAccessDenied, worth_store_layout_indexes::BootstrapOnlyAccessPath};
-use {worth_store_physical_certification::FixtureCapabilityDeclaration, worth_store_physical_certification::FixtureMutationBoundary, worth_store_physical_certification::LargeStoreFixtureProfile, worth_store_physical_certification::PhysicalFixtureBuilder, worth_store_physical_certification::ProductionBackedFixtureMaterialization};
-use {worth_store_physical_format::physical_bootstrap_catalog, worth_store_physical_format::InMemoryPhysicalFormatModel, worth_store_physical_format::InMemoryPhysicalFormatModelRequest, worth_store_physical_format::PhysicalExtentId, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalRecordSlot, worth_store_physical_format::PhysicalRootReference, worth_store_physical_format::PhysicalSegmentId, worth_store_physical_format::PlatformPhysicalAppendRequest};
+#[allow(unused_imports)]
+use crate::bootstrap_catalog::*;
+use {
+    worth_store_contracts::AcceptedHandoffReadiness,
+    worth_store_contracts::DurableArtifactFamilyId,
+    worth_store_contracts::HandoffEvidenceDigestSet, worth_store_contracts::StableDigest,
+    worth_store_contracts::ROADMAP_2_S1_SCOPE,
+};
+use {
+    worth_store_layout_indexes::bootstrap_catalog,
+    worth_store_layout_indexes::declarations::layout_declarations,
+    worth_store_layout_indexes::BootstrapOnlyAccessDenied,
+    worth_store_layout_indexes::BootstrapOnlyAccessPath,
+};
+use {
+    worth_store_physical_certification::FixtureCapabilityDeclaration,
+    worth_store_physical_certification::FixtureMutationBoundary,
+    worth_store_physical_certification::LargeStoreFixtureProfile,
+    worth_store_physical_certification::PhysicalFixtureBuilder,
+    worth_store_physical_certification::ProductionBackedFixtureMaterialization,
+};
+use {
+    worth_store_physical_format::physical_bootstrap_catalog,
+    worth_store_physical_format::InMemoryPhysicalFormatModel,
+    worth_store_physical_format::InMemoryPhysicalFormatModelRequest,
+    worth_store_physical_format::PhysicalExtentId, worth_store_physical_format::PhysicalGeneration,
+    worth_store_physical_format::PhysicalGenerationAuthority,
+    worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalRecordSlot,
+    worth_store_physical_format::PhysicalRootReference,
+    worth_store_physical_format::PhysicalSegmentId,
+    worth_store_physical_format::PlatformPhysicalAppendRequest,
+};
 
 // store-proof-identity[bootstrap_catalog_admits_minimal_root_discovery_and_typed_read_access]: worth-store-layout-indexes::layout/bootstrap::bootstrap_catalog::bootstrap_catalog_admits_minimal_root_discovery_and_typed_read_access
 #[test]
@@ -175,20 +202,25 @@ fn bootstrap_catalog_replays_stably_across_certification_replay() {
             published.replay_artifact(),
         )
         .expect("published layout should materialize for certification replay");
-    let fixture = worth_store_physical_certification::PhysicalFixtureBuilder::production_backed("bootstrap-certification")
-        .materialize_with(certification_materialization)
-        .capability(worth_store_physical_certification::FixtureCapabilityDeclaration::for_mutation_boundary(
+    let fixture = worth_store_physical_certification::PhysicalFixtureBuilder::production_backed(
+        "bootstrap-certification",
+    )
+    .materialize_with(certification_materialization)
+    .capability(
+        worth_store_physical_certification::FixtureCapabilityDeclaration::for_mutation_boundary(
             worth_store_physical_certification::FixtureMutationBoundary::Manifest,
-        ))
-        .and_reopen_through_physical_authority()
-        .expect("certification fixture should replay through physical authority");
+        ),
+    )
+    .and_reopen_through_physical_authority()
+    .expect("certification fixture should replay through physical authority");
     let certification_replay_artifact = fixture
         .replay_artifact()
         .expect("production-backed certification replay should preserve the native replay artifact")
         .clone();
     let reopened = worth_store_physical_format::InMemoryPhysicalFormatModel::restore(
         readiness(),
-        worth_store_physical_format::InMemoryPhysicalFormatModelRequest::physical_format_canonical(),
+        worth_store_physical_format::InMemoryPhysicalFormatModelRequest::physical_format_canonical(
+        ),
         certification_replay_artifact.clone(),
     )
     .expect("certification replay layout should reopen through physical authority");

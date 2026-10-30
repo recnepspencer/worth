@@ -252,7 +252,9 @@ fn source_movement_cannot_mutate_a_forked_target_reference() {
     };
     advance
         .push_batch(
-            worth_relational::facade::transactions::WorkerIntentBatch::new("advance-source-after-fork"),
+            worth_relational::facade::transactions::WorkerIntentBatch::new(
+                "advance-source-after-fork",
+            ),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();

@@ -1,10 +1,27 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::speculative_residency::shutdown::*;
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::speculative_residency::shutdown::*;
 use {std::time::Duration, std::time::Instant};
 
-use {worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint, worth_store::physical_runtime::PhysicalPrefetchIntent, worth_store::physical_runtime::PhysicalPrefetchOutcome, worth_store::physical_runtime::PhysicalReadAheadFrameOutcome, worth_store::physical_runtime::PhysicalReadAheadIntent, worth_store::physical_runtime::PhysicalReadAheadOutcome, worth_store::physical_runtime::PhysicalSpeculativeWorkKind, worth_store::physical_runtime::PhysicalStoreCloseObservation, worth_store::physical_runtime::PhysicalStoreClosePhase, worth_store::physical_runtime::PhysicalWritebackExecution};
-use {worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement};
+use worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement;
+use {
+    worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint,
+    worth_store::physical_runtime::PhysicalPrefetchIntent,
+    worth_store::physical_runtime::PhysicalPrefetchOutcome,
+    worth_store::physical_runtime::PhysicalReadAheadFrameOutcome,
+    worth_store::physical_runtime::PhysicalReadAheadIntent,
+    worth_store::physical_runtime::PhysicalReadAheadOutcome,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind,
+    worth_store::physical_runtime::PhysicalStoreCloseObservation,
+    worth_store::physical_runtime::PhysicalStoreClosePhase,
+    worth_store::physical_runtime::PhysicalWritebackExecution,
+};
 
-use {crate::physical_record_journeys::physical_work::speculative_residency::fixture::coordinate, crate::physical_record_journeys::physical_work::speculative_residency::fixture::initialize_store, crate::physical_record_journeys::physical_work::speculative_residency::fixture::open_store, crate::physical_record_journeys::physical_work::speculative_residency::fixture::open_store_with_writebehind};
+use {
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::coordinate,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::initialize_store,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::open_store,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::open_store_with_writebehind,
+};
 
 #[test]
 fn close_joins_paused_speculation_and_reports_no_residue() {
@@ -19,7 +36,9 @@ fn close_joins_paused_speculation_and_reports_no_residue() {
     );
     let owner_residency = residency.clone();
     let owner = std::thread::spawn(move || {
-        owner_residency.prefetch(worth_store::physical_runtime::PhysicalPrefetchIntent::new(coordinate(0)))
+        owner_residency.prefetch(worth_store::physical_runtime::PhysicalPrefetchIntent::new(
+            coordinate(0),
+        ))
     });
     assert!(gate.await_arrival());
 
@@ -30,7 +49,10 @@ fn close_joins_paused_speculation_and_reports_no_residue() {
     gate.release();
     let owner_outcome = owner.join().unwrap();
     assert!(
-        matches!(owner_outcome, worth_store::physical_runtime::PhysicalPrefetchOutcome::Loaded { .. }),
+        matches!(
+            owner_outcome,
+            worth_store::physical_runtime::PhysicalPrefetchOutcome::Loaded { .. }
+        ),
         "paused speculative owner did not settle after dispatch: {owner_outcome:?}"
     );
     let closed = close.join().unwrap().into_shutdown();
@@ -38,7 +60,9 @@ fn close_joins_paused_speculation_and_reports_no_residue() {
     assert!(!closed.residency().requires_inspection());
     let counters = closed.residency().counters();
     assert_eq!(
-        counters.active_speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::Prefetch),
+        counters.active_speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::Prefetch
+        ),
         0
     );
     assert_eq!(counters.active_operation_bytes(), 0);
@@ -58,7 +82,9 @@ fn close_joins_paused_read_ahead_possible_effect_and_reports_no_residue() {
     let coordinates = [coordinate(0)];
     let owner_residency = residency.clone();
     let owner = std::thread::spawn(move || {
-        owner_residency.read_ahead(worth_store::physical_runtime::PhysicalReadAheadIntent::new(&coordinates).unwrap())
+        owner_residency.read_ahead(
+            worth_store::physical_runtime::PhysicalReadAheadIntent::new(&coordinates).unwrap(),
+        )
     });
     assert!(gate.await_arrival());
 
@@ -80,7 +106,9 @@ fn close_joins_paused_read_ahead_possible_effect_and_reports_no_residue() {
     assert!(!closed.residency().requires_inspection());
     let counters = closed.residency().counters();
     assert_eq!(
-        counters.active_speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead),
+        counters.active_speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead
+        ),
         0
     );
     assert_eq!(counters.active_operation_bytes(), 0);
@@ -133,7 +161,9 @@ fn close_joins_paused_writebehind_possible_effect_and_reports_no_residue() {
     assert!(!closed.residency().requires_inspection());
     let counters = closed.residency().counters();
     assert_eq!(
-        counters.active_speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        counters.active_speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         0
     );
     assert_eq!(counters.dirty_frames(), 0);

@@ -1,9 +1,24 @@
-#[allow(unused_imports)] use worth_store_testkit_store::physical_record_journeys::scan_journeys::*;
-use {worth_store_testkit_store::durable_publication::root::publish_single, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration, worth_store_testkit_store::physical_record_journeys::success};
-use {worth_store::physical_runtime::ExternalRecordScanCursor, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordScanCounterSnapshot, worth_store::physical_runtime::RecordScanDenial, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest};
-
-
-
+#[allow(unused_imports)]
+use worth_store_testkit_store::physical_record_journeys::scan_journeys::*;
+use {
+    worth_store::physical_runtime::ExternalRecordScanCursor,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordCountLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordScanCounterSnapshot,
+    worth_store::physical_runtime::RecordScanDenial,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanRequest,
+};
+use {
+    worth_store_testkit_store::durable_publication::root::publish_single,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn scan_batch_widths_converge_to_one_physical_sequence() {
@@ -11,7 +26,9 @@ fn scan_batch_widths_converge_to_one_physical_sequence() {
     let root = parent.path().join("store");
     let (format, placement, access) = dense_configuration(2);
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let payloads = (0_u8..13)
         .map(|ordinal| {
@@ -45,7 +62,10 @@ fn scan_batch_widths_converge_to_one_physical_sequence() {
     let mut first = serving
         .records()
         .expect("read protection admission")
-        .scan(worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(3).unwrap()))
+        .scan(
+            worth_store::physical_runtime::RecordScanRequest::from_start()
+                .with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(3).unwrap()),
+        )
         .unwrap();
     let mut scratch = vec![0_u8; 32_000];
     let cursor = match first.read_next_into(&mut scratch).unwrap() {
@@ -53,7 +73,9 @@ fn scan_batch_widths_converge_to_one_physical_sequence() {
             assert_eq!(batch.records().len(), 3);
             batch.end_cursor()
         }
-        worth_store::physical_runtime::RecordScanOutcome::Completed(_) => panic!("the seeded scan cannot complete empty"),
+        worth_store::physical_runtime::RecordScanOutcome::Completed(_) => {
+            panic!("the seeded scan cannot complete empty")
+        }
     };
     drop(first);
     let resumed = collect_resume(&serving, cursor, 4, 32_000);
@@ -76,7 +98,9 @@ fn whole_extent_materialization_mutant_is_replaced_by_deferred_scan_payload() {
         .admit(format)
         .unwrap();
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let logical_bytes = 17 * 65_536 + 7;
     let batch = worth_store::physical_runtime::RecordAppendBatch::builder()
@@ -99,7 +123,9 @@ fn whole_extent_materialization_mutant_is_replaced_by_deferred_scan_payload() {
     let mut scratch = vec![0_u8; 131_072];
     let batch = match scan.read_next_into(&mut scratch).unwrap() {
         worth_store::physical_runtime::RecordScanOutcome::Batch(batch) => batch,
-        worth_store::physical_runtime::RecordScanOutcome::Completed(_) => panic!("the extent record must be discoverable"),
+        worth_store::physical_runtime::RecordScanOutcome::Completed(_) => {
+            panic!("the extent record must be discoverable")
+        }
     };
     assert_eq!(batch.records().len(), 1);
     assert_eq!(batch.records()[0].record_id(), record);
@@ -113,7 +139,9 @@ fn whole_extent_materialization_mutant_is_replaced_by_deferred_scan_payload() {
         .expect("read protection admission")
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(logical_bytes as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(logical_bytes as u32).unwrap(),
+            ),
         )
         .unwrap();
     let mut transferred = 0_u64;
@@ -136,18 +164,27 @@ fn stale_foreign_and_out_of_range_cursors_fail_before_payload_read() {
     let root = parent.path().join("store");
     let (format, placement, access) = dense_configuration(2);
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     publish_single(
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([162; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"alpha".as_slice(), b"beta".as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+            b"alpha".as_slice(),
+            b"beta".as_slice(),
+        ])
+        .unwrap(),
     );
     let mut scan = serving
         .records()
         .expect("read protection admission")
-        .scan(worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(1).unwrap()))
+        .scan(
+            worth_store::physical_runtime::RecordScanRequest::from_start()
+                .with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(1).unwrap()),
+        )
         .unwrap();
     let mut scratch = [0_u8; 16];
     let valid = match scan.read_next_into(&mut scratch).unwrap() {
@@ -157,20 +194,34 @@ fn stale_foreign_and_out_of_range_cursors_fail_before_payload_read() {
     drop(scan);
 
     for (offset, expected) in [
-        (0, worth_store::physical_runtime::RecordScanDenial::ForeignStore),
-        (16, worth_store::physical_runtime::RecordScanDenial::StaleRoot),
-        (24, worth_store::physical_runtime::RecordScanDenial::RoutingTreeMismatch),
-        (32, worth_store::physical_runtime::RecordScanDenial::FormatMismatch),
-        (42, worth_store::physical_runtime::RecordScanDenial::CursorPositionNotFound),
+        (
+            0,
+            worth_store::physical_runtime::RecordScanDenial::ForeignStore,
+        ),
+        (
+            16,
+            worth_store::physical_runtime::RecordScanDenial::StaleRoot,
+        ),
+        (
+            24,
+            worth_store::physical_runtime::RecordScanDenial::RoutingTreeMismatch,
+        ),
+        (
+            32,
+            worth_store::physical_runtime::RecordScanDenial::FormatMismatch,
+        ),
+        (
+            42,
+            worth_store::physical_runtime::RecordScanDenial::CursorPositionNotFound,
+        ),
     ] {
         let mut bytes = valid.encode();
         bytes[offset] ^= 0x7f;
-        let forged = worth_store::physical_runtime::ExternalRecordScanCursor::decode(bytes).unwrap();
-        let error = match serving
-            .records()
-            .expect("read protection admission")
-            .scan(worth_store::physical_runtime::RecordScanRequest::resume(forged))
-        {
+        let forged =
+            worth_store::physical_runtime::ExternalRecordScanCursor::decode(bytes).unwrap();
+        let error = match serving.records().expect("read protection admission").scan(
+            worth_store::physical_runtime::RecordScanRequest::resume(forged),
+        ) {
             Ok(_) => panic!("forged scan cursor was admitted"),
             Err(error) => error,
         };
@@ -187,18 +238,27 @@ fn scratch_retry_preserves_position_and_counts_manifest_discovery_once() {
     let root = parent.path().join("store");
     let (format, placement, access) = dense_configuration(2);
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     publish_single(
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([163; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"alpha".as_slice(), b"beta".as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+            b"alpha".as_slice(),
+            b"beta".as_slice(),
+        ])
+        .unwrap(),
     );
     let mut scan = serving
         .records()
         .expect("read protection admission")
-        .scan(worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(1).unwrap()))
+        .scan(
+            worth_store::physical_runtime::RecordScanRequest::from_start()
+                .with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(1).unwrap()),
+        )
         .unwrap();
     let error = match scan.read_next_into(&mut []) {
         Ok(_) => panic!("empty scratch cannot hold the first record"),

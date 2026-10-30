@@ -5,14 +5,27 @@
 //! runtime-neutral (D11), so a durable run, recovered or not, must reproduce
 //! the reference's artifacts byte for byte at every position.
 
-pub(crate) use {std::collections::BTreeMap};
+pub(crate) use std::collections::BTreeMap;
 
-pub(crate) use {worth_execution::CancellationSource, worth_execution::ExecutionAllocationPolicy, worth_execution::ExecutionRequest, worth_execution::SerialMemoryBudget, worth_execution::SerialRequest};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_relational::facade::mvcc::RelationalTransactionIntent};
-pub(crate) use {worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::runtime::RelationalRuntimeBuilder};
-pub(crate) use {worth_relational::facade::schema::SchemaVersionId};
-pub(crate) use {worth_relational::facade::transactions::CommitResult, worth_relational::facade::transactions::RecordRef, worth_relational::facade::transactions::TransactionCommitError, worth_relational::facade::transactions::WorkerIntentBatch};
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use worth_relational::facade::mvcc::RelationalTransactionIntent;
+pub(crate) use worth_relational::facade::schema::SchemaVersionId;
+pub(crate) use {
+    worth_execution::CancellationSource, worth_execution::ExecutionAllocationPolicy,
+    worth_execution::ExecutionRequest, worth_execution::SerialMemoryBudget,
+    worth_execution::SerialRequest,
+};
+pub(crate) use {
+    worth_relational::facade::runtime::RelationalRuntime,
+    worth_relational::facade::runtime::RelationalRuntimeApi,
+    worth_relational::facade::runtime::RelationalRuntimeBuilder,
+};
+pub(crate) use {
+    worth_relational::facade::transactions::CommitResult,
+    worth_relational::facade::transactions::RecordRef,
+    worth_relational::facade::transactions::TransactionCommitError,
+    worth_relational::facade::transactions::WorkerIntentBatch,
+};
 
 pub(crate) use {crate::batches, crate::schema_transition};
 
@@ -113,7 +126,8 @@ impl Script {
         let mut generator = Xorshift(seed | 1);
         let main = BranchId("main".to_owned());
         let fork = BranchId("feature".to_owned());
-        let mut live: BTreeMap<String, crate::batches::BranchLive> = std::collections::BTreeMap::new();
+        let mut live: BTreeMap<String, crate::batches::BranchLive> =
+            std::collections::BTreeMap::new();
         let mut steps = Vec::new();
         let mut records = Vec::new();
         let fork_at = commits / 3;
@@ -164,7 +178,9 @@ impl Script {
                             .changed_records
                             .iter()
                             .filter_map(|record| match record {
-                                worth_relational::facade::transactions::RecordRef::Entity(entity) => Some(*entity),
+                                worth_relational::facade::transactions::RecordRef::Entity(
+                                    entity,
+                                ) => Some(*entity),
                                 _ => None,
                             }),
                     );
@@ -237,10 +253,16 @@ pub(crate) fn commit(
         .observe_branch(&identity)
         .expect("the branch is owner-observable");
     let mut transaction = runtime
-        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .expect("owner-admitted transaction");
     transaction
-        .push_batch(batch, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the batch stages");
     transaction.commit(execution, runtime)
 }
@@ -299,7 +321,10 @@ pub(crate) fn states_of(runtime: &RelationalRuntime, records: &[RecordRef]) -> B
             let identity = runtime.branch_identity(&BranchId(name.to_owned())).ok()?;
             let (_, basis) = runtime.observe_branch(&identity).ok()?;
             let mut reader = runtime
-                .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+                .begin_branch_transaction(
+                    &basis,
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                )
                 .expect("a read transaction");
             let rendered = records
                 .iter()
@@ -311,13 +336,15 @@ pub(crate) fn states_of(runtime: &RelationalRuntime, records: &[RecordRef]) -> B
                             .expect("entity read")
                             .effective()
                     ),
-                    worth_relational::facade::transactions::RecordRef::Relation(relation) => format!(
-                        "{:?}",
-                        reader
-                            .read_relation(execution, *relation)
-                            .expect("relation read")
-                            .effective()
-                    ),
+                    worth_relational::facade::transactions::RecordRef::Relation(relation) => {
+                        format!(
+                            "{:?}",
+                            reader
+                                .read_relation(execution, *relation)
+                                .expect("relation read")
+                                .effective()
+                        )
+                    }
                 })
                 .collect();
             Some((name.to_owned(), rendered))

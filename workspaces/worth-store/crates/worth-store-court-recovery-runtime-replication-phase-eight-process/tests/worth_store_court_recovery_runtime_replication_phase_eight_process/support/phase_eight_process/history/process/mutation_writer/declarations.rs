@@ -1,7 +1,16 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {crate::phase_eight_process::history::schedule::create_mutation_crash_operation_program_with_operation_count, crate::history::schedule::in_flight_mutation::MutationCrashWorkload};
-pub(crate) use {crate::phase_eight_process::history::process::lifecycle::launch, crate::phase_eight_process::history::process::lifecycle::launch_root, crate::phase_eight_process::history::process::lifecycle::KilledProductionWriter, crate::phase_eight_process::history::process::lifecycle::MutationCrashLaunch, crate::phase_eight_process::history::process::lifecycle::WriterLaunch};
+pub(crate) use {
+    crate::history::schedule::in_flight_mutation::MutationCrashWorkload,
+    crate::phase_eight_process::history::schedule::create_mutation_crash_operation_program_with_operation_count,
+};
+pub(crate) use {
+    crate::phase_eight_process::history::process::lifecycle::launch,
+    crate::phase_eight_process::history::process::lifecycle::launch_root,
+    crate::phase_eight_process::history::process::lifecycle::KilledProductionWriter,
+    crate::phase_eight_process::history::process::lifecycle::MutationCrashLaunch,
+    crate::phase_eight_process::history::process::lifecycle::WriterLaunch,
+};
 
 pub(crate) fn launch_killed_mutation_writer(
     parent: &Path,
@@ -65,7 +74,11 @@ pub(crate) fn launch_killed_mutation_writer_with_operation_count(
     launch(WriterLaunch {
         root: parent.join("mutation-crash-writer-root"),
         stage: format!("namespace-synchronization-complete@{schedule_seed}:{perturbation_seed}"),
-        mutation_crash: Some(crate::phase_eight_process::history::process::lifecycle::MutationCrashLaunch::new(stage, workload)),
+        mutation_crash: Some(
+            crate::phase_eight_process::history::process::lifecycle::MutationCrashLaunch::new(
+                stage, workload,
+            ),
+        ),
         operation_program,
         start: parent.join("mutation-crash-writer-start"),
         reached: parent.join("mutation-crash-writer-reached"),

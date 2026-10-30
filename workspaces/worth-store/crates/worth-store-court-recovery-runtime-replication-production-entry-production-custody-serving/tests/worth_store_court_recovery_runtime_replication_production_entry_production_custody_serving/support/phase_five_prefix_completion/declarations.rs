@@ -1,16 +1,40 @@
 #![cfg(all())]
 
-
-
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaFaultSchedule, worth_store::physical_runtime::certification::MediaOperationRole};
-pub(crate) use {worth_store::physical_runtime::ArtifactTreeFailureKind, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalRecoveryStagingCommandIndeterminate, worth_store::physical_runtime::RecoveryStagingIndeterminatePhysical};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration, worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryOpenRequest, worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority, worth_store_recovery_runtime::PhysicalRecoveryStagingSettlement, worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration};
-pub(crate) use {worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution, worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaFaultSchedule,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+};
+pub(crate) use {
+    worth_store::physical_runtime::ArtifactTreeFailureKind,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalRecoveryStagingCommandIndeterminate,
+    worth_store::physical_runtime::RecoveryStagingIndeterminatePhysical,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration,
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
+    worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority,
+    worth_store_recovery_runtime::PhysicalRecoveryStagingSettlement,
+    worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration,
+};
+pub(crate) use {
+    worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution,
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
-pub(crate) fn assert_existing_artifact_is_damaged(label: &str, bytes: impl FnOnce(&[u8]) -> Vec<u8>) {
+pub(crate) fn assert_existing_artifact_is_damaged(
+    label: &str,
+    bytes: impl FnOnce(&[u8]) -> Vec<u8>,
+) {
     let (parent, root) = ordinary_persisted_world(label);
     let planned = plan_with_schedule(&root, empty_fault_schedule());
     let (artifact, expected) = only_command(&planned);
@@ -42,7 +66,8 @@ pub(crate) fn ordinary_persisted_world(label: &str) -> (tempfile::TempDir, PathB
     canonical_physical_mutation_acknowledgment(&world, [0x81; 32], b"prefix-base");
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x83; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()
@@ -65,14 +90,16 @@ pub(crate) fn plan_with_schedule(
     schedule: MediaFaultSchedule,
 ) -> worth_store_recovery_runtime::PlannedPhysicalRecovery {
     let limits = ordinary_limits();
-    let configuration = worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current();
-    let authority = worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority::acquire_for_certification(
-        root.to_path_buf(),
-        configuration.clone(),
-        limits,
-        schedule,
-    )
-    .expect("certification recovery authority");
+    let configuration =
+        worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current();
+    let authority =
+        worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority::acquire_for_certification(
+            root.to_path_buf(),
+            configuration.clone(),
+            limits,
+            schedule,
+        )
+        .expect("certification recovery authority");
     let profile = authority.qualified_backend_profile().clone();
     worth_store_recovery_runtime::PhysicalRecoveryOpenRequest::declare(
         root.to_path_buf(),

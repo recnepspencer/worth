@@ -20,6 +20,11 @@ class TelemetryTests(unittest.TestCase):
         self.assertEqual(slot_use([])['status'], 'unmeasured')
         self.assertEqual(setup_counts([])['status'], 'unmeasured')
 
+    def test_unusable_clock_samples_are_unmeasured_and_never_fail_a_lane(self):
+        event = dict(binary='a', test='claim', wall_seconds=0, cpu_seconds=0, reserved_slots=1)
+        self.assertEqual(slot_use([event])['status'], 'unmeasured')
+        self.assertEqual(len(slot_use([event])['unmeasured']), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

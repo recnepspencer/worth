@@ -1,15 +1,24 @@
 pub(crate) use {std::num::NonZeroU64, std::path::Path, std::process::Command};
 
+pub(crate) use worth_store_blob_chunks::BlobChunkSize;
 #[cfg(not(all()))]
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::PhysicalMutationDeadline};
-pub(crate) use {worth_store_blob_chunks::BlobChunkSize};
+pub(crate) use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
 
-pub(crate) use {worth_store_testkit_store::allocation_probe::physical_blob_journeys::peak_live_bytes_during};
-pub(crate) use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+pub(crate) use worth_store_testkit_store::allocation_probe::physical_blob_journeys::peak_live_bytes_during;
+pub(crate) use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
-
-pub(crate) use {crate::physical_blob_journeys::blob_ingest_process::range_read::reader};
+pub(crate) use crate::physical_blob_journeys::blob_ingest_process::range_read::reader;
 
 pub(crate) const OBJECT_BYTES: usize = 8 * 1024 * 1024;
 pub(crate) const SOURCE_WINDOW: usize = 1024 * 1024;
@@ -31,7 +40,9 @@ pub(crate) const NEGATIVE_PREFIX: &str = "C11_BLOB_NEGATIVE_PEAK ";
 pub(crate) fn writer(root: &Path) {
     println!("{PROCESS_PREFIX}{}", std::process::id());
     let serving = serving_from_initialization(root);
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(SELECTED_SCAN_LIMIT).unwrap());
+    let limits = worth_store::physical_runtime::BlobReadLimits::new(
+        std::num::NonZeroU64::new(SELECTED_SCAN_LIMIT).unwrap(),
+    );
     let scope = admitted_blob_scope(SCOPE_KEY);
     let blobs = serving.blobs().unwrap();
     let object = blobs.issue_object_id(limits).unwrap();
@@ -41,7 +52,8 @@ pub(crate) fn writer(root: &Path) {
         OBJECT_BYTES as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(64).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
     )
     .unwrap();
     let ((published, memory), measured_peak) = peak_live_bytes_during(|| {
@@ -140,7 +152,9 @@ pub(crate) fn observe_closed_store_with_limits(
     maximum_report_bytes: u64,
     maximum_elapsed_milliseconds: u64,
 ) -> serde_json::Value {
-    let binary = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();
+    let binary = worth_store_test_support::OFFLINE_ROOT_OBSERVER
+        .path()
+        .expect("runner must prebuild the independent executable");
     let maximum_open_files = if cfg!(windows) { "6" } else { "5" };
     let output = std::process::Command::new(&binary)
         .arg("observe")

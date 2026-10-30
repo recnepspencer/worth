@@ -1,24 +1,51 @@
 #![cfg(all())]
 
-#[allow(unused_imports)] use crate::physical_blob_journeys::layout_reuse_claim_admission::*;
-use {std::num::NonZeroU64};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::layout_reuse_claim_admission::*;
+use std::num::NonZeroU64;
 
 use {sha2::Digest, sha2::Sha256};
 
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendDenial};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobChunkReuseClaimV1, worth_store_physical_format::BlobChunkReuseClaimV2, worth_store_physical_format::BlobGenerationPublicationV1, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::PersistedRecordIdentity};
+use worth_proof::TransitionOutcome;
+use worth_store_blob_chunks::BlobChunkSize;
+use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::RecordAppendDenial,
+};
+use {
+    worth_store_physical_format::decode_blob_record,
+    worth_store_physical_format::BlobChunkReuseClaimV1,
+    worth_store_physical_format::BlobChunkReuseClaimV2,
+    worth_store_physical_format::BlobGenerationPublicationV1,
+    worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
 
-use {worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn classified_reuse_claim_denies_wrong_selected_destination_before_effect() {
     let directory = tempfile::tempdir().unwrap();
     let serving = serving_from_initialization(directory.path());
     let scope = admitted_blob_scope("c11.layout.reuse.destination");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
-    let deadline = worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap();
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
+    let deadline =
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap();
     let blobs = serving.blobs().unwrap();
     let source_object = blobs.issue_object_id(limits).unwrap();
     let source_declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
@@ -160,7 +187,9 @@ fn classified_reuse_claim_denies_wrong_selected_destination_before_effect() {
 
     let before = selected_blob_records(&serving).len();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x31; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x31; 32]),
+        )
         .unwrap();
     let prepared = submission.prepare_blob_reuse_claim_append(
         valid,
@@ -169,12 +198,15 @@ fn classified_reuse_claim_denies_wrong_selected_destination_before_effect() {
         placement(),
         worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(key, deadline),
     );
-    let worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) =
-        prepared.into_raw()
+    let worth_proof::TransitionOutcome::Success(
+        worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+    ) = prepared.into_raw()
     else {
         panic!("classified claim must reach selected proof planning")
     };
-    let worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(fate) = prepared.execute() else {
+    let worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(fate) =
+        prepared.execute()
+    else {
         panic!("wrong destination must not publish")
     };
     assert_eq!(

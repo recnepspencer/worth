@@ -1,17 +1,32 @@
 #[allow(unused_imports)]
-pub(crate) use {crate::test_serialization};
+pub(crate) use crate::test_serialization;
 
-pub(crate) use {std::collections::BTreeMap, std::num::NonZeroUsize, std::sync::Mutex, std::sync::OnceLock};
+pub(crate) use {
+    std::collections::BTreeMap, std::num::NonZeroUsize, std::sync::Mutex, std::sync::OnceLock,
+};
 
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::ExecutionResourceLease, worth_execution::ExecutionWorkCeiling, worth_execution::KeylessPartition, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelContext, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop, worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel, worth_execution::SerialMemoryBudget, worth_execution::SerialRequest};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
+    worth_execution::ExecutionResourceLease, worth_execution::ExecutionWorkCeiling,
+    worth_execution::KeylessPartition, worth_execution::LeaseDenial, worth_execution::LeaseRequest,
+    worth_execution::MapKernelContext, worth_execution::MapKernelFailure,
+    worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop,
+    worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel,
+    worth_execution::SerialMemoryBudget, worth_execution::SerialRequest,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 pub(crate) const PROCESS_BYTES: u64 = 1 << 30;
 
 pub(crate) static AUTHORITY: OnceLock<ExecutionAuthority> = std::sync::OnceLock::new();
 pub(crate) static SERIAL: Mutex<()> = std::sync::Mutex::new(());
 #[allow(unused_imports)]
-pub(crate) use {crate::memory_reservation::isolated_context::payload_custody};
+pub(crate) use crate::memory_reservation::isolated_context::payload_custody;
 
 #[allow(unused_imports)]
 pub(crate) use {};
@@ -30,7 +45,11 @@ pub(crate) fn policy(bytes: u64) -> ExecutionRequestPolicy {
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
         worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), Some(bytes), Some(u64::MAX)),
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::new(1).unwrap(),
+            Some(bytes),
+            Some(u64::MAX),
+        ),
     )
 }
 
@@ -62,7 +81,11 @@ pub(crate) fn one_partition_map() -> ExecutionMap<u64, u64> {
 }
 
 pub(crate) fn serial_request(memory: SerialMemoryBudget) -> SerialRequest {
-    worth_execution::SerialRequest::from_memory(memory, worth_execution::CancellationToken::new(), None)
+    worth_execution::SerialRequest::from_memory(
+        memory,
+        worth_execution::CancellationToken::new(),
+        None,
+    )
 }
 
 /// `Some(true)` completed, `Some(false)` the map refused at its admission,
@@ -78,14 +101,16 @@ pub(crate) fn serial_run_holding(bytes: u64, hold: Option<u64>) -> Option<bool> 
     let budget = worth_execution::SerialMemoryBudget::from_policy(&policy(bytes));
     let held = hold.map(|hold| budget.reserve(hold).unwrap());
     let request = serial_request(budget);
-    let ran = worth_execution::ExecutionWorkCeiling::new(Some(u64::MAX)).run_serial(&request, || {
-        let kernel =
-            |value: &u64, _: &mut MapKernelContext<'_, '_>| Ok::<_, MapKernelFailure<()>>(*value);
-        match held {
-            Some(held) => map.run_taking(None, held, kernel),
-            None => map.run(None, kernel),
-        }
-    });
+    let ran =
+        worth_execution::ExecutionWorkCeiling::new(Some(u64::MAX)).run_serial(&request, || {
+            let kernel = |value: &u64, _: &mut MapKernelContext<'_, '_>| {
+                Ok::<_, MapKernelFailure<()>>(*value)
+            };
+            match held {
+                Some(held) => map.run_taking(None, held, kernel),
+                None => map.run(None, kernel),
+            }
+        });
     match ran {
         Ok((worth_execution::MapOutcome::Complete { values, .. }, _)) => {
             assert_eq!(values, vec![5]);
@@ -94,11 +119,13 @@ pub(crate) fn serial_run_holding(bytes: u64, hold: Option<u64>) -> Option<bool> 
         Ok((
             worth_execution::MapOutcome::Stopped {
                 reason:
-                    worth_execution::MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
-                        requested,
-                        admitted,
-                        level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
-                    })),
+                    worth_execution::MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(
+                        worth_execution::MemoryLimitDenial::Capacity {
+                            requested,
+                            admitted,
+                            level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+                        },
+                    )),
                 completed_prefix,
                 ..
             },
@@ -150,7 +177,10 @@ pub(crate) fn leased_run(budget: u64, hold: u64, take: bool) -> Result<(), Memor
             Ok(())
         }
         worth_execution::MapOutcome::Stopped {
-            reason: worth_execution::MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(denial)),
+            reason:
+                worth_execution::MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(
+                    denial,
+                )),
             ..
         } => Err(denial),
         worth_execution::MapOutcome::Stopped { .. } => panic!("only memory refuses this run"),

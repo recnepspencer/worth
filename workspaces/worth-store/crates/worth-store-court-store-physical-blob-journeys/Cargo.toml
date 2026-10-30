@@ -8,12 +8,12 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+"worth-testkit-compiler" = { "path" = "../../../../crates/worth-testkit-compiler" }
 "serde_json" = { "version" = "^1" }
 "sha2" = { "version" = "^0.10" }
 "stats_alloc" = { "version" = "^0.1" }
 "tempfile" = { "version" = "^3" }
 "tracking-allocator" = { "version" = "^0.4", "default-features" = false }
-"trybuild" = { "version" = "^1.0" }
 "worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
 "worth-proof" = { "path" = "../../../../crates/worth-proof" }
 "worth-signal" = { "path" = "../../../../crates/worth-signal" }

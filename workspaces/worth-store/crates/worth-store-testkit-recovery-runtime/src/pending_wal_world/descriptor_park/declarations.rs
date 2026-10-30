@@ -1,9 +1,15 @@
 //! Parks a reclaim at the durable WAL of its descriptor, the third WAL
 //! durability point of the batch, and only then writes the marker.
 
-pub use {std::fs, std::path::Path, std::sync::atomic::AtomicBool, std::sync::atomic::Ordering, std::thread, std::time::Duration, std::time::Instant};
+pub use {
+    std::fs, std::path::Path, std::sync::atomic::AtomicBool, std::sync::atomic::Ordering,
+    std::thread, std::time::Duration, std::time::Instant,
+};
 
-pub use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::BlobReclaimRequest};
+pub use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::BlobReclaimRequest,
+};
 
 pub fn park_at_descriptor_wal(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
@@ -11,7 +17,9 @@ pub fn park_at_descriptor_wal(
     marker: &Path,
     marker_bytes: &[u8],
 ) {
-    let first = serving.pause_physical_mutation_at(worth_store::physical_runtime::production::PhysicalMutationCheckpoint::AfterWalDurability);
+    let first = serving.pause_physical_mutation_at(
+        worth_store::physical_runtime::production::PhysicalMutationCheckpoint::AfterWalDurability,
+    );
     let cancelled = std::sync::atomic::AtomicBool::new(false);
     std::thread::scope(|workers| {
         workers.spawn(|| {

@@ -1,9 +1,24 @@
 //! Ordinary home reads distinguish unavailable members from absent records.
-pub(crate) use {crate::durable_run, crate::open_refusals, crate::residency_fixture::Fixture, crate::selected_checkpoint, crate::workload};
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::mvcc::RelationalTransactionReadDenial, worth_relational::facade::storage::RelationalStorageSubject, worth_relational::facade::storage::RelationalStorageUnavailableCause, worth_relational::facade::transactions::RecordRef};
-pub(crate) use {worth_store::physical_runtime::AnchoredRecordMember, worth_store::physical_runtime::AnchoredRecordName, worth_store::physical_runtime::AnchoredRecordPublication, worth_store::physical_runtime::AnchoredRecordsDenial, worth_store::physical_runtime::PhysicalMutationDeadline};
-pub(crate) use {worth_store_relational::RelationalStoreHome};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_store_relational::RelationalStoreHome;
+pub(crate) use {
+    crate::durable_run, crate::open_refusals, crate::residency_fixture::Fixture,
+    crate::selected_checkpoint, crate::workload,
+};
+pub(crate) use {
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+    worth_relational::facade::mvcc::RelationalTransactionReadDenial,
+    worth_relational::facade::storage::RelationalStorageSubject,
+    worth_relational::facade::storage::RelationalStorageUnavailableCause,
+    worth_relational::facade::transactions::RecordRef,
+};
+pub(crate) use {
+    worth_store::physical_runtime::AnchoredRecordMember,
+    worth_store::physical_runtime::AnchoredRecordName,
+    worth_store::physical_runtime::AnchoredRecordPublication,
+    worth_store::physical_runtime::AnchoredRecordsDenial,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
 
 /// Keep both levels cold: a Relational miss alone need not reach media when
 /// Store's readmission already cached the same physical page.
@@ -52,7 +67,10 @@ pub(crate) fn read(
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
     let mut reader = runtime
-        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .unwrap();
     match record {
         worth_relational::facade::transactions::RecordRef::Entity(id) => reader
@@ -73,7 +91,13 @@ pub(crate) enum DirectoryFault {
 /// A record-checksum fault affects its physical frame. Put the healthy region's
 /// head in an extent so its own bytes remain intact when region 1 is damaged.
 pub(crate) fn isolate_healthy_region(fixture: &mut Fixture, execution: &ExecutionRequest<'_, '_>) {
-    use {worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::transactions::WorkerIntentBatch};
+    use {
+        worth_relational::facade::history::BranchId,
+        worth_relational::facade::identity::PartitionId,
+        worth_relational::facade::transactions::CreateIntent,
+        worth_relational::facade::transactions::MutationIntent,
+        worth_relational::facade::transactions::WorkerIntentBatch,
+    };
     let mut batch = WorkerIntentBatch::new("extent-backed healthy subject");
     for index in 10_000..10_512 {
         let mut create = crate::batches::create(index);
@@ -84,7 +108,8 @@ pub(crate) fn isolate_healthy_region(fixture: &mut Fixture, execution: &Executio
         batch.intents.extend(create.intents);
     }
     let branch = BranchId("main".into());
-    let outcome = crate::workload::commit(&fixture.reference, execution, &branch, batch.clone()).unwrap();
+    let outcome =
+        crate::workload::commit(&fixture.reference, execution, &branch, batch.clone()).unwrap();
     fixture
         .records
         .extend(outcome.changed_records.iter().cloned());
@@ -102,7 +127,9 @@ pub(crate) fn region_head(
     Vec<u8>,
 ) {
     let records = home.certification_serving().anchored_records().unwrap();
-    let anchor = worth_store::physical_runtime::AnchoredRecordName::new(crate::selected_checkpoint::ANCHOR).unwrap();
+    let anchor =
+        worth_store::physical_runtime::AnchoredRecordName::new(crate::selected_checkpoint::ANCHOR)
+            .unwrap();
     let selected = records.read(anchor, 1 << 30).unwrap().unwrap();
     selected
         .members()

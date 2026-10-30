@@ -1,12 +1,28 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::residency_generation_fencing::*;
-use {std::cell::Cell};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::residency_generation_fencing::*;
+use std::cell::Cell;
 
-use {worth_store::physical_runtime::AdmittedDirtyFrame, worth_store::physical_runtime::CertificationFrameReadFailure, worth_store::physical_runtime::CertificationFrameWorkFailure, worth_store::physical_runtime::PhysicalDirtyTransitionFailure, worth_store::physical_runtime::PhysicalResidencyAllocationBoundaryKind, worth_store::physical_runtime::PhysicalResidencyCertification, worth_store::physical_runtime::PhysicalWorkPreEffectDenial, worth_store::physical_runtime::PhysicalWritebackFailureCause};
-use {worth_store_buffer_pool::PhysicalResidencyDimension};
-use {worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement};
-use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+use worth_store_buffer_pool::PhysicalResidencyDimension;
+use worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement;
+use {
+    worth_store::physical_runtime::AdmittedDirtyFrame,
+    worth_store::physical_runtime::CertificationFrameReadFailure,
+    worth_store::physical_runtime::CertificationFrameWorkFailure,
+    worth_store::physical_runtime::PhysicalDirtyTransitionFailure,
+    worth_store::physical_runtime::PhysicalResidencyAllocationBoundaryKind,
+    worth_store::physical_runtime::PhysicalResidencyCertification,
+    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
+    worth_store::physical_runtime::PhysicalWritebackFailureCause,
+};
+use {
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 #[test]
 fn stale_generation_cannot_consume_an_already_hot_frame() {
@@ -33,9 +49,11 @@ fn stale_generation_cannot_consume_an_already_hot_frame() {
 
     assert_eq!(
         failure,
-        worth_store::physical_runtime::CertificationFrameReadFailure::PhysicalWork(worth_store::physical_runtime::CertificationFrameWorkFailure::PreEffect(
-            worth_store::physical_runtime::PhysicalWorkPreEffectDenial::StaleGeneration,
-        ),),
+        worth_store::physical_runtime::CertificationFrameReadFailure::PhysicalWork(
+            worth_store::physical_runtime::CertificationFrameWorkFailure::PreEffect(
+                worth_store::physical_runtime::PhysicalWorkPreEffectDenial::StaleGeneration,
+            ),
+        ),
         "MUTANT_PREDICATE:stale-residency-generation-consumed"
     );
     assert_eq!(
@@ -78,7 +96,10 @@ fn stale_generation_cannot_consume_current_lease_for_dirty_admission() {
         .admit_dirty_frame(lease, |_, _| fill_called.set(true))
         .unwrap_err();
 
-    assert_eq!(failure, worth_store::physical_runtime::PhysicalDirtyTransitionFailure::StaleOrForeignFrame);
+    assert_eq!(
+        failure,
+        worth_store::physical_runtime::PhysicalDirtyTransitionFailure::StaleOrForeignFrame
+    );
     assert!(
         !fill_called.get(),
         "stale dirty admission invoked the mutation closure"
@@ -185,7 +206,9 @@ fn stale_generation_cannot_consume_current_dirty_writeback_authority() {
 
     assert_eq!(
         failure.cause(),
-        worth_store::physical_runtime::PhysicalWritebackFailureCause::PreEffect(worth_store::physical_runtime::PhysicalWorkPreEffectDenial::StaleGeneration,),
+        worth_store::physical_runtime::PhysicalWritebackFailureCause::PreEffect(
+            worth_store::physical_runtime::PhysicalWorkPreEffectDenial::StaleGeneration,
+        ),
         "MUTANT_PREDICATE:stale-residency-generation-consumed"
     );
     assert_eq!(current.counters(), residency_before);

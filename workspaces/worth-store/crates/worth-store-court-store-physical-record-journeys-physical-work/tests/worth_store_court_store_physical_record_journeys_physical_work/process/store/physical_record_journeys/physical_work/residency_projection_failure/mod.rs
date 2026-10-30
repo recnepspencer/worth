@@ -1,8 +1,20 @@
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalManifestCapacityTransition, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationDenial, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordAppendDenial};
-use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+use worth_proof::TransitionOutcome;
+use {
+    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationDenial,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordAppendDenial,
+};
+use {
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+};
 
 #[test]
 fn semantic_rejection_consumes_the_admitted_residency_projection_failure() {
@@ -13,8 +25,12 @@ fn semantic_rejection_consumes_the_admitted_residency_projection_failure() {
         .physical_signal_observation()
         .unwrap()
         .aspect_invalidation_count();
-    let coordinate =
-        worth_store_physical_format::RecordFrameCoordinate::new(worth_store_physical_format::RecordArtifactFile::BootstrapCatalog, 0, 8).unwrap();
+    let coordinate = worth_store_physical_format::RecordFrameCoordinate::new(
+        worth_store_physical_format::RecordArtifactFile::BootstrapCatalog,
+        0,
+        8,
+    )
+    .unwrap();
     let frame = serving
         .certification_physical_residency()
         .pin_exact(coordinate)
@@ -36,12 +52,15 @@ fn semantic_rejection_consumes_the_admitted_residency_projection_failure() {
             placement,
             worth_store::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
             worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([212; 32]),
-            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"fenced".as_slice()]).unwrap(),
+            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"fenced".as_slice()])
+                .unwrap(),
         )
         .into_raw(),
-        worth_proof::TransitionOutcome::Denied(worth_store::physical_runtime::PhysicalMutationPreparationDenial::RecordAppend(
-            worth_store::physical_runtime::RecordAppendDenial::ServingRequiresInspection
-        ))
+        worth_proof::TransitionOutcome::Denied(
+            worth_store::physical_runtime::PhysicalMutationPreparationDenial::RecordAppend(
+                worth_store::physical_runtime::RecordAppendDenial::ServingRequiresInspection
+            )
+        )
     ));
     assert!(serving.close_plan().execute().requires_inspection());
 }

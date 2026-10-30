@@ -1,9 +1,24 @@
-pub(crate) use {std::any::type_name};
+pub(crate) use std::any::type_name;
 
-pub(crate) use {worth_proof::FamilyResolvedReference, worth_proof::ForkOutputs2, worth_proof::JoinInputs2, worth_proof::Pair};
+pub(crate) use {
+    worth_proof::FamilyResolvedReference, worth_proof::ForkOutputs2, worth_proof::JoinInputs2,
+    worth_proof::Pair,
+};
 
-pub(crate) use {crate::shared_support::proof_shapes::digest::FailureDigest, crate::shared_support::proof_shapes::digest::ProofShapeDigest, crate::shared_support::proof_shapes::digest::TransitionDigest};
-pub(crate) use {crate::shared_support::composition_family::representatives::JoinedReadyRecipe, crate::shared_support::composition_family::representatives::LeftReadyRecipe, crate::shared_support::composition_family::representatives::RepresentativeFamilyAction, crate::shared_support::composition_family::representatives::RepresentativeLoweredFamilyProgram, crate::shared_support::composition_family::representatives::RepresentativeMember, crate::shared_support::composition_family::representatives::RepresentativeSymbol, crate::shared_support::composition_family::representatives::RightReadyRecipe};
+pub(crate) use {
+    crate::shared_support::composition_family::representatives::JoinedReadyRecipe,
+    crate::shared_support::composition_family::representatives::LeftReadyRecipe,
+    crate::shared_support::composition_family::representatives::RepresentativeFamilyAction,
+    crate::shared_support::composition_family::representatives::RepresentativeLoweredFamilyProgram,
+    crate::shared_support::composition_family::representatives::RepresentativeMember,
+    crate::shared_support::composition_family::representatives::RepresentativeSymbol,
+    crate::shared_support::composition_family::representatives::RightReadyRecipe,
+};
+pub(crate) use {
+    crate::shared_support::proof_shapes::digest::FailureDigest,
+    crate::shared_support::proof_shapes::digest::ProofShapeDigest,
+    crate::shared_support::proof_shapes::digest::TransitionDigest,
+};
 
 pub(crate) fn transition_digest() -> TransitionDigest {
     crate::shared_support::proof_shapes::digest::TransitionDigest::new(

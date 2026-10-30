@@ -1,11 +1,23 @@
-#[allow(unused_imports)] use crate::operation_request::ordinary_context::*;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_operation_request_runtime as operation_request_runtime};
+use crate::operation_request::ordinary_context::*;
+#[allow(unused_imports)]
+use worth_testkit_server::shared_support_operation_request_runtime as operation_request_runtime;
 
-use {serde_json::json};
-use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationInputEnvelope, worth_server::WorthServerOperationRequestDenialCode, worth_server::WorthServerOperationRequestInput};
+use serde_json::json;
+use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerOperationFamily,
+    worth_server::WorthServerOperationInputEnvelope,
+    worth_server::WorthServerOperationRequestDenialCode,
+    worth_server::WorthServerOperationRequestInput,
+};
 
-use {worth_testkit_server::shared_support_operation_request_runtime::compat_prepared_request, worth_testkit_server::shared_support_operation_request_runtime::operation_request_test_server, worth_testkit_server::shared_support_operation_request_runtime::worth_native_admission, worth_testkit_server::shared_support_operation_request_runtime::worth_native_resolved_context};
+use {
+    worth_testkit_server::shared_support_operation_request_runtime::compat_prepared_request,
+    worth_testkit_server::shared_support_operation_request_runtime::operation_request_test_server,
+    worth_testkit_server::shared_support_operation_request_runtime::worth_native_admission,
+    worth_testkit_server::shared_support_operation_request_runtime::worth_native_resolved_context,
+};
 
 #[test]
 fn equivalent_surface_inputs_lower_to_identical_operation_identity() {
@@ -42,9 +54,14 @@ fn equivalent_surface_inputs_lower_to_identical_operation_identity() {
     let direct = server
         .operation_requests()
         .admit(
-            worth_native_resolved_context(&server, Some(worth_server::request_context::DiagnosticRichnessProfile::Standard)),
+            worth_native_resolved_context(
+                &server,
+                Some(worth_server::request_context::DiagnosticRichnessProfile::Standard),
+            ),
             worth_server::WorthServerOperationRequestInput::builder()
-                .with_operation_family(worth_server::WorthServerOperationFamily::QueryDirectSubmission)
+                .with_operation_family(
+                    worth_server::WorthServerOperationFamily::QueryDirectSubmission,
+                )
                 .with_operation_name("tasks.insert")
                 .with_basis_digest("basis:abc123")
                 .with_idempotency_key("idem-42")
@@ -145,7 +162,10 @@ fn diagnostics_policy_does_not_change_semantic_operation_identity() {
     let standard = server
         .operation_requests()
         .admit(
-            worth_native_resolved_context(&server, Some(worth_server::request_context::DiagnosticRichnessProfile::Standard)),
+            worth_native_resolved_context(
+                &server,
+                Some(worth_server::request_context::DiagnosticRichnessProfile::Standard),
+            ),
             input.clone(),
         )
         .expect("standard diagnostics request should admit");
@@ -196,7 +216,9 @@ fn operation_request_identity_rejects_display_string_ordering() {
         .admit_from_worth_native_admission(
             &worth_native_admission(&server, None, "tasks.insert"),
             worth_server::WorthServerOperationRequestInput::builder()
-                .with_operation_family(worth_server::WorthServerOperationFamily::QueryDirectSubmission)
+                .with_operation_family(
+                    worth_server::WorthServerOperationFamily::QueryDirectSubmission,
+                )
                 .with_operation_name("Tasks.Insert")
                 .with_payload_envelope(left)
                 .build(),
@@ -207,7 +229,9 @@ fn operation_request_identity_rejects_display_string_ordering() {
         .admit_from_worth_native_admission(
             &worth_native_admission(&server, None, "tasks.insert"),
             worth_server::WorthServerOperationRequestInput::builder()
-                .with_operation_family(worth_server::WorthServerOperationFamily::QueryDirectSubmission)
+                .with_operation_family(
+                    worth_server::WorthServerOperationFamily::QueryDirectSubmission,
+                )
                 .with_operation_name("tasks.insert")
                 .with_payload_envelope(right)
                 .build(),

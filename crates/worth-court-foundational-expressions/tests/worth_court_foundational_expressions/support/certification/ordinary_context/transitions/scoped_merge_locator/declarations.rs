@@ -1,23 +1,50 @@
-pub(crate) use {worth_foundational::prepare_canonical_comparison, worth_foundational::prepare_locator_for_canonical_basis, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalLocatorInput, worth_foundational::CanonicalizationRuleVersion, worth_foundational::FoundationalBoundaryEvidenceAuthorityPath, worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary, worth_foundational::FoundationalDiagnosticLocator, worth_foundational::FoundationalMergeConflictLocator, worth_foundational::FoundationalSelectedAspectScopeLocator, worth_foundational::FoundationalSelectedNodeScopeLocator, worth_foundational::FoundationalTransitionLocator};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::prepare_canonical_comparison,
+    worth_foundational::prepare_locator_for_canonical_basis,
+    worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry,
+    worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus,
+    worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue,
+    worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis,
+    worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalLocatorInput,
+    worth_foundational::CanonicalizationRuleVersion,
+    worth_foundational::FoundationalBoundaryEvidenceAuthorityPath,
+    worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary,
+    worth_foundational::FoundationalDiagnosticLocator,
+    worth_foundational::FoundationalMergeConflictLocator,
+    worth_foundational::FoundationalSelectedAspectScopeLocator,
+    worth_foundational::FoundationalSelectedNodeScopeLocator,
+    worth_foundational::FoundationalTransitionLocator,
+};
 
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id};
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate, crate::certification::ordinary_context::transitions::fixtures::merge::conflict_locus};
-pub(crate) use {crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node};
+pub(crate) use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
+pub(crate) use {
+    crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::merge::conflict_locus,
+};
+pub(crate) use {
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_node,
+};
 
 pub(crate) fn locator_entries(locator: FoundationalTransitionLocator) -> Vec<CanonicalBasisEntry> {
     ready_locator(locator).payload().entries().to_vec()
 }
 
 pub(crate) fn ready_locator(locator: FoundationalTransitionLocator) -> CanonicalBasisReadyArtifact {
-    match prepare_locator_for_canonical_basis(version(), worth_foundational::CanonicalLocatorInput::Transition(locator))
-    {
+    match prepare_locator_for_canonical_basis(
+        version(),
+        worth_foundational::CanonicalLocatorInput::Transition(locator),
+    ) {
         worth_proof::TransitionOutcome::Success(ready) => ready,
         _ => panic!("expected ready scoped transition locator"),
     }
 }
 
-pub(crate) fn assert_mismatched(left: CanonicalBasisReadyArtifact, right: CanonicalBasisReadyArtifact) {
+pub(crate) fn assert_mismatched(
+    left: CanonicalBasisReadyArtifact,
+    right: CanonicalBasisReadyArtifact,
+) {
     let ready = match prepare_canonical_comparison(
         worth_foundational::CanonicalEquivalenceBasis::ExactCanonicalBasis,
         left,

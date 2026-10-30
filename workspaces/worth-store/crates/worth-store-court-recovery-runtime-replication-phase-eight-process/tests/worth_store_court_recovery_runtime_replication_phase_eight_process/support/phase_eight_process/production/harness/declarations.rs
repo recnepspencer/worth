@@ -1,26 +1,40 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {tempfile::TempDir};
-pub(crate) use {worth_store_offline_verifier::RecoveryObserverDecodeDenial, worth_store_offline_verifier::RecoveryObserverReport, worth_store_offline_verifier::RECOVERY_OBSERVER_REPORT_PROTOCOL};
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportDecodeDenial, worth_store_recovery_runtime::RecoveryReportEnvelope, worth_store_recovery_runtime::RecoveryReportOutcome, worth_store_recovery_runtime::RECOVERY_REPORT_PROTOCOL};
+pub(crate) use tempfile::TempDir;
+pub(crate) use {
+    worth_store_offline_verifier::RecoveryObserverDecodeDenial,
+    worth_store_offline_verifier::RecoveryObserverReport,
+    worth_store_offline_verifier::RECOVERY_OBSERVER_REPORT_PROTOCOL,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::RecoveryReportDecodeDenial,
+    worth_store_recovery_runtime::RecoveryReportEnvelope,
+    worth_store_recovery_runtime::RecoveryReportOutcome,
+    worth_store_recovery_runtime::RECOVERY_REPORT_PROTOCOL,
+};
 
-pub(crate) use {crate::phase_eight_process::comparison, crate::history};
-pub(crate) use {crate::production::fate_markers::IndexedRecoveryFate};
+pub(crate) use crate::production::fate_markers::IndexedRecoveryFate;
+pub(crate) use {crate::history, crate::phase_eight_process::comparison};
 
-
-
-
-
-pub(crate) use {crate::history::schedule::in_flight_mutation::MutationCrashWorkload};
-pub(crate) use {crate::production::harness::markers::RecoveryFateMarker, crate::production::harness::markers::RecoveryRuntimeMarker};
-pub(crate) use {crate::phase_eight_process::production::harness::process::run_recovery_with_profile};
-pub(crate) use {crate::phase_eight_process::production::harness::process::assert_child_succeeded, crate::phase_eight_process::production::harness::process::run_observer, crate::phase_eight_process::production::harness::process::spawn_recovery_at_yieldpoint, crate::phase_eight_process::production::harness::process::spawn_recovery_at_yieldpoint_with_deadline};
+pub(crate) use crate::history::schedule::in_flight_mutation::MutationCrashWorkload;
+pub(crate) use crate::phase_eight_process::production::harness::process::run_recovery_with_profile;
+pub(crate) use {
+    crate::phase_eight_process::production::harness::process::assert_child_succeeded,
+    crate::phase_eight_process::production::harness::process::run_observer,
+    crate::phase_eight_process::production::harness::process::spawn_recovery_at_yieldpoint,
+    crate::phase_eight_process::production::harness::process::spawn_recovery_at_yieldpoint_with_deadline,
+};
+pub(crate) use {
+    crate::production::harness::markers::RecoveryFateMarker,
+    crate::production::harness::markers::RecoveryRuntimeMarker,
+};
 
 pub(crate) const C8_RECOVERY_MEMORY_BUDGET_BYTES: u64 = 512 * 1024;
 
 pub(crate) struct ProcessWorld {
     pub(crate) parent: TempDir,
-    pub(crate) writer: crate::phase_eight_process::history::process::lifecycle::KilledProductionWriter,
+    pub(crate) writer:
+        crate::phase_eight_process::history::process::lifecycle::KilledProductionWriter,
 }
 
 pub(crate) struct ObserverProcess {
@@ -156,7 +170,8 @@ impl ProcessWorld {
         let (process_id, output) = run_observer(root, output_path.clone(), self.parent.path());
         assert_child_succeeded(name, &output);
         let encoded = std::fs::read(&output_path).expect("observer report bytes");
-        let report = worth_store_offline_verifier::RecoveryObserverReport::decode(&encoded).expect("observer report decode");
+        let report = worth_store_offline_verifier::RecoveryObserverReport::decode(&encoded)
+            .expect("observer report decode");
         ObserverProcess {
             process_id,
             report,
@@ -178,16 +193,26 @@ impl ProcessWorld {
         name: &str,
         profile: &str,
     ) -> RuntimeProcess {
-        crate::phase_eight_process::production::harness::recovery::recover_root_with_profile(self, root, name, profile)
+        crate::phase_eight_process::production::harness::recovery::recover_root_with_profile(
+            self, root, name, profile,
+        )
     }
 
-    pub(crate) fn parent_history(&self) -> crate::phase_eight_process::history::physical_history::ParentPhysicalHistory {
+    pub(crate) fn parent_history(
+        &self,
+    ) -> crate::phase_eight_process::history::physical_history::ParentPhysicalHistory {
         self.parent_history_root(&self.writer.root)
     }
 
-    pub(crate) fn parent_history_root(&self, root: &Path) -> crate::phase_eight_process::history::physical_history::ParentPhysicalHistory {
-        crate::phase_eight_process::history::physical_history::ParentPhysicalHistory::capture(root, &self.writer.expected)
-            .expect("capture parent history")
+    pub(crate) fn parent_history_root(
+        &self,
+        root: &Path,
+    ) -> crate::phase_eight_process::history::physical_history::ParentPhysicalHistory {
+        crate::phase_eight_process::history::physical_history::ParentPhysicalHistory::capture(
+            root,
+            &self.writer.expected,
+        )
+        .expect("capture parent history")
     }
 
     pub(crate) fn parent_history_after_recovery(
@@ -199,13 +224,16 @@ impl ProcessWorld {
     }
 
     pub(crate) fn require_cleanup_candidate(&self) -> Result<(), String> {
-        crate::phase_eight_process::history::parent_oracle::cleanup_candidate::capture(&self.writer.root).map(|_| ())
+        crate::phase_eight_process::history::parent_oracle::cleanup_candidate::capture(
+            &self.writer.root,
+        )
+        .map(|_| ())
     }
 
     pub(crate) fn cleanup_candidate(
         &self,
         root: &Path,
-    ) -> Result<crate::phase_eight_process::history::parent_oracle::cleanup_candidate::CleanupCandidateProof, String> {
+    ) -> Result<crate::phase_eight_process::history::parent_oracle::cleanup_candidate::CleanupCandidateProof, String>{
         crate::phase_eight_process::history::parent_oracle::cleanup_candidate::capture(root)
     }
 
@@ -213,7 +241,7 @@ impl ProcessWorld {
         &self,
         root: &Path,
         before: &crate::phase_eight_process::history::parent_oracle::cleanup_candidate::CleanupCandidateProof,
-    ) -> Result<crate::phase_eight_process::history::parent_oracle::cleanup_candidate::CleanupTransitionProof, String> {
+    ) -> Result<crate::phase_eight_process::history::parent_oracle::cleanup_candidate::CleanupTransitionProof, String>{
         crate::phase_eight_process::history::parent_oracle::cleanup_candidate::verify_removed_covered(root, before)
     }
 
@@ -222,7 +250,9 @@ impl ProcessWorld {
         root: &Path,
         before: &crate::phase_eight_process::history::parent_oracle::cleanup_candidate::CleanupCandidateProof,
     ) -> Result<(), String> {
-        crate::phase_eight_process::history::parent_oracle::cleanup_candidate::verify_preserved(root, before)
+        crate::phase_eight_process::history::parent_oracle::cleanup_candidate::verify_preserved(
+            root, before,
+        )
     }
 
     pub(crate) fn parent_path(&self) -> &Path {
@@ -249,7 +279,10 @@ pub(crate) fn compare_runtime_and_observer_with_budget(
     history: &crate::phase_eight_process::history::physical_history::ParentPhysicalHistory,
     memory_budget_bytes: u64,
 ) {
-    assert_eq!(runtime.report.outcome(), worth_store_recovery_runtime::RecoveryReportOutcome::Recovered);
+    assert_eq!(
+        runtime.report.outcome(),
+        worth_store_recovery_runtime::RecoveryReportOutcome::Recovered
+    );
     assert!(runtime.fates.acknowledged > 0);
     assert!(runtime.report.store_identity().is_some());
     assert!(runtime.report.root_generation().is_some());

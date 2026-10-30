@@ -1,8 +1,19 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::branch::SignalBranchRetirementDenial, worth_signal::facade::branch::SignalBranchRetirementReason};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_signal::facade::branch::SignalBranchRetirementDenial,
+    worth_signal::facade::branch::SignalBranchRetirementReason,
+};
 
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld};
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::advance, crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::capture, crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::prove_advance_is_effectful, crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::prove_capture_and_restore_are_effectful, crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::prove_retirement_is_effectful, crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::retire, crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::retirement_plan};
+pub(crate) use crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld;
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::advance,
+    crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::capture,
+    crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::prove_advance_is_effectful,
+    crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::prove_capture_and_restore_are_effectful,
+    crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::prove_retirement_is_effectful,
+    crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::retire,
+    crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::retirement_plan,
+};
 
 #[test]
 fn same_branch_advance_retire_fences_retention_then_retires_uncontended() {

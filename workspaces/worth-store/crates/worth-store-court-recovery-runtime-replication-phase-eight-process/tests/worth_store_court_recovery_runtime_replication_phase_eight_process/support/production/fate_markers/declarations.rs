@@ -1,5 +1,5 @@
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::process::Output};
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use std::process::Output;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct IndexedRecoveryFate {

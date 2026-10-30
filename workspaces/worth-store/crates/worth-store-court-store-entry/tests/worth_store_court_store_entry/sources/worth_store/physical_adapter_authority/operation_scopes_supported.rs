@@ -36,4 +36,4 @@ fn admit_successor_scopes(
         .unwrap()
 }
 
-fn main() {}
+pub(crate) fn main() {}

@@ -28,8 +28,10 @@ pub(crate) fn empty_entity_field_cache_growth(
             name: "supply-chain.absent.optional-cache-control".to_owned(),
             kind: worth_relational::facade::indexes::DerivedIndexKind::EntityField {
                 field_locator: planned_single_field_locator(
-                    worth_foundational::facade::AspectKey::new("phase5-absent").expect("valid absent aspect key"),
-                    worth_foundational::facade::FieldKey::new("phase5-absent").expect("valid absent field key"),
+                    worth_foundational::facade::AspectKey::new("phase5-absent")
+                        .expect("valid absent aspect key"),
+                    worth_foundational::facade::FieldKey::new("phase5-absent")
+                        .expect("valid absent field key"),
                 ),
             },
             branch_scoped: true,

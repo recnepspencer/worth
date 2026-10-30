@@ -1,10 +1,23 @@
-#[allow(unused_imports)] use crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::*;
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
-use {crate::signal_owner_services::ordinary_context::execution_custody};
+#[allow(unused_imports)]
+use crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::*;
+use crate::signal_owner_services::ordinary_context::execution_custody;
+pub(crate) use std::thread;
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
+    crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND,
+};
 pub(crate) use {std::sync::mpsc, std::sync::Arc, std::sync::Barrier};
-pub(crate) use {std::thread};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::AdmittedSignalBranchSnapshot, worth_signal::facade::branch::SignalBranchAdvanceDenial, worth_signal::facade::branch::SignalBranchRestoreDenial, worth_signal::facade::branch::SignalBranchRetirementDenial, worth_signal::facade::branch::SignalBranchRetirementReason, worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial, worth_signal::facade::branch::SignalOwnerCancellationSource};
+pub(crate) use {
+    worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    worth_signal::facade::branch::AdmittedSignalBranchSnapshot,
+    worth_signal::facade::branch::SignalBranchAdvanceDenial,
+    worth_signal::facade::branch::SignalBranchRestoreDenial,
+    worth_signal::facade::branch::SignalBranchRetirementDenial,
+    worth_signal::facade::branch::SignalBranchRetirementReason,
+    worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+};
 
 #[test]
 fn same_branch_advance_advance_has_one_winner_and_both_orderings() {
@@ -75,7 +88,8 @@ fn same_branch_advance_advance_has_one_winner_and_both_orderings() {
 fn same_branch_advance_restore_has_one_winner() {
     prove_advance_is_effectful();
     prove_capture_and_restore_are_effectful();
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let (snapshot, current) = capture(&world.mutation, &world.child_basis)
         .expect("the race has a real admitted snapshot");
     let mutation_a = world.mutation.clone();
@@ -94,7 +108,8 @@ fn same_branch_advance_restore_has_one_winner() {
 #[test]
 fn same_branch_restore_restore_has_one_winner() {
     prove_capture_and_restore_are_effectful();
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let (snapshot, current) = capture(&world.mutation, &world.child_basis)
         .expect("the race has a real admitted snapshot");
     let mutation_a = world.mutation.clone();
@@ -115,7 +130,8 @@ fn same_branch_restore_restore_has_one_winner() {
 fn same_branch_snapshot_advance_has_one_winner() {
     prove_capture_and_restore_are_effectful();
     prove_advance_is_effectful();
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let mutation_a = world.mutation.clone();
     let mutation_b = world.mutation.clone();
     let basis_a = world.child_basis.clone();

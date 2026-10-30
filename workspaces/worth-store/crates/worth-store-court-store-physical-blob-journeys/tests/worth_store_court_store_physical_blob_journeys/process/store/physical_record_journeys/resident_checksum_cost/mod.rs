@@ -1,8 +1,21 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::resident_checksum_cost::*;
-use {worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_physical_format::certification_crc32c_invocations};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::resident_checksum_cost::*;
+use worth_store_physical_format::certification_crc32c_invocations;
+use {
+    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::read_record, worth_store_testkit_store::physical_record_journeys::serving_from_initialization, worth_store_testkit_store::physical_record_journeys::serving_from_open};
+use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::read_record,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+    worth_store_testkit_store::physical_record_journeys::serving_from_open,
+};
 
 #[test]
 fn ordinary_resident_lookup_hashes_cold_and_evicted_frames_but_not_warm_hits() {
@@ -14,8 +27,12 @@ fn ordinary_resident_lookup_hashes_cold_and_evicted_frames_but_not_warm_hits() {
     let published = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("resident-checksum-cost", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload.as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "resident-checksum-cost",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload.as_slice()])
+            .unwrap(),
     );
     let locator = worth_store::physical_runtime::ExternalPhysicalRecordLocator::new(
         serving.store_identity(),

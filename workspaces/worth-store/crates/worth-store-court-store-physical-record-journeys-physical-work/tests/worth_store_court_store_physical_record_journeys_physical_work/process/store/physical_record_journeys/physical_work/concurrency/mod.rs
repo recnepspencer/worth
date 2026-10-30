@@ -1,11 +1,35 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::concurrency::*;
-use {tempfile::tempdir};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalEffectObligation, worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalSchedulerDenial, worth_store::physical_runtime::PhysicalStoreCloseOutcome, worth_store::physical_runtime::PhysicalStoreClosePhase, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkExecutionOutcome, worth_store::physical_runtime::PhysicalWorkPreEffectDenial};
-use {worth_store_physical_backend::MediaOperationRole};
-use {worth_store_physical_backend::FilesystemAccessPosture, worth_store_physical_backend::MediaFaultDirective};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::concurrency::*;
+use tempfile::tempdir;
+use worth_proof::TransitionOutcome;
+use worth_store_physical_backend::MediaOperationRole;
+use {
+    worth_store::physical_runtime::PhysicalEffectObligation,
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalSchedulerDenial,
+    worth_store::physical_runtime::PhysicalStoreCloseOutcome,
+    worth_store::physical_runtime::PhysicalStoreClosePhase,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkExecutionOutcome,
+    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
+};
+use {
+    worth_store_physical_backend::FilesystemAccessPosture,
+    worth_store_physical_backend::MediaFaultDirective,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_artifact_mutation_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::overlapping_mutation_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_open_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture, worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::ready_work, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::secure_demand, worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::write_demand};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_artifact_mutation_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::overlapping_mutation_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_open_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::ready_work,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::secure_demand,
+    worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::write_demand,
+    worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt,
+};
 
 #[test]
 fn independent_mutation_capabilities_execute_without_a_global_runtime_borrow() {
@@ -44,10 +68,13 @@ fn independent_mutation_capabilities_execute_without_a_global_runtime_borrow() {
         _ => panic!("faulted media should admit"),
     };
     let (format, _, access) = worth_store_testkit_store::physical_record_journeys::configuration();
-    let serving = worth_store_testkit_store::physical_record_journeys::success(open_record_store!(media, |durability| {
-        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
-            .with_physical_work_profile(profile)
-    },));
+    let serving = worth_store_testkit_store::physical_record_journeys::success(open_record_store!(
+        media,
+        |durability| {
+            worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+                .with_physical_work_profile(profile)
+        },
+    ));
     let before = serving.media_counters();
     let first = admitted_write(&serving, first_request);
     let second = admitted_write(&serving, second_request);
@@ -58,8 +85,16 @@ fn independent_mutation_capabilities_execute_without_a_global_runtime_borrow() {
         worth_store::physical_runtime::PhysicalWorkConcurrencyRelation::DisjointArtifacts,
         "C5_PREDICATE:branch-label-disjointness exact physical coordinates, not label-like digests, must determine concurrency",
     );
-    let first = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(first, b"thread01".as_slice()).unwrap();
-    let second = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(second, b"thread02".as_slice()).unwrap();
+    let first = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        first,
+        b"thread01".as_slice(),
+    )
+    .unwrap();
+    let second = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        second,
+        b"thread02".as_slice(),
+    )
+    .unwrap();
     let (first, second, overlapped) = std::thread::scope(|scope| {
         let first = scope.spawn(|| serving.execute_physical_work(first));
         let second = scope.spawn(|| serving.execute_physical_work(second));
@@ -104,7 +139,8 @@ fn independent_mutation_capabilities_execute_without_a_global_runtime_borrow() {
         serving
             .media_counters()
             .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
         2
     );
     assert!(matches!(
@@ -140,13 +176,18 @@ fn overlapping_writes_conflict_before_the_second_effect() {
         }
         Ok(_) => panic!("an overlapping write must be refused before its effect"),
     }
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(first, b"overlap!".as_slice()).unwrap();
+    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+        first,
+        b"overlap!".as_slice(),
+    )
+    .unwrap();
     serving.execute_physical_work(command).unwrap();
     assert_eq!(
         serving
             .media_counters()
             .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
         1,
         "the conflicting write must not reach the backend"
     );
@@ -185,10 +226,13 @@ fn close_waits_for_a_dispatched_execution_capability_before_disposal() {
         _ => panic!("faulted media should admit"),
     };
     let (format, _, access) = worth_store_testkit_store::physical_record_journeys::configuration();
-    let serving = worth_store_testkit_store::physical_record_journeys::success(open_record_store!(media, |durability| {
-        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
-            .with_physical_work_profile(profile)
-    },));
+    let serving = worth_store_testkit_store::physical_record_journeys::success(open_record_store!(
+        media,
+        |durability| {
+            worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+                .with_physical_work_profile(profile)
+        },
+    ));
     let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
         admitted_write(&serving, request),
         b"closing!".as_slice(),
@@ -210,12 +254,14 @@ fn close_waits_for_a_dispatched_execution_capability_before_disposal() {
         );
         let closing = scope.spawn(move || close.execute());
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
-        while !progress.reached(worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped)
+        while !progress
+            .reached(worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped)
             && std::time::Instant::now() < deadline
         {
             std::thread::yield_now();
         }
-        assert!(progress.reached(worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped));
+        assert!(progress
+            .reached(worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped));
         assert!(
             !progress.reached(worth_store::physical_runtime::PhysicalStoreClosePhase::DispatchSettlementComplete),
             "C5_PREDICATE:duplicate-work-registry: close used a registry disjoint from active execution"
@@ -232,7 +278,10 @@ fn close_waits_for_a_dispatched_execution_capability_before_disposal() {
         settled.settled().evidence().fate(),
         worth_store::physical_runtime::PhysicalWorkEffectFate::WriteCompleted
     );
-    assert!(matches!(closed, worth_store::physical_runtime::PhysicalStoreCloseOutcome::Closed { .. }));
+    assert!(matches!(
+        closed,
+        worth_store::physical_runtime::PhysicalStoreCloseOutcome::Closed { .. }
+    ));
     assert!(progress.reached(worth_store::physical_runtime::PhysicalStoreClosePhase::MediaReleased));
 }
 
@@ -261,14 +310,19 @@ fn overlapping_exact_writes_are_refused_before_a_second_effect() {
     }
     serving
         .execute_physical_work(
-            worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(first, b"winner01".as_slice()).unwrap(),
+            worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+                first,
+                b"winner01".as_slice(),
+            )
+            .unwrap(),
         )
         .unwrap();
     assert_eq!(
         serving
             .media_counters()
             .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
         1
     );
     let catalog = std::fs::read(root.path().join("families/records/bootstrap.catalog")).unwrap();
@@ -284,8 +338,11 @@ fn cancellation_and_dispatch_have_one_atomic_physical_winner() {
     for ordinal in 0..32_u8 {
         let admitted = admitted_write(&serving, request.clone());
         let consumer = admitted.consumer_handle();
-        let command =
-            worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, [ordinal; 8].as_slice()).unwrap();
+        let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+            admitted,
+            [ordinal; 8].as_slice(),
+        )
+        .unwrap();
         let barrier = std::sync::Barrier::new(3);
         let before = serving.media_counters();
         let (execution, cancellation) = std::thread::scope(|scope| {
@@ -308,7 +365,8 @@ fn cancellation_and_dispatch_have_one_atomic_physical_winner() {
         let effects = serving
             .media_counters()
             .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite);
+            - before
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite);
         match execution {
             Ok(settled) => {
                 assert_eq!(

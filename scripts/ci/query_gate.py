@@ -5,9 +5,9 @@
     python scripts/ci/query_gate.py relational,bank  the named suites
     python scripts/ci/query_gate.py --list           suite names
 
-Build each workspace's tests once with `cargo test --no-run`, then run every
-listed case by exact name. Category prefixes govern selection and isolation; independent
-chunks run concurrently, and compiler sessions run sequentially.
+Governed workspaces use one census/prebuild execution for every selected suite.
+Category prefixes govern selection. External fixture and scheduled suites retain
+their explicit process scheduling.
 
 Results go to target/query-gate (or --out): <suite>.json and one log per
 build, chunk and command. The exit code is 0 only when every suite is green.
@@ -23,10 +23,12 @@ import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from check_trybuild_test_group import session_tests
 from query_gate_artifacts import test_binaries
 from query_gate_diagnostics import failed_tests, report_failed_command
 from query_gate_environment import environment
+from query_gate_prebuild import GatePrebuild, PrerequisiteFailure, refused_scale_suites
+from query_gate_cost import CostGate, governed
+from cargo_capture import CargoRunner
 
 from query_gate_courts import (
     BANK, BEFORE, BOUNDARY, FIXTURE, FIXTURE_PACKAGES, GROUPS, LOWER, QUERY,
@@ -37,14 +39,6 @@ from query_gate_courts import (
 def in_class(name, cost_class):
     return cost_class in name.split("::")[:-1]
 
-
-# Tests that open a trybuild session. trybuild builds every crate's cases in
-# one shared project under target/tests/trybuild, and its cross-process lock
-# does not hold on Windows: two chunks running sessions at once overwrite each
-# other's generated manifest, so a should-fail case builds from another case's
-# source and passes. They run in the serial lane, as nextest's trybuild-project
-# group runs them; check_trybuild_test_group.py owns which tests those are.
-TRYBUILD_SESSIONS = session_tests()[0]
 
 # The root Execution owner still needs one authority configuration per process.
 # Its migration is owned by Track A1. Governed fixture tests use serial paths.
@@ -123,9 +117,6 @@ COMMAND_SUITES = {
         ("line-caps", [bash(), "scripts/ci/check_workspace_rust_line_caps.sh", "dirty"]),
     ],
     "extra": [
-        ("server-refused-read",
-         ["cargo", "test", *ROOT_TESTS,
-          "refused_basis_advancement_fails_the_slot_and_closes_the_lane"]),
         ("consumer-root",
          ["cargo", "run", "--manifest-path", FIXTURE, "-p", "worth-query-consumer-root"]),
         ("check-query-workspace",
@@ -146,14 +137,14 @@ COMMAND_ENV = {
 }
 
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
-         "relational", "signal", "execution", "query-execution", "query-rest",
+         "relational", "signal", "execution", "root-rest", "query-execution", "query-rest",
          "query-process", "query-exhaustive", "fixture", "bank", "bank-process", "doc-lower", "doc", "wasm", "boundary", "extra"]
-ORDER += [name for name in TEST_SUITES if name.startswith(("query-", "bank-"))
+ORDER += [name for name in TEST_SUITES if name.startswith(("query-", "bank-", "root-"))
           and name not in ORDER and not name.endswith("-scale")]
 
 
 class Gate:
-    def __init__(self, out):
+    def __init__(self, out, census=False):
         self.out = out
         self.env = environment(ROOT)
         # An explicitly supplied build identity governs this complete gate.
@@ -162,15 +153,25 @@ class Gate:
             self.env["WORTH_IMPLEMENTATION_BUILD_ID"] = build_id
         self.built = {}
         self.prepared = set()
+        self.census = census
+        self.prerequisites = GatePrebuild(ROOT, out / "prebuilt", self.env)
+        self.cost = CostGate(ROOT, out / "test-cost", self.env)
+
+    def plan(self, suites):
+        self.cost.configure(suites)
 
     def command(self, label, argv):
         log = self.out / f"{label}.log"
         started = time.time()
-        with open(log, "w", encoding="utf-8", errors="replace") as sink:
-            code = subprocess.run(
-                argv, cwd=ROOT, env=dict(self.env, **COMMAND_ENV.get(label, {})),
-                stdout=sink, stderr=subprocess.STDOUT,
-            ).returncode
+        child_environment = dict(self.env, **COMMAND_ENV.get(label, {}))
+        if argv[:1] == ["cargo"]:
+            code = CargoRunner(ROOT, child_environment)(argv, ROOT, log).returncode
+        else:
+            with open(log, "w", encoding="utf-8", errors="replace") as sink:
+                code = subprocess.run(
+                    argv, cwd=ROOT, env=child_environment,
+                    stdout=sink, stderr=subprocess.STDOUT,
+                ).returncode
         text = log.read_text(encoding="utf-8", errors="replace").splitlines()
         if code != 0:
             report_failed_command(label, code, log, text)
@@ -186,12 +187,9 @@ class Gate:
             return self.built[group]
         log = self.out / f"group-{group}-build.log"
         started = time.time()
-        with open(log, "w", encoding="utf-8") as sink:
-            done = subprocess.run(
-                ["cargo", "test", *GROUPS[group], "--no-run", "--timings", "--message-format=json"],
-                cwd=ROOT, env=self.env, stdout=subprocess.PIPE, stderr=sink, text=True,
-                encoding="utf-8", errors="replace",
-            )
+        done = CargoRunner(ROOT, self.env)(
+            ["cargo", "test", *GROUPS[group], "--no-run", "--timings"], ROOT, log,
+        )
         # Preserve JSON compiler diagnostics even when no test binary was produced.
         log.with_suffix(".jsonl").write_text(done.stdout, encoding="utf-8")
         binaries = test_binaries(done.stdout)
@@ -200,6 +198,8 @@ class Gate:
         return self.built[group]
 
     def chunk(self, suite, index, binary, names, extra=()):
+        if refused_scale_suites([suite], self.census):
+            raise ValueError("ignored scale tests are scheduled-only, outside census execution")
         if suite.endswith("-scale"):
             extra = (*extra, "--include-ignored")
         log = self.out / f"{suite}-chunk-{index:03}.log"
@@ -222,6 +222,13 @@ class Gate:
         }
 
     def tests(self, suite):
+        if refused_scale_suites([suite], self.census):
+            raise ValueError("ignored scale tests are scheduled-only, outside census execution")
+        if governed(suite):
+            return self.cost.run(suite)
+        return self._nonlanding_tests(suite)
+
+    def _nonlanding_tests(self, suite):
         group, want, size, workers = TEST_SUITES[suite]
         for label, argv in BEFORE.get(suite, []):
             if label in self.prepared:
@@ -234,10 +241,12 @@ class Gate:
         if binaries is None:
             return {"suite": suite, "build": "FAILED", "log": build_log, "ok": False}
         shared, alone, whole, exclusive, listing, total = [], [], [], [], [], 0
+        prerequisite_binaries = []
         for binary in filter(want, binaries):
             if not binary["harness"]:
                 listing.append((binary["package"], binary["target"], 0))
                 whole.append(binary)
+                prerequisite_binaries.append(binary)
                 continue
             env = dict(self.env, CARGO_MANIFEST_DIR=binary["cwd"])
             discovery = subprocess.run(
@@ -252,6 +261,8 @@ class Gate:
             names = sorted(line[: -len(": test")] for line in discovery.stdout.splitlines()
                            if line.endswith(": test"))
             names = [name for name in names if selected(suite, binary, name)]
+            if names:
+                prerequisite_binaries.append(binary)
             listing.append((binary["package"], binary["target"], len(names)))
             total += len(names)
             exclusive_names = [n for n in names
@@ -261,14 +272,18 @@ class Gate:
             if (suite, binary["package"]) in PROCESS_PER_CASE:
                 shared += [(binary, [name], ()) for name in names]
                 continue
-            probes = [n for n in names if in_class(n, "compile_fail")
-                      or n.rsplit("::", 1)[-1] in TRYBUILD_SESSIONS]
+            probes = [n for n in names if in_class(n, "compile_fail")]
             isolated = [n for n in names if in_class(n, "serial") and n not in probes]
             rest = [n for n in names if n not in set(probes + isolated)]
             shared += [(binary, rest[at:at + size], ()) for at in range(0, len(rest), size)]
             shared += [(binary, [name], ()) for name in isolated]
             alone += [(binary, [name], ()) for name in probes]
-            # Compiler sessions run only after every independent chunk has finished.
+            # Boundary outcomes are checked after independent chunks have finished.
+        try:
+            self.prerequisites.prepare(group, prerequisite_binaries)
+        except PrerequisiteFailure as failure:
+            return {"suite": suite, "ok": False, "prebuild": "FAILED",
+                    "workspace": failure.workspace, "failure": str(failure)}
         jobs = list(enumerate(
             shared + alone + [(binary, [], ()) for binary in whole] + exclusive
         ))
@@ -310,22 +325,32 @@ class Gate:
                                                 encoding="utf-8")
         return result
 
-def main():
+def main(argv=None, default_suites=None, default_out=None, allowed_suites=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("suites", nargs="?", default=",".join(ORDER),
+    parser.add_argument("suites", nargs="?", default=",".join(default_suites or ORDER),
                         help="comma-separated suite names (default: all)")
-    parser.add_argument("--out", type=Path, default=ROOT / "target" / "query-gate")
+    parser.add_argument("--out", type=Path, default=default_out or ROOT / "target" / "query-gate")
     parser.add_argument("--list", action="store_true", help="print suite names")
-    args = parser.parse_args()
+    parser.add_argument("--census", action="store_true", help="refuse scheduled scale suites")
+    args = parser.parse_args(argv)
     if args.list:
-        print("\n".join(dict.fromkeys([*ORDER, *TEST_SUITES, *COMMAND_SUITES])))
+        print("\n".join(allowed_suites or dict.fromkeys([*ORDER, *TEST_SUITES, *COMMAND_SUITES])))
         return 0
     suites = args.suites.split(",")
     unknown = [name for name in suites if name not in TEST_SUITES and name not in COMMAND_SUITES]
     if unknown:
         parser.error("unknown suite: " + ", ".join(unknown))
+    if len(set(suites)) != len(suites):
+        parser.error("suite repeats in the execution plan")
+    if allowed_suites is not None and any(name not in allowed_suites for name in suites):
+        parser.error("suite is outside this workspace gate")
+    if refused_scale_suites(suites, args.census):
+        parser.error("ignored scale tests are scheduled-only, outside census execution")
+    if args.census and "ui" in suites:
+        parser.error("worth-ui is excluded from census execution")
     args.out.mkdir(parents=True, exist_ok=True)
-    gate = Gate(args.out)
+    gate = Gate(args.out, census=args.census)
+    gate.plan(suites)
     red = []
     for suite in suites:
         result = gate.run(suite)

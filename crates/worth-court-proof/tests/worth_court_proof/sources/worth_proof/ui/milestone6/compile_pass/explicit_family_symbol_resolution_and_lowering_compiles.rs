@@ -38,4 +38,4 @@ fn explicit_family_symbol_resolution_and_lowering_compiles() {
     let _ = lowered.proof();
 }
 
-fn main() {}
+pub(crate) fn main() {}

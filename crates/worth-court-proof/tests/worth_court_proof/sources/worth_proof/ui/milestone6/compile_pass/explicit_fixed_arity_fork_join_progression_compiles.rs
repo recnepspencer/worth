@@ -6,7 +6,7 @@ use worth_proof::{
 struct RawPhase;
 impl PhaseMarker for RawPhase {}
 
-fn main() {
+pub(crate) fn main() {
     let source = Artifact::<RawPhase, _>::new((3_u8, 5_u8));
 
     let forked = fork_artifact_pair(source, |payload, proofs, basis| {

@@ -1,9 +1,15 @@
 //! Cold serving and interrupted cold readmission use the existing kill driver.
-#[allow(unused_imports)] use crate::residency_process::*;
-use {crate::durable_run, crate::killed_child, crate::residency_fixture::Fixture, crate::schema_transition, crate::workload};
+#[allow(unused_imports)]
+use crate::residency_process::*;
+use worth_execution::ExecutionRequest;
+use {
+    crate::durable_run, crate::killed_child, crate::residency_fixture::Fixture,
+    crate::schema_transition, crate::workload,
+};
 use {std::fs, std::path::PathBuf};
-use {worth_execution::ExecutionRequest};
-use {worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeRequest};
+use {
+    worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeRequest,
+};
 
 #[test]
 fn a_killed_home_stays_cold_and_an_interrupted_cold_restore_reopens_again() {
@@ -86,30 +92,31 @@ fn residency_child() {
         .unwrap()
         .parse::<u64>()
         .unwrap();
-    let opened = worth_store_relational::RelationalStoreHome::certification_open_with_readmission_observer(
-        worth_store_relational::RelationalStoreHomeRequest::new(
-            &location,
-            crate::workload::runtime_builder(crate::schema_transition::SOURCE),
-        ),
-        move |position, reads| {
-            assert_eq!(position.0, head, "readmission requests the selected head");
-            assert_eq!(reads.commit_reads, 1, "first cold-port journal payload");
-            assert_eq!(
-                reads.member_reads, 0,
-                "readmission has not demanded regions"
-            );
-            crate::killed_child::announce(
-                &markers.join("ready"),
-                format!(
-                    "selected-head-payload {}: commits={} members={}",
-                    position.0, reads.commit_reads, reads.member_reads
-                )
-                .as_bytes(),
-            );
-            crate::killed_child::park();
-        },
-        &execution,
-    );
+    let opened =
+        worth_store_relational::RelationalStoreHome::certification_open_with_readmission_observer(
+            worth_store_relational::RelationalStoreHomeRequest::new(
+                &location,
+                crate::workload::runtime_builder(crate::schema_transition::SOURCE),
+            ),
+            move |position, reads| {
+                assert_eq!(position.0, head, "readmission requests the selected head");
+                assert_eq!(reads.commit_reads, 1, "first cold-port journal payload");
+                assert_eq!(
+                    reads.member_reads, 0,
+                    "readmission has not demanded regions"
+                );
+                crate::killed_child::announce(
+                    &markers.join("ready"),
+                    format!(
+                        "selected-head-payload {}: commits={} members={}",
+                        position.0, reads.commit_reads, reads.member_reads
+                    )
+                    .as_bytes(),
+                );
+                crate::killed_child::park();
+            },
+            &execution,
+        );
     let completed = opened.map(worth_store_relational::RelationalStoreHome::close);
     panic!("cold restore completed without its selected-head pause: {completed:?}");
 }

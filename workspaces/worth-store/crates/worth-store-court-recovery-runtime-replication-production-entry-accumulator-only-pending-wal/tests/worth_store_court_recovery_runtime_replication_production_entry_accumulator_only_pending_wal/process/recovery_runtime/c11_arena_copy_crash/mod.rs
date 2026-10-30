@@ -1,14 +1,44 @@
+#[allow(unused_imports)]
+use crate::c11_arena_copy_crash::*;
+use worth_proof::TransitionOutcome;
+use {
+    std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread,
+    std::time::Duration, std::time::Instant,
+};
+use {
+    worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalExtentCopyPhase,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+};
+use {
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+    worth_store_testkit_recovery_runtime::support::append,
+    worth_store_testkit_recovery_runtime::support::configuration,
+    worth_store_testkit_recovery_runtime::support::generation,
+    worth_store_testkit_recovery_runtime::support::initialize,
+    worth_store_testkit_recovery_runtime::support::open,
+    worth_store_testkit_recovery_runtime::support::recovery_request,
+    worth_store_testkit_recovery_runtime::support::scan,
+    worth_store_testkit_recovery_runtime::support::EXTENT_BYTES,
+};
+use {
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DurableExtentRecordPlacement,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
-
-#[allow(unused_imports)] use crate::c11_arena_copy_crash::*;
-use {std::path::Path, std::path::PathBuf, std::process::Command, std::process::Stdio, std::thread, std::time::Duration, std::time::Instant};
-use {worth_store_testkit_recovery_runtime::support::EXTENT_BYTES, worth_store::physical_runtime::ServingPhysicalRuntime, worth_store_testkit_recovery_runtime::support::append, worth_store_testkit_recovery_runtime::support::configuration, worth_store_testkit_recovery_runtime::support::generation, worth_store_testkit_recovery_runtime::support::initialize, worth_store_testkit_recovery_runtime::support::open, worth_store_testkit_recovery_runtime::support::recovery_request, worth_store_testkit_recovery_runtime::support::scan};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalExtentCopyPhase, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationRequest};
-use {worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::PersistedRecordIdentity};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff, worth_store_recovery_runtime::WorthStoreRecovery};
-
-use {crate::c11_arena_copy_crash::observation::observe_copy_media};
+use crate::c11_arena_copy_crash::observation::observe_copy_media;
 
 #[test]
 fn killed_final_copy_wal_replays_one_destination_before_serving() {
@@ -83,11 +113,14 @@ fn final_copy_wal_child() {
     checkpoint_source(&serving);
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([203; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([203; 32]),
+        )
         .unwrap();
     let request = worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
         key,
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let Ok(mut progress) = submission
         .certification_begin_selected_extent_copy(placement, request, identity)
@@ -96,12 +129,17 @@ fn final_copy_wal_child() {
         panic!("selected extent copy did not admit")
     };
     for _ in 0..128 {
-        if progress.phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption {
+        if progress.phase
+            == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+        {
             break;
         }
         progress = submission.advance_extent_copy().unwrap();
     }
-    assert_eq!(progress.phase, worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption);
+    assert_eq!(
+        progress.phase,
+        worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+    );
     let prepared = submission.prepare_completed_extent_copy().unwrap();
     let original = std::fs::read(root.join("families/records/bootstrap.catalog")).unwrap();
     std::fs::write(directory.join("baseline-catalog"), &original).unwrap();

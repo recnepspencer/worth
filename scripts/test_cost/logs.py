@@ -24,7 +24,7 @@ def json_objects(text):
 
 def read_lane(path):
     text = Path(path).read_text(encoding='utf-8-sig', errors='replace')
-    result = {'log': str(path), 'artifacts': [], 'artifact_messages': 0, 'tests': [], 'setup': [],
+    result = {'log': str(path), 'artifacts': [], 'artifact_messages': 0, 'tests': [], 'suites': [], 'setup': [],
               'cpu': [], 'compiler_progress': [], 'telemetry': {}, 'headers': {}}
     context = {}
     for event in json_objects(text):
@@ -36,11 +36,23 @@ def read_lane(path):
                 result['artifacts'].append(artifact(event, context))
         if event.get('type') == 'test' and event.get('event') in ('ok', 'failed', 'ignored'):
             result['tests'].append(event)
+        if event.get('type') == 'suite' and event.get('event') in ('ok', 'failed'):
+            result['suites'].append(event)
         if event.get('type') == 'test-cost-setup':
             result['setup'].append(event)
         if event.get('type') == 'test-cost-cpu':
             result['cpu'].append(event)
+        if event.get('type') == 'test-cost-phases':
+            result['telemetry'].update(build_seconds=event['build_seconds'],
+                                       run_seconds=event['wall_seconds'] - event['build_seconds'],
+                                       wall_seconds=event['wall_seconds'])
     result['compiler_progress'] = re.findall(r'^\s*(?:Compiling|Checking) (\S+) v(\S+)', text, re.M)
+    build = re.findall(r'^\s*Finished .+ target\(s\) in (.+)$', text, re.M)
+    run = re.findall(r'^\s*Summary \[\s*([^]]+)\]', text, re.M)
+    if build:
+        result['telemetry'].setdefault('build_seconds', sum(duration(value) for value in build))
+    if run:
+        result['telemetry'].setdefault('run_seconds', sum(duration(value) for value in run))
     for field in ('Command', 'HEAD', 'Git status --short empty', 'Start', 'End', 'Exit code'):
         found = re.findall(rf'^{re.escape(field)}: (.+)$', text, re.M)
         result['headers'][field] = found[-1].strip() if found else None
@@ -56,6 +68,14 @@ def read_lane(path):
     return result
 
 
+def duration(value):
+    units = {'h': 3600, 'm': 60, 's': 1, 'ms': .001}
+    matches = re.findall(r'(\d+(?:\.\d+)?)\s*(ms|h|m|s)', value)
+    if not matches:
+        raise ValueError(f'unrecognized Cargo/nextest duration: {value}')
+    return sum(float(number) * units[unit] for number, unit in matches)
+
+
 def artifact(event, context):
     files = event.get('filenames', [])
     filename = files[0].replace('\\', '/') if files else ''
@@ -63,6 +83,12 @@ def artifact(event, context):
     target_dir = context.get('target_dir')
     if target_dir is None and 'deps' in path.parts:
         target_dir = str(PurePosixPath(*path.parts[:path.parts.index('deps') - 1]))
+    if target_dir is None and filename:
+        parent = path.parent
+        if parent.name in ('examples', 'incremental'):
+            parent = parent.parent
+        if parent.name in ('debug', 'release', 'ci-test', 'diagnostic-test'):
+            target_dir = str(parent.parent)
     return {'package': event['package_id'], 'target': event['target']['name'],
             'kind': sorted(event['target']['kind']), 'features': sorted(event['features']),
             'profile': event['profile'], 'target_dir': target_dir,
@@ -93,8 +119,9 @@ def llvm_lines(text, helpers=()):
         match = re.match(r'\s*(\d+)\s+(?:\([^)]*\)\s+)?(\d+)\s+(?:\([^)]*\)\s+)?(.+?)\s*$', line)
         if match:
             name = match[3]
+            inferred = re.findall(r'\b(worth_\w*(?:testkit\w*|test_support)::[^\s<>(),]+)', name)
             rows.append({'lines': int(match[1]), 'copies': int(match[2]), 'name': name,
-                         'testkit_helpers': sorted(h for h in helpers if h in name)})
+                         'testkit_helpers': sorted(set(inferred) | {h for h in helpers if h in name})})
     if not rows or not any(r['name'] == 'TOTAL' for r in rows):
         raise ValueError('LLVM lines input has no TOTAL row')
     return sorted(rows, key=lambda r: (-r['lines'], r['name']))

@@ -3,10 +3,28 @@
 
 pub(crate) use {std::fs, std::path::Path, std::time::Duration};
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::PhysicalCheckpointCaptureFailureKind, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalCheckpointStartFailure, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalCheckpointCaptureFailureKind,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalCheckpointStartFailure,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {crate::physical_blob_journeys::blob_crash::establish_recovery_frontier, crate::physical_blob_journeys::blob_crash::kill_at, crate::physical_blob_journeys::blob_reclaim_released_crash::TIER_ROLE, worth_store_testkit_store::fixture::assert_anchored_open_requires_recovered_custody, worth_store_testkit_store::fixture::assert_released_open_requires_recovered_custody, worth_store_testkit_store::fixture::configuration, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+pub(crate) use {
+    crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
+    crate::physical_blob_journeys::blob_crash::kill_at,
+    crate::physical_blob_journeys::blob_reclaim_released_crash::TIER_ROLE,
+    worth_store_testkit_store::fixture::assert_anchored_open_requires_recovered_custody,
+    worth_store_testkit_store::fixture::assert_released_open_requires_recovered_custody,
+    worth_store_testkit_store::fixture::configuration,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 pub(crate) const TIER_CERTIFICATE_KIND: u8 = 6;
 pub(crate) const RELEASE_CERTIFICATE_KIND: u8 = 7;
@@ -22,9 +40,12 @@ pub(crate) fn certify_tier_epoch(serving: &ServingPhysicalRuntime) {
 pub(crate) fn checkpoint(serving: &ServingPhysicalRuntime, key: u8) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("checkpoint must admit")
     };
     assert!(matches!(

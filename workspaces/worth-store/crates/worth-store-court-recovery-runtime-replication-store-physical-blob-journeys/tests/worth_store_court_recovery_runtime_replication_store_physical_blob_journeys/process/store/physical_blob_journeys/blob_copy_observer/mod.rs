@@ -1,10 +1,40 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_copy_observer::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_copy_observer::*;
 use {std::io::Read, std::io::Seek, std::io::SeekFrom, std::path::Path};
 
-use {worth_store::physical_runtime::PhysicalExtentCopyPhase, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRecordId};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::decode_extent_chunk, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::BootstrapCatalog, worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurableExtentManifest, worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::ExtentArenaFrameLayout, worth_store_physical_format::ExtentChunkCoordinate, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalRootRoutingBlock, worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES, worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES, worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES};
+use {
+    worth_store::physical_runtime::PhysicalExtentCopyPhase,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRecordId,
+};
+use {
+    worth_store_physical_format::decode_blob_record,
+    worth_store_physical_format::decode_extent_chunk, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::BootstrapCatalog,
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DurableExtentManifest,
+    worth_store_physical_format::DurableExtentRecordPlacement,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::ExtentArenaFrameLayout,
+    worth_store_physical_format::ExtentChunkCoordinate,
+    worth_store_physical_format::PersistedRecordIdentity,
+    worth_store_physical_format::PhysicalRootRoutingBlock,
+    worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES,
+    worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES,
+    worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES,
+};
 
-use {crate::physical_blob_journeys::blob_abort::unfinished, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+use {
+    crate::physical_blob_journeys::blob_abort::unfinished,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn held_historical_blob_copy_is_not_a_second_selected_chunk() {
@@ -17,7 +47,12 @@ fn held_historical_blob_copy_is_not_a_second_selected_chunk() {
     let selected = selected_blob_records(&serving);
     let (chunk, bytes) = selected
         .iter()
-        .find(|(_, bytes)| matches!(decode_blob_record(bytes), Ok(worth_store_physical_format::BlobRecordV1::Chunk(_))))
+        .find(|(_, bytes)| {
+            matches!(
+                decode_blob_record(bytes),
+                Ok(worth_store_physical_format::BlobRecordV1::Chunk(_))
+            )
+        })
         .expect("one real selected blob chunk");
     let chunk = *chunk;
     let bytes = bytes.clone();
@@ -28,13 +63,20 @@ fn held_historical_blob_copy_is_not_a_second_selected_chunk() {
     // WAL, root publication, and unresolved custody use production owners.
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([113; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([113; 32]),
+        )
         .unwrap();
     let request = worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
         key,
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
     );
-    let identity = worth_store_physical_format::PersistedRecordIdentity::new(chunk.allocation_epoch(), chunk.ordinal()).unwrap();
+    let identity = worth_store_physical_format::PersistedRecordIdentity::new(
+        chunk.allocation_epoch(),
+        chunk.ordinal(),
+    )
+    .unwrap();
     let Ok(mut progress) = submission
         .certification_begin_selected_extent_copy(placement(), request, identity)
         .unwrap()
@@ -42,12 +84,17 @@ fn held_historical_blob_copy_is_not_a_second_selected_chunk() {
         panic!("actual selected blob extent must admit bounded copy");
     };
     for _ in 0..128 {
-        if progress.phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption {
+        if progress.phase
+            == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+        {
             break;
         }
         progress = submission.advance_extent_copy().unwrap();
     }
-    assert_eq!(progress.phase, worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption);
+    assert_eq!(
+        progress.phase,
+        worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+    );
     let prepared = submission.prepare_completed_extent_copy().unwrap();
     assert!(matches!(
         prepared.execute(),

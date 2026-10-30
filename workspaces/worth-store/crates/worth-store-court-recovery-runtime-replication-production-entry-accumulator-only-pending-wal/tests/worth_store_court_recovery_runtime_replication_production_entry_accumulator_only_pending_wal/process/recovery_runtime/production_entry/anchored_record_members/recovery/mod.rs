@@ -2,10 +2,11 @@
 //! recovery, and a member whose durable bytes are damaged refuses with a
 //! typed failure instead of reading as content or as absence.
 
-#[allow(unused_imports)] use crate::production_entry::anchored_record_members::recovery::*;
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::production_entry::anchored_record_members::recovery::*;
+use std::path::Path;
 
-use {worth_store::physical_runtime::AnchoredRecordMemberReadFailure};
+use worth_store::physical_runtime::AnchoredRecordMemberReadFailure;
 
 use {crate::production_entry::anchored_record_members::assert_value, crate::production_entry::anchored_record_members::carried, crate::production_entry::anchored_record_members::content, crate::production_entry::anchored_record_members::new_member, crate::production_entry::anchored_record_members::publish_with_members};
 use {worth_store_testkit_recovery_runtime::production_entry::anchored_records::assert_journal, worth_store_testkit_recovery_runtime::production_entry::anchored_records::name, worth_store_testkit_recovery_runtime::production_entry::anchored_records::publish_journal_entry, worth_store_testkit_recovery_runtime::production_entry::anchored_records::value, worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT};
@@ -104,9 +105,11 @@ fn a_damaged_member_refuses_typed_and_never_reads_as_absent() {
         assert!(
             matches!(
                 outcome,
-                Err(worth_store::physical_runtime::AnchoredRecordMemberReadFailure::Damaged(_)
-                    | worth_store::physical_runtime::AnchoredRecordMemberReadFailure::Stream(_)
-                    | worth_store::physical_runtime::AnchoredRecordMemberReadFailure::Open(_))
+                Err(
+                    worth_store::physical_runtime::AnchoredRecordMemberReadFailure::Damaged(_)
+                        | worth_store::physical_runtime::AnchoredRecordMemberReadFailure::Stream(_)
+                        | worth_store::physical_runtime::AnchoredRecordMemberReadFailure::Open(_)
+                )
             ),
             "member {index} answered {outcome:?}"
         );

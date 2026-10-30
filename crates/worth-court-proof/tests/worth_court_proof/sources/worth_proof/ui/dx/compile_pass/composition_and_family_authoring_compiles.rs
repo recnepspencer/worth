@@ -5,9 +5,15 @@ fn family_action_key(
 ) -> (u8, Option<u8>, Option<u16>) {
     match action {
         worth_proof::FamilyLifecycleAction::Retire { target } => (0, None, Some(*target.value())),
-        worth_proof::FamilyLifecycleAction::Rewrite { target, .. } => (1, None, Some(*target.value())),
-        worth_proof::FamilyLifecycleAction::Supersede { target, .. } => (2, None, Some(*target.value())),
-        worth_proof::FamilyLifecycleAction::Create { symbol, .. } => (3, Some(*symbol.value()), None),
+        worth_proof::FamilyLifecycleAction::Rewrite { target, .. } => {
+            (1, None, Some(*target.value()))
+        }
+        worth_proof::FamilyLifecycleAction::Supersede { target, .. } => {
+            (2, None, Some(*target.value()))
+        }
+        worth_proof::FamilyLifecycleAction::Create { symbol, .. } => {
+            (3, Some(*symbol.value()), None)
+        }
     }
 }
 
@@ -76,7 +82,7 @@ fn compose_ready_flow(
     let _ = joined;
 }
 
-fn main() {
+pub(crate) fn main() {
     let _ = family_flow;
     let _ = ready_join_flow;
     let _ = compose_ready_flow;

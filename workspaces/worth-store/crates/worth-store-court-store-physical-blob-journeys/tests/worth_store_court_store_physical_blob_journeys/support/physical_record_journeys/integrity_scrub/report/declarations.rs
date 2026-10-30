@@ -1,5 +1,14 @@
-pub(crate) use {worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress as Progress, worth_store_testkit_store::integrity_scrub::assert_released, crate::physical_record_journeys::integrity_scrub::report, worth_store_testkit_store::integrity_scrub::request, worth_store_testkit_store::integrity_scrub::target};
-pub(crate) use {worth_store::integrity_observation::PhysicalIntegrityRuntimeReportContext as Context, worth_store::integrity_observation::PhysicalIntegrityRuntimeReportDenial as ReportDenial};
+pub(crate) use {
+    crate::physical_record_journeys::integrity_scrub::report,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress as Progress,
+    worth_store_testkit_store::integrity_scrub::assert_released,
+    worth_store_testkit_store::integrity_scrub::request,
+    worth_store_testkit_store::integrity_scrub::target,
+};
+pub(crate) use {
+    worth_store::integrity_observation::PhysicalIntegrityRuntimeReportContext as Context,
+    worth_store::integrity_observation::PhysicalIntegrityRuntimeReportDenial as ReportDenial,
+};
 
 pub(crate) fn capture(
     handle: &mut worth_store::physical_runtime::ManagedPhysicalIntegrityScrubHandle,
@@ -9,7 +18,11 @@ pub(crate) fn capture(
     let mut bytes = Vec::new();
     let count = handle
         .write_observation_report(
-            worth_store::integrity_observation::PhysicalIntegrityRuntimeReportContext::new(run, "runtime-report").unwrap(),
+            worth_store::integrity_observation::PhysicalIntegrityRuntimeReportContext::new(
+                run,
+                "runtime-report",
+            )
+            .unwrap(),
             16_384,
             &mut bytes,
         )

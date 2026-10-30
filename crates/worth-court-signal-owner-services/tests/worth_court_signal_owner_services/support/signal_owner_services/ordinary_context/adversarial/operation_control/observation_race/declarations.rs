@@ -1,15 +1,36 @@
-pub(crate) use {std::sync::mpsc};
-pub(crate) use {std::thread};
+pub(crate) use std::sync::mpsc;
+pub(crate) use std::thread;
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::ManagedSignalBranchReference, worth_signal::facade::branch::ManagedSignalBranchReferenceAdmissionDenial, worth_signal::facade::branch::SignalBranchBasisObservationDenial, worth_signal::facade::branch::SignalBranchObservation, worth_signal::facade::branch::SignalBranchRetirementDenial, worth_signal::facade::branch::SignalBranchRetirementReceipt, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest, worth_signal::facade::branch::SignalOwnerOperationControlForTest};
-pub(crate) use {worth_signal::facade::history::RuntimeBranchId};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_signal::facade::history::RuntimeBranchId;
+pub(crate) use {
+    worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    worth_signal::facade::branch::ManagedSignalBranchReference,
+    worth_signal::facade::branch::ManagedSignalBranchReferenceAdmissionDenial,
+    worth_signal::facade::branch::SignalBranchBasisObservationDenial,
+    worth_signal::facade::branch::SignalBranchObservation,
+    worth_signal::facade::branch::SignalBranchRetirementDenial,
+    worth_signal::facade::branch::SignalBranchRetirementReceipt,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+    worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest,
+    worth_signal::facade::branch::SignalOwnerOperationControlForTest,
+};
 
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, crate::signal_owner_services::ordinary_context::adversarial::world::BasisPort, crate::signal_owner_services::ordinary_context::adversarial::world::LifecyclePort, crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::prove_retirement_is_effectful, crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::retire, crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::retirement_plan};
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::prove_retirement_is_effectful,
+    crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::retire,
+    crate::signal_owner_services::ordinary_context::adversarial::operation_control::races::retirement_plan,
+};
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
+    crate::signal_owner_services::ordinary_context::adversarial::world::BasisPort,
+    crate::signal_owner_services::ordinary_context::adversarial::world::LifecyclePort,
+    crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND,
+};
 
 pub(crate) fn run_order(observe_first: bool) {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let branch_id = world.child_basis.branch_id();
     let expected = world.child_basis.observation().clone();
     let control: SignalOwnerOperationControlForTest = world
@@ -41,9 +62,10 @@ pub(crate) fn run_order(observe_first: bool) {
                 .recv_timeout(PROGRESS_BOUND)
                 .expect("the observer completes before retirement is admitted");
             scope.spawn(move || {
-                let _ = retire_tx.send(
-                    lifecycle.retire_exact(plan, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token()),
-                );
+                let _ = retire_tx.send(lifecycle.retire_exact(
+                    plan,
+                    &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+                ));
             });
             let retirement = retire_rx
                 .recv_timeout(PROGRESS_BOUND)
@@ -59,9 +81,10 @@ pub(crate) fn run_order(observe_first: bool) {
             });
             assert!(pause.wait_until_reached(PROGRESS_BOUND));
             scope.spawn(move || {
-                let _ = retire_tx.send(
-                    lifecycle.retire_exact(plan, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token()),
-                );
+                let _ = retire_tx.send(lifecycle.retire_exact(
+                    plan,
+                    &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+                ));
             });
             let retirement = retire_rx
                 .recv_timeout(PROGRESS_BOUND)
@@ -137,7 +160,10 @@ pub(crate) fn assert_retire_first(
     observation: Result<AdmittedSignalBranchBasis, SignalBranchBasisObservationDenial>,
     retirement: TransitionOutcome<SignalBranchRetirementReceipt, SignalBranchRetirementDenial>,
 ) {
-    assert!(matches!(retirement, worth_proof::TransitionOutcome::Success(_)));
+    assert!(matches!(
+        retirement,
+        worth_proof::TransitionOutcome::Success(_)
+    ));
     match observation {
         Err(worth_signal::facade::branch::SignalBranchBasisObservationDenial::ManagedReferenceDenied {
             denial: worth_signal::facade::branch::ManagedSignalBranchReferenceAdmissionDenial::BranchLifecycleEnded,

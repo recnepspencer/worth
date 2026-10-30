@@ -1,20 +1,41 @@
 #![cfg(all())]
 
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_digest_corruption::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_digest_corruption::*;
 use {std::fs, std::num::NonZeroU64, std::path::Path};
 
+use worth_store_blob_chunks::BlobChunkSize;
 use {sha2::Digest, sha2::Sha256};
-use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PublishedBlobGeneration};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_physical_format::BlobRecordDenial, worth_store_physical_format::DecodedBlobChunkFrameV1};
+use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PublishedBlobGeneration,
+};
+use {
+    worth_store_physical_format::BlobRecordDenial,
+    worth_store_physical_format::DecodedBlobChunkFrameV1,
+};
 
-use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
 fn damaged_inner_digest_field_localizes_without_inventing_an_observed_digest() {
     let (root, scope, published, limits) = one_chunk_store("c11.digest-field.corrupt");
     let before = observe_closed_store_named(root.path(), "c11-digest-field", "before");
-    let identity = mutate_selected_chunk(root.path(), &before, crate::physical_blob_journeys::blob_digest_corruption::Mutation::StoredDigestField);
+    let identity = mutate_selected_chunk(
+        root.path(),
+        &before,
+        crate::physical_blob_journeys::blob_digest_corruption::Mutation::StoredDigestField,
+    );
     let after = observe_closed_store_named(root.path(), "c11-digest-field", "damaged");
     let row = selected_chunk(&after);
     assert_eq!(row["identity"], identity);
@@ -48,7 +69,11 @@ fn damaged_inner_digest_field_localizes_without_inventing_an_observed_digest() {
 fn malformed_chunk_length_localizes_to_selected_chunk_record() {
     let (root, scope, published, limits) = one_chunk_store("c11.chunk-length.corrupt");
     let before = observe_closed_store_named(root.path(), "c11-chunk-length", "before");
-    let identity = mutate_selected_chunk(root.path(), &before, crate::physical_blob_journeys::blob_digest_corruption::Mutation::ContentLengthField);
+    let identity = mutate_selected_chunk(
+        root.path(),
+        &before,
+        crate::physical_blob_journeys::blob_digest_corruption::Mutation::ContentLengthField,
+    );
     let after = observe_closed_store_named(root.path(), "c11-chunk-length", "damaged");
     let row = selected_chunk(&after);
     assert_eq!(row["identity"], identity);
@@ -79,7 +104,11 @@ fn malformed_chunk_length_localizes_to_selected_chunk_record() {
 fn valid_chunk_with_resealed_changed_content_blames_parent_edge_not_chunk() {
     let (root, scope, published, limits) = one_chunk_store("c11.valid-chunk.wrong-edge");
     let before = observe_closed_store_named(root.path(), "c11-edge-mismatch", "before");
-    let identity = mutate_selected_chunk(root.path(), &before, crate::physical_blob_journeys::blob_digest_corruption::Mutation::ValidChangedContent);
+    let identity = mutate_selected_chunk(
+        root.path(),
+        &before,
+        crate::physical_blob_journeys::blob_digest_corruption::Mutation::ValidChangedContent,
+    );
     let after = observe_closed_store_named(root.path(), "c11-edge-mismatch", "changed");
     let chunk = selected_chunk(&after);
     assert_eq!(chunk["identity"], identity);
@@ -97,7 +126,13 @@ fn valid_chunk_with_resealed_changed_content_blames_parent_edge_not_chunk() {
     let blobs = serving.blobs().unwrap();
     let mut read = blobs.read(published, &scope, 0, 1, limits).unwrap();
     let error = read.read_next(&mut [0; 1]).unwrap_err();
-    assert!(matches!(error, worth_store::physical_runtime::BlobReadFailure::TreeDamaged), "{error:?}");
+    assert!(
+        matches!(
+            error,
+            worth_store::physical_runtime::BlobReadFailure::TreeDamaged
+        ),
+        "{error:?}"
+    );
     assert!(
         read.damaged_chunk_scrub_target().unwrap().is_none(),
         "a valid chunk must not acquire a false chunk-damage target"

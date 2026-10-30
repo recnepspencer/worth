@@ -1,9 +1,11 @@
-#[allow(unused_imports)] use crate::physical_work_recovery_source_boundary::*;
+#[allow(unused_imports)]
+use crate::physical_work_recovery_source_boundary::*;
 use {std::path::Path, std::path::PathBuf};
 
 #[test]
 fn physical_work_recovery_has_no_raw_decoder_route() {
-    let store_source = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-store")).join("src");
+    let store_source =
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-store")).join("src");
     let production_sources = production_rust_sources(&store_source);
 
     assert!(!production_sources.is_empty());

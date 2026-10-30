@@ -1,16 +1,44 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::residency_pressure_projection::*;
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::residency_pressure_projection::*;
 use {std::num::NonZeroU32, std::num::NonZeroU64};
 use {std::time::Duration, std::time::Instant};
 
 use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::certification::CertificationDurableMutationInput, worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy, worth_store::physical_runtime::DataDispatchedPhysicalMutation, worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalDataDispatchFailureCause, worth_store::physical_runtime::PhysicalDataDispatchOutcome, worth_store::physical_runtime::PhysicalDataEffectSource, worth_store::physical_runtime::PhysicalManifestCapacityTransition, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::PhysicalResidencyRetryPosture, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalSpeculativeWorkKind, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordServingTerminalPosture};
-use {worth_store_physical_backend::FilesystemAccessPosture, worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
+use {
+    worth_store::physical_runtime::certification::CertificationDurableMutationInput,
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::DataDispatchedPhysicalMutation,
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalDataDispatchFailureCause,
+    worth_store::physical_runtime::PhysicalDataDispatchOutcome,
+    worth_store::physical_runtime::PhysicalDataEffectSource,
+    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::PhysicalResidencyDimension,
+    worth_store::physical_runtime::PhysicalResidencyRetryPosture,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind,
+    worth_store::physical_runtime::PhysicalStore,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordServingTerminalPosture,
+};
+use {
+    worth_store_physical_backend::FilesystemAccessPosture,
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
-
-
-
-
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn inline_writebehind_pressure_preserves_settled_prefix_before_retry() {
@@ -18,12 +46,15 @@ fn inline_writebehind_pressure_preserves_settled_prefix_before_retry() {
     let root = parent.path().join("inline-writebehind-pressure");
     let (format, placement, access) = configuration();
     let initialized = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     assert!(!initialized.close().residency().requires_inspection());
 
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::production(worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::production(
+        worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let authority = admission.fault_schedule_authority();
     let gate = authority.pause_gate();
     let schedule = authority
@@ -35,7 +66,10 @@ fn inline_writebehind_pressure_preserves_settled_prefix_before_retry() {
             )
             .for_identified_operation_ordinal()])
         .unwrap();
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(worth_store::physical_runtime::PhysicalRuntimeAdmission::new(&root).unwrap()).unwrap();
+    let runtime = worth_store::physical_runtime::PhysicalStore::admit(
+        worth_store::physical_runtime::PhysicalRuntimeAdmission::new(&root).unwrap(),
+    )
+    .unwrap();
     let media = match runtime
         .try_admit_filesystem_media(admission.with_fault_schedule(schedule))
         .into_raw()
@@ -77,7 +111,10 @@ fn inline_writebehind_pressure_preserves_settled_prefix_before_retry() {
     let context = gate
         .reached_context()
         .expect("primary canonical mutation must reach candidate writeback");
-    assert_eq!(context.role(), worth_store_physical_backend::MediaOperationRole::PositionedWrite);
+    assert_eq!(
+        context.role(),
+        worth_store_physical_backend::MediaOperationRole::PositionedWrite
+    );
     assert_eq!(context.identified_operation_ordinal(), Some(4));
     let residency_at_dispatch = serving.residency_observation().counters();
 
@@ -87,7 +124,10 @@ fn inline_writebehind_pressure_preserves_settled_prefix_before_retry() {
     {
         worth_store::physical_runtime::PhysicalDataDispatchOutcome::Suspended(retry) => {
             assert!(!retry.completed_effects().is_empty());
-            let worth_store::physical_runtime::PhysicalDataDispatchFailureCause::PhysicalPressure(pressure) = retry.cause() else {
+            let worth_store::physical_runtime::PhysicalDataDispatchFailureCause::PhysicalPressure(
+                pressure,
+            ) = retry.cause()
+            else {
                 gate.release();
                 panic!(
                     "suspended dispatch must retain exact pressure evidence: {:?}",
@@ -100,25 +140,32 @@ fn inline_writebehind_pressure_preserves_settled_prefix_before_retry() {
         }
         worth_store::physical_runtime::PhysicalDataDispatchOutcome::NotStarted {
             durable,
-            cause: worth_store::physical_runtime::PhysicalDataDispatchFailureCause::PhysicalPressure(_),
+            cause:
+                worth_store::physical_runtime::PhysicalDataDispatchFailureCause::PhysicalPressure(_),
         } => {
             drop(durable);
             panic!("writebehind pressure denied before settling the first inline page")
         }
-        worth_store::physical_runtime::PhysicalDataDispatchOutcome::NotStarted { cause, .. } => {
+        worth_store::physical_runtime::PhysicalDataDispatchOutcome::NotStarted {
+            cause, ..
+        } => {
             panic!("canonical dispatch omitted pressure evidence: {cause:?}")
         }
         worth_store::physical_runtime::PhysicalDataDispatchOutcome::Dispatched(_) => {
             panic!("competing canonical dispatch bypassed pressure")
         }
-        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Indeterminate(indeterminate) => panic!(
+        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Indeterminate(
+            indeterminate,
+        ) => panic!(
             "competing canonical dispatch became indeterminate: {:?}",
             indeterminate.cause()
         ),
     };
     assert_eq!(
         pressure.dimension(),
-        worth_store::physical_runtime::PhysicalResidencyDimension::SpeculativeFrames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind)
+        worth_store::physical_runtime::PhysicalResidencyDimension::SpeculativeFrames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        )
     );
     assert_eq!(pressure.basis().store_identity(), serving.store_identity());
     assert!(pressure.basis().frame_coordinate().is_some());
@@ -142,14 +189,20 @@ fn inline_writebehind_pressure_preserves_settled_prefix_before_retry() {
 
     gate.release();
     let primary_dispatched = match primary.join().unwrap() {
-        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Dispatched(dispatched) => dispatched,
+        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Dispatched(dispatched) => {
+            dispatched
+        }
         worth_store::physical_runtime::PhysicalDataDispatchOutcome::Suspended(_) => {
             panic!("primary canonical dispatch unexpectedly suspended")
         }
-        worth_store::physical_runtime::PhysicalDataDispatchOutcome::NotStarted { cause, .. } => {
+        worth_store::physical_runtime::PhysicalDataDispatchOutcome::NotStarted {
+            cause, ..
+        } => {
             panic!("primary canonical dispatch did not start: {cause:?}")
         }
-        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Indeterminate(indeterminate) => panic!(
+        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Indeterminate(
+            indeterminate,
+        ) => panic!(
             "primary canonical dispatch became indeterminate: {:?}",
             indeterminate.cause()
         ),
@@ -160,14 +213,20 @@ fn inline_writebehind_pressure_preserves_settled_prefix_before_retry() {
         .certification_record_submission()
         .dispatch_wal_durable_data(retry_durable)
     {
-        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Dispatched(dispatched) => dispatched,
+        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Dispatched(dispatched) => {
+            dispatched
+        }
         worth_store::physical_runtime::PhysicalDataDispatchOutcome::Suspended(_) => {
             panic!("canonical retry suspended after writeback capacity was released")
         }
-        worth_store::physical_runtime::PhysicalDataDispatchOutcome::NotStarted { cause, .. } => {
+        worth_store::physical_runtime::PhysicalDataDispatchOutcome::NotStarted {
+            cause, ..
+        } => {
             panic!("canonical retry did not start: {cause:?}")
         }
-        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Indeterminate(indeterminate) => panic!(
+        worth_store::physical_runtime::PhysicalDataDispatchOutcome::Indeterminate(
+            indeterminate,
+        ) => panic!(
             "canonical retry became indeterminate: {:?}",
             indeterminate.cause()
         ),

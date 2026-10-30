@@ -1,6 +1,9 @@
-pub use {std::path::Path};
+pub use std::path::Path;
 
-pub use {worth_store_physical_format::ExtentArenaId, worth_store_physical_format::ExtentArenaRange, worth_store_physical_format::PersistedRecordIdentity};
+pub use {
+    worth_store_physical_format::ExtentArenaId, worth_store_physical_format::ExtentArenaRange,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
 
 #[derive(Clone, Copy)]
 pub struct RoutedExtent {

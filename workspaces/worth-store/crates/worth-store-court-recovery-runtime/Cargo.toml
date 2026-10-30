@@ -8,7 +8,7 @@
 "license" = { "workspace" = true }
 
 [dependencies]
-"trybuild" = { "version" = "^1.0" }
+"worth-testkit-compiler" = { "path" = "../../../../crates/worth-testkit-compiler" }
 "worth-store-recovery-runtime" = { "path" = "../worth-store-recovery-runtime" }
 "worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
 "worth-store-testkit-recovery-runtime" = { "path" = "../worth-store-testkit-recovery-runtime" }

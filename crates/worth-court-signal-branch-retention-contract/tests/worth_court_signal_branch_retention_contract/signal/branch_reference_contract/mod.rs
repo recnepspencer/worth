@@ -1,11 +1,21 @@
-#[allow(unused_imports)] use crate::branch_reference_contract::ordinary_context::*;
-use {worth_foundational::FoundationalBranchReferenceGeneration, worth_foundational::FoundationalBranchReferenceMismatchAxis, worth_foundational::FoundationalBranchTarget, worth_foundational::FoundationalBranchTargetBasis};
-use {worth_signal::facade::branch::signal_branch_observation, worth_signal::facade::branch::SignalBranchTarget};
+#[allow(unused_imports)]
+use crate::branch_reference_contract::ordinary_context::*;
+use {
+    worth_foundational::FoundationalBranchReferenceGeneration,
+    worth_foundational::FoundationalBranchReferenceMismatchAxis,
+    worth_foundational::FoundationalBranchTarget,
+    worth_foundational::FoundationalBranchTargetBasis,
+};
+use {
+    worth_signal::facade::branch::signal_branch_observation,
+    worth_signal::facade::branch::SignalBranchTarget,
+};
 
 #[test]
 fn signal_basis_identity_lowers_to_the_shared_target_descriptor() {
     let target =
-        worth_signal::facade::branch::SignalBranchTarget::new("graph-a", 3, Some(11), None).expect("valid graph identity");
+        worth_signal::facade::branch::SignalBranchTarget::new("graph-a", 3, Some(11), None)
+            .expect("valid graph identity");
     assert_eq!(target.snapshot_id(), Some(11));
     assert_eq!(target.definition_basis(), 3);
 
@@ -56,18 +66,22 @@ fn signal_basis_identity_lowers_to_the_shared_target_descriptor() {
 
 #[test]
 fn signal_target_canonical_encoding_includes_graph_identity() {
-    let first =
-        worth_signal::facade::branch::SignalBranchTarget::new("graph-a", 3, Some(11), None).expect("valid graph identity");
+    let first = worth_signal::facade::branch::SignalBranchTarget::new("graph-a", 3, Some(11), None)
+        .expect("valid graph identity");
     let second =
-        worth_signal::facade::branch::SignalBranchTarget::new("graph-b", 3, Some(11), None).expect("valid graph identity");
+        worth_signal::facade::branch::SignalBranchTarget::new("graph-b", 3, Some(11), None)
+            .expect("valid graph identity");
     assert_ne!(first.canonical_encoding(), second.canonical_encoding());
 
     let definition_variant =
-        worth_signal::facade::branch::SignalBranchTarget::new("graph-a", 4, Some(11), None).expect("valid graph identity");
+        worth_signal::facade::branch::SignalBranchTarget::new("graph-a", 4, Some(11), None)
+            .expect("valid graph identity");
     let snapshot_variant =
-        worth_signal::facade::branch::SignalBranchTarget::new("graph-a", 3, Some(12), None).expect("valid graph identity");
+        worth_signal::facade::branch::SignalBranchTarget::new("graph-a", 3, Some(12), None)
+            .expect("valid graph identity");
     let restore_variant =
-        worth_signal::facade::branch::SignalBranchTarget::new("graph-a", 3, Some(11), Some(13)).expect("valid graph identity");
+        worth_signal::facade::branch::SignalBranchTarget::new("graph-a", 3, Some(11), Some(13))
+            .expect("valid graph identity");
     assert_ne!(
         first.canonical_encoding(),
         definition_variant.canonical_encoding()
@@ -148,7 +162,8 @@ fn signal_owner_branch_identity_is_injective_and_validated() {
 #[test]
 fn signal_observation_rejects_foreign_target_graph() {
     let target =
-        worth_signal::facade::branch::SignalBranchTarget::new("graph-b", 3, Some(11), None).expect("valid graph identity");
+        worth_signal::facade::branch::SignalBranchTarget::new("graph-b", 3, Some(11), None)
+            .expect("valid graph identity");
     let denial = signal_branch_observation(
         "graph-a",
         7,

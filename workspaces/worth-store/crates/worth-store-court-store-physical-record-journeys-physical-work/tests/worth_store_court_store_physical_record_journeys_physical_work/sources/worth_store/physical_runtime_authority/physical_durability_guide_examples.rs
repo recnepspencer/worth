@@ -107,4 +107,4 @@ mod checkpoint_example {
     fn main() {}
 }
 
-fn main() {}
+pub(crate) fn main() {}

@@ -1,21 +1,42 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_frontier_crash::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_frontier_crash::*;
 use {std::num::NonZeroU64, std::time::Duration};
 
 use {sha2::Digest, sha2::Sha256};
-use {worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::PhysicalRecordId};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::BlobSessionFrontierV1};
+use {
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReadOpenFailure,
+    worth_store::physical_runtime::PhysicalRecordId,
+};
+use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::BlobSessionFrontierV1,
+};
 
-use {crate::physical_blob_journeys::blob_crash::kill_at, crate::blob_crash::recovery::recover_closed_store, crate::physical_blob_journeys::blob_crash::SCOPE_KEY, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_crash::kill_at,
+    crate::physical_blob_journeys::blob_crash::SCOPE_KEY,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::serving_from_open,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn durable_frontier_survives_kill_with_partial_next_chunk_absent() {
-    let world = kill_at("crash-frontier-partial", std::time::Duration::from_secs(120));
+    let world = kill_at(
+        "crash-frontier-partial",
+        std::time::Duration::from_secs(120),
+    );
     recover_closed_store(&world.root);
 
     let serving = serving_from_open(&world.root);
     let scope = admitted_blob_scope(SCOPE_KEY);
     let blobs = serving.blobs().unwrap();
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(1024).unwrap());
+    let limits = worth_store::physical_runtime::BlobReadLimits::new(
+        std::num::NonZeroU64::new(1024).unwrap(),
+    );
     assert!(matches!(
         blobs.resolve_publication(world.object, 1, &scope, limits),
         Err(worth_store::physical_runtime::BlobReadOpenFailure::PublicationNotFound)

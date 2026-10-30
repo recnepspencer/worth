@@ -1,7 +1,17 @@
-pub(crate) use {std::collections::VecDeque};
-pub(crate) use {std::path::Path};
+pub(crate) use std::collections::VecDeque;
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurableFreeSpaceManifestHeader, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::PhysicalFreeSpaceMembershipBlock, worth_store_physical_format::PhysicalRootRoutingBlock, worth_store_physical_format::PhysicalSegmentMembershipBlock, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFreeSpaceManifestEntry, worth_store_physical_format::RecordSegmentPageManifestEntry};
+pub(crate) use {
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DurableFreeSpaceManifestHeader,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::PhysicalFreeSpaceMembershipBlock,
+    worth_store_physical_format::PhysicalRootRoutingBlock,
+    worth_store_physical_format::PhysicalSegmentMembershipBlock,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFreeSpaceManifestEntry,
+    worth_store_physical_format::RecordSegmentPageManifestEntry,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct CandidateCost {
@@ -21,12 +31,13 @@ pub(crate) struct CandidatePartialPeaks {
 
 pub(crate) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
     let records = root.join("families/records");
-    let root_path = records
-        .join("roots")
-        .join(worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name());
+    let root_path = records.join("roots").join(
+        worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name(),
+    );
     let root_bytes = std::fs::read(root_path).expect("read candidate root for cost oracle");
-    let (manifest, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(&root_bytes, u16::MAX)
-        .expect("decode candidate root for cost oracle");
+    let (manifest, format) =
+        worth_store_physical_format::DurablePhysicalRootManifest::decode(&root_bytes, u16::MAX)
+            .expect("decode candidate root for cost oracle");
     assert_eq!(manifest.generation(), generation);
 
     let mut reads = 1_u64;
@@ -61,9 +72,11 @@ pub(crate) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
             ),
         )
         .expect("read candidate routing block for cost oracle");
-        let (block, found_format) =
-            worth_store_physical_format::PhysicalRootRoutingBlock::decode(&bytes, manifest.node_capacity())
-                .expect("decode candidate routing block for cost oracle");
+        let (block, found_format) = worth_store_physical_format::PhysicalRootRoutingBlock::decode(
+            &bytes,
+            manifest.node_capacity(),
+        )
+        .expect("decode candidate routing block for cost oracle");
         assert_eq!(found_format, format);
         placements += block.entries().map_or(0, <[_]>::len);
         root_queue.extend(block.children().unwrap_or_default().iter().copied());
@@ -100,8 +113,11 @@ pub(crate) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
         )
         .expect("read candidate segment block for cost oracle");
         let (block, found_format) =
-            worth_store_physical_format::PhysicalSegmentMembershipBlock::decode(&bytes, manifest.node_capacity())
-                .expect("decode candidate segment block for cost oracle");
+            worth_store_physical_format::PhysicalSegmentMembershipBlock::decode(
+                &bytes,
+                manifest.node_capacity(),
+            )
+            .expect("decode candidate segment block for cost oracle");
         assert_eq!(found_format, format);
         segment_entries += block.entries().map_or(0, <[_]>::len);
         segment_queue.extend(block.children().unwrap_or_default().iter().copied());
@@ -114,14 +130,17 @@ pub(crate) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
     }
 
     let free_bytes = std::fs::read(
-        records
-            .join("free-space")
-            .join(worth_store_physical_format::RecordArtifactFile::FreeSpaceManifest { generation }.file_name()),
+        records.join("free-space").join(
+            worth_store_physical_format::RecordArtifactFile::FreeSpaceManifest { generation }
+                .file_name(),
+        ),
     )
     .expect("read candidate free-space header for cost oracle");
-    let (free, found_format) =
-        worth_store_physical_format::DurableFreeSpaceManifestHeader::decode(&free_bytes, manifest.node_capacity())
-            .expect("decode candidate free-space header for cost oracle");
+    let (free, found_format) = worth_store_physical_format::DurableFreeSpaceManifestHeader::decode(
+        &free_bytes,
+        manifest.node_capacity(),
+    )
+    .expect("decode candidate free-space header for cost oracle");
     assert_eq!(found_format, format);
     reads += 1;
     raw_bytes += free_bytes.len() as u64;
@@ -154,8 +173,11 @@ pub(crate) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
         )
         .expect("read candidate free-space block for cost oracle");
         let (block, found_format) =
-            worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::decode(&bytes, manifest.node_capacity())
-                .expect("decode candidate free-space block for cost oracle");
+            worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::decode(
+                &bytes,
+                manifest.node_capacity(),
+            )
+            .expect("decode candidate free-space block for cost oracle");
         assert_eq!(found_format, format);
         free_entries += block.entries().map_or(0, <[_]>::len);
         free_queue.extend(block.children().unwrap_or_default().iter().copied());

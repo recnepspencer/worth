@@ -1,11 +1,25 @@
-#[allow(unused_imports)] use crate::work_ceiling::ordinary_context::*;
 #[allow(unused_imports)]
-pub(crate) use {crate::work_ceiling::isolated_context::retained_run};
+pub(crate) use crate::work_ceiling::isolated_context::retained_run;
+#[allow(unused_imports)]
+use crate::work_ceiling::ordinary_context::*;
 
 pub(crate) use {std::num::NonZeroUsize, std::panic::catch_unwind, std::panic::AssertUnwindSafe};
 
-pub(crate) use {worth_execution::CancellationSource, worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::ExecutionResourceLease, worth_execution::ExecutionWorkCeiling, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapKernelStop, worth_execution::MapPartition, worth_execution::MapStop, worth_execution::ReduceInputDenial, worth_execution::ReductionRunStop, worth_execution::SerialRequest, worth_execution::WorkCeilingDenial};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionReport, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    worth_execution::CancellationSource, worth_execution::CancellationToken,
+    worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig,
+    worth_execution::ExecutionMap, worth_execution::ExecutionResourceLease,
+    worth_execution::ExecutionWorkCeiling, worth_execution::LeaseRequest,
+    worth_execution::MapKernelFailure, worth_execution::MapKernelStop,
+    worth_execution::MapPartition, worth_execution::MapStop, worth_execution::ReduceInputDenial,
+    worth_execution::ReductionRunStop, worth_execution::SerialRequest,
+    worth_execution::WorkCeilingDenial,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionReport,
+    worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn a_declared_ceiling_decides_the_canonical_exhaustion_boundary_without_a_lease() {
@@ -41,12 +55,16 @@ fn a_declared_ceiling_decides_the_canonical_exhaustion_boundary_without_a_lease(
 #[test]
 fn a_panic_outside_every_pattern_is_typed_and_the_next_run_is_clean() {
     let panicked = catch_unwind(AssertUnwindSafe(|| {
-        worth_execution::ExecutionWorkCeiling::new(Some(10)).run_serial(&funded_serial_request(), || -> u64 {
-            panic!("outside a pattern")
-        })
+        worth_execution::ExecutionWorkCeiling::new(Some(10))
+            .run_serial(&funded_serial_request(), || -> u64 {
+                panic!("outside a pattern")
+            })
     }))
     .expect("the ceiling contains the panic");
-    assert_eq!(panicked.unwrap_err(), worth_execution::WorkCeilingDenial::Panicked);
+    assert_eq!(
+        panicked.unwrap_err(),
+        worth_execution::WorkCeilingDenial::Panicked
+    );
     let (after, _) = reduce(None, u64::MAX, 2);
     assert_eq!(after.expect("the next run completes").0, 3);
 }
@@ -90,9 +108,12 @@ fn a_serial_request_cancelled_mid_reduction_stops_at_a_combine() {
 #[test]
 fn a_serial_request_past_its_deadline_refuses_before_the_computation() {
     let request = funded_serial_request().with_deadline(Some(std::time::Instant::now()));
-    let ran = worth_execution::ExecutionWorkCeiling::new(Some(u64::MAX)).run_serial(&request, || ());
+    let ran =
+        worth_execution::ExecutionWorkCeiling::new(Some(u64::MAX)).run_serial(&request, || ());
     assert_eq!(
         ran.unwrap_err(),
-        worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::DeadlineElapsed)
+        worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::DeadlineElapsed
+        )
     );
 }

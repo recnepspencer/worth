@@ -1,7 +1,24 @@
-#[allow(unused_imports)] use crate::external_resource_execution::ordinary_context::*;
-use {serde::Serialize};
-use {worth_query::facade::foundation::WorthQueryAsyncFailurePosture, worth_query::facade::foundation::WorthQueryAsyncLoadingPosture, worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart, worth_query::facade::foundation::WorthQueryAsyncResourceRequestIdentity, worth_query::facade::foundation::WorthQueryAsyncSourceFamily};
-use {worth_server::WorthServerExternalResourceBudget, worth_server::WorthServerExternalResourceExecutionBoundary, worth_server::WorthServerExternalResourceExecutionDenialCode, worth_server::WorthServerExternalResourceExecutionOutcome, worth_server::WorthServerExternalResourceIntent, worth_server::WorthServerExternalResourceTransport, worth_server::WorthServerExternalResourceTransportOutcome, worth_server::WorthServerExternalResourceTransportResponse, worth_server::WorthServerLoweredExternalResourcePlan};
+#[allow(unused_imports)]
+use crate::external_resource_execution::ordinary_context::*;
+use serde::Serialize;
+use {
+    worth_query::facade::foundation::WorthQueryAsyncFailurePosture,
+    worth_query::facade::foundation::WorthQueryAsyncLoadingPosture,
+    worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart,
+    worth_query::facade::foundation::WorthQueryAsyncResourceRequestIdentity,
+    worth_query::facade::foundation::WorthQueryAsyncSourceFamily,
+};
+use {
+    worth_server::WorthServerExternalResourceBudget,
+    worth_server::WorthServerExternalResourceExecutionBoundary,
+    worth_server::WorthServerExternalResourceExecutionDenialCode,
+    worth_server::WorthServerExternalResourceExecutionOutcome,
+    worth_server::WorthServerExternalResourceIntent,
+    worth_server::WorthServerExternalResourceTransport,
+    worth_server::WorthServerExternalResourceTransportOutcome,
+    worth_server::WorthServerExternalResourceTransportResponse,
+    worth_server::WorthServerLoweredExternalResourcePlan,
+};
 
 #[test]
 fn one_shot_resource_execution_carries_exact_bounded_attempt_evidence() {
@@ -11,7 +28,8 @@ fn one_shot_resource_execution_carries_exact_bounded_attempt_evidence() {
     };
     let boundary = worth_server::WorthServerExternalResourceExecutionBoundary::using(&transport);
     let plan = boundary.plan(intent(1024)).expect("intent should lower");
-    let worth_server::WorthServerExternalResourceExecutionOutcome::Completed(completed) = boundary.execute(plan)
+    let worth_server::WorthServerExternalResourceExecutionOutcome::Completed(completed) =
+        boundary.execute(plan)
     else {
         panic!("bounded response should complete");
     };
@@ -42,7 +60,9 @@ fn response_budget_denial_prevents_result_admission() {
     let boundary = worth_server::WorthServerExternalResourceExecutionBoundary::using(&transport);
     let plan = boundary.plan(intent(64)).expect("request should lower");
 
-    let worth_server::WorthServerExternalResourceExecutionOutcome::Denied(denial) = boundary.execute(plan) else {
+    let worth_server::WorthServerExternalResourceExecutionOutcome::Denied(denial) =
+        boundary.execute(plan)
+    else {
         panic!("oversized response must deny");
     };
     assert_eq!(
@@ -78,9 +98,11 @@ fn transport_stops_remain_typed_and_non_successful() {
         ),
     ] {
         let transport = FixedTransport(outcome);
-        let boundary = worth_server::WorthServerExternalResourceExecutionBoundary::using(&transport);
+        let boundary =
+            worth_server::WorthServerExternalResourceExecutionBoundary::using(&transport);
         let plan = boundary.plan(intent(1024)).expect("request should lower");
-        let worth_server::WorthServerExternalResourceExecutionOutcome::Denied(denial) = boundary.execute(plan)
+        let worth_server::WorthServerExternalResourceExecutionOutcome::Denied(denial) =
+            boundary.execute(plan)
         else {
             panic!("transport stop must not complete");
         };
@@ -109,9 +131,9 @@ fn canonical_result_identity_ignores_transport_identity_but_tracks_semantic_drif
 
 #[test]
 fn canonical_plan_identity_preserves_arbitrary_request_bytes_losslessly() {
-    let boundary = worth_server::WorthServerExternalResourceExecutionBoundary::using(&FixedTransport(
-        worth_server::WorthServerExternalResourceTransportOutcome::Unavailable,
-    ));
+    let boundary = worth_server::WorthServerExternalResourceExecutionBoundary::using(
+        &FixedTransport(worth_server::WorthServerExternalResourceTransportOutcome::Unavailable),
+    );
     let left = boundary
         .plan(intent_with_body(1024, vec![0x80]))
         .expect("first binary request should lower");

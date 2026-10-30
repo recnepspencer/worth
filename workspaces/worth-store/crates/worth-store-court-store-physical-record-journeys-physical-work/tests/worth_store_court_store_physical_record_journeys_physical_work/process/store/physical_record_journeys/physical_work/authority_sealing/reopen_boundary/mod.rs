@@ -1,8 +1,12 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::authority_sealing::reopen_boundary::*;
-use {tempfile::tempdir};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::authority_sealing::reopen_boundary::*;
+use tempfile::tempdir;
+use worth_proof::TransitionOutcome;
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 #[test]
 fn reopen_cannot_consume_serialized_signal_state() {

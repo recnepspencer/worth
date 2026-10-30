@@ -1,22 +1,6 @@
 //! Fast integration courts.
 #[allow(unused_imports)]
-use {crate::branch_bases_example};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+use crate::branch_bases_example;
 
 /// The documented owner workflow runs whole, exactly as the example binary.
 #[test]

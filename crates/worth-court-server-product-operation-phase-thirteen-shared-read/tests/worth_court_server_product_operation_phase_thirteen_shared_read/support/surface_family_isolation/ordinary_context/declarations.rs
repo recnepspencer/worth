@@ -1,14 +1,27 @@
 pub(crate) use {worth_proof::TransitionOutcome, worth_proof::TransitionReadiness};
-pub(crate) use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::SyncSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerConfig, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerPipelineInput, worth_server::WorthServerPipelineIntent, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerRequestContextInput, worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+pub(crate) use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::SyncSurface,
+    worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer,
+    worth_server::WorthServerConfig, worth_server::WorthServerMiddlewareConfig,
+    worth_server::WorthServerPipelineInput, worth_server::WorthServerPipelineIntent,
+    worth_server::WorthServerRequestContextConfig, worth_server::WorthServerRequestContextInput,
+    worth_server::WorthServerResolvedRequestContext, worth_server::WorthServerSurfaceFamily,
+    worth_server::WorthServerTransportClass,
+};
 
-pub(crate) fn test_server_with_surfaces(registered_families: &[WorthServerSurfaceFamily]) -> WorthServer {
+pub(crate) fn test_server_with_surfaces(
+    registered_families: &[WorthServerSurfaceFamily],
+) -> WorthServer {
     let mut builder = worth_server::WorthServer::builder().with_config(
         worth_server::WorthServerConfig::builder()
             .with_bind_address(([127, 0, 0, 1], 8080).into())
             .with_request_context_config(
                 worth_server::WorthServerRequestContextConfig::builder()
                     .with_preview_targeting_enabled(true)
-                    .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                    .with_default_diagnostics_profile(
+                        worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                    )
                     .build()
                     .expect("request context config should validate"),
             )
@@ -30,7 +43,9 @@ pub(crate) fn test_server_with_surfaces(registered_families: &[WorthServerSurfac
             worth_server::WorthServerSurfaceFamily::CompatHttp => {
                 builder.register_surface(worth_server::surfaces::CompatHttpSurface::disabled())
             }
-            worth_server::WorthServerSurfaceFamily::Sync => builder.register_surface(worth_server::surfaces::SyncSurface::disabled()),
+            worth_server::WorthServerSurfaceFamily::Sync => {
+                builder.register_surface(worth_server::surfaces::SyncSurface::disabled())
+            }
             unsupported => panic!("unexpected unsupported test family {unsupported:?}"),
         };
     }
@@ -38,7 +53,9 @@ pub(crate) fn test_server_with_surfaces(registered_families: &[WorthServerSurfac
     builder.build().expect("server should build")
 }
 
-pub(crate) fn resolve_worth_native_request_context(server: &WorthServer) -> WorthServerResolvedRequestContext {
+pub(crate) fn resolve_worth_native_request_context(
+    server: &WorthServer,
+) -> WorthServerResolvedRequestContext {
     match server.request_contexts().resolve(
         worth_server::WorthServerRequestContextInput::builder()
             .with_authenticated_principal_id("principal-7")

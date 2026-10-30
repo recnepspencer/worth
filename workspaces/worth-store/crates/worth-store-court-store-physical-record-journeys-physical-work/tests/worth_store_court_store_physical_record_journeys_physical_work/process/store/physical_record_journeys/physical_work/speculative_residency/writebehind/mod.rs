@@ -1,10 +1,29 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::speculative_residency::writebehind::*;
-use {worth_store::physical_runtime::AdmittedDirtyFrame, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalResidencyCertification, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::PhysicalSpeculativeWorkKind, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkSignalFamily, worth_store::physical_runtime::PhysicalWritebackExecution, worth_store::physical_runtime::PhysicalWritebackFailureCause, worth_store::physical_runtime::PhysicalWritebackSettlement, worth_store::physical_runtime::PreparedPhysicalWriteback};
-use {worth_store_buffer_pool::PhysicalResidencyDenial};
-use {worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement};
-use {worth_store_physical_format::RecordFrameCoordinate};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::speculative_residency::writebehind::*;
+use worth_store_buffer_pool::PhysicalResidencyDenial;
+use worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement;
+use worth_store_physical_format::RecordFrameCoordinate;
+use {
+    worth_store::physical_runtime::AdmittedDirtyFrame,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalResidencyCertification,
+    worth_store::physical_runtime::PhysicalResidencyDimension,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkSignalFamily,
+    worth_store::physical_runtime::PhysicalWritebackExecution,
+    worth_store::physical_runtime::PhysicalWritebackFailureCause,
+    worth_store::physical_runtime::PhysicalWritebackSettlement,
+    worth_store::physical_runtime::PreparedPhysicalWriteback,
+};
 
-use {crate::physical_record_journeys::physical_work::speculative_residency::fixture::causal_record, crate::physical_record_journeys::physical_work::speculative_residency::fixture::coordinate, crate::physical_record_journeys::physical_work::speculative_residency::fixture::initialize_store, crate::physical_record_journeys::physical_work::speculative_residency::fixture::open_store_with_writebehind};
+use {
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::causal_record,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::coordinate,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::initialize_store,
+    crate::physical_record_journeys::physical_work::speculative_residency::fixture::open_store_with_writebehind,
+};
 
 #[test]
 fn denied_writebehind_retains_dirty_authority_without_work_or_media_and_retries_cleanly() {
@@ -34,14 +53,16 @@ fn denied_writebehind_retains_dirty_authority_without_work_or_media_and_retries_
         Ok(_) => panic!("one-past writebehind must be denied before work submission"),
     };
     let pressure = match failure.cause() {
-        worth_store::physical_runtime::PhysicalWritebackFailureCause::Residency(worth_store_buffer_pool::PhysicalResidencyDenial::Pressure(pressure)) => {
-            pressure
-        }
+        worth_store::physical_runtime::PhysicalWritebackFailureCause::Residency(
+            worth_store_buffer_pool::PhysicalResidencyDenial::Pressure(pressure),
+        ) => pressure,
         cause => panic!("one-past writebehind must expose exact residency pressure: {cause:?}"),
     };
     assert_eq!(
         pressure.dimension(),
-        worth_store::physical_runtime::PhysicalResidencyDimension::SpeculativeFrames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind)
+        worth_store::physical_runtime::PhysicalResidencyDimension::SpeculativeFrames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        )
     );
     assert_eq!(
         pressure.scope(),
@@ -67,23 +88,33 @@ fn denied_writebehind_retains_dirty_authority_without_work_or_media_and_retries_
     let live = residency.counters();
     assert_eq!(live.dirty_frames(), 2);
     assert_eq!(
-        live.speculative_attempts(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        live.speculative_attempts(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         2
     );
     assert_eq!(
-        live.speculative_admissions(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        live.speculative_admissions(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         1
     );
     assert_eq!(
-        live.speculative_denials(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        live.speculative_denials(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         1
     );
     assert_eq!(
-        live.active_speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        live.active_speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         1
     );
     assert_eq!(
-        live.peak_speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        live.peak_speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         1
     );
 
@@ -106,34 +137,49 @@ fn denied_writebehind_retains_dirty_authority_without_work_or_media_and_retries_
             worth_store::physical_runtime::PhysicalWorkSignalFamily::ExactWriteback
         );
         assert!(record.backend_operation().is_some());
-        assert_eq!(record.effect_fate(), worth_store::physical_runtime::PhysicalWorkEffectFate::WriteCompleted);
+        assert_eq!(
+            record.effect_fate(),
+            worth_store::physical_runtime::PhysicalWorkEffectFate::WriteCompleted
+        );
         assert_eq!(record.derived_completion(), Some(settlement.signal()));
     }
 
     let settled = residency.counters();
     assert_eq!(settled.dirty_frames(), 0);
     assert_eq!(
-        settled.speculative_attempts(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        settled.speculative_attempts(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         3
     );
     assert_eq!(
-        settled.speculative_admissions(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        settled.speculative_admissions(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         2
     );
     assert_eq!(
-        settled.speculative_completions(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        settled.speculative_completions(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         2
     );
     assert_eq!(
-        settled.speculative_denials(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        settled.speculative_denials(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         1
     );
     assert_eq!(
-        settled.active_speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        settled.active_speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         0
     );
     assert_eq!(
-        settled.peak_speculative_frames(worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind),
+        settled.peak_speculative_frames(
+            worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind
+        ),
         1
     );
     assert!(!serving.close().residency().requires_inspection());

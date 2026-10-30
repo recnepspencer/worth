@@ -1,11 +1,23 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::integrity_scrub::report::*;
-use {worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress as Progress, worth_store_testkit_store::integrity_scrub::assert_released, crate::physical_record_journeys::integrity_scrub::report, worth_store_testkit_store::integrity_scrub::request, worth_store_testkit_store::integrity_scrub::target};
-use {worth_store::integrity_observation::PhysicalIntegrityRuntimeReportContext as Context, worth_store::integrity_observation::PhysicalIntegrityRuntimeReportDenial as ReportDenial};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::integrity_scrub::report::*;
+use {
+    crate::physical_record_journeys::integrity_scrub::report,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress as Progress,
+    worth_store_testkit_store::integrity_scrub::assert_released,
+    worth_store_testkit_store::integrity_scrub::request,
+    worth_store_testkit_store::integrity_scrub::target,
+};
+use {
+    worth_store::integrity_observation::PhysicalIntegrityRuntimeReportContext as Context,
+    worth_store::integrity_observation::PhysicalIntegrityRuntimeReportDenial as ReportDenial,
+};
 
 #[test]
 fn selected_report_rejects_raw_target_without_acquiring_or_fabricating_a_path() {
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let raw = target(&serving, parent.path());
     let mut handle = serving
         .start_physical_integrity_scrub(request(&serving, raw))
@@ -27,7 +39,9 @@ fn selected_report_rejects_raw_target_without_acquiring_or_fabricating_a_path() 
 #[test]
 fn runtime_report_uses_actual_source_and_effect_counters_without_mutation() {
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let target = target(&serving, parent.path());
     let path = parent.path().join("families/records/root-current.selector");
     let before = std::fs::read(&path).unwrap();
@@ -61,7 +75,9 @@ fn runtime_report_uses_actual_source_and_effect_counters_without_mutation() {
 #[test]
 fn report_bounds_and_pause_do_not_hide_extra_acquisition_or_retry() {
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let target = target(&serving, parent.path());
     let mut handle = serving
         .start_physical_integrity_scrub(request(&serving, target))
@@ -82,7 +98,10 @@ fn report_bounds_and_pause_do_not_hide_extra_acquisition_or_retry() {
     assert_eq!(report["artifacts"].as_array().unwrap().len(), 0);
     assert_eq!(report["consumed"]["bytes"], 0);
     handle.resume(pause).unwrap();
-    assert!(matches!(handle.next_window(), worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(_)));
+    assert!(matches!(
+        handle.next_window(),
+        worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(_)
+    ));
     assert_eq!(handle.counters().completed_windows, 1);
     serving.close();
 }
@@ -90,7 +109,9 @@ fn report_bounds_and_pause_do_not_hide_extra_acquisition_or_retry() {
 #[test]
 fn partial_runtime_report_preserves_observed_range_without_a_damage_claim() {
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let target = target(&serving, parent.path());
     std::fs::OpenOptions::new()
         .write(true)
@@ -133,7 +154,9 @@ fn sink_failure_after_effect_preserves_the_cursor_and_releases_source_resources(
         }
     }
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let target = target(&serving, parent.path());
     let mut handle = serving
         .start_physical_integrity_scrub(request(&serving, target))

@@ -1,5 +1,13 @@
-pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::CompositeSupplyChainCourt, crate::court::ordinary_context::operation_control::WAIT, crate::court::ordinary_context::operation_control::clean, std::sync::mpsc, crate::court::ordinary_context::relational, crate::court::ordinary_context::operation_control::serial_request, crate::court::ordinary_context::operation_control::signal_prepared};
-pub(crate) use {std::num::NonZeroUsize};
+pub(crate) use std::num::NonZeroUsize;
+pub(crate) use {
+    crate::court::ordinary_context::operation_control::clean,
+    crate::court::ordinary_context::operation_control::serial_request,
+    crate::court::ordinary_context::operation_control::signal_prepared,
+    crate::court::ordinary_context::operation_control::WAIT,
+    crate::court::ordinary_context::relational,
+    crate::court::ordinary_context::CompositeSupplyChainCourt, std::sync::mpsc,
+    worth_runtime_world::facade::*,
+};
 #[test]
 fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
     let host_request = crate::test_execution_policy::serial_request();
@@ -29,10 +37,13 @@ fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
         .unwrap()
         .canonical_movements();
     std::thread::scope(|scope| {
-        let pause = control.pause_before_product_compare_for_test(std::num::NonZeroUsize::new(1).unwrap());
+        let pause =
+            control.pause_before_product_compare_for_test(std::num::NonZeroUsize::new(1).unwrap());
         let worker = scope.spawn(move || {
             port.execute_with_signal(
-                worth_execution::ExecutionRequest::serial(&crate::court::ordinary_context::operation_control::serial_request(policy)),
+                worth_execution::ExecutionRequest::serial(
+                    &crate::court::ordinary_context::operation_control::serial_request(policy),
+                ),
                 signal_attempt,
                 &mut context,
                 &token,
@@ -81,7 +92,9 @@ fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
         assert_eq!(old.selected_commit(), root.selected_commit());
         read.send(()).unwrap();
         let winner = court.world.publication_port().execute_without_signal(
-            worth_execution::ExecutionRequest::serial(&crate::court::ordinary_context::operation_control::serial_request(policy)),
+            worth_execution::ExecutionRequest::serial(
+                &crate::court::ordinary_context::operation_control::serial_request(policy),
+            ),
             relational_attempt,
             &RuntimeWorldCancellationSource::new().token(),
         );

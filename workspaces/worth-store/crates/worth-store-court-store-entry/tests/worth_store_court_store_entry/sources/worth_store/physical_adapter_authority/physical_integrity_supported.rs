@@ -14,4 +14,4 @@ fn inspect_validated_physical_payload(view: &PhysicalRecordChunkView<'_>) {
 
 fn inspect<A, B, C, D, E, F>(_: A, _: B, _: C, _: D, _: E, _: F) {}
 
-fn main() {}
+pub(crate) fn main() {}

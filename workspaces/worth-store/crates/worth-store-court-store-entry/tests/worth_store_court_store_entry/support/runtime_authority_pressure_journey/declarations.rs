@@ -1,13 +1,18 @@
-pub(crate) use {std::ffi::OsString, std::path::Path, std::path::PathBuf, std::sync::atomic::AtomicU64, std::sync::atomic::Ordering, std::sync::Arc, std::sync::Barrier};
+pub(crate) use {
+    std::ffi::OsString, std::path::Path, std::path::PathBuf, std::sync::atomic::AtomicU64,
+    std::sync::atomic::Ordering, std::sync::Arc, std::sync::Barrier,
+};
 
-pub(crate) use {worth_store::physical_runtime::AdmissionError, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore};
+pub(crate) use {
+    worth_store::physical_runtime::AdmissionError,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore,
+};
 
-
-
-
-
-pub(crate) use {crate::lifecycle_oracle::assert_terminal_observation, crate::lifecycle_oracle::LifecycleAction};
-pub(crate) use {crate::pressure_outcome::PressureOutcome};
+pub(crate) use crate::pressure_outcome::PressureOutcome;
+pub(crate) use {
+    crate::lifecycle_oracle::assert_terminal_observation, crate::lifecycle_oracle::LifecycleAction,
+};
 
 pub(crate) static NEXT_TEST_ROOT: AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
@@ -20,7 +25,10 @@ pub(crate) fn run_pressure_world() -> PressureOutcome {
     crate::process_death_probe::prove_process_death_emits_no_physical_residue(unique_absent_root(
         "child-death",
     ));
-    let outcome = crate::pressure_outcome::PressureOutcome::between(counters_before, worth_store::physical_runtime::PhysicalStore::diagnostics());
+    let outcome = crate::pressure_outcome::PressureOutcome::between(
+        counters_before,
+        worth_store::physical_runtime::PhysicalStore::diagnostics(),
+    );
     assert_eq!(outcome, crate::pressure_outcome::PressureOutcome::EXPECTED);
     outcome
 }
@@ -30,7 +38,8 @@ pub(crate) fn prove_concurrent_observers_close_together() {
 
     let root = unique_absent_root("close-pressure");
     let before = snapshot_root(&root);
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(valid_admission(root.clone())).unwrap();
+    let runtime =
+        worth_store::physical_runtime::PhysicalStore::admit(valid_admission(root.clone())).unwrap();
     let runtime_identity = runtime.runtime_identity();
     let observation_handles = (0..OBSERVER_COUNT)
         .map(|_| runtime.observe())
@@ -82,8 +91,9 @@ pub(crate) fn prove_concurrent_observers_close_together() {
         );
     }
 
-    let readmitted = worth_store::physical_runtime::PhysicalStore::admit(valid_admission(root.clone()))
-        .expect("a closed summary must not retain root admission authority");
+    let readmitted =
+        worth_store::physical_runtime::PhysicalStore::admit(valid_admission(root.clone()))
+            .expect("a closed summary must not retain root admission authority");
     assert_ne!(readmitted.runtime_identity(), closed.runtime_identity());
     let readmitted_closed = readmitted.close();
     drop((closed, readmitted_closed));
@@ -93,7 +103,9 @@ pub(crate) fn prove_concurrent_observers_close_together() {
 pub(crate) fn prove_abort_and_unexpected_drop_make_observers_stale() {
     let aborted_root = unique_absent_root("abort-pressure");
     let aborted_root_before = snapshot_root(&aborted_root);
-    let aborted_runtime = worth_store::physical_runtime::PhysicalStore::admit(valid_admission(aborted_root.clone())).unwrap();
+    let aborted_runtime =
+        worth_store::physical_runtime::PhysicalStore::admit(valid_admission(aborted_root.clone()))
+            .unwrap();
     let aborted_identity = aborted_runtime.runtime_identity();
     let aborted_observer = aborted_runtime.observe();
     let aborted_generation = aborted_observer
@@ -113,7 +125,9 @@ pub(crate) fn prove_abort_and_unexpected_drop_make_observers_stale() {
 
     let dropped_root = unique_absent_root("drop-pressure");
     let dropped_root_before = snapshot_root(&dropped_root);
-    let dropped_runtime = worth_store::physical_runtime::PhysicalStore::admit(valid_admission(dropped_root.clone())).unwrap();
+    let dropped_runtime =
+        worth_store::physical_runtime::PhysicalStore::admit(valid_admission(dropped_root.clone()))
+            .unwrap();
     let dropped_identity = dropped_runtime.runtime_identity();
     let dropped_observer = dropped_runtime.observe();
     let dropped_generation = dropped_observer
@@ -130,9 +144,11 @@ pub(crate) fn prove_abort_and_unexpected_drop_make_observers_stale() {
     );
 
     let readmitted_after_abort =
-        worth_store::physical_runtime::PhysicalStore::admit(valid_admission(aborted_root.clone())).unwrap();
+        worth_store::physical_runtime::PhysicalStore::admit(valid_admission(aborted_root.clone()))
+            .unwrap();
     let readmitted_after_drop =
-        worth_store::physical_runtime::PhysicalStore::admit(valid_admission(dropped_root.clone())).unwrap();
+        worth_store::physical_runtime::PhysicalStore::admit(valid_admission(dropped_root.clone()))
+            .unwrap();
     drop((
         aborted,
         aborted_observer,
@@ -151,7 +167,9 @@ pub(crate) fn prove_same_root_denial_does_not_block_different_root_admission() {
     let different_root = unique_absent_root("different-root-pressure");
     let primary_root_before = snapshot_root(&primary_root);
     let different_root_before = snapshot_root(&different_root);
-    let primary_runtime = worth_store::physical_runtime::PhysicalStore::admit(valid_admission(primary_root.clone())).unwrap();
+    let primary_runtime =
+        worth_store::physical_runtime::PhysicalStore::admit(valid_admission(primary_root.clone()))
+            .unwrap();
     let attempt = std::sync::Arc::new(std::sync::Barrier::new(CONTENDER_COUNT + 1));
     let release = std::sync::Arc::new(std::sync::Barrier::new(CONTENDER_COUNT + 1));
     let contender_roots = [
@@ -239,7 +257,9 @@ pub(crate) fn prove_cancellation_and_panic_release_authority() {
 
     let panic_root = unique_absent_root("panic-pressure");
     let panic_before = snapshot_root(&panic_root);
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(valid_admission(panic_root.clone())).unwrap();
+    let runtime =
+        worth_store::physical_runtime::PhysicalStore::admit(valid_admission(panic_root.clone()))
+            .unwrap();
     let runtime_identity = runtime.runtime_identity();
     let observer = runtime.observe();
     let admitted_generation = observer.snapshot().unwrap().lifecycle().generation();
@@ -265,7 +285,10 @@ pub(crate) fn prove_cancellation_and_panic_release_authority() {
 pub(crate) fn assert_all_physical_capabilities_absent(
     capabilities: worth_store::physical_runtime::InstalledCapabilityStatus,
 ) {
-    use {worth_store::physical_runtime::CapabilityAvailability, worth_store::physical_runtime::PhysicalCapability};
+    use {
+        worth_store::physical_runtime::CapabilityAvailability,
+        worth_store::physical_runtime::PhysicalCapability,
+    };
 
     for capability in [
         PhysicalCapability::Media,
@@ -309,7 +332,8 @@ pub(crate) enum RootSnapshot {
 }
 
 pub(crate) fn valid_admission(root: PathBuf) -> PhysicalRuntimeAdmission {
-    worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).expect("the fixed root declaration should validate")
+    worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root)
+        .expect("the fixed root declaration should validate")
 }
 
 pub(crate) fn unique_absent_root(label: &str) -> PathBuf {

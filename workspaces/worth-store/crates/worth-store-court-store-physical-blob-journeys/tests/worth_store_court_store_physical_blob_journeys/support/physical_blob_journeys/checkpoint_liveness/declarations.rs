@@ -7,15 +7,29 @@
 
 pub(crate) use {std::num::NonZeroU32, std::num::NonZeroU64};
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::BlobReclaimRetirementBudget, worth_store::physical_runtime::CertificationScopedAllocation, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalRetirementDenial, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::BlobReclaimRetirementBudget,
+    worth_store::physical_runtime::CertificationScopedAllocation,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalRetirementDenial,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_blob_journeys::checkpoint_capture_envelope::release_one_batch};
-pub(crate) use {worth_store_testkit_store::fixture::serving_from_initialization};
+pub(crate) use worth_store_testkit_store::fixture::serving_from_initialization;
+pub(crate) use worth_store_testkit_store::physical_blob_journeys::checkpoint_capture_envelope::release_one_batch;
 
 /// Holds, in a foreign ordinary scope, every operation byte the pool would
 /// still grant except one. The bound is found against the real pool.
-pub(crate) fn hold_all_but_one_byte(serving: &ServingPhysicalRuntime) -> CertificationScopedAllocation {
+pub(crate) fn hold_all_but_one_byte(
+    serving: &ServingPhysicalRuntime,
+) -> CertificationScopedAllocation {
     let residency = serving.certification_physical_residency();
     let admit = |bytes: u64| {
         residency.admit_operation_scope(
@@ -41,7 +55,8 @@ pub(crate) fn hold_all_but_one_byte(serving: &ServingPhysicalRuntime) -> Certifi
 pub(crate) fn checkpoint(serving: &ServingPhysicalRuntime, key: u8) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let handle = match serving.checkpoints().start(request).into_raw() {
         worth_proof::TransitionOutcome::Success(handle) => handle,
@@ -52,7 +67,10 @@ pub(crate) fn checkpoint(serving: &ServingPhysicalRuntime, key: u8) {
     };
     let outcome = handle.wait();
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "checkpoint {key:#x} must complete under a foreign hold: {outcome:?}"
     );
 }
@@ -60,6 +78,7 @@ pub(crate) fn checkpoint(serving: &ServingPhysicalRuntime, key: u8) {
 pub(crate) fn retirement_budget() -> BlobReclaimRetirementBudget {
     worth_store::physical_runtime::BlobReclaimRetirementBudget::new(
         std::num::NonZeroU32::new(2).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
 }

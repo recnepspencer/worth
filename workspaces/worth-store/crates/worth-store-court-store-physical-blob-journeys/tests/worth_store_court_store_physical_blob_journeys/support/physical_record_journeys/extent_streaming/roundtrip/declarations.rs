@@ -1,6 +1,25 @@
-pub(crate) use {worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalWorkCounterSnapshot, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkSignalFamily, worth_store::physical_runtime::PhysicalWritebackCounterSnapshot, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub(crate) use {
+    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalWorkCounterSnapshot,
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkSignalFamily,
+    worth_store::physical_runtime::PhysicalWritebackCounterSnapshot,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {worth_store_testkit_store::durable_publication::root::publish_single, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration, worth_store_testkit_store::stream_fixture::hex, worth_store_testkit_store::stream_fixture::pattern_digest, worth_store_testkit_store::stream_fixture::PatternSource, worth_store_testkit_store::physical_record_journeys::success};
+pub(crate) use {
+    worth_store_testkit_store::durable_publication::root::publish_single,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration,
+    worth_store_testkit_store::physical_record_journeys::success,
+    worth_store_testkit_store::stream_fixture::hex,
+    worth_store_testkit_store::stream_fixture::pattern_digest,
+    worth_store_testkit_store::stream_fixture::PatternSource,
+};
 
 pub(crate) const EXTENT_METADATA_BYTES: u64 = 64;
 pub(crate) const EXTENT_FRAME_OVERHEAD: u64 =
@@ -14,18 +33,21 @@ pub(crate) fn assert_extent_artifact_and_fresh_read(
 ) {
     let extent = root.join("families/records/arenas/arena-0000000000000001.data");
     let arena = std::fs::read(&extent).unwrap();
-    let last_chunk =
-        worth_store_testkit_store::durable_frame_oracle::first_arena_chunk_offset(&arena, chunks - 1);
+    let last_chunk = worth_store_testkit_store::durable_frame_oracle::first_arena_chunk_offset(
+        &arena,
+        chunks - 1,
+    );
     let last_payload = logical_bytes - (chunks - 1) * (16_384 - EXTENT_FRAME_OVERHEAD);
     assert_eq!(
         std::fs::metadata(extent).unwrap().len(),
         last_chunk + EXTENT_FRAME_OVERHEAD + last_payload
     );
-    let output = worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child(
-        "extent_reader",
-        root,
-        Some(&hex(&locator.encode())),
-    );
+    let output =
+        worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child(
+            "extent_reader",
+            root,
+            Some(&hex(&locator.encode())),
+        );
     assert!(output.contains(&format!(
         "C5_EXTENT {logical_bytes} {}",
         pattern_digest(logical_bytes)
@@ -107,7 +129,10 @@ pub(crate) fn assert_extent_writeback_evidence(
     let causal = serving.physical_work_observer().causal().records();
     let writeback_records = causal[before.causal_records..]
         .iter()
-        .filter(|record| record.operation() == worth_store::physical_runtime::PhysicalWorkOperationFamily::ArtifactRangeWrite)
+        .filter(|record| {
+            record.operation()
+                == worth_store::physical_runtime::PhysicalWorkOperationFamily::ArtifactRangeWrite
+        })
         .collect::<Vec<_>>();
     assert_eq!(writeback_records.len() as u64, expected_writebacks);
     let signal_bindings = serving.physical_signal_aspect_binding_observations();
@@ -119,9 +144,9 @@ pub(crate) fn assert_extent_writeback_evidence(
         assert!(writeback.backend_operation().is_some());
         assert!(signal_bindings.iter().any(|binding| {
             binding.digest() == writeback.signal_binding()
-                && binding
-                    .families()
-                    .contains(worth_store::physical_runtime::PhysicalWorkSignalFamily::ExactWriteback)
+                && binding.families().contains(
+                    worth_store::physical_runtime::PhysicalWorkSignalFamily::ExactWriteback,
+                )
         }));
     }
 }

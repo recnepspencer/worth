@@ -1,7 +1,15 @@
-use {worth_store::physical_runtime::PhysicalIndexRange, worth_store::physical_runtime::PhysicalIndexScanBudget, worth_store::physical_runtime::PhysicalLayoutDenial, worth_store::physical_runtime::PhysicalMutationDeadline};
-use {worth_store_contracts::DurableArtifactFamilyId};
+use worth_store_contracts::DurableArtifactFamilyId;
+use {
+    worth_store::physical_runtime::PhysicalIndexRange,
+    worth_store::physical_runtime::PhysicalIndexScanBudget,
+    worth_store::physical_runtime::PhysicalLayoutDenial,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
 
-use {worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+use {
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+};
 
 #[test]
 fn protected_layout_probe_height_two_has_exact_path_and_range_budget() {
@@ -11,11 +19,14 @@ fn protected_layout_probe_height_two_has_exact_path_and_range_budget() {
         .certification_publish_blob_catalog_probe_tree(
             2,
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         )
         .unwrap();
     let layouts = serving.layouts().unwrap();
-    let index = layouts.btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog).unwrap();
+    let index = layouts
+        .btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog)
+        .unwrap();
     for key in &keys {
         let point = index.point(*key).unwrap();
         assert!(point.selected_record().is_some());
@@ -46,7 +57,9 @@ fn protected_layout_probe_height_two_has_exact_path_and_range_budget() {
     );
     assert!(matches!(
         short.next(),
-        Some(Err(worth_store::physical_runtime::PhysicalLayoutDenial::ScanBudgetExhausted))
+        Some(Err(
+            worth_store::physical_runtime::PhysicalLayoutDenial::ScanBudgetExhausted
+        ))
     ));
     assert_eq!(short.counters().page_touches(), 2);
     assert!(short.next().is_none());
@@ -73,11 +86,14 @@ fn protected_layout_probe_height_three_counts_actual_node_path() {
         .certification_publish_blob_catalog_probe_tree(
             3,
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         )
         .unwrap();
     let layouts = serving.layouts().unwrap();
-    let index = layouts.btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog).unwrap();
+    let index = layouts
+        .btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog)
+        .unwrap();
     for key in &keys {
         assert_eq!(index.point(*key).unwrap().counters().page_touches(), 3);
     }
@@ -109,12 +125,15 @@ fn protected_layout_probe_height_five_remains_readable_with_bounded_paths() {
         .certification_publish_blob_catalog_probe_tree(
             5,
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         )
         .unwrap();
     assert_eq!(keys.len(), 16);
     let layouts = serving.layouts().unwrap();
-    let index = layouts.btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog).unwrap();
+    let index = layouts
+        .btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog)
+        .unwrap();
     for key in &keys {
         let point = index.point(*key).unwrap();
         assert!(point.selected_record().is_some());

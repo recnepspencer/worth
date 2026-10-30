@@ -1,4 +1,10 @@
-use {worth_foundational::aspect_contract_digest_preparation_basis, worth_foundational::AbsenceLaw, worth_foundational::CanonicalDigestAspectShapeKind, worth_foundational::CanonicalDigestMaskMode, worth_foundational::CanonicalDigestPreparationEntry, worth_foundational::FieldRequirement, worth_foundational::ScalarAspectType};
+use {
+    worth_foundational::aspect_contract_digest_preparation_basis, worth_foundational::AbsenceLaw,
+    worth_foundational::CanonicalDigestAspectShapeKind,
+    worth_foundational::CanonicalDigestMaskMode,
+    worth_foundational::CanonicalDigestPreparationEntry, worth_foundational::FieldRequirement,
+    worth_foundational::ScalarAspectType,
+};
 
 use {crate::certification::ordinary_context::canonicalization::digest_preparation::readiness_fixtures::ready_contract, crate::certification::ordinary_context::canonicalization::digest_preparation::readiness_fixtures::task_summary_contract, crate::certification::ordinary_context::canonicalization::digest_preparation::readiness_fixtures::task_summary_contract_with_reversed_declaration_order};
 use {worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision};

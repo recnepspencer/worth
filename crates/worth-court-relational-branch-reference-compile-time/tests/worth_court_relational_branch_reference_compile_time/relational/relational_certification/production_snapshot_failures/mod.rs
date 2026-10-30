@@ -20,7 +20,9 @@ fn pinned_snapshot_observation_does_not_select_a_later_head() {
             worth_foundational::facade::AspectKey::new("name").expect("canonical field"),
             worth_foundational::facade::FieldKey::new("name").expect("canonical field"),
         ),
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw("later-head".to_owned())),
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw("later-head".to_owned()),
+        ),
     );
     let mut transaction = {
         let transaction_validation_input = {
@@ -40,12 +42,20 @@ fn pinned_snapshot_observation_does_not_select_a_later_head() {
     };
     transaction
         .push_batch(
-            worth_relational::facade::transactions::WorkerIntentBatch::new("latest-head-twin").push(worth_relational::facade::transactions::MutationIntent::Entity(
-                worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                    entity_id: port_id,
-                    fields: worth_relational::facade::transactions::AspectFieldPatch::new(fields),
-                }),
-            )),
+            worth_relational::facade::transactions::WorkerIntentBatch::new("latest-head-twin")
+                .push(
+                    worth_relational::facade::transactions::MutationIntent::Entity(
+                        worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(
+                            UpdateEntityFieldsIntent {
+                                entity_id: port_id,
+                                fields:
+                                    worth_relational::facade::transactions::AspectFieldPatch::new(
+                                        fields,
+                                    ),
+                            },
+                        ),
+                    ),
+                ),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();

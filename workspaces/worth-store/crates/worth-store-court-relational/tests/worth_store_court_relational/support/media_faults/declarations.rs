@@ -3,16 +3,25 @@
 //! identified operation of a role after their activation is armed, and count
 //! each role's operations with rules that never fire.
 
-pub(crate) use {std::num::NonZeroU64};
-pub(crate) use {std::path::Path};
+pub(crate) use std::num::NonZeroU64;
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::schema::SchemaVersionId};
-pub(crate) use {worth_store::physical_runtime::certification::CertificationMediaFaultActivation, worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-pub(crate) use {worth_store::physical_runtime::FilesystemAccessPosture, worth_store::physical_runtime::FilesystemMediaAdmission};
-pub(crate) use {worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeRequest};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_relational::facade::schema::SchemaVersionId;
+pub(crate) use {
+    worth_store::physical_runtime::certification::CertificationMediaFaultActivation,
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+};
+pub(crate) use {
+    worth_store::physical_runtime::FilesystemAccessPosture,
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+};
+pub(crate) use {
+    worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeRequest,
+};
 
-pub(crate) use {crate::workload};
+pub(crate) use crate::workload;
 
 /// One fault: the `nth` operation of `role` after arming meets `directive`.
 pub(crate) type Fault = (MediaOperationRole, NonZeroU64, MediaFaultDirective);
@@ -27,7 +36,10 @@ pub(crate) fn fail_before() -> MediaFaultDirective {
 /// Both directives the sweep injects: an operation that fails with no effect,
 /// and one whose effect happened but whose answer is lost.
 pub(crate) fn directives() -> [MediaFaultDirective; 2] {
-    [fail_before(), worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect]
+    [
+        fail_before(),
+        worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect,
+    ]
 }
 
 /// Open the closed home at `location`, declaring the `schema` it serves, with
@@ -80,12 +92,16 @@ impl FaultedMedia {
         schema: SchemaVersionId,
         execution: &ExecutionRequest<'_, '_>,
     ) -> (RelationalStoreHome, Vec<CertificationMediaFaultActivation>) {
-        let request = worth_store_relational::RelationalStoreHomeRequest::new(location, crate::workload::runtime_builder(schema));
-        let home =
-            worth_store_relational::RelationalStoreHome::certification_open_with_media(request, self.admission, execution)
-                .unwrap_or_else(|refusal| {
-                    panic!("a closed home opens with a fault schedule: {refusal:?}")
-                });
+        let request = worth_store_relational::RelationalStoreHomeRequest::new(
+            location,
+            crate::workload::runtime_builder(schema),
+        );
+        let home = worth_store_relational::RelationalStoreHome::certification_open_with_media(
+            request,
+            self.admission,
+            execution,
+        )
+        .unwrap_or_else(|refusal| panic!("a closed home opens with a fault schedule: {refusal:?}"));
         (home, self.activations)
     }
 }

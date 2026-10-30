@@ -1,6 +1,17 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::canonicalization::equivalence::comparison_readiness::*;
-use {worth_foundational::compare_canonical_basis, worth_foundational::prepare_canonical_basis_sequence, worth_foundational::prepare_canonical_comparison, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalComparisonReadinessProofs, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalMismatchKind, worth_foundational::CanonicalizationRuleVersion};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::canonicalization::equivalence::comparison_readiness::*;
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::compare_canonical_basis,
+    worth_foundational::prepare_canonical_basis_sequence,
+    worth_foundational::prepare_canonical_comparison, worth_foundational::CanonicalBasisDomain,
+    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
+    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact,
+    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome,
+    worth_foundational::CanonicalComparisonReadinessProofs,
+    worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalIntegerWidth,
+    worth_foundational::CanonicalMismatchKind, worth_foundational::CanonicalizationRuleVersion,
+};
 
 #[test]
 fn exact_comparison_requires_ready_input_and_reports_equivalence_basis() {
@@ -30,7 +41,10 @@ fn exact_comparison_requires_ready_input_and_reports_equivalence_basis() {
                 equivalent.equivalence_basis(),
                 worth_foundational::CanonicalEquivalenceBasis::ExactCanonicalBasis
             );
-            assert_eq!(equivalent.domain(), worth_foundational::CanonicalBasisDomain::Value);
+            assert_eq!(
+                equivalent.domain(),
+                worth_foundational::CanonicalBasisDomain::Value
+            );
             assert_eq!(equivalent.entry_count(), 2);
         }
         _ => panic!("same canonical entries should compare equivalent"),
@@ -76,19 +90,36 @@ fn comparison_reports_smallest_value_mismatch_locus_for_blind_consumers() {
         [value_entry("same", 2)],
     );
 
-    match compare(worth_foundational::CanonicalEquivalenceBasis::ExactCanonicalBasis, left, right) {
+    match compare(
+        worth_foundational::CanonicalEquivalenceBasis::ExactCanonicalBasis,
+        left,
+        right,
+    ) {
         worth_foundational::CanonicalComparisonOutcome::Mismatched(mismatch) => {
-            assert_eq!(mismatch.kind(), worth_foundational::CanonicalMismatchKind::ValueMismatch);
+            assert_eq!(
+                mismatch.kind(),
+                worth_foundational::CanonicalMismatchKind::ValueMismatch
+            );
             assert_eq!(
                 mismatch.left_locus(),
-                Some(&worth_foundational::CanonicalBasisLocus::Named("same".into()))
+                Some(&worth_foundational::CanonicalBasisLocus::Named(
+                    "same".into()
+                ))
             );
             assert_eq!(
                 mismatch.right_locus(),
-                Some(&worth_foundational::CanonicalBasisLocus::Named("same".into()))
+                Some(&worth_foundational::CanonicalBasisLocus::Named(
+                    "same".into()
+                ))
             );
-            assert_eq!(mismatch.left_domain(), worth_foundational::CanonicalBasisDomain::Value);
-            assert_eq!(mismatch.right_domain(), worth_foundational::CanonicalBasisDomain::Value);
+            assert_eq!(
+                mismatch.left_domain(),
+                worth_foundational::CanonicalBasisDomain::Value
+            );
+            assert_eq!(
+                mismatch.right_domain(),
+                worth_foundational::CanonicalBasisDomain::Value
+            );
             assert_eq!(
                 mismatch.left_entry_kind(),
                 Some(worth_foundational::CanonicalBasisEntryKind::Value)
@@ -120,10 +151,15 @@ fn comparison_distinguishes_missing_additional_and_entry_kind_mismatch() {
         additional_right,
     ) {
         worth_foundational::CanonicalComparisonOutcome::Mismatched(mismatch) => {
-            assert_eq!(mismatch.kind(), worth_foundational::CanonicalMismatchKind::AdditionalEntry);
+            assert_eq!(
+                mismatch.kind(),
+                worth_foundational::CanonicalMismatchKind::AdditionalEntry
+            );
             assert_eq!(
                 mismatch.left_locus(),
-                Some(&worth_foundational::CanonicalBasisLocus::Named("left.only".into()))
+                Some(&worth_foundational::CanonicalBasisLocus::Named(
+                    "left.only".into()
+                ))
             );
             assert_eq!(mismatch.right_locus(), None);
         }
@@ -146,11 +182,16 @@ fn comparison_distinguishes_missing_additional_and_entry_kind_mismatch() {
         missing_right,
     ) {
         worth_foundational::CanonicalComparisonOutcome::Mismatched(mismatch) => {
-            assert_eq!(mismatch.kind(), worth_foundational::CanonicalMismatchKind::MissingEntry);
+            assert_eq!(
+                mismatch.kind(),
+                worth_foundational::CanonicalMismatchKind::MissingEntry
+            );
             assert_eq!(mismatch.left_locus(), None);
             assert_eq!(
                 mismatch.right_locus(),
-                Some(&worth_foundational::CanonicalBasisLocus::Named("right.only".into()))
+                Some(&worth_foundational::CanonicalBasisLocus::Named(
+                    "right.only".into()
+                ))
             );
         }
         _ => panic!("right-only entry should be missing"),
@@ -182,7 +223,10 @@ fn comparison_distinguishes_missing_additional_and_entry_kind_mismatch() {
         kind_right,
     ) {
         worth_foundational::CanonicalComparisonOutcome::Mismatched(mismatch) => {
-            assert_eq!(mismatch.kind(), worth_foundational::CanonicalMismatchKind::EntryKindMismatch);
+            assert_eq!(
+                mismatch.kind(),
+                worth_foundational::CanonicalMismatchKind::EntryKindMismatch
+            );
             assert_eq!(
                 mismatch.left_entry_kind(),
                 Some(worth_foundational::CanonicalBasisEntryKind::Value)
@@ -214,7 +258,10 @@ fn unsupported_comparison_posture_is_structured_for_versions_domains_and_scopes(
         right_version,
     ) {
         worth_foundational::CanonicalComparisonOutcome::Unsupported(mismatch) => {
-            assert_eq!(mismatch.kind(), worth_foundational::CanonicalMismatchKind::VersionMismatch);
+            assert_eq!(
+                mismatch.kind(),
+                worth_foundational::CanonicalMismatchKind::VersionMismatch
+            );
             assert_eq!(
                 mismatch.equivalence_basis(),
                 worth_foundational::CanonicalEquivalenceBasis::ExactCanonicalBasis
@@ -248,8 +295,14 @@ fn unsupported_comparison_posture_is_structured_for_versions_domains_and_scopes(
                 mismatch.kind(),
                 worth_foundational::CanonicalMismatchKind::UnsupportedComparison
             );
-            assert_eq!(mismatch.left_domain(), worth_foundational::CanonicalBasisDomain::Value);
-            assert_eq!(mismatch.right_domain(), worth_foundational::CanonicalBasisDomain::Identity);
+            assert_eq!(
+                mismatch.left_domain(),
+                worth_foundational::CanonicalBasisDomain::Value
+            );
+            assert_eq!(
+                mismatch.right_domain(),
+                worth_foundational::CanonicalBasisDomain::Identity
+            );
         }
         _ => panic!("cross-domain exact comparison should be unsupported"),
     }

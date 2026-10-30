@@ -10,6 +10,6 @@ fn admit_owner_identity(runtime: &RelationalRuntime, branch: &BranchId) {
         .expect("the owner admits its exact identity");
 }
 
-fn main() {
+pub(crate) fn main() {
     let _ = admit_owner_identity;
 }

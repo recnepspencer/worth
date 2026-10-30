@@ -1,4 +1,12 @@
-pub(crate) use {worth_runtime_world::facade::*, crate::court::reference_context::cost::population::Axis, crate::court::reference_context::cost::population::Population, crate::court::reference_context::cost, crate::court::reference_context::model, crate::court::reference_context::cost::observe_probe, crate::court::reference_context::cost::population, crate::court::reference_context::cost::publication_probe, crate::court::reference_context::cost::writers};
+pub(crate) use {
+    crate::court::reference_context::cost, crate::court::reference_context::cost::observe_probe,
+    crate::court::reference_context::cost::population,
+    crate::court::reference_context::cost::population::Axis,
+    crate::court::reference_context::cost::population::Population,
+    crate::court::reference_context::cost::publication_probe,
+    crate::court::reference_context::cost::writers, crate::court::reference_context::model,
+    worth_runtime_world::facade::*,
+};
 
 pub(crate) fn distribution(profile: &str, axis: &str, posture: &str, samples: &mut [u128]) {
     samples.sort_unstable();
@@ -27,7 +35,12 @@ pub(crate) fn profile(
             let mut warmed = vec![];
             let mut publications = vec![];
             for _ in 0..repetitions {
-                let mut population = crate::court::reference_context::cost::population::Population::build(request_execution, axis, size);
+                let mut population =
+                    crate::court::reference_context::cost::population::Population::build(
+                        request_execution,
+                        axis,
+                        size,
+                    );
                 println!(
                     "profile={name} requested={axis:?}/{size} actual_B_H_U_A_P_O={:?}",
                     population.axes()
@@ -65,7 +78,8 @@ pub(crate) fn profile(
     for width in [1, 4, 16] {
         let mut times = vec![];
         for _ in 0..repetitions {
-            let (time, cost) = crate::court::reference_context::cost::writers::run(request_execution, width);
+            let (time, cost) =
+                crate::court::reference_context::cost::writers::run(request_execution, width);
             times.push(time);
             assert_eq!(*baseline.get_or_insert(cost), cost);
         }

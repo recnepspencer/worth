@@ -1,5 +1,9 @@
-use {worth_proof::prelude::*};
-use {worth_proof::resolve_family_symbol, worth_proof::AuthoritativeFamilyMember, worth_proof::CompositionFamilySymbol, worth_proof::NonEmpty, worth_proof::Pair, worth_proof::Recipe, worth_proof::Unresolved};
+use worth_proof::prelude::*;
+use {
+    worth_proof::resolve_family_symbol, worth_proof::AuthoritativeFamilyMember,
+    worth_proof::CompositionFamilySymbol, worth_proof::NonEmpty, worth_proof::Pair,
+    worth_proof::Recipe, worth_proof::Unresolved,
+};
 
 #[test]
 fn pleasant_entrypoint_helpers_construct_the_same_semantic_shapes_as_raw_constructors() {

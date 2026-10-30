@@ -8,8 +8,8 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+"worth-testkit-compiler" = { "path" = "../../../../crates/worth-testkit-compiler" }
 "stats_alloc" = { "version" = "^0.1" }
-"trybuild" = { "version" = "^1.0" }
 "worth-store" = { "path" = "../worth-store" }
 "worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
 

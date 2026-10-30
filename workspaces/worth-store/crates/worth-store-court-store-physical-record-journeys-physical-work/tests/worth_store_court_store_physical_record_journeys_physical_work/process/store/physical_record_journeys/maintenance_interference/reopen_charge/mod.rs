@@ -1,9 +1,22 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::maintenance_interference::reopen_charge::*;
-use {worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalRetirementDenial};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::maintenance_interference::reopen_charge::*;
+use {
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalRetirementDenial,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::reopen::open_interference};
-use {worth_store_testkit_store::physical_record_journeys::maintenance_interference::append, worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint, worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize, worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement, worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files};
-use {worth_store_testkit_store::physical_record_journeys::retirement_charge_oracle::assert_one_page_released_net_of_wal, worth_store_testkit_store::physical_record_journeys::retirement_charge_oracle::wal_bytes};
+use worth_store_testkit_store::physical_record_journeys::maintenance_interference::reopen::open_interference;
+use {
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::append,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::checkpoint,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::initialize,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::placement,
+    worth_store_testkit_store::physical_record_journeys::maintenance_interference::segment_files,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::retirement_charge_oracle::assert_one_page_released_net_of_wal,
+    worth_store_testkit_store::physical_record_journeys::retirement_charge_oracle::wal_bytes,
+};
 
 /// A retirement stopped after its unlink is reconstructed on reopen from both
 /// the displaced chain and the unresolved WAL intent. It must be charged once.

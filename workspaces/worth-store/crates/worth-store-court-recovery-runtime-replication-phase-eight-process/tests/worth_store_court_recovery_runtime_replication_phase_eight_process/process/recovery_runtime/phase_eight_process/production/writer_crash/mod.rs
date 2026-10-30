@@ -1,26 +1,45 @@
-#[allow(unused_imports)] use crate::phase_eight_process::production::writer_crash::*;
-use {std::collections::BTreeSet};
+#[allow(unused_imports)]
+use crate::phase_eight_process::production::writer_crash::*;
+use std::collections::BTreeSet;
 
-use {worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::RecordArtifactFile};
-use {worth_store_physical_integrity::PhysicalDamageCause};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial, worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial, worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial, worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateMismatch, worth_store_recovery_runtime::RecoveryReportEnvelope, worth_store_recovery_runtime::RecoveryReportOutcome};
+use worth_store_physical_integrity::PhysicalDamageCause;
+use {
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::RecordArtifactFile,
+};
+use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial,
+    worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial,
+    worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateMismatch,
+    worth_store_recovery_runtime::RecoveryReportEnvelope,
+    worth_store_recovery_runtime::RecoveryReportOutcome,
+};
 
-use {crate::history::schedule::in_flight_mutation::MutationCrashWorkload, crate::phase_eight_process::production::harness::ProcessWorld};
+use {
+    crate::history::schedule::in_flight_mutation::MutationCrashWorkload,
+    crate::phase_eight_process::production::harness::ProcessWorld,
+};
 
-
-
-
-
-
-
-
-
-
-
-
-use {crate::production::writer_crash::persisted_world::changed_paths, crate::production::writer_crash::persisted_world::copy_directory, crate::production::writer_crash::persisted_world::raw_media_snapshot};
-use {crate::production::writer_crash::recovery_planning::plan_with_limits, crate::production::writer_crash::recovery_planning::plan_with_memory, crate::production::writer_crash::recovery_planning::successor_limits, crate::production::writer_crash::recovery_planning::successor_limits_with_observation};
-use {crate::production::writer_crash::successor_candidate_media::candidate_root_path, crate::production::writer_crash::successor_candidate_media::candidate_topology, crate::production::writer_crash::successor_candidate_media::hostile_artifact, crate::production::writer_crash::successor_candidate_media::mutate_candidate, crate::production::writer_crash::successor_candidate_media::selected_root_bytes};
+use {
+    crate::production::writer_crash::persisted_world::changed_paths,
+    crate::production::writer_crash::persisted_world::copy_directory,
+    crate::production::writer_crash::persisted_world::raw_media_snapshot,
+};
+use {
+    crate::production::writer_crash::recovery_planning::plan_with_limits,
+    crate::production::writer_crash::recovery_planning::plan_with_memory,
+    crate::production::writer_crash::recovery_planning::successor_limits,
+    crate::production::writer_crash::recovery_planning::successor_limits_with_observation,
+};
+use {
+    crate::production::writer_crash::successor_candidate_media::candidate_root_path,
+    crate::production::writer_crash::successor_candidate_media::candidate_topology,
+    crate::production::writer_crash::successor_candidate_media::hostile_artifact,
+    crate::production::writer_crash::successor_candidate_media::mutate_candidate,
+    crate::production::writer_crash::successor_candidate_media::selected_root_bytes,
+};
 
 #[test]
 fn killed_writer_recovers_after_each_mutation_effect_boundary() {
@@ -111,21 +130,23 @@ fn killed_writer_recovers_after_each_mutation_effect_boundary() {
 
 #[test]
 fn hostile_successor_candidates_block_before_recovery_effects() {
-    let inline = crate::phase_eight_process::production::harness::ProcessWorld::start_mutation_crash(
-        "during-root-publication",
-        crate::history::schedule::in_flight_mutation::MutationCrashWorkload::InlineRecord,
-        0xC8_09_00_17,
-        0xC8_19_00_17,
-    );
+    let inline =
+        crate::phase_eight_process::production::harness::ProcessWorld::start_mutation_crash(
+            "during-root-publication",
+            crate::history::schedule::in_flight_mutation::MutationCrashWorkload::InlineRecord,
+            0xC8_09_00_17,
+            0xC8_19_00_17,
+        );
     // Reusing the selected routing root needs a last inline record inside its
     // range. Production record identities are random, so a new inline record
     // can fall outside it; an extent mutation keeps the selected inline tail.
-    let extent = crate::phase_eight_process::production::harness::ProcessWorld::start_mutation_crash(
-        "during-root-publication",
-        crate::history::schedule::in_flight_mutation::MutationCrashWorkload::ExtentWriteback,
-        0xC8_09_00_18,
-        0xC8_19_00_18,
-    );
+    let extent =
+        crate::phase_eight_process::production::harness::ProcessWorld::start_mutation_crash(
+            "during-root-publication",
+            crate::history::schedule::in_flight_mutation::MutationCrashWorkload::ExtentWriteback,
+            0xC8_09_00_18,
+            0xC8_19_00_18,
+        );
 
     for (hostile, world) in [
         ("malformed", &inline),
@@ -182,12 +203,13 @@ fn hostile_successor_candidates_block_before_recovery_effects() {
         let report_path = world
             .parent_path()
             .join(format!("hostile-{hostile}.report"));
-        let (_, output) = crate::phase_eight_process::production::harness::process::run_recovery_with_profile(
-            &root,
-            &report_path,
-            world.parent_path(),
-            "c8-phase8-fate-coverage-v1",
-        );
+        let (_, output) =
+            crate::phase_eight_process::production::harness::process::run_recovery_with_profile(
+                &root,
+                &report_path,
+                world.parent_path(),
+                "c8-phase8-fate-coverage-v1",
+            );
         assert!(
             !output.status.success(),
             "blocked recovery must not report success"
@@ -200,9 +222,12 @@ fn hostile_successor_candidates_block_before_recovery_effects() {
                 String::from_utf8_lossy(&output.stderr),
             )
         });
-        let report =
-            worth_store_recovery_runtime::RecoveryReportEnvelope::decode(&report_bytes).expect("decode hostile recovery report");
-        assert_eq!(report.outcome(), worth_store_recovery_runtime::RecoveryReportOutcome::Blocked);
+        let report = worth_store_recovery_runtime::RecoveryReportEnvelope::decode(&report_bytes)
+            .expect("decode hostile recovery report");
+        assert_eq!(
+            report.outcome(),
+            worth_store_recovery_runtime::RecoveryReportOutcome::Blocked
+        );
         assert_eq!(report.counters().recovery_effects(), 0);
         let media_after = raw_media_snapshot(&root);
         assert!(

@@ -14,7 +14,7 @@ PATTERNS = {
     'cargo-environment': re.compile(r'(?:env!|(?:std::)?env::var(?:_os)?)\("CARGO"\)'),
     'trybuild': re.compile(r'\btrybuild::(?:TestCases|Runner)'),
     'cargo-metadata': re.compile(r'\bcargo_metadata::|\bMetadataCommand::new\('),
-    'trybuild-pass': re.compile(r'\b\w+\.pass\('),
+    'trybuild-pass': re.compile(r'\b(?:(\w+)|trybuild::TestCases::new\(\))\.pass\('),
     'sleep': re.compile(r'\b(?:(?:std::)?thread|tokio::time|async_std::task)::sleep\('),
     'polling-loop': re.compile(r'\b(?:while\b|loop\s*\{)'),
     'fixed-timeout': re.compile(r'\b(?:Duration::from_(?:secs|millis|micros)\(\d|TIMEOUT\b)'),
@@ -28,21 +28,43 @@ def scan_text(text):
         value = token.value
         if token.kind == 'string':
             literal = string_value(token)
-            value = '"' + (literal if literal in ('cargo', 'CARGO') else '<string>') + '"'
+            value = '"' + (('cargo' if literal == 'cargo.exe' else literal)
+                           if literal in ('cargo', 'cargo.exe', 'CARGO') else '<string>') + '"'
         if index and stream[index - 1].kind == token.kind == 'ident':
             normalized += ' '
             offsets.append(token.start)
         normalized += value
         offsets.extend([token.start] * len(value))
     result = []
+    compiler_sessions = set(re.findall(r'\blet\s+(?:mut\s+)?(\w+)\s*=trybuild::TestCases::new\(', normalized))
+    compiler_sessions.update(re.findall(r'\b(\w+):&trybuild::TestCases\b', normalized))
+    if 'trybuild::TestCases' in normalized:
+        compiler_sessions.update(re.findall(r'\blet\s+(\w+)\s*=TestCases::new\(', normalized))
     for kind, pattern in PATTERNS.items():
         for match in pattern.finditer(normalized):
+            if kind == 'trybuild-pass' and match[1] is not None and match[1] not in compiler_sessions:
+                continue
             position = offsets[match.start()]
             preceding = text[:position]
             functions = re.findall(r'\bfn\s+(\w+)\s*\(', preceding)
             result.append({'kind': kind, 'line': preceding.count('\n') + 1,
                            'function': functions[-1] if functions else None,
                            'expression': normalized[match.start():match.end()][:200]})
+    bindings = set(re.findall(r'\blet\s+(\w+)\s*=\s*"cargo"', normalized))
+    aliases = {'Command'} | set(re.findall(r'\bCommand\s+as\s+(\w+)', normalized))
+    for alias in aliases:
+        pattern = re.compile(r'\b' + re.escape(alias) + r'::new\(([^;)]+)\)')
+        for match in pattern.finditer(normalized):
+            if match[1] != '"cargo"' and match[1] not in bindings:
+                continue
+            position = offsets[match.start()]
+            line = text[:position].count('\n') + 1
+            if any(row['kind'] == 'cargo-command' and row['line'] == line for row in result):
+                continue
+            functions = re.findall(r'\bfn\s+(\w+)\s*\(', text[:position])
+            result.append({'kind': 'cargo-command', 'line': line,
+                           'function': functions[-1] if functions else None,
+                           'expression': match[0]})
     return sorted(result, key=lambda r: (r['line'], r['kind']))
 
 

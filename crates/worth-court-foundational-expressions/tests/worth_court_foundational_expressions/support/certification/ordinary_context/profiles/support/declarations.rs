@@ -1,5 +1,14 @@
-pub(crate) use {worth_foundational::admit_requested_foundational_profile, worth_foundational::request_foundational_profile_set, worth_foundational::AdmissionReadinessProfile, worth_foundational::AdmittedFoundationalProfileArtifact, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::admit_requested_foundational_profile,
+    worth_foundational::request_foundational_profile_set,
+    worth_foundational::AdmissionReadinessProfile,
+    worth_foundational::AdmittedFoundationalProfileArtifact,
+    worth_foundational::CertificationPostureProfile,
+    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
+    worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput,
+    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
+};
 
 pub(crate) fn profile(
     diagnostic_richness: DiagnosticRichnessProfile,
@@ -22,7 +31,9 @@ pub(crate) fn profile(
     .expect("coherent profile")
 }
 
-pub(crate) fn admit_same_profile(profile: FoundationalProfileSet) -> AdmittedFoundationalProfileArtifact {
+pub(crate) fn admit_same_profile(
+    profile: FoundationalProfileSet,
+) -> AdmittedFoundationalProfileArtifact {
     match admit_requested_foundational_profile(
         request_foundational_profile_set(profile),
         profile,

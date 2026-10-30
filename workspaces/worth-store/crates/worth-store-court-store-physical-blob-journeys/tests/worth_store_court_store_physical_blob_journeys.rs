@@ -11,3 +11,6 @@ pub(crate) mod physical_blob_journeys;
 pub(crate) mod physical_record_journeys;
 #[path = "worth_store_court_store_physical_blob_journeys/process/mod.rs"]
 pub(crate) mod process;
+
+#[path = "worth_store_court_store_physical_blob_journeys/supported_programs/mod.rs"]
+mod supported_programs;

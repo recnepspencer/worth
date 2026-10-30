@@ -1,11 +1,27 @@
-pub(crate) use {std::alloc::System, std::ffi::OsString, std::path::Path, std::path::PathBuf, std::sync::atomic::AtomicU64, std::sync::atomic::Ordering};
+pub(crate) use {
+    std::alloc::System, std::ffi::OsString, std::path::Path, std::path::PathBuf,
+    std::sync::atomic::AtomicU64, std::sync::atomic::Ordering,
+};
 
-pub(crate) use {stats_alloc::Region, stats_alloc::Stats, stats_alloc::StatsAlloc, stats_alloc::INSTRUMENTED_SYSTEM};
-pub(crate) use {worth_store::physical_runtime::AdmissionError, worth_store::physical_runtime::CapabilityAvailability, worth_store::physical_runtime::DeclaredStoreRootDenialKind, worth_store::physical_runtime::LifecycleObservation, worth_store::physical_runtime::PhysicalCapability, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::ProcessRuntimeCounterSnapshot, worth_store::physical_runtime::RootAdmissionObservation};
+pub(crate) use {
+    stats_alloc::Region, stats_alloc::Stats, stats_alloc::StatsAlloc,
+    stats_alloc::INSTRUMENTED_SYSTEM,
+};
+pub(crate) use {
+    worth_store::physical_runtime::AdmissionError,
+    worth_store::physical_runtime::CapabilityAvailability,
+    worth_store::physical_runtime::DeclaredStoreRootDenialKind,
+    worth_store::physical_runtime::LifecycleObservation,
+    worth_store::physical_runtime::PhysicalCapability,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore,
+    worth_store::physical_runtime::ProcessRuntimeCounterSnapshot,
+    worth_store::physical_runtime::RootAdmissionObservation,
+};
 
-
-
-pub(crate) use {crate::lifecycle_oracle::assert_terminal_observation, crate::lifecycle_oracle::LifecycleAction};
+pub(crate) use {
+    crate::lifecycle_oracle::assert_terminal_observation, crate::lifecycle_oracle::LifecycleAction,
+};
 
 pub(crate) static NEXT_TEST_ROOT: AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
@@ -22,10 +38,12 @@ pub(crate) fn prove_invalid_admission_is_allocation_free() {
 
     assert!(matches!(
         outcome,
-        Err(worth_store::physical_runtime::AdmissionError::InvalidDeclaredStoreRoot {
-            kind: worth_store::physical_runtime::DeclaredStoreRootDenialKind::Relative,
-            ..
-        })
+        Err(
+            worth_store::physical_runtime::AdmissionError::InvalidDeclaredStoreRoot {
+                kind: worth_store::physical_runtime::DeclaredStoreRootDenialKind::Relative,
+                ..
+            }
+        )
     ));
     assert_eq!(
         allocation,
@@ -37,14 +55,17 @@ pub(crate) fn prove_invalid_admission_is_allocation_free() {
 pub(crate) fn prove_declared_root_closes_without_retaining_authority() {
     let declared_root = unique_absent_root();
     let initial_absent_root = snapshot_root(&declared_root);
-    assert_eq!(initial_absent_root, crate::sealed_runtime_lifecycle_journey::RootSnapshot::Absent);
+    assert_eq!(
+        initial_absent_root,
+        crate::sealed_runtime_lifecycle_journey::RootSnapshot::Absent
+    );
 
     let first_admission = valid_admission(declared_root.clone());
     let second_admission = valid_admission(declared_root.clone());
 
     let first_allocation_region = stats_alloc::Region::new(GLOBAL_ALLOCATOR);
-    let first_runtime =
-        worth_store::physical_runtime::PhysicalStore::admit(first_admission).expect("the validated root declaration should admit");
+    let first_runtime = worth_store::physical_runtime::PhysicalStore::admit(first_admission)
+        .expect("the validated root declaration should admit");
     let first_allocation = first_allocation_region.change();
     assert!(
         first_allocation.bytes_allocated <= MAX_ADMISSION_ALLOCATION_BYTES,
@@ -176,8 +197,10 @@ pub(crate) fn prove_existing_root_is_unchanged() {
     std::fs::create_dir(&existing_empty_root)
         .expect("the existing-root world should create one empty directory");
     let initial_empty_root = snapshot_root(&existing_empty_root);
-    let existing_runtime = worth_store::physical_runtime::PhysicalStore::admit(valid_admission(existing_empty_root.clone()))
-        .expect("an existing empty directory remains only a declaration in C.3");
+    let existing_runtime = worth_store::physical_runtime::PhysicalStore::admit(valid_admission(
+        existing_empty_root.clone(),
+    ))
+    .expect("an existing empty directory remains only a declaration in C.3");
     let existing_identity = existing_runtime.runtime_identity();
     let existing_closed = existing_runtime.close();
     assert_eq!(existing_closed.runtime_identity(), existing_identity);
@@ -193,7 +216,8 @@ pub(crate) enum RootSnapshot {
 }
 
 pub(crate) fn valid_admission(root: PathBuf) -> PhysicalRuntimeAdmission {
-    worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).expect("the fixed root declaration should validate")
+    worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root)
+        .expect("the fixed root declaration should validate")
 }
 
 pub(crate) fn unique_absent_root() -> PathBuf {

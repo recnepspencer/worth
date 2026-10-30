@@ -1,4 +1,5 @@
-#[allow(unused_imports)] use crate::relational_certification::ordinary_context::delta_contracts::*;
+#[allow(unused_imports)]
+use crate::relational_certification::ordinary_context::delta_contracts::*;
 pub(crate) use {std::collections::BTreeMap, std::collections::BTreeSet};
 
 pub(crate) use {crate::relational_certification::ordinary_context::field_values::field_value};

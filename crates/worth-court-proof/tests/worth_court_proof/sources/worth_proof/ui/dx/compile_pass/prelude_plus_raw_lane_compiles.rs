@@ -1,7 +1,7 @@
 use worth_proof::prelude::*;
 use worth_proof::raw::{resolve_family_symbol, Recipe, Unresolved};
 
-fn main() {
+pub(crate) fn main() {
     let pleasant_recipe = recipe("payload");
     let raw_recipe = Recipe::<Unresolved, _>::new("payload");
     let pleasant_pair = pair("left", "right");

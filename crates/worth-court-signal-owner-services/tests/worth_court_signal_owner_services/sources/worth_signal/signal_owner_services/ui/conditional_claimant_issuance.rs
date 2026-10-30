@@ -1,6 +1,6 @@
 use worth_signal::facade::{SignalAspectLoweringOwner, SignalGraph, SignalRuntime};
 
-fn main() {
+pub(crate) fn main() {
     let claimant = SignalAspectLoweringOwner::fresh();
     let mut graph = SignalGraph::new();
     graph.claim_aspect_lowering_owner(&claimant).unwrap();

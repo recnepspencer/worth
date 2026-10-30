@@ -1,6 +1,13 @@
 // A finite process policy is exercised in its actual owning executable,
 // independently of work, worker, and canonical-settlement fixtures.
-pub(crate) use {worth_execution::LeaseDenial, worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel, crate::memory_reservation::ordinary_context::PROCESS_BYTES, crate::memory_reservation::ordinary_context::SERIAL, crate::memory_reservation::ordinary_context::authority, crate::memory_reservation::ordinary_context::request, crate::test_serialization};
+pub(crate) use {
+    crate::memory_reservation::ordinary_context::authority,
+    crate::memory_reservation::ordinary_context::request,
+    crate::memory_reservation::ordinary_context::PROCESS_BYTES,
+    crate::memory_reservation::ordinary_context::SERIAL, crate::test_serialization,
+    worth_execution::LeaseDenial, worth_execution::MemoryLimitDenial,
+    worth_execution::MemoryLimitLevel,
+};
 
 #[test]
 fn a_refusal_names_the_process_or_the_policy_that_refused() {

@@ -1,9 +1,28 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::residency_writeback_retry::*;
-use {worth_store::physical_runtime::AdmittedDirtyFrame, worth_store::physical_runtime::PhysicalResidencyCertification, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkRecoveryDisposition, worth_store::physical_runtime::PhysicalWorkRetryScheduleOutcome, worth_store::physical_runtime::PhysicalWritebackExecution};
-use {worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement, worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
-use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::residency_writeback_retry::*;
+use {
+    worth_store::physical_runtime::AdmittedDirtyFrame,
+    worth_store::physical_runtime::PhysicalResidencyCertification,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkRecoveryDisposition,
+    worth_store::physical_runtime::PhysicalWorkRetryScheduleOutcome,
+    worth_store::physical_runtime::PhysicalWritebackExecution,
+};
+use {
+    worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement,
+    worth_store_physical_backend::MediaFaultDirective,
+    worth_store_physical_backend::MediaOperationRole,
+};
+use {
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 #[test]
 fn no_effect_writeback_retains_dirty_ownership_through_signal_retry() {
@@ -19,8 +38,12 @@ fn no_effect_writeback_retains_dirty_ownership_through_signal_retry() {
         },
     );
     let residency = serving.certification_physical_residency();
-    let coordinate =
-        worth_store_physical_format::RecordFrameCoordinate::new(worth_store_physical_format::RecordArtifactFile::BootstrapCatalog, 8, 8).unwrap();
+    let coordinate = worth_store_physical_format::RecordFrameCoordinate::new(
+        worth_store_physical_format::RecordArtifactFile::BootstrapCatalog,
+        8,
+        8,
+    )
+    .unwrap();
     let before_bytes = artifact_range(root.path(), coordinate);
     let writeback_before = serving.residency_observation().writebacks();
     let dirty = dirty_frame(&residency, coordinate);
@@ -45,7 +68,9 @@ fn no_effect_writeback_retains_dirty_ownership_through_signal_retry() {
     );
 
     let retryable = match residency.execute_writeback(admitted).unwrap() {
-        worth_store::physical_runtime::PhysicalWritebackExecution::Retryable(retryable) => retryable,
+        worth_store::physical_runtime::PhysicalWritebackExecution::Retryable(retryable) => {
+            retryable
+        }
         worth_store::physical_runtime::PhysicalWritebackExecution::Clean(_) => {
             panic!("faulted residency writeback must retain a safe retry")
         }
@@ -80,12 +105,16 @@ fn no_effect_writeback_retains_dirty_ownership_through_signal_retry() {
     );
     assert_eq!(
         completed_writes(&serving)
-            - before.completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before.completed_operations_for(
+                worth_store_physical_backend::MediaOperationRole::PositionedWrite
+            ),
         0
     );
     assert_eq!(
         denied_writes(&serving)
-            - before.denied_before_effect_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before.denied_before_effect_for(
+                worth_store_physical_backend::MediaOperationRole::PositionedWrite
+            ),
         1
     );
 
@@ -143,11 +172,15 @@ fn no_effect_writeback_retains_dirty_ownership_through_signal_retry() {
     );
     assert_eq!(
         completed_writes(&serving),
-        before.completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite) + 1
+        before.completed_operations_for(
+            worth_store_physical_backend::MediaOperationRole::PositionedWrite
+        ) + 1
     );
     assert_eq!(
         denied_writes(&serving),
-        before.denied_before_effect_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite) + 1
+        before.denied_before_effect_for(
+            worth_store_physical_backend::MediaOperationRole::PositionedWrite
+        ) + 1
     );
     assert_eq!(artifact_range(root.path(), coordinate), EXPECTED_WRITEBACK);
     assert_eq!(residency.counters().dirty_frames(), 0);

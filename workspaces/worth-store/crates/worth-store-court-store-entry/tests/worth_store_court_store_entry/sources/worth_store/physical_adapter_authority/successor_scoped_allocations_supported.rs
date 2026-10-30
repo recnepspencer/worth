@@ -16,4 +16,4 @@ fn admit_exact_successor_scopes(
     let _: BlobPhysicalAllocation<'_> = allocations.admit_blob(bytes).unwrap();
 }
 
-fn main() {}
+pub(crate) fn main() {}

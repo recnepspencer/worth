@@ -1,9 +1,17 @@
+pub(crate) use std::process::Command;
 pub(crate) use {std::path::Path, std::path::PathBuf};
-pub(crate) use {std::process::Command};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard};
-pub(crate) use {crate::phase_eight_process::history::writer_process::c8_writer_binary_path, crate::phase_eight_process::history::writer_process::wait_for_marker};
-pub(crate) use {crate::phase_eight_process::history::writer_history::expected_history::ExpectedWriterHistory, crate::history::schedule::in_flight_mutation::MutationCrashWorkload, crate::phase_eight_process::history::physical_history::ParentPhysicalHistory, crate::phase_eight_process::history::writer_history::submitted_program::SubmittedOperationProgram};
+pub(crate) use worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard;
+pub(crate) use {
+    crate::history::schedule::in_flight_mutation::MutationCrashWorkload,
+    crate::phase_eight_process::history::physical_history::ParentPhysicalHistory,
+    crate::phase_eight_process::history::writer_history::expected_history::ExpectedWriterHistory,
+    crate::phase_eight_process::history::writer_history::submitted_program::SubmittedOperationProgram,
+};
+pub(crate) use {
+    crate::phase_eight_process::history::writer_process::c8_writer_binary_path,
+    crate::phase_eight_process::history::writer_process::wait_for_marker,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct KilledProductionWriter {
@@ -45,7 +53,10 @@ pub(crate) fn launch(declaration: WriterLaunch) -> Result<KilledProductionWriter
     let history = if killed.allow_unresolved_current_record {
         crate::phase_eight_process::history::physical_history::ParentPhysicalHistory::capture_with_unresolved_record(&killed.root, &killed.expected)?
     } else {
-        crate::phase_eight_process::history::physical_history::ParentPhysicalHistory::capture(&killed.root, &killed.expected)?
+        crate::phase_eight_process::history::physical_history::ParentPhysicalHistory::capture(
+            &killed.root,
+            &killed.expected,
+        )?
     };
     Ok(KilledProductionWriter {
         root: killed.root,
@@ -64,7 +75,10 @@ pub(crate) struct DrivenWriter {
     pub(crate) allow_unresolved_current_record: bool,
 }
 
-pub(crate) fn drive(mut declaration: WriterLaunch, bind_history: bool) -> Result<DrivenWriter, String> {
+pub(crate) fn drive(
+    mut declaration: WriterLaunch,
+    bind_history: bool,
+) -> Result<DrivenWriter, String> {
     let mut command = std::process::Command::new(c8_writer_binary_path());
     command
         .args(["--root"])

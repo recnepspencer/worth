@@ -8,7 +8,7 @@
 "license" = { "workspace" = true }
 
 [dependencies]
-"trybuild" = { "version" = "^1.0" }
+"worth-testkit-compiler" = { "path" = "../worth-testkit-compiler" }
 "worth-proof" = { "path" = "../worth-proof" }
 
 [[test]]

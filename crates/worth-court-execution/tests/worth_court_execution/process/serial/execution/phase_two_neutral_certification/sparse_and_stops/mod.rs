@@ -1,5 +1,20 @@
-#[allow(unused_imports)] use crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::*;
-use {worth_execution::BackInput, worth_execution::CancellationToken, worth_execution::CanonicalBits, worth_execution::ChargedBytes, worth_execution::DecomposeFailure, worth_foundational::DeterminismContract, crate::phase_two_neutral_certification::isolated_context::EDITIONS, crate::phase_two_neutral_certification::isolated_context::EQUIVALENCE_ID, worth_execution::ExecutionDecompose, worth_execution::ExecutionMap, worth_foundational::ExecutionPosture, worth_execution::InterfaceSolution, worth_execution::InteriorResult, worth_execution::MapKernelFailure, worth_execution::MapPartition, worth_foundational::PartitionIdentity, crate::phase_two_neutral_certification::isolated_context::TEST_LOCK, worth_execution::compare_canonical_values, crate::phase_two_neutral_certification::isolated_context::execution_matrix, crate::phase_two_neutral_certification::isolated_context::lease};
+#[allow(unused_imports)]
+use crate::phase_two_neutral_certification::isolated_context::sparse_and_stops::*;
+use {
+    crate::phase_two_neutral_certification::isolated_context::execution_matrix,
+    crate::phase_two_neutral_certification::isolated_context::lease,
+    crate::phase_two_neutral_certification::isolated_context::EDITIONS,
+    crate::phase_two_neutral_certification::isolated_context::EQUIVALENCE_ID,
+    crate::phase_two_neutral_certification::isolated_context::TEST_LOCK,
+    worth_execution::compare_canonical_values, worth_execution::BackInput,
+    worth_execution::CancellationToken, worth_execution::CanonicalBits,
+    worth_execution::ChargedBytes, worth_execution::DecomposeFailure,
+    worth_execution::ExecutionDecompose, worth_execution::ExecutionMap,
+    worth_execution::InterfaceSolution, worth_execution::InteriorResult,
+    worth_execution::MapKernelFailure, worth_execution::MapPartition,
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionPosture,
+    worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn sparse_decomposition_matches_independent_undecomposed_solver_across_widths() {

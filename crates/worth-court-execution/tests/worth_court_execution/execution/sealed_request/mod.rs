@@ -1,7 +1,20 @@
-#[allow(unused_imports)] use crate::sealed_request::ordinary_context::*;
-pub(crate) use {std::num::NonZeroUsize, std::sync::atomic::AtomicBool, std::sync::atomic::Ordering};
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionRequest, worth_execution::ExecutionWorkCeiling, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MemoryLimitLevel, worth_execution::SerialMemoryBudget, worth_execution::SerialRequest, worth_execution::WorkCeilingDenial};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy};
+#[allow(unused_imports)]
+use crate::sealed_request::ordinary_context::*;
+pub(crate) use {
+    std::num::NonZeroUsize, std::sync::atomic::AtomicBool, std::sync::atomic::Ordering,
+};
+pub(crate) use {
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionRequest,
+    worth_execution::ExecutionWorkCeiling, worth_execution::LeaseDenial,
+    worth_execution::LeaseRequest, worth_execution::MemoryLimitLevel,
+    worth_execution::SerialMemoryBudget, worth_execution::SerialRequest,
+    worth_execution::WorkCeilingDenial,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+};
 
 #[test]
 fn sealed_serial_request_refuses_memory_before_running_the_operation() {
@@ -12,11 +25,17 @@ fn sealed_serial_request_refuses_memory_before_running_the_operation() {
     );
     let called = std::sync::atomic::AtomicBool::new(false);
     let denial = worth_execution::ExecutionRequest::serial(&serial)
-        .run(worth_execution::ExecutionWorkCeiling::new(Some(1_000)), |_| {
-            called.store(true, std::sync::atomic::Ordering::Relaxed);
-        })
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(Some(1_000)),
+            |_| {
+                called.store(true, std::sync::atomic::Ordering::Relaxed);
+            },
+        )
         .unwrap_err();
-    let worth_execution::WorkCeilingDenial::Admission(worth_execution::LeaseDenial::MemoryExhausted(memory)) = denial else {
+    let worth_execution::WorkCeilingDenial::Admission(
+        worth_execution::LeaseDenial::MemoryExhausted(memory),
+    ) = denial
+    else {
         panic!("required serial memory must produce its own resource cause")
     };
     let worth_execution::MemoryLimitDenial::Capacity {
@@ -27,7 +46,10 @@ fn sealed_serial_request_refuses_memory_before_running_the_operation() {
     else {
         panic!("finite memory policy must refuse capacity, not counter overflow")
     };
-    assert_eq!(level, worth_execution::MemoryLimitLevel::Policy { ancestor: 0 });
+    assert_eq!(
+        level,
+        worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
+    );
     assert!(requested > admitted);
     assert_eq!(admitted, 1);
     assert!(!called.load(std::sync::atomic::Ordering::Relaxed));
@@ -35,14 +57,25 @@ fn sealed_serial_request_refuses_memory_before_running_the_operation() {
 
 #[test]
 fn serial_meter_preserves_counter_overflow() {
-    use {worth_execution::ExecutionScan, worth_execution::MapKernelFailure, worth_execution::MapKernelStop, worth_execution::MapStop, worth_execution::ScanOutcome};
-    use {worth_foundational::PartitionIdentity};
+    use worth_foundational::PartitionIdentity;
+    use {
+        worth_execution::ExecutionScan, worth_execution::MapKernelFailure,
+        worth_execution::MapKernelStop, worth_execution::MapStop, worth_execution::ScanOutcome,
+    };
     let policy = worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
         worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 20), Some(u64::MAX)),
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            Some(1 << 20),
+            Some(u64::MAX),
+        ),
     );
-    let serial = worth_execution::SerialRequest::from_policy(&policy, worth_execution::CancellationToken::new(), None);
+    let serial = worth_execution::SerialRequest::from_policy(
+        &policy,
+        worth_execution::CancellationToken::new(),
+        None,
+    );
     let identity = PartitionIdentity::new(1);
     let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())]).unwrap();
     worth_execution::ExecutionRequest::serial(&serial)
@@ -71,7 +104,11 @@ fn serial_meter_preserves_counter_overflow() {
 /// the whole advancement in both placements.
 #[test]
 fn serial_policy_work_ceiling_bounds_the_request_like_its_lease() {
-    let request = worth_execution::SerialRequest::from_policy(&one_unit_policy(), worth_execution::CancellationToken::new(), None);
+    let request = worth_execution::SerialRequest::from_policy(
+        &one_unit_policy(),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
     let result = worth_execution::ExecutionRequest::serial(&request)
         .in_scope(charged_scan)
         .unwrap();
@@ -84,8 +121,11 @@ fn serial_policy_work_ceiling_bounds_the_request_like_its_lease() {
 
 #[test]
 fn serial_policy_without_a_work_ceiling_meters_every_checkpoint() {
-    let request =
-        worth_execution::SerialRequest::from_policy(&unbounded_work_policy(), worth_execution::CancellationToken::new(), None);
+    let request = worth_execution::SerialRequest::from_policy(
+        &unbounded_work_policy(),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
     let result = worth_execution::ExecutionRequest::serial(&request)
         .in_scope(charged_scan)
         .unwrap();
@@ -99,16 +139,30 @@ fn serial_computation_declared_work_ceiling_still_bounds_the_same_scan() {
         worth_foundational::DeterminismContract::CanonicalBitwise,
         worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 20), None),
     );
-    let request = worth_execution::SerialRequest::from_policy(&absent_work, worth_execution::CancellationToken::new(), None);
+    let request = worth_execution::SerialRequest::from_policy(
+        &absent_work,
+        worth_execution::CancellationToken::new(),
+        None,
+    );
     let (result, report) = worth_execution::ExecutionRequest::serial(&request)
-        .run(worth_execution::ExecutionWorkCeiling::new(Some(100)), charged_scan)
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(Some(100)),
+            charged_scan,
+        )
         .unwrap();
     assert_eq!(result, (false, 64));
     assert_eq!(report.charged_work(), 64);
     // A declaration never widens the request: the narrower policy ceiling binds.
-    let request = worth_execution::SerialRequest::from_policy(&one_unit_policy(), worth_execution::CancellationToken::new(), None);
+    let request = worth_execution::SerialRequest::from_policy(
+        &one_unit_policy(),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
     let (result, report) = worth_execution::ExecutionRequest::serial(&request)
-        .run(worth_execution::ExecutionWorkCeiling::new(Some(100)), charged_scan)
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(Some(100)),
+            charged_scan,
+        )
         .unwrap();
     assert_eq!(result, (false, 0));
     assert_eq!(report.charged_work(), 0);

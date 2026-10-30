@@ -1,13 +1,30 @@
-
-
-pub(crate) use {crate::shared_support::compile_fail::bundle::CompileFailBundle, crate::shared_support::compile_fail::bundle::CompileFailCase};
-pub(crate) use {crate::shared_support::proof_shapes::digest::BasisDigest, crate::shared_support::proof_shapes::digest::ProofShapeDigest};
-pub(crate) use {crate::shared_support::type_shapes::codegen::CodegenHonestyReport, crate::shared_support::type_shapes::codegen::CodegenShapeCheck, crate::shared_support::type_shapes::debt::DebtInventory, crate::shared_support::type_shapes::debt::DebtItem, crate::shared_support::type_shapes::type_shape::TypeShapeCheck, crate::shared_support::type_shapes::type_shape::TypeShapeReport};
-pub(crate) use {std::any::type_name};
+pub(crate) use std::any::type_name;
+pub(crate) use {
+    crate::shared_support::compile_fail::bundle::CompileFailBundle,
+    crate::shared_support::compile_fail::bundle::CompileFailCase,
+};
+pub(crate) use {
+    crate::shared_support::proof_shapes::digest::BasisDigest,
+    crate::shared_support::proof_shapes::digest::ProofShapeDigest,
+};
+pub(crate) use {
+    crate::shared_support::type_shapes::codegen::CodegenHonestyReport,
+    crate::shared_support::type_shapes::codegen::CodegenShapeCheck,
+    crate::shared_support::type_shapes::debt::DebtInventory,
+    crate::shared_support::type_shapes::debt::DebtItem,
+    crate::shared_support::type_shapes::type_shape::TypeShapeCheck,
+    crate::shared_support::type_shapes::type_shape::TypeShapeReport,
+};
 pub(crate) use {std::mem::align_of, std::mem::needs_drop, std::mem::size_of};
 
-pub(crate) use {crate::shared_support::core_artifact::representatives::RawPhase};
-pub(crate) use {worth_proof::Artifact, worth_proof::ArtifactParts, worth_proof::ArtifactView, worth_proof::AssumptionBasis, worth_proof::CanonicalOrder, worth_proof::CanonicalVec, worth_proof::DisjointPair, worth_proof::ExactlyOne, worth_proof::NoAssumptionBasis, worth_proof::NoProofs, worth_proof::NonEmpty, worth_proof::Pair, worth_proof::Proof, worth_proof::StructuralProofAuthority, worth_proof::UniqueVec};
+pub(crate) use crate::shared_support::core_artifact::representatives::RawPhase;
+pub(crate) use {
+    worth_proof::Artifact, worth_proof::ArtifactParts, worth_proof::ArtifactView,
+    worth_proof::AssumptionBasis, worth_proof::CanonicalOrder, worth_proof::CanonicalVec,
+    worth_proof::DisjointPair, worth_proof::ExactlyOne, worth_proof::NoAssumptionBasis,
+    worth_proof::NoProofs, worth_proof::NonEmpty, worth_proof::Pair, worth_proof::Proof,
+    worth_proof::StructuralProofAuthority, worth_proof::UniqueVec,
+};
 
 pub(crate) fn compile_fail_bundle() -> CompileFailBundle {
     let cases = vec![
@@ -24,11 +41,17 @@ pub(crate) fn compile_fail_bundle() -> CompileFailBundle {
             concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs"),
         ),
     ];
-    crate::shared_support::compile_fail::bundle::CompileFailBundle::new("core_artifact_and_proof_substrate", cases)
+    crate::shared_support::compile_fail::bundle::CompileFailBundle::new(
+        "core_artifact_and_proof_substrate",
+        cases,
+    )
 }
 
 pub(crate) fn type_shape_report(checks: Vec<TypeShapeCheck>) -> TypeShapeReport {
-    crate::shared_support::type_shapes::type_shape::TypeShapeReport::new("core_artifact_and_proof_substrate", checks)
+    crate::shared_support::type_shapes::type_shape::TypeShapeReport::new(
+        "core_artifact_and_proof_substrate",
+        checks,
+    )
 }
 
 pub(crate) fn derive_type_shape_report() -> TypeShapeReport {

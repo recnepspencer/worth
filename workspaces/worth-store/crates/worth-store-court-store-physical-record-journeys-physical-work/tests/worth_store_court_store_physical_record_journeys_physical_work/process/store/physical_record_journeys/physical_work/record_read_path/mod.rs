@@ -1,10 +1,26 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::record_read_path::*;
-use {worth_store::physical_runtime::PhysicalWorkCounterSnapshot, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordReadObservation};
-use {worth_store_physical_backend::MediaOperationRole};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::record_read_path::*;
+use worth_store_physical_backend::MediaOperationRole;
+use {
+    worth_store::physical_runtime::PhysicalWorkCounterSnapshot,
+    worth_store::physical_runtime::PhysicalWorkCounterStage,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordReadObservation,
+};
 
-use {worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::read_record, worth_store_testkit_store::physical_record_journeys::serving_from_open};
-use {worth_store_testkit_store::physical_work::record_read_signal_cleanup::await_read_signal_cleanup};
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use worth_store_testkit_store::physical_work::record_read_signal_cleanup::await_read_signal_cleanup;
+use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::read_record,
+    worth_store_testkit_store::physical_record_journeys::serving_from_open,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+};
 
 #[test]
 fn cold_read_carries_artifact_proof_so_hot_read_creates_no_physical_work() {
@@ -15,14 +31,19 @@ fn cold_read_carries_artifact_proof_so_hot_read_creates_no_physical_work() {
     let publication = worth_store_testkit_store::durable_publication::root::publish_single(
         &initial,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("physical-work-record-read-path", 1),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "physical-work-record-read-path",
+            1,
+        ),
         worth_store::physical_runtime::RecordAppendBatch::try_from_iter([PAYLOAD]).unwrap(),
     );
     let record = publication.settled_members()[0].record_id(0).unwrap();
     initial.close();
 
     let serving = serving_from_open(&root);
-    let limits = worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap());
+    let limits = worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(PAYLOAD.len() as u32).unwrap(),
+    );
     let media_before = serving.media_counters();
     let residency_before = serving.residency_observation().counters();
     let work_before = serving.physical_work_counters();

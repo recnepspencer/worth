@@ -1,6 +1,6 @@
-pub(crate) use {std::cmp::Ordering};
+pub(crate) use std::cmp::Ordering;
 
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::WalFacts};
+pub(crate) use crate::phase_eight_process::history::parent_oracle::artifact_facts::WalFacts;
 
 pub(crate) fn validate(wal_files: &[WalFacts]) -> Result<(), String> {
     let mut chain = wal_files

@@ -1,5 +1,8 @@
-pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::CompositeSupplyChainCourt, crate::court::ordinary_context::budgets, crate::court::ordinary_context::relational};
-pub(crate) use {std::num::NonZeroUsize};
+pub(crate) use std::num::NonZeroUsize;
+pub(crate) use {
+    crate::court::ordinary_context::budgets, crate::court::ordinary_context::relational,
+    crate::court::ordinary_context::CompositeSupplyChainCourt, worth_runtime_world::facade::*,
+};
 #[test]
 fn history_and_observation_dependencies_hold_exact_pins_without_clone_amplification() {
     let host_request = crate::test_execution_policy::serial_request();
@@ -84,7 +87,10 @@ fn history_and_observation_dependencies_hold_exact_pins_without_clone_amplificat
 fn full_history_denies_before_owner_publication() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let court = crate::court::ordinary_context::CompositeSupplyChainCourt::compile_config(true, crate::court::ordinary_context::budgets::limited(1, 8));
+    let court = crate::court::ordinary_context::CompositeSupplyChainCourt::compile_config(
+        true,
+        crate::court::ordinary_context::budgets::limited(1, 8),
+    );
     let root = court.bootstrap();
     let before = court
         .records

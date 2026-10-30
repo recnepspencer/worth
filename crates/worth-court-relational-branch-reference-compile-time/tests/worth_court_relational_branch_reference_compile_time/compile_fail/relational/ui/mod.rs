@@ -1,12 +1,9 @@
 #[test]
 fn invariant_ui_boundaries_are_sealed() {
-    let tests = trybuild::TestCases::new();
-    tests.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/invariants/*.rs"));
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/invariants/*.rs")).expect("prebuilt compiler denial");
 }
 
 #[test]
 fn a_durable_medium_is_moved_into_exactly_one_runtime() {
-    let cases = trybuild::TestCases::new();
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/durable_medium/*.rs"));
-    cases.pass(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/durable_medium_pass/*.rs"));
+    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/durable_medium/*.rs")).expect("prebuilt compiler denial");
 }

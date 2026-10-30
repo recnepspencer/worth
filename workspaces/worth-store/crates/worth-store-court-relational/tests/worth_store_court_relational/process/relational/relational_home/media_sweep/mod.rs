@@ -14,22 +14,22 @@
 //! the first commit on a durably forked branch, the schema-transition commit,
 //! and a checkpoint that replaces a selected one; two seeds each.
 
-#[allow(unused_imports)] use crate::media_sweep::*;
-use {std::num::NonZeroU64};
+#[allow(unused_imports)]
+use crate::media_sweep::*;
+use std::num::NonZeroU64;
+use std::sync::Mutex;
 use {std::panic, std::panic::AssertUnwindSafe};
 use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
-use {std::sync::Mutex};
 
-use {worth_execution::ExecutionRequest};
-use {worth_store::physical_runtime::certification::MediaOperationRole};
+use worth_execution::ExecutionRequest;
+use worth_store::physical_runtime::certification::MediaOperationRole;
 
+use crate::media_faults;
 use {crate::durable_run::apply, crate::durable_run::served_schema};
 use {crate::media_case::run_case, crate::media_case::Ended, crate::media_case::Target};
-use {crate::media_faults};
 use {crate::workload, crate::workload::Script, crate::workload::Step};
 
-
-use {crate::media_sweep::prepared_sweep_home::PreparedSweepHome};
+use crate::media_sweep::prepared_sweep_home::PreparedSweepHome;
 
 #[test]
 fn every_media_operation_of_the_first_commit_recovers() {
@@ -71,7 +71,11 @@ fn every_media_operation_of_archive_and_delete_transitions_recovers() {
         |step| matches!(step, crate::workload::Step::RequestDeletion { .. }),
         |step| matches!(step, crate::workload::Step::Delete { .. }),
     ] {
-        sweep(|script| crate::media_case::Target::BranchTransition(script.steps.iter().position(select).unwrap()));
+        sweep(|script| {
+            crate::media_case::Target::BranchTransition(
+                script.steps.iter().position(select).unwrap(),
+            )
+        });
     }
 }
 

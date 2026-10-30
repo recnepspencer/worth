@@ -4,7 +4,7 @@
 //! runtime wrappers that issue entry-charged reads: lent to all but a root's
 //! last read, which spends the charge.
 
-#[path = "../../../src/orchestration/planning/page_observation/walk_entry/manifest_entry_budget.rs"]
+#[path = "../../../../../../../worth-store-recovery-runtime/src/orchestration/planning/page_observation/walk_entry/manifest_entry_budget.rs"]
 pub mod manifest_entry_budget;
 
 use manifest_entry_budget::{pays_for, spend, ChargeToken, ManifestEntryBudget};

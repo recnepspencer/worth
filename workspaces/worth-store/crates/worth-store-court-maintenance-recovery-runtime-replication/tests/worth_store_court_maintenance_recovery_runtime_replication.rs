@@ -19,6 +19,10 @@ pub(crate) mod backup_export_custody;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_maintenance_recovery_runtime_replication/support/bootstrap_catalog/mod.rs"]
 pub(crate) mod bootstrap_catalog;
+#[path = "worth_store_court_maintenance_recovery_runtime_replication/certification/mod.rs"]
+pub(crate) mod certification;
+#[path = "worth_store_court_maintenance_recovery_runtime_replication/compile_fail/mod.rs"]
+pub(crate) mod compile_fail;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_maintenance_recovery_runtime_replication/support/epoch_scope_foundational_lowering/mod.rs"]
 pub(crate) mod epoch_scope_foundational_lowering;
@@ -82,7 +86,3 @@ pub(crate) mod terminal_projection_quarantine_ui;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_maintenance_recovery_runtime_replication/support/tier_movement_future_chunk_stability/mod.rs"]
 pub(crate) mod tier_movement_future_chunk_stability;
-#[path = "worth_store_court_maintenance_recovery_runtime_replication/certification/mod.rs"]
-pub(crate) mod certification;
-#[path = "worth_store_court_maintenance_recovery_runtime_replication/compile_fail/mod.rs"]
-pub(crate) mod compile_fail;

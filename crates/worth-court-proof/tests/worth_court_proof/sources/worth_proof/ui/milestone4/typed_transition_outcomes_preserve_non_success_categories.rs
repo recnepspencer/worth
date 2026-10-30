@@ -31,4 +31,4 @@ fn typed_transition_outcomes_preserve_non_success_categories(
     );
 }
 
-fn main() {}
+pub(crate) fn main() {}

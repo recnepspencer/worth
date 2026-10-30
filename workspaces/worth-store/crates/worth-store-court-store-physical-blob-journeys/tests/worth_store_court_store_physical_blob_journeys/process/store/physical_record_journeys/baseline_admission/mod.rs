@@ -1,8 +1,33 @@
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalManifestCapacityTransition, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalPageSizeClass, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PhysicalRootProtocolRoute, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordBootstrapDenial, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordServingRebindReason, worth_store::physical_runtime::RecordStoreInitializationOutcome, worth_store::physical_runtime::RecordStoreOpenOutcome};
-use {worth_store_physical_backend::MediaOperationRole};
+use worth_proof::TransitionOutcome;
+use worth_store_physical_backend::MediaOperationRole;
+use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalPageSizeClass,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::PhysicalRootProtocolRoute,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordBootstrapDenial,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordServingRebindReason,
+    worth_store::physical_runtime::RecordStoreInitializationOutcome,
+    worth_store::physical_runtime::RecordStoreOpenOutcome,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::serving_from_initialization, worth_store_testkit_store::physical_record_journeys::serving_from_open, worth_store_testkit_store::physical_record_journeys::success};
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::durability,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+    worth_store_testkit_store::physical_record_journeys::serving_from_open,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn foreign_durability_policy_rebinds_before_any_target_media_effect() {
@@ -14,7 +39,9 @@ fn foreign_durability_policy_rebinds_before_any_target_media_effect() {
     let before = target.media_counters();
 
     let outcome = target
-        .open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, policy))
+        .open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(
+            format, access, policy,
+        ))
         .into_raw();
     let worth_proof::TransitionOutcome::RebindRequired(rebind) = outcome else {
         panic!("a durability policy from another Store must require rebinding");
@@ -37,12 +64,15 @@ fn empty_bootstrap_create_and_reopen_converge() {
     let store = serving.store_identity();
     let initialization = serving.root_protocol_counters();
     assert_eq!(
-        initialization.root_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::Initialization),
+        initialization
+            .root_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::Initialization),
         1,
         "initialization must enter its root only after resident admission",
     );
     assert_eq!(
-        initialization.selector_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::Initialization),
+        initialization.selector_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::Initialization
+        ),
         0,
         "initialization publishes its selector without reading it",
     );
@@ -76,9 +106,9 @@ fn empty_bootstrap_create_and_reopen_converge() {
         "ordinary open must enter root interpretation exactly once after admission",
     );
     assert_eq!(
-        reopened
-            .root_protocol_counters()
-            .selector_entries(worth_store::physical_runtime::PhysicalRootProtocolRoute::OrdinaryOpen),
+        reopened.root_protocol_counters().selector_entries(
+            worth_store::physical_runtime::PhysicalRootProtocolRoute::OrdinaryOpen
+        ),
         0,
         "ordinary open has no Store-private selector decode route",
     );
@@ -90,7 +120,9 @@ fn empty_bootstrap_create_and_reopen_converge() {
     );
     assert_eq!(
         after.completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-            - before.completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
+            - before.completed_bytes_for(
+                worth_store_physical_backend::MediaOperationRole::PositionedRead
+            ),
         expected_reopen_bytes
     );
     assert_eq!(after.replacements(), before.replacements());
@@ -103,25 +135,31 @@ fn initialize_and_open_never_substitute_for_each_other() {
     let root = parent.path().join("store");
     let (format, placement, access) = configuration();
     let absent = media(&root);
-    let open_outcome: RecordStoreOpenOutcome =
-        open_record_store!(absent, |durability| worth_store::physical_runtime::PhysicalRecordOpen::new(
-            format, access, durability
-        ));
+    let open_outcome: RecordStoreOpenOutcome = open_record_store!(absent, |durability| {
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+    });
     let absent = match open_outcome.into_raw() {
         worth_proof::TransitionOutcome::Denied(denial) => denial.into_runtime(),
         _ => panic!("C5_PREDICATE:lifecycle open must not initialize an absent record family"),
     };
     success(initialize_record_store!(absent, |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }))
     .close();
 
     let existing = media(&root);
-    let existing: RecordStoreInitializationOutcome = initialize_record_store!(
-        existing,
-        |durability| worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
-    );
-    assert!(matches!(existing.into_raw(), worth_proof::TransitionOutcome::Denied(_)));
+    let existing: RecordStoreInitializationOutcome =
+        initialize_record_store!(existing, |durability| {
+            worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                format, placement, access, durability,
+            )
+        });
+    assert!(matches!(
+        existing.into_raw(),
+        worth_proof::TransitionOutcome::Denied(_)
+    ));
 }
 
 #[test]
@@ -165,16 +203,21 @@ fn operational_policy_drift_reopens_but_format_drift_does_not() {
         .unwrap();
     let wrong_media = media(&root);
     let replacements = wrong_media.media_counters().replacements();
-    let rejected = open_record_store!(wrong_media, |durability| worth_store::physical_runtime::PhysicalRecordOpen::new(
-        changed_format,
-        changed_access,
-        durability
-    ))
+    let rejected = open_record_store!(wrong_media, |durability| {
+        worth_store::physical_runtime::PhysicalRecordOpen::new(
+            changed_format,
+            changed_access,
+            durability,
+        )
+    })
     .into_raw();
     let worth_proof::TransitionOutcome::Denied(denial) = rejected else {
         panic!("persisted format drift must be denied");
     };
-    let worth_store::physical_runtime::RecordBootstrapDenial::PhysicalRecordFormatMismatch(mismatch) = denial.reason() else {
+    let worth_store::physical_runtime::RecordBootstrapDenial::PhysicalRecordFormatMismatch(
+        mismatch,
+    ) = denial.reason()
+    else {
         panic!("format mismatch must retain both exact declarations")
     };
     assert_eq!(mismatch.expected(), changed_format.declaration());

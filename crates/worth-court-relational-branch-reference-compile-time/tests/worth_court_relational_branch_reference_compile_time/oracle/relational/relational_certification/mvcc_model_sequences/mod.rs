@@ -1,5 +1,6 @@
-#[allow(unused_imports)] use crate::relational_certification::reference_context::mvcc_model_sequences::*;
-pub(crate) use {std::collections::BTreeSet};
+#[allow(unused_imports)]
+use crate::relational_certification::reference_context::mvcc_model_sequences::*;
+pub(crate) use std::collections::BTreeSet;
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::invariant_oracle_expectations::expected_supply_chain_branch};
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_supply_chain_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison::compare, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::observation::observe_snapshot as observe_supply_chain_snapshot, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
@@ -53,14 +54,20 @@ fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
             })
             .collect::<Vec<_>>();
         let selected = world.runtime.branch_identity(&branch).unwrap();
-        let selected_scope =
-            worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![selected.clone()]);
+        let selected_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+            &world.runtime,
+            vec![selected.clone()],
+        );
         let unrelated = identities
             .iter()
             .filter(|identity| *identity != &selected)
             .cloned()
             .collect::<Vec<_>>();
-        let unrelated_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, unrelated);
+        let unrelated_scope =
+            worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+                &world.runtime,
+                unrelated,
+            );
 
         let batch = lower_supply_chain_production_delta(
             execution,

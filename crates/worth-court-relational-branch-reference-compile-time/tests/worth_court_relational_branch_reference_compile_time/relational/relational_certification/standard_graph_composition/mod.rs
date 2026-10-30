@@ -1,6 +1,7 @@
-#[allow(unused_imports)] use crate::relational_certification::ordinary_context::standard_graph_composition::*;
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::sync::atomic::Ordering};
+#[allow(unused_imports)]
+use crate::relational_certification::ordinary_context::standard_graph_composition::*;
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use std::sync::atomic::Ordering;
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::graph_composition_probe::registration};
 pub(crate) use {crate::relational_certification::ordinary_context::graph_selected_state_probe::registration as selected_state_registration, crate::relational_certification::ordinary_context::graph_selected_state_probe::RULE_ID};
@@ -51,8 +52,14 @@ fn standard_runtime_public_graph_admission_is_touched_and_not_ordinary_commit_wo
         worth_relational::facade::runtime::InvariantCostClass::Global
     );
     assert!(!contains_custom_rule(&world.commit_result, GRAPH_PROBE_ID));
-    assert_eq!(graph_preparation_calls.load(std::sync::atomic::Ordering::Relaxed), 0);
-    assert_eq!(graph_evaluation_calls.load(std::sync::atomic::Ordering::Relaxed), 0);
+    assert_eq!(
+        graph_preparation_calls.load(std::sync::atomic::Ordering::Relaxed),
+        0
+    );
+    assert_eq!(
+        graph_evaluation_calls.load(std::sync::atomic::Ordering::Relaxed),
+        0
+    );
 
     let branch = BranchId("main".to_owned());
     let graph_execution = graph_execution(execution, &world.runtime, &branch);
@@ -64,8 +71,14 @@ fn standard_runtime_public_graph_admission_is_touched_and_not_ordinary_commit_wo
         &graph_execution,
         GRAPH_PROBE_ID
     ));
-    assert_eq!(graph_preparation_calls.load(std::sync::atomic::Ordering::Relaxed), 1);
-    assert_eq!(graph_evaluation_calls.load(std::sync::atomic::Ordering::Relaxed), 1);
+    assert_eq!(
+        graph_preparation_calls.load(std::sync::atomic::Ordering::Relaxed),
+        1
+    );
+    assert_eq!(
+        graph_evaluation_calls.load(std::sync::atomic::Ordering::Relaxed),
+        1
+    );
 }
 
 #[test]

@@ -1,31 +1,18 @@
-use {std::num::NonZeroU32};
+use std::num::NonZeroU32;
 
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_with_group_limit, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
-use {worth_store::physical_runtime::PhysicalMutationIdempotencyIssuanceDenial, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalRecordInitialization};
-
-
-
-
-
-
-
-
-
-
+use {
+    worth_store::physical_runtime::PhysicalMutationIdempotencyIssuanceDenial,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::durability_with_group_limit,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 pub(super) use {worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::rewrite_redo::produced_rewrite_payloads};
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[test]
 fn admitted_limits_and_identity_are_observable_without_exposing_policy_authority() {
@@ -43,11 +30,11 @@ fn admitted_limits_and_identity_are_observable_without_exposing_policy_authority
     }
 
     let (format, placement, access) = configuration();
-    let serving = success(
-        media.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
+    let serving = success(media.initialize_record_store(
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
             format, placement, access, ordinary,
-        )),
-    );
+        ),
+    ));
     let observed = serving.durability_observation();
     assert_eq!(observed.store_identity(), serving.store_identity());
     assert_eq!(observed.runtime_identity(), serving.runtime_identity());
@@ -85,22 +72,28 @@ fn serving_issues_policy_bound_generation_leases_until_publication_shutdown() {
     let policy = durability_with_group_limit(&media, std::num::NonZeroU32::new(32).unwrap());
     let policy_identity = policy.identity();
     let (format, placement, access) = configuration();
-    let serving = success(
-        media.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
+    let serving = success(media.initialize_record_store(
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
             format, placement, access, policy,
-        )),
-    );
+        ),
+    ));
     let store_identity = serving.store_identity();
     let submission = serving.record_submission();
 
     let first = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([7; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([7; 32]),
+        )
         .unwrap();
     let retry = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([7; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([7; 32]),
+        )
         .unwrap();
     let distinct = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([8; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([8; 32]),
+        )
         .unwrap();
 
     assert_eq!(first.identity(), retry.identity());

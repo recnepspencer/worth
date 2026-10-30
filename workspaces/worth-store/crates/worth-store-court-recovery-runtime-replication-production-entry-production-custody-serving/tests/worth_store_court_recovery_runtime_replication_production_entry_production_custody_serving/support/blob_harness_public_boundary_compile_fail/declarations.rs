@@ -1,40 +1,21 @@
-pub(crate) use {std::path::Path};
+use std::path::Path;
 
-pub(crate) use {worth_store_test_support::compiler_boundary::cargo_dependency_manifest, worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite};
+use worth_store_test_support::compiler_boundary::{read_ui_fixture_suite, UiCompilerEnvironment};
 
-pub(crate) fn run_case(suite: &str, blob_authority: bool, fixture: &str, expected: &[&str]) {
+pub(crate) fn run_case(
+    suite: &str,
+    environment: UiCompilerEnvironment,
+    fixture: &str,
+    expected: &[&str],
+) {
     let root = store_workspace_root();
-    let dependencies = [
-        (
-            "worth-store-blob-chunks",
-            root.join("crates/worth-store-blob-chunks"),
-            blob_authority
-                .then_some(vec!["certification-test-authority"])
-                .unwrap_or_default(),
-        ),
-        (
-            "worth-store-budgets",
-            root.join("crates/worth-store-budgets"),
-            Vec::new(),
-        ),
-    ];
-    let borrowed = dependencies
-        .iter()
-        .map(|(name, path, features)| (*name, path.as_path(), features.as_slice()))
-        .collect::<Vec<_>>();
-    let evidence = run_cargo_ui_fixture_suite(
+    let source_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/sources/worth_store_physical_certification/ui/blob_harness/public_boundary");
+    let evidence = read_ui_fixture_suite(
         root,
         suite,
-        cargo_dependency_manifest(&borrowed, &[]),
-        if blob_authority {
-            "blob-certification-authority"
-        } else {
-            "production"
-        },
-        "diagnostic-test",
-        &root.join(
-            "crates/worth-store-physical-certification/tests/ui/blob_harness/public_boundary",
-        ),
+        environment,
+        &source_root,
         &[(fixture, expected)],
     )
     .unwrap();
@@ -42,8 +23,8 @@ pub(crate) fn run_case(suite: &str, blob_authority: bool, fixture: &str, expecte
 }
 
 pub(crate) fn store_workspace_root() -> &'static Path {
-    std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-store-physical-certification"))
+    Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
         .nth(2)
-        .unwrap()
+        .expect("blob compiler court lives under the Store workspace")
 }

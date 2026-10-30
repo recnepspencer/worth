@@ -1,11 +1,21 @@
 //! The open-time incarnation decision under every identified media fault.
-#[allow(unused_imports)] use crate::incarnation::media::*;
+#[allow(unused_imports)]
+use crate::incarnation::media::*;
+use std::num::NonZeroU64;
+use worth_store::physical_runtime::certification::MediaOperationRole;
+use {
+    crate::durable_run::open, crate::incarnation::media, crate::workload, std::path::Path,
+    worth_execution::ExecutionRequest,
+    worth_store_relational::RelationalStoreHomeOpenRefusal as Refusal,
+};
 use {crate::media_faults, crate::schema_transition};
-use {worth_execution::ExecutionRequest, std::path::Path, worth_store_relational::RelationalStoreHomeOpenRefusal as Refusal, crate::incarnation::media, crate::durable_run::open, crate::workload};
-use {std::num::NonZeroU64};
-use {worth_store::physical_runtime::certification::MediaOperationRole};
-use {worth_store::physical_runtime::FilesystemAccessPosture, worth_store::physical_runtime::FilesystemMediaAdmission};
-use {worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeRequest};
+use {
+    worth_store::physical_runtime::FilesystemAccessPosture,
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+};
+use {
+    worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeRequest,
+};
 
 #[test]
 fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_advance() {
@@ -34,7 +44,11 @@ fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_a
                 first.close();
                 let Some((outcome, activations)) = faulted_open(
                     &location,
-                    &[(role, std::num::NonZeroU64::new(ordinal).unwrap(), directive.clone())],
+                    &[(
+                        role,
+                        std::num::NonZeroU64::new(ordinal).unwrap(),
+                        directive.clone(),
+                    )],
                     &execution,
                 ) else {
                     continue;
@@ -43,8 +57,8 @@ fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_a
                     activations[0].is_consumed(),
                     "{role:?} {ordinal} {directive:?}"
                 );
-                use {worth_store::physical_runtime::AnchoredRecordPublicationFailure as Publication};
-                use {worth_store_relational::RelationalStoreHomeDescriptorRefusal as Descriptor};
+                use worth_store::physical_runtime::AnchoredRecordPublicationFailure as Publication;
+                use worth_store_relational::RelationalStoreHomeDescriptorRefusal as Descriptor;
                 let expected_next = match outcome {
                     Ok(home) => {
                         assert_eq!(home.incarnation(), 2);
@@ -52,10 +66,14 @@ fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_a
                         home.certification_abort();
                         Some(3)
                     }
-                    Err(worth_store_relational::RelationalStoreHomeOpenRefusal::Descriptor(Descriptor::Publication(
-                        Publication::Indeterminate(_) | Publication::CompletedWithoutRecord,
-                    ))) => None,
-                    Err(worth_store_relational::RelationalStoreHomeOpenRefusal::Readmission(_)) => Some(3),
+                    Err(worth_store_relational::RelationalStoreHomeOpenRefusal::Descriptor(
+                        Descriptor::Publication(
+                            Publication::Indeterminate(_) | Publication::CompletedWithoutRecord,
+                        ),
+                    )) => None,
+                    Err(worth_store_relational::RelationalStoreHomeOpenRefusal::Readmission(_)) => {
+                        Some(3)
+                    }
                     Err(_) => Some(2),
                 };
                 let reopened = open(&location, &execution)

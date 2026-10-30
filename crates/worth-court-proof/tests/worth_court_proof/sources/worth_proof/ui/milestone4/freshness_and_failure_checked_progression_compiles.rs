@@ -26,10 +26,7 @@ fn freshness_and_failure_checked_progression_compiles(
     > = TransitionReadiness::failed("failed");
     let failed = resolve_checked_lower_and_admit_recipe(
         Recipe::<Unresolved, _>::new("payload"),
-        PreConstructionGate::ready(RecipeResolutionContext::new(
-            7_u8,
-            resolution_authority,
-        )),
+        PreConstructionGate::ready(RecipeResolutionContext::new(7_u8, resolution_authority)),
         failed_lowering,
         RecipeAdmissionReadiness::<
             &str,
@@ -44,4 +41,4 @@ fn freshness_and_failure_checked_progression_compiles(
     let _ = matches!(failed, TransitionOutcome::Failed("failed"));
 }
 
-fn main() {}
+pub(crate) fn main() {}

@@ -1,9 +1,16 @@
 #[allow(unused_imports)] use crate::physical_record_journeys::physical_work::residency_pressure_projection::public_pre_effect_basis::*;
 use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalResidencyAllocationSnapshot, worth_store::physical_runtime::PhysicalResidencyCounterSnapshot, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::PhysicalResidencyRetryPosture, worth_store::physical_runtime::PhysicalSpeculativeWorkKind, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits};
 
-use {worth_store_testkit_store::durable_publication};
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
-use {crate::physical_record_journeys::physical_work::residency_pressure_projection::nonzero, crate::physical_record_journeys::physical_work::residency_pressure_projection::nonzero_count};
+use worth_store_testkit_store::durable_publication;
+use {
+    crate::physical_record_journeys::physical_work::residency_pressure_projection::nonzero,
+    crate::physical_record_journeys::physical_work::residency_pressure_projection::nonzero_count,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn public_read_pressure_retains_exact_pre_effect_basis() {
@@ -11,13 +18,22 @@ fn public_read_pressure_retains_exact_pre_effect_basis() {
     let root = parent.path().join("public-residency-pressure");
     let (format, placement, access) = configuration();
     let seeded = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let published = worth_store_testkit_store::durable_publication::root::publish_single(
         &seeded,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("public-read-pressure", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"first".as_slice(), b"second".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "public-read-pressure",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+            b"first".as_slice(),
+            b"second".as_slice(),
+        ])
+        .unwrap(),
     );
     let member = &published.settled_members()[0];
     let first_record = member.record_id(0).unwrap();
@@ -26,7 +42,8 @@ fn public_read_pressure_retains_exact_pre_effect_basis() {
 
     let policy = one_page_foreground_read_policy(format);
     let serving = success(open_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability).with_residency_policy(policy)
+        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+            .with_residency_policy(policy)
     },));
     let store = serving.store_identity();
     let observation = serving.residency_observation();
@@ -43,7 +60,9 @@ fn public_read_pressure_retains_exact_pre_effect_basis() {
         counters.metadata_bytes(),
     );
     let page_bytes = u64::from(format.declaration().page_size().bytes());
-    let read_limits = worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(16).unwrap());
+    let read_limits = worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(16).unwrap(),
+    );
 
     let held = serving
         .records()
@@ -59,7 +78,10 @@ fn public_read_pressure_retains_exact_pre_effect_basis() {
         Err(error) => error,
         Ok(_) => panic!("the second read must not spend the held read allocation"),
     };
-    assert_eq!(read_error.denial(), worth_store::physical_runtime::RecordReadDenial::PhysicalPressure);
+    assert_eq!(
+        read_error.denial(),
+        worth_store::physical_runtime::RecordReadDenial::PhysicalPressure
+    );
     let read_pressure = read_error.pressure().unwrap();
     assert_eq!(read_pressure.basis().store_identity(), store);
     assert_eq!(read_pressure.basis().record(), Some(second_record));

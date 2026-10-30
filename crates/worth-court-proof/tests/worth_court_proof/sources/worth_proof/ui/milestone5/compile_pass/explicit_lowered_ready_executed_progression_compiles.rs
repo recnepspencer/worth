@@ -25,16 +25,18 @@ fn explicit_lowered_ready_executed_progression_compiles(
         RecipeResolutionContext::new(8_u8, resolution_authority),
     );
     let lowered = LowerRecipeTransition::new(lowering_capability)
-    .transition(resolved.into_value())
-    .into_value();
+        .transition(resolved.into_value())
+        .into_value();
     let ready = AdmitExecutionReadyRecipeTransition.transition(
         lowered,
         ExecutionReadinessContext::new("runtime admission", readiness_authority),
     );
-    let executed = ExecuteReadyRecipeTransition.transition(ready.into_value()).into_value();
+    let executed = ExecuteReadyRecipeTransition
+        .transition(ready.into_value())
+        .into_value();
 
     let _ = executed.payload();
     let _ = executed.strong_basis().value();
 }
 
-fn main() {}
+pub(crate) fn main() {}

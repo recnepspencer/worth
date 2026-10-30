@@ -7,11 +7,19 @@
 //! (`ScopeConflict`) rather than ordered behind the transition. Recovery then
 //! decides the transition's fate alone and both journals publish again.
 
-#[allow(unused_imports)] use crate::production_entry::ordered_journals::unresolved_isolation::*;
-use {std::num::NonZeroU64};
+#[allow(unused_imports)]
+use crate::production_entry::ordered_journals::unresolved_isolation::*;
+use std::num::NonZeroU64;
 
-use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-use {worth_store::physical_runtime::OrderedJournalPublicationFailure, worth_store::physical_runtime::OrderedJournalResolution, worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause};
+use {
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+};
+use {
+    worth_store::physical_runtime::OrderedJournalPublicationFailure,
+    worth_store::physical_runtime::OrderedJournalResolution,
+    worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause,
+};
 
 use {crate::production_entry::ordered_journals::branch_transitions_oracle::leaves_fate_unresolved, crate::production_entry::ordered_journals::branch_transitions_oracle::measure, crate::production_entry::ordered_journals::branch_transitions_oracle::prepared_store, crate::production_entry::ordered_journals::branch_transitions_oracle::COMMITS};
 use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::open_with_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
@@ -29,7 +37,8 @@ fn an_unresolved_journal_blocks_only_itself_until_reopen() {
     ];
     let isolated = directives.iter().any(|directive| {
         counts.iter().any(|(role, count)| {
-            (1..=*count).any(|nth| isolates(*role, std::num::NonZeroU64::new(nth).unwrap(), directive))
+            (1..=*count)
+                .any(|nth| isolates(*role, std::num::NonZeroU64::new(nth).unwrap(), directive))
         })
     });
     assert!(

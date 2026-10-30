@@ -1,11 +1,38 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::physical_work::authority::*;
-use {tempfile::tempdir};
-use {worth_foundational::aspects, worth_foundational::AbsenceLaw, worth_foundational::AspectEquivalenceBasis, worth_foundational::AspectEvolutionPolicy, worth_foundational::AspectMask, worth_foundational::AspectValue, worth_foundational::ProjectionMask, worth_foundational::ScalarAspectType};
-use {worth_proof::TransitionOutcome};
-use {worth_store::aspect_native::StoreAspectAuthorityInput, worth_store::aspect_native::StoreAspectBoundaryFact, worth_store::aspect_native::StoreAspectContractAdmission, worth_store::aspect_native::StoreAspectIdentity, worth_store::aspect_native::StoreAspectNativeDenial, worth_store::aspect_native::StoreAspectPatchAuthorityInput, worth_store::aspect_native::StoreAspectPatchBoundaryFact};
-use {worth_store::physical_runtime::PhysicalReadWorkRequest, worth_store::physical_runtime::PhysicalWorkProfileDeclaration, worth_store::physical_runtime::PhysicalWorkSemanticBasis, worth_store::physical_runtime::PhysicalWorkSemanticBasisDenial, worth_store::physical_runtime::PhysicalWorkSubmissionDenial};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::physical_work::authority::*;
+use tempfile::tempdir;
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::aspects, worth_foundational::AbsenceLaw,
+    worth_foundational::AspectEquivalenceBasis, worth_foundational::AspectEvolutionPolicy,
+    worth_foundational::AspectMask, worth_foundational::AspectValue,
+    worth_foundational::ProjectionMask, worth_foundational::ScalarAspectType,
+};
+use {
+    worth_store::aspect_native::StoreAspectAuthorityInput,
+    worth_store::aspect_native::StoreAspectBoundaryFact,
+    worth_store::aspect_native::StoreAspectContractAdmission,
+    worth_store::aspect_native::StoreAspectIdentity,
+    worth_store::aspect_native::StoreAspectNativeDenial,
+    worth_store::aspect_native::StoreAspectPatchAuthorityInput,
+    worth_store::aspect_native::StoreAspectPatchBoundaryFact,
+};
+use {
+    worth_store::physical_runtime::PhysicalReadWorkRequest,
+    worth_store::physical_runtime::PhysicalWorkProfileDeclaration,
+    worth_store::physical_runtime::PhysicalWorkSemanticBasis,
+    worth_store::physical_runtime::PhysicalWorkSemanticBasisDenial,
+    worth_store::physical_runtime::PhysicalWorkSubmissionDenial,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::admitted_contract, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::alternative_physical_witness, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::security_scope, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::security_scope_from_authority, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::validated_value};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::admitted_contract,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::alternative_physical_witness,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::security_scope,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::security_scope_from_authority,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::authority::validated_value,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+};
 
 #[test]
 fn semantic_basis_rejects_same_key_with_a_different_contract_revision() {
@@ -27,8 +54,12 @@ fn semantic_basis_rejects_same_identity_and_revision_with_a_different_shape() {
         .identified_by(string_contract.identity())
         .at_revision(string_contract.revision())
         .scalar(worth_foundational::ScalarAspectType::UInt64);
-    let integer_admission =
-        worth_store::aspect_native::StoreAspectContractAdmission::new(identity.clone(), integer_contract, witness).unwrap();
+    let integer_admission = worth_store::aspect_native::StoreAspectContractAdmission::new(
+        identity.clone(),
+        integer_contract,
+        witness,
+    )
+    .unwrap();
     let fact = projection_fact(&string_contract, identity, witness, "string-shape");
     assert_eq!(
         worth_store::physical_runtime::PhysicalWorkSemanticBasis::projection(fact, integer_admission),
@@ -40,7 +71,9 @@ fn semantic_basis_rejects_same_identity_and_revision_with_a_different_shape() {
 fn request_security_scope_must_share_the_semantic_physical_witness() {
     let (contract, identity, admission, witness) = admitted_contract(1);
     let fact = projection_fact(&contract, identity, witness, "security-scope");
-    let basis = worth_store::physical_runtime::PhysicalWorkSemanticBasis::projection(fact, admission).unwrap();
+    let basis =
+        worth_store::physical_runtime::PhysicalWorkSemanticBasis::projection(fact, admission)
+            .unwrap();
     assert_eq!(
         worth_store::physical_runtime::PhysicalReadWorkRequest::new(
             request_scope(),
@@ -56,7 +89,11 @@ fn profile_security_authority_rejects_a_foreign_admitted_receipt_before_retentio
     let root = tempdir().unwrap();
     let (contract, identity, admission, witness) = admitted_contract(1);
     let fact = projection_fact(&contract, identity, witness, "foreign-security-authority");
-    let basis = worth_store::physical_runtime::PhysicalWorkSemanticBasis::projection(fact, admission.clone()).unwrap();
+    let basis = worth_store::physical_runtime::PhysicalWorkSemanticBasis::projection(
+        fact,
+        admission.clone(),
+    )
+    .unwrap();
     let request = worth_store::physical_runtime::PhysicalReadWorkRequest::new(
         request_scope(),
         basis,
@@ -65,7 +102,11 @@ fn profile_security_authority_rejects_a_foreign_admitted_receipt_before_retentio
     .unwrap();
     let serving = serving_from_initialization_with_work_profile(
         root.path(),
-        worth_store::physical_runtime::PhysicalWorkProfileDeclaration::new(security_scope(witness), [admission]).unwrap(),
+        worth_store::physical_runtime::PhysicalWorkProfileDeclaration::new(
+            security_scope(witness),
+            [admission],
+        )
+        .unwrap(),
     );
 
     assert!(matches!(
@@ -73,7 +114,9 @@ fn profile_security_authority_rejects_a_foreign_admitted_receipt_before_retentio
             .physical_read_submission()
             .submit(request)
             .into_raw(),
-        worth_proof::TransitionOutcome::Denied(worth_store::physical_runtime::PhysicalWorkSubmissionDenial::SecurityAuthorityMismatch)
+        worth_proof::TransitionOutcome::Denied(
+            worth_store::physical_runtime::PhysicalWorkSubmissionDenial::SecurityAuthorityMismatch
+        )
     ));
     assert_eq!(serving.close().work().declared(), 0);
 }
@@ -83,17 +126,29 @@ fn installed_profile_rejects_an_exact_contract_from_another_physical_boundary() 
     let root = tempdir().unwrap();
     let (contract, identity, installed, witness) = admitted_contract(1);
     let alternate_witness = alternative_physical_witness();
-    let alternate =
-        worth_store::aspect_native::StoreAspectContractAdmission::new(identity.clone(), contract.clone(), alternate_witness)
-            .unwrap();
+    let alternate = worth_store::aspect_native::StoreAspectContractAdmission::new(
+        identity.clone(),
+        contract.clone(),
+        alternate_witness,
+    )
+    .unwrap();
     let fact = projection_fact(&contract, identity, alternate_witness, "other-boundary");
-    let basis = worth_store::physical_runtime::PhysicalWorkSemanticBasis::projection(fact, alternate).unwrap();
-    let request =
-        worth_store::physical_runtime::PhysicalReadWorkRequest::new(request_scope(), basis, security_scope(alternate_witness))
+    let basis =
+        worth_store::physical_runtime::PhysicalWorkSemanticBasis::projection(fact, alternate)
             .unwrap();
+    let request = worth_store::physical_runtime::PhysicalReadWorkRequest::new(
+        request_scope(),
+        basis,
+        security_scope(alternate_witness),
+    )
+    .unwrap();
     let serving = serving_from_initialization_with_work_profile(
         root.path(),
-        worth_store::physical_runtime::PhysicalWorkProfileDeclaration::new(security_scope(witness), [installed]).unwrap(),
+        worth_store::physical_runtime::PhysicalWorkProfileDeclaration::new(
+            security_scope(witness),
+            [installed],
+        )
+        .unwrap(),
     );
     assert!(matches!(
         serving
@@ -164,10 +219,14 @@ fn semantic_basis_rejects_a_patch_outside_the_admitted_mutation_mask() {
 #[test]
 fn semantic_basis_rejects_mutation_without_an_admitted_mutation_mask() {
     let (contract, identity, _, witness) = admitted_contract(1);
-    let admission = worth_store::aspect_native::StoreAspectContractAdmission::new(identity.clone(), contract.clone(), witness)
-        .unwrap()
-        .admit_projection_mask(AspectMask::<ProjectionMask>::whole_aspect())
-        .unwrap();
+    let admission = worth_store::aspect_native::StoreAspectContractAdmission::new(
+        identity.clone(),
+        contract.clone(),
+        witness,
+    )
+    .unwrap()
+    .admit_projection_mask(AspectMask::<ProjectionMask>::whole_aspect())
+    .unwrap();
     let patch = match aspects()
         .patch()
         .whole_aspect()
@@ -206,16 +265,24 @@ fn contract_admission_rejects_structurally_typed_but_contract_illegal_masks() {
         .unwrap();
 
     assert_eq!(
-        worth_store::aspect_native::StoreAspectContractAdmission::new(identity.clone(), contract.clone(), witness)
-            .unwrap()
-            .admit_projection_mask(projection),
+        worth_store::aspect_native::StoreAspectContractAdmission::new(
+            identity.clone(),
+            contract.clone(),
+            witness
+        )
+        .unwrap()
+        .admit_projection_mask(projection),
         Err(worth_store::aspect_native::StoreAspectNativeDenial::ProjectionMaskNotAdmitted)
     );
 
     assert_eq!(
-        worth_store::aspect_native::StoreAspectContractAdmission::new(identity.clone(), contract.clone(), witness)
-            .unwrap()
-            .admit_mutation_mask(mutation),
+        worth_store::aspect_native::StoreAspectContractAdmission::new(
+            identity.clone(),
+            contract.clone(),
+            witness
+        )
+        .unwrap()
+        .admit_mutation_mask(mutation),
         Err(worth_store::aspect_native::StoreAspectNativeDenial::MutationMaskNotAdmitted)
     );
     assert_eq!(
@@ -286,7 +353,8 @@ fn installed_profile_rejects_a_different_valid_mutation_mask() {
         worth_store::aspect_native::StoreAspectPatchAuthorityInput::new(patch, witness),
     )
     .unwrap();
-    let basis = worth_store::physical_runtime::PhysicalWorkSemanticBasis::mutation(fact, submitted).unwrap();
+    let basis = worth_store::physical_runtime::PhysicalWorkSemanticBasis::mutation(fact, submitted)
+        .unwrap();
     let request = worth_store::physical_runtime::PhysicalMutationWorkRequest::exact_write(
         request_scope(),
         basis,
@@ -296,7 +364,11 @@ fn installed_profile_rejects_a_different_valid_mutation_mask() {
     .unwrap();
     let serving = serving_from_initialization_with_work_profile(
         root.path(),
-        worth_store::physical_runtime::PhysicalWorkProfileDeclaration::new(security_scope(witness), [installed]).unwrap(),
+        worth_store::physical_runtime::PhysicalWorkProfileDeclaration::new(
+            security_scope(witness),
+            [installed],
+        )
+        .unwrap(),
     );
     assert!(matches!(
         serving

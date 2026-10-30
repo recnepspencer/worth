@@ -1,6 +1,10 @@
-use {crate::owned_async::ordinary_context::fixture::completion, crate::owned_async::ordinary_context::fixture::selected_fork, crate::owned_async::ordinary_context::fixture::AsyncSourceCourt};
-use {crate::owned_async::ordinary_context::native_service::NativeServiceCourt};
-use {worth_signal::facade::branch::SignalOwnedAsyncManagedReport as Report};
+use crate::owned_async::ordinary_context::native_service::NativeServiceCourt;
+use worth_signal::facade::branch::SignalOwnedAsyncManagedReport as Report;
+use {
+    crate::owned_async::ordinary_context::fixture::completion,
+    crate::owned_async::ordinary_context::fixture::selected_fork,
+    crate::owned_async::ordinary_context::fixture::AsyncSourceCourt,
+};
 
 #[test]
 fn unqueued_initial_supersession_preserves_witness_and_exact_old_cleanup() {
@@ -30,7 +34,9 @@ fn unqueued_initial_supersession_preserves_witness_and_exact_old_cleanup() {
     assert!(successor.admitted_current_occurrence());
     let replacement = successor.retained_request().unwrap();
     assert_ne!(successor.request_handle(), original_handle);
-    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Admission(report) = successor.native_report() else {
+    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Admission(report) =
+        successor.native_report()
+    else {
         panic!("actual initial report")
     };
     assert_eq!(report.superseded_request().unwrap(), original_handle);
@@ -112,7 +118,8 @@ fn unqueued_initial_supersession_preserves_witness_and_exact_old_cleanup() {
 
 #[test]
 fn native_initial_coalescence_keeps_winner_and_retires_only_new_unused_timeout() {
-    let court = crate::owned_async::ordinary_context::native_service::NativeServiceCourt::coalescing();
+    let court =
+        crate::owned_async::ordinary_context::native_service::NativeServiceCourt::coalescing();
     let winner = court.owner.admitted_request().handle();
     let (before, frontier) = court
         .port
@@ -129,7 +136,9 @@ fn native_initial_coalescence_keeps_winner_and_retires_only_new_unused_timeout()
     assert!(joined.refusal().is_none());
     assert_eq!(joined.admitted_request().handle(), winner);
     assert!(!joined.admitted_current_occurrence());
-    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Admission(report) = joined.report() else {
+    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Admission(report) =
+        joined.report()
+    else {
         panic!("actual initial coalescence report")
     };
     let coalescing = report.intent_equivalence_coalescing().unwrap();
@@ -179,7 +188,9 @@ fn native_initial_coalescence_keeps_winner_and_retires_only_new_unused_timeout()
         progress,
         worth_signal::facade::branch::SignalOwnedAsyncManagedProgress::TimedOut
     );
-    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Timeout(report) = joined.report() else {
+    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Timeout(report) =
+        joined.report()
+    else {
         panic!("real winner timeout")
     };
     assert!(report.timed_out_request().is_some());

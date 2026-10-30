@@ -1,8 +1,15 @@
 //! Reopened-home evidence after the parent has killed its parked child.
-pub(crate) use {crate::crash_oracle::assert_continues, crate::crash_oracle::assert_recovered, crate::crash_oracle::InFlight, crate::durable_run::open, crate::selected_checkpoint, crate::workload, crate::workload::Step};
-pub(crate) use {crate::process_kill::launch, crate::process_kill::script, crate::process_kill::Stop, crate::process_kill::SEED};
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
+pub(crate) use {
+    crate::crash_oracle::assert_continues, crate::crash_oracle::assert_recovered,
+    crate::crash_oracle::InFlight, crate::durable_run::open, crate::selected_checkpoint,
+    crate::workload, crate::workload::Step,
+};
+pub(crate) use {
+    crate::process_kill::launch, crate::process_kill::script, crate::process_kill::Stop,
+    crate::process_kill::SEED,
+};
 
 pub(crate) fn assert_killed_home_recovers(stop: Stop) {
     let script = script();
@@ -45,7 +52,9 @@ pub(crate) fn assert_killed_home_recovers(stop: Stop) {
     );
     if matches!(
         stop,
-        crate::process_kill::Stop::CheckpointCarried(_) | crate::process_kill::Stop::CheckpointAcknowledged(_) | crate::process_kill::Stop::CheckpointReturned
+        crate::process_kill::Stop::CheckpointCarried(_)
+            | crate::process_kill::Stop::CheckpointAcknowledged(_)
+            | crate::process_kill::Stop::CheckpointReturned
     ) {
         assert_eq!(
             home.cold_storage_reads().member_reads,

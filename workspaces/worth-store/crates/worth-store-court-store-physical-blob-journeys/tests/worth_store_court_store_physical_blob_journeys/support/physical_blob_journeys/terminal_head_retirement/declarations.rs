@@ -4,15 +4,38 @@
 pub(crate) use {std::num::NonZeroU16, std::num::NonZeroU32, std::num::NonZeroU64};
 
 pub(crate) use {worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::certification::CertificationReleaseHeadObservation, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimReceipt, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::BlobReclaimRetirementBudget, worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial, worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure, worth_store::physical_runtime::BlobTerminalHeadRetirementReceipt, worth_store::physical_runtime::BlobTerminalHeadRetirementRequest, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalWalObservation, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub(crate) use {
+    worth_store::physical_runtime::certification::CertificationReleaseHeadObservation,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimReceipt,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::BlobReclaimRetirementBudget,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementReceipt,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementRequest,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalWalObservation,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
-pub(crate) use {crate::physical_blob_journeys::terminal_head_retirement::publication::again, crate::physical_blob_journeys::terminal_head_retirement::publication::begin, crate::physical_blob_journeys::terminal_head_retirement::publication::publish_chunks, crate::physical_blob_journeys::terminal_head_retirement::publication::publish_resumable, crate::physical_blob_journeys::terminal_head_retirement::publication::Published};
-
-
-
-
-
+pub(crate) use {
+    crate::physical_blob_journeys::terminal_head_retirement::publication::again,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::begin,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::publish_chunks,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::publish_resumable,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::Published,
+};
+pub(crate) use {
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+};
 
 pub(crate) const SCOPE: &str = "c11.blob.terminal.head.retired.scope";
 pub(crate) const CHUNK: usize = 64 << 10;
@@ -24,7 +47,10 @@ pub(crate) const WHOLE_GENERATION: u16 = 16;
 
 /// After its head is retired the object stays settled: a repeated reclaim is
 /// proven no effect and mints no head, and a second retirement finds no head.
-pub(crate) fn assert_settled_absence(serving: &ServingPhysicalRuntime, proof: &AdmittedBlobReleaseProof) {
+pub(crate) fn assert_settled_absence(
+    serving: &ServingPhysicalRuntime,
+    proof: &AdmittedBlobReleaseProof,
+) {
     let before = fixed(serving);
     let repeated = serving
         .blobs()
@@ -38,17 +64,25 @@ pub(crate) fn assert_settled_absence(serving: &ServingPhysicalRuntime, proof: &A
         worth_store::physical_runtime::BlobReclaimDisposition::ProvenNoEffect
     );
     assert!(repeated.dropped_records().is_empty());
-    assert_eq!(repeated.retirement(), worth_store::physical_runtime::BlobReclaimRetirement::NotRequired);
+    assert_eq!(
+        repeated.retirement(),
+        worth_store::physical_runtime::BlobReclaimRetirement::NotRequired
+    );
     assert_eq!(fixed(serving), before, "a settled reclaim minted an effect");
     assert!(matches!(
         denied(serving, proof),
-        worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Denied(worth_store::physical_runtime::BlobTerminalHeadRetirementDenial::NoHead)
+        worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Denied(
+            worth_store::physical_runtime::BlobTerminalHeadRetirementDenial::NoHead
+        )
     ));
 }
 
 /// Runs one retirement that must deny, and proves the denial left the WAL
 /// end, the selected root and the release ledger exactly as they were.
-pub(crate) fn denied(serving: &ServingPhysicalRuntime, proof: &AdmittedBlobReleaseProof) -> Failure {
+pub(crate) fn denied(
+    serving: &ServingPhysicalRuntime,
+    proof: &AdmittedBlobReleaseProof,
+) -> Failure {
     let before = fixed(serving);
     let failure = retire(serving, proof).expect_err("the retirement must deny");
     assert_eq!(
@@ -88,15 +122,14 @@ pub(crate) fn retire(
     serving: &ServingPhysicalRuntime,
     proof: &AdmittedBlobReleaseProof,
 ) -> Result<BlobTerminalHeadRetirementReceipt, Failure> {
-    serving
-        .blobs()
-        .unwrap()
-        .retire_terminal_head(worth_store::physical_runtime::BlobTerminalHeadRetirementRequest::new(
+    serving.blobs().unwrap().retire_terminal_head(
+        worth_store::physical_runtime::BlobTerminalHeadRetirementRequest::new(
             again(proof),
             placement(),
             deadline(),
             limits(WHOLE_GENERATION),
-        ))
+        ),
+    )
 }
 
 /// Completes enough checkpoints, keyed from `first_key`, that every
@@ -119,7 +152,12 @@ pub(crate) fn release_request(
     proof: &AdmittedBlobReleaseProof,
     batch_records: u16,
 ) -> BlobReclaimRequest<'static> {
-    worth_store::physical_runtime::BlobReclaimRequest::released(again(proof), placement(), deadline(), limits(batch_records))
+    worth_store::physical_runtime::BlobReclaimRequest::released(
+        again(proof),
+        placement(),
+        deadline(),
+        limits(batch_records),
+    )
 }
 
 /// One drop batch of the release, with its displaced extents not yet settled.
@@ -135,13 +173,19 @@ pub(crate) fn release_batch(
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     receipt
 }
 
 /// Drops the whole generation and settles every displaced extent, so its
 /// head is terminal and the drop's own checkpoint has attested it.
-pub(crate) fn release_to_terminal(serving: &ServingPhysicalRuntime, proof: &AdmittedBlobReleaseProof) {
+pub(crate) fn release_to_terminal(
+    serving: &ServingPhysicalRuntime,
+    proof: &AdmittedBlobReleaseProof,
+) {
     let mut receipt = release_batch(serving, proof, WHOLE_GENERATION);
     assert_eq!(receipt.remaining_payload_records(), 0);
     settle(serving, &mut receipt);
@@ -158,7 +202,10 @@ pub(crate) fn settle(serving: &ServingPhysicalRuntime, receipt: &mut BlobReclaim
             .unwrap()
             .continue_reclaim_retirement(
                 receipt,
-                worth_store::physical_runtime::BlobReclaimRetirementBudget::new(std::num::NonZeroU32::new(64).unwrap(), deadline()),
+                worth_store::physical_runtime::BlobReclaimRetirementBudget::new(
+                    std::num::NonZeroU32::new(64).unwrap(),
+                    deadline(),
+                ),
             )
             .unwrap();
     }
@@ -168,16 +215,22 @@ pub(crate) fn settle(serving: &ServingPhysicalRuntime, receipt: &mut BlobReclaim
 pub(crate) fn checkpoint(serving: &ServingPhysicalRuntime, key: u8) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let handle = match serving.checkpoints().start(request).into_raw() {
         worth_proof::TransitionOutcome::Success(handle) => handle,
-        worth_proof::TransitionOutcome::Failed(failure) => panic!("checkpoint {key:#x} denied: {failure:?}"),
+        worth_proof::TransitionOutcome::Failed(failure) => {
+            panic!("checkpoint {key:#x} denied: {failure:?}")
+        }
         _ => panic!("checkpoint {key:#x} did not start"),
     };
     let outcome = handle.wait();
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "checkpoint {key:#x} must complete: {outcome:?}"
     );
 }

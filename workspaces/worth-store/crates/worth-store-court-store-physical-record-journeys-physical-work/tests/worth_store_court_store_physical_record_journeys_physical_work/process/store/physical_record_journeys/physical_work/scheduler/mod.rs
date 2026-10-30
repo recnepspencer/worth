@@ -1,17 +1,39 @@
-#[allow(unused_imports)] use worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::*;
-use {tempfile::tempdir};
-use {worth_foundational::FoundationalPerformanceWorkClass};
-use {worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalEffectObligation, worth_store::physical_runtime::PhysicalSchedulerDemand, worth_store::physical_runtime::PhysicalSchedulerDenial, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkPreEffectDenial, worth_store::physical_runtime::PhysicalWorkReadiness};
-use {worth_store_io_scheduler::admit_secure_io_scope_for_scheduler, worth_store_io_scheduler::admit_security_scope_for_scheduler, worth_store_io_scheduler::foreground_reservation::ForegroundIoLaneKind, worth_store_io_scheduler::IoSchedulerBackendCapabilityAdmission, worth_store_io_scheduler::QueueDurabilityClass, worth_store_io_scheduler::QueueExecutionAdmissionDenial, worth_store_io_scheduler::SecureIoOperation, worth_store_io_scheduler::SecureIoPreservationRequest};
+use tempfile::tempdir;
+use worth_foundational::FoundationalPerformanceWorkClass;
+use worth_proof::TransitionOutcome;
+#[allow(unused_imports)]
+use worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::*;
+use {
+    worth_store::physical_runtime::PhysicalEffectObligation,
+    worth_store::physical_runtime::PhysicalSchedulerDemand,
+    worth_store::physical_runtime::PhysicalSchedulerDenial,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
+    worth_store::physical_runtime::PhysicalWorkReadiness,
+};
+use {
+    worth_store_io_scheduler::admit_secure_io_scope_for_scheduler,
+    worth_store_io_scheduler::admit_security_scope_for_scheduler,
+    worth_store_io_scheduler::foreground_reservation::ForegroundIoLaneKind,
+    worth_store_io_scheduler::IoSchedulerBackendCapabilityAdmission,
+    worth_store_io_scheduler::QueueDurabilityClass,
+    worth_store_io_scheduler::QueueExecutionAdmissionDenial,
+    worth_store_io_scheduler::SecureIoOperation,
+    worth_store_io_scheduler::SecureIoPreservationRequest,
+};
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::foreground_saturation_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::foreground_saturation_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
-
-
-
-use {worth_store_testkit_store::physical_work::scheduler::policy_evidence::mismatched_policy_receipt};
-pub(crate) use {worth_store_testkit_store::physical_work::scheduler::policy_evidence::exhausted_policy_receipt, worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt, worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt_for};
+use worth_store_testkit_store::physical_work::scheduler::policy_evidence::mismatched_policy_receipt;
+pub(crate) use {
+    worth_store_testkit_store::physical_work::scheduler::policy_evidence::exhausted_policy_receipt,
+    worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt,
+    worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt_for,
+};
 
 #[test]
 fn ready_work_lowers_exact_budget_and_admits_without_effects() {
@@ -20,11 +42,19 @@ fn ready_work_lowers_exact_budget_and_admits_without_effects() {
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
     let before = serving.media_counters();
     let ready = ready_work(&serving, mutation_request);
-    let demand =
-        worth_store::physical_runtime::PhysicalSchedulerDemand::foreground(ready, worth_store_testkit_store::physical_work::scheduler_reservation::reserved_page_write(&serving), None)
-            .unwrap();
+    let demand = worth_store::physical_runtime::PhysicalSchedulerDemand::foreground(
+        ready,
+        worth_store_testkit_store::physical_work::scheduler_reservation::reserved_page_write(
+            &serving,
+        ),
+        None,
+    )
+    .unwrap();
     let work = demand.queue_work();
-    assert_eq!(work.durability_class(), worth_store_io_scheduler::QueueDurabilityClass::BufferedWrite);
+    assert_eq!(
+        work.durability_class(),
+        worth_store_io_scheduler::QueueDurabilityClass::BufferedWrite
+    );
     assert_eq!(work.requested_budget().queue_slots(), 1);
     assert_eq!(work.requested_budget().bandwidth_tokens(), 8);
     let backend_requirement = work.backend_requirement();
@@ -58,9 +88,14 @@ fn budget_mismatch_preserves_the_scheduler_denial() {
     let (profile, _, mutation_request) = work_fixture();
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
     let ready = ready_work(&serving, mutation_request);
-    let demand =
-        worth_store::physical_runtime::PhysicalSchedulerDemand::foreground(ready, worth_store_testkit_store::physical_work::scheduler_reservation::reserved_page_write(&serving), None)
-            .unwrap();
+    let demand = worth_store::physical_runtime::PhysicalSchedulerDemand::foreground(
+        ready,
+        worth_store_testkit_store::physical_work::scheduler_reservation::reserved_page_write(
+            &serving,
+        ),
+        None,
+    )
+    .unwrap();
     let work = demand.queue_work();
     let backend_requirement = work.backend_requirement();
     let requested_budget = work.requested_budget();
@@ -155,10 +190,18 @@ fn cancelled_ready_work_is_denied_before_scheduler_demand_admission() {
         worth_store::physical_runtime::PhysicalEffectObligation::NotDispatched
     );
     assert!(matches!(
-        worth_store::physical_runtime::PhysicalSchedulerDemand::foreground(ready, worth_store_testkit_store::physical_work::scheduler_reservation::reserved_page_write(&serving), None,),
-        Err(worth_store::physical_runtime::PhysicalSchedulerDenial::PreEffect(
-            worth_store::physical_runtime::PhysicalWorkPreEffectDenial::ConsumerCancelled
-        ))
+        worth_store::physical_runtime::PhysicalSchedulerDemand::foreground(
+            ready,
+            worth_store_testkit_store::physical_work::scheduler_reservation::reserved_page_write(
+                &serving
+            ),
+            None,
+        ),
+        Err(
+            worth_store::physical_runtime::PhysicalSchedulerDenial::PreEffect(
+                worth_store::physical_runtime::PhysicalWorkPreEffectDenial::ConsumerCancelled
+            )
+        )
     ));
     let capacity_after = serving.physical_scheduler_capacity();
     assert_eq!(capacity_after.active_reservations(), 0);
@@ -280,9 +323,11 @@ fn a_scheduler_demand_cannot_cross_store_owners() {
 
     assert!(matches!(
         second.admit_physical_scheduler_demand(demand, &backend, policy_receipt(requested_budget)),
-        Err(worth_store::physical_runtime::PhysicalSchedulerDenial::PreEffect(
-            worth_store::physical_runtime::PhysicalWorkPreEffectDenial::ForeignStore
-        ))
+        Err(
+            worth_store::physical_runtime::PhysicalSchedulerDenial::PreEffect(
+                worth_store::physical_runtime::PhysicalWorkPreEffectDenial::ForeignStore
+            )
+        )
     ));
     assert_eq!(second.media_counters(), before);
     first.close();

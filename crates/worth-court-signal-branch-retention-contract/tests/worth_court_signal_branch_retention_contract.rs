@@ -8,3 +8,6 @@ pub(crate) mod branch_retention_contract;
 pub(crate) mod compile_fail;
 #[path = "worth_court_signal_branch_retention_contract/signal/mod.rs"]
 pub(crate) mod signal;
+
+#[path = "worth_court_signal_branch_retention_contract/supported_programs/mod.rs"]
+mod supported_programs;

@@ -2,14 +2,47 @@
 //! denial precedes any WAL, root or release-ledger effect, and the same
 //! retirement succeeds once the dependency is gone.
 
-#[allow(unused_imports)] use crate::physical_blob_journeys::terminal_head_retirement::denials::*;
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::terminal_head_retirement::denials::*;
 use {std::num::NonZeroU64, std::thread, std::time::Duration, std::time::Instant};
 
 use {worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::BlobAppendFailure, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::CertificationScopedAllocation, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalReadProtectionDenial, worth_store::physical_runtime::PhysicalRetirementDenial, worth_store::physical_runtime::PreparedPhysicalMutation, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::ServingPhysicalRuntime};
+use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::BlobAppendFailure,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::CertificationScopedAllocation,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalReadProtectionDenial,
+    worth_store::physical_runtime::PhysicalRetirementDenial,
+    worth_store::physical_runtime::PreparedPhysicalMutation,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-use {crate::physical_blob_journeys::terminal_head_retirement::checkpoint, crate::physical_blob_journeys::terminal_head_retirement::deadline, crate::physical_blob_journeys::terminal_head_retirement::denied, crate::physical_blob_journeys::terminal_head_retirement::publish, crate::physical_blob_journeys::terminal_head_retirement::release_batch, crate::physical_blob_journeys::terminal_head_retirement::release_request, crate::physical_blob_journeys::terminal_head_retirement::release_to_terminal, crate::physical_blob_journeys::terminal_head_retirement::retire, crate::physical_blob_journeys::terminal_head_retirement::settle, worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial, worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure, crate::physical_blob_journeys::terminal_head_retirement::WHOLE_GENERATION};
-use {worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+use {
+    crate::physical_blob_journeys::terminal_head_retirement::checkpoint,
+    crate::physical_blob_journeys::terminal_head_retirement::deadline,
+    crate::physical_blob_journeys::terminal_head_retirement::denied,
+    crate::physical_blob_journeys::terminal_head_retirement::publish,
+    crate::physical_blob_journeys::terminal_head_retirement::release_batch,
+    crate::physical_blob_journeys::terminal_head_retirement::release_request,
+    crate::physical_blob_journeys::terminal_head_retirement::release_to_terminal,
+    crate::physical_blob_journeys::terminal_head_retirement::retire,
+    crate::physical_blob_journeys::terminal_head_retirement::settle,
+    crate::physical_blob_journeys::terminal_head_retirement::WHOLE_GENERATION,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure,
+};
+use {
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+};
 
 #[test]
 fn an_external_reader_of_the_source_root_denies_before_effects() {
@@ -17,7 +50,9 @@ fn an_external_reader_of_the_source_root_denies_before_effects() {
     let held = serving.records().unwrap();
     assert!(matches!(
         denied(&serving, &proof),
-        worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Denied(worth_store::physical_runtime::BlobTerminalHeadRetirementDenial::ProtectedReader)
+        worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Denied(
+            worth_store::physical_runtime::BlobTerminalHeadRetirementDenial::ProtectedReader
+        )
     ));
     drop(held);
     retire(&serving, &proof).expect("the reader is gone");
@@ -37,7 +72,10 @@ fn a_release_proof_of_another_store_is_refused_before_effects() {
         proof.issuer_evidence_sha256(),
     )
     .unwrap();
-    assert!(matches!(denied(&serving, &foreign), worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::ForeignStore));
+    assert!(matches!(
+        denied(&serving, &foreign),
+        worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::ForeignStore
+    ));
     retire(&serving, &proof).expect("the Store's own proof still retires the head");
     serving.close();
 }
@@ -45,7 +83,9 @@ fn a_release_proof_of_another_store_is_refused_before_effects() {
 #[test]
 fn a_retirement_in_flight_fences_readers_until_it_commits() {
     let (_directory, serving, proof) = attested_world();
-    let gate = serving.pause_physical_mutation_at(worth_store::physical_runtime::production::PhysicalMutationCheckpoint::BeforeWalAppend);
+    let gate = serving.pause_physical_mutation_at(
+        worth_store::physical_runtime::production::PhysicalMutationCheckpoint::BeforeWalAppend,
+    );
     std::thread::scope(|workers| {
         let retiring = workers.spawn(|| retire(&serving, &proof));
         let until = std::time::Instant::now() + std::time::Duration::from_secs(60);
@@ -74,7 +114,9 @@ fn a_retirement_in_flight_fences_readers_until_it_commits() {
 fn a_pending_publication_denies_before_effects() {
     let (_directory, serving, proof) = attested_world();
     let prepared = prepared_append(&serving, 0xa1);
-    let gate = serving.pause_physical_mutation_at(worth_store::physical_runtime::production::PhysicalMutationCheckpoint::BeforeWalAppend);
+    let gate = serving.pause_physical_mutation_at(
+        worth_store::physical_runtime::production::PhysicalMutationCheckpoint::BeforeWalAppend,
+    );
     std::thread::scope(|workers| {
         let appender = workers.spawn(|| prepared.execute());
         let until = std::time::Instant::now() + std::time::Duration::from_secs(60);
@@ -112,11 +154,16 @@ fn a_live_reclaim_claim_denies_before_effects() {
     assert!(
         matches!(
             failure,
-            worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::ReadProtection(worth_store::physical_runtime::PhysicalReadProtectionDenial::ReclaimFenced)
+            worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::ReadProtection(
+                worth_store::physical_runtime::PhysicalReadProtectionDenial::ReclaimFenced
+            )
         ),
         "{failure:?}"
     );
-    assert_eq!(live.cancel(), worth_store::physical_runtime::BlobReclaimDisposition::ProvenNoEffect);
+    assert_eq!(
+        live.cancel(),
+        worth_store::physical_runtime::BlobReclaimDisposition::ProvenNoEffect
+    );
     retire(&serving, &proof).expect("the competing reclaim was cancelled");
     serving.close();
 }
@@ -134,7 +181,10 @@ fn an_unresolved_idempotency_binding_denies_before_effects_and_releases_the_fenc
         "{failure:?}"
     );
     assert!(
-        matches!(prepared.execute(), worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_)),
+        matches!(
+            prepared.execute(),
+            worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_)
+        ),
         "the denied retirement must not leave its fence behind"
     );
     retire(&serving, &proof).expect("the settled binding no longer blocks");
@@ -149,7 +199,9 @@ fn an_unresolved_idempotency_binding_denies_before_effects_and_releases_the_fenc
 fn pool_pressure_denies_the_retirement_before_the_wal_effect() {
     let (_directory, serving, proof) = attested_world();
     let held = hold_recovery_bytes_leaving(&serving, 1);
-    let worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Allocation(entry) = denied(&serving, &proof) else {
+    let worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Allocation(entry) =
+        denied(&serving, &proof)
+    else {
         panic!("one spare byte cannot fund the entry's own working allocation");
     };
     let entry_bytes = entry
@@ -164,7 +216,9 @@ fn pool_pressure_denies_the_retirement_before_the_wal_effect() {
     assert!(
         matches!(
             failure,
-            worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Publication(worth_store::physical_runtime::BlobAppendFailure::Preparation(_))
+            worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Publication(
+                worth_store::physical_runtime::BlobAppendFailure::Preparation(_)
+            )
         ),
         "{failure:?}"
     );
@@ -201,7 +255,9 @@ fn a_partially_released_generation_keeps_its_nonterminal_head() {
     settle(&serving, &mut receipt);
     assert!(matches!(
         denied(&serving, &proof),
-        worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Denied(worth_store::physical_runtime::BlobTerminalHeadRetirementDenial::NonterminalHead)
+        worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Denied(
+            worth_store::physical_runtime::BlobTerminalHeadRetirementDenial::NonterminalHead
+        )
     ));
     serving.close();
 }
@@ -216,7 +272,9 @@ fn a_terminal_head_no_checkpoint_has_attested_denies_until_that_checkpoint() {
     assert_eq!(receipt.remaining_payload_records(), 0);
     assert_eq!(
         receipt.retirement(),
-        worth_store::physical_runtime::BlobReclaimRetirement::Pending(worth_store::physical_runtime::PhysicalRetirementDenial::Checkpoint)
+        worth_store::physical_runtime::BlobReclaimRetirement::Pending(
+            worth_store::physical_runtime::PhysicalRetirementDenial::Checkpoint
+        )
     );
     assert!(receipt.displaced_extents().len() > 1);
     let failure = denied(&serving, &proof);
@@ -227,7 +285,12 @@ fn a_terminal_head_no_checkpoint_has_attested_denies_until_that_checkpoint() {
     checkpoint(&serving, 0x91);
     let failure = denied(&serving, &proof);
     assert!(
-        matches!(failure, worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Denied(worth_store::physical_runtime::BlobTerminalHeadRetirementDenial::PendingPublication)),
+        matches!(
+            failure,
+            worth_store::physical_runtime::BlobTerminalHeadRetirementFailure::Denied(
+                worth_store::physical_runtime::BlobTerminalHeadRetirementDenial::PendingPublication
+            )
+        ),
         "the first displaced extent's release is a prepared publication: {failure:?}"
     );
     serving

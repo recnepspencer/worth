@@ -1,8 +1,26 @@
-#[allow(unused_imports)] use crate::phase_two_certification_repair::isolated_context::*;
-use {std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Mutex, std::sync::OnceLock};
+#[allow(unused_imports)]
+use crate::phase_two_certification_repair::isolated_context::*;
+use {
+    std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
+    std::sync::Mutex, std::sync::OnceLock,
+};
 
-use {worth_execution::CancellationSource, worth_execution::CancellationToken, worth_execution::CanonicalBits, worth_execution::ChargedBytes, worth_execution::DecomposeCertificationFailure, worth_execution::DecomposeKernelEditions, worth_execution::EquivalencePredicate, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionDecompose, worth_execution::ExecutionMap, worth_execution::InterfaceSolution, worth_execution::InteriorResult, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::OracleMismatch, worth_execution::ReduceCertificationFailure};
-use {worth_foundational::DeterminismContract, worth_foundational::EquivalenceContractId, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+use {
+    worth_execution::CancellationSource, worth_execution::CancellationToken,
+    worth_execution::CanonicalBits, worth_execution::ChargedBytes,
+    worth_execution::DecomposeCertificationFailure, worth_execution::DecomposeKernelEditions,
+    worth_execution::EquivalencePredicate, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionDecompose,
+    worth_execution::ExecutionMap, worth_execution::InterfaceSolution,
+    worth_execution::InteriorResult, worth_execution::LeaseRequest,
+    worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition,
+    worth_execution::OracleMismatch, worth_execution::ReduceCertificationFailure,
+};
+use {
+    worth_foundational::DeterminismContract, worth_foundational::EquivalenceContractId,
+    worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture,
+    worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn nested_reduce_certification_charges_only_selected_work() {
@@ -14,7 +32,11 @@ fn nested_reduce_certification_charges_only_selected_work() {
     let inner = map(3);
     let outer = map(1);
     let run = |work| {
-        let lease = lease(work, 1 << 20, worth_foundational::DeterminismContract::CanonicalBitwise);
+        let lease = lease(
+            work,
+            1 << 20,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+        );
         outer.run(Some(&lease), |_, context| {
             let (_, report, _) = inner
                 .certify_reduce(
@@ -76,10 +98,17 @@ fn reduce_uses_installed_equivalence_and_bitwise_policy() {
             0,
         )
     };
-    assert!(run(worth_foundational::DeterminismContract::ContractEquivalent(CONTRACT)).is_ok());
+    assert!(
+        run(worth_foundational::DeterminismContract::ContractEquivalent(
+            CONTRACT
+        ))
+        .is_ok()
+    );
     assert!(matches!(
         run(worth_foundational::DeterminismContract::CanonicalBitwise),
-        Err(worth_execution::ReduceCertificationFailure::Mismatch(worth_execution::OracleMismatch::Values))
+        Err(worth_execution::ReduceCertificationFailure::Mismatch(
+            worth_execution::OracleMismatch::Values
+        ))
     ));
 }
 
@@ -138,7 +167,9 @@ fn decompose_uses_installed_equivalence_and_bitwise_policy() {
             },
         )
     };
-    let equivalent = run(worth_foundational::DeterminismContract::ContractEquivalent(CONTRACT));
+    let equivalent = run(worth_foundational::DeterminismContract::ContractEquivalent(
+        CONTRACT,
+    ));
     assert!(equivalent.is_ok(), "{:?}", equivalent.err());
     assert!(matches!(
         run(worth_foundational::DeterminismContract::CanonicalBitwise),
@@ -158,7 +189,11 @@ fn nested_decompose_certification_charges_only_selected_work() {
     let outer = map(1);
     let changed = map(1);
     let run = |work| {
-        let lease = lease(work, 1 << 20, worth_foundational::DeterminismContract::CanonicalBitwise);
+        let lease = lease(
+            work,
+            1 << 20,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+        );
         outer.run(Some(&lease), |_, context| {
             let mut decomposition = worth_execution::ExecutionDecompose::try_new(
                 vec![worth_foundational::PartitionIdentity::new(1)],
@@ -212,8 +247,10 @@ fn nested_decompose_certification_charges_only_selected_work() {
         }
         _ => panic!("nested decomposition stopped"),
     };
-    assert!(matches!(run(selected), worth_execution::MapOutcome::Complete { report, .. }
-        if report.charged_work() == selected));
+    assert!(
+        matches!(run(selected), worth_execution::MapOutcome::Complete { report, .. }
+        if report.charged_work() == selected)
+    );
 }
 
 #[test]
@@ -224,7 +261,11 @@ fn certification_memory_peak_includes_retained_results() {
 
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
     let reduce = |memory| {
-        let lease = lease(100, memory, worth_foundational::DeterminismContract::CanonicalBitwise);
+        let lease = lease(
+            100,
+            memory,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+        );
         map(3).certify_reduce(
             &lease,
             1,
@@ -244,7 +285,11 @@ fn certification_memory_peak_includes_retained_results() {
     assert!(reduce(peak - 1).is_err());
 
     let decompose = |memory| {
-        let lease = lease(100, memory, worth_foundational::DeterminismContract::CanonicalBitwise);
+        let lease = lease(
+            100,
+            memory,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+        );
         let mut decomposition = worth_execution::ExecutionDecompose::try_new(
             vec![worth_foundational::PartitionIdentity::new(1)],
             0_u64,

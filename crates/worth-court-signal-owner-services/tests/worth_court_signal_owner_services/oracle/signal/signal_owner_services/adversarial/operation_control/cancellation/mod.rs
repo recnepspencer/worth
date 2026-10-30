@@ -1,10 +1,21 @@
+use crate::signal_owner_services::ordinary_context::execution_custody;
 #[allow(unused_imports)]
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchSnapshot, crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, worth_signal::facade::branch::SignalBranchAdvanceDenial, worth_signal::facade::branch::SignalBranchForkOperationDenial, worth_signal::facade::branch::SignalBranchRestoreDenial, worth_signal::facade::branch::SignalBranchRetirementDenial, worth_signal::facade::branch::SignalBranchRetirementReason, worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_proof::TransitionOutcome};
-use {crate::signal_owner_services::ordinary_context::execution_custody};
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
+    worth_proof::TransitionOutcome, worth_signal::facade::branch::AdmittedSignalBranchSnapshot,
+    worth_signal::facade::branch::SignalBranchAdvanceDenial,
+    worth_signal::facade::branch::SignalBranchForkOperationDenial,
+    worth_signal::facade::branch::SignalBranchRestoreDenial,
+    worth_signal::facade::branch::SignalBranchRetirementDenial,
+    worth_signal::facade::branch::SignalBranchRetirementReason,
+    worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+};
 
 #[test]
 fn pre_movement_cancellation_denies_every_cancellable_public_operation() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let snapshot_and_basis = world
         .mutation
         .capture_exact(
@@ -76,10 +87,10 @@ fn pre_movement_cancellation_denies_every_cancellable_public_operation() {
     drop(snapshot);
     drop(captured_basis);
     drop(world.child_basis);
-    let plan = match world
-        .lifecycle
-        .plan_retirement_exact(retirement_basis, worth_signal::facade::branch::SignalBranchRetirementReason::Superseded)
-    {
+    let plan = match world.lifecycle.plan_retirement_exact(
+        retirement_basis,
+        worth_signal::facade::branch::SignalBranchRetirementReason::Superseded,
+    ) {
         worth_proof::TransitionOutcome::Success(plan) => plan,
         other => panic!("the cancellation retirement plan is valid: {other:?}"),
     };
@@ -87,7 +98,9 @@ fn pre_movement_cancellation_denies_every_cancellable_public_operation() {
     retire_cancel.cancel();
     assert!(matches!(
         world.lifecycle.retire_exact(plan, &retire_cancel.token()),
-        worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementDenial::CancelledNoMovement)
+        worth_proof::TransitionOutcome::Denied(
+            worth_signal::facade::branch::SignalBranchRetirementDenial::CancelledNoMovement
+        )
     ));
 
     assert_eq!(

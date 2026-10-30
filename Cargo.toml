@@ -1,7 +1,7 @@
 [workspace]
 "resolver" = "3"
 "exclude" = ["workspaces/*", "workspaces/worth-contracts", "workspaces/worth-query", "workspaces/worth-query-bank-world", "workspaces/worth-store", "workspaces/worth-ui"]
-"members" = ["crates/worth-court-execution", "crates/worth-court-foundational-certification-boundary-artifacts", "crates/worth-court-foundational-certification-boundary-evidence", "crates/worth-court-foundational-expressions", "crates/worth-court-proof", "crates/worth-court-relational-branch-reference-compile-time", "crates/worth-court-relational-certification", "crates/worth-court-runtime-bridge", "crates/worth-court-runtime-world", "crates/worth-court-server-certification-suite", "crates/worth-court-server-product-operation-phase-eleven", "crates/worth-court-server-product-operation-phase-thirteen-shared-read", "crates/worth-court-signal-branch-retention-contract", "crates/worth-court-signal-owner-services", "crates/worth-court-signal-wasm", "crates/worth-execution", "crates/worth-foundational", "crates/worth-harness", "crates/worth-proof", "crates/worth-relational", "crates/worth-runtime-bridge", "crates/worth-runtime-world", "crates/worth-server", "crates/worth-server-client-generation", "crates/worth-signal", "crates/worth-signal-wasm", "crates/worth-testkit-foundational", "crates/worth-testkit-relational", "crates/worth-testkit-server", "crates/worth-value-shape-derive"]
+"members" = ["crates/worth-court-execution", "crates/worth-court-foundational-certification-boundary-artifacts", "crates/worth-court-foundational-certification-boundary-evidence", "crates/worth-court-foundational-expressions", "crates/worth-court-proof", "crates/worth-court-relational-branch-reference-compile-time", "crates/worth-court-relational-certification", "crates/worth-court-runtime-bridge", "crates/worth-court-runtime-world", "crates/worth-court-server-certification-suite", "crates/worth-court-server-product-operation-phase-eleven", "crates/worth-court-server-product-operation-phase-thirteen-shared-read", "crates/worth-court-signal-branch-retention-contract", "crates/worth-court-signal-owner-services", "crates/worth-court-signal-wasm", "crates/worth-execution", "crates/worth-foundational", "crates/worth-harness", "crates/worth-proof", "crates/worth-relational", "crates/worth-runtime-bridge", "crates/worth-runtime-world", "crates/worth-server", "crates/worth-server-client-generation", "crates/worth-signal", "crates/worth-signal-wasm", "crates/worth-testkit-compiler", "crates/worth-testkit-foundational", "crates/worth-testkit-relational", "crates/worth-testkit-server", "crates/worth-value-shape-derive"]
 
 
 [workspace.metadata.worth_topology]
@@ -35,9 +35,6 @@ worth-signal = { path = "crates/worth-signal" }
 worth-signal-wasm = { path = "crates/worth-signal-wasm" }
 worth-relational = { path = "crates/worth-relational" }
 worth-runtime-world = { path = "crates/worth-runtime-world" }
-
-# Testing
-trybuild = "1.0"
 
 # Serialization
 serde = { version = "1", features = ["derive", "rc"] }

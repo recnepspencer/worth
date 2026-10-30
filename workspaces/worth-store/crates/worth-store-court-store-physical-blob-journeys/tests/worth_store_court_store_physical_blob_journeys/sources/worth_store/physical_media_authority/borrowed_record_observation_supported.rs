@@ -18,4 +18,4 @@ fn addressed_read<D: LimitDimension, S: ArtifactTreeReadAllocator>(
     let _ = observation.read_record_artifact_range_with_storage(address, 0, 32, grant, storage);
 }
 
-fn main() {}
+pub(crate) fn main() {}

@@ -1,4 +1,8 @@
-use {worth_foundational::BoundaryArtifactId, worth_foundational::BoundaryEpoch, worth_foundational::BoundaryHandle, worth_foundational::CanonicalDigestId, worth_foundational::EquivalenceBasisId};
+use {
+    worth_foundational::BoundaryArtifactId, worth_foundational::BoundaryEpoch,
+    worth_foundational::BoundaryHandle, worth_foundational::CanonicalDigestId,
+    worth_foundational::EquivalenceBasisId,
+};
 
 #[test]
 fn equal_representations_keep_distinct_identity_meanings() {

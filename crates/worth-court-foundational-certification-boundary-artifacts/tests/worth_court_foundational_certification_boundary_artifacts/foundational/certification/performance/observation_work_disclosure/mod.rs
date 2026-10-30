@@ -1,6 +1,32 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::performance::observation_work_disclosure::*;
-use {worth_foundational::admit_requested_foundational_profile, worth_foundational::derive_foundational_profile_identity, worth_foundational::foundational_profile_progression_authority, worth_foundational::performance, worth_foundational::performance_api, worth_foundational::profiles, worth_foundational::request_foundational_profile_set, worth_foundational::AdmissionReadinessProfile, worth_foundational::CanonicalizationRuleVersion, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalObservationDisposition, worth_foundational::FoundationalPerformanceAccessPatternPosture, worth_foundational::FoundationalPerformanceAttachmentTargetKind, worth_foundational::FoundationalPerformanceBoundary, worth_foundational::FoundationalPerformanceBreadthLocalityPosture, worth_foundational::FoundationalPerformanceClaimConstructionDenial, worth_foundational::FoundationalPerformanceEvidenceStrength, worth_foundational::FoundationalPerformanceExecutionTemperature, worth_foundational::FoundationalPerformanceFallbackDebtPosture, worth_foundational::FoundationalPerformanceFreshnessRetentionPosture, worth_foundational::FoundationalPerformanceMismatch, worth_foundational::FoundationalPerformanceObservationContext, worth_foundational::FoundationalPerformanceReportRequest, worth_foundational::FoundationalPerformanceWorkClass, worth_foundational::ObservationActivationProfile, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::performance::observation_work_disclosure::*;
+use worth_proof::TransitionOutcome;
+use {
+    worth_foundational::admit_requested_foundational_profile,
+    worth_foundational::derive_foundational_profile_identity,
+    worth_foundational::foundational_profile_progression_authority,
+    worth_foundational::performance, worth_foundational::performance_api,
+    worth_foundational::profiles, worth_foundational::request_foundational_profile_set,
+    worth_foundational::AdmissionReadinessProfile, worth_foundational::CanonicalizationRuleVersion,
+    worth_foundational::CertificationPostureProfile,
+    worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile,
+    worth_foundational::FoundationalObservationDisposition,
+    worth_foundational::FoundationalPerformanceAccessPatternPosture,
+    worth_foundational::FoundationalPerformanceAttachmentTargetKind,
+    worth_foundational::FoundationalPerformanceBoundary,
+    worth_foundational::FoundationalPerformanceBreadthLocalityPosture,
+    worth_foundational::FoundationalPerformanceClaimConstructionDenial,
+    worth_foundational::FoundationalPerformanceEvidenceStrength,
+    worth_foundational::FoundationalPerformanceExecutionTemperature,
+    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
+    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
+    worth_foundational::FoundationalPerformanceMismatch,
+    worth_foundational::FoundationalPerformanceObservationContext,
+    worth_foundational::FoundationalPerformanceReportRequest,
+    worth_foundational::FoundationalPerformanceWorkClass,
+    worth_foundational::ObservationActivationProfile, worth_foundational::RetentionDeliveryProfile,
+    worth_foundational::SupportPostureProfile,
+};
 
 #[test]
 fn optional_observation_work_requires_active_profile_context() {
@@ -18,7 +44,8 @@ fn optional_observation_work_requires_active_profile_context() {
         ),
         Err(worth_foundational::FoundationalPerformanceClaimConstructionDenial::ObservationWorkRequiresActiveDisposition)
     );
-    let expected_context = active_context(worth_foundational::FoundationalObservationDisposition::Continuous);
+    let expected_context =
+        active_context(worth_foundational::FoundationalObservationDisposition::Continuous);
     let claim = claim_with_work(
         worth_foundational::FoundationalPerformanceWorkClass::DiagnosticFactCapture,
         Some(expected_context.clone()),
@@ -53,17 +80,19 @@ fn every_optional_work_class_is_independently_gated_and_disclosed() {
                 worth_foundational::FoundationalPerformanceClaimConstructionDenial::ObservationWorkRequiresActiveDisposition
             )
         );
-        let continuous = active_context(worth_foundational::FoundationalObservationDisposition::Continuous);
+        let continuous =
+            active_context(worth_foundational::FoundationalObservationDisposition::Continuous);
         let claim = claim_with_work(work_class, Some(continuous.clone()))
             .expect("continuous observation should admit each optional class");
         assert_eq!(claim.observation_context(), Some(&continuous));
         assert_eq!(claim.included_work(), &[work_class]);
 
-        let explicit = worth_foundational::FoundationalObservationDisposition::ExplicitlyActivated {
-            scope: worth_foundational::FoundationalObservationActivationScope::Operation,
-            session: worth_foundational::BoundaryHandle::new(7),
-            observed_epoch: worth_foundational::BoundaryEpoch::new(3),
-        };
+        let explicit =
+            worth_foundational::FoundationalObservationDisposition::ExplicitlyActivated {
+                scope: worth_foundational::FoundationalObservationActivationScope::Operation,
+                session: worth_foundational::BoundaryHandle::new(7),
+                observed_epoch: worth_foundational::BoundaryEpoch::new(3),
+            };
         let explicit_context = active_context(explicit);
         let claim = claim_with_work(work_class, Some(explicit_context.clone()))
             .expect("explicit observation should admit each optional class");
@@ -90,12 +119,15 @@ fn every_optional_work_class_is_independently_gated_and_disclosed() {
 
 #[test]
 fn observation_context_changes_comparison_and_canonical_basis() {
-    let continuous = active_context(worth_foundational::FoundationalObservationDisposition::Continuous);
-    let explicit = active_context(worth_foundational::FoundationalObservationDisposition::ExplicitlyActivated {
-        scope: worth_foundational::FoundationalObservationActivationScope::Batch,
-        session: worth_foundational::BoundaryHandle::new(8),
-        observed_epoch: worth_foundational::BoundaryEpoch::new(2),
-    });
+    let continuous =
+        active_context(worth_foundational::FoundationalObservationDisposition::Continuous);
+    let explicit = active_context(
+        worth_foundational::FoundationalObservationDisposition::ExplicitlyActivated {
+            scope: worth_foundational::FoundationalObservationActivationScope::Batch,
+            session: worth_foundational::BoundaryHandle::new(8),
+            observed_epoch: worth_foundational::BoundaryEpoch::new(2),
+        },
+    );
     let left = worth_foundational::performance_api::lower_lane::basis::performance_bundle(
         claim_with_work(
             worth_foundational::FoundationalPerformanceWorkClass::DiagnosticFactCapture,
@@ -115,7 +147,10 @@ fn observation_context_changes_comparison_and_canonical_basis() {
     .finish()
     .expect("right bundle");
 
-    let comparison = worth_foundational::performance_api::lower_lane::basis::compare_performance_bundles(&left, &right);
+    let comparison =
+        worth_foundational::performance_api::lower_lane::basis::compare_performance_bundles(
+            &left, &right,
+        );
     assert!(comparison.mismatches().iter().any(|mismatch| matches!(
         mismatch,
         worth_foundational::FoundationalPerformanceMismatch::ObservationContext { .. }
@@ -130,8 +165,10 @@ fn observation_context_changes_comparison_and_canonical_basis() {
             worth_foundational::performance_api::lower_lane::basis::performance_basis_rule_version(),
             &right,
         );
-    let (worth_proof::TransitionOutcome::Success(left_basis), worth_proof::TransitionOutcome::Success(right_basis)) =
-        (left_basis, right_basis)
+    let (
+        worth_proof::TransitionOutcome::Success(left_basis),
+        worth_proof::TransitionOutcome::Success(right_basis),
+    ) = (left_basis, right_basis)
     else {
         panic!("contextual bundle bases should prepare");
     };
@@ -143,26 +180,31 @@ fn observation_context_changes_comparison_and_canonical_basis() {
 
 #[test]
 fn observation_context_survives_report_materialization_and_canonicalization() {
-    let continuous = active_context(worth_foundational::FoundationalObservationDisposition::Continuous);
-    let explicit = active_context(worth_foundational::FoundationalObservationDisposition::ExplicitlyActivated {
-        scope: worth_foundational::FoundationalObservationActivationScope::Operation,
-        session: worth_foundational::BoundaryHandle::new(9),
-        observed_epoch: worth_foundational::BoundaryEpoch::new(6),
-    });
+    let continuous =
+        active_context(worth_foundational::FoundationalObservationDisposition::Continuous);
+    let explicit = active_context(
+        worth_foundational::FoundationalObservationDisposition::ExplicitlyActivated {
+            scope: worth_foundational::FoundationalObservationActivationScope::Operation,
+            session: worth_foundational::BoundaryHandle::new(9),
+            observed_epoch: worth_foundational::BoundaryEpoch::new(6),
+        },
+    );
     let materialize = |context: FoundationalPerformanceObservationContext| {
         let claim = claim_with_work(
             worth_foundational::FoundationalPerformanceWorkClass::DiagnosticFactCapture,
             Some(context),
         )
         .expect("report claim");
-        let bundle = worth_foundational::performance_api::lower_lane::basis::performance_bundle(claim)
-            .finish()
-            .expect("report bundle");
-        let source = worth_foundational::performance_api::lower_lane::reports::attach_performance_bundle(
-            worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundaryArtifact,
-            bundle,
-        )
-        .expect("report source");
+        let bundle =
+            worth_foundational::performance_api::lower_lane::basis::performance_bundle(claim)
+                .finish()
+                .expect("report bundle");
+        let source =
+            worth_foundational::performance_api::lower_lane::reports::attach_performance_bundle(
+                worth_foundational::FoundationalPerformanceAttachmentTargetKind::BoundaryArtifact,
+                bundle,
+            )
+            .expect("report source");
         worth_foundational::performance_api::lower_lane::reports::plan_performance_report(
             FoundationalPerformanceReportRequest {
                 source,

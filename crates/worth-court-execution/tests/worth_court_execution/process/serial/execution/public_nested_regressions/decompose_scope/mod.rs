@@ -1,6 +1,21 @@
 // A reduction interruption crosses the actual decomposition scope wrapper.
-use {worth_execution::CancellationToken, worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_execution::ExecutionMap, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapKernelStop, worth_execution::MapOutcome, worth_execution::MapStop, std::num::NonZeroUsize, worth_foundational::PartitionIdentity, crate::public_nested_regressions::isolated_context::TEST_LOCK, crate::public_nested_regressions::isolated_context::authority, crate::public_nested_regressions::isolated_context::map};
-use {worth_execution::CancellationSource, worth_execution::DecomposeFailure, worth_execution::DecomposeKernelEditions, worth_execution::ExecutionDecompose, worth_execution::InteriorResult, worth_execution::KeylessPartition, worth_execution::ReductionRunFailure, worth_execution::ReductionRunStop};
+use {
+    crate::public_nested_regressions::isolated_context::authority,
+    crate::public_nested_regressions::isolated_context::map,
+    crate::public_nested_regressions::isolated_context::TEST_LOCK, std::num::NonZeroUsize,
+    worth_execution::CancellationToken, worth_execution::ExecutionMap,
+    worth_execution::LeaseRequest, worth_execution::MapKernelFailure,
+    worth_execution::MapKernelStop, worth_execution::MapOutcome, worth_execution::MapStop,
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
+use {
+    worth_execution::CancellationSource, worth_execution::DecomposeFailure,
+    worth_execution::DecomposeKernelEditions, worth_execution::ExecutionDecompose,
+    worth_execution::InteriorResult, worth_execution::KeylessPartition,
+    worth_execution::ReductionRunFailure, worth_execution::ReductionRunStop,
+};
 
 #[test]
 fn a_real_decomposition_scope_keeps_the_reduction_interruption_request_owned() {
@@ -72,7 +87,9 @@ fn a_real_decomposition_scope_keeps_the_reduction_interruption_request_owned() {
             stopped,
             Err(worth_execution::DecomposeRunFailure {
                 cause: worth_execution::DecomposeFailure::ReductionRun(ReductionRunFailure {
-                    reason: worth_execution::ReductionRunStop::Hook(worth_execution::MapKernelStop::Cancelled),
+                    reason: worth_execution::ReductionRunStop::Hook(
+                        worth_execution::MapKernelStop::Cancelled
+                    ),
                     ..
                 }),
                 ..
@@ -85,7 +102,9 @@ fn a_real_decomposition_scope_keeps_the_reduction_interruption_request_owned() {
         outer,
         worth_execution::MapOutcome::Stopped {
             reason: worth_execution::MapStop::Failure {
-                cause: worth_execution::MapKernelFailure::Stop(worth_execution::MapKernelStop::NestedStopped),
+                cause: worth_execution::MapKernelFailure::Stop(
+                    worth_execution::MapKernelStop::NestedStopped
+                ),
                 ..
             },
             ..

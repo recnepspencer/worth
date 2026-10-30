@@ -1,13 +1,22 @@
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {serde_json::json};
-use {worth_server::WorthServerProductOperationExecutionBoundary, worth_server::WorthServerProductOperationInput, worth_server::WorthServerProductOperationPayload, worth_server::WorthServerProductOperationSurfaceDenialCode};
+use serde_json::json;
+use {
+    worth_server::WorthServerProductOperationExecutionBoundary,
+    worth_server::WorthServerProductOperationInput,
+    worth_server::WorthServerProductOperationPayload,
+    worth_server::WorthServerProductOperationSurfaceDenialCode,
+};
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_durable_product_mutation as durable_support};
+use worth_testkit_server::shared_support_durable_product_mutation as durable_support;
 
-use {worth_testkit_server::shared_support_durable_product_mutation::runtime::build_server, worth_testkit_server::shared_support_durable_product_mutation::runtime::session, worth_testkit_server::shared_support_durable_product_mutation::executor::TestDurableProductExecutor};
+use {
+    worth_testkit_server::shared_support_durable_product_mutation::executor::TestDurableProductExecutor,
+    worth_testkit_server::shared_support_durable_product_mutation::runtime::build_server,
+    worth_testkit_server::shared_support_durable_product_mutation::runtime::session,
+};
 
 #[test]
 fn missing_durable_preconditions_never_reach_product_persistence() {
@@ -23,17 +32,23 @@ fn missing_durable_preconditions_never_reach_product_persistence() {
 
     let missing_basis = operations
         .execute(
-            worth_server::WorthServerProductOperationInput::new("product.host_connection.upsert", payload())
-                .with_idempotency_key(
-                    worth_server::WorthServerProductIdempotencyKey::new("boundary-key")
-                        .expect("test key should validate"),
-                ),
+            worth_server::WorthServerProductOperationInput::new(
+                "product.host_connection.upsert",
+                payload(),
+            )
+            .with_idempotency_key(
+                worth_server::WorthServerProductIdempotencyKey::new("boundary-key")
+                    .expect("test key should validate"),
+            ),
         )
         .expect_err("durable mutation without a basis must deny");
     let missing_key = operations
         .execute(
-            worth_server::WorthServerProductOperationInput::new("product.host_connection.upsert", payload())
-                .with_basis_digest("basis:0"),
+            worth_server::WorthServerProductOperationInput::new(
+                "product.host_connection.upsert",
+                payload(),
+            )
+            .with_basis_digest("basis:0"),
         )
         .expect_err("durable mutation without an idempotency key must deny");
 

@@ -2,14 +2,30 @@
 //! residue of the released session: it leaves with the release, before any
 //! chunk, so the head still becomes terminal and retires.
 
-#[allow(unused_imports)] use crate::physical_blob_journeys::terminal_head_retirement::frontier::*;
-use {worth_store::physical_runtime::ServingPhysicalRuntime};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::terminal_head_retirement::frontier::*;
+use worth_store::physical_runtime::ServingPhysicalRuntime;
 use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1};
 
-use {crate::physical_blob_journeys::terminal_head_retirement::non_reissue::assert_release_is_the_sessions_fate, crate::physical_blob_journeys::terminal_head_retirement::non_reissue::assert_retired_identity_stays_ended, crate::physical_blob_journeys::terminal_head_retirement::non_reissue::retire_once_expired};
-use {crate::physical_blob_journeys::terminal_head_retirement::checkpoint, crate::physical_blob_journeys::terminal_head_retirement::denied, crate::physical_blob_journeys::terminal_head_retirement::observe, crate::physical_blob_journeys::terminal_head_retirement::publication::publish_chunks, crate::physical_blob_journeys::terminal_head_retirement::release_batch, crate::physical_blob_journeys::terminal_head_retirement::settle, worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial, worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure, crate::physical_blob_journeys::terminal_head_retirement::publication::Published, crate::physical_blob_journeys::terminal_head_retirement::CHUNK};
-use {worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records};
-use {worth_store_testkit_store::fixture::serving_from_initialization};
+use worth_store_testkit_store::fixture::serving_from_initialization;
+use worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records;
+use {
+    crate::physical_blob_journeys::terminal_head_retirement::checkpoint,
+    crate::physical_blob_journeys::terminal_head_retirement::denied,
+    crate::physical_blob_journeys::terminal_head_retirement::observe,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::publish_chunks,
+    crate::physical_blob_journeys::terminal_head_retirement::publication::Published,
+    crate::physical_blob_journeys::terminal_head_retirement::release_batch,
+    crate::physical_blob_journeys::terminal_head_retirement::settle,
+    crate::physical_blob_journeys::terminal_head_retirement::CHUNK,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementDenial as Denial,
+    worth_store::physical_runtime::BlobTerminalHeadRetirementFailure as Failure,
+};
+use {
+    crate::physical_blob_journeys::terminal_head_retirement::non_reissue::assert_release_is_the_sessions_fate,
+    crate::physical_blob_journeys::terminal_head_retirement::non_reissue::assert_retired_identity_stays_ended,
+    crate::physical_blob_journeys::terminal_head_retirement::non_reissue::retire_once_expired,
+};
 
 /// The first batch takes the publication, the frontier and 62 chunks; the
 /// second takes the last four chunks and then their root node.

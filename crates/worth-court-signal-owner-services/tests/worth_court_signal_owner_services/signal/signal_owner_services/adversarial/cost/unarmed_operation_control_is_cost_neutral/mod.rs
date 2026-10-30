@@ -1,11 +1,16 @@
 // Unarmed operation control is cost neutral.
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, worth_signal::facade::branch::SignalOwnerCancellationSource};
-use {crate::signal_owner_services::ordinary_context::execution_custody};
+use crate::signal_owner_services::ordinary_context::execution_custody;
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+};
 
 #[test]
 fn unarmed_operation_control_is_cost_neutral() {
-    let controlled = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
-    let ordinary = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let controlled =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let ordinary =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     controlled
         .runtime
         .as_ref()

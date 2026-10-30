@@ -1,4 +1,4 @@
-use {worth_runtime_bridge::facade::RuntimeWorldCorrespondenceAdmissionDenial};
+use worth_runtime_bridge::facade::RuntimeWorldCorrespondenceAdmissionDenial;
 
 #[test]
 fn bridge_generation_drift_is_a_distinct_denial_axis() {

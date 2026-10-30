@@ -8,25 +8,36 @@
 //! journal's `resolve` of the next position, and the history a reopened home
 //! recovers.
 
-#[allow(unused_imports)] use crate::publication_refusals::*;
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::publication_refusals::*;
+use std::path::Path;
 
+use worth_relational::facade::durability::RelationalCanonicalCommitArtifact;
+use worth_relational::facade::history::BranchId;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::publication::PatchStreamPosition;
+use worth_store::physical_runtime::certification::MediaOperationRole;
+use worth_store_relational::RelationalStoreCommitFate;
 use {worth_execution::ExecutionAllocationPolicy, worth_execution::ExecutionRequest};
-use {worth_relational::facade::durability::RelationalCanonicalCommitArtifact};
-use {worth_relational::facade::history::BranchId};
-use {worth_relational::facade::identity::EntityId};
-use {worth_relational::facade::mvcc::RelationalPublicationDenial, worth_relational::facade::mvcc::RelationalTransactionIntent};
-use {worth_relational::facade::publication::PatchStreamPosition};
-use {worth_relational::facade::transactions::RecordRef, worth_relational::facade::transactions::TransactionCommitError, worth_relational::facade::transactions::WorkerIntentBatch};
-use {worth_store::physical_runtime::certification::MediaOperationRole};
-use {worth_store_relational::RelationalStoreCommitFate};
-use {worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreJournalRefusal};
+use {
+    worth_relational::facade::mvcc::RelationalPublicationDenial,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+};
+use {
+    worth_relational::facade::transactions::RecordRef,
+    worth_relational::facade::transactions::TransactionCommitError,
+    worth_relational::facade::transactions::WorkerIntentBatch,
+};
+use {
+    worth_store_relational::RelationalStoreHome,
+    worth_store_relational::RelationalStoreJournalRefusal,
+};
 
-use {crate::batches};
-use {crate::durable_run::open};
-use {crate::media_faults};
-use {crate::schema_transition::SOURCE};
-use {crate::workload};
+use crate::batches;
+use crate::durable_run::open;
+use crate::media_faults;
+use crate::schema_transition::SOURCE;
+use crate::workload;
 
 #[test]
 fn a_conflicting_write_and_a_stale_candidate_publish_nothing() {
@@ -46,7 +57,12 @@ fn a_conflicting_write_and_a_stale_candidate_publish_nothing() {
             &execution,
         );
         assert!(
-            matches!(raced, Err(worth_relational::facade::transactions::TransactionCommitError::Conflict { .. })),
+            matches!(
+                raced,
+                Err(
+                    worth_relational::facade::transactions::TransactionCommitError::Conflict { .. }
+                )
+            ),
             "{case}: {:?}",
             raced
         );
@@ -91,7 +107,12 @@ fn a_commit_the_medium_refuses_before_any_effect_is_denied_and_not_installed() {
     // A Store that has begun terminating admits no new publication.
     home.certification_serving()
         .certification_begin_lifecycle_termination();
-    let denied = crate::workload::commit(home.runtime(), &execution, &main(), crate::batches::create(2));
+    let denied = crate::workload::commit(
+        home.runtime(),
+        &execution,
+        &main(),
+        crate::batches::create(2),
+    );
     assert!(
         matches!(
             denied,
@@ -126,14 +147,21 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
     home.close();
     // The last positioned write of a commit happens after its WAL record is
     // durable: losing its answer leaves a durable commit of unknown fate.
-    let (home, counters) =
-        crate::media_faults::open_with_faults(&location, SOURCE, &crate::media_faults::counters(), &execution)
-            .unwrap();
+    let (home, counters) = crate::media_faults::open_with_faults(
+        &location,
+        SOURCE,
+        &crate::media_faults::counters(),
+        &execution,
+    )
+    .unwrap();
     crate::media_faults::arm(&counters);
     create(&home, 2, &execution);
     let writes = crate::media_faults::counts(&counters)
         .into_iter()
-        .find(|(role, _)| *role == worth_store::physical_runtime::certification::MediaOperationRole::PositionedWrite)
+        .find(|(role, _)| {
+            *role
+                == worth_store::physical_runtime::certification::MediaOperationRole::PositionedWrite
+        })
         .expect("a commit writes")
         .1;
     home.close();
@@ -146,7 +174,12 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
         crate::media_faults::open_with_faults(&location, SOURCE, &[fault], &execution).unwrap();
     let acknowledged = crate::workload::artifacts_of(home.runtime());
     crate::media_faults::arm(&activations);
-    let unresolved = crate::workload::commit(home.runtime(), &execution, &main(), crate::batches::create(3));
+    let unresolved = crate::workload::commit(
+        home.runtime(),
+        &execution,
+        &main(),
+        crate::batches::create(3),
+    );
     let fate = unresolved
         .as_ref()
         .err()
@@ -164,7 +197,12 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
         2,
         "installed while unresolved"
     );
-    let blocked = crate::workload::commit(home.runtime(), &execution, &main(), crate::batches::create(4));
+    let blocked = crate::workload::commit(
+        home.runtime(),
+        &execution,
+        &main(),
+        crate::batches::create(4),
+    );
     assert_eq!(
         blocked
             .as_ref()
@@ -211,7 +249,10 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
         )
         .unwrap();
     assert!(
-        matches!(resolved, worth_store_relational::RelationalStoreCommitFate::Committed),
+        matches!(
+            resolved,
+            worth_store_relational::RelationalStoreCommitFate::Committed
+        ),
         "the unresolved fate resolved {resolved:?} after reopen"
     );
     home.close();

@@ -1,4 +1,8 @@
-use {worth_runtime_world::facade::CompositeCallerCorrelation, worth_runtime_world::facade::CompositeCommitParent, worth_runtime_world::facade::RuntimeWorldPublicationPhase};
+use {
+    worth_runtime_world::facade::CompositeCallerCorrelation,
+    worth_runtime_world::facade::CompositeCommitParent,
+    worth_runtime_world::facade::RuntimeWorldPublicationPhase,
+};
 
 #[test]
 fn publication_phase_vocabulary_is_complete_for_diagnostics() {
@@ -23,9 +27,18 @@ fn publication_phase_vocabulary_is_complete_for_diagnostics() {
 #[test]
 fn immutable_history_keeps_root_parentage_and_correlation_descriptive() {
     let parent = worth_runtime_world::facade::CompositeCommitParent::Root;
-    assert!(matches!(parent, worth_runtime_world::facade::CompositeCommitParent::Root));
+    assert!(matches!(
+        parent,
+        worth_runtime_world::facade::CompositeCommitParent::Root
+    ));
 
     let correlation = worth_runtime_world::facade::CompositeCallerCorrelation::new(17);
-    assert_eq!(correlation, worth_runtime_world::facade::CompositeCallerCorrelation::new(17));
-    assert_ne!(correlation, worth_runtime_world::facade::CompositeCallerCorrelation::new(18));
+    assert_eq!(
+        correlation,
+        worth_runtime_world::facade::CompositeCallerCorrelation::new(17)
+    );
+    assert_ne!(
+        correlation,
+        worth_runtime_world::facade::CompositeCallerCorrelation::new(18)
+    );
 }

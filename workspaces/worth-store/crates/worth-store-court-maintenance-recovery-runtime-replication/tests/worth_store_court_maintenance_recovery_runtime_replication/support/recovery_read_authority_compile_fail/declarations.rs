@@ -1,10 +1,16 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store_test_support::compiler_boundary::run_ui_proof_suite, worth_store_test_support::compiler_boundary::ExpectedCompilerDenial, worth_store_test_support::compiler_boundary::UiFixtureDeclaration, worth_store_test_support::compiler_boundary::UiProofEnvironment, worth_store_test_support::compiler_boundary::UiProofSuiteDeclaration};
+pub(crate) use {
+    worth_store_test_support::compiler_boundary::read_ui_proof_suite,
+    worth_store_test_support::compiler_boundary::ExpectedCompilerDenial,
+    worth_store_test_support::compiler_boundary::UiCompilerEnvironment,
+    worth_store_test_support::compiler_boundary::UiFixtureDeclaration,
+    worth_store_test_support::compiler_boundary::UiProofSuiteDeclaration,
+};
 
 pub(crate) fn suite(root: &Path) -> UiProofSuiteDeclaration {
     let source_root = root.join(
-        "crates/worth-store-certification/tests/compile_fail/physical_isolation/recovery_read_authority",
+        "crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/sources/worth_store_certification/compile_fail/physical_isolation/recovery_read_authority",
     );
     let fixtures = fixture_denials()
         .into_iter()
@@ -19,8 +25,7 @@ pub(crate) fn suite(root: &Path) -> UiProofSuiteDeclaration {
         .collect();
     worth_store_test_support::compiler_boundary::UiProofSuiteDeclaration::new(
         "recovery-read-authority",
-        worth_store_test_support::compiler_boundary::UiProofEnvironment::cargo(dependency_manifest(root), "production", "diagnostic-test")
-            .unwrap(),
+        worth_store_test_support::compiler_boundary::UiCompilerEnvironment::Certification,
         fixtures,
     )
     .unwrap()
@@ -91,18 +96,8 @@ pub(crate) fn fixture_denials() -> Vec<(&'static str, Vec<&'static str>)> {
     ]
 }
 
-pub(crate) fn dependency_manifest(root: &Path) -> String {
-    format!(
-        "[dependencies]\nworth-store-physical-certification = {{ path = \"{}\" }}\nworth-store-physical-isolation = {{ path = \"{}\" }}\nworth-store = {{ path = \"{}\" }}\nworth-store-recovery-runtime = {{ path = \"{}\" }}\n",
-        manifest_path(&root.join("crates/worth-store-physical-certification")),
-        manifest_path(&root.join("crates/worth-store-physical-isolation")),
-        manifest_path(&root.join("crates/worth-store")),
-        manifest_path(&root.join("crates/worth-store-recovery-runtime")),
-    )
-}
-
 pub(crate) fn store_workspace_root() -> &'static Path {
-    std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-store-certification"))
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
         .nth(2)
         .expect("certification crate lives under the Store workspace")

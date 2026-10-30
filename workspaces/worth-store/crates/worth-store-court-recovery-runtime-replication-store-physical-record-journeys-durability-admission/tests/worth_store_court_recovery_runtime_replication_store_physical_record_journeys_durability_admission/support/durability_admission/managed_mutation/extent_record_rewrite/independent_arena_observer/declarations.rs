@@ -1,4 +1,7 @@
-pub(crate) use {std::path::Path, std::process::Command, std::sync::atomic::AtomicU64, std::sync::atomic::Ordering};
+pub(crate) use {
+    std::path::Path, std::process::Command, std::sync::atomic::AtomicU64,
+    std::sync::atomic::Ordering,
+};
 
 pub(crate) static NEXT_REPORT: AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
@@ -8,7 +11,9 @@ pub(crate) fn observe_arena_in_separate_process(
     run: &str,
     scenario: &str,
 ) -> serde_json::Value {
-    let executable = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();
+    let executable = worth_store_test_support::OFFLINE_ROOT_OBSERVER
+        .path()
+        .expect("runner must prebuild the independent executable");
     let ordinal = NEXT_REPORT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let report_path = directory.join(format!("c11-{run}-{scenario}-{ordinal}.json"));
     let output = std::process::Command::new(executable)

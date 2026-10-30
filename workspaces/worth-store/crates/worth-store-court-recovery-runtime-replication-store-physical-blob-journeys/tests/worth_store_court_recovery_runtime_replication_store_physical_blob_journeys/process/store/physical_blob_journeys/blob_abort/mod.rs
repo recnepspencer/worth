@@ -1,11 +1,39 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_abort::*;
-use {std::num::NonZeroU64};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_abort::*;
+use std::num::NonZeroU64;
 
-use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestClaimDenial, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestSession, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobResumeFailure, worth_store::physical_runtime::BlobResumeLimits, worth_store::physical_runtime::BlobResumeToken, worth_store::physical_runtime::BlobTerminalDisposition, worth_store::physical_runtime::BlobTerminalFailure, worth_store::physical_runtime::BlobTerminalLimits, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_blob_chunks::BlobChunkSize};
+use worth_store_blob_chunks::BlobChunkSize;
+use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestClaimDenial,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobIngestSession,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobResumeFailure,
+    worth_store::physical_runtime::BlobResumeLimits,
+    worth_store::physical_runtime::BlobResumeToken,
+    worth_store::physical_runtime::BlobTerminalDisposition,
+    worth_store::physical_runtime::BlobTerminalFailure,
+    worth_store::physical_runtime::BlobTerminalLimits,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1};
 
-use {crate::physical_blob_journeys::blob_crash::establish_recovery_frontier, crate::blob_crash::recovery::recover_closed_store, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::admitted_blob_scope_for_replay_boundary, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::admitted_blob_scope_for_replay_boundary,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn abort_is_durable_terminal_but_preserves_selected_bytes_and_read_pins() {
@@ -32,13 +60,21 @@ fn abort_is_durable_terminal_but_preserves_selected_bytes_and_read_pins() {
     assert_eq!(held.protected_root().root().generation(), protected_root);
     let (chunk_record, expected_chunk) = before
         .iter()
-        .find(|(_, bytes)| matches!(decode_blob_record(bytes), Ok(worth_store_physical_format::BlobRecordV1::Chunk(_))))
+        .find(|(_, bytes)| {
+            matches!(
+                decode_blob_record(bytes),
+                Ok(worth_store_physical_format::BlobRecordV1::Chunk(_))
+            )
+        })
         .expect("unfinished ingest selected its first chunk");
     let mut retained = held
         .open(
             *chunk_record,
             worth_store::physical_runtime::RecordReadLimits::new(
-                worth_store::physical_runtime::RecordByteLimit::new(u32::try_from(expected_chunk.len()).unwrap()).unwrap(),
+                worth_store::physical_runtime::RecordByteLimit::new(
+                    u32::try_from(expected_chunk.len()).unwrap(),
+                )
+                .unwrap(),
             ),
         )
         .unwrap();
@@ -158,7 +194,9 @@ fn abort_denials_preserve_custody_and_release_inspecting_claim() {
             &scope,
             placement(),
             deadline(),
-            worth_store::physical_runtime::BlobTerminalLimits::new(std::num::NonZeroU64::new(1).unwrap())
+            worth_store::physical_runtime::BlobTerminalLimits::new(
+                std::num::NonZeroU64::new(1).unwrap()
+            )
         ),
         Err(worth_store::physical_runtime::BlobTerminalFailure::ScanBoundExhausted)
     ));

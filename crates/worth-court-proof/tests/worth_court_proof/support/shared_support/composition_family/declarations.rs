@@ -1,17 +1,14 @@
-
-
-
-
-
-
-
-
-
-
-pub(crate) use {crate::shared_support::compile_fail::bundle::CompileFailBundle};
-pub(crate) use {crate::shared_support::compile_pass::bundle::CompilePassBundle};
-pub(crate) use {crate::shared_support::proof_shapes::digest::FailureDigest, crate::shared_support::proof_shapes::digest::ProofShapeDigest, crate::shared_support::proof_shapes::digest::TransitionDigest};
-pub(crate) use {crate::shared_support::type_shapes::codegen::CodegenHonestyReport, crate::shared_support::type_shapes::debt::ResidualDebtReport};
+pub(crate) use crate::shared_support::compile_fail::bundle::CompileFailBundle;
+pub(crate) use crate::shared_support::compile_pass::bundle::CompilePassBundle;
+pub(crate) use {
+    crate::shared_support::proof_shapes::digest::FailureDigest,
+    crate::shared_support::proof_shapes::digest::ProofShapeDigest,
+    crate::shared_support::proof_shapes::digest::TransitionDigest,
+};
+pub(crate) use {
+    crate::shared_support::type_shapes::codegen::CodegenHonestyReport,
+    crate::shared_support::type_shapes::debt::ResidualDebtReport,
+};
 
 pub(crate) fn compile_fail_bundle() -> CompileFailBundle {
     crate::shared_support::composition_family::compile::compile_fail_bundle()

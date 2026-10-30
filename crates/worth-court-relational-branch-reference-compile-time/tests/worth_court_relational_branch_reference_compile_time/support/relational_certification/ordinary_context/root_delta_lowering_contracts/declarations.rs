@@ -87,12 +87,19 @@ pub(crate) fn update_number(
         ),
         worth_foundational::facade::AspectValue::UInt64(value),
     );
-    worth_relational::facade::transactions::WorkerIntentBatch::new("phase5-actual-prestate-control").push(worth_relational::facade::transactions::MutationIntent::Entity(
-        worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-            entity_id: handles.entities[&entity].id,
-            fields: worth_relational::facade::transactions::AspectFieldPatch::new(fields),
-        }),
-    ))
+    worth_relational::facade::transactions::WorkerIntentBatch::new("phase5-actual-prestate-control")
+        .push(
+            worth_relational::facade::transactions::MutationIntent::Entity(
+                worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(
+                    UpdateEntityFieldsIntent {
+                        entity_id: handles.entities[&entity].id,
+                        fields: worth_relational::facade::transactions::AspectFieldPatch::new(
+                            fields,
+                        ),
+                    },
+                ),
+            ),
+        )
 }
 
 pub(crate) fn update_text(
@@ -107,23 +114,30 @@ pub(crate) fn update_text(
             worth_foundational::facade::AspectKey::new(field).unwrap(),
             worth_foundational::facade::FieldKey::new(field).unwrap(),
         ),
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw(
-            value.to_owned(),
-        )),
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw(value.to_owned()),
+        ),
     );
-    worth_relational::facade::transactions::WorkerIntentBatch::new("phase5-actual-text-prestate-control").push(worth_relational::facade::transactions::MutationIntent::Entity(
-        worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-            entity_id: handles.entities[&entity].id,
-            fields: worth_relational::facade::transactions::AspectFieldPatch::new(fields),
-        }),
-    ))
+    worth_relational::facade::transactions::WorkerIntentBatch::new(
+        "phase5-actual-text-prestate-control",
+    )
+    .push(
+        worth_relational::facade::transactions::MutationIntent::Entity(
+            worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(
+                UpdateEntityFieldsIntent {
+                    entity_id: handles.entities[&entity].id,
+                    fields: worth_relational::facade::transactions::AspectFieldPatch::new(fields),
+                },
+            ),
+        ),
+    )
 }
 
 pub(crate) fn observe_branch(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::production_world::ProductionSeededSupplyChainWorld,
     branch: &str,
-) -> worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison_state::ObservedSupplyChainState {
+) -> worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison_state::ObservedSupplyChainState{
     let identity = world
         .runtime
         .branch_identity(&BranchId(branch.to_owned()))

@@ -1,4 +1,14 @@
-use {worth_execution::CancellationToken, worth_foundational::DeterminismContract, worth_execution::ExecutionForkJoin, worth_execution::ExecutionRounds, worth_execution::ExecutionScan, worth_execution::ForkChild, worth_execution::MapKernelFailure, worth_execution::MapOutcome, std::num::NonZeroUsize, worth_foundational::PartitionIdentity, worth_execution::RoundsOutcome, worth_execution::ScanOutcome, crate::phase_two_neutral_certification::isolated_context::TEST_LOCK, crate::phase_two_neutral_certification::isolated_context::execution_matrix, crate::phase_two_neutral_certification::isolated_context::integer_map, crate::phase_two_neutral_certification::isolated_context::lease};
+use {
+    crate::phase_two_neutral_certification::isolated_context::execution_matrix,
+    crate::phase_two_neutral_certification::isolated_context::integer_map,
+    crate::phase_two_neutral_certification::isolated_context::lease,
+    crate::phase_two_neutral_certification::isolated_context::TEST_LOCK, std::num::NonZeroUsize,
+    worth_execution::CancellationToken, worth_execution::ExecutionForkJoin,
+    worth_execution::ExecutionRounds, worth_execution::ExecutionScan, worth_execution::ForkChild,
+    worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::RoundsOutcome,
+    worth_execution::ScanOutcome, worth_foundational::DeterminismContract,
+    worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn reduction_scan_and_rounds_preserve_canonical_values_and_cost() {
@@ -50,7 +60,9 @@ fn reduction_scan_and_rounds_preserve_canonical_values_and_cost() {
     assert!(serial_reduced.2 < serial_reduced.1);
 
     let expected_prefix: Vec<_> = (1..=17_u64).map(|n| n * (n + 1) / 2).collect();
-    let rounds = worth_execution::ExecutionRounds::try_new(std::num::NonZeroUsize::new(19).unwrap()).unwrap();
+    let rounds =
+        worth_execution::ExecutionRounds::try_new(std::num::NonZeroUsize::new(19).unwrap())
+            .unwrap();
     let mut serial_scan = None;
     let mut serial_rounds = None;
     for (posture, width) in execution_matrix() {
@@ -83,7 +95,9 @@ fn reduction_scan_and_rounds_preserve_canonical_values_and_cost() {
         assert_eq!(certified.result().to_bits(), serial_reduced.0);
         assert_eq!(certified_report.charged_work(), serial_reduced.1);
         assert_eq!(certified_report.charged_span(), serial_reduced.2);
-        let ids: Vec<_> = (1..=17).map(worth_foundational::PartitionIdentity::new).collect();
+        let ids: Vec<_> = (1..=17)
+            .map(worth_foundational::PartitionIdentity::new)
+            .collect();
         let scan = worth_execution::ExecutionScan::try_from_ordered(
             ids.clone(),
             ids.into_iter().map(|id| (id, id.value())).collect(),
@@ -166,7 +180,9 @@ fn ordered_patterns_preserve_cost_with_seeded_nested_fork_schedules() {
     }
 
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
-    let identities: Vec<_> = (1..=3).map(worth_foundational::PartitionIdentity::new).collect();
+    let identities: Vec<_> = (1..=3)
+        .map(worth_foundational::PartitionIdentity::new)
+        .collect();
     let fork = worth_execution::ExecutionForkJoin::try_from_children(
         identities.clone(),
         identities
@@ -193,7 +209,9 @@ fn ordered_patterns_preserve_cost_with_seeded_nested_fork_schedules() {
             None,
             worth_foundational::DeterminismContract::CanonicalBitwise,
         );
-        let ids: Vec<_> = (1..=7).map(worth_foundational::PartitionIdentity::new).collect();
+        let ids: Vec<_> = (1..=7)
+            .map(worth_foundational::PartitionIdentity::new)
+            .collect();
         let scan = worth_execution::ExecutionScan::try_from_ordered(
             ids.clone(),
             ids.into_iter().map(|id| (id, id.value())).collect(),
@@ -239,7 +257,9 @@ fn ordered_patterns_preserve_cost_with_seeded_nested_fork_schedules() {
             serial_scan = Some(scan_signature);
         }
 
-        let rounds = worth_execution::ExecutionRounds::try_new(std::num::NonZeroUsize::new(5).unwrap()).unwrap();
+        let rounds =
+            worth_execution::ExecutionRounds::try_new(std::num::NonZeroUsize::new(5).unwrap())
+                .unwrap();
         let rounds_outcome = rounds.run(
             Some(&lease),
             0_u64,

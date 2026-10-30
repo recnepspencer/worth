@@ -1,5 +1,8 @@
-pub(crate) use {worth_relational::facade::inspection::RelationalBranchSharingObservation, worth_relational::facade::inspection::RelationalStorageRegionLocator};
-pub(crate) use {worth_relational::facade::runtime::RelationalRuntime};
+pub(crate) use worth_relational::facade::runtime::RelationalRuntime;
+pub(crate) use {
+    worth_relational::facade::inspection::RelationalBranchSharingObservation,
+    worth_relational::facade::inspection::RelationalStorageRegionLocator,
+};
 
 pub(crate) fn inspect_main_regions(
     runtime: &RelationalRuntime,
