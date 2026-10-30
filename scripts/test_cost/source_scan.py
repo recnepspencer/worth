@@ -28,8 +28,9 @@ def scan_text(text):
         value = token.value
         if token.kind == 'string':
             literal = string_value(token)
-            value = '"' + (('cargo' if literal == 'cargo.exe' else literal)
-                           if literal in ('cargo', 'cargo.exe', 'CARGO') else '<string>') + '"'
+            executable = literal.replace('\\', '/').rsplit('/', 1)[-1].casefold()
+            value = '"' + ('CARGO' if literal == 'CARGO' else 'cargo'
+                           if executable in ('cargo', 'cargo.exe') else '<string>') + '"'
         if index and stream[index - 1].kind == token.kind == 'ident':
             normalized += ' '
             offsets.append(token.start)

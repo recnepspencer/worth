@@ -35,6 +35,15 @@ class SourceCostTests(unittest.TestCase):
                      'use std::process::Command as Process; fn proof() { Process::new("cargo.exe"); }']:
             self.assertIn('cargo-command', [site['kind'] for site in scan_text(text)])
 
+    def test_absolute_and_case_variant_cargo_executables_cannot_bypass_the_rule(self):
+        for executable in ['r"C:\\Rust\\bin\\cargo.exe"', '"/opt/rust/bin/cargo"',
+                           '"cargo.EXE"', 'r"\\\\server\\tools\\Cargo.Exe"']:
+            for expression in [f'Command::new({executable});',
+                               f'let executable={executable}; Command::new(executable);']:
+                with self.subTest(expression=expression):
+                    self.assertIn('cargo-command', [site['kind'] for site in scan_text(expression)])
+        self.assertEqual(scan_text('Command::new("/opt/bin/cargo-harness");'), [])
+
     def test_async_sleeps_are_found_and_literals_cannot_impersonate_calls(self):
         self.assertEqual([s['kind'] for s in scan_text('tokio::time::sleep(delay).await;')], ['sleep'])
         self.assertEqual(scan_text('let text = "Command::new(\\\"cargo\\\")";'), [])
