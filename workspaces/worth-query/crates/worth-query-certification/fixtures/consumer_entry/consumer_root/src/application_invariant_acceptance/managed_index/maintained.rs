@@ -4,6 +4,7 @@ mod authoring;
 mod bounds;
 #[cfg(test)]
 mod court;
+mod generated;
 mod geometry;
 mod handler;
 mod host;

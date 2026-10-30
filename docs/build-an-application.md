@@ -5620,6 +5620,12 @@ physical read during generated-output suspension. Retaining an earlier result
 does not make it current. After resumption, open the index through a fresh
 admitted request and handle its returned lifecycle status; an old payload or
 equal values cannot establish a new physical basis.
+The [generated Catalog journey](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/generated/court.rs)
+uses a real fixed-delivery source action, producer and reconstruction receiver.
+Suspension preserves logical invariant rows in both affected scopes while current
+public reads refuse. Reconstructing the exact manifest still runs the Source
+rules on the proposed values; the valid reconstruction publishes material used
+by fresh public reads. A retained result keeps its original values throughout.
 The compiled endpoint shape preserves each actual `Starts` and `Ends` relation
 occurrence and checks its declared cardinality before provider maintenance:
 

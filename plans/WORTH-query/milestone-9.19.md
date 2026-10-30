@@ -606,6 +606,18 @@ fresh observation, descriptor-only admission, fork and write paths still refuse
 the deleted branch. Four existing creation-recovery and three transport-recovery
 controls pass. Dedicated generated recovery runtime composition remains open;
 its carrier forwarding is typechecked and independently reviewed only.
+The first genuine generated Catalog Source lifecycle is now qualified through
+its fixed-delivery source action and installed prefix producer. The producer
+creates the actual Item and both A/B memberships in one publication. Native
+suspension preserves both full-generation scoped rule reads while fresh public
+reads refuse before provider query; a retained decoded result stays immutable.
+The exact-manifest duplicate reaches B's existing Source invariant with unavailable
+committed physical custody and refuses without moving Native/World selection.
+Its lawful reconstruction restores canonical material; fresh A/B reads add no
+provider builds. All 27 public managed-index controls and exact final-owner
+allocation balance pass. This proves unopened B, not cold B or fresh historical
+query admission. Geometry-generated composition, correspondence/reuse and both
+original-request interruption directions remain open.
 Remaining lifecycle/affinity hostile controls, materialization/recovery composition
 and the required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication

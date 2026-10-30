@@ -220,6 +220,11 @@ an observation identity do not alone admit a projected index read: exact install
 audience, complete Source preparation and publication remain required. Unsupported
 Source shapes refuse installation; valid shapes bind the same configured catalog
 and managed registry before bootstrap mutations and rule factory publication.
+The [public generated Catalog court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/generated/court.rs)
+composes this path with a real fixed source action and producer. Both actual
+Directory scopes retain logical rows during suspension; current public reads
+refuse before provider queries. The manifest-correct reconstructed duplicate
+reaches its installed Source invariant, and its lawful twin restores warm reads.
 
 Native stages provider roots before its first dependent invariant. Each actual
 observation reborrows its own Source loan. The existing SourceInvalidationOwner

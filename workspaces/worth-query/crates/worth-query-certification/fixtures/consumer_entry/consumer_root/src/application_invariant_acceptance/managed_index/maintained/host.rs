@@ -1,6 +1,6 @@
 //! Ordinary contribution authoring/install, reusing the existing catalog and provider.
 use super::{
-    authoring, geometry,
+    authoring, generated, geometry,
     handler::{DecisionRead, Handler},
     mutation, prefix, query, rule,
     schema::*,
@@ -22,7 +22,7 @@ impl ApplicationSchemaContribution<Catalog> for Contribution {
     ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
         // Declare this root's typed Source, fields, index and public bindings.
         // Its fixed contribution adds the rule and original decision reads.
-        super::schema::declare(builder)
+        generated::declare(super::schema::declare(builder))
             .operation_managed_index_read::<query::PrefixBinding, _, _>(
                 mutation::RenameItem::reference(),
             )
@@ -38,11 +38,17 @@ pub struct Configuration {
 }
 impl WorthQueryApplicationContribution<Catalog> for Contribution {
     type Configuration = Configuration;
+    fn contracts(
+        contracts: &mut WorthQueryApplicationContributionContracts<Catalog>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        generated::contracts(contracts)
+    }
     fn configure(
         configuration: Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         geometry::configure(configuration.geometry, setup)?;
+        generated::configure(setup)?;
         setup.managed_index::<prefix::PrefixIndex, _>(prefix::Provider(configuration.prefix))?;
         setup.handler::<mutation::Binding, _>(Handler(configuration.decision_read))?;
         setup.handler::<authoring::Binding, _>(authoring::Handler)?;
@@ -61,7 +67,7 @@ impl ApplicationFeature<Catalog> for Feature {
 }
 impl ApplicationProgramDefinition<Catalog> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Outputs = ApplicationProgramOutputs<generated::program::Root>;
     type Rules = ApplicationRuleList<
         ApplicationRuleAt<
             ApplicationSharedRuleRef<Catalog, rule::ReservedName>,
@@ -78,16 +84,22 @@ impl ApplicationProgramDefinition<Catalog> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("managed-catalog.maintained-program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![ApplicationFeatureSpec::root::<Catalog, Feature>()
-            .native_action::<mutation::Binding>()
-            .finish_action()
-            .native_action::<authoring::Binding>()
-            .finish_action()
-            .native_action::<geometry::authoring::Binding>()
-            .finish_action()
-            .native_action::<geometry::refresh::Binding>()
-            .finish_action()
-            .finish()]
+        vec![
+            ApplicationFeatureSpec::root::<Catalog, Feature>()
+                .provides::<generated::program::DirectoryOutput>()
+                .action::<generated::source::operation::Binding, generated::program::Delivery>()
+                .finish_action()
+                .native_action::<mutation::Binding>()
+                .finish_action()
+                .native_action::<authoring::Binding>()
+                .finish_action()
+                .native_action::<geometry::authoring::Binding>()
+                .finish_action()
+                .native_action::<geometry::refresh::Binding>()
+                .finish_action()
+                .finish(),
+            generated::program::feature(),
+        ]
     }
 }
 pub(super) type Host = WorthQueryProgramApplicationRuntime<Catalog, Program>;

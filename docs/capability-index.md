@@ -446,6 +446,9 @@ attempt. Normal rules still judge it; selection is consumed even by an empty
 permission, and ordinary new/cold scopes keep their declared refusal.
 A retained logical Source during
 generated-output suspension does not make a current public physical read Ready.
+The generated Catalog prefix journey uses actual producer/reconstruction custody:
+logical rules preserve suspended rows, an exact manifest cannot bypass the
+reconstructed proposed-domain check, and valid restoration serves fresh reads.
 See the
 [current limits](build-an-application.md#prepare-candidate-structural-source-changes)
 and [Native audience](../workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md).
