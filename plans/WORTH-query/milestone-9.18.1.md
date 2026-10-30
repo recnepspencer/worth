@@ -1380,7 +1380,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.5 | Canonical field absence and mandatory currentness proof | Complete; qualified `70812eb0c3` | Stronger whole-aspect/scalar journeys belong to 9.6-9.7 |
 | 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
 | 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
-| 9.8 | Genuine equivalent-output suppression explanations | Open | Actual Signal suppression evidence through the application surface |
+| 9.8 | Genuine equivalent-output suppression explanations | In progress; lossless native computed-effect handoff qualified | Actual producer output evaluation and application explanation |
 | 9.9 | Optional rich materialization | Open | Freshly admitted, demand-driven views from existing evidence owners |
 | 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
 | 9.11 | Integrated application qualification and consumer handoff | Open | Coherent public capability, executable guidance and phase acceptance |
@@ -1538,7 +1538,7 @@ correction authority.
 
 #### Phase 9.8: Genuine Equivalent-Output Suppression Explanations
 
-**Status: open. Depends on: 9.3-9.4 and the existing Signal evidence owner.**
+**Status: in progress; native computed-effect handoff qualified. Depends on: 9.3-9.4 and the existing Signal evidence owner.**
 Expose a real producer/equivalence decision through existing inspection and
 Bridge contracts. A lawful changed source whose producer evaluates to equivalent
 output must be distinguished from zero-contact reuse, checkpoint restoration,
@@ -1546,6 +1546,22 @@ invalidation and Changed/Unchanged query comparison. Require owner-issued
 evidence and independently expected source/output values; equal bytes or contact
 counts cannot manufacture suppression. This can advance on a qualified field
 shape without waiting for every 9.7 shape.
+
+The native handoff now moves the actual Signal `AppliedEffectReport` from
+computed application into private conditional decision evidence. Its original
+verdict, suppression reason and comparison survive finalization, together with
+the actual before/after output versions and existing recipe/dependency custody.
+Passive dependency reuse, pre-compute suppression and deferral carry no computed
+report. Bridge borrows the same immutable report under its original reservation;
+it does not reconstruct a verdict or retain another reader. The installed
+comparator court computes distinct candidates `3 -> 5 -> 6`, independently expects
+parity equivalence followed by change, and checks exact observation association,
+operational-evidence release and final reservation release. All 171 focused
+Signal/Bridge conditional-execution tests pass. This is a qualified substrate,
+not application suppression completion: installed producer scheduling/readiness
+still use attempt versions, so their reports cannot stand in for actual handler
+output evaluation. The remaining sequence below must supply that declared output
+basis and the independently admitted application outcome.
 
 #### Phase 9.9: Optional Rich Materialization
 

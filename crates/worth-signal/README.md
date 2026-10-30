@@ -166,6 +166,14 @@ The core types are `InstalledSignalConditionalContract`,
 `InstalledSignalConditionDecision`, `SignalConditionalDecisionEvidence`, and
 `SignalConditionalExecutionRequest`.
 
+`SignalConditionalDecisionEvidence::computed_evaluation()` borrows the actual
+`AppliedEffectReport` when Signal computed an output. Its verdict preserves the
+original `SuppressionReason` and comparison, available through
+`facade::diagnostics`. Dependency reuse, condition suppression and deferral return
+`None`. `output_version_before()` and `output_version()` retain the actual
+observed output basis. These are descriptions of the installed node's evaluation;
+they identify no application producer beyond the node's real installed contract.
+
 Signal aspects are runtime-local slots. They are not Foundational semantic
 aspect identities and must not be persisted or authored in portable Query
 packages.

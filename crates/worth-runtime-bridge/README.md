@@ -149,6 +149,17 @@ retains neither the admitted snapshot reader nor the operational reentry core.
 It provides no source-read, execution, continuation or disclosure permission.
 The operational seed remains the only retained conditional reentry entrance.
 
+`computed_evaluation()` borrows the same Signal `AppliedEffectReport` from that
+immutable backing. It preserves the actual computed verdict, suppression reason
+and comparison; `signal_output_versions()` supplies the observed before/after
+versions. Passive decisions have no computed report. The
+[installed comparator court](src/builder/tests/correspondence/conditional_compatibility/equivalence_observation.rs)
+contrasts genuine equivalent and changed evaluations and checks original custody
+through operational evidence release. An evaluation of scheduling or readiness
+still describes that installed contract; it cannot establish equivalence of an
+application handler's output. Application producer explanation requires its
+own exact source/output association and current admission.
+
 Bridge reserves the decision and observation headers before provider callbacks.
 Signal funds its immutable invalidation backing at its existing post-execution
 receipt-preparation boundary, preserving that boundary's typed failure posture.

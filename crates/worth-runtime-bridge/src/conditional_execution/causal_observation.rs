@@ -44,6 +44,21 @@ impl BridgeConditionalCausalObservation {
         self.observation.signal.class()
     }
 
+    /// Borrows the original Signal computed effect; passive decisions have none.
+    /// Its meaning belongs to this exact installed lowering and source observation.
+    pub fn computed_evaluation(
+        &self,
+    ) -> Option<&worth_signal::facade::diagnostics::AppliedEffectReport> {
+        self.observation.signal.computed_evaluation()
+    }
+
+    pub fn signal_output_versions(&self) -> (u64, u64) {
+        (
+            self.observation.signal.output_version_before(),
+            self.observation.signal.output_version(),
+        )
+    }
+
     pub fn attempt(&self) -> u64 {
         self.observation.attempt
     }

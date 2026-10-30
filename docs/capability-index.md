@@ -127,6 +127,13 @@ custody and this runtime's aspect-name meanings, performs no source read, and
 returns a typed cold-pin refusal. `RelationalPinnedEntityMetadata` exposes current
 kind, aspect revision and retirement only; historical reads require Full custody.
 
+Native conditional observation owners borrow the genuine computed effect through
+`BridgeConditionalCausalObservation::computed_evaluation()` and its observed
+before/after Signal versions. The original Signal verdict, suppression reason
+and comparison survive; passive decisions have no computed report. Scheduling
+and readiness evidence describes those installed contracts and supplies no
+application output-equivalence association. See [read-only Native observation custody](../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody).
+
 Native generation payload inspection uses request-aware `read_latest_generation`,
 `read_published_generation_for_commit`, `read_published_generation_for_observation`
 and `read_generations_for_version`; a deferred index image is never reported as
