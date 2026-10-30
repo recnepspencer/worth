@@ -14,7 +14,7 @@ from coverage import inventory, prove as prove_selection
 from executed_coverage import execution_kind, observations, prove
 from logs import read_lane
 from measured_slots import load as load_slots, retain as retain_slots
-from ratchet import build_violations, lane_budget
+from ratchet import build_violations, compiler_observations, lane_budget
 from residue_report import generate as generate_residue, markdown as residue_markdown
 from workspace import WORKSPACES
 
@@ -144,10 +144,8 @@ def recover(repository, workspace, source, output, cpu, setup, runner, profile='
     (output / 'recommendations.json').write_text(json.dumps(load_slots(output / 'measured-slots'), indent=2) + '\n', encoding='utf-8')
     logs = [(f'initial-{index}', path) for index, path in enumerate(paths)] + [('initial-telemetry', telemetry_path)]
     result = collect(repository / WORKSPACES[workspace], repository, logs, complete, chosen)
-    artifacts = [artifact for lane in result['lanes'].values() for artifact in lane['artifacts']]
-    observation = 'json' if any(lane['build_observation'] == 'json' for lane in result['lanes'].values()) else 'unmeasured'
     budget = lane_budget(json.loads(Path(__file__).with_name('budgets.json').read_text()), workspace, ['selection'], profile)
-    violations = build_violations({'build_observation': observation, 'artifacts': artifacts, 'log': str(output)}, budget)
+    violations = build_violations(compiler_observations(result['lanes'].values(), output), budget)
     start = min(row['headers']['Start'] for row in provenance)
     end = max(row['headers']['End'] for row in provenance)
     wall = (datetime.fromisoformat(end) - datetime.fromisoformat(start)).total_seconds()

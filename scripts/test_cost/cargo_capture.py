@@ -8,7 +8,7 @@ import subprocess
 import shutil
 import sys
 
-from compiler_units import CompilerUnitRefusal, attribute as attribute_unit
+from compiler_units import CompilerUnitRefusal, attribute as attribute_unit, failed_unit
 from unit_plan import command_for, declare, verify
 
 
@@ -169,6 +169,9 @@ class CargoRunner:
             for event in json_objects(result.stdout):
                 if event.get('reason') == 'compiler-artifact':
                     attribute_unit(event, plan)
+                elif (event.get('reason') == 'compiler-message'
+                      and event.get('message', {}).get('level') == 'error'):
+                    failed_unit(event, plan)
         if command[:2] == ['cargo', 'metadata'] and result.returncode == 0:
             metadata = json.loads(result.stdout)
             if 'workspace_root' in metadata and 'target_directory' in metadata:

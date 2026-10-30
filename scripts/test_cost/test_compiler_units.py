@@ -2,7 +2,7 @@ import copy
 import unittest
 from unittest.mock import patch
 
-from compiler_units import CompilerUnitRefusal, attribute, declarations
+from compiler_units import CompilerUnitRefusal, attribute, declarations, failed_unit
 
 
 def unit(name, *, mode='check', features=(), dependencies=(), kind='lib'):
@@ -25,6 +25,32 @@ def event(row, *, linked=False):
 
 
 class CompilerUnitDeclarationTests(unittest.TestCase):
+    def test_failed_target_without_artifact_uses_only_its_exact_predeclared_unit(self):
+        row = unit('owner')
+        denied = {'package_id': row['pkg_id'], 'target': row['target'],
+                  'message': {'level': 'error', 'message': 'denied'}}
+        declaration = {'units': declarations(graph(row)), 'compiler_inputs': 'flags'}
+        self.assertEqual(failed_unit(denied, declaration)['identity'], declaration['units'][0]['identity'])
+        denied['target'] = {**denied['target'], 'src_path': 'foreign.rs'}
+        with self.assertRaises(CompilerUnitRefusal):
+            failed_unit(denied, declaration)
+
+    def test_failed_target_with_ambiguous_host_and_check_units_refuses_attribution(self):
+        owner = unit('owner', dependencies=[1, 2])
+        linked = unit('dependency', mode='build')
+        checked = unit('dependency')
+        declaration = {'units': declarations(graph(owner, linked, checked)), 'compiler_inputs': 'flags'}
+        with self.assertRaises(CompilerUnitRefusal):
+            failed_unit({'package_id': linked['pkg_id'], 'target': linked['target'],
+                         'message': {'level': 'error'}}, declaration)
+
+    def test_cached_warning_cannot_prove_a_failed_compiler_attempt(self):
+        row = unit('owner')
+        with self.assertRaises(CompilerUnitRefusal):
+            failed_unit({'package_id': row['pkg_id'], 'target': row['target'],
+                         'message': {'level': 'warning'}},
+                        {'units': declarations(graph(row)), 'compiler_inputs': 'flags'})
+
     def test_required_transitive_feature_graph_distinguishes_equal_own_features(self):
         first = declarations(graph(unit('owner', dependencies=[1]), unit('proof')))
         second = declarations(graph(unit('owner', dependencies=[1]), unit('proof', features=['cert'])))

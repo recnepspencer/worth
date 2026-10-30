@@ -75,6 +75,27 @@ class CargoCaptureTests(unittest.TestCase):
             self.assertIn('Exit code: 125', text)
             self.assertIn('drifted after declaration', text)
 
+    def test_failed_compiler_target_is_verified_against_the_preexecution_plan(self):
+        for foreign in (False, True):
+            with self.subTest(foreign=foreign), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                owner = unit('owner')
+                diagnostic = {'reason': 'compiler-message', 'package_id': owner['pkg_id'],
+                    'target': {**owner['target'], 'src_path': 'foreign.rs'} if foreign else owner['target'],
+                    'message': {'level': 'error', 'message': 'denied'}}
+                def execute(command, **kwargs):
+                    code, output = (0, json.dumps(graph(owner))) if '--unit-graph' in command else (101, json.dumps(diagnostic))
+                    return subprocess.CompletedProcess(command, code, output, '')
+                runner = CargoRunner(Path.cwd(), {})
+                with patch('cargo_capture.subprocess.run', side_effect=execute), \
+                     patch('cargo_capture.subprocess.check_output', side_effect=['head\n', '']*2):
+                    if foreign:
+                        with self.assertRaises(CompilerUnitRefusal):
+                            runner(['cargo', 'check'], root, root/'checked.log')
+                    else:
+                        self.assertEqual(runner(['cargo', 'check'], root, root/'checked.log').returncode, 101)
+                self.assertIn('Exit code: 101', (root/'checked.log').read_text())
+
     def test_repeated_invocations_cannot_overwrite_retained_lane_evidence(self):
         first = retention_name('test-cost/store/build.log', '0123456789abcdef', '2026-01-01T00:00:01Z')
         second = retention_name('test-cost/store/build.log', '0123456789abcdef', '2026-01-01T00:00:02Z')

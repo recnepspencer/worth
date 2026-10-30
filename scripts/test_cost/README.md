@@ -58,6 +58,12 @@ compares terminal observations with the requested identities.
   and lockfile guards refuse drift. Artifact hashes remain observations only.
   `RUSTC_BOOTSTRAP=1` is scoped to Cargo's non-compiling `--unit-graph`
   subprocess; the real pinned compiler invocation never receives that override.
+  Failed targets emit errors without successful artifacts. Their exact declared
+  package/target/source proves one failed attempt per Cargo invocation, regardless
+  of the number of error diagnostics. The budget combines those attempts with
+  fresh artifact compilations; the artifact census remains unchanged. Ambiguous
+  failed-unit attribution refuses. Cached warnings and diagnostics printed by a
+  running court do not establish new compiler attempts.
 * The runner builds process helpers as independent executable targets. Tests
   read typed prebuilt manifests and refuse missing or malformed observations.
   They never silently build a fallback.

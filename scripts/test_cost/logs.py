@@ -5,7 +5,7 @@ import json
 from pathlib import Path, PurePosixPath
 import re
 
-from compiler_units import CompilerUnitRefusal, attribute as attribute_unit
+from compiler_units import CompilerUnitRefusal, attribute as attribute_unit, failed_unit
 
 
 def json_objects(text):
@@ -27,15 +27,29 @@ def json_objects(text):
 def read_lane(path):
     text = Path(path).read_text(encoding='utf-8-sig', errors='replace')
     result = {'log': str(path), 'artifacts': [], 'artifact_messages': 0, 'tests': [], 'suites': [], 'setup': [],
-              'cpu': [], 'compiler_progress': [], 'telemetry': {}, 'headers': {}}
-    context = {}
+              'cpu': [], 'compiler_progress': [], 'telemetry': {}, 'headers': {},
+              'failed_compiler_attempts': [], 'compiler_attempt_refusals': [], 'compiler_error_messages': 0}
+    context, failed, refused, invocation = {}, {}, set(), -1
     for event in json_objects(text):
         if event.get('type') == 'cargo-invocation':
-            context = event
+            invocation += 1
+            context = dict(event, observation_invocation=f'{Path(path).resolve()}#{invocation}')
         if event.get('reason') == 'compiler-artifact':
             result['artifact_messages'] += 1
             if not event['fresh']:
                 result['artifacts'].append(artifact(event, context))
+        if (event.get('reason') == 'compiler-message' and event.get('message', {}).get('level') == 'error'
+                and compiler_context(context)):
+            result['compiler_error_messages'] += 1
+            try:
+                attempted = denied_attempt(event, context)
+                failed.setdefault((attempted['invocation'], attempted['unit']['identity']), attempted)
+            except (CompilerUnitRefusal, KeyError, TypeError) as error:
+                key = (invocation, event.get('package_id'), json.dumps(event.get('target'), sort_keys=True))
+                if key not in refused:
+                    refused.add(key)
+                    result['compiler_attempt_refusals'].append({'kind': 'unattributed-failed-compiler-unit',
+                        'package': event.get('package_id'), 'target': event.get('target'), 'reason': str(error)})
         if event.get('type') == 'test' and event.get('event') in ('ok', 'failed', 'ignored'):
             result['tests'].append(event)
         if event.get('type') == 'suite' and event.get('event') in ('ok', 'failed'):
@@ -70,9 +84,35 @@ def read_lane(path):
     durations = [e['exec_time'] for e in result['tests'] if 'exec_time' in e]
     result['telemetry']['test_work_seconds'] = sum(durations) if durations else None
     # A textual Compiling line has no features/profile/target or fresh bit.
-    result['build_observation'] = 'json' if result['artifact_messages'] else 'unmeasured'
+    result['build_observation'] = 'json' if result['artifact_messages'] or result['compiler_error_messages'] else 'unmeasured'
+    emitted = {(row['invocation'], row['unit']['identity']) for row in result['artifacts'] if row['unit']}
+    result['failed_compiler_attempts'] = [row for key, row in failed.items() if key not in emitted]
     result['duplicates'] = duplicates(result['artifacts'])
+    result['compiler_attempt_groups'] = duplicates(result['artifacts'] + result['failed_compiler_attempts'])
     return result
+
+
+def compiler_context(context):
+    if context.get('unit_plan') is not None:
+        return True
+    command = context.get('command', [])
+    return command[:1] == ['cargo'] and command[1:2] in (
+        ['build'], ['check'], ['test'], ['rustc'], ['clippy'], ['run'])
+
+
+def denied_attempt(event, context):
+    if context.get('unit_plan') is None:
+        raise CompilerUnitRefusal('failed compilation has no preexecution Cargo unit declaration')
+    unit = failed_unit(event, context['unit_plan'])
+    profile = {field: unit['declared_profile'][field] for field in
+               ('opt_level', 'debuginfo', 'debug_assertions', 'overflow_checks')}
+    profile['test'] = unit['mode'] == 'test'
+    return {'package': event['package_id'], 'target': event['target']['name'],
+            'kind': sorted(event['target']['kind']), 'features': unit['features'], 'profile': profile,
+            'target_dir': context.get('target_dir'), 'cargo_profile': context.get('cargo_profile'),
+            'check_mode': 'check' if unit['output'] == 'check' else 'build',
+            'invocation_mode': context.get('mode'), 'invocation': context.get('observation_invocation'),
+            'filenames': [], 'unit': unit, 'unit_refusal': None, 'observation': 'compiler-error'}
 
 
 def duration(value):
@@ -111,6 +151,7 @@ def artifact(event, context):
             'profile': event['profile'], 'target_dir': target_dir,
             'cargo_profile': context.get('cargo_profile'),
             'check_mode': check_mode, 'invocation_mode': context.get('mode'),
+            'invocation': context.get('observation_invocation'),
             'filenames': files, 'unit': unit, 'unit_refusal': refusal}
 
 

@@ -128,7 +128,29 @@ def attribute(event, declaration):
                                   + encoded({'package': event['package_id'], 'target': target,
                                              'matches': sorted(unique)}))
     row = next(iter(unique.values()))
+    return observed_unit(row, declaration)
+
+
+def observed_unit(row, declaration):
     return {'identity': row['identity'], 'roles': row['roles'], 'output': row['output'],
+            'mode': row['mode'], 'features': row['features'],
             'platform': row['platform'], 'declared_target': row['target'],
             'dependency_units': row['dependency_units'], 'declared_profile': row['profile'],
             'compiler_inputs': declaration['compiler_inputs']}
+
+
+def failed_unit(event, declaration):
+    """An exact Cargo target error proves an attempt, never an aggregate exit."""
+    if event.get('message', {}).get('level') != 'error':
+        raise CompilerUnitRefusal('non-error diagnostic does not prove a failed compiler attempt')
+    target = event['target']
+    candidates = {row['identity']: row for row in declaration['units']
+                  if row['package'] == event['package_id']
+                  and row['target']['name'] == target['name']
+                  and row['target']['kind'] == sorted(target['kind'])
+                  and row['target']['source'] == normalized_path(target['src_path'])}
+    if len(candidates) != 1:
+        raise CompilerUnitRefusal('failed target does not identify exactly one predeclared compiler unit: '
+                                  + encoded({'package': event['package_id'], 'target': target,
+                                             'matches': sorted(candidates)}))
+    return observed_unit(next(iter(candidates.values())), declaration)

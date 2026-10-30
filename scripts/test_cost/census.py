@@ -50,6 +50,9 @@ def collect(manifest, repository, lane_logs=(), discovered=None, selections=None
         lanes[name] = {'log': str(path), 'headers': lane['headers'],
                        'build_observation': lane['build_observation'],
                        'artifacts': lane['artifacts'], 'duplicate_graphs': lane['duplicates'],
+                       'failed_compiler_attempts': lane['failed_compiler_attempts'],
+                       'compiler_attempt_refusals': lane['compiler_attempt_refusals'],
+                       'compiler_attempt_groups': lane['compiler_attempt_groups'],
                        'compiler_progress': lane['compiler_progress'],
                        'timing_telemetry': timing_summary(lane),
                        'slot_use_telemetry': slot_use(lane['cpu']),
@@ -73,12 +76,15 @@ def markdown(result):
               'Package compilation groups count packages compiled more than once, including distinct '
               'required targets and dependency graphs. They are not budget violations; the ratchet '
               'separately checks recompilation of an identical declared unit.', '',
-              '| Lane | Build census | Packages compiled >1 time | Pass / fail / ignored | Wall seconds |',
-              '|---|---|---:|---|---:|']
+              '| Lane | Build census | Packages compiled >1 time | Failed compiler attempts | Pass / fail / ignored | Wall seconds |',
+              '|---|---|---:|---:|---|---:|']
     for name, lane in result['lanes'].items():
         timing = lane['timing_telemetry']
         duplicate_count = len(lane['duplicate_graphs']) if lane['build_observation'] == 'json' else 'unknown'
+        denied = lane.get('failed_compiler_attempts')
+        failed_count = len(denied) if denied is not None and not lane.get('compiler_attempt_refusals') else 'unknown'
         lines.append(f'| {name} | {lane["build_observation"]} | {duplicate_count} | '
+                     f'{failed_count} | '
                      f'{timing["pass"]} / {timing["fail"]} / {timing["ignored"]} | '
                      f'{timing.get("wall_seconds", "unknown")} |')
     for name, lane in result['lanes'].items():
@@ -88,12 +94,14 @@ def markdown(result):
                   'Slowest observed tests (summed work is not lane wall time):', '']
         lines += [f'- {r["seconds"]:.3f}s: `{r["name"]}` ({r["event"]})' for r in timing['slowest']]
         lines += ['', 'Package compilation inventory (required variants are not duplicate units):', '']
-        for row in lane['duplicate_graphs']:
-            units = (f'{row["distinct_required_units"]} declared required units; '
-                     f'{len(row["repeated_units"])} repeated identical units'
-                     if row.get('unit_observation') == 'declared' else 'required-unit identity unmeasured')
-            lines.append(f'- `{row["package"]}`: {row["compiles"]} compilations; {units}; '
-                         f'causes: {", ".join(row["causes"])}.')
+        lines += package_inventory_lines(lane['duplicate_graphs'], 'compilations')
+        if lane.get('failed_compiler_attempts'):
+            lines += ['', 'Combined compiler attempts (artifact compilations plus attributed failures):', '',
+                      'Multiple error diagnostics from one declared unit in one Cargo invocation count once.', '']
+            lines += package_inventory_lines(lane['compiler_attempt_groups'], 'attempts')
+        if lane.get('compiler_attempt_refusals'):
+            lines += ['', 'Failed compiler unit attribution refused; the budget cannot pass as zero work:', '']
+            lines += [f'- {row["reason"]}' for row in lane['compiler_attempt_refusals']]
         slots, setup = lane['slot_use_telemetry'], lane['repeated_setup']
         lines += ['', f'CPU/slots: **{slots["status"]}**; complete observations: {len(slots["tests"])}.', '']
         lines += [f'- `{row["binary"]}::{row["test"]}` reserves {row["reserved_slots"]}, '
@@ -116,6 +124,17 @@ def markdown(result):
         lines += [f'| {row["lines"]} | {row["copies"]} | `{row["name"]}` | '
                   f'{", ".join(row["testkit_helpers"])} |' for row in rows[:30]]
     return '\n'.join(lines) + '\n'
+
+
+def package_inventory_lines(groups, noun):
+    lines = []
+    for row in groups:
+        units = (f'{row["distinct_required_units"]} declared required units; '
+                 f'{len(row["repeated_units"])} repeated identical units'
+                 if row.get('unit_observation') == 'declared' else 'required-unit identity unmeasured')
+        lines.append(f'- `{row["package"]}`: {row["compiles"]} {noun}; {units}; '
+                     f'causes: {", ".join(row["causes"])}.')
+    return lines
 
 
 def main():

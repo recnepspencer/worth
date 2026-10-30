@@ -19,6 +19,44 @@ def compiled(**changes):
 
 
 class ArtifactObservationTests(unittest.TestCase):
+    def error(self, row, level='error'):
+        return {'reason': 'compiler-message', 'package_id': row['pkg_id'], 'target': row['target'],
+                'message': {'level': level, 'message': 'compiler denied this target'}}
+
+    def test_multiple_error_diagnostics_prove_one_attempt_per_declared_invocation(self):
+        owner = unit('owner')
+        marker = self.declared(owner)[0]
+        row = self.lane([marker, self.error(owner), self.error(owner)])
+        self.assertEqual(row['artifacts'], [])
+        self.assertEqual(row['artifact_messages'], 0)
+        self.assertEqual(row['compiler_error_messages'], 2)
+        self.assertEqual(len(row['failed_compiler_attempts']), 1)
+        self.assertEqual(row['build_observation'], 'json')
+        twice = self.lane([marker, self.error(owner), marker, self.error(owner)])
+        self.assertEqual(len(twice['failed_compiler_attempts']), 2)
+        self.assertEqual(twice['compiler_attempt_groups'][0]['repeated_units'][0]['compiles'], 2)
+
+    def test_cached_warning_or_test_printing_prebuilt_diagnostic_does_not_invent_a_compile(self):
+        owner = unit('owner')
+        marker, cached = self.declared(owner)
+        cached['fresh'] = True
+        row = self.lane([marker, cached, self.error(owner, 'warning')])
+        self.assertEqual(row['artifacts'], [])
+        self.assertEqual(row['failed_compiler_attempts'], [])
+        printed = self.lane([dict(type='cargo-invocation', command=['cargo', 'nextest', 'run',
+                             '--binaries-metadata', 'built.json']), self.error(owner)])
+        self.assertEqual(printed['failed_compiler_attempts'], [])
+        self.assertEqual(printed['compiler_attempt_refusals'], [])
+
+    def test_ambiguous_failed_target_refuses_instead_of_inventing_two_attempts(self):
+        first = unit('owner', dependencies=[1, 2])
+        dependency, linked = unit('dependency'), unit('dependency', mode='build')
+        marker = dict(type='cargo-invocation', unit_plan={
+            'units': declarations(graph(first, dependency, linked)), 'compiler_inputs': 'flags'})
+        row = self.lane([marker, self.error(dependency), self.error(dependency)])
+        self.assertEqual(row['failed_compiler_attempts'], [])
+        self.assertEqual(len(row['compiler_attempt_refusals']), 1)
+
     def declared(self, row, dependencies=(), directory='target'):
         return [dict(type='cargo-invocation', cargo_profile='dev', mode='check', target_dir=directory,
                      unit_plan={'units': declarations(graph(row, *dependencies)), 'compiler_inputs': 'flags'}),

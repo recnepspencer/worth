@@ -74,6 +74,26 @@ class DocLaneTests(unittest.TestCase):
                 self.assertEqual(violations[0]['kind'], 'duplicate-graph' if copies else 'unmeasured-build')
                 self.assertTrue((root/'target/test-cost/root/census.json').is_file())
 
+    def test_doc_lane_budget_includes_repeated_failed_compilations_without_artifacts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            self.workspace(root)
+            cached = self.engine(root, fresh=False)
+            def failing_compiler(manifest, output, runner, profile):
+                result = cached(manifest, output, runner, profile)
+                path = runner.logs[-1]
+                lines = path.read_text().splitlines()
+                artifact = json.loads(lines[2])
+                error = json.dumps({'reason': 'compiler-message', 'package_id': artifact['package_id'],
+                                    'target': artifact['target'], 'message': {'level': 'error', 'message': 'denied'}})
+                path.write_text('\n'.join(lines + [error, lines[1], error]))
+                return result
+            with self.assertRaisesRegex(LaneExecutionFailure, 'build budget exceeded') as raised:
+                execute(root, 'root', root/'output', SimpleNamespace(logs=[]), engine=failing_compiler)
+            violations = raised.exception.result['build_ratchet']['violations']
+            self.assertEqual(violations[0]['kind'], 'duplicate-graph')
+            self.assertEqual(violations[0]['compiles'], 2)
+
     def test_doc_only_budget_failure_carries_counts_without_claiming_native_coverage(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()

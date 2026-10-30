@@ -1,6 +1,12 @@
 import unittest
+import json
+from pathlib import Path
+import tempfile
 
-from ratchet import build_violations, lane_budget, source_violations
+from ratchet import build_violations, compiler_observations, lane_budget, source_violations
+from compiler_units import declarations
+from logs import read_lane
+from test_compiler_units import event, graph, unit
 
 
 def artifact(**changes):
@@ -13,6 +19,54 @@ def artifact(**changes):
 
 
 class StructuralBudgetTests(unittest.TestCase):
+    def failed_lane(self, invocations, errors=1, level='error'):
+        denied, cached = unit('denied'), unit('cached')
+        required = graph(denied, cached)
+        required['roots'] = [0, 1]
+        marker = {'type': 'cargo-invocation', 'mode': 'check', 'cargo_profile': 'dev',
+                  'unit_plan': {'units': declarations(required), 'compiler_inputs': 'flags'}}
+        diagnostic = {'reason': 'compiler-message', 'package_id': denied['pkg_id'], 'target': denied['target'],
+                      'message': {'level': level, 'message': 'diagnostic'}}
+        cached = dict(event(cached), reason='compiler-artifact', fresh=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary)/'lane.log'
+            path.write_text('\n'.join(map(json.dumps, ([marker] + [diagnostic]*errors + [cached])*invocations)))
+            return read_lane(path)
+
+    def test_identical_failed_unit_in_two_cargo_invocations_exceeds_unchanged_budget(self):
+        lane = self.failed_lane(2)
+        self.assertEqual(lane['artifacts'], [])
+        result = build_violations(lane, {'max_compiles_per_unit': 1})
+        self.assertEqual(result[0]['kind'], 'duplicate-graph')
+        self.assertEqual(result[0]['compiles'], 2)
+
+    def test_multiple_error_messages_in_one_invocation_are_one_budgeted_attempt(self):
+        lane = self.failed_lane(1, errors=3)
+        self.assertEqual(len(lane['failed_compiler_attempts']), 1)
+        self.assertEqual(build_violations(lane, {'max_compiles_per_unit': 1}), [])
+
+    def test_replayed_cached_warnings_are_not_compilation_attempts(self):
+        lane = self.failed_lane(2, errors=2, level='warning')
+        self.assertEqual(lane['artifacts'], [])
+        self.assertEqual(lane['failed_compiler_attempts'], [])
+        self.assertEqual(build_violations(lane, {'max_compiles_per_unit': 1}), [])
+
+    def test_unattributed_failed_unit_cannot_pass_as_zero_work(self):
+        lane = {'build_observation': 'json', 'artifacts': [], 'compiler_attempt_refusals': [
+            {'kind': 'unattributed-failed-compiler-unit', 'reason': 'ambiguous required role'}]}
+        self.assertEqual(build_violations(lane, {'max_compiles_per_unit': 1})[0]['kind'],
+                         'unattributed-failed-compiler-unit')
+
+    def test_aggregating_command_captures_preserves_failed_attempts_and_refusals(self):
+        failed = self.failed_lane(2)
+        refused = {'build_observation': 'json', 'artifacts': [],
+                   'compiler_attempt_refusals': [{'kind': 'unattributed-failed-compiler-unit'}]}
+        combined = compiler_observations([failed, refused], 'lane')
+        self.assertEqual(len(combined['failed_compiler_attempts']), 2)
+        self.assertEqual(len(combined['compiler_attempt_refusals']), 1)
+        self.assertEqual({row['kind'] for row in build_violations(combined, {'max_compiles_per_unit': 1})},
+                         {'duplicate-graph', 'unattributed-failed-compiler-unit'})
+
     def test_new_lane_or_profile_requires_a_committed_budget_declaration(self):
         configuration = {'store': {'declared_cargo_profiles': ['ci-test'],
                                     'lanes': {'process': {'max_compiles_per_unit': 1}}}}

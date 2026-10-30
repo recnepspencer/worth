@@ -19,7 +19,7 @@ from measured_slots import load as load_slots, retain as retain_slots
 from nextest_build import LANES, build, coverage, list_tests
 from prebuild import prepare
 from prebuild_selection import required as required_prebuilds
-from ratchet import build_violations, lane_budget, source_violations
+from ratchet import build_violations, compiler_observations, lane_budget, source_violations
 from reservations import configuration, original_reservations
 from standalone import execute as execute_standalone
 from workspace import WORKSPACES, repository_root
@@ -221,11 +221,7 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
     result['documentation'] = documentation
     # Count actual compiler units across all invocations in this lane, including
     # executable and fixture prebuilds. A warm graph remains a measured zero.
-    compiled = [artifact for lane in result['lanes'].values() for artifact in lane['artifacts']]
-    build_observation = 'json' if any(lane['build_observation'] == 'json'
-                                     for lane in result['lanes'].values()) else 'unmeasured'
-    violations = build_violations({'build_observation': build_observation, 'artifacts': compiled,
-                                  'log': str(output)}, budget)
+    violations = build_violations(compiler_observations(result['lanes'].values(), output), budget)
     return retain_completed(repository, workspace, output, result, violations, failures)
 
 

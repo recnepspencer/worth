@@ -18,8 +18,9 @@ def build_violations(lane, budget):
     if lane['build_observation'] != 'json':
         return [{'kind': 'unmeasured-build', 'log': lane['log']}]
     counts = Counter()
-    directories, units, compiler_inputs, violations = {}, {}, {}, []
-    for artifact in lane['artifacts']:
+    directories, units, compiler_inputs = {}, {}, {}
+    violations = list(lane.get('compiler_attempt_refusals', []))
+    for artifact in lane['artifacts'] + lane.get('failed_compiler_attempts', []):
         # Identity is declared from Cargo inputs before rustc executes. Output
         # hashes and target directories never mint an additional budget unit.
         declared = budget.get('declared_cargo_profiles')
@@ -50,6 +51,13 @@ def build_violations(lane, budget):
                                'cargo_profile': artifact.get('cargo_profile'),
                                'target_dirs': sorted(str(p) for p in directories[key])})
     return violations
+
+
+def compiler_observations(lanes, log):
+    lanes = list(lanes)
+    return {'build_observation': 'json' if any(lane['build_observation'] == 'json' for lane in lanes) else 'unmeasured',
+            'log': str(log), **{field: [row for lane in lanes for row in lane.get(field, [])]
+                for field in ('artifacts', 'failed_compiler_attempts', 'compiler_attempt_refusals')}}
 
 
 def source_violations(sites):

@@ -6,7 +6,7 @@ from census import collect, markdown
 from complete_coverage import merge
 from doc_contracts import execute as execute_documentation
 from executed_coverage import observations, prove
-from ratchet import build_violations, lane_budget, source_violations
+from ratchet import build_violations, compiler_observations, lane_budget, source_violations
 from run_lane import LaneExecutionFailure
 from workspace import WORKSPACES
 
@@ -59,10 +59,7 @@ def execute(repository, workspace, output, runner, profile='dev', engine=None):
             failure = failure or ValueError('documentation executions do not match selections')
         if documentation['status'] != 'pass':
             failure = failure or ValueError(f'documentation failed: exit {documentation["exit_code"]}')
-    compiled = [artifact for lane in result['lanes'].values() for artifact in lane['artifacts']]
-    observation = 'json' if any(lane['build_observation'] == 'json' for lane in result['lanes'].values()) else 'unmeasured'
-    violations = build_violations({'build_observation': observation, 'artifacts': compiled,
-                                   'log': str(output)}, budget)
+    violations = build_violations(compiler_observations(result['lanes'].values(), output), budget)
     result['build_ratchet'] = {'budget_lane': 'selection', 'violations': violations}
     result['failure'] = str(failure) if failure is not None else None
     (output / 'build-ratchet.json').write_text(json.dumps(violations, indent=2) + '\n', encoding='utf-8')

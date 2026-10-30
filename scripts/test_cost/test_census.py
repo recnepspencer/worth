@@ -14,6 +14,27 @@ from test_compiler_units import event as compiler_event, graph, unit
 
 
 class CensusFixtureTests(unittest.TestCase):
+    def test_failed_attempt_inventory_does_not_change_fresh_artifact_measure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = root/'Cargo.toml'
+            manifest.write_text('[package]\nname="fixture-court-runtime"\nversion="0.1.0"\n')
+            owner = unit('owner')
+            marker = {'type': 'cargo-invocation', 'mode': 'check', 'cargo_profile': 'dev',
+                      'unit_plan': {'units': declarations(graph(owner)), 'compiler_inputs': 'flags'}}
+            error = {'reason': 'compiler-message', 'package_id': owner['pkg_id'], 'target': owner['target'],
+                     'message': {'level': 'error', 'message': 'denied'}}
+            log = root/'denied.log'
+            log.write_text('\n'.join(map(json.dumps, [marker, error, error, marker, error])))
+            result = collect(manifest, root, [('lane', log)])
+            lane = result['lanes']['lane']
+            self.assertEqual(lane['artifacts'], [])
+            self.assertEqual(lane['duplicate_graphs'], [])
+            self.assertEqual(len(lane['failed_compiler_attempts']), 2)
+            self.assertEqual(lane['compiler_attempt_groups'][0]['repeated_units'][0]['compiles'], 2)
+            self.assertIn('Combined compiler attempts', markdown(result))
+            self.assertIn('2 attempts; 1 declared required units; 1 repeated identical units', markdown(result))
+
     def test_required_package_variants_and_identical_recompilations_are_reported_separately(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

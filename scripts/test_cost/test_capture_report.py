@@ -82,6 +82,31 @@ class CaptureRecoveryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'differs from original'):
                 retained_logs(root, source)
 
+    def test_recovery_budget_retains_failed_compiler_attempts_without_success_artifacts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            source, cpu, setup = self.fixture(root)
+            build = source/'build/binaries-build.log'
+            records = [json.loads(line) for line in build.read_text().splitlines() if line.startswith('{')]
+            marker, artifact = records[:2]
+            artifact['fresh'] = True
+            error = {'reason': 'compiler-message', 'package_id': artifact['package_id'], 'target': artifact['target'],
+                     'message': {'level': 'error', 'message': 'denied'}}
+            self.capture(root, build, ['cargo', 'check'], '\n'.join(map(json.dumps,
+                [marker, error, artifact, marker, error, artifact])))
+            test = self
+            class Runner:
+                logs = []
+                def __call__(self, command, cwd, path):
+                    test.assertNotEqual(command[0], 'cargo')
+                    result = subprocess.run(command, capture_output=True, text=True, check=True)
+                    self.logs.append(test.capture(root, path, command, result.stdout))
+                    return result
+            result = recover(root, 'root', source, source/'initial-run', cpu, setup, Runner())
+            violation = result['build_ratchet']['violations'][0]
+            self.assertEqual(violation['kind'], 'duplicate-graph')
+            self.assertEqual(violation['compiles'], 2)
+
     def test_missing_worktree_status_header_refuses_provenance(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
