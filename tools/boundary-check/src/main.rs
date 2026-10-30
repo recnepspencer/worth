@@ -1,212 +1,77 @@
-mod cargo_graph;
-mod certification_construction;
 mod config;
-mod configured_dependency_denials;
-mod configured_source_dependency_allowlists;
-mod configured_source_identifier_denials;
-mod configured_source_owner_isolations;
-mod consumer_docs;
-mod context_workspace_rules;
-mod control_seal;
-mod dependency_rules;
-mod derived_skills;
-mod diagnostics;
-mod facade_docs;
-mod governed_sources;
-mod hook_authority;
-mod legacy_references;
-mod manifest_types;
-mod naming;
-mod one_build;
-mod query_audience;
-mod scan;
-mod scan_profile;
-mod sealed_sources;
-mod seed_contracts;
-mod snapshots;
-mod source_documents;
-mod source_rules;
-mod source_syntax;
-mod source_workers;
-mod subworkspace_rules;
-mod test_topology;
-
-use crate::diagnostics::{render_human, render_json};
-use crate::snapshots::SnapshotMode;
-use std::{env, path::PathBuf};
-
-struct Arguments {
-    root: PathBuf,
-    config_path: PathBuf,
-    format: OutputFormat,
-    snapshot_mode: SnapshotMode,
-    profile_path: Option<PathBuf>,
-    width: usize,
-    write_guidance: bool,
-    sealed_sources_only: bool,
-    topology_report: bool,
-    topology_only: bool,
-    topology_all: bool,
-}
-
-enum OutputFormat {
-    Human,
-    Json,
-}
+mod document_rules;
+mod graph_rules;
+mod inputs;
+mod lexical;
+mod runtime_courts;
+mod seal_rules;
+mod text_rules;
+use config::{diagnostic, Diagnostic};
+use inputs::Inputs;
+use std::{env, path::PathBuf, thread};
 
 fn main() {
-    let Arguments {
-        root,
-        config_path,
-        format,
-        snapshot_mode,
-        profile_path,
-        width,
-        write_guidance,
-        sealed_sources_only,
-        topology_report,
-        topology_only,
-        topology_all,
-    } = match parse_args() {
-        Ok(args) => args,
-        Err(error) => {
-            eprintln!("{error}");
-            std::process::exit(1);
-        }
-    };
-
-    if topology_report {
-        match test_topology::source_report(&root) {
-            Ok(report) => {
-                let entries = report.as_array().unwrap();
-                println!("[");
-                for (index, entry) in entries.iter().enumerate() {
-                    println!(
-                        "{}{}",
-                        serde_json::to_string(entry).unwrap(),
-                        if index + 1 == entries.len() { "" } else { "," }
-                    );
-                }
-                println!("]");
-            }
-            Err(error) => {
-                eprintln!("{error}");
-                std::process::exit(1);
-            }
-        }
-        return;
-    }
-    if write_guidance {
-        match consumer_docs::write_guidance(&root) {
-            Ok(()) => println!("boundary-check: generated guidance regions and derived skills"),
-            Err(error) => {
-                eprintln!("{error}");
-                std::process::exit(1);
-            }
-        }
-        return;
-    }
-    let profile = scan_profile::Session::new(profile_path);
-    let result = if topology_only {
-        let diagnostics = if topology_all {
-            test_topology::validate(&root)
-        } else {
-            test_topology::validate_diff(&root)
-        };
-        if diagnostics.is_empty() {
-            Ok(())
-        } else {
-            Err(diagnostics)
-        }
-    } else if sealed_sources_only {
-        let diagnostics = sealed_sources::validate(&root);
-        if diagnostics.is_empty() {
-            Ok(())
-        } else {
-            Err(diagnostics)
-        }
-    } else {
-        scan::run(root, config_path, snapshot_mode, width)
-    };
-    drop(profile);
-    match result {
-        Ok(()) if sealed_sources_only => println!("boundary-check: sealed source reach is valid"),
-        Ok(()) => println!("boundary-check: Road 1 Cargo topology is valid"),
-        Err(diagnostics) => {
-            let output = match format {
-                OutputFormat::Human => Ok(render_human(&diagnostics)),
-                OutputFormat::Json => render_json(&diagnostics),
-            };
-            eprintln!("{}", output.unwrap_or_else(|error| error));
-            std::process::exit(1);
-        }
-    }
-}
-
-fn parse_args() -> Result<Arguments, String> {
     let mut root = PathBuf::from(".");
-    let mut config = PathBuf::from("tools/boundary-check/config/road1.toml");
-    let mut format = OutputFormat::Human;
-    let mut snapshot_mode = SnapshotMode::Check;
-    let mut profile = None;
-    let mut width = std::thread::available_parallelism().map_or(1, usize::from);
-    let mut write_guidance = false;
-    let mut sealed_sources_only = false;
-    let mut topology_report = false;
-    let mut topology_only = false;
-    let mut topology_all = false;
+    let mut config = format!("{}road1.toml", config::CONFIG);
+    let mut json = false;
     let mut args = env::args().skip(1);
     while let Some(arg) = args.next() {
-        match arg.as_str() {
-            "--root" => root = PathBuf::from(args.next().ok_or("missing --root value")?),
-            "--config" => config = PathBuf::from(args.next().ok_or("missing --config value")?),
-            "--format" => {
-                let value = args.next().ok_or("missing --format value")?;
-                format = match value.as_str() {
-                    "human" => OutputFormat::Human,
-                    "json" => OutputFormat::Json,
-                    other => return Err(format!("unknown --format value: {other}")),
-                };
+        match (arg.as_str(), args.next()) {
+            ("--root", Some(value)) => root = value.into(),
+            ("--config", Some(value)) => config = value,
+            ("--format", Some(value)) if value == "json" || value == "human" => {
+                json = value == "json"
             }
-            "--profile" => {
-                profile = Some(PathBuf::from(args.next().ok_or("missing --profile value")?))
+            _ => {
+                eprintln!(
+                    "usage: boundary-check [--root PATH] [--config PATH] [--format human|json]"
+                );
+                std::process::exit(2);
             }
-            "--width" => {
-                width = args
-                    .next()
-                    .ok_or("missing --width value")?
-                    .parse()
-                    .map_err(|_| "--width must be a positive integer")?;
-                if width == 0 {
-                    return Err("--width must be a positive integer".into());
-                }
-            }
-            "--write-guidance" => write_guidance = true,
-            "--sealed-sources-only" => sealed_sources_only = true,
-            "--test-topology-report" => topology_report = true,
-            "--test-topology-only" => topology_only = true,
-            "--all" => topology_all = true,
-            "--update-snapshots" => snapshot_mode = SnapshotMode::Update,
-            other => return Err(format!("unknown argument: {other}")),
         }
     }
-    if write_guidance && matches!(snapshot_mode, SnapshotMode::Update) {
-        return Err("guidance writes and snapshot updates are separate operations".into());
+    let result = root
+        .canonicalize()
+        .map_err(|e| e.to_string())
+        .and_then(|root| Inputs::read(&root, &config));
+    let mut diagnostics = match result {
+        Ok(input) => thread::scope(|s| {
+            let rules: [fn(&Inputs) -> Vec<Diagnostic>; 5] = [
+                graph_rules::check,
+                text_rules::check,
+                document_rules::check,
+                seal_rules::check,
+                runtime_courts::check,
+            ];
+            let handles: Vec<_> = rules
+                .into_iter()
+                .map(|rule| {
+                    let input = &input;
+                    s.spawn(move || rule(input))
+                })
+                .collect();
+            handles
+                .into_iter()
+                .flat_map(|h| h.join().expect("rule panicked"))
+                .collect::<Vec<_>>()
+        }),
+        Err(error) => vec![diagnostic("BC2001", "inputs", error)],
+    };
+    diagnostics.sort();
+    diagnostics.dedup();
+    if json {
+        println!("{}", serde_json::to_string_pretty(&diagnostics).unwrap());
+    } else if diagnostics.is_empty() {
+        println!("boundary-check: repository boundaries are valid");
+    } else {
+        for d in &diagnostics {
+            eprintln!(
+                "{} {}: {}\nbelongs: {}",
+                d.code, d.subject, d.message, d.legal_home
+            );
+        }
     }
-    if sealed_sources_only && (write_guidance || matches!(snapshot_mode, SnapshotMode::Update)) {
-        return Err("sealed-source validation cannot write guidance or snapshots".into());
+    if !diagnostics.is_empty() {
+        std::process::exit(1);
     }
-    Ok(Arguments {
-        root,
-        config_path: config,
-        format,
-        snapshot_mode,
-        profile_path: profile,
-        width,
-        write_guidance,
-        sealed_sources_only,
-        topology_report,
-        topology_only,
-        topology_all,
-    })
 }

@@ -20,10 +20,10 @@ fn test_root() -> PathBuf {
         &workspace_root().join("tools/boundary-check/config"),
         &root.join("tools/boundary-check/config"),
     );
-    copy_dir(
-        &workspace_root().join("tools/boundary-check/snapshots"),
-        &root.join("tools/boundary-check/snapshots"),
-    );
+    // The fixture's UI workspace must be registered before asserting its contexts.
+    let configuration = root.join("tools/boundary-check/config/road1.toml");
+    let text = fs::read_to_string(&configuration).expect("read fixture configuration");
+    fs::write(&configuration, format!("{text}\n[[context_workspaces]]\npath = 'workspaces/worth-ui'\npackage_prefix = 'worth-ui'\n")).expect("register UI fixture");
     copy_dir(
         &workspace_root().join("workspaces/worth-contracts/crates/worth-schema-core"),
         &root.join("workspaces/worth-contracts/crates/worth-schema-core"),
@@ -40,6 +40,14 @@ fn test_root() -> PathBuf {
     }
     fs::create_dir_all(root.join("workspaces/worth-query/crates/worth-query-certification"))
         .expect("create Query certification fixture root");
+    let certification = "workspaces/worth-query/crates/worth-query-certification/src/facade.rs";
+    fs::create_dir_all(root.join(certification).parent().unwrap())
+        .expect("create certification source directory");
+    fs::copy(
+        workspace_root().join(certification),
+        root.join(certification),
+    )
+    .expect("copy real certification facade");
     let app_root = root.join("workspaces/worth-ui/apps/platform-pulse");
     let crate_root = root.join("workspaces/worth-ui/crates/worth-ui-runtime");
     fs::create_dir_all(app_root.join("src")).expect("create Worth UI application fixture root");
@@ -69,14 +77,13 @@ fn test_root() -> PathBuf {
     root
 }
 
+// The approved boundary triage retires facade snapshots; orientation follows source.
 #[test]
-fn facade_exports_are_rendered_from_snapshot() {
+fn facade_exports_follow_source_declarations() {
     let root = test_root();
-    let snapshot = root.join("tools/boundary-check/snapshots/facades.toml");
-    let text = fs::read_to_string(&snapshot)
-        .expect("read facade snapshot")
-        .replace("CanonicalQueryArtifact", "SnapshotOwnedExport");
-    fs::write(&snapshot, text).expect("write divergent snapshot");
+    let source = root.join("workspaces/worth-query/crates/worth-query-decl/src/facade.rs");
+    let text = fs::read_to_string(&source).unwrap();
+    fs::write(&source, format!("{text}\npub use worth_query_declaration::facade::canonicalization::CanonicalQueryArtifact as SourceOwnedExport;\n")).unwrap();
     let generate = run_tool(&root, "generate");
     assert!(
         generate.status.success(),
@@ -86,29 +93,19 @@ fn facade_exports_are_rendered_from_snapshot() {
     let context = fs::read_to_string(
         root.join("workspaces/worth-query/crates/worth-query-decl/AGENT_CONTEXT.md"),
     )
-    .expect("read context");
-    assert!(context.contains("SnapshotOwnedExport"));
-    assert!(!context.contains("CanonicalQueryArtifact"));
+    .unwrap();
+    assert!(context.contains("SourceOwnedExport"));
 }
 
 #[test]
-fn missing_facade_snapshot_row_fails_closed() {
+fn missing_facade_source_fails_closed() {
     let root = test_root();
-    let snapshot = root.join("tools/boundary-check/snapshots/facades.toml");
-    let text = fs::read_to_string(&snapshot).expect("read facade snapshot");
-    let package = text
-        .find("package = \"worth-query-decl\"")
-        .expect("decl package");
-    let start = text[..package].rfind("[[facades]]").expect("decl row");
-    let end = text[package..]
-        .find("[[facades]]")
-        .map(|offset| package + offset)
-        .unwrap_or(text.len());
-    fs::write(&snapshot, format!("{}{}", &text[..start], &text[end..])).expect("remove row");
+    fs::remove_file(root.join("workspaces/worth-query/crates/worth-query-decl/src/facade.rs"))
+        .unwrap();
     let output = run_tool(&root, "generate");
     assert!(!output.status.success());
     let error = String::from_utf8_lossy(&output.stderr);
-    assert!(error.contains("facades.toml") && error.contains("worth-query-decl"));
+    assert!(error.contains("facade source") && error.contains("worth-query-decl"));
 }
 
 fn workspace_root() -> PathBuf {

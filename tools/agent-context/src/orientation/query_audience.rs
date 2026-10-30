@@ -1,16 +1,13 @@
 //! Orientation construction for configured Query audience facade crates.
 
 use super::model::CrateOrientation;
-use crate::authority_inputs::{
-    CommittedFacadeSnapshot, QueryAudienceContractSpec, QueryAudienceFacadeSpec,
-};
+use crate::authority_inputs::{facade_exports, QueryAudienceContractSpec, QueryAudienceFacadeSpec};
 use std::path::Path;
 
 pub(crate) fn framework_audience_orientations(
     root: &Path,
     contract: &QueryAudienceContractSpec,
     machine_constitution: &str,
-    facade_snapshot: &CommittedFacadeSnapshot,
 ) -> Result<Vec<CrateOrientation>, String> {
     contract
         .audiences
@@ -27,7 +24,7 @@ pub(crate) fn framework_audience_orientations(
                     "configured Query audience facade missing at {relative_path}"
                 ));
             }
-            let facade_exports = facade_snapshot.exports_for(&audience.package)?;
+            let facade_exports = facade_exports(&crate_root)?;
             let machine_fences = vec![
                 format!(
                     "Framework Query audience facade (`{}`); legal consuming bands: {}.",
@@ -71,7 +68,6 @@ pub(crate) fn framework_certification_orientation(
     root: &Path,
     contract: &QueryAudienceContractSpec,
     machine_constitution: &str,
-    facade_snapshot: &CommittedFacadeSnapshot,
 ) -> Result<Option<CrateOrientation>, String> {
     let Some(certification_package) = &contract.certification_package else {
         return Ok(None);
@@ -86,7 +82,7 @@ pub(crate) fn framework_certification_orientation(
             "configured Query certification package missing at {relative_path}"
         ));
     }
-    let facade_exports = facade_snapshot.exports_for(certification_package)?;
+    let facade_exports = facade_exports(&root.join(&relative_path))?;
 
     Ok(Some(CrateOrientation {
         crate_name: certification_package.clone(),

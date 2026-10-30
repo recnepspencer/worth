@@ -8,29 +8,14 @@ publish = false
 [workspace]
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
+serde = "1"
 serde_json = "1"
-proc-macro2 = { version = "1", features = ["span-locations"] }
-quote = "1"
-syn = { version = "2", features = ["full", "visit", "visit-mut"] }
 toml = "1"
-pulldown-cmark = { version = "0.13", default-features = false }
-unicode-general-category = "1"
-serde_yaml_ng = "0.10"
-
-[dev-dependencies]
-worth-harness = { path = "../../crates/worth-harness" }
-
-# Parsing every governed crate with syn dominates a run; optimize dependencies
-# even in the dev profile that `make boundary-check` uses.
-[profile.dev.package."*"]
-opt-level = 3
-
-# These tools run on every edit; retain debug assertions while optimizing them.
 [profile.dev]
-opt-level = 3
-debug-assertions = true
-
-# Test edits need fast compilation; optimized dependencies retain parser speed.
+debug = 0
+[profile.dev.package.boundary-check]
+opt-level = 1
+[profile.dev.package.serde_json]
+opt-level = 1
 [profile.test]
-opt-level = 0
+debug = 0
