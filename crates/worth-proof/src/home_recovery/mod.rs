@@ -21,16 +21,42 @@
 //! stage.consume(|_| ());
 //! ```
 //!
-//! An owner can transfer the same custody through the named stages:
+//! Each actual transition mints a distinct owner-sealed carrier while moving
+//! the same underlying custody. Rewrapping an extracted predecessor does not
+//! satisfy the next concrete port:
+//!
+//! ```compile_fail,E0308
+//! use worth_proof::{AuthorityMarker, HomeAdmitted, StoreRecovered};
+//! struct RecoveredCustody;
+//! impl AuthorityMarker for RecoveredCustody {}
+//! struct AdmittedCustody;
+//! impl AuthorityMarker for AdmittedCustody {}
+//! fn readmit(_: HomeAdmitted<AdmittedCustody>) {}
+//! let recovered = StoreRecovered::from_owner(RecoveredCustody);
+//! let relabeled = recovered.consume(HomeAdmitted::from_owner);
+//! readmit(relabeled);
+//! ```
+//!
+//! The owner transfer preserves the underlying value:
 //!
 //! ```
-//! use worth_proof::{AuthorityMarker, HomeAdmitted, RelationalReadmitted, StoreRecovered};
-//! struct OwnerCustody(String);
-//! impl AuthorityMarker for OwnerCustody {}
-//! let recovered = StoreRecovered::from_owner(OwnerCustody("same custody".into()));
-//! let admitted = recovered.consume(HomeAdmitted::from_owner);
-//! let relational = admitted.consume(RelationalReadmitted::from_owner);
-//! assert_eq!(relational.consume(|custody| custody.0), "same custody");
+//! mod owner {
+//!     use worth_proof::{AuthorityMarker, HomeAdmitted, StoreRecovered};
+//!     pub struct RecoveredCustody { lease: String }
+//!     pub struct AdmittedCustody { lease: String }
+//!     impl AuthorityMarker for RecoveredCustody {}
+//!     impl AuthorityMarker for AdmittedCustody {}
+//!     pub fn recover() -> StoreRecovered<RecoveredCustody> {
+//!         StoreRecovered::from_owner(RecoveredCustody { lease: "same custody".into() })
+//!     }
+//!     pub fn admit(stage: StoreRecovered<RecoveredCustody>) -> HomeAdmitted<AdmittedCustody> {
+//!         stage.consume(|previous| HomeAdmitted::from_owner(AdmittedCustody { lease: previous.lease }))
+//!     }
+//!     pub fn finish(stage: HomeAdmitted<AdmittedCustody>) -> String {
+//!         stage.consume(|admitted| admitted.lease)
+//!     }
+//! }
+//! assert_eq!(owner::finish(owner::admit(owner::recover())), "same custody");
 //! ```
 
 mod home_admitted;
