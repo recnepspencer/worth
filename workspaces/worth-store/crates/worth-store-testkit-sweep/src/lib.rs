@@ -73,9 +73,7 @@ fn run_jobs(jobs: Vec<Box<dyn FnOnce() + Send + '_>>, worker_limit: Option<usize
         drain()
     } else {
         std::thread::scope(|scope| {
-            let handles = (0..workers)
-                .map(|_| scope.spawn(&drain))
-                .collect::<Vec<_>>();
+            let handles = (0..workers).map(|_| scope.spawn(drain)).collect::<Vec<_>>();
             let mut failures = Vec::new();
             for handle in handles {
                 match handle.join() {
