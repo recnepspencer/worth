@@ -1,9 +1,11 @@
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
-from workspace import read_tree
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'test_topology'))
+from module_tree import read_tree
 
 
 class ExplicitModuleDirectoryTests(unittest.TestCase):
