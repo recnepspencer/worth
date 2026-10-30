@@ -37,7 +37,7 @@ use crate::durability::canonical_commit_artifact::{
 };
 use crate::durability::data::RelationalNativeCheckpoint;
 use crate::durability::medium::{
-    RelationalDurableCheckpointSource, RelationalDurableMedium, RelationalDurablePublication,
+    DurablePublicationFate, RelationalDurableCheckpointSource, RelationalDurableMedium,
     RelationalDurableRecoverySource,
 };
 use crate::publication::patch::data::PatchStreamPosition;
@@ -172,7 +172,7 @@ impl TestDurableMedium {
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         let mut journal = self.journal();
         journal.offered.push(artifact.clone());
         match journal.scripted.pop_front() {
@@ -185,7 +185,7 @@ impl TestDurableMedium {
     fn publish_transition(
         &self,
         artifact: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.transition_journal().publish(artifact)
     }
 }

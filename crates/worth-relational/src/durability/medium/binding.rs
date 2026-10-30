@@ -1,8 +1,9 @@
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
+use worth_proof::{AuthorityMarker, DurablyCommitted};
 
 use super::{
-    RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject, RelationalDurableMedium,
-    RelationalDurablePublication, RelationalDurablePublicationRefusal,
+    DurablePublicationFate, RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
+    RelationalDurableMedium, RelationalDurablePublicationRefusal,
 };
 use crate::branch::PositionedBranchTransition;
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
@@ -47,6 +48,7 @@ pub(crate) enum RelationalDurableStepStop {
 /// Placement facts issued only after the journal answered Committed.
 #[derive(Debug)]
 pub(crate) struct RelationalDurableCommitReadmission {
+    positioned: Arc<PositionedCanonicalCommit>,
     entry: crate::history::RelationalCommitIndexEntry,
     source: Arc<dyn super::RelationalDurableColdSource>,
 }
@@ -54,10 +56,28 @@ impl RelationalDurableCommitReadmission {
     pub(crate) fn into_parts(
         self,
     ) -> (
+        Arc<PositionedCanonicalCommit>,
         crate::history::RelationalCommitIndexEntry,
         Arc<dyn super::RelationalDurableColdSource>,
     ) {
-        (self.entry, self.source)
+        (self.positioned, self.entry, self.source)
+    }
+}
+
+impl AuthorityMarker for RelationalDurableCommitReadmission {}
+
+/// The exact positioned transition accepted by the medium. Its construction
+/// stays in this binding, on the Committed branch only.
+#[derive(Debug)]
+pub(crate) struct RelationalDurableTransitionPublication {
+    positioned: PositionedBranchTransition,
+}
+
+impl AuthorityMarker for RelationalDurableTransitionPublication {}
+
+impl RelationalDurableTransitionPublication {
+    pub(crate) fn into_positioned(self) -> PositionedBranchTransition {
+        self.positioned
     }
 }
 
@@ -98,13 +118,14 @@ impl RelationalDurableMediumBinding {
     /// before the live cutover, so a refusal leaves no live or durable effect.
     pub(crate) fn publish(
         &self,
-        commit: &PositionedCanonicalCommit,
+        commit: Arc<PositionedCanonicalCommit>,
         roots: &crate::branch::RelationalBranchRootDescriptor,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<RelationalDurableCommitReadmission, RelationalDurableStepStop> {
+    ) -> Result<DurablyCommitted<RelationalDurableCommitReadmission>, RelationalDurableStepStop>
+    {
         let mut state = self.state();
         let medium = state.admitting_medium()?;
-        let artifact = RelationalCanonicalCommitArtifact::from_positioned(commit, policy)
+        let artifact = RelationalCanonicalCommitArtifact::from_positioned(&commit, policy)
             .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
         let entry = crate::history::RelationalCommitIndexEntry {
             commit: commit.commit.clone(),
@@ -121,11 +142,12 @@ impl RelationalDurableMediumBinding {
                 commit_id: artifact.commit_id(),
                 digest: artifact.payload_digest(),
             },
-        )?;
-        Ok(RelationalDurableCommitReadmission {
-            entry,
-            source: self.cold_source.clone(),
-        })
+            || RelationalDurableCommitReadmission {
+                positioned: commit,
+                entry,
+                source: self.cold_source.clone(),
+            },
+        )
     }
 
     /// Encode `transition` as its artifact and make it durable.
@@ -134,12 +156,13 @@ impl RelationalDurableMediumBinding {
     /// preparation step and before any live effect of the transition.
     pub(crate) fn publish_transition(
         &self,
-        transition: &PositionedBranchTransition,
+        transition: PositionedBranchTransition,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), RelationalDurableStepStop> {
+    ) -> Result<DurablyCommitted<RelationalDurableTransitionPublication>, RelationalDurableStepStop>
+    {
         let mut state = self.state();
         let medium = state.admitting_medium()?;
-        let artifact = RelationalBranchTransitionArtifact::from_positioned(transition, policy)
+        let artifact = RelationalBranchTransitionArtifact::from_positioned(&transition, policy)
             .map_err(|denial| {
                 refused(RelationalDurablePublicationRefusal::TransitionEncoding(
                     denial,
@@ -152,6 +175,9 @@ impl RelationalDurableMediumBinding {
                 sequence: artifact.sequence(),
                 follows: artifact.follows(),
                 digest: artifact.payload_digest(),
+            },
+            || RelationalDurableTransitionPublication {
+                positioned: transition,
             },
         )
     }
@@ -196,24 +222,31 @@ impl BindingState {
 
     /// Record the medium's answer for `subject`; an unknown fate blocks every
     /// later publication.
-    fn settle(
+    fn settle<Publication: AuthorityMarker>(
         &mut self,
-        answer: RelationalDurablePublication,
+        answer: DurablePublicationFate<String>,
         subject: RelationalDurabilityUnresolvedSubject,
-    ) -> Result<(), RelationalDurableStepStop> {
+        committed: impl FnOnce() -> Publication,
+    ) -> Result<DurablyCommitted<Publication>, RelationalDurableStepStop> {
         match answer {
-            RelationalDurablePublication::Committed => Ok(()),
-            RelationalDurablePublication::ProvenNoEffect { detail } => Err(refused(
+            DurablePublicationFate::Committed => Ok(DurablyCommitted::from_owner(committed())),
+            DurablePublicationFate::ProvenNoEffect { detail } => Err(refused(
                 RelationalDurablePublicationRefusal::ProvenNoEffect { detail },
             )),
-            RelationalDurablePublication::Indeterminate { detail } => {
-                let fate = self
-                    .unresolved
-                    .get_or_init(|| RelationalDurabilityUnresolved::new(subject, detail))
-                    .clone();
-                Err(RelationalDurableStepStop::Unresolved(fate))
-            }
+            DurablePublicationFate::Indeterminate { detail } => Err(
+                RelationalDurableStepStop::Unresolved(self.record_unresolved(subject, detail)),
+            ),
         }
+    }
+
+    fn record_unresolved(
+        &self,
+        subject: RelationalDurabilityUnresolvedSubject,
+        detail: String,
+    ) -> RelationalDurabilityUnresolved {
+        self.unresolved
+            .get_or_init(|| RelationalDurabilityUnresolved::new(subject, detail))
+            .clone()
     }
 }
 

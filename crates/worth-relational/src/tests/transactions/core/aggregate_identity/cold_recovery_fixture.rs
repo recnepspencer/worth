@@ -122,7 +122,7 @@ pub(super) fn reopen(
     for artifact in artifacts {
         assert!(matches!(
             attachment.publish(&artifact),
-            RelationalDurablePublication::Committed
+            DurablePublicationFate::Committed
         ));
     }
     let mut receiving = RelationalRuntimeApi::builder()

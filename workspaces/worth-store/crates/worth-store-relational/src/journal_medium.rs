@@ -9,8 +9,8 @@
 use std::sync::Arc;
 
 use worth_relational::facade::durability::{
-    RelationalBranchTransitionArtifact, RelationalCanonicalCommitArtifact, RelationalDurableMedium,
-    RelationalDurablePublication,
+    DurablePublicationFate, RelationalBranchTransitionArtifact, RelationalCanonicalCommitArtifact,
+    RelationalDurableMedium,
 };
 use worth_store::physical_runtime::{
     AdmittedRecordPlacementPolicy, OrderedJournal, OrderedJournalDenial, OrderedJournalPublication,
@@ -46,11 +46,11 @@ impl StoreJournalMedium {
         journal: Result<OrderedJournal<'_>, OrderedJournalDenial>,
         entry: u64,
         bytes: &[u8],
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         let journal = match journal {
             Ok(journal) => journal,
             Err(denial) => {
-                return RelationalDurablePublication::ProvenNoEffect {
+                return DurablePublicationFate::ProvenNoEffect {
                     detail: format!("journal unavailable: {denial:?}"),
                 };
             }
@@ -58,7 +58,7 @@ impl StoreJournalMedium {
         let Some(deadline) =
             PhysicalMutationDeadline::after_milliseconds(PUBLICATION_DEADLINE_MILLIS)
         else {
-            return RelationalDurablePublication::ProvenNoEffect {
+            return DurablePublicationFate::ProvenNoEffect {
                 detail: "publication deadline is not representable".to_owned(),
             };
         };
@@ -68,7 +68,7 @@ impl StoreJournalMedium {
             Ok(
                 OrderedJournalPublished::Committed(_)
                 | OrderedJournalPublished::AlreadyCommitted(_),
-            ) => RelationalDurablePublication::Committed,
+            ) => DurablePublicationFate::Committed,
             Err(failure) => publication_failure(failure),
         }
     }
@@ -117,7 +117,7 @@ impl RelationalDurableMedium for StoreJournalMedium {
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.publish_entry(
             self.serving.canonical_commits(),
             artifact.position().0,
@@ -128,7 +128,7 @@ impl RelationalDurableMedium for StoreJournalMedium {
     fn publish_transition(
         &self,
         artifact: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.publish_entry(
             self.serving.branch_transitions(),
             artifact.sequence().0,
@@ -139,12 +139,14 @@ impl RelationalDurableMedium for StoreJournalMedium {
 
 /// Every journal failure either happened before any effect or leaves the fate
 /// to recovery; nothing in between is reported as durable.
-fn publication_failure(failure: OrderedJournalPublicationFailure) -> RelationalDurablePublication {
+fn publication_failure(
+    failure: OrderedJournalPublicationFailure,
+) -> DurablePublicationFate<String> {
     let detail = format!("{failure:?}");
     match failure {
         OrderedJournalPublicationFailure::Indeterminate(_)
         | OrderedJournalPublicationFailure::CompletedWithoutRecord => {
-            RelationalDurablePublication::Indeterminate { detail }
+            DurablePublicationFate::Indeterminate { detail }
         }
         OrderedJournalPublicationFailure::EmptyPayload
         | OrderedJournalPublicationFailure::PositionGap { .. }
@@ -156,9 +158,9 @@ fn publication_failure(failure: OrderedJournalPublicationFailure) -> RelationalD
         | OrderedJournalPublicationFailure::Preparation(_)
         | OrderedJournalPublicationFailure::ProvenNoEffect(_)
         | OrderedJournalPublicationFailure::Read(_) => {
-            RelationalDurablePublication::ProvenNoEffect { detail }
+            DurablePublicationFate::ProvenNoEffect { detail }
         }
         // A failure this build does not know cannot be proven harmless.
-        _ => RelationalDurablePublication::Indeterminate { detail },
+        _ => DurablePublicationFate::Indeterminate { detail },
     }
 }

@@ -69,13 +69,13 @@ fn an_attachment_the_medium_moved_out_of_publishes_nothing() {
 
     assert!(binding.detach().is_some(), "the medium moves out once");
     assert!(binding.detach().is_none(), "and only once");
+    let artifact = source
+        .history
+        .commit_artifact(positioned.commit.commit_id)
+        .unwrap();
     let refused = binding.publish(
-        &positioned,
-        source
-            .history
-            .commit_artifact(positioned.commit.commit_id)
-            .unwrap()
-            .roots(),
+        positioned,
+        artifact.roots(),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     );
 

@@ -147,7 +147,7 @@ fn recovered_shape(
         let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
         assert!(matches!(
             medium.publish(&artifact),
-            crate::durability::medium::RelationalDurablePublication::Committed
+            crate::durability::medium::DurablePublicationFate::Committed
         ));
     }
     let mut runtime = RelationalRuntimeApi::builder()

@@ -394,6 +394,7 @@ pub use crate::diagnostics::{
     FoundationalReportArtifactKind, FoundationalSummaryArtifactKind,
     FoundationalSupportReportArtifactKind,
 };
+pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{
     DeterminismContract, EquivalenceContractId, ExecutionBudget, ExecutionFallbackCause,
     ExecutionPhysicalReport, ExecutionPosture, ExecutionReport, ExecutionRequestPolicy,

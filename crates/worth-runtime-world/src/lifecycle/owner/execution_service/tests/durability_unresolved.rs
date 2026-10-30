@@ -4,8 +4,8 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use worth_relational::facade::durability::{
-    RelationalBranchTransitionArtifact, RelationalCanonicalCommitArtifact, RelationalDurableMedium,
-    RelationalDurablePublication,
+    DurablePublicationFate, RelationalBranchTransitionArtifact, RelationalCanonicalCommitArtifact,
+    RelationalDurableMedium,
 };
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 
@@ -21,13 +21,13 @@ struct UnresolvingMedium {
 }
 
 impl UnresolvingMedium {
-    fn answer(&self) -> RelationalDurablePublication {
+    fn answer(&self) -> DurablePublicationFate<String> {
         if self.unresolve_next.swap(false, Ordering::AcqRel) {
-            return RelationalDurablePublication::Indeterminate {
+            return DurablePublicationFate::Indeterminate {
                 detail: "the medium lost its answer after the effect".to_owned(),
             };
         }
-        RelationalDurablePublication::Committed
+        DurablePublicationFate::Committed
     }
 }
 
@@ -52,7 +52,7 @@ impl RelationalDurableMedium for UnresolvingMedium {
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.journal.commits.lock().unwrap().push(artifact.clone());
         self.answer()
     }
@@ -60,7 +60,7 @@ impl RelationalDurableMedium for UnresolvingMedium {
     fn publish_transition(
         &self,
         artifact: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.journal
             .transitions
             .lock()

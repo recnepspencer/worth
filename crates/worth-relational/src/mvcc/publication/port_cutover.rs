@@ -164,8 +164,12 @@ impl PreparedBranchPublicationPreflight {
                 self.publication_cell.clone(),
                 admission,
                 |positioned, roots| match &medium {
-                    Some(medium) => medium.publish(positioned, roots, durable_policy).map(Some),
-                    None => Ok(None),
+                    Some(medium) => medium
+                        .publish(positioned, roots, durable_policy)
+                        .map(crate::durability::medium::RelationalCommitPublication::Durable),
+                    None => Ok(crate::durability::medium::RelationalCommitPublication::MemoryOnly(
+                        positioned,
+                    )),
                 },
                 |position| {
                     symbol_meanings

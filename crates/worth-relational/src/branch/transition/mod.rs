@@ -15,8 +15,8 @@ mod stop;
 
 pub(crate) use durable_step::{
     LiveBranchTransitionStep, RelationalBranchTransitionDenial,
-    RelationalBranchTransitionDurableStep, ReplayedBranchTransitionDivergence,
-    ReplayedBranchTransitionStep,
+    RelationalBranchTransitionDurableStep, RelationalTransitionPublication,
+    ReplayedBranchTransitionDivergence, ReplayedBranchTransitionStep,
 };
 pub use positioned::PositionedBranchTransition;
 pub use record::RelationalBranchTransition;

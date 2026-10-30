@@ -287,10 +287,10 @@ impl PreparedCanonicalPublicationRoute {
         publication_cell: crate::branch::RelationalBranchPublicationCell,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         durable: impl FnOnce(
-            &PositionedCanonicalCommit,
+            Arc<PositionedCanonicalCommit>,
             &crate::branch::RelationalBranchRootDescriptor,
         ) -> Result<
-            Option<crate::durability::medium::RelationalDurableCommitReadmission>,
+            crate::durability::medium::RelationalCommitPublication,
             crate::durability::medium::RelationalDurableStepStop,
         >,
         cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition) -> T,

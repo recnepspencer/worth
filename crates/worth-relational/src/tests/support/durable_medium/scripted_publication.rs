@@ -5,7 +5,7 @@ use super::journal::TestDurableJournal;
 use super::transition_journal::TestTransitionJournal;
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
-use crate::durability::medium::RelationalDurablePublication;
+use crate::durability::medium::DurablePublicationFate;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ScriptedPublication {
@@ -22,7 +22,7 @@ impl ScriptedPublication {
         self,
         journal: &mut TestDurableJournal,
         artifact: &RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         if self == Self::IndeterminateAfterEffect && journal.is_next(artifact.position()) {
             journal.store(artifact);
         }
@@ -33,22 +33,22 @@ impl ScriptedPublication {
         self,
         journal: &mut TestTransitionJournal,
         artifact: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         if self == Self::IndeterminateAfterEffect && journal.is_next(artifact.sequence()) {
             journal.store(artifact);
         }
         self.publication()
     }
 
-    fn publication(self) -> RelationalDurablePublication {
+    fn publication(self) -> DurablePublicationFate<String> {
         match self {
-            Self::ProvenNoEffect => RelationalDurablePublication::ProvenNoEffect {
+            Self::ProvenNoEffect => DurablePublicationFate::ProvenNoEffect {
                 detail: "scripted: the journal refused before appending".to_owned(),
             },
-            Self::IndeterminateWithoutEffect => RelationalDurablePublication::Indeterminate {
+            Self::IndeterminateWithoutEffect => DurablePublicationFate::Indeterminate {
                 detail: "scripted: the append's fate is unknown (not appended)".to_owned(),
             },
-            Self::IndeterminateAfterEffect => RelationalDurablePublication::Indeterminate {
+            Self::IndeterminateAfterEffect => DurablePublicationFate::Indeterminate {
                 detail: "scripted: the append's fate is unknown (appended)".to_owned(),
             },
         }

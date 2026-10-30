@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use super::TestDurableMedium;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
-use crate::durability::medium::{RelationalDurableMedium, RelationalDurablePublication};
+use crate::durability::medium::{DurablePublicationFate, RelationalDurableMedium};
 use crate::runtime::RelationalRuntime;
 
 /// One runtime's medium over shared test durable contents. It is not
@@ -46,14 +46,14 @@ impl RelationalDurableMedium for TestDurableMediumAttachment {
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.contents.publish(artifact)
     }
 
     fn publish_transition(
         &self,
         artifact: &crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.contents.publish_transition(artifact)
     }
 

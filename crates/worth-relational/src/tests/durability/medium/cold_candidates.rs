@@ -71,7 +71,7 @@ fn recovered(
         let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
         assert!(matches!(
             attachment.publish(&artifact),
-            crate::durability::medium::RelationalDurablePublication::Committed
+            crate::durability::medium::DurablePublicationFate::Committed
         ));
     }
     let mut receiving = runtime(attachment);

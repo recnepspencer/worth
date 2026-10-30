@@ -167,9 +167,14 @@ fn durable_fork_waits_for_another_branch_commit() {
 struct ParkedMemoryTransition(Arc<PublicationGate>);
 impl RelationalBranchTransitionDurableStep for ParkedMemoryTransition {
     type Stop = std::convert::Infallible;
-    fn take(&self, _: &PositionedBranchTransition) -> Result<(), Self::Stop> {
+    fn take(
+        &self,
+        positioned: PositionedBranchTransition,
+    ) -> Result<crate::branch::RelationalTransitionPublication, Self::Stop> {
         self.0.pass();
-        Ok(())
+        Ok(crate::branch::RelationalTransitionPublication::MemoryOnly(
+            positioned,
+        ))
     }
 }
 

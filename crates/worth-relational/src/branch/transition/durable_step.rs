@@ -1,9 +1,33 @@
 use std::sync::Arc;
+use worth_proof::DurablyCommitted;
 
 use super::PositionedBranchTransition;
 use crate::durability::medium::{
     RelationalDurableMediumBinding, RelationalDurablePublicationRefusal, RelationalDurableStepStop,
+    RelationalDurableTransitionPublication,
 };
+
+/// A transition's subject stays bound to its distinct publication authority
+/// until the stream applies it. Replay is not a new medium publication.
+pub(crate) enum RelationalTransitionPublication {
+    MemoryOnly(PositionedBranchTransition),
+    Replayed(PositionedBranchTransition),
+    Durable(DurablyCommitted<RelationalDurableTransitionPublication>),
+}
+
+impl RelationalTransitionPublication {
+    pub(crate) fn cutover<Output>(
+        self,
+        apply: impl FnOnce(PositionedBranchTransition) -> Output,
+    ) -> Output {
+        match self {
+            Self::MemoryOnly(positioned) | Self::Replayed(positioned) => apply(positioned),
+            Self::Durable(committed) => {
+                committed.consume(|publication| apply(publication.into_positioned()))
+            }
+        }
+    }
+}
 
 /// What makes a positioned branch transition durable before its cutover.
 ///
@@ -16,7 +40,10 @@ pub(crate) trait RelationalBranchTransitionDurableStep {
     type Stop;
 
     /// Make `positioned` durable, or say why its cutover must not run.
-    fn take(&self, positioned: &PositionedBranchTransition) -> Result<(), Self::Stop>;
+    fn take(
+        &self,
+        positioned: PositionedBranchTransition,
+    ) -> Result<RelationalTransitionPublication, Self::Stop>;
 }
 
 /// The step of a live transition: publish to the runtime's medium when it
@@ -43,10 +70,15 @@ impl RelationalBranchTransitionDurableStep for LiveBranchTransitionStep<'_, '_> 
     type Stop = RelationalDurableStepStop;
 
     /// Cost: one artifact encode and one medium publication with a medium.
-    fn take(&self, positioned: &PositionedBranchTransition) -> Result<(), Self::Stop> {
+    fn take(
+        &self,
+        positioned: PositionedBranchTransition,
+    ) -> Result<RelationalTransitionPublication, Self::Stop> {
         match &self.medium {
-            Some(medium) => medium.publish_transition(positioned, self.policy),
-            None => Ok(()),
+            Some(medium) => medium
+                .publish_transition(positioned, self.policy)
+                .map(RelationalTransitionPublication::Durable),
+            None => Ok(RelationalTransitionPublication::MemoryOnly(positioned)),
         }
     }
 }
@@ -99,16 +131,19 @@ impl RelationalBranchTransitionDurableStep for ReplayedBranchTransitionStep<'_> 
     type Stop = ReplayedBranchTransitionDivergence;
 
     /// Cost: one structural comparison of two small records.
-    fn take(&self, positioned: &PositionedBranchTransition) -> Result<(), Self::Stop> {
+    fn take(
+        &self,
+        positioned: PositionedBranchTransition,
+    ) -> Result<RelationalTransitionPublication, Self::Stop> {
         let reproduced = match self.fidelity {
-            ReplayFidelity::Positioned => self.recorded == positioned,
+            ReplayFidelity::Positioned => self.recorded == &positioned,
             ReplayFidelity::TransitionOnly => self.recorded.transition() == positioned.transition(),
         };
         if reproduced {
-            return Ok(());
+            return Ok(RelationalTransitionPublication::Replayed(positioned));
         }
         Err(ReplayedBranchTransitionDivergence {
-            performed: Box::new(positioned.clone()),
+            performed: Box::new(positioned),
         })
     }
 }

@@ -1,6 +1,6 @@
 //! Replay and recovery reconstruct only the history absent from their basis.
 use super::*;
-use crate::durability::medium::{RelationalDurableMedium, RelationalDurablePublication};
+use crate::durability::medium::{DurablePublicationFate, RelationalDurableMedium};
 use crate::facade::durability::RecoveryVerificationMode;
 use crate::facade::replay::{RelationalReplayRequest, ReplayExecutionMode, ReplayVerificationMode};
 use crate::facade::runtime::RelationalRuntimeApi;
@@ -79,10 +79,10 @@ impl RelationalDurableMedium for CountedTransitionReads {
     fn publish(
         &self,
         artifact: &crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.medium.publish(artifact)
     }
-    fn publish_transition(&self, artifact: &Artifact) -> RelationalDurablePublication {
+    fn publish_transition(&self, artifact: &Artifact) -> DurablePublicationFate<String> {
         self.medium.publish_transition(artifact)
     }
 }

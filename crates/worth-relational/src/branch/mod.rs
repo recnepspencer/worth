@@ -116,8 +116,8 @@ pub(crate) use sharing_cost_cell::RelationalBranchSharingCostCell;
 pub use target::{RelationalBranchRootDescriptor, RelationalBranchTarget};
 pub(crate) use transition::{
     LiveBranchTransitionStep, RelationalBranchTransitionDenial,
-    RelationalBranchTransitionDurableStep, ReplayedBranchTransitionDivergence,
-    ReplayedBranchTransitionStep,
+    RelationalBranchTransitionDurableStep, RelationalTransitionPublication,
+    ReplayedBranchTransitionDivergence, ReplayedBranchTransitionStep,
 };
 pub use transition::{
     PositionedBranchTransition, RelationalBranchTransition, RelationalBranchTransitionSequence,

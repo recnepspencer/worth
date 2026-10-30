@@ -32,7 +32,7 @@ fn cold_head_warm_and_full_warm_uniqueness_reuse_the_original_paged_field_identi
             let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
             assert!(matches!(
                 medium.publish(&artifact),
-                crate::durability::medium::RelationalDurablePublication::Committed
+                crate::durability::medium::DurablePublicationFate::Committed
             ));
         }
         let mut receiving = runtime(medium);

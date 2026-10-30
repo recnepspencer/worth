@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, VecDeque};
 
 use super::ScriptedPublication;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
-use crate::durability::medium::{RelationalDurableCheckpointSource, RelationalDurablePublication};
+use crate::durability::medium::{DurablePublicationFate, RelationalDurableCheckpointSource};
 use crate::publication::patch::data::PatchStreamPosition;
 
 #[derive(Debug, Default)]
@@ -79,16 +79,16 @@ impl TestDurableJournal {
     pub(super) fn publish_at_head(
         &mut self,
         artifact: &RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         let position = artifact.position();
         if self.is_next(position) {
             self.store(artifact);
-            return RelationalDurablePublication::Committed;
+            return DurablePublicationFate::Committed;
         }
         if self.bytes_at(position) == Some(artifact.as_bytes()) {
-            return RelationalDurablePublication::Committed;
+            return DurablePublicationFate::Committed;
         }
-        RelationalDurablePublication::ProvenNoEffect {
+        DurablePublicationFate::ProvenNoEffect {
             detail: format!(
                 "position {} is not the next durable position {}",
                 position.0,

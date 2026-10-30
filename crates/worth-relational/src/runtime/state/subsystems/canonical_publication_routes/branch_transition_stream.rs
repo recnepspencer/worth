@@ -12,7 +12,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::branch::{
     PositionedBranchTransition, RelationalBranchTransition, RelationalBranchTransitionDurableStep,
-    RelationalBranchTransitionSequence,
+    RelationalBranchTransitionSequence, RelationalTransitionPublication,
 };
 
 use super::RelationalCanonicalPublicationRoutes;
@@ -102,13 +102,16 @@ impl BranchTransitionPublication<'_> {
             .next()
             .ok_or(BranchTransitionRecordError::SequenceCapacityExhausted)?;
         let positioned = PositionedBranchTransition::admit(sequence, follows, transition);
-        step.take(&positioned)
+        let publication: RelationalTransitionPublication = step
+            .take(positioned)
             .map_err(BranchTransitionRecordError::Step)?;
-        let positioned = Arc::new(positioned);
-        self.routes
-            .branch_transitions
-            .append(Arc::clone(&positioned));
-        Ok(cutover(&positioned))
+        Ok(publication.cutover(|positioned| {
+            let positioned = Arc::new(positioned);
+            self.routes
+                .branch_transitions
+                .append(Arc::clone(&positioned));
+            cutover(&positioned)
+        }))
     }
 }
 

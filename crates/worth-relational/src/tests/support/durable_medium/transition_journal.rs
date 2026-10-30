@@ -7,7 +7,7 @@ use std::collections::{BTreeMap, VecDeque};
 use super::ScriptedPublication;
 use crate::branch::RelationalBranchTransitionSequence;
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
-use crate::durability::medium::RelationalDurablePublication;
+use crate::durability::medium::DurablePublicationFate;
 
 #[derive(Debug, Default)]
 pub(super) struct TestTransitionJournal {
@@ -68,7 +68,7 @@ impl TestTransitionJournal {
     pub(super) fn publish(
         &mut self,
         artifact: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.offered.push(artifact.clone());
         match self.scripted.pop_front() {
             Some(answer) => answer.answer_transition(self, artifact),
@@ -79,16 +79,16 @@ impl TestTransitionJournal {
     fn publish_at_head(
         &mut self,
         artifact: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         let sequence = artifact.sequence();
         if self.is_next(sequence) {
             self.store(artifact);
-            return RelationalDurablePublication::Committed;
+            return DurablePublicationFate::Committed;
         }
         if self.bytes_at(sequence) == Some(artifact.as_bytes()) {
-            return RelationalDurablePublication::Committed;
+            return DurablePublicationFate::Committed;
         }
-        RelationalDurablePublication::ProvenNoEffect {
+        DurablePublicationFate::ProvenNoEffect {
             detail: format!(
                 "sequence {} is not the next durable sequence {}",
                 sequence.0,

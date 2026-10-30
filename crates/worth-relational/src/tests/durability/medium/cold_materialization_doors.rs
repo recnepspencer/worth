@@ -92,7 +92,7 @@ fn residency_retained_kind_demands_only_its_cold_head_and_preserves_damage() {
                 RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
             assert!(matches!(
                 attachment.publish(&artifact),
-                crate::durability::medium::RelationalDurablePublication::Committed
+                crate::durability::medium::DurablePublicationFate::Committed
             ));
         }
         let mut runtime = durable_runtime_with_test_schema();

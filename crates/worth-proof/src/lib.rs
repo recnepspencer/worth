@@ -9,6 +9,7 @@ mod brand;
 mod collections;
 mod composition;
 pub mod contracts;
+mod durable_publication;
 mod dx;
 mod effect;
 mod linear;
@@ -42,6 +43,7 @@ pub use crate::dx::{
     RecipeStageDxExt, RecipeStageKind, ResolvedBridgedRecipeDxExt, ResolvedRecipeDxExt,
     UnresolvedRecipeDxExt,
 };
+pub use durable_publication::DurablyCommitted;
 pub use raw::PhaseMarker;
 pub use raw::{
     admit_ready_and_execute_recipe, apply_contextual_transition, apply_transition,

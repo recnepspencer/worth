@@ -1,5 +1,5 @@
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
-use crate::durability::medium::{RelationalDurableMedium, RelationalDurablePublication};
+use crate::durability::medium::{DurablePublicationFate, RelationalDurableMedium};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
@@ -87,7 +87,7 @@ impl RelationalDurableMedium for SlowFirstPublication {
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.gate.pass();
         self.contents.publish(artifact)
     }
@@ -95,7 +95,7 @@ impl RelationalDurableMedium for SlowFirstPublication {
     fn publish_transition(
         &self,
         artifact: &crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
+    ) -> DurablePublicationFate<String> {
         self.gate.pass();
         self.contents.publish_transition(artifact)
     }

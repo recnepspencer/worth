@@ -46,7 +46,7 @@ fn cold_retirement_metadata_carries_original_creation_and_deletion_in_head() {
         let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
         assert!(matches!(
             medium.publish(&artifact),
-            crate::durability::medium::RelationalDurablePublication::Committed
+            crate::durability::medium::DurablePublicationFate::Committed
         ));
     }
     let mut runtime = durable_runtime_with_test_schema();

@@ -105,10 +105,10 @@ impl PerformedPublicationStream {
         resident: Arc<CanonicalCommitEnvelope>,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         durable: impl FnOnce(
-            &PositionedCanonicalCommit,
+            Arc<PositionedCanonicalCommit>,
             &crate::branch::RelationalBranchRootDescriptor,
         ) -> Result<
-            Option<crate::durability::medium::RelationalDurableCommitReadmission>,
+            crate::durability::medium::RelationalCommitPublication,
             DurableStepStop,
         >,
         cutover: impl FnOnce(PatchStreamPosition) -> T,
@@ -128,22 +128,22 @@ impl PerformedPublicationStream {
         ));
         // Durable before live: the position is assigned only once the medium
         // holds it, and the cutover below runs only after that.
-        let journal =
-            durable(&positioned, &route.roots).map_err(CanonicalPublicationRecordError::Durable)?;
-        route
-            .envelope
-            .bind_performed(&positioned, journal.map(|receipt| receipt.into_parts()));
-        let node = Arc::new(PerformedPublicationNode {
-            position: positioned.position(),
-            route: Arc::clone(&route),
-            previous: current,
-        });
-        route.set_position(PatchStreamPosition(next_position));
-        self.head.store(Some(node));
-        self.reservation.assignments.fetch_add(1, Ordering::Relaxed);
-        let completed = cutover(PatchStreamPosition(next_position));
-        route.mark_performed();
-        Ok((positioned, completed))
+        let publication =
+            durable(positioned, &route.roots).map_err(CanonicalPublicationRecordError::Durable)?;
+        Ok(publication.cutover(|positioned, journal| {
+            route.envelope.bind_performed(&positioned, journal);
+            let node = Arc::new(PerformedPublicationNode {
+                position: positioned.position(),
+                route: Arc::clone(&route),
+                previous: current,
+            });
+            route.set_position(positioned.position());
+            self.head.store(Some(node));
+            self.reservation.assignments.fetch_add(1, Ordering::Relaxed);
+            let completed = cutover(positioned.position());
+            route.mark_performed();
+            (positioned, completed)
+        }))
     }
 
     pub(super) fn link_recovered(

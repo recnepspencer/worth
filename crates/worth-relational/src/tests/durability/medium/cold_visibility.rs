@@ -69,7 +69,7 @@ fn cold_and_warm_visibility_preserve_an_observation_across_a_later_commit() {
         let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
         assert!(matches!(
             attachment.publish(&artifact),
-            crate::durability::medium::RelationalDurablePublication::Committed
+            crate::durability::medium::DurablePublicationFate::Committed
         ));
     }
     let mut runtime = RelationalRuntimeApi::builder()

@@ -84,7 +84,7 @@ fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> SymbolFixt
         let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
         assert!(matches!(
             attachment.publish(&artifact),
-            crate::durability::medium::RelationalDurablePublication::Committed
+            crate::durability::medium::DurablePublicationFate::Committed
         ));
     }
     let mut runtime = RelationalRuntimeApi::builder()

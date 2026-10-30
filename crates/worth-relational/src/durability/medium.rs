@@ -16,6 +16,7 @@
 
 mod binding;
 mod cold_source;
+mod commit_publication;
 pub use cold_source::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 mod member_custody;
 pub use member_custody::RelationalDurableMemberCustody;
@@ -27,9 +28,12 @@ pub(crate) use transition_read::RelationalTransitionHistoryReader;
 
 pub(crate) use binding::{
     RelationalDurableCommitReadmission, RelationalDurableMediumBinding, RelationalDurableStepStop,
+    RelationalDurableTransitionPublication,
 };
+pub(crate) use commit_publication::RelationalCommitPublication;
 pub use recovery_source::{RelationalDurableCheckpointSource, RelationalDurableRecoverySource};
 pub use unresolved::{RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject};
+pub use worth_foundational::facade::DurablePublicationFate;
 
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
@@ -68,15 +72,17 @@ pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
     /// identical retry of an artifact that already was. `ProvenNoEffect` means
     /// nothing durable changed. `Indeterminate` means the publication may or
     /// may not have become durable; only the medium's own recovery can tell.
-    fn publish(&self, artifact: &RelationalCanonicalCommitArtifact)
-        -> RelationalDurablePublication;
+    fn publish(
+        &self,
+        artifact: &RelationalCanonicalCommitArtifact,
+    ) -> DurablePublicationFate<String>;
 
     /// Make one branch transition artifact durable at its sequence, with the
     /// same answers as [`Self::publish`].
     fn publish_transition(
         &self,
         artifact: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication;
+    ) -> DurablePublicationFate<String>;
 
     /// The in-crate test medium's durable contents behind this medium, so
     /// Relational's own durability tests can recover from the medium a
@@ -88,15 +94,6 @@ pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
     ) -> Option<std::sync::Arc<crate::tests::support::TestDurableMedium>> {
         None
     }
-}
-
-/// A medium's answer to one publication.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum RelationalDurablePublication {
-    Committed,
-    ProvenNoEffect { detail: String },
-    Indeterminate { detail: String },
 }
 
 /// Why a medium-backed publication stopped before any effect.

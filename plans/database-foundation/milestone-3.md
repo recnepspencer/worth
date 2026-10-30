@@ -514,9 +514,11 @@ invariant comes from.
   retained decision (R9) or recovery step is exhaustive, with no `_` arm, so
   that adding a variant lists every site to update.
 - **One meaning per name** (law 10). Names are unique and greppable.
-- **Enforcement or a named test.** Every invariant in this specification is
-  either compiler-enforced or covered by a test named after its requirement,
-  such as `d4_live_cutover_requires_durable_commit`.
+- **Enforcement or a traced test.** Every invariant in this specification is
+  either compiler-enforced or covered by a test whose name states the
+  behaviour, such as `live_cutover_requires_durable_commit` (iteration law 16:
+  no milestone, decision or ticket ids in names). Each phase's requirement map
+  traces requirement ids to those tests.
 - **Explicit over clever.** Explicit, repetitive code is acceptable. An
   abstraction is acceptable only when it shares semantic authority, lifecycle,
   failure topology and cost class (law 12).
