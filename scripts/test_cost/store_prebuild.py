@@ -3,7 +3,11 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import sys
 from urllib.parse import unquote
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'test_topology'))
+from filesystem_path import filesystem_path
 
 from logs import json_objects
 from native_features import load as load_native_features, validate as validate_native_libraries, NativeFeatureRefusal
@@ -28,7 +32,7 @@ class ExecutablePrebuildFailure(ValueError):
 
 def retain(events, directory, requests=REQUESTS):
     directory = Path(directory).resolve()
-    directory.mkdir(parents=True, exist_ok=True)
+    filesystem_path(directory).mkdir(parents=True, exist_ok=True)
     executables = []
     for request in requests:
         artifacts = [event for event in events if event.get('reason') == 'compiler-artifact'
@@ -44,14 +48,14 @@ def retain(events, directory, requests=REQUESTS):
         if request['package'] != package_name:
             raise ExecutablePrebuildFailure(f'executable belongs to another package: {package_id}')
         source = Path(artifact['executable'])
-        digest = hashlib.sha256(source.read_bytes()).hexdigest()
+        digest = hashlib.sha256(filesystem_path(source).read_bytes()).hexdigest()
         destination = directory / f'{request["binary"]}-{digest}{source.suffix}'
-        if not destination.exists():
-            shutil.copy2(source, destination)
+        if not filesystem_path(destination).exists():
+            shutil.copy2(filesystem_path(source), filesystem_path(destination))
         executables.append(dict(request, path=str(destination),
                                 built_features=artifact['features'], profile=artifact['profile']))
     manifest = directory / 'executables.json'
-    manifest.write_text(json.dumps({'schema': 1, 'executables': executables}, indent=2) + '\n', encoding='utf-8')
+    filesystem_path(manifest).write_text(json.dumps({'schema': 1, 'executables': executables}, indent=2) + '\n', encoding='utf-8')
     return {'WORTH_PREBUILT_EXECUTABLES': str(manifest)}
 
 

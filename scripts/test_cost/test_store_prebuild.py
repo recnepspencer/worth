@@ -5,6 +5,7 @@ import tempfile
 import unittest
 
 from store_prebuild import ExecutablePrebuildFailure, REQUESTS, prepare, retain
+from filesystem_path import command_path, filesystem_path
 from native_features import NativeFeatureGraph, NativeFeatureRefusal, library_identity, signature
 
 
@@ -39,6 +40,25 @@ class StoreExecutablePrebuildTests(unittest.TestCase):
             self.assertNotEqual(retained, binary)
             with self.assertRaises(ExecutablePrebuildFailure):
                 retain([dict(event, profile={'test': True})], root / 'retained', [request])
+
+    def test_retained_executable_supports_long_output_paths_without_changing_its_identity(self):
+        with tempfile.TemporaryDirectory(dir=filesystem_path(Path(tempfile.gettempdir()))) as temporary:
+            root = command_path(Path(temporary))
+            binary = root / 'observer.exe'
+            binary.write_bytes(b'independent executable under a long retention path')
+            request = dict(package='owner', binary='observer', features=[])
+            event = dict(reason='compiler-artifact', package_id='path+file:///owner#owner@1',
+                         target={'name': 'observer', 'kind': ['bin']},
+                         profile={'test': False}, features=[], executable=str(binary))
+            directory = root / ('retained-' + 'a' * 90) / ('nested-' + 'b' * 90)
+            result = retain([event], directory, [request])
+            manifest_path = Path(result['WORTH_PREBUILT_EXECUTABLES'])
+            self.assertEqual(manifest_path, directory.resolve() / 'executables.json')
+            manifest = json.loads(filesystem_path(manifest_path).read_text())
+            retained = Path(manifest['executables'][0]['path'])
+            self.assertGreater(len(str(retained)), 260)
+            self.assertEqual(filesystem_path(retained).read_bytes(), binary.read_bytes())
+            self.assertEqual(retained.parent, directory.resolve())
 
     def test_missing_binary_cannot_be_replaced_by_the_test_process(self):
         with tempfile.TemporaryDirectory() as temporary:
