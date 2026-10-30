@@ -42,6 +42,22 @@ def capture_record(environment, path):
             stream.write((json.dumps({'log': str(Path(path).resolve())}) + '\n').encode('utf-8'))
 
 
+def compiler_profile(command):
+    if command[:1] != ['cargo']:
+        return None
+    flags = ('--cargo-profile',) if command[1:2] == ['nextest'] else ('--profile',)
+    boundary = command.index('--') if '--' in command else len(command)
+    for index, argument in enumerate(command[:boundary]):
+        for flag in flags:
+            if argument == flag:
+                return command[index + 1]
+            if argument.startswith(flag + '='):
+                return argument.split('=', 1)[1]
+    if '--release' in command[:boundary]:
+        return 'release'
+    return 'test' if command[1:2] in (['test'], ['nextest']) else 'dev'
+
+
 def retention_name(relative, head, start):
     relative = str(relative).replace('\\', '/')
     label = re.sub(r'[^A-Za-z0-9_.-]', '-', relative)[:64]
@@ -72,11 +88,7 @@ class CargoRunner:
                   'capture': 'ordered' if ordered else 'separate',
                   'mode': 'check' if command[1:2] in (['check'], ['clippy']) else 'build',
                   'target_dir': None,
-                  'cargo_profile': ('release' if '--release' in command else
-                                    'test' if command[1:2] in (['test'], ['nextest']) else 'dev')}
-        for flag in ('--profile', '--cargo-profile'):
-            if flag in command:
-                marker['cargo_profile'] = command[command.index(flag) + 1]
+                  'cargo_profile': compiler_profile(command)}
         if '--target-dir' in command:
             marker['target_dir'] = command[command.index('--target-dir') + 1]
         else:

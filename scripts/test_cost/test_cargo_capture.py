@@ -6,10 +6,18 @@ import unittest
 import subprocess
 from unittest.mock import patch
 
-from cargo_capture import CargoRunner, capture_record, instrument, retention_name
+from cargo_capture import CargoRunner, capture_record, compiler_profile, instrument, retention_name
 
 
 class CargoCaptureTests(unittest.TestCase):
+    def test_runtime_nextest_profiles_cannot_disguise_the_same_compiler_graph(self):
+        self.assertEqual(compiler_profile(['cargo', 'nextest', 'run', '--profile', 'ci']), 'test')
+        self.assertEqual(compiler_profile(['cargo', 'nextest', 'run', '--profile', 'integration',
+                                           '--cargo-profile=ci-test']), 'ci-test')
+        self.assertEqual(compiler_profile(['cargo', 'check', '--profile=diagnostic-test']), 'diagnostic-test')
+        self.assertEqual(compiler_profile(['cargo', 'rustc', '--release', '--', '--profile=not-cargo']), 'release')
+        self.assertIsNone(compiler_profile(['python', 'phase_telemetry.py']))
+
     def test_doctest_owner_headings_keep_their_actual_order_with_result_blocks(self):
         with tempfile.TemporaryDirectory() as temporary:
             runner = CargoRunner(Path.cwd())

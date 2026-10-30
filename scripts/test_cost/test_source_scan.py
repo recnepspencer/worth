@@ -30,6 +30,8 @@ class SourceCostTests(unittest.TestCase):
 
     def test_named_executable_and_imported_command_alias_cannot_bypass_the_rule(self):
         for text in ['fn proof() { let executable="cargo"; Command::new(executable); }',
+                     'const EXECUTABLE: &str = "cargo"; fn proof() { Command::new(EXECUTABLE); }',
+                     'static EXECUTABLE: &str = "cargo.exe"; fn proof() { Command::new(EXECUTABLE); }',
                      'use std::process::Command as Process; fn proof() { Process::new("cargo.exe"); }']:
             self.assertIn('cargo-command', [site['kind'] for site in scan_text(text)])
 

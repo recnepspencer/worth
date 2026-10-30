@@ -51,6 +51,7 @@ def scan_text(text):
                            'function': functions[-1] if functions else None,
                            'expression': normalized[match.start():match.end()][:200]})
     bindings = set(re.findall(r'\blet\s+(\w+)\s*=\s*"cargo"', normalized))
+    bindings.update(re.findall(r'\b(?:const|static)\s+(\w+):[^;=]{1,200}="cargo"', normalized))
     aliases = {'Command'} | set(re.findall(r'\bCommand\s+as\s+(\w+)', normalized))
     for alias in aliases:
         pattern = re.compile(r'\b' + re.escape(alias) + r'::new\(([^;)]+)\)')
