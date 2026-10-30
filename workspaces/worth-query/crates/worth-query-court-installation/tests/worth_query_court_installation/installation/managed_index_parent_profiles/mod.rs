@@ -1,15 +1,29 @@
 //! Each actual schema owns the recipes that its installed provenance must match.
-use super::ProbeBinding;
-use crate::facade::{
+use worth_query_declaration::facade::{application_query::*, application_schema::*};
+use worth_query_declaration::{worth_query_structured_value_binding, worth_query_value_binding};
+use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
     WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledApplicationSchema,
     WorthQueryInstalledApplicationSchemaDenial,
     WorthQueryInstalledApplicationSchemaDenialKind as SchemaKind, WorthQueryInstalledPackageIndex,
     WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
 };
-use worth_query_declaration::facade::{application_query::*, application_schema::*};
 mod model;
 mod queries;
+
+#[derive(worth_foundational::facade::WorthValue)]
+pub struct Probe {
+    prefix: String,
+}
+worth_query_value_binding!(pub ProbeBinding for Probe {
+    identity: "worth.query.tests.index-probe.v1", scalar: String,
+    canonical: ValueDecodeBounds::new(1024, 512, 4, 4),
+});
+
+pub struct PrincipalQueryResult;
+worth_query_structured_value_binding!(pub PrincipalQueryResultBinding for PrincipalQueryResult {
+    identity: "worth.query.tests.principal-query-result.v1"
+});
 
 #[derive(worth_foundational::facade::WorthValue)]
 pub struct OtherProbe {
@@ -44,7 +58,8 @@ fn bind<const MODE: u8>() -> Result<
     .unwrap()
     .bind_application_schema(declaration)
 }
-pub(super) fn check_actual_parent_profiles() {
+#[test]
+fn installed_parent_profiles_preserve_identity_and_refuse_codec_or_disclosure_drift() {
     type Lawful = model::ParentSchema<0>;
     let first = queries::ModelIndex::<Lawful>::descriptor();
     let other = queries::OtherIndex::<Lawful>::descriptor();

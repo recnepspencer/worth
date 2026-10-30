@@ -1,6 +1,5 @@
 //! Actual installed binding twins; portable names cannot substitute for their owners.
 use super::*;
-mod parent_profiles;
 use crate::application_principal_binding_tests::{
     IdentitySchema, Principal, PrincipalQueryBinding,
 };
@@ -104,5 +103,4 @@ fn managed_index_checks_actual_binding_and_probe_before_installation() {
             .kind(),
         Kind::InvalidManagedIndexDefinition
     );
-    parent_profiles::check_actual_parent_profiles();
 }

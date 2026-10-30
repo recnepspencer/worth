@@ -1,7 +1,6 @@
 //! Typed query recipes belong to each real ParentSchema mode.
-use super::{model::*, OtherProbeBinding, ProbeBinding};
-use crate::application_principal_binding_tests::{
-    PrincipalQueryResult, PrincipalQueryResultBinding,
+use super::{
+    model::*, OtherProbeBinding, PrincipalQueryResult, PrincipalQueryResultBinding, ProbeBinding,
 };
 use std::marker::PhantomData;
 use worth_query_declaration::facade::{application_query::*, application_schema::*};
