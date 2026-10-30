@@ -17,6 +17,12 @@ code, including associated and trait-default methods, enter a conservative
 same-target source closure. Literal `include!`
 sources retain their real paths; selected unresolved includes refuse the census.
 
+Store's independent products carry the native build's observed workspace
+features. The prebuilder compares shared library feature/profile/output
+identities even when Cargo reports them fresh; cached duplicate graphs cannot
+escape this guard. Standalone Store prebuilding requires `--native-build` with
+the native capture directory. Existing executable manifests retain their schema.
+
 ```text
 python scripts/test_cost/census.py --all --check-sources
 python scripts/test_cost/run_lane.py --workspace store

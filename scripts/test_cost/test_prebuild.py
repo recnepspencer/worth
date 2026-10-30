@@ -2,9 +2,10 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from prebuild import prepare
+from native_features import NativeFeatureRefusal
 
 
 class PrerequisiteOwnershipTests(unittest.TestCase):
@@ -20,6 +21,13 @@ class PrerequisiteOwnershipTests(unittest.TestCase):
     def test_query_without_nested_compilation_has_no_fabricated_prerequisite(self):
         with tempfile.TemporaryDirectory() as temporary:
             self.assertEqual(prepare(Path.cwd(), 'query', Path(temporary), object()), {})
+
+    def test_missing_native_graph_refuses_store_preparation_before_compiler_work(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runner = Mock()
+            with self.assertRaisesRegex(NativeFeatureRefusal, 'native build directory'):
+                prepare(Path.cwd(), 'store', Path(temporary), runner)
+            runner.assert_not_called()
 
 
 if __name__ == '__main__':

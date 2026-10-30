@@ -141,7 +141,8 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
         if binaries.returncode:
             raise ValueError('Bank product executable prebuild failed')
     environment.update(prepare(repository, workspace, output / 'prebuilt', runner,
-                               include_proof=proof_observations, compiler_scope=scope, profile=profile))
+                               include_proof=proof_observations, compiler_scope=scope, profile=profile,
+                               native_build=output / 'build'))
     config = manifest.parent / '.config/nextest.toml'
     reservations = original_reservations(config, nextest_profile, discovered, lambda index, query:
         list_tests(reuse, output / 'build' / f'reservation-{index}.json', runner, query))

@@ -6,6 +6,7 @@ import shutil
 from urllib.parse import unquote
 
 from logs import json_objects
+from native_features import load as load_native_features, validate as validate_native_libraries, NativeFeatureRefusal
 
 
 REQUESTS = [
@@ -54,14 +55,31 @@ def retain(events, directory, requests=REQUESTS):
     return {'WORTH_PREBUILT_EXECUTABLES': str(manifest)}
 
 
-def prepare(repository, output_directory, cargo_runner, profile='dev'):
+def require_native(repository, directory):
+    native = load_native_features(directory, Path(repository) / 'workspaces/worth-store')
+    required = {feature for request in REQUESTS for feature in request['features']}
+    missing = required - set(native.features)
+    if missing:
+        raise NativeFeatureRefusal('native graph omits required executable features: ' + ', '.join(sorted(missing)))
+    return native
+
+
+def prepare(repository, output_directory, cargo_runner, profile='dev', *, native):
     workspace = Path(repository) / 'workspaces/worth-store'
     output = Path(output_directory)
+    output.mkdir(parents=True, exist_ok=True)
+    if native.workspace != workspace.resolve():
+        raise NativeFeatureRefusal('independent executable graph belongs to another workspace')
+    receipt = {'schema': 1, 'features': native.features, 'inputs': native.inputs}
+    (output / 'native-feature-graph.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
     result = cargo_runner(['cargo', 'build', '--workspace', '--bins', '--locked',
                            '--profile', profile, '--features',
-                           'worth-store/volatile-sync-for-tests,worth-store/certification-test-authority,worth-store-recovery-runtime/certification-test-authority',
+                           ','.join(native.features),
                            '--manifest-path', str(workspace / 'Cargo.toml')],
                           workspace, output / 'executables-build.log')
     if result.returncode:
         raise ExecutablePrebuildFailure('Store executable prebuild failed; see executables-build.log')
-    return retain(list(json_objects(result.stdout)), output / 'executables')
+    events = list(json_objects(result.stdout))
+    receipt['validated_shared_libraries'] = validate_native_libraries(events, native)
+    (output / 'native-feature-graph.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
+    return retain(events, output / 'executables')
