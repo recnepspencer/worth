@@ -34,6 +34,7 @@ Executable journeys:
 - [Workflows](./foundations/workflows.md): workflow specs, definitions, publication, instances, approvals, assessments, conditions, retries, and cancellation.
 - [Workflow-Enrolled Creations](./authoring/workflow-enrolled-creations.md): publish a new subject and fresh native instance in one authorized mutation.
 - [Ordinary Application Front Door](./foundations/ordinary-application-front-door.md): declare, install, admit, execute, commit, and recover one application request.
+- [Inspect original evidence](./capabilities/cross-runtime-causal-inspection.md): audit or debug an earlier result with `request.inspect` and `request.inspect_source`.
 - [Branches and Previews](./foundations/branches-and-previews.md): application product branches and branch-local programs; its Workspace preview section is internal.
 
 ### Declaring application meaning
@@ -117,7 +118,6 @@ modules. They serve engine work and `worth-ui-query-binding`.
 
 - [Declarative Query Experience](./capabilities/declarative-query-experience.md): the Workspace declarative API for reads, live resources, history, previews, and mutations.
 - [Inspection](./capabilities/inspection.md): why a retained surface or receipt has its current state.
-- [Cross-Runtime Causal Inspection](./capabilities/cross-runtime-causal-inspection.md): explanations across Query, Bridge, Relational, and Signal.
 - [Authoritative Mutation Evidence](./capabilities/authoritative-mutation-evidence.md): what a write batch bound, executed, and retained.
 - [Basis Capability Lifecycle](./capabilities/basis-capability-lifecycle.md): choose which version of truth an operation may use.
 - [Historical Basis, Diff, And Comparison Queries](./capabilities/historical-diff-and-basis.md): run and compare one query against different admitted versions.

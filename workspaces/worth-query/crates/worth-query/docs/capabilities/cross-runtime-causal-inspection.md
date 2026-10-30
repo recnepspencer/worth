@@ -1,251 +1,453 @@
-# Cross-Runtime Causal Inspection
+# Explain Original Query Results and Source Operations
 
-Application code imports `worth-query-decl` and `worth-query-host`. Start with the
-[ordinary application front door](../foundations/ordinary-application-front-door.md).
+Use causal inspection to answer an audit or debugging question about work that
+already happened: what a query returned, whether two results differ, which source
+operation supplied a produced value, and whether a producer changed its output.
+Inspection uses the saved originals, so a later write cannot replace the evidence
+you are explaining. Each inspection checks the caller's current permission.
 
-The supported workflow is compiled through the
-[Decl/Host consumer fixture](../../../worth-query-host/tests/application_runtime_surface/inspection.rs)
-and its [rich signature/lifetime checks](../../../worth-query-host/tests/application_runtime_surface/inspection/rich.rs).
-The [installed source/producer journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/history.rs)
-qualifies Equivalent and Changed output, original values, owner loss, cancellation
-and release in the same application. No Bridge, Signal, Relational or replay
-handle is an application requirement.
+Application declarations use `worth-query-decl`. Requests and results use
+`worth-query-host::facade::{application_entry, causal_inspection}`. Start with
+[application requests](../foundations/ordinary-application-front-door.md) if you
+have not installed an application and authenticated a caller yet.
 
-## What This Feature Is
+| You want to… | Start with |
+| --- | --- |
+| Identify one original query result | [Fresh application inspection](#fresh-application-inspection) |
+| Compare what two queries returned | [Paired original comparison](#paired-original-comparison) |
+| Inspect an authored operation without a query | [Source-only inspection](#source-only-inspection) |
+| Connect an authored operation to produced output | [Source/producer connection](#sourceproducer-connection) |
+| Distinguish changed output from equivalent output | [Performed producer output evaluation](#performed-producer-output-evaluation) |
+| Read the saved query values or source effects | [Materialize original values](#rich-original-query-materialization) |
+| Check retained detail and handle its loss | [Evidence availability](#original-evidence-availability) |
 
-Inspect an actual completed query observation or performed source receipt through
-a fresh Host request. The original supplies evidence, never current permission.
-The request independently admits current READ and the binding's inspection metadata.
-Diagnostic comparison and causal connection additionally require the applicable
-current diagnostic contracts. Reports grant no mutation, correction or replay authority.
-
-## Fresh Application Inspection
-
-Keep the original observation before dropping the query result:
-
-```rust,ignore
-let original = result.receipt().inspect().observation()
-    .ok_or(ApplicationError::ObservationUnavailable)?.clone();
-drop(result);
-let report = fresh.inspect::<ReadBinding>(&original)
-    .why_observed().reference_only().execute()?;
-assert_eq!(report.reason(), CausalInspectionReason::ObservedResult);
-report.close();
-original.close();
-```
-
-`ReadBinding` and the application error are application-defined. Governed metadata
-uses `execute_governed(current_metadata_capability)`. One original establishes
-`ObservedResult`, not `ChangedResult`.
-
-The report borrows its original and owns its fresh request's report reservation.
-Closing it releases that reservation. Observations share their immutable backing
-and original payer; close or drop the last clone to release it. Neither retains
-a mutable runtime or a Native snapshot reader.
-
-### Original Query Binding Custody
-
-Execute an ordinary bound query to retain its actual installed binding, scope and
-admitted parameters. Two bindings of the same query remain distinct. A foreign
-runtime, schema, binding, branch incarnation or full-generation subject cannot be
-substituted using a matching name, digest or current value. An unbound query cannot
-acquire an original binding later.
-
-### Original Query Row Evidence
-
-Observations retain actual completed row footprints and separate result-set
-selection meaning. Empty results retain selection evidence and an empty row roster.
-Set membership does not stand in for projected reads. These footprints supply
-neither business rows nor current READ or a producer connection.
-
-### Original Disclosed Projection Custody
-
-Request complete original payload custody on each query execution to be compared:
+In the examples, `Read`, `ReadBinding`, `SourceDisclosure`, capability names and
+`AppError` are types supplied by your application. `runtime` is your installed
+application runtime; a program installation exposes it through
+`application.runtime()`. `external_principal` and `scope` identify the current
+caller and request. Use these Host imports for the examples:
 
 ```rust,ignore
-let result = request.query(Read { key })
-    .retain_projection_for_inspection()
-    .execute()?;
+use worth_query_host::facade::{
+    application_entry::WorthQueryApplicationRequestExt,
+    application_contribution::WorthQueryProducerOutputEquivalence,
+    causal_inspection::{
+        CausalInspectionReason,
+        WorthQueryApplicationEvidenceFamily as Family,
+        WorthQueryApplicationMaterializationRequest as Detail,
+        WorthQueryConditionalHistoryOutcome,
+    },
+    primary_graph::WorthQueryPrincipalResolutionMode,
+};
 ```
 
-Governed payload queries use their ordinary `execute_governed` form. Custody retains
-the Native field/relation tree and original effective slot-disclosure decisions;
-it does not reconstruct a DTO from later state. Complete empty results are supported.
-Unbound, partial, continuation, orbit and component capture refuse rather than
-publishing incomplete comparison evidence.
+## Prepare the inspection contracts
 
 ### Optional Query Inspection Metadata Meaning
 
-Declare `ApplicationQueryInspectionDefinition<Schema, Binding>` against the complete
-ordinary query binding and register it with `application_query_inspection`.
-Metadata is separate from payload disclosure. The closed facets are observation
-identity, evidence links, counts, availability, explanation and diagnostic fields.
-A governed contract covers each facet once: counts require `Count` influence and
-the other facets require `Explanation`. Public metadata is explicit.
+Declare `ApplicationQueryInspectionDefinition<Schema, ReadBinding>` against the
+query's complete binding and register it with `application_query_inspection`.
+This determines who may inspect identities, evidence links, counts, availability,
+explanations and diagnostic fields. It is separate from the query's business-data
+disclosure: permission to read a result does not automatically permit an explanation.
 
-Reference-only observation admits five reference facets before evidence lookup.
-Diagnostic requests also admit the diagnostic facet and current `DiagnosticMask`
-for projected fields and observable predicate, ordering and relation influences.
-Another binding's metadata or public payload visibility supplies no such permission.
+A public metadata contract is explicit. For governed metadata, disclose the
+inspection facets through the intended capability. Counts require `Count`
+influence; the other metadata facets require `Explanation`. Comparison and rich
+values also need the declared diagnostic field, relation and influence permissions.
+
+For source inspection, implement `ApplicationSourceDisclosureBinding<Schema>` and
+add `inspection_disclosure SourceDisclosure,` to the mutation binding. The source
+receipt then retains that binding's original scope and parameters. The disclosure
+query defines inspection permissions; inspection does not rerun it to reconstruct
+the operation.
+
+The [query binding declaration](../../../worth-query-certification/examples/application_correction_support/causal_inspection/query.rs),
+[source-disclosure declaration](../../../worth-query-certification/examples/application_correction_support/causal_inspection.rs)
+and [metadata contract](../../../worth-query-certification/examples/application_correction_support/causal_inspection/independent.rs)
+show the binding and facet declarations together.
+
+## Keep the evidence you will inspect
+
+| Object | How to obtain it | What to use it for |
+| --- | --- | --- |
+| Authored source receipt | Keep the performed receipt returned by the original action or mutation | Pass it to `inspect_source`, `caused_by` or `evaluated_by` |
+| Settled output observation | Keep `settlement.observation()` from the output demand | Select the produced result's read basis |
+| Original query observation | Clone `result.receipt().inspect().observation()` before dropping the result | Pass it to `inspect::<ReadBinding>` |
+| Current capability access | Admit the declared inspection capability for the current caller and subject | Supply metadata or diagnostic permission for a new inspection |
+
+### Original Disclosed Projection Custody
+
+Opt into saved values on each query that you intend to compare or materialize:
+
+```rust,ignore
+let request = runtime.request(&external_principal, &scope);
+let result = request.query(Read { key })
+    .retain_projection_for_inspection()
+    .execute()?;
+let original = result.receipt().inspect().observation()
+    .ok_or(AppError::ObservationUnavailable)?.clone();
+drop(result);
+```
+
+A governed payload query uses its ordinary
+`execute_governed(Capability::reference(), Operation::reference(), input)` form.
+Save both originals when comparing two executions. Captured empty results are
+valid empty projections. Without the opt-in, you can inspect the original's
+reference, but its values are unavailable for comparison or materialization.
+
+Complete one-shot field/relation projections support capture. Unbound, partial,
+continuation, orbit and component capture return a typed refusal. Handle that
+refusal when executing the query rather than assuming values were saved.
+
+### Original Settled Producer Custody
+
+When you need a producer explanation, read through its actual settlement:
+
+```rust,ignore
+let result = request.at(settlement.observation())
+    .query(Read { key })
+    .retain_projection_for_inspection()
+    .execute_governed(ReadCapability::reference(), ReadOperation::reference(), read_input)?;
+let original = result.receipt().inspect().observation()
+    .ok_or(AppError::ObservationUnavailable)?.clone();
+drop(result);
+```
+
+A plain `request.query(...)` reads the selected head and does not infer the
+settled producer from equal values. Keep the authored source receipt separately:
+`settlement.application_commit_receipt()` identifies the producer publication and
+is not automatically the authored operation that changed its input.
+[Output demands](../foundations/ordinary-application-front-door.md)
+explain how to obtain and settle the output owner.
+
+## Admit current inspection access
+
+Inspection's `execute_governed` consumes already-admitted
+`WorthQueryAdmittedApplicationCapabilityAccess` values. This differs from a
+payload query's refs-and-input execution call. Admit access using the Host's
+selected branch and the capability declared by the inspection contract:
+
+```rust,ignore
+let metadata = runtime.with_host_advancement(|phase| -> Result<_, AppError> {
+    let selected = runtime.on_branch(runtime.current_world()).select(&phase)?;
+    let binding = runtime.installed_schema()
+        .principal_binding(ActorBinding::reference())?;
+    let principal = selected.resolve_authenticated_principal(
+        &phase, &binding, &external_principal, &scope,
+        WorthQueryPrincipalResolutionMode::Ordinary,
+    )?;
+    let capability = runtime.installed_schema()
+        .capability(Inspect::reference(), InspectEvidence::reference())?;
+    Ok(selected.admit_capability_access(
+        &phase, &principal, &capability, inspection_input, &scope,
+    )?)
+})??;
+```
+
+`inspection_input` selects the actual subject and purpose required by your
+capability contract. `AppError` maps the typed setup/admission denials into your
+application's error handling. Repeat admission for each metadata and diagnostic
+argument. Use the source subject for source access and the query subject for
+query access; do not clone or borrow one side's permission for the other.
+The [subject-specific access helper](../../../worth-query-certification/examples/application_correction_support/causal_inspection/distinct_subjects.rs)
+shows this selection in application code.
+
+## Fresh Application Inspection
+
+Start a new request and inspect the saved original:
+
+```rust,ignore
+let fresh = runtime.request(&external_principal, &scope);
+let report = fresh.inspect::<ReadBinding>(&original)
+    .why_observed().reference_only().execute_governed(metadata)?;
+assert_eq!(report.reason(), CausalInspectionReason::ObservedResult);
+let availability = report.evidence_availability();
+report.close();
+```
+
+For public inspection metadata, use `execute()` instead. One original establishes
+`ObservedResult`. It does not establish that anything changed or that a particular
+operation caused the result. `observation_identity()` correlates the original;
+`report_identity()` identifies this inspection. Treat both as descriptive IDs.
 
 ## Paired Original Comparison
 
-Retain both complete original projections, then compare through a fresh request:
+Use two saved complete projections to compare their returned values:
 
 ```rust,ignore
 let report = fresh.inspect::<ReadBinding>(&after)
     .why_changed(&before).reference_only()
-    .execute_governed(current_metadata, current_diagnostics)?;
-let reason = report.reason(); // ChangedResult or UnchangedResult
+    .execute_governed(metadata, diagnostics)?;
+match report.reason() {
+    CausalInspectionReason::ChangedResult => show_changed(),
+    CausalInspectionReason::UnchangedResult => show_unchanged(),
+    _ => unreachable!(),
+}
 report.close();
 ```
 
-Public metadata uses `execute_with_diagnostic(current_diagnostics)`. Diagnostic
-permission remains mandatory. Original binding, parameters, subject, shape, order
-and disclosure interpretation must agree. Comparison uses actual Native cell meaning,
-optional presence and ordered nested rows. Revisions and producer contacts cannot
-substitute for output equality. Missing bodies, withheld slots, changed disclosure
-or unsupported shapes refuse rather than publishing a partial `UnchangedResult`.
+Public metadata uses `execute_with_diagnostic(diagnostics)`. The bindings,
+parameters, subject, result shape and disclosure meaning must be compatible.
+Comparison includes optional presence and ordered nested rows. A new revision or
+producer execution alone does not mean the returned values changed. Missing or
+withheld values refuse comparison rather than producing a partial unchanged result.
 
-### Source-only inspection
+## Source-only inspection
 
-Inspect a performed source without a query result:
+Inspect an authored operation even when no query result was retained:
 
 ```rust,ignore
 let report = fresh.inspect_source::<SourceDisclosure>(&source_receipt)
     .why_performed().reference_only()
-    .execute_governed(current_source_metadata)?;
-let source = report.source_commit();
+    .execute_governed(source_metadata)?;
+let commit = report.source_commit();
 report.close();
 ```
 
-Implement `ApplicationSourceDisclosureBinding<Schema>` and declare
-`inspection_disclosure SourceDisclosure,` on the mutation binding. Execution captures
-the source's genuine scope and disclosure parameters. Correction metadata and later
-business-input reconstruction are not substitutes.
+Public source metadata uses `execute()`. This report identifies the original
+performed source. It does not include business values or claim a producer cause.
 
-The source's declared query supplies independent current READ and metadata; it is
-not executed to reconstruct the source and need not project the authored field.
-Public source metadata uses `execute()`. Source-only reports return no diagnostic
-fields or producer causes. Their consuming terminal freshly revalidates the actual
-session, policies, request and released basis.
+## Source/producer connection
 
-### Source/producer connection
-
-For matching source/query disclosure bindings, ask for the performed connection:
+Use a source receipt and a query read from the producer settlement to explain
+creation of an observed output revision:
 
 ```rust,ignore
-let report = fresh.inspect::<ReadBinding>(&after)
-    .why_changed(&before).caused_by(&source_receipt).reference_only()
-    .execute_governed(current_metadata, current_diagnostics)?;
+let report = fresh.inspect::<ReadBinding>(&original).why_observed()
+    .caused_by::<SourceDisclosure>(&source_receipt).reference_only()
+    .execute_governed(query_metadata, query_diagnostics,
+        source_metadata, source_diagnostics)?;
 let connection = report.producer_connection();
 report.close();
 ```
 
-A genuine completed handler read must match the source-created Native revision on
-the exact full-generation record and installed physical field. The producer's
-canonical publication, declared output role and original query-observed revision
-must also intersect. Binding compatibility, equal values, a plain head query and
-stable reuse cannot manufacture these facts.
+The arguments are query metadata, query diagnostics, source metadata, then source
+diagnostics. Public metadata uses
+`execute_with_diagnostics(query_diagnostics, source_diagnostics)`.
+The source must be the operation whose recorded change was actually read by the
+producer; its declared output must match what the original query observed. An
+older equal write, no-op write or unrelated producer cannot supply that cause.
+
+`producer_commit()` identifies the settled producer publication.
+`output_publication_commit()` identifies the publication that created the
+observed field revision. These can differ when a producer reobserves its own
+publication. Use the returned IDs; do not infer either from the current head.
 
 ### Independently admitted source and query connection
 
-The observed query can omit the input when both originals have their own bindings:
-
-```rust,ignore
-let report = fresh.inspect::<CalculatedOnlyBinding>(&after)
-    .why_observed().caused_by::<SourceDisclosure>(&source_receipt)
-    .reference_only().execute_governed(
-        query_metadata, query_diagnostics,
-        source_metadata, source_diagnostics,
-    )?;
-let connection = report.producer_connection();
-report.close();
-```
-
-Public metadata uses `execute_with_diagnostics(query_diagnostics, source_diagnostics)`.
-Each original retains its complete binding and parameters; their values need not
-equal each other. Source diagnostics admit the input; query diagnostics independently
-admit the output and observable influences. Both current READ and policy sets are
-checked in one session before publication. Each member retains its own exact
-full-generation subject; both belong to the same original branch occurrence.
-
-The independent route rejects foreign issuer/installed association and source-subject
-affinity before connection admission. Its public denial can be coarse `Admission`
-with no connection projection. The paired route's later connection validator can
-return exact `ForeignSource` for a sibling source. A missing connection projection
-is not success and supplies no protected original-admission detail.
+The output query may omit the authored input. Give source and query their own
+inspection bindings and admit their contracts independently. Their parameter
+values can differ; each must still describe its own original subject.
 
 ### Distinct Original Source And Query Subjects
 
-An ordinary nested query rooted at B can observe A's produced field through an
-authored reference while the performed source and producer belong to A. Use the
-same `caused_by::<SourceDisclosure>` call and supply query capabilities for B and
-source capabilities for A. Each member is freshly resolved, admitted and checked
-again before the consuming terminal. A capability for one subject cannot be used
-for the other, even when both records have the same entity kind and principal.
-
-The [compiled distinct-subject journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/distinct_subjects.rs)
-asserts both root B and nested A keys, the independently expected result and exact
-source/producer receipts. A same-kind sibling's nested value cannot supply the
-output join. Its [lifecycle courts](../../../worth-query-certification/examples/application_correction_support/causal_inspection/distinct_subjects/lifecycle.rs)
-withdraw either real grant, replace B under the same selector with a new Native
-generation, and cancel inspection without exposing cause details or retaining a
-reader. An original observation remains descriptive evidence through those
-refusals; a replacement identity grants no use of the original subject.
-
-This qualified shape is a nested observation of A from B. Applications still
-need actual performed input, canonical output and declared role correspondence;
-a reference alone cannot establish a producer or authorize another subject.
+A query rooted at B may observe A's produced field through an authored reference.
+Admit query access for B and source access for A. A grant for one record does not
+authorize the other, even if both have the same entity kind. A replacement under
+the same selector is a different generation and cannot stand in for the original.
 
 ### Retained Output After Retirement
 
-An original query rooted at a surviving source A can retain its nested observation
-of output B. Later lawful retirement of B does not replace the original observed
-field or its declared output correspondence. Inspect that original under fresh
-source/query admission. A replacement under B's old selector has a different full
-generation, even when it has equal field values; a current query cannot borrow the
-original supplier.
+If the original query's subject still admits inspection, it can explain a nested
+output captured before that output was retired. An equal replacement does not
+replace the original evidence. An empty query made after retirement does not by
+itself establish a retirement cause.
 
-The [compiled retirement journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/retired_outputs.rs)
-uses a real installed producer reading A and publishing B through a Preserve role.
-It retains B's actual Native identity and independently expected value, retires B
-through an ordinary action, and inspects the original before and after equal-value
-replacement. Current grant withdrawal still refuses before cause discovery and
-all holders release their readers. This supports inspection of a pre-retirement
-original. An empty post-retirement query does not establish a Retire publication
-connection; that unsupported shape continues to refuse.
+## Performed Producer Output Evaluation
 
-### Original Settled Producer Custody
+Use `evaluated_by` to distinguish a producer that changed its output from one that
+computed an equivalent output. The producer opts in for one Required standard
+`u64` field on its exactly-one Preserve role. Add this method to its
+`WorthQueryApplicationProducerBinding<Schema>` implementation:
 
-Read through the genuine settled observation to preserve its supplier association.
-A later head query cannot infer it from equal values. Committed publication and
-settled read remain distinct. Immutable custody shares the actual publication,
-performed inputs, output correspondence and optional Native observation, without
-retaining a commit receipt, Ready cell or operational snapshot reader.
-An unsettled own-publication continuation may carry one publication candidate
-across its admitted source occurrence. It preserves that candidate only when
-the successor keeps the full-generation output roster without canonical output
-mutation. A changed output resets it, and the successor's own eligible Ready
-publication can become the new candidate. This is deliberately conservative for
-mixed field origins: there is no per-field history lookup. A connection still
-requires the exact observed Native field revision, installed contract, declared
-role and canonical field effect; candidate retention alone proves none of them.
+```rust,ignore
+fn output_equivalence(
+) -> Option<WorthQueryProducerOutputEquivalence<Schema, Self::OutputRole>> {
+    Some(WorthQueryProducerOutputEquivalence::exact_u64(Calculated::reference()))
+}
+```
+
+The handler must complete the declared read of that output field before writing
+it. Then inspect the original evaluation:
+
+```rust,ignore
+let report = fresh.inspect::<ReadBinding>(&original).why_observed()
+    .evaluated_by::<SourceDisclosure>(&source_receipt).reference_only()
+    .execute_governed(query_metadata, query_diagnostics,
+        source_metadata, source_diagnostics)?;
+let evaluation = report.producer_evaluation();
+let decision = evaluation.decision(); // Changed or Equivalent
+report.close();
+```
+
+For a parity producer, input `2 -> 4` can compute output `0` again: Equivalent.
+Input `4 -> 5` computes output `1`: Changed. Equivalent preserves the observed
+output revision, so it cannot claim a new creation through `caused_by`.
+`output_role()`, `output_field()` and `observed_output_revision()` identify the
+admitted field; `same_evaluation_as` compares evaluation occurrences.
+
+Stable input reuse and checkpoint-restored output cannot supply a new performed
+comparison; inspection returns `NotPerformed`. A retry that resumes the same
+completed evaluation can report that original occurrence without another compute.
+
+## Rich original query materialization
+
+Select `QueryInspection` to read the saved values:
+
+```rust,ignore
+let detail = Detail::family(Family::QueryInspection);
+let rich = fresh.inspect::<ReadBinding>(&original).why_observed()
+    .materialize(detail).execute_governed(metadata, diagnostics)?;
+for row in rich.materialization().original_query().into_iter().flat_map(|p| p.rows()) {
+    for field in row.fields() {
+        consume(field.output_name(), field.result_path(), field.value());
+    }
+}
+rich.close();
+```
+
+Public metadata uses `execute_with_diagnostic(diagnostics)`. The view reads the
+original disclosed fields and ordered nested relations, even if the current head
+has changed. A captured empty projection is Provided with zero rows. An original
+without saved values reports `OriginalProjectionNotRetained`.
+
+## Rich connected source and producer evidence
+
+Add source effects and the verified producer explanation to a connected request:
+
+```rust,ignore
+let detail = Detail::family(Family::QueryInspection)
+    .with_source_effects().with_producer_evidence();
+let rich = fresh.inspect::<ReadBinding>(&original).why_observed()
+    .evaluated_by::<SourceDisclosure>(&source_receipt).materialize(detail)
+    .execute_governed(query_metadata, query_diagnostics,
+        source_metadata, source_diagnostics)?;
+let body = rich.materialization();
+for field in body.source_effects().into_iter().flat_map(|s| s.fields()) {
+    consume(field.output_name(), field.effect(), field.value());
+}
+rich.close();
+```
+
+For a `caused_by` result, read `rich.materialization().producer_connection()`;
+for an `evaluated_by` result, read `rich.materialization().producer_evaluation()`.
+Both return an `Option`. Select `.with_producer_evidence()` to include that
+explanation in the materialized body. Unrequested detail remains NotRequested.
+
+## Rich source-only inspection
+
+Select source effects without requiring a completed query:
+
+```rust,ignore
+let rich = fresh.inspect_source::<SourceDisclosure>(&source_receipt)
+    .why_performed().materialize(Detail::source_effects())
+    .execute_governed(source_metadata, source_diagnostics)?;
+drop(source_receipt);
+for field in rich.materialization().source_effects().into_iter().flat_map(|s| s.fields()) {
+    consume(field.output_name(), field.effect(), field.value());
+}
+rich.close();
+```
+
+This result owns its readonly source view and can outlive the source receipt.
+Public metadata uses `execute_with_diagnostic(source_diagnostics)`.
+Source effects support the disclosure query's direct-root fields on the original
+source subject. Other shapes report `UnsupportedSourceProjectionShape`.
+
+| Effect | Value returned |
+| --- | --- |
+| Present | The value recorded by that source write |
+| Unchanged | None; the field was not changed by that source |
+| FieldCleared | None; the source cleared the field |
+| AspectCleared | None; the source removed the parent aspect |
+
+The view describes the source's recorded effects, not a query against later
+state. Query projection, producer evidence and conditional history are not
+provided by source-only mode.
+
+## Original evidence availability
+
+Reference, connected, evaluated and rich query reports expose
+`evidence_availability()`. Comparisons expose before/after availability separately.
+The values are snapshots taken during that inspection; getters do not check again.
+
+| Accessor | Meaning |
+| --- | --- |
+| `projection()` | Retained or NotRetained; an intentionally saved empty result is Retained |
+| `supplier()` | CommittedOutput, StableInputReuse, CheckpointRestoration or NotRetained |
+| `native_observation()` | Whether the original conditional observation is retained |
+| `conditional_history()` | Optional history's recorded availability, or None when no conditional observation was captured |
+
+NotRetained does not mean no producer ran or that evidence expired. An original's
+immutable evidence has no TTL. For materialized detail, distinguish NotRequested,
+OriginalProjectionNotRetained, unsupported source shape, and
+RequestedButNotProvidedBySelectedObservationMode. Use the outcome accessors before
+reading an optional body; a missing body is not a complete empty explanation.
+
+## Optional conditional execution history
+
+Use history when you need the supplier's conditional/readiness decision, attempt
+or output versions. It describes readiness separately from Changed/Equivalent
+output comparison. Select it on a connected rich request:
+
+```rust,ignore
+let detail = Detail::conditional_history()
+    .with_source_effects().with_producer_evidence();
+let report = fresh.inspect::<ReadBinding>(&original).why_observed()
+    .evaluated_by::<SourceDisclosure>(&source_receipt).materialize(detail)
+    .execute_governed(query_metadata, query_diagnostics,
+        source_metadata, source_diagnostics)?;
+match report.materialization().conditional_history_outcome() {
+    WorthQueryConditionalHistoryOutcome::Provided => {
+        let history = report.materialization().conditional_history().unwrap();
+        consume(history.attempt(), history.decision_class());
+    }
+    WorthQueryConditionalHistoryOutcome::OwnerUnavailable(cause) => show_loss(cause),
+    other => show_selection_outcome(other),
+}
+report.close();
+```
+
+History has bounded retention. A new execution can evict detail between an
+availability report and a later materialization request. That later request
+rechecks the original's history and can report EvictedByRetention while the source,
+query values and performed evaluation remain usable. OmittedByTier, CaptureDenied
+and OwnerClosed describe different owner outcomes. Minimal diagnostics tier alone
+does not imply omission; the installed record-retention policy decides that.
+A previously materialized readonly history snapshot remains usable after eviction.
+Plain query and source-only requests cannot provide connected history.
+
+## Refusal, Cancellation And Retry
+
+Handle `kind()` first. Depending on the failed operation, inspect
+`resource_refusal()`, `canonical_refusal()`, `producer_connection_refusal()`,
+`producer_output_refusal()` or `producer_evaluation_refusal()` for more detail.
+Early permission refusal can intentionally expose no protected cause detail.
+For an output connection, detail can distinguish an unrelated entity/field,
+missing revision, wrong contract or an output not created by that publication.
+It does not identify an alternative creator.
+
+Revoked access, cancellation and deadline expiry refuse the new request. They do
+not expire an immutable original or undo a completed source operation. Retain the
+originals and use a new authorized request and newly admitted capability access
+for a retry. Close reports to release their request funding. Close or drop the
+last original holder when you no longer need its evidence; closing one clone
+leaves its sibling valid. Original query reports borrow that original, while the
+source-only materialized result owns its source view.
+
+## Declare source shapes that can be explained
 
 ### Canonical Absence Evidence
 
-Only a completed absence read and the particular canonical clear/removal that
-created its Native absence revision can establish an absent-input connection.
-Missing versions, equal `None`, no-op clears and an old absence after
-remove/recreate/remove cannot substitute. Field absence, aspect absence, present
-values and retired output roles have distinct meanings. Unsupported nested shapes
-refuse. Scalar whole-aspect correspondence is never inferred from a field name or
-from an aspect containing one field.
+An absent-input connection needs a completed absence read and the specific clear
+or parent removal that created that absence. Repeated no-op clears and equal
+`None` values cannot replace that occurrence. Keep the original source receipt
+through removal, recreation and a later removal.
 
 ### Explicit Scalar Aspect Storage
 
-Use `scalar_aspect_field` to bind an aspect's complete scalar value to one exact
-Required field. Declare its parent separately:
+Bind a whole scalar aspect explicitly:
 
 ```rust,ignore
 let schema = schema
@@ -253,115 +455,25 @@ let schema = schema
     .scalar_aspect_field(Number::reference(), Value::reference());
 ```
 
-The declared field supplies its scalar family and executable value binding.
-Installation requires exactly that field, Required presence and a primitive scalar
-codec. Extra children, optional child presence and structured canonical carriers
-refuse with `InvalidAspectShape`. Ordinary `field` declarations keep Struct storage,
-including when the aspect has only one field. Storage interpretation participates
-in schema identity and value-meaning predecessor comparison.
-
-Use ordinary `DecisionReader::field` and `CandidateWriter::write_field` for the
-bound scalar. Writes lower to the installed whole scalar contract. For a Required
-child beneath an Optional parent, declare and project an
-`ApplicationQueryOptionalAspectFieldRef`; genuine parent absence yields `None`.
-An unrelated field name or nested path grants no scalar read or write.
-
-Keep an ordinary producer-input query separate from governed inspection bindings.
-For a connected scalar input, declare the bound field as `u64` with
-`U64ApplicationValueBinding`. Have the ordinary producer read it and publish its
-declared Struct output role on the same full-generation subject. Observe that
-output through the settled query, then independently admit the retained source
-and query bindings with the inspection call above.
-The source receipt, completed producer read, canonical scalar write and original
-query output revision must still connect. Equal bytes and no-op writes cannot
-supply missing revision or effect evidence. An ABA rewrite does not make a later
-occurrence identical to an earlier one. Read, metadata and
-diagnostic admission remain independent for source and query subjects. Scalar
-storage grants no parent-removal authority or retired-output interpretation.
+Use one Required field with a primitive scalar codec such as
+`U64ApplicationValueBinding`. Extra children, optional child presence or structured
+carriers refuse with `InvalidAspectShape`. A normal `field` declaration uses Struct
+storage, even with one child. Read and write the bound scalar through ordinary
+`DecisionReader::field` and `CandidateWriter::write_field`.
 
 ### Scalar Producer Outputs
 
-Declare a `u64` output with `scalar_aspect_field` and
-`U64ApplicationValueBinding`, then use the ordinary producer's completed reads,
-`CandidateWriter::write_field` and declared output role. Keep the producer-input
-query limited to its actual inputs; projecting the produced output there would
-make it part of the source identity.
-
-Build readiness from the completed declaration and the actual output field:
-
-```rust,ignore
-let contract = WorthQueryOutputReadinessContractBuilder::for_field(
-    declaration, Total::reference(), operation_identity, "total-ready",
-    canonical_query, projection_role, strategy, "total-readiness",
-)?
-.field_dependency(
-    declaration, Total::reference(),
-    WorthQueryReadinessFieldUse::DeliveryAndEligibility,
-)?
-.build_typed::<Domain, Operation, Family>()?;
-```
-
-The builder retains the declared physical binding and seals it against the
-installed catalog. Scalar readiness uses the whole Scalar projection and its
-`WholeAspectSet` event. Struct child readiness keeps its field projection and
-`FieldSet` event. Do not construct a raw field mask for a Scalar contract or
-substitute an aspect name for its bound field.
-
-Bind the resulting node to the producer with its declared delivery ordinal.
-Read the Scalar output through the settled observation, using
-`ApplicationQueryOptionalAspectFieldRef` for a Required child under an Optional
-parent. The source-disclosure and output-query bindings still require independent
-current admissions. The connection must find the queried Scalar field's own
-Native revision and effect in the producer publication. A changed Struct sibling
-or equal Scalar value supplies no missing output evidence. When that revision and
-effect intersection is missing, the connection refuses `OutputUnconnected`.
-
-`connection.producer_commit()` identifies the current settled producer publication.
-Use `connection.output_publication_commit()` for the publication that actually
-created the queried field revision. They may differ when an unsettled producer
-has to reobserve its own publication. Only immutable evidence carried through that
-same installed producer's selected own-publication continuation is eligible. It
-must independently join the original source occurrence and completed input read,
-the current output role and full-generation entity, the installed field/contract,
-and the observed Native revision and canonical effect. An unrelated source change
-or equal output cannot acquire that earlier publication's cause. Current settlement
-and fresh admissions still govern use; this descriptive connection owns no reader.
-
-On an inspection denial, `producer_connection_refusal()` gives the coarse
-connection refusal. For `OutputUnconnected`, `producer_output_refusal()` also
-returns a `WorthQueryProducerOutputConnectionDenial` after current diagnostic
-admission. It distinguishes output kind/entity affinity, incomplete observation,
-missing or absent Native revision, a revision not created by the selected producer
-publication, unavailable installed field, contract revision mismatch, and the
-canonical effect (unchanged, cleared, unsupported or ambiguous).
-
-The detail describes the first failed condition after the longest satisfied join
-prefix among disclosed candidates. Equally deep failures retain original
-role/footprint order; it does not identify every failed candidate. No field names,
-entity IDs, versions or business values are returned. Earlier admission, request
-and source/input refusals return `None` from `producer_output_refusal()`. For
-example, `NativeRevisionNotCreatedByProducer` says the observed field revision
-differs from the selected producer publication; it does not identify a different
-creator or authorize substituting another receipt. Preserve the refusal and the
-original operation's cleanup custody.
-
-The [compiled Scalar-output journey](../../../worth-query-certification/examples/application_correction_support/scalar_input/output.rs)
-uses an Optional Scalar with a Required `u64` child and ordinary Preserve output
-roles. It exercises changed values, ABA, no-op, independent governance and an
-equal Scalar beside a changed Struct sibling through the same Decl/Host route.
+Use the scalar field's own declared output role and build readiness with
+`WorthQueryOutputReadinessContractBuilder::for_field`, then its declared
+`field_dependency` and `build_typed`. This preserves the Scalar field's delivery
+and eligibility meaning. Read through the output settlement and independently
+admit the source/query inspection contracts. A changed Struct sibling cannot
+supply the Scalar output's missing effect or revision; handle `OutputUnconnected`.
 
 ### Public Optional Struct Removal
 
-Declare `OperationRemovesAspects<Operation>` with
-`worth_query_operation_removes_aspects!`, register `operation_remove_aspect`, and
-declare every installed child decision read. `CandidateWriter::remove_aspect`
-requires the ordinary completed full-generation target and complete read closure.
-A field-write marker grants no parent removal. Unread siblings, Required parents,
-wrong aspects, foreign backing and mixing removal with child writes in either order
-refuse. Recreate the parent with all required fields.
-
-For example, an Optional `InputFacts` parent with Required `Bias` and `Sibling`
-children needs both declared reads and distinct parent-removal authority:
+Declare parent removal with `worth_query_operation_removes_aspects!`, register
+`operation_remove_aspect`, and declare every child decision read:
 
 ```rust,ignore
 worth_query_operation_reads!(EditInputAspect => [Key, Ceiling, Bias, Sibling]);
@@ -372,374 +484,12 @@ let schema = schema
     .operation_remove_aspect(EditInputAspect::reference(), InputFacts::reference());
 ```
 
-In the decision phase, complete each child read through `DecisionReader::field`
-and propagate a denied or unavailable read. Pass the resulting mutation target
-through the ordinary candidate writer's `projected_entity`, then call
-`writer.remove_aspect(&target, InputFacts::reference())`. The marker and declaration
-alone do not replace those completed reads. A no-op removal cannot create another
-absence revision.
+Complete the child reads before `writer.remove_aspect(&target, InputFacts::reference())`.
+A field-write marker does not authorize parent removal. Recreate a removed parent
+with all required fields; mixing removal and child writes refuses.
 
-Use `ApplicationQueryOptionalAspectFieldRef`, `optional_aspect_field` and
-`disclose_optional_aspect_field_by` for a Required child beneath an Optional parent.
-Only actual parent absence yields `None`. A present parent missing its Required child
-or an unavailable read is a denial. This does not implement
-`OptionalApplicationFieldValue` for a Required child.
-
-Register each parent-optional slot in the result shape with
-`.optional_aspect_field(...)` and in the disclosure contract with
-`.disclose_optional_aspect_field_by(...)`. Project each actual child separately:
-
-```rust,ignore
-let bias = row.optional_aspect_field(bias())?;
-let sibling = row.optional_aspect_field(sibling())?;
-```
-
-Use an ordinary data query for a required producer's input port. A separately
-governed inspection query keeps its own metadata and diagnostic admission; it
-cannot be substituted for ordinary input admission. Declare the actual input
-dependencies rather than adding an unused produced output to that input query.
-The producer's completed decision reads and canonical publication still establish
-any later causal connection.
-
-### Performed Producer Output Evaluation
-
-A producer may opt into exact output comparison for one Required standard `u64`
-field on its exactly-one Preserve role:
-
-```rust,ignore
-fn output_equivalence(
-) -> Option<WorthQueryProducerOutputEquivalence<Schema, Self::OutputRole>> {
-    Some(WorthQueryProducerOutputEquivalence::exact_u64(Calculated::reference()))
-}
-```
-
-The installed field seal binds the role, complete Native contract and physical
-binding. The completed handler must actually read the output field before its
-write. Query joins that read to the exact committed Native field revision and
-readiness observation, then retains the actual Signal baseline/candidate
-comparison before Ready. A missing, conflicting, absent or differently bound
-artifact cannot stand in for that comparison.
-
-Inspect the completed evaluation with independent query and source admissions:
-
-```rust,ignore
-let report = fresh.inspect::<OutputQuery>(&original)
-    .why_observed().evaluated_by::<SourceDisclosure>(&source)
-    .reference_only()
-    .execute_governed(query_metadata, query_diagnostics,
-                      source_metadata, source_diagnostics)?;
-let evaluation = report.producer_evaluation();
-let decision = evaluation.decision(); // Changed or Equivalent, from actual Signal evidence
-```
-
-`output_role()`, `output_field()` and `observed_output_revision()` describe only
-that admitted field. Equivalent output retains the Native revision it actually
-observed. Use `.caused_by(...)` when the desired claim is creation of an observed
-revision; its exact canonical publication requirement still applies.
-
-`same_evaluation_as` compares the retained owner-issued comparison occurrence.
-Reopening an existing performed Ready result can retain its original evaluation;
-this does not assert another handler execution or comparison. Stable/restored
-suppliers cannot issue a performed-evaluation report. The compiled
-[Stable input-cutoff journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/reuse.rs)
-checks actual `StableReused`, no live receipt and no Native publication. The
-[checkpoint-restoration journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/restoration.rs)
-checks actual `RecoveredPerformed` without recreating the original in-memory
-comparison. Both return `NotPerformed` after fresh independent admission; recovered
-historical performance supplies no new computed evidence. A source receipt must still
-join the producer's actual completed input: an old equal-output occurrence or a
-same-shaped sibling cannot substitute for it.
-
-The [compiled parity journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/journey.rs)
-qualifies source `2 -> 4` with output `0` and actual equivalence, followed by source
-`4 -> 5` with output `1` and actual change. Independent permissions, original output
-projection and exact field revisions gate disclosure. Cancellation, either subject's
-grant withdrawal and insufficient request funding refuse the optional explanation;
-closing it releases its request funding without retaining another Native reader.
-`producer_evaluation_refusal()` exposes a typed refusal only after the required
-fresh admission. It exposes no before/after business values.
-
-A late interruption after comparison preserves its original pair in the Delivered
-checkpoint. Fresh request admission can resume readiness without another handler,
-comparison or Native publication. The [public cancellation/retry journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/retry.rs)
-qualifies this behavior; reopening the completed Ready result retains that same
-evaluation occurrence. A retained comparison supplies no permission to inspect it.
-
-### Native Bridge Assembly Boundary
-
-Use Host's fresh issuer for application receipt inspection. Native backing,
-descriptors and digests supply no admission. The generic diagnostic/legacy envelope
-path refuses `NativeInspectionAdmissionRequired`; reference-only policy cannot
-bypass that fence. Application reports expose no raw Native cells or proof constructor.
-
-## Retained Workspace Diagnostics
-
-The workspace diagnostic audience uses `CausalInspection::for_observation` with an
-actual matching `ScopedInspectionBasis`. That basis supplies no application READ,
-metadata or diagnostic permission. Use Host for application receipts; a retained
-workspace Route cannot bypass its admission.
-
-## Refusal, Cancellation And Retry
-
-Read typed `kind()`, `resource_refusal()`, `canonical_refusal()` and
-`producer_connection_refusal()` projections according to the failed boundary.
-Missing bodies are not an empty successful explanation. An empty query result
-cannot establish output retirement; an unverified supplier cannot establish a cause.
-
-Revocation, cancellation and request expiry are checked before protected lookup and
-again at the consuming terminal. An immutable proof is not permanent authorization.
-Retain genuine originals and use a fresh request and capabilities for a lawful retry.
-Closing a report or owned denial releases its own reservation; it neither undoes the
-business operation nor discards another owner's original evidence.
-
-
-## Rich original query materialization
-
-A new request can materialize an original complete, retained projection after fresh
-READ, inspection metadata and Diagnostic field/relation/influence admission:
-
-```rust,ignore
-let detail = WorthQueryApplicationMaterializationRequest::family(
-    WorthQueryApplicationEvidenceFamily::QueryInspection,
-);
-let rich = fresh.inspect::<Binding>(&original).why_observed()
-    .materialize(detail)
-    .execute_governed(current_metadata, current_diagnostic)?;
-for row in rich.materialization().original_query().into_iter().flat_map(|p| p.rows()) {
-    for field in row.fields() {
-        // Borrowed declared output name, canonical result path, and original Native value.
-        consume(field.output_name(), field.result_path(), field.value());
-    }
-}
-rich.close();
-```
-
-Public inspection metadata uses `execute_with_diagnostic(current_diagnostic)`.
-A reference-only report never grants a subsequent rich read. The new request
-uses the same inspection session and consuming publication terminal as the
-reference path. It shares the original disclosed cells and their original owner;
-it does not run a query against the current head. Rows include their original
-ordered nested relations. Names come from the exact retained compiled slot
-contract. Internal working nodes, predicate sources and operational handles are
-not part of this view. The fresh request pays for the new report; close and refusal
-release its existing reservation.
-
-A retained empty projection is `Provided` with zero rows. An original captured
-without `retain_projection_for_inspection()` reports `OriginalProjectionNotRetained`.
-Current diagnostic policy admits before this availability lookup, even for empty
-results. Unrequested families report `NotRequested`; a requested family outside
-this selected original-query mode reports
-`RequestedButNotProvidedBySelectedObservationMode`. This is a selection outcome,
-not a Signal retention or expiry verdict. Owner/family references are the actual
-freshly assembled Query envelope bindings. The rich report has a distinct versioned
-identity bound to the original, policy, requested families and actual projection
-outcome. Original-query materialization currently uses the existing
-`OfflineInterpretableArtifact` policy. A connected request can additionally select
-canonical source effects and its actual producer evidence, as described below.
-
-Cancellation after private projection preparation refuses before any public rich
-artifact, without changing business output. Previously admitted descriptive
-results remain usable after later grant revocation; every new request rechecks
-current access. The older unadmitted generic materialization door continues to
-refuse application observation envelopes with `NativeInspectionAdmissionRequired`.
-
-
-## Rich connected source and producer evidence
-
-Both the strict creation and performed-evaluation intents accept `.materialize`.
-They use the existing independently admitted source/query connection and one
-consuming inspection session:
-
-```rust,ignore
-let detail = WorthQueryApplicationMaterializationRequest::family(
-    WorthQueryApplicationEvidenceFamily::QueryInspection,
-).with_source_effects().with_producer_evidence();
-let rich = fresh.inspect::<QueryBinding>(&original).why_observed()
-    .evaluated_by::<SourceDisclosure>(&original_source)
-    .materialize(detail)
-    .execute_governed(query_metadata, query_diagnostic,
-        source_metadata, source_diagnostic)?;
-let body = rich.materialization();
-for field in body.source_effects().into_iter().flat_map(|source| source.fields()) {
-    consume(field.output_name(), field.effect(), field.value());
-}
-let actual_comparison = body.producer_evaluation();
-rich.close();
-```
-
-`.caused_by::<SourceDisclosure>(&source)` uses the same rich route and exposes
-`producer_connection()`. Creation and output evaluation remain distinct:
-Equivalent output cannot acquire a strict creation connection. The producer
-facet carries the existing actual connection or Native output comparison, with
-its original source/producer commits, role, basis and observed revision. It does
-not synthesize a new evaluation from equal bytes or readiness. The optional
-`connection_identity()` retains the actual qualified connection identity;
-`report_identity()` additionally binds the rich request, facet outcomes and policy.
-
-`source_effects()` describes the original canonical commit's selected direct-root
-field effects, not a historical source-query result. A Present effect borrows its
-original written Native value. Unchanged, FieldCleared and AspectCleared remain
-distinct, and supply no value from the current head. The sealed value handle
-retains its original immutable envelope and exact full-generation record patch;
-Native validates the original contract and physical binding. Getter lookup does
-not allocate or open a reader; struct storage visits at most its original width.
-Exact SDK array storage for the selected fields remains charged to the fresh
-inspection request until close. Canonical payloads retain their original owners.
-
-The source graph must match the actual independently issued source scope kind,
-with only direct-root fields. Other source shapes report
-`UnsupportedSourceProjectionShape` after diagnostic admission. Source and producer
-facets have explicit `source_outcome()` and `producer_outcome()`; unrequested
-facets remain NotRequested, and plain query mode cannot supply connected detail.
-These facets do not relabel canonical patches as unrelated retained inventory
-families. A requested lower family that this observation mode does not supply
-continues to report `RequestedButNotProvidedBySelectedObservationMode`.
-
-Both subjects are freshly admitted before canonical values or their availability
-are inspected. Revoking either subject refuses a new rich request. Cancellation
-after both private bodies are prepared prevents publication, preserves committed
-business state and releases fresh request funding. Source-only richness uses the
-same source effect owner through the separate request described below. Optional history availability and owner loss use the separate facet below;
-the integrated consumer fixture above qualifies the public handoff.
-
-
-## Rich source-only inspection
-
-A performed source can materialize its canonical effects without supplying any
-completed query observation. Select only its canonical source effects:
-
-```rust,ignore
-let detail = WorthQueryApplicationMaterializationRequest::source_effects();
-let rich = fresh.inspect_source::<SourceDisclosure>(&original_source)
-    .why_performed().materialize(detail)
-    .execute_governed(current_source_metadata, current_source_diagnostic)?;
-let expected_commit = rich.source_commit().clone();
-drop(original_source);
-for field in rich.materialization().source_effects().into_iter().flat_map(|s| s.fields()) {
-    consume(field.output_name(), field.effect(), field.value());
-}
-assert_eq!(rich.source_commit(), &expected_commit);
-rich.close();
-```
-
-Public inspection metadata uses `execute_with_diagnostic(current_diagnostic)`.
-There is no diagnostic-free `execute()` on a rich source request. Metadata and
-field diagnostics are independently prepared and revalidated through the actual
-source binding, principal, full-generation scope and single inspection session.
-The source report's consuming terminal checks the exact original Source target
-and rich request before publication. Source-only success cannot contain a query
-projection, connected target or producer payload.
-
-The result owns immutable original source data and the same fresh report ticket;
-it borrows neither the original receipt nor an operational query read. Closing
-other receipt/producer holders leaves its original canonical values usable.
-Already admitted descriptive values remain usable after later grant withdrawal;
-a new rich request rechecks access. A diagnostic capability whose own request was
-cancelled cannot supply permission. Real cancellation after private source-body
-assembly prevents publication and releases fresh report/view funding without
-changing the business head.
-
-If selected by `detail`, QueryInspection and producer evidence report
-`RequestedButNotProvidedBySelectedObservationMode`, not projection-not-retained,
-producer absence or a Signal evaluation verdict. Unrequested facets remain
-NotRequested. Source-only mode performs no query or producer/Signal discovery.
-Owner/family references come from the actual admitted Source reporting envelope.
-The existing Host doctest lane checks the admitted signature, absence of a
-capability-free execution method, and private success construction. Optional
-conditional history is unavailable in source-only mode. Generic Signal forensic
-materialization remains outside the selected observation modes. The integrated
-consumer handoff uses the compiled fixtures linked above.
-
-
-## Original evidence availability
-
-A freshly admitted query report exposes `evidence_availability()`. Compared
-reports expose `before_evidence_availability()` and `after_evidence_availability()`.
-The same metadata is available on connected, evaluated and rich query reports.
-The report freezes one admitted lookup for its payload and identity. Later getter
-calls perform no owner lookup, allocation or body traversal. It includes:
-
-- `projection()` distinguishes Retained from NotRetained; an intentionally
-  captured empty projection is Retained.
-- `supplier()` distinguishes CommittedOutput, StableInputReuse,
-  CheckpointRestoration and NotRetained. None establishes a source connection
-  or a performed output comparison by itself.
-- `native_observation()` describes custody of the original conditional Native
-  observation. Retained does not promise every optional Signal diagnostic family.
-
-Missing custody does not establish expiry, no producer or suppression. These
-originals retain strong immutable owners and have no TTL. Closing a reader or
-one observation clone cannot invalidate another clone. The final original holder
-releases the original query backing and payer; reports close their separate fresh
-request reservations. A later rich request must independently admit diagnostics.
-Cancelling a request or withdrawing metadata access refuses that request and
-cannot turn retained evidence into expired evidence.
-
-The query report anchor uses `query.application-inspection.observation-anchor.v3`
-to bind the actual custody and optional history availability states, including
-original typed capacity causes. The underlying observation identity is
-unchanged. The compiled availability and sibling-release journeys live in
-[the existing correction model](../../../worth-query-certification/examples/application_correction_support/causal_inspection/journey/availability.rs); their grouped court is
-`application_graph::correction::causal_inspection`.
-
-`conditional_history()` on availability returns the actual optional conditional
-history owner state, or None when no original conditional observation was captured.
-This is distinct from evictable Signal forensic histories and legacy Bridge route
-records. Those lower families remain unsupported by this selected observation
-mode; their empty inventories do not establish omission or expiry.
-
-## Optional conditional execution history
-
-Select this facet on a connected rich request with both current query/source
-metadata and diagnostic admissions:
-
-```rust,ignore
-let detail = WorthQueryApplicationMaterializationRequest::conditional_history()
-    .with_source_effects().with_producer_evidence();
-let report = fresh.inspect::<ReadBinding>(&original)
-    .why_observed().evaluated_by::<SourceDisclosure>(&source)
-    .materialize(detail)
-    .execute_governed(query_metadata, query_diagnostic,
-        source_metadata, source_diagnostic)?;
-match report.materialization().conditional_history_outcome() {
-    WorthQueryConditionalHistoryOutcome::Provided => {
-        let history = report.materialization().conditional_history().unwrap();
-        consume(history.attempt(), history.decision_class());
-    }
-    WorthQueryConditionalHistoryOutcome::OwnerUnavailable(cause) => consume_loss(cause),
-    other => consume_omission(other),
-}
-report.close();
-```
-
-The history describes the supplier's actual conditional/readiness execution;
-it is separate from `producer_evaluation()` and its Changed/Equivalent pair.
-Both diagnostic loans and the exact performed source connection precede history
-body lookup. A plain query or source-only rich request reports
-RequestedButNotProvidedBySelectedObservationMode for this facet. No unrelated
-inventory family must be selected merely to request history.
-
-The Bridge diagnostics owner issues the record at successful conditional
-execution, funds the fixed slot from that original execution request, and applies
-its actual bounded retention policy. The operational Host records history under
-its installed artifact policy, even at Minimal diagnostics tier. A policy that
-disables record retention reports OmittedByTier. A retaining owner can report
-RetainedAvailable, EvictedByRetention or OwnerClosed. Finite optional memory capacity denial preserves its actual
-CaptureDenied cause; request cancellation, deadline and overflow remain request
-stops. None of these is producer absence, output suppression or receipt expiry.
-
-Earlier availability grants no retention lease. A later rich request rechecks
-this exact original's history; a new execution can evict it in between. That
-request reports the owner's actual loss while other original evidence remains
-valid. A previously successful rich result owns a readonly snapshot that remains
-usable after eviction. Closing one original cannot invalidate its sibling;
-final close releases their original funding. History eviction detaches successor
-links, so an old original cannot retain later entries.
-
-The query anchor v3 binds the frozen metadata snapshot. Rich materialization v3
-also binds the requested history facet, actual outcome, original Native
-association and supplied fixed facts. Existing older identity domains retain
-their prior meanings. The executable
-[owner-loss journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/history.rs)
-uses real source/producer executions and owner retention control, with preserved
-old snapshots, independent diagnostics, cancellation and final release.
+For a Required child under an Optional parent, use
+`ApplicationQueryOptionalAspectFieldRef`, `optional_aspect_field` and
+`disclose_optional_aspect_field_by`. Project each child with
+`row.optional_aspect_field(slot)?`. Only actual parent absence returns None;
+a present parent missing Required content is a denial.
