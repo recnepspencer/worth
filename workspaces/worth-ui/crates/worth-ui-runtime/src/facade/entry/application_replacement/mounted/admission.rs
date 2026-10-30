@@ -85,10 +85,9 @@ pub(super) fn prepare_replacement_presentation(
     if !matches!(
         prepared,
         crate::mounting::UiMountedGraphReplacementPreparation::Admitted(_)
-    ) {
-        if let Some(attempt) = overlay_attempt {
-            session.overlay_composition_owners.discard(attempt);
-        }
+    ) && let Some(attempt) = overlay_attempt
+    {
+        session.overlay_composition_owners.discard(attempt);
     }
     match prepared {
         crate::mounting::UiMountedGraphReplacementPreparation::Admitted(mounted) => {

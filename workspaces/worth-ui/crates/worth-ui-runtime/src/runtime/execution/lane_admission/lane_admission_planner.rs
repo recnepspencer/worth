@@ -128,12 +128,11 @@ fn record_query_lane_support_evidence(
         return;
     }
 
-    if let Ok(plan_index) = u32::try_from(position) {
-        if let Some(links) = WorthUiQueryLaneFactLink::from_plan_node_input(plan_index, node_input)
-        {
-            counters.record_query_support_link();
-            evidence.query_fact_links.push(links);
-        }
+    if let Ok(plan_index) = u32::try_from(position)
+        && let Some(links) = WorthUiQueryLaneFactLink::from_plan_node_input(plan_index, node_input)
+    {
+        counters.record_query_support_link();
+        evidence.query_fact_links.push(links);
     }
 
     if node_input.query_binding_identity().is_none() && node_input.transition().is_none() {

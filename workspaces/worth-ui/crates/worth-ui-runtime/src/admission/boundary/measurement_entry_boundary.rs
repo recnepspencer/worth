@@ -39,12 +39,11 @@ impl<'a> UiAdmissionBoundary<'a> {
         let selection_target = selection_target_for_touch(touch, &target);
         let support_snapshot = self.support_snapshot(&selection_target);
 
-        let selected = crate::obligations::selection::UiObligationSelectionBoundary::new(
+        crate::obligations::selection::UiObligationSelectionBoundary::new(
             self.support_artifacts,
             self.graph_snapshot,
         )
-        .select(touch, support_snapshot, target);
-        selected
+        .select(touch, support_snapshot, target)
     }
 
     pub fn lower_obligation_dispatch(

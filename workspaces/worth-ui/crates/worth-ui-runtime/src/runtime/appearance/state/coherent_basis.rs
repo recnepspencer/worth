@@ -204,16 +204,16 @@ impl UiAppearanceCoherentBasis {
                 return false;
             }
         }
-        if self.consumer.consumes(UiAppearanceStateAxis::Pressed) {
-            if let Some(pressed_owner) = snapshot.pressed() {
-                let mismatch = pressed_owner.postures().iter().any(|posture| {
-                    posture.target() == self.mounted_instance
-                        && Some(posture.node_receipt()) == self.owner_node_receipt
-                        && self.presentation != Some(posture.presentation())
-                });
-                if mismatch {
-                    return false;
-                }
+        if self.consumer.consumes(UiAppearanceStateAxis::Pressed)
+            && let Some(pressed_owner) = snapshot.pressed()
+        {
+            let mismatch = pressed_owner.postures().iter().any(|posture| {
+                posture.target() == self.mounted_instance
+                    && Some(posture.node_receipt()) == self.owner_node_receipt
+                    && self.presentation != Some(posture.presentation())
+            });
+            if mismatch {
+                return false;
             }
         }
         true

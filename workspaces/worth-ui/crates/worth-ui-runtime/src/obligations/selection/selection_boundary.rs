@@ -330,12 +330,11 @@ fn prerequisite_evidence_refs(
     if matches!(
         support_basis,
         UiObligationSupportBasis::HostCapability | UiObligationSupportBasis::ServiceUsage
-    ) {
-        if let Some(host_capability_report) = target.host_capability_report() {
-            refs.push(UiObligationPrerequisiteEvidenceRef::Host(
-                host_capability_report.clone(),
-            ));
-        }
+    ) && let Some(host_capability_report) = target.host_capability_report()
+    {
+        refs.push(UiObligationPrerequisiteEvidenceRef::Host(
+            host_capability_report.clone(),
+        ));
     }
     refs.into_boxed_slice()
 }

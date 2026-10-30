@@ -61,10 +61,10 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             predecessor,
             semantic_text_formatting,
         )?;
-        if !self.mechanics_predecessor_available {
-            if let Some(seed) = semantic_text.as_mut() {
-                seed.require_complete_mechanics();
-            }
+        if !self.mechanics_predecessor_available
+            && let Some(seed) = semantic_text.as_mut()
+        {
+            seed.require_complete_mechanics();
         }
         let hit_test = super::super::hit_test::lower_hit_test_seed(self.plan, plan_index)?;
         let focus_support = plan_index

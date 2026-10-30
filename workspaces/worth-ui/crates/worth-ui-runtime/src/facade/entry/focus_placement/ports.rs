@@ -99,13 +99,12 @@ impl UiFocusPlacementPorts<'_> {
         if receipt.outcome()
             == crate::mounting::UiFocusHostPlacementReconciliationOutcome::RequestedTargetObserved
             && self.focus.requires_focused_submit()
+            && let Some(current) = self.focus.current_semantic_focus()
         {
-            if let Some(current) = self.focus.current_semantic_focus() {
-                self.bind_current(current.mounted_target(), observation.presentation())
-                    .map_err(|_| {
-                        UiFocusPlacementReconciliationExecutionDenial::RecipientInstallation
-                    })?;
-            }
+            self.bind_current(current.mounted_target(), observation.presentation())
+                .map_err(|_| {
+                    UiFocusPlacementReconciliationExecutionDenial::RecipientInstallation
+                })?;
         }
         Ok(receipt)
     }
@@ -178,10 +177,10 @@ impl UiFocusPlacementPorts<'_> {
         &self,
         previous: Option<worth_ui_host_contract::UiHostInputRecipientBindingReceipt>,
     ) {
-        if let Some(previous) = previous {
-            if self.interaction.active_input_binding() != Some(previous) {
-                let _ = self.host_session.clear_input_recipient(previous);
-            }
+        if let Some(previous) = previous
+            && self.interaction.active_input_binding() != Some(previous)
+        {
+            let _ = self.host_session.clear_input_recipient(previous);
         }
     }
 }

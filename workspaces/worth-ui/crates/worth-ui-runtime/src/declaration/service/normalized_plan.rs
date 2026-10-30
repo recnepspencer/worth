@@ -56,14 +56,13 @@ impl UiNormalizedServicePolicyPlan {
         if let Some(settle_ticks) = scroll
             .map(super::UiScrollPolicy::wheel_behavior)
             .and_then(super::UiScrollWheelBehavior::settle_ticks)
+            && motion.is_none()
         {
-            if motion.is_none() {
-                return Err(
-                    super::UiServicePolicyNormalizationDenial::SmoothWheelWithoutMotionOwner {
-                        settle_ticks,
-                    },
-                );
-            }
+            return Err(
+                super::UiServicePolicyNormalizationDenial::SmoothWheelWithoutMotionOwner {
+                    settle_ticks,
+                },
+            );
         }
         Ok(Self {
             portal,

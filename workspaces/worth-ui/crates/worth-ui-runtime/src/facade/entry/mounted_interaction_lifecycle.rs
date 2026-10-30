@@ -61,19 +61,19 @@ impl WorthUiActiveApplicationSession {
                 .expect("Scroll installation was checked above")
                 .retire_mounted_instance(identity);
         }
-        if self.selection.is_installed() {
-            if let Some(basis) = service_basis {
-                self.selection
-                    .as_mut()
-                    .expect("Selection installation was checked above")
-                    .retire_mounted_owner(
+        if self.selection.is_installed()
+            && let Some(basis) = service_basis
+        {
+            self.selection
+                .as_mut()
+                .expect("Selection installation was checked above")
+                .retire_mounted_owner(
                     basis.semantic_surface_identity(),
                     basis.graph_node_identity(),
                     crate::runtime::selection::UiSelectionOwnerIncarnation::from_mount_incarnation(
                         basis.mount_incarnation(),
                     ),
                 );
-            }
         }
         self.intent_confirmation.cancel_instance(
             identity,

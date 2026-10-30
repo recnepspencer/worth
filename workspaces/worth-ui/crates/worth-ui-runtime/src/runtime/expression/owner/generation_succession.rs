@@ -49,20 +49,18 @@ impl UiExpressionRuntimeState {
             let prior_record = prior_slot.and_then(|prior| self.records.get(prior));
             let prior_expression = prior_slot.and_then(|prior| self.catalog.expression(prior));
             if let (Some(record), Some(prior), Some(next)) = (prior_record, prior_expression, next)
+                && same_slots
+                && prior.installs_same_program_as(next)
+                && restamp(
+                    record,
+                    next,
+                    &successor.records,
+                    inputs,
+                    &mut successor.counters,
+                )
+                .is_some_and(|restamped| successor.records.admit(restamped).is_ok())
             {
-                if same_slots
-                    && prior.installs_same_program_as(next)
-                    && restamp(
-                        record,
-                        next,
-                        &successor.records,
-                        inputs,
-                        &mut successor.counters,
-                    )
-                    .is_some_and(|restamped| successor.records.admit(restamped).is_ok())
-                {
-                    continue;
-                }
+                continue;
             }
             dirty.insert(slot);
         }

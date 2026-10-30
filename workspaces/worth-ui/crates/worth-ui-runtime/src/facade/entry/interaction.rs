@@ -190,10 +190,10 @@ impl WorthUiActiveApplicationSession {
                     let displayed = self
                         .mounted
                         .current_displayed_presentation(core.presentation());
-                    if let Some(displayed) = displayed {
-                        if let Ok(prepared) = self.prepare_motion_tick(tick, displayed) {
-                            self.present_prepared_motion_tick(prepared, displayed);
-                        }
+                    if let Some(displayed) = displayed
+                        && let Ok(prepared) = self.prepare_motion_tick(tick, displayed)
+                    {
+                        self.present_prepared_motion_tick(prepared, displayed);
                     }
                 } else if self.awaits_scroll_settle_retry() {
                     // A settle deferred while a presentation was in flight is
@@ -241,10 +241,10 @@ impl WorthUiActiveApplicationSession {
         &self,
         previous: Option<worth_ui_host_contract::UiHostInputRecipientBindingReceipt>,
     ) {
-        if let Some(previous) = previous {
-            if self.interaction.active_input_binding() != Some(previous) {
-                let _ = self.host_session.clear_input_recipient(previous);
-            }
+        if let Some(previous) = previous
+            && self.interaction.active_input_binding() != Some(previous)
+        {
+            let _ = self.host_session.clear_input_recipient(previous);
         }
     }
 

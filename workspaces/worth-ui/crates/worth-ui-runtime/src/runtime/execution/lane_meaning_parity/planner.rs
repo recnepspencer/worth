@@ -146,18 +146,18 @@ fn validate_inputs(
             counters,
         ));
     }
-    if let Some(rebind_plan) = query_rebind_plan {
-        if !same_digest(
+    if let Some(rebind_plan) = query_rebind_plan
+        && !same_digest(
             node_plan,
             rebind_plan.active_artifact_digest(),
             rebind_plan.candidate_artifact_digest(),
-        ) {
-            return Err(denial(
-                WorthUiLaneParityDenialReason::QueryRebindDigestMismatch,
-                node_plan,
-                counters,
-            ));
-        }
+        )
+    {
+        return Err(denial(
+            WorthUiLaneParityDenialReason::QueryRebindDigestMismatch,
+            node_plan,
+            counters,
+        ));
     }
     Ok(())
 }

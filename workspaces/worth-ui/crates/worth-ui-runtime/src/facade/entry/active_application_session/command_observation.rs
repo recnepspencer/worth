@@ -80,10 +80,10 @@ impl WorthUiActiveApplicationSession {
             phase,
             worth_ui_host_contract::UiHostImeCompositionPhase::Preedit(_)
         );
-        if self.ime_composing {
-            if let Some(command_routing) = self.command_routing.as_mut() {
-                command_routing.cancel_prefix();
-            }
+        if self.ime_composing
+            && let Some(command_routing) = self.command_routing.as_mut()
+        {
+            command_routing.cancel_prefix();
         }
     }
 }

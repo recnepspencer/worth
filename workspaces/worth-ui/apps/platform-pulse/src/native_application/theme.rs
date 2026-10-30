@@ -161,14 +161,14 @@ impl PlatformPulseApplicationRuntime {
             );
             return;
         }
-        if receipt.is_some() {
-            if let Err(denial) = self.visual_identity.refresh_after_presentation_replacement(
+        if receipt.is_some()
+            && let Err(denial) = self.visual_identity.refresh_after_presentation_replacement(
                 shell,
                 self.presentation_tick,
                 std::time::Instant::now(),
-            ) {
-                self.fail_visual_identity(denial);
-            }
+            )
+        {
+            self.fail_visual_identity(denial);
         }
     }
 
