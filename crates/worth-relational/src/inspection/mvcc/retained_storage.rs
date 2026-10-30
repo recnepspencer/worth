@@ -132,10 +132,10 @@ fn observe_root(
     runtime: &RelationalRuntime,
     root: &Arc<RelationalBranchRoot>,
     catalog: &BTreeMap<CommitId, Arc<RelationalCommitArtifact>>,
-    seen: &mut BTreeSet<usize>,
+    seen: &mut BTreeSet<u64>,
     accounting: &mut RelationalAuthoritativeAllocationAccounting,
 ) -> Result<(), RelationalBranchSharingInspectionDenial> {
-    if !seen.insert(Arc::as_ptr(root) as usize) {
+    if !seen.insert(root.metadata_allocation_observation().owner_id) {
         return Ok(());
     }
     accounting.observe_census_root(runtime.runtime_instance_id(), root)?;

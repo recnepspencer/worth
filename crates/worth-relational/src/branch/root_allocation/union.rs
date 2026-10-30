@@ -9,11 +9,7 @@ impl RelationalBranchRoot {
         &self,
         visitor: &mut V,
     ) -> Result<(), V::Error> {
-        visitor.allocation(RelationalRootAuthoritativeAllocationObservation {
-            kind: RelationalRootAuthoritativeAllocationKind::RootMetadata,
-            owner_id: self as *const Self as usize as u64,
-            authoritative_bytes: size_of::<Self>() as u64,
-        });
+        visitor.allocation(self.metadata_allocation_observation());
         visitor.allocation(RelationalRootAuthoritativeAllocationObservation {
             kind: RelationalRootAuthoritativeAllocationKind::SchemaAuthority,
             owner_id: self.schema_authority().allocation_id(),
