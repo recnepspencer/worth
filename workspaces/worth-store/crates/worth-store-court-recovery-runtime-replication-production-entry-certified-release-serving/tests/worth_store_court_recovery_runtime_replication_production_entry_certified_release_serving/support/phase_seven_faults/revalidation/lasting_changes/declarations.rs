@@ -5,12 +5,25 @@
 //! before `finish` do reach cleanup; `denial_matrix.rs` and
 //! `cleanup_revalidates_exact_wal_bytes_before_deletion` pin them.
 
-pub(crate) use {worth_store::physical_runtime::ArtifactTreeFailureKind, worth_store::physical_runtime::RecoveryCheckpointResidueDenial};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryOutcome};
+pub(crate) use {
+    worth_store::physical_runtime::ArtifactTreeFailureKind,
+    worth_store::physical_runtime::RecoveryCheckpointResidueDenial,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+};
 
-pub(crate) use {crate::phase_seven_faults::world::cleanup_world, crate::phase_seven_faults::world::empty_fault_schedule, crate::phase_seven_faults::world::reopen_with_schedule};
-pub(crate) use {crate::revalidation::checkpoint_replacement::replace_with_distinct_valid_checkpoint};
-pub(crate) use {crate::revalidation::window::append_byte, crate::revalidation::window::checkpoint_path, crate::revalidation::window::flip_first_byte};
+pub(crate) use crate::revalidation::checkpoint_replacement::replace_with_distinct_valid_checkpoint;
+pub(crate) use {
+    crate::phase_seven_faults::world::cleanup_world,
+    crate::phase_seven_faults::world::empty_fault_schedule,
+    crate::phase_seven_faults::world::reopen_with_schedule,
+};
+pub(crate) use {
+    crate::revalidation::window::append_byte, crate::revalidation::window::checkpoint_path,
+    crate::revalidation::window::flip_first_byte,
+};
 
 pub(crate) fn residue_gate_denial(
     label: &str,
@@ -25,7 +38,9 @@ pub(crate) fn residue_gate_denial(
     denial
 }
 
-pub(crate) fn blocked_residue_denial(outcome: PhysicalRecoveryOutcome) -> RecoveryCheckpointResidueDenial {
+pub(crate) fn blocked_residue_denial(
+    outcome: PhysicalRecoveryOutcome,
+) -> RecoveryCheckpointResidueDenial {
     let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) = outcome else {
         panic!("a lasting checkpoint change must block at Store's residue gate")
     };

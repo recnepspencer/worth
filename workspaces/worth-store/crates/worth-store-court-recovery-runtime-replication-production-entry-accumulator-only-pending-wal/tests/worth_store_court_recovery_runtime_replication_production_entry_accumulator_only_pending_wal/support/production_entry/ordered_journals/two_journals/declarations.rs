@@ -4,7 +4,19 @@
 //! with the other's entry, and both survive abandoned runtimes.
 
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::OrderedJournal, worth_store::physical_runtime::OrderedJournalName, worth_store::physical_runtime::OrderedJournalNameDenial, worth_store::physical_runtime::OrderedJournalPublication, worth_store::physical_runtime::OrderedJournalPublicationFailure, worth_store::physical_runtime::OrderedJournalPublished, worth_store::physical_runtime::OrderedJournalResolution, worth_store::physical_runtime::ServingPhysicalRuntime, worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS, worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS};
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::OrderedJournal,
+    worth_store::physical_runtime::OrderedJournalName,
+    worth_store::physical_runtime::OrderedJournalNameDenial,
+    worth_store::physical_runtime::OrderedJournalPublication,
+    worth_store::physical_runtime::OrderedJournalPublicationFailure,
+    worth_store::physical_runtime::OrderedJournalPublished,
+    worth_store::physical_runtime::OrderedJournalResolution,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+    worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS,
+    worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS,
+};
 
 pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
 pub(crate) use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
@@ -74,12 +86,15 @@ pub(crate) fn publish_bytes(
     position: u64,
     bytes: Vec<u8>,
 ) -> Result<OrderedJournalPublished, OrderedJournalPublicationFailure> {
-    journal.of(serving).publish(worth_store::physical_runtime::OrderedJournalPublication::new(
-        position,
-        bytes,
-        placement,
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-    ))
+    journal.of(serving).publish(
+        worth_store::physical_runtime::OrderedJournalPublication::new(
+            position,
+            bytes,
+            placement,
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
+        ),
+    )
 }
 
 /// Requires `journal` to hold exactly its own entries `1..=head`: point
@@ -137,18 +152,48 @@ pub(crate) fn assert_holds(serving: &ServingPhysicalRuntime, journal: Journal, h
 
 /// Interleaved publications: neither journal's position moves the other's.
 pub(crate) const SCRIPT: [(Journal, u64); 9] = [
-    (crate::production_entry::ordered_journals::two_journals::Journal::Commits, 1),
-    (crate::production_entry::ordered_journals::two_journals::Journal::Transitions, 1),
-    (crate::production_entry::ordered_journals::two_journals::Journal::Commits, 2),
-    (crate::production_entry::ordered_journals::two_journals::Journal::Commits, 3),
-    (crate::production_entry::ordered_journals::two_journals::Journal::Transitions, 2),
-    (crate::production_entry::ordered_journals::two_journals::Journal::Transitions, 3),
-    (crate::production_entry::ordered_journals::two_journals::Journal::Commits, 4),
-    (crate::production_entry::ordered_journals::two_journals::Journal::Transitions, 4),
-    (crate::production_entry::ordered_journals::two_journals::Journal::Transitions, 5),
+    (
+        crate::production_entry::ordered_journals::two_journals::Journal::Commits,
+        1,
+    ),
+    (
+        crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+        1,
+    ),
+    (
+        crate::production_entry::ordered_journals::two_journals::Journal::Commits,
+        2,
+    ),
+    (
+        crate::production_entry::ordered_journals::two_journals::Journal::Commits,
+        3,
+    ),
+    (
+        crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+        2,
+    ),
+    (
+        crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+        3,
+    ),
+    (
+        crate::production_entry::ordered_journals::two_journals::Journal::Commits,
+        4,
+    ),
+    (
+        crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+        4,
+    ),
+    (
+        crate::production_entry::ordered_journals::two_journals::Journal::Transitions,
+        5,
+    ),
 ];
 
-pub(crate) fn publish_script(serving: &ServingPhysicalRuntime, placement: AdmittedRecordPlacementPolicy) {
+pub(crate) fn publish_script(
+    serving: &ServingPhysicalRuntime,
+    placement: AdmittedRecordPlacementPolicy,
+) {
     for (journal, position) in SCRIPT {
         let published = publish(serving, placement, journal, position)
             .unwrap_or_else(|failure| panic!("{journal:?} {position}: {failure:?}"));

@@ -9,10 +9,17 @@
 //! publication's name refuses as unresolved until reopen; the journal beside it is
 //! unchanged; the new value then publishes; and a second recovery agrees.
 
-pub(crate) use {std::num::NonZeroU64};
+pub(crate) use std::num::NonZeroU64;
 
-pub(crate) use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-pub(crate) use {worth_store::physical_runtime::AnchoredRecordPublicationFailure, worth_store::physical_runtime::AnchoredRecordPublished, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub(crate) use {
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+};
+pub(crate) use {
+    worth_store::physical_runtime::AnchoredRecordPublicationFailure,
+    worth_store::physical_runtime::AnchoredRecordPublished,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
 pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::anchored_records::assert_journal, worth_store_testkit_recovery_runtime::production_entry::anchored_records::current, worth_store_testkit_recovery_runtime::production_entry::anchored_records::name, worth_store_testkit_recovery_runtime::production_entry::anchored_records::publish, worth_store_testkit_recovery_runtime::production_entry::anchored_records::publish_journal_entry, worth_store_testkit_recovery_runtime::production_entry::anchored_records::value, worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT};
 pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::open_with_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
@@ -121,7 +128,10 @@ pub(crate) fn run_case(
     let republished = publish_target(&recovered, target)
         .unwrap_or_else(|failure| panic!("{case}: republication: {failure:?}"));
     assert_eq!(
-        matches!(republished, worth_store::physical_runtime::AnchoredRecordPublished::AlreadyPublished(_)),
+        matches!(
+            republished,
+            worth_store::physical_runtime::AnchoredRecordPublished::AlreadyPublished(_)
+        ),
         held == after,
         "{case}: republication answer"
     );
@@ -159,7 +169,10 @@ pub(crate) fn indeterminate_name_refuses_until_reopen(
     // Any request to the name refuses; the unresolved fate is checked first.
     let retry = publish(serving, placement(), name(CHECKPOINT), 0, value(0xee, 10));
     assert!(
-        matches!(retry, Err(worth_store::physical_runtime::AnchoredRecordPublicationFailure::Unresolved)),
+        matches!(
+            retry,
+            Err(worth_store::physical_runtime::AnchoredRecordPublicationFailure::Unresolved)
+        ),
         "{case}: an unresolved name admitted {retry:?}"
     );
     true

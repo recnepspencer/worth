@@ -1,8 +1,14 @@
 //! Child execution of the process-kill plan; all parks use the existing Store gates.
-pub(crate) use {worth_execution::ExecutionRequest, std::time::Instant, crate::process_kill::LOCATION_ENV, crate::process_kill::MARKERS_ENV, std::path::PathBuf, worth_store::physical_runtime::production::PhysicalCheckpointStep, crate::process_kill::ROLE_ENV, crate::workload::Step, crate::process_kill::Stop, crate::durable_run::apply, crate::process_kill::await_mutation_seam, crate::process_kill::child_wal_profile, crate::process_kill::encode, crate::killed_child, crate::durable_run::open, crate::process_kill::script, crate::workload};
-pub(crate) use {std::path::Path};
-
-
+pub(crate) use std::path::Path;
+pub(crate) use {
+    crate::durable_run::apply, crate::durable_run::open, crate::killed_child,
+    crate::process_kill::await_mutation_seam, crate::process_kill::child_wal_profile,
+    crate::process_kill::encode, crate::process_kill::script, crate::process_kill::Stop,
+    crate::process_kill::LOCATION_ENV, crate::process_kill::MARKERS_ENV,
+    crate::process_kill::ROLE_ENV, crate::workload, crate::workload::Step, std::path::PathBuf,
+    std::time::Instant, worth_execution::ExecutionRequest,
+    worth_store::physical_runtime::production::PhysicalCheckpointStep,
+};
 
 /// The child: run the plan for its stop, park, announce, and wait to die.
 pub(crate) fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
@@ -13,10 +19,19 @@ pub(crate) fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
     let home = open(location, &execution).expect("the child's home opens");
     let (completed, parked) = stop.plan(&script);
     apply(&home, &execution, &script.steps[..completed]);
-    if let (crate::process_kill::Stop::CheckpointAcknowledged(_), Some(profile)) = (stop, child_wal_profile()) {
-        crate::process_kill::child::cleanup_wal::cover_segments_at_next_checkpoint(&home, profile.wal_segment_bytes());
+    if let (crate::process_kill::Stop::CheckpointAcknowledged(_), Some(profile)) =
+        (stop, child_wal_profile())
+    {
+        crate::process_kill::child::cleanup_wal::cover_segments_at_next_checkpoint(
+            &home,
+            profile.wal_segment_bytes(),
+        );
     }
-    if matches!(stop, crate::process_kill::Stop::CheckpointCarried(_) | crate::process_kill::Stop::CheckpointReturned) {
+    if matches!(
+        stop,
+        crate::process_kill::Stop::CheckpointCarried(_)
+            | crate::process_kill::Stop::CheckpointReturned
+    ) {
         home.checkpoint(&execution).unwrap();
     }
     let acknowledged = crate::workload::artifacts_of(home.runtime());
@@ -31,9 +46,13 @@ pub(crate) fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
         | crate::process_kill::Stop::Delete(seam)
         | crate::process_kill::Stop::Checkpoint(seam)
         | crate::process_kill::Stop::CheckpointMembers(seam) => seam,
-        crate::process_kill::Stop::CheckpointAcknowledged(step) => acknowledged_checkpoint(&home, markers, step),
+        crate::process_kill::Stop::CheckpointAcknowledged(step) => {
+            acknowledged_checkpoint(&home, markers, step)
+        }
         crate::process_kill::Stop::CheckpointCarried(seam) => seam,
-        crate::process_kill::Stop::BeforeFirstCheckpoint | crate::process_kill::Stop::AboveCheckpoint | crate::process_kill::Stop::CheckpointReturned => {
+        crate::process_kill::Stop::BeforeFirstCheckpoint
+        | crate::process_kill::Stop::AboveCheckpoint
+        | crate::process_kill::Stop::CheckpointReturned => {
             let live = acknowledged.len().to_string();
             crate::killed_child::announce(
                 &markers.join("transition-live"),

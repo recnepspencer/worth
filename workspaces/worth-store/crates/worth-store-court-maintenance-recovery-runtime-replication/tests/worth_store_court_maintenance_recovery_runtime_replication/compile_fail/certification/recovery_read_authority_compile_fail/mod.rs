@@ -1,7 +1,7 @@
-#[allow(unused_imports)] use crate::recovery_read_authority_compile_fail::*;
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::recovery_read_authority_compile_fail::*;
 
-use {worth_store_test_support::compiler_boundary::run_ui_proof_suite, worth_store_test_support::compiler_boundary::ExpectedCompilerDenial, worth_store_test_support::compiler_boundary::UiFixtureDeclaration, worth_store_test_support::compiler_boundary::UiProofEnvironment, worth_store_test_support::compiler_boundary::UiProofSuiteDeclaration};
+use worth_store_test_support::compiler_boundary::run_ui_proof_suite;
 
 #[test]
 fn recovery_reports_cannot_reenter_physical_read_authority() {

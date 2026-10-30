@@ -1,10 +1,39 @@
-pub(crate) use {std::fs, std::num::NonZeroU64, std::path::Path, std::thread, std::time::Duration, std::time::Instant};
+pub(crate) use {
+    std::fs, std::num::NonZeroU64, std::path::Path, std::thread, std::time::Duration,
+    std::time::Instant,
+};
 
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::BlobIngestSession, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobResumeFailure, worth_store::physical_runtime::BlobResumeLimits, worth_store::physical_runtime::BlobResumeToken, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::BlobTreeNodeKind, worth_store_physical_format::BlobTreeNodeV1, worth_store_physical_format::PersistedRecordIdentity};
+pub(crate) use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::BlobIngestSession,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobResumeFailure,
+    worth_store::physical_runtime::BlobResumeLimits,
+    worth_store::physical_runtime::BlobResumeToken,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalRecordId,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::BlobTreeNodeKind, worth_store_physical_format::BlobTreeNodeV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
 
-pub(crate) use {crate::physical_blob_journeys::blob_crash::kill_at, crate::physical_blob_journeys::blob_crash::marker_path, crate::blob_crash::recovery::recover_closed_store, crate::physical_blob_journeys::blob_crash::resume_token_path, crate::physical_blob_journeys::blob_crash::write_marker, crate::physical_blob_journeys::blob_crash::SCOPE_KEY, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_open};
+pub(crate) use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_crash::kill_at,
+    crate::physical_blob_journeys::blob_crash::marker_path,
+    crate::physical_blob_journeys::blob_crash::resume_token_path,
+    crate::physical_blob_journeys::blob_crash::write_marker,
+    crate::physical_blob_journeys::blob_crash::SCOPE_KEY,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_open,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 pub(crate) const CHUNK: usize = 64 * 1024;
 
@@ -18,7 +47,9 @@ pub(crate) fn park_after_leaf_root(
     object: [u8; 16],
     session: [u8; 16],
 ) -> ! {
-    let gate = serving.pause_physical_mutation_at(worth_store::physical_runtime::production::PhysicalMutationCheckpoint::AfterRootReplacement);
+    let gate = serving.pause_physical_mutation_at(
+        worth_store::physical_runtime::production::PhysicalMutationCheckpoint::AfterRootReplacement,
+    );
     let marker = marker_path(root);
     std::thread::scope(|workers| {
         workers.spawn(|| {
@@ -98,7 +129,9 @@ pub(crate) fn reseal_selected_leaf_index(root: &Path, record: PhysicalRecordId, 
         hash.update(&inner[..16]);
         hash.update(&inner[C11_HEADER..]);
         inner[16..C11_HEADER].copy_from_slice(&hash.finalize());
-        let worth_store_physical_format::BlobRecordV1::TreeNode(decoded) = decode_blob_record(inner).unwrap() else {
+        let worth_store_physical_format::BlobRecordV1::TreeNode(decoded) =
+            decode_blob_record(inner).unwrap()
+        else {
             panic!("resealed inner frame must stay a valid tree node");
         };
         assert_eq!(decoded.occurrence().index(), 1);
@@ -127,7 +160,9 @@ pub(crate) fn selected_nodes(
     selected_blob_records(serving)
         .into_iter()
         .filter_map(|(record, bytes)| match decode_blob_record(&bytes) {
-            Ok(worth_store_physical_format::BlobRecordV1::TreeNode(node)) if node.occurrence().session() == session => {
+            Ok(worth_store_physical_format::BlobRecordV1::TreeNode(node))
+                if node.occurrence().session() == session =>
+            {
                 Some((record, node))
             }
             _ => None,
@@ -136,7 +171,10 @@ pub(crate) fn selected_nodes(
 }
 
 pub(crate) fn token_from_sidecar(root: &Path) -> BlobResumeToken {
-    worth_store::physical_runtime::BlobResumeToken::decode(&std::fs::read(resume_token_path(root)).unwrap()).unwrap()
+    worth_store::physical_runtime::BlobResumeToken::decode(
+        &std::fs::read(resume_token_path(root)).unwrap(),
+    )
+    .unwrap()
 }
 
 pub(crate) fn resume_limits() -> BlobResumeLimits {

@@ -1,25 +1,4 @@
-#[cfg(all())]
-use std::num::NonZeroU64;
-
-#[cfg(all())]
-use worth_store_physical_format::RootSelectorRole;
-use worth_store_recovery_runtime::PhysicalRecoveryOutcome;
-#[cfg(all())]
-use worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority;
-use {
-    worth_store_physical_format::BootstrapCatalog,
-    worth_store_physical_format::DurableRootSelector,
-    worth_store_physical_format::RecordArtifactFile,
-};
-#[cfg(all())]
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
-    worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration,
-};
-use {
-    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
-    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
-};
+use worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment;
 
 use crate::phase_four_planning::publication_faults::assert_partial_root_protocol;
 
@@ -206,13 +185,11 @@ fn an_already_durable_namespace_fresh_reopens_without_publication_effects() {
     assert!(published.reopen().is_ok());
 }
 
-#[cfg(all())]
 #[test]
 fn fault_after_previous_selector_retains_the_exact_one_of_three_prefix() {
     assert_partial_root_protocol(2, 1);
 }
 
-#[cfg(all())]
 #[test]
 fn fault_after_current_selector_retains_the_exact_two_of_three_prefix() {
     assert_partial_root_protocol(3, 2);

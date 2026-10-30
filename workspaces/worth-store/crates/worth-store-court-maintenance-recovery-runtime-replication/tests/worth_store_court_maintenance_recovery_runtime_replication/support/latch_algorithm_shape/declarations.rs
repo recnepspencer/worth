@@ -1,10 +1,30 @@
-pub(crate) use {worth_store_test_support::harness::physical_isolation::epoch_scope as support};
+pub(crate) use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
 
-pub(crate) use {std::collections::HashSet};
+pub(crate) use std::collections::HashSet;
 pub(crate) use {std::hash::BuildHasher, std::hash::Hasher};
 
-pub(crate) use {worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_segment_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority, worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout};
-pub(crate) use {worth_store_physical_isolation::lower_latch_acquisition_plan, worth_store_physical_isolation::CanonicalLatchAcquisitionOrder, worth_store_physical_isolation::LatchAcquisitionDenial, worth_store_physical_isolation::LatchAcquisitionRequest, worth_store_physical_isolation::LatchAcquisitionStep, worth_store_physical_isolation::LatchUpgradeAuthority, worth_store_physical_isolation::LatchWaitForGraph, worth_store_physical_isolation::LatchWaitForGraphAdmissionDenial, worth_store_physical_isolation::PhysicalLatchClass, worth_store_physical_isolation::PhysicalLatchDeadlockPolicy, worth_store_physical_isolation::PhysicalLatchFamilyDeadlockPolicy, worth_store_physical_isolation::PhysicalLatchKey, worth_store_physical_isolation::PhysicalLatchWaitEdge};
+pub(crate) use {
+    worth_store_physical_isolation::lower_latch_acquisition_plan,
+    worth_store_physical_isolation::CanonicalLatchAcquisitionOrder,
+    worth_store_physical_isolation::LatchAcquisitionDenial,
+    worth_store_physical_isolation::LatchAcquisitionRequest,
+    worth_store_physical_isolation::LatchAcquisitionStep,
+    worth_store_physical_isolation::LatchUpgradeAuthority,
+    worth_store_physical_isolation::LatchWaitForGraph,
+    worth_store_physical_isolation::LatchWaitForGraphAdmissionDenial,
+    worth_store_physical_isolation::PhysicalLatchClass,
+    worth_store_physical_isolation::PhysicalLatchDeadlockPolicy,
+    worth_store_physical_isolation::PhysicalLatchFamilyDeadlockPolicy,
+    worth_store_physical_isolation::PhysicalLatchKey,
+    worth_store_physical_isolation::PhysicalLatchWaitEdge,
+};
+pub(crate) use {
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_segment_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout,
+};
 
 pub(crate) fn mixed_mode_expected_steps() -> Vec<LatchAcquisitionStep> {
     let keys = algorithm_latch_keys();
@@ -23,10 +43,12 @@ pub(crate) fn mixed_mode_expected_steps() -> Vec<LatchAcquisitionStep> {
 }
 
 pub(crate) fn lower_steps(steps: Vec<LatchAcquisitionStep>) -> Vec<LatchAcquisitionStep> {
-    lower_latch_acquisition_plan(worth_store_physical_isolation::LatchAcquisitionRequest::for_declared_footprint(steps))
-        .unwrap()
-        .steps()
-        .to_vec()
+    lower_latch_acquisition_plan(
+        worth_store_physical_isolation::LatchAcquisitionRequest::for_declared_footprint(steps),
+    )
+    .unwrap()
+    .steps()
+    .to_vec()
 }
 
 pub(crate) fn reversed(mut steps: Vec<LatchAcquisitionStep>) -> Vec<LatchAcquisitionStep> {
@@ -34,12 +56,18 @@ pub(crate) fn reversed(mut steps: Vec<LatchAcquisitionStep>) -> Vec<LatchAcquisi
     steps
 }
 
-pub(crate) fn rotated_left(mut steps: Vec<LatchAcquisitionStep>, by: usize) -> Vec<LatchAcquisitionStep> {
+pub(crate) fn rotated_left(
+    mut steps: Vec<LatchAcquisitionStep>,
+    by: usize,
+) -> Vec<LatchAcquisitionStep> {
     steps.rotate_left(by);
     steps
 }
 
-pub(crate) fn salted_hash_steps(steps: Vec<LatchAcquisitionStep>, salt: u64) -> Vec<LatchAcquisitionStep> {
+pub(crate) fn salted_hash_steps(
+    steps: Vec<LatchAcquisitionStep>,
+    salt: u64,
+) -> Vec<LatchAcquisitionStep> {
     let mut rebuilt = std::collections::HashSet::with_hasher(SaltedBuildHasher { salt });
     rebuilt.extend(steps);
     rebuilt.into_iter().collect()
@@ -103,7 +131,10 @@ pub(crate) fn algorithm_latch_keys() -> AlgorithmLatchKeys {
 
     AlgorithmLatchKeys {
         root: worth_store_physical_isolation::PhysicalLatchKey::root(root_epoch),
-        manifest: worth_store_physical_isolation::PhysicalLatchKey::manifest(root_epoch, root.manifest_epoch()),
+        manifest: worth_store_physical_isolation::PhysicalLatchKey::manifest(
+            root_epoch,
+            root.manifest_epoch(),
+        ),
         segment_a: worth_store_physical_isolation::PhysicalLatchKey::segment(root_epoch, segment_a),
         segment_b: worth_store_physical_isolation::PhysicalLatchKey::segment(root_epoch, segment_b),
         extent_a: worth_store_physical_isolation::PhysicalLatchKey::extent(root_epoch, extent_a),

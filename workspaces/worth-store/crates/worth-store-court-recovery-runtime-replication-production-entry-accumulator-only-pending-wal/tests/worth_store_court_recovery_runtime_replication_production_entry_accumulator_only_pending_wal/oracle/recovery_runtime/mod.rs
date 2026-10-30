@@ -3,3 +3,6 @@ pub(crate) mod c10_extent_rewrite_crash;
 
 #[path = "c10_phase_six_span_crash/mod.rs"]
 pub(crate) mod c10_phase_six_span_crash;
+
+#[path = "production_entry/mod.rs"]
+pub(crate) mod production_entry;

@@ -1,11 +1,41 @@
 //! Process-kill proof for the V2 manifest-residue selector/Completed gap.
 
-pub(crate) use {std::fs, std::num::NonZeroU16, std::num::NonZeroU64, std::path::Path, std::thread, std::time::Duration, std::time::Instant};
+pub(crate) use {
+    std::fs, std::num::NonZeroU16, std::num::NonZeroU64, std::path::Path, std::thread,
+    std::time::Duration, std::time::Instant,
+};
 
-pub(crate) use {worth_store::physical_runtime::production::PhysicalMutationCheckpoint, worth_store::physical_runtime::production::PhysicalMutationPauseGate, worth_store::physical_runtime::BlobAppendFailure, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimFailure, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause, worth_store::physical_runtime::PhysicalRetirementDenial};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::PersistedRecordIdentity};
+pub(crate) use {
+    worth_store::physical_runtime::production::PhysicalMutationCheckpoint,
+    worth_store::physical_runtime::production::PhysicalMutationPauseGate,
+    worth_store::physical_runtime::BlobAppendFailure,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimFailure,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause,
+    worth_store::physical_runtime::PhysicalRetirementDenial,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::PersistedRecordIdentity,
+};
 
-pub(crate) use {crate::physical_blob_journeys::blob_crash::establish_recovery_frontier, crate::physical_blob_journeys::blob_crash::kill_at, crate::physical_blob_journeys::blob_crash::marker_path, crate::blob_crash::recovery::recover_closed_store, crate::physical_blob_journeys::blob_crash::write_marker, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_reclaim::abandoned_prefix, crate::physical_blob_journeys::blob_reclaim::request, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+pub(crate) use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_crash::establish_recovery_frontier,
+    crate::physical_blob_journeys::blob_crash::kill_at,
+    crate::physical_blob_journeys::blob_crash::marker_path,
+    crate::physical_blob_journeys::blob_crash::write_marker,
+    crate::physical_blob_journeys::blob_reclaim::abandoned_prefix,
+    crate::physical_blob_journeys::blob_reclaim::request,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 pub(crate) const SELECTOR_ROLE: &str = "crash-reclaim-cleanup-selector";
 pub(crate) const INTENT_ROLE: &str = "crash-reclaim-cleanup-intent";
@@ -96,18 +126,21 @@ pub(crate) fn child(root: &Path, role: &str) {
     let first = serving
         .blobs()
         .unwrap()
-        .reclaim(worth_store::physical_runtime::BlobReclaimRequest::abandoned(
-            token,
-            &scope,
-            placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(5_000).unwrap(),
-            worth_store::physical_runtime::BlobReclaimLimits::new(
-                std::num::NonZeroU64::new(128).unwrap(),
-                std::num::NonZeroU64::new(8 << 20).unwrap(),
-                std::num::NonZeroU16::new(1).unwrap(),
-            )
-            .unwrap(),
-        ))
+        .reclaim(
+            worth_store::physical_runtime::BlobReclaimRequest::abandoned(
+                token,
+                &scope,
+                placement(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(5_000)
+                    .unwrap(),
+                worth_store::physical_runtime::BlobReclaimLimits::new(
+                    std::num::NonZeroU64::new(128).unwrap(),
+                    std::num::NonZeroU64::new(8 << 20).unwrap(),
+                    std::num::NonZeroU16::new(1).unwrap(),
+                )
+                .unwrap(),
+            ),
+        )
         .unwrap();
     let manifest_gate =
         serving.pause_physical_mutation_at(worth_store::physical_runtime::production::PhysicalMutationCheckpoint::BeforeTerminalFinalization);
@@ -187,7 +220,10 @@ pub(crate) fn child(root: &Path, role: &str) {
             .unwrap()
             .wait()
             .unwrap();
-        assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+        assert_eq!(
+            receipt.disposition(),
+            worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+        );
         assert_eq!(receipt.remaining_payload_records(), remaining);
         assert!(!receipt.dropped_records().contains(&manifest_record));
         assert!(!receipt.dropped_records().contains(&reserved));
@@ -234,8 +270,14 @@ pub(crate) fn child(root: &Path, role: &str) {
     });
 }
 
-pub(crate) fn persisted(record: worth_store::physical_runtime::PhysicalRecordId) -> PersistedRecordIdentity {
-    worth_store_physical_format::PersistedRecordIdentity::new(record.allocation_epoch(), record.ordinal()).unwrap()
+pub(crate) fn persisted(
+    record: worth_store::physical_runtime::PhysicalRecordId,
+) -> PersistedRecordIdentity {
+    worth_store_physical_format::PersistedRecordIdentity::new(
+        record.allocation_epoch(),
+        record.ordinal(),
+    )
+    .unwrap()
 }
 
 pub(crate) fn append_identity(bytes: &mut Vec<u8>, identity: PersistedRecordIdentity) {

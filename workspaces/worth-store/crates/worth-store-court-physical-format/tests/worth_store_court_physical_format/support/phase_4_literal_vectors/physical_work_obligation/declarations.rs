@@ -3,7 +3,7 @@ pub(crate) use worth_store_physical_format::integrity_declarations::{
     PhysicalIntegrityArtifactFamily, PhysicalIntegrityCoverageBoundary,
 };
 
-pub(crate) use crate::phase_4_literal_vectors::oracle::{
+pub(crate) use crate::oracle::support::literal_vectors::{
     assert_declaration, assert_literal_vector, decode_hex, DeclarationChecksumExpectation,
     LiteralChecksum, LiteralChecksumExpectation, LiteralVector,
 };
@@ -68,7 +68,7 @@ pub(crate) fn verify() {
         let bytes = decode_hex(hex);
         assert_eq!(bytes.len(), 160);
         let checksums = [LiteralChecksumExpectation {
-            checksum: crate::phase_4_literal_vectors::oracle::LiteralChecksum::Sha256(checksum),
+            checksum: crate::oracle::support::literal_vectors::LiteralChecksum::Sha256(checksum),
             ranges: RANGES,
             field: (128, 160),
         }];

@@ -3,10 +3,39 @@
 
 pub(crate) use {std::fs, std::path::Path};
 
-pub(crate) use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world};
-pub(crate) use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::RecordAppendBatch};
-pub(crate) use {worth_store_physical_format::durable_artifact_checksum, worth_store_physical_format::inspect_inline_page_records, worth_store_physical_format::BlobRecordKind, worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::DurableRootSelector, worth_store_physical_format::PhysicalRootRoutingBlock, worth_store_physical_format::PhysicalSegmentMembershipBlock, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordSegmentPageManifestEntry, worth_store_physical_format::SelectedRecordContentClass};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+pub(crate) use {
+    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+};
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::RecordAppendBatch,
+};
+pub(crate) use {
+    worth_store_physical_format::durable_artifact_checksum,
+    worth_store_physical_format::inspect_inline_page_records,
+    worth_store_physical_format::BlobRecordKind,
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::DurableRootSelector,
+    worth_store_physical_format::PhysicalRootRoutingBlock,
+    worth_store_physical_format::PhysicalSegmentMembershipBlock,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordSegmentPageManifestEntry,
+    worth_store_physical_format::SelectedRecordContentClass,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 pub(crate) struct SelectedRoot {
     pub(crate) manifest: DurablePhysicalRootManifest,
@@ -19,7 +48,10 @@ impl SelectedRoot {
     pub(crate) fn read(root: &Path) -> Self {
         let records = root.join("families/records");
         let selector = worth_store_physical_format::DurableRootSelector::decode(
-            &std::fs::read(records.join(worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name())).unwrap(),
+            &std::fs::read(records.join(
+                worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name(),
+            ))
+            .unwrap(),
         )
         .unwrap();
         let (manifest, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(
@@ -49,16 +81,23 @@ impl SelectedRoot {
                 ),
             )
             .unwrap();
-            let (block, found) =
-                worth_store_physical_format::PhysicalRootRoutingBlock::decode(&bytes, manifest.node_capacity()).unwrap();
+            let (block, found) = worth_store_physical_format::PhysicalRootRoutingBlock::decode(
+                &bytes,
+                manifest.node_capacity(),
+            )
+            .unwrap();
             assert_eq!(found, format);
             assert_eq!(
                 block.reference(durable_artifact_checksum(&bytes)),
                 reference
             );
             match block {
-                worth_store_physical_format::PhysicalRootRoutingBlock::Leaf { entries, .. } => routes.extend(entries),
-                worth_store_physical_format::PhysicalRootRoutingBlock::Branch { children, .. } => pending.extend(children),
+                worth_store_physical_format::PhysicalRootRoutingBlock::Leaf { entries, .. } => {
+                    routes.extend(entries)
+                }
+                worth_store_physical_format::PhysicalRootRoutingBlock::Branch {
+                    children, ..
+                } => pending.extend(children),
             }
         }
         let mut pages = Vec::new();
@@ -75,15 +114,25 @@ impl SelectedRoot {
             )
             .unwrap();
             let (block, found) =
-                worth_store_physical_format::PhysicalSegmentMembershipBlock::decode(&bytes, manifest.node_capacity()).unwrap();
+                worth_store_physical_format::PhysicalSegmentMembershipBlock::decode(
+                    &bytes,
+                    manifest.node_capacity(),
+                )
+                .unwrap();
             assert_eq!(found, format);
             assert_eq!(
                 block.reference(durable_artifact_checksum(&bytes)),
                 reference
             );
             match block {
-                worth_store_physical_format::PhysicalSegmentMembershipBlock::Leaf { entries, .. } => pages.extend(entries),
-                worth_store_physical_format::PhysicalSegmentMembershipBlock::Branch { children, .. } => pending.extend(children),
+                worth_store_physical_format::PhysicalSegmentMembershipBlock::Leaf {
+                    entries,
+                    ..
+                } => pages.extend(entries),
+                worth_store_physical_format::PhysicalSegmentMembershipBlock::Branch {
+                    children,
+                    ..
+                } => pending.extend(children),
             }
         }
         Self {

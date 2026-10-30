@@ -1,13 +1,12 @@
-#[allow(unused_imports)] use worth_store_testkit_store::integrity_scrub::*;
-use {std::path::Path, std::time::Duration};
-use {worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress as Progress, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest as Request, worth_store::physical_runtime::PhysicalIntegrityScrubRequestDenial as Denial, worth_store::physical_runtime::PhysicalIntegrityScrubTarget as Target, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkPressureClass, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_physical_format::PhysicalArtifactReadTarget, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::RecordArtifactFile};
-use {worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalIntegrityObservationOutcome, worth_store_physical_integrity::PhysicalIntegrityRejection};
+#[allow(unused_imports)]
+use worth_store_testkit_store::integrity_scrub::*;
 
 #[test]
 fn managed_scrub_reads_real_bytes_once_and_settles_background_resources() {
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let target = target(&serving, parent.path());
     let before = serving.physical_work_counters().count_under_pressure(
         worth_store::physical_runtime::PhysicalWorkOperationFamily::ArtifactRangeRead,
@@ -18,7 +17,10 @@ fn managed_scrub_reads_real_bytes_once_and_settles_background_resources() {
         .start_physical_integrity_scrub(request(&serving, target))
         .unwrap();
     let progress = handle.next_window();
-    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(observation) = progress else {
+    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(
+        observation,
+    ) = progress
+    else {
         panic!("one real inspection: {progress:?}")
     };
     assert_eq!(observation.ordinal, 0);
@@ -54,7 +56,9 @@ fn managed_scrub_reads_real_bytes_once_and_settles_background_resources() {
 #[test]
 fn cancellation_pause_and_cross_handle_resume_do_not_read_or_replay() {
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let target = target(&serving, parent.path());
     let mut first = serving
         .start_physical_integrity_scrub(request(&serving, target))
@@ -65,9 +69,15 @@ fn cancellation_pause_and_cross_handle_resume_do_not_read_or_replay() {
     let token = first.pause();
     second.pause();
     assert!(second.resume(token).is_err());
-    assert!(matches!(first.next_window(), worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::Paused));
+    assert!(matches!(
+        first.next_window(),
+        worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::Paused
+    ));
     first.resume(token).unwrap();
-    assert!(matches!(first.next_window(), worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(_)));
+    assert!(matches!(
+        first.next_window(),
+        worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(_)
+    ));
     first.pause();
     assert!(
         first.resume(token).is_err(),
@@ -88,7 +98,9 @@ fn cancellation_pause_and_cross_handle_resume_do_not_read_or_replay() {
 #[test]
 fn close_terminates_retained_handle_and_releases_registration_capacity() {
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let target = target(&serving, parent.path());
     let mut retained_tokens = Vec::new();
     for _ in 0..20 {
@@ -97,7 +109,10 @@ fn close_terminates_retained_handle_and_releases_registration_capacity() {
             .unwrap();
         retained_tokens.push(handle.cancellation());
         handle.cancellation().cancel();
-        assert!(matches!(handle.next_window(), worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::Cancelled(_)));
+        assert!(matches!(
+            handle.next_window(),
+            worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::Cancelled(_)
+        ));
     }
     let mut outstanding = serving
         .start_physical_integrity_scrub(request(&serving, target))
@@ -113,7 +128,9 @@ fn close_terminates_retained_handle_and_releases_registration_capacity() {
 #[test]
 fn damaged_selector_observation_never_repairs_or_revokes_serving_authority() {
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let target = target(&serving, parent.path());
     let path = parent.path().join("families/records/root-current.selector");
     let mut damaged = std::fs::read(&path).unwrap();
@@ -122,7 +139,10 @@ fn damaged_selector_observation_never_repairs_or_revokes_serving_authority() {
     let mut handle = serving
         .start_physical_integrity_scrub(request(&serving, target))
         .unwrap();
-    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(observation) = handle.next_window() else {
+    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(
+        observation,
+    ) = handle.next_window()
+    else {
         panic!("actual damaged byte window")
     };
     assert!(
@@ -142,7 +162,9 @@ fn damaged_selector_observation_never_repairs_or_revokes_serving_authority() {
 #[test]
 fn explicit_scope_rejects_duplicate_and_byte_limit_before_start() {
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let target = target(&serving, parent.path());
     assert!(matches!(
         worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest::new(
@@ -162,7 +184,9 @@ fn explicit_scope_rejects_duplicate_and_byte_limit_before_start() {
             65_536,
             std::time::Duration::from_secs(30)
         ),
-        Err(worth_store::physical_runtime::PhysicalIntegrityScrubRequestDenial::WindowBoundExceeded)
+        Err(
+            worth_store::physical_runtime::PhysicalIntegrityScrubRequestDenial::WindowBoundExceeded
+        )
     ));
     assert!(matches!(
         worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest::new(

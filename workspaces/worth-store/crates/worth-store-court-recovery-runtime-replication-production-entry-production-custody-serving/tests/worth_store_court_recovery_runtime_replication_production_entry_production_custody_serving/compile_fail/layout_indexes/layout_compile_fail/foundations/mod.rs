@@ -1,5 +1,3 @@
-use {crate::compile_fail_support};
-
 #[test]
 fn raw_physical_references_cannot_admit_index_materialization() {
     crate::compile_fail_support::assert_compile_fails(

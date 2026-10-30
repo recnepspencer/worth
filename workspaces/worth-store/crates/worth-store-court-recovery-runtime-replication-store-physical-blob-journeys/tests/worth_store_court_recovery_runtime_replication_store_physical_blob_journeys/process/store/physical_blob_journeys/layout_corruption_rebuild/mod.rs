@@ -1,21 +1,20 @@
-#![cfg(all())]
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::layout_corruption_rebuild::*;
 
-#[allow(unused_imports)] use crate::physical_blob_journeys::layout_corruption_rebuild::*;
-use {std::fs, std::num::NonZeroU64, std::path::Path, std::time::Duration};
-
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::DeferredDerivedRetirementCause, worth_store::physical_runtime::LayoutRebuildLimits, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest, worth_store::physical_runtime::PhysicalIndexPointKey, worth_store::physical_runtime::PhysicalLayoutDenial, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_contracts::DurableArtifactFamilyId};
-use {worth_store_physical_format::PersistedRecordIdentity};
-use {worth_store_physical_integrity::PhysicalIntegrityObservationOutcome, worth_store_physical_integrity::PhysicalIntegrityRejection};
-
-use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
 fn damaged_catalog_leaf_denies_point_then_rebuilds_from_selected_blob_authority() {
     let root = tempfile::tempdir().unwrap();
     let scope = admitted_blob_scope("c11.layout.corrupt-leaf.rebuild");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let (object, published, original) = {
         let serving = serving_from_initialization(root.path());
         let blobs = serving.blobs().unwrap();
@@ -26,7 +25,8 @@ fn damaged_catalog_leaf_denies_point_then_rebuilds_from_selected_blob_authority(
             2,
             &scope,
             worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         )
         .unwrap();
         let mut ingest = blobs
@@ -35,8 +35,11 @@ fn damaged_catalog_leaf_denies_point_then_rebuilds_from_selected_blob_authority(
         ingest.push(&[0x31]).unwrap();
         ingest.push(&[0x72]).unwrap();
         let published = ingest.finish().unwrap();
-        let key =
-            worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence()).unwrap();
+        let key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+            object,
+            published.generation().sequence(),
+        )
+        .unwrap();
         let original = serving
             .layouts()
             .unwrap()
@@ -64,10 +67,15 @@ fn damaged_catalog_leaf_denies_point_then_rebuilds_from_selected_blob_authority(
     assert_eq!(damaged_node["outcome"]["posture"], "damaged", "{damaged}");
 
     let serving = serving_from_open(root.path());
-    let key =
-        worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence()).unwrap();
+    let key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+        object,
+        published.generation().sequence(),
+    )
+    .unwrap();
     let layouts = serving.layouts().unwrap();
-    let btree = layouts.btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog).unwrap();
+    let btree = layouts
+        .btree(worth_store_contracts::DurableArtifactFamilyId::BlobCatalog)
+        .unwrap();
     assert!(matches!(
         btree.point(key),
         Err(worth_store::physical_runtime::PhysicalLayoutDenial::NodeIntegrity(_))
@@ -80,9 +88,11 @@ fn damaged_catalog_leaf_denies_point_then_rebuilds_from_selected_blob_authority(
         .unwrap()
         .issue_object_id(limits)
         .unwrap();
-    let foreign_key =
-        worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(foreign_object, published.generation().sequence())
-            .unwrap();
+    let foreign_key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+        foreign_object,
+        published.generation().sequence(),
+    )
+    .unwrap();
     assert!(matches!(
         btree.point(foreign_key),
         Err(worth_store::physical_runtime::PhysicalLayoutDenial::ForeignStore)
@@ -112,7 +122,10 @@ fn damaged_catalog_leaf_denies_point_then_rebuilds_from_selected_blob_authority(
     )
     .unwrap();
     let mut scrub = serving.start_physical_integrity_scrub(request).unwrap();
-    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(window) = scrub.next_window() else {
+    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(
+        window,
+    ) = scrub.next_window()
+    else {
         panic!("selected catalog leaf scrub must inspect its bounded window")
     };
     assert_eq!(window.scope.btree_node_identity().unwrap().0, target_record);
@@ -136,7 +149,8 @@ fn damaged_catalog_leaf_denies_point_then_rebuilds_from_selected_blob_authority(
             worth_store_contracts::DurableArtifactFamilyId::BlobCatalog,
             bounded,
             placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         )
         .unwrap();
     // The receipt counts authoritative logical chunks preflighted, not the

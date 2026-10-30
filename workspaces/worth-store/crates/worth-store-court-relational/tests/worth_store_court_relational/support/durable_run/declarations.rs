@@ -1,15 +1,23 @@
 //! Running a script against a durable home and comparing it with the
 //! reference.
 
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeOpenRefusal, worth_store_relational::RelationalStoreHomeRequest};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use {
+    worth_store_relational::RelationalStoreHome,
+    worth_store_relational::RelationalStoreHomeOpenRefusal,
+    worth_store_relational::RelationalStoreHomeRequest,
+};
 
-pub(crate) use {worth_relational::facade::durability::RecoveryAuthorityContinuityMismatch, worth_relational::facade::durability::RecoveryFailureClass, worth_relational::facade::durability::RelationalRecoveryStop};
-pub(crate) use {worth_relational::facade::schema::SchemaVersionId};
+pub(crate) use worth_relational::facade::schema::SchemaVersionId;
+pub(crate) use {
+    worth_relational::facade::durability::RecoveryAuthorityContinuityMismatch,
+    worth_relational::facade::durability::RecoveryFailureClass,
+    worth_relational::facade::durability::RelationalRecoveryStop,
+};
 
-pub(crate) use {crate::schema_transition};
+pub(crate) use crate::schema_transition;
 pub(crate) use {crate::workload, crate::workload::Script, crate::workload::Step};
 
 /// Open the home declaring the schema it serves (D5): the script's source
@@ -31,8 +39,9 @@ pub(crate) fn open(
 /// The schema a refused open's recovered main head records, when the refusal
 /// is that the declared schema differs from it.
 pub(crate) fn recorded_schema(refusal: &RelationalStoreHomeOpenRefusal) -> Option<SchemaVersionId> {
-    let worth_store_relational::RelationalStoreHomeOpenRefusal::Readmission(worth_relational::facade::durability::RelationalRecoveryStop::Durability(error)) =
-        refusal
+    let worth_store_relational::RelationalStoreHomeOpenRefusal::Readmission(
+        worth_relational::facade::durability::RelationalRecoveryStop::Durability(error),
+    ) = refusal
     else {
         return None;
     };
@@ -68,7 +77,10 @@ pub(crate) fn open_declaring(
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<RelationalStoreHome, RelationalStoreHomeOpenRefusal> {
     worth_store_relational::RelationalStoreHome::open(
-        worth_store_relational::RelationalStoreHomeRequest::new(location, crate::workload::runtime_builder(schema)),
+        worth_store_relational::RelationalStoreHomeRequest::new(
+            location,
+            crate::workload::runtime_builder(schema),
+        ),
         execution,
     )
 }

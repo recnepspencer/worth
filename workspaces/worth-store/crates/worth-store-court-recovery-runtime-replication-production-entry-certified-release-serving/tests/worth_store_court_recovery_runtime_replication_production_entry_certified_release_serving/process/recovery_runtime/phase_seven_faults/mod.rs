@@ -1,5 +1,3 @@
-#![cfg(all())]
-
 use {
     crate::phase_seven_faults::world::assert_child_succeeded,
     crate::phase_seven_faults::world::cleanup_fault,
@@ -250,7 +248,6 @@ fn cleanup_cancellation_from_another_plan_defers_without_effect() {
     );
 }
 
-#[cfg(all())]
 #[path = "revalidation/mod.rs"]
 pub(crate) mod revalidation;
 

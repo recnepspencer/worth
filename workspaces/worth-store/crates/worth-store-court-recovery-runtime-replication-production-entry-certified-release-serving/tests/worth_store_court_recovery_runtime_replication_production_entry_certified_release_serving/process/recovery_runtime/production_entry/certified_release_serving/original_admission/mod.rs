@@ -1,17 +1,15 @@
 //! Recovery carries one pool into Serving while retaining its original ceiling.
 //! The larger or smaller target policy is declared before recovery admission.
 
-#[allow(unused_imports)] use crate::production_entry::certified_release_serving::original_admission::*;
-use {std::num::NonZeroU32, std::num::NonZeroU64, std::path::Path};
-
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::CheckpointMemoryLimit, worth_store::physical_runtime::FilesystemAccessPosture, worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::GroupCommitDelay, worth_store::physical_runtime::GroupCommitLimit, worth_store::physical_runtime::IdempotencyRetentionGenerations, worth_store::physical_runtime::LiveIdempotencyBindingLimit, worth_store::physical_runtime::PendingUnresolvedMutationLimit, worth_store::physical_runtime::PhysicalCheckpointPolicy, worth_store::physical_runtime::PhysicalDurabilityDeclaration, worth_store::physical_runtime::PhysicalIdempotencyPolicy, worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody, worth_store::physical_runtime::RetainedWalTailLimit, worth_store::physical_runtime::ServingPhysicalRuntime, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
-
-use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::admit_serving_with_seal, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery::recover, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request, worth_store_testkit_recovery_runtime::production_entry::release_reopen, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request_with_configuration};
+#[allow(unused_imports)]
+use crate::production_entry::certified_release_serving::original_admission::*;
 
 #[test]
 fn original_recovery_ceiling_survives_seal_checkpoint_and_fresh_reopen() {
-    let (world, receipt, _) = worth_store_testkit_recovery_runtime::production_entry::release_reopen::released_world(1024);
+    let (world, receipt, _) =
+        worth_store_testkit_recovery_runtime::production_entry::release_reopen::released_world(
+            1024,
+        );
     assert_eq!(receipt.remaining_payload_records(), 0);
     let store = world.serving().residency_observation().store_identity();
     checkpoint(world.serving(), [0xb1; 32]);

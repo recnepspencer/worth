@@ -15,9 +15,7 @@ pub use {std::process::Command, std::process::Stdio};
 pub use {std::time::Duration, std::time::Instant};
 
 pub const CHILD_MARKER: &str = "WORTH_C8_RELEASE_CERTIFICATE_CRASH_MARKER";
-#[cfg(all())]
 pub const RECOVERY_CHILD_ROOT: &str = "WORTH_C8_RELEASE_CERTIFICATE_RECOVERY_ROOT";
-#[cfg(all())]
 pub const RECOVERY_CHILD_CHECKPOINT: &str = "WORTH_C8_RELEASE_CERTIFICATE_RECOVERY_CHECKPOINT";
 
 pub fn run() {
@@ -78,7 +76,6 @@ pub fn run_inner(require_successor_checkpoint: bool) {
         after_accumulator.base().checkpoint(),
         before_accumulator.base().checkpoint()
     );
-    #[cfg(all())]
     let recovery = {
         let mut command = std::process::Command::new(std::env::current_exe().expect("test executable"));
         command
@@ -99,7 +96,6 @@ pub fn run_inner(require_successor_checkpoint: bool) {
         "selected predecessor custody must recover after candidate-only crash: {}",
         String::from_utf8_lossy(&recovery.stderr)
     );
-    #[cfg(all())]
     assert!(
         String::from_utf8_lossy(&recovery.stderr)
             .contains("C8_CANDIDATE_CRASH_SELECTED_PREDECESSOR_OPENED"),

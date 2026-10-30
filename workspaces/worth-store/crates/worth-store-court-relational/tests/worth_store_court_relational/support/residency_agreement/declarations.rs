@@ -1,7 +1,15 @@
 //! A real Store home agrees with an independent memory runtime at every warmth.
+pub(crate) use worth_execution::ExecutionRequest;
 pub(crate) use {crate::batches, crate::durable_run, crate::schema_transition, crate::workload};
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::branch::RelationalBranchObservation, worth_relational::facade::history::BranchId, worth_relational::facade::identity::EntityId, worth_relational::facade::identity::PartitionId, worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::transactions::RecordRef};
+pub(crate) use {
+    worth_relational::facade::branch::RelationalBranchObservation,
+    worth_relational::facade::history::BranchId, worth_relational::facade::identity::EntityId,
+    worth_relational::facade::identity::PartitionId,
+    worth_relational::facade::runtime::RelationalRuntime,
+    worth_relational::facade::transactions::CreateIntent,
+    worth_relational::facade::transactions::MutationIntent,
+    worth_relational::facade::transactions::RecordRef,
+};
 
 pub(crate) fn observation(runtime: &RelationalRuntime) -> RelationalBranchObservation {
     runtime

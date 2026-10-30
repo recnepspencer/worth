@@ -4,15 +4,37 @@
 //! declares an optional added field in its diff while its registry keeps v1's
 //! kind contracts.
 
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use worth_relational::facade::identity::KindId;
+pub(crate) use worth_relational::facade::mvcc::BranchBoundRelationalTransaction;
 pub(crate) use {worth_execution::ExecutionAllocationPolicy, worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_relational::facade::identity::KindId};
-pub(crate) use {worth_relational::facade::mvcc::BranchBoundRelationalTransaction};
-pub(crate) use {worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::runtime::RelationalSchemaTransitionAdmissionDenial, worth_relational::facade::runtime::RelationalSchemaTransitionAdmissionDenialKind};
-pub(crate) use {worth_relational::facade::schema::HistoricalInterpretationSensitivity, worth_relational::facade::schema::ProposedSchemaTransition, worth_relational::facade::schema::RelationalSchemaRegistry, worth_relational::facade::schema::SchemaDiffAtom, worth_relational::facade::schema::SchemaDiffDetail, worth_relational::facade::schema::SchemaElementKind, worth_relational::facade::schema::SchemaElementRef, worth_relational::facade::schema::SchemaId, worth_relational::facade::schema::SchemaPublicationImpact, worth_relational::facade::schema::SchemaReconciliationPolicy, worth_relational::facade::schema::SchemaStratum, worth_relational::facade::schema::SchemaSubscriberImpact, worth_relational::facade::schema::SchemaVersionId, worth_relational::facade::schema::SubscriberBoundaryVisibility};
-pub(crate) use {worth_relational::facade::transactions::CommitResult, worth_relational::facade::transactions::TransactionCommitError, worth_relational::facade::transactions::WorkerIntentBatch};
+pub(crate) use {
+    worth_relational::facade::runtime::RelationalRuntime,
+    worth_relational::facade::runtime::RelationalSchemaTransitionAdmissionDenial,
+    worth_relational::facade::runtime::RelationalSchemaTransitionAdmissionDenialKind,
+};
+pub(crate) use {
+    worth_relational::facade::schema::HistoricalInterpretationSensitivity,
+    worth_relational::facade::schema::ProposedSchemaTransition,
+    worth_relational::facade::schema::RelationalSchemaRegistry,
+    worth_relational::facade::schema::SchemaDiffAtom,
+    worth_relational::facade::schema::SchemaDiffDetail,
+    worth_relational::facade::schema::SchemaElementKind,
+    worth_relational::facade::schema::SchemaElementRef, worth_relational::facade::schema::SchemaId,
+    worth_relational::facade::schema::SchemaPublicationImpact,
+    worth_relational::facade::schema::SchemaReconciliationPolicy,
+    worth_relational::facade::schema::SchemaStratum,
+    worth_relational::facade::schema::SchemaSubscriberImpact,
+    worth_relational::facade::schema::SchemaVersionId,
+    worth_relational::facade::schema::SubscriberBoundaryVisibility,
+};
+pub(crate) use {
+    worth_relational::facade::transactions::CommitResult,
+    worth_relational::facade::transactions::TransactionCommitError,
+    worth_relational::facade::transactions::WorkerIntentBatch,
+};
 
-pub(crate) use {crate::batches};
+pub(crate) use crate::batches;
 
 pub(crate) const SOURCE: SchemaVersionId = SchemaVersionId(1);
 pub(crate) const TARGET: SchemaVersionId = SchemaVersionId(2);
@@ -21,7 +43,10 @@ pub(crate) fn registry(version: SchemaVersionId) -> RelationalSchemaRegistry {
     crate::batches::schema_registry(version)
 }
 
-pub(crate) fn proposed(source: SchemaVersionId, target: SchemaVersionId) -> ProposedSchemaTransition {
+pub(crate) fn proposed(
+    source: SchemaVersionId,
+    target: SchemaVersionId,
+) -> ProposedSchemaTransition {
     let schema = SchemaId("oracle".to_string());
     ProposedSchemaTransition {
         source_schema_id: schema.clone(),
@@ -108,7 +133,10 @@ pub(crate) fn commit(
     let mut transaction =
         begin(runtime, branch, SOURCE).expect("the schema transition is admitted");
     transaction
-        .push_batch(batch, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the transition batch stages");
     transaction.commit(execution, runtime)
 }

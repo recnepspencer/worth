@@ -19,7 +19,8 @@ pub(crate) fn run() {
     let request = worth_store::physical_runtime::BlobReclaimRequest::released(
         proof,
         world.placement(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(1024).unwrap(),
             std::num::NonZeroU64::new(64 << 20).unwrap(),
@@ -34,12 +35,17 @@ pub(crate) fn run() {
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert_eq!(receipt.dropped_records().len(), 1);
     assert!(receipt.remaining_payload_records() > 0);
     assert_eq!(
         receipt.retirement(),
-        worth_store::physical_runtime::BlobReclaimRetirement::Pending(worth_store::physical_runtime::PhysicalRetirementDenial::Checkpoint)
+        worth_store::physical_runtime::BlobReclaimRetirement::Pending(
+            worth_store::physical_runtime::PhysicalRetirementDenial::Checkpoint
+        )
     );
     assert_eq!(checkpoint_family(world.root()), selected_before_drop);
 
@@ -60,8 +66,9 @@ pub(crate) fn run() {
 
     // Every other Recovery byte is held: the capture consumes the reservation.
     let selected_before = snapshot_family(world.root());
-    let gate =
-        serving.pause_physical_checkpoint_at(worth_store::physical_runtime::production::PhysicalCheckpointStep::CandidateSynchronization);
+    let gate = serving.pause_physical_checkpoint_at(
+        worth_store::physical_runtime::production::PhysicalCheckpointStep::CandidateSynchronization,
+    );
     let handle = start(serving, 0x7b);
     // The pause probe waits five seconds per call; the admitted checkpoint has
     // thirty seconds. Observe that whole envelope without restarting its work.
@@ -94,7 +101,10 @@ pub(crate) fn run() {
     );
     let completed = start(serving, 0x7c).wait();
     assert!(
-        matches!(completed, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            completed,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "the retry runs on the same reservation under held pressure: {completed:?}"
     );
     // The committed roster lives inside the reservation that funded it.
@@ -109,7 +119,11 @@ pub(crate) fn run() {
     };
     assert_eq!(batch.cumulative_dropped(), 1);
     assert!(!batch.terminal());
-    let heads = worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), accumulator);
+    let heads =
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            accumulator,
+        );
     let [head] = heads.as_slice() else {
         panic!("one partial release must retain its keyed head");
     };
@@ -126,7 +140,8 @@ pub(crate) fn run() {
 pub(crate) fn checkpoint_request(key: u8) -> PhysicalCheckpointRequest {
     worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
 }
 
@@ -148,7 +163,9 @@ pub(crate) fn recovery_bytes(serving: &ServingPhysicalRuntime) -> u64 {
     serving
         .residency_observation()
         .counters()
-        .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery)
+        .active_operation_bytes_for(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery,
+        )
 }
 
 pub(crate) fn checkpoint_family(root: &Path) -> Vec<(PathBuf, Vec<u8>)> {

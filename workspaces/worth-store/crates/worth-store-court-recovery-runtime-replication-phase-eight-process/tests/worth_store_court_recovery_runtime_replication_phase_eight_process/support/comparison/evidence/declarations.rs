@@ -1,4 +1,4 @@
-pub(crate) use {worth_store_offline_verifier::RecoveryObserverReport};
+pub(crate) use worth_store_offline_verifier::RecoveryObserverReport;
 
 pub(crate) fn same_physical_evidence(
     expected: &RecoveryObserverReport,

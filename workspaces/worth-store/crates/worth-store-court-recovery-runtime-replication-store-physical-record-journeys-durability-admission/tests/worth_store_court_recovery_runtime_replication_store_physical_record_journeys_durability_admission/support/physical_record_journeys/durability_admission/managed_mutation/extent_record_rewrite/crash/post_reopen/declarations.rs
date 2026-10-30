@@ -1,7 +1,10 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
 pub(crate) fn reseal_observer_fixture_frame(bytes: &mut [u8]) {
-    let checksum = worth_store_testkit_store::durable_frame_oracle::independent_crc32c(&[&bytes[..44], &bytes[48..]]);
+    let checksum = worth_store_testkit_store::durable_frame_oracle::independent_crc32c(&[
+        &bytes[..44],
+        &bytes[48..],
+    ]);
     bytes[44..48].copy_from_slice(&checksum.to_le_bytes());
 }
 

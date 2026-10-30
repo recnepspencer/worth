@@ -1,12 +1,30 @@
-pub(crate) use {std::path::PathBuf};
+pub(crate) use std::path::PathBuf;
 
-pub(crate) use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedRecordAccessPolicy, worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalResidencyCounterSnapshot, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordReadObservation, worth_store::physical_runtime::RecordScanCounterSnapshot};
-pub(crate) use {worth_store_offline_verifier::OfflineDurableManifestWalk};
-pub(crate) use {worth_store_physical_backend::MediaCounterSnapshot, worth_store_physical_backend::MediaOperationRole};
+pub(crate) use worth_store_offline_verifier::OfflineDurableManifestWalk;
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedRecordAccessPolicy,
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalRecordId,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalResidencyCounterSnapshot,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordReadObservation,
+    worth_store::physical_runtime::RecordScanCounterSnapshot,
+};
+pub(crate) use {
+    worth_store_physical_backend::MediaCounterSnapshot,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-pub(crate) use {worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence};
-pub(crate) use {crate::physical_record_journeys::manifest_scale::evidence::ScaleCourtroomEvidence};
-pub(crate) use {crate::manifest_scale::ScaleObservation};
+pub(crate) use crate::manifest_scale::ScaleObservation;
+pub(crate) use crate::physical_record_journeys::manifest_scale::evidence::ScaleCourtroomEvidence;
+pub(crate) use worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence;
 
 pub(crate) struct SeededScaleWorld {
     pub(crate) _parent: tempfile::TempDir,
@@ -52,18 +70,20 @@ impl LiveScaleMeasurements {
                 .saturating_sub(self.residency_before_point.faults()),
             point_media_reads: self
                 .media_after_point
-                .completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-                .saturating_sub(
-                    self.media_before_point
-                        .completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
-                ),
+                .completed_operations_for(
+                    worth_store_physical_backend::MediaOperationRole::PositionedRead,
+                )
+                .saturating_sub(self.media_before_point.completed_operations_for(
+                    worth_store_physical_backend::MediaOperationRole::PositionedRead,
+                )),
             point_media_bytes: self
                 .media_after_point
-                .completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-                .saturating_sub(
-                    self.media_before_point
-                        .completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
-                ),
+                .completed_bytes_for(
+                    worth_store_physical_backend::MediaOperationRole::PositionedRead,
+                )
+                .saturating_sub(self.media_before_point.completed_bytes_for(
+                    worth_store_physical_backend::MediaOperationRole::PositionedRead,
+                )),
             point_manifest_bytes: self.point.manifest_bytes(),
             scan_records: self.scan.records(),
             scan_payload_bytes: self.scan.payload_bytes(),
@@ -76,18 +96,20 @@ impl LiveScaleMeasurements {
                 .saturating_sub(self.residency_after_point.faults()),
             scan_media_reads: self
                 .media_after_scan
-                .completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-                .saturating_sub(
-                    self.media_after_point
-                        .completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
-                ),
+                .completed_operations_for(
+                    worth_store_physical_backend::MediaOperationRole::PositionedRead,
+                )
+                .saturating_sub(self.media_after_point.completed_operations_for(
+                    worth_store_physical_backend::MediaOperationRole::PositionedRead,
+                )),
             scan_media_bytes: self
                 .media_after_scan
-                .completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-                .saturating_sub(
-                    self.media_after_point
-                        .completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
-                ),
+                .completed_bytes_for(
+                    worth_store_physical_backend::MediaOperationRole::PositionedRead,
+                )
+                .saturating_sub(self.media_after_point.completed_bytes_for(
+                    worth_store_physical_backend::MediaOperationRole::PositionedRead,
+                )),
             scan_manifest_bytes: self.scan.manifest_bytes(),
             signal_clock_advance: self.signal_clock_advance,
             signal_invalidation_delta: self.signal_invalidation_delta,
@@ -137,28 +159,34 @@ pub(crate) fn seed_scale_world(record_count: u16) -> SeededScaleWorld {
     let format = worth_store_testkit_store::scale_support::format();
     let placement = worth_store_testkit_store::scale_support::placement(format, 2, 2, 50);
     let initial_access = worth_store_testkit_store::scale_support::access(format, 17);
-    let serving = worth_store_testkit_store::physical_record_journeys::success(initialize_record_store!(
-        worth_store_testkit_store::physical_record_journeys::media(&root),
-        |durability| worth_store::physical_runtime::PhysicalRecordInitialization::new(
-            format,
-            placement,
-            initial_access,
-            durability
-        ),
-    ));
+    let serving =
+        worth_store_testkit_store::physical_record_journeys::success(initialize_record_store!(
+            worth_store_testkit_store::physical_record_journeys::media(&root),
+            |durability| worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                format,
+                placement,
+                initial_access,
+                durability
+            ),
+        ));
     let payloads = (0..record_count)
         .map(|ordinal| vec![(ordinal % 251) as u8; 100])
         .collect::<Vec<_>>();
     let published = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([record_count as u8; 32]),
+        worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(
+            [record_count as u8; 32],
+        ),
         worth_store::physical_runtime::RecordAppendBatch::try_from_iter(payloads.iter()).unwrap(),
     );
     let last = published.settled_members()[0]
         .record_id(usize::from(record_count - 1))
         .unwrap();
-    let locator = worth_store::physical_runtime::ExternalPhysicalRecordLocator::new(serving.store_identity(), last);
+    let locator = worth_store::physical_runtime::ExternalPhysicalRecordLocator::new(
+        serving.store_identity(),
+        last,
+    );
     serving.close();
     SeededScaleWorld {
         _parent: parent,
@@ -176,7 +204,11 @@ pub(crate) fn observe_runtime_world(
 ) -> RuntimeScaleWorld {
     let serving = worth_store_testkit_store::physical_record_journeys::success(open_record_store!(
         worth_store_testkit_store::physical_record_journeys::media(&seeded.root),
-        |durability| worth_store::physical_runtime::PhysicalRecordOpen::new(seeded.format, changed_access, durability)
+        |durability| worth_store::physical_runtime::PhysicalRecordOpen::new(
+            seeded.format,
+            changed_access,
+            durability
+        )
     ));
     assert_eq!(
         serving
@@ -215,10 +247,13 @@ pub(crate) fn observe_live_reads(
         .expect("read protection admission")
         .open(
             last,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(100).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(100).unwrap(),
+            ),
         )
         .unwrap();
-    let (bytes, point) = worth_store_testkit_store::physical_record_journeys::read_record(session, 100);
+    let (bytes, point) =
+        worth_store_testkit_store::physical_record_journeys::read_record(session, 100);
     assert_eq!(
         bytes,
         vec![(last.ordinal().saturating_sub(1) % 251) as u8; 100]
@@ -251,18 +286,31 @@ pub(crate) fn observe_live_reads(
     }
 }
 
-pub(crate) fn observe_allocation_probe(seeded: &SeededScaleWorld) -> (ScenarioProcessEvidence, usize, usize) {
-    let stdout = worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child(
-        "scale_allocation_reader",
-        &seeded.root,
-        Some(&worth_store_testkit_store::child_process::locator_codec::hex(&seeded.locator.encode())),
-    );
-    let process = worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence::parse_child(&stdout, "scale-allocation-probe");
+pub(crate) fn observe_allocation_probe(
+    seeded: &SeededScaleWorld,
+) -> (ScenarioProcessEvidence, usize, usize) {
+    let stdout =
+        worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_child(
+            "scale_allocation_reader",
+            &seeded.root,
+            Some(
+                &worth_store_testkit_store::child_process::locator_codec::hex(
+                    &seeded.locator.encode(),
+                ),
+            ),
+        );
+    let process =
+        worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence::parse_child(
+            &stdout,
+            "scale-allocation-probe",
+        );
     let (point, scan) = scale_allocations(&stdout);
     (process, point, scan)
 }
 
-pub(crate) fn assert_invalid_worlds(invalid: &crate::physical_record_journeys::scale_invalid_worlds::InvalidScaleWorlds) {
+pub(crate) fn assert_invalid_worlds(
+    invalid: &crate::physical_record_journeys::scale_invalid_worlds::InvalidScaleWorlds,
+) {
     assert!(
         invalid.missing_catalog_refused,
         "C5_PREDICATE:current-truth missing catalog was guessed"
@@ -283,7 +331,9 @@ pub(crate) fn assert_invalid_worlds(invalid: &crate::physical_record_journeys::s
     assert_eq!(invalid.count(), 5);
 }
 
-pub(crate) fn await_signal_cleanup(serving: &worth_store::physical_runtime::ServingPhysicalRuntime) {
+pub(crate) fn await_signal_cleanup(
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+) {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
     loop {
         let observation = serving.physical_signal_observation().unwrap();

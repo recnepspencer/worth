@@ -1,27 +1,35 @@
+pub(crate) use std::time::Duration;
 pub(crate) use {std::path::Path, std::path::PathBuf};
-pub(crate) use {std::time::Duration};
 
-pub(crate) use {worth_store::physical_runtime::PhysicalRecoveryYieldpointStage};
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportDenialCause, worth_store_recovery_runtime::RecoveryReportEnvelope, worth_store_recovery_runtime::RecoveryReportOutcome};
+pub(crate) use worth_store::physical_runtime::PhysicalRecoveryYieldpointStage;
+pub(crate) use {
+    worth_store_recovery_runtime::RecoveryReportDenialCause,
+    worth_store_recovery_runtime::RecoveryReportEnvelope,
+    worth_store_recovery_runtime::RecoveryReportOutcome,
+};
 
-pub(crate) use {crate::phase_eight_process::comparison};
-pub(crate) use {crate::phase_eight_process::production::harness::ProcessWorld};
-
-
-
-
+pub(crate) use crate::phase_eight_process::comparison;
+pub(crate) use crate::phase_eight_process::production::harness::ProcessWorld;
 
 pub(crate) const RECOVERY_INTERRUPTION_MEMORY_BUDGET_BYTES: u64 = 4 * 1024 * 1024;
 
 pub(crate) fn run_publication(world: &ProcessWorld, index: usize) {
-    run_stages(world, index, |stage| !crate::phase_eight_process::production::recovery_crash::is_cleanup_stage(stage));
-    run_deadlines(world, index + crate::phase_eight_process::production::recovery_crash::RECOVERY_SEAMS.len(), |stage| {
+    run_stages(world, index, |stage| {
         !crate::phase_eight_process::production::recovery_crash::is_cleanup_stage(stage)
     });
+    run_deadlines(
+        world,
+        index + crate::phase_eight_process::production::recovery_crash::RECOVERY_SEAMS.len(),
+        |stage| !crate::phase_eight_process::production::recovery_crash::is_cleanup_stage(stage),
+    );
 }
 
 pub(crate) fn run_cleanup(world: &ProcessWorld, index: usize) {
-    run_stages(world, index, crate::phase_eight_process::production::recovery_crash::is_cleanup_stage);
+    run_stages(
+        world,
+        index,
+        crate::phase_eight_process::production::recovery_crash::is_cleanup_stage,
+    );
     run_deadlines(
         world,
         index + crate::phase_eight_process::production::recovery_crash::RECOVERY_SEAMS.len(),
@@ -44,11 +52,19 @@ pub(crate) fn run_stages(
     }
 }
 
-pub(crate) fn run_cancelled(world: &ProcessWorld, index: usize, stage: PhysicalRecoveryYieldpointStage) {
+pub(crate) fn run_cancelled(
+    world: &ProcessWorld,
+    index: usize,
+    stage: PhysicalRecoveryYieldpointStage,
+) {
     let root = copied_root(world, index, stage, "cancelled");
     let publication_before =
-        (!crate::phase_eight_process::production::recovery_crash::is_cleanup_stage(stage)).then(|| world.parent_history_root(&root));
-    let cleanup_before = crate::phase_eight_process::production::recovery_crash::is_cleanup_stage(stage).then(|| {
+        (!crate::phase_eight_process::production::recovery_crash::is_cleanup_stage(stage))
+            .then(|| world.parent_history_root(&root));
+    let cleanup_before = crate::phase_eight_process::production::recovery_crash::is_cleanup_stage(
+        stage,
+    )
+    .then(|| {
         world
             .cleanup_candidate(&root)
             .unwrap_or_else(|error| panic!("cleanup cancellation candidate precondition: {error}"))
@@ -59,15 +75,18 @@ pub(crate) fn run_cancelled(world: &ProcessWorld, index: usize, stage: PhysicalR
     let reached = parent.join(format!("{name}-reached"));
     let release = parent.join(format!("{name}-release"));
     let cancel = release.with_extension("cancel");
-    let mut child = crate::phase_eight_process::production::recovery_crash::interruption::cancelled::spawn(
-        &root,
-        &report,
-        world.parent_path(),
-        stage,
-        &reached,
-        &release,
+    let mut child =
+        crate::phase_eight_process::production::recovery_crash::interruption::cancelled::spawn(
+            &root,
+            &report,
+            world.parent_path(),
+            stage,
+            &reached,
+            &release,
+        );
+    crate::phase_eight_process::production::recovery_crash::seam::wait_for_reached(
+        &mut child, &reached, stage,
     );
-    crate::phase_eight_process::production::recovery_crash::seam::wait_for_reached(&mut child, &reached, stage);
     std::fs::write(&cancel, "cancel").expect("arm product cancellation");
     let output = child
         .wait_with_output_within(std::time::Duration::from_secs(120))
@@ -81,7 +100,10 @@ pub(crate) fn run_cancelled(world: &ProcessWorld, index: usize, stage: PhysicalR
             report.outcome(),
             report.denial_cause(),
         );
-        assert_eq!(report.outcome(), worth_store_recovery_runtime::RecoveryReportOutcome::Recovered);
+        assert_eq!(
+            report.outcome(),
+            worth_store_recovery_runtime::RecoveryReportOutcome::Recovered
+        );
         assert!(
             report.counters().cleanup_deferred() > 0,
             "cleanup cancellation must defer at least one cleanup action"
@@ -152,11 +174,19 @@ pub(crate) fn run_deadlines(
     }
 }
 
-pub(crate) fn run_deadline(world: &ProcessWorld, index: usize, stage: PhysicalRecoveryYieldpointStage) {
+pub(crate) fn run_deadline(
+    world: &ProcessWorld,
+    index: usize,
+    stage: PhysicalRecoveryYieldpointStage,
+) {
     let root = copied_root(world, index, stage, "deadline");
     let publication_before =
-        (!crate::phase_eight_process::production::recovery_crash::is_cleanup_stage(stage)).then(|| world.parent_history_root(&root));
-    let cleanup_before = crate::phase_eight_process::production::recovery_crash::is_cleanup_stage(stage).then(|| {
+        (!crate::phase_eight_process::production::recovery_crash::is_cleanup_stage(stage))
+            .then(|| world.parent_history_root(&root));
+    let cleanup_before = crate::phase_eight_process::production::recovery_crash::is_cleanup_stage(
+        stage,
+    )
+    .then(|| {
         world
             .cleanup_candidate(&root)
             .unwrap_or_else(|error| panic!("cleanup deadline candidate precondition: {error}"))
@@ -167,15 +197,18 @@ pub(crate) fn run_deadline(world: &ProcessWorld, index: usize, stage: PhysicalRe
     let reached = parent.join(format!("{name}-reached"));
     let release = parent.join(format!("{name}-release"));
     let cancel = release.with_extension("cancel");
-    let mut child = crate::phase_eight_process::production::recovery_crash::interruption::deadline::spawn(
-        &root,
-        &report,
-        world.parent_path(),
-        stage,
-        &reached,
-        &release,
+    let mut child =
+        crate::phase_eight_process::production::recovery_crash::interruption::deadline::spawn(
+            &root,
+            &report,
+            world.parent_path(),
+            stage,
+            &reached,
+            &release,
+        );
+    crate::phase_eight_process::production::recovery_crash::seam::wait_for_reached(
+        &mut child, &reached, stage,
     );
-    crate::phase_eight_process::production::recovery_crash::seam::wait_for_reached(&mut child, &reached, stage);
     let output = child
         .wait_with_output_within(std::time::Duration::from_secs(120))
         .expect("wait for product deadline");
@@ -192,7 +225,10 @@ pub(crate) fn run_deadline(world: &ProcessWorld, index: usize, stage: PhysicalRe
             report.outcome(),
             report.denial_cause(),
         );
-        assert_eq!(report.outcome(), worth_store_recovery_runtime::RecoveryReportOutcome::Recovered);
+        assert_eq!(
+            report.outcome(),
+            worth_store_recovery_runtime::RecoveryReportOutcome::Recovered
+        );
         assert!(report.counters().cleanup_deferred() > 0);
         assert_cleanup_outcome(
             world,

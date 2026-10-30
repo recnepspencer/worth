@@ -1,6 +1,10 @@
-pub use {std::path::Path};
+pub use std::path::Path;
 
-pub use {crate::child_process::CHILD_TEST, crate::child_process::LOCATOR_ENV, crate::child_process::ORACLE_ENV, crate::child_process::ROLE_ENV, crate::child_process::ROOT_ENV};
+pub use {
+    crate::child_process::CHILD_TEST, crate::child_process::LOCATOR_ENV,
+    crate::child_process::ORACLE_ENV, crate::child_process::ROLE_ENV,
+    crate::child_process::ROOT_ENV,
+};
 
 pub fn child_command(role: &str, root: &Path) -> std::process::Command {
     let mut command = std::process::Command::new(std::env::current_exe().unwrap());
@@ -39,7 +43,12 @@ pub fn run_courtroom_reopener(root: &Path, locators: &Path) -> String {
     run_courtroom_child("courtroom_reopener", root, locators, None)
 }
 
-pub fn run_courtroom_child(role: &str, root: &Path, locators: &Path, oracle: Option<&Path>) -> String {
+pub fn run_courtroom_child(
+    role: &str,
+    root: &Path,
+    locators: &Path,
+    oracle: Option<&Path>,
+) -> String {
     let mut command = child_command(role, root);
     command.env(LOCATOR_ENV, locators);
     if let Some(oracle) = oracle {

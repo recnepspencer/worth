@@ -1,6 +1,14 @@
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::find_file, crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::frame_at, crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::frame_total};
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u16, crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u32, crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64};
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity};
+pub(crate) use crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity;
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u16,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u32,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64,
+};
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::find_file,
+    crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::frame_at,
+    crate::phase_eight_process::history::parent_oracle::canonical_membership_frame::frame_total,
+};
 
 pub(crate) const INLINE_PAGE_KIND: u8 = 3;
 

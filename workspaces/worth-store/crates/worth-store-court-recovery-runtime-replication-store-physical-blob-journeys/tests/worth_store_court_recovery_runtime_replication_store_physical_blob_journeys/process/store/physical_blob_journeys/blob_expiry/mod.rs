@@ -1,15 +1,18 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_expiry::*;
-use {std::fs, std::num::NonZeroU64, std::path::Path};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_expiry::*;
 
-use {worth_proof::TransitionOutcome};
-use {worth_signal::facade::TemporalDuration};
-use {worth_store::physical_runtime::production::PhysicalCheckpointStep, worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestClaimDenial, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobTerminalDisposition, worth_store::physical_runtime::BlobTerminalFailure, worth_store::physical_runtime::BlobTerminalLimits, worth_store::physical_runtime::CompletedPhysicalCheckpoint, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointHandle, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalWalReclamationObservation, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobAbandonmentReasonV1, worth_store_physical_format::BlobRecordV1};
+use worth_store_physical_format::decode_blob_record;
 
-
-
-use {crate::physical_blob_journeys::blob_abort::assert_resume_abandoned, crate::blob_crash::recovery::recover_closed_store, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization_with_wal_segment_bytes, worth_store_testkit_store::fixture::serving_from_open_with_wal_segment_bytes};
+use {
+    crate::blob_crash::recovery::recover_closed_store,
+    crate::physical_blob_journeys::blob_abort::assert_resume_abandoned,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization_with_wal_segment_bytes,
+    worth_store_testkit_store::fixture::serving_from_open_with_wal_segment_bytes,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
 
 #[test]
 fn only_completed_checkpoint_crossing_declared_max_can_publish_expiry() {
@@ -43,8 +46,9 @@ fn only_completed_checkpoint_crossing_declared_max_can_publish_expiry() {
     drop(ingest);
 
     assert_not_expired(&serving, token, &scope, 0, declared_max);
-    let gate =
-        serving.pause_physical_checkpoint_at(worth_store::physical_runtime::production::PhysicalCheckpointStep::CandidateSynchronization);
+    let gate = serving.pause_physical_checkpoint_at(
+        worth_store::physical_runtime::production::PhysicalCheckpointStep::CandidateSynchronization,
+    );
     let pending = start_checkpoint(&serving, 1);
     assert!(
         gate.await_arrival(),
@@ -120,7 +124,8 @@ fn only_completed_checkpoint_crossing_declared_max_can_publish_expiry() {
         retained_first > terminal_wal_segment,
         "replacement retained tail must exclude the terminal's WAL segment"
     );
-    let worth_store::physical_runtime::PhysicalWalReclamationObservation::Reclaimed(reclamation) = replacement.wal_reclamation()
+    let worth_store::physical_runtime::PhysicalWalReclamationObservation::Reclaimed(reclamation) =
+        replacement.wal_reclamation()
     else {
         panic!("replacement checkpoint must prune terminal-containing WAL prefix");
     };
@@ -143,7 +148,8 @@ fn only_completed_checkpoint_crossing_declared_max_can_publish_expiry() {
         .last()
         .expect("completed checkpoint retains one WAL origin segment");
     assert_eq!(anchor.lsn_range().1, cutoff);
-    let anchor_bytes = std::fs::read(wal_segment_path(directory.path(), anchor.identity())).unwrap();
+    let anchor_bytes =
+        std::fs::read(wal_segment_path(directory.path(), anchor.identity())).unwrap();
     recover_closed_store(directory.path());
     let after_c8 = assert_checkpoint_wal_range(directory.path(), cutoff, "after C8");
     assert_eq!(after_c8.segment_facts(), &[anchor]);

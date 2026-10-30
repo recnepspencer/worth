@@ -1,6 +1,6 @@
 //! Independent durable-frame geometry used by integration evidence.
 
-pub use {std::path::Path};
+pub use std::path::Path;
 
 pub const HEADER_BYTES: usize = 48;
 pub const CHECKSUM_OFFSET: usize = 44;

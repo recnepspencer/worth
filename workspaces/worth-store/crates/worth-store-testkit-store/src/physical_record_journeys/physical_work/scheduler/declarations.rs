@@ -1,22 +1,48 @@
-pub use {tempfile::tempdir};
-pub use {worth_foundational::FoundationalPerformanceWorkClass};
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_store::physical_runtime::PhysicalEffectObligation, worth_store::physical_runtime::PhysicalSchedulerDemand, worth_store::physical_runtime::PhysicalSchedulerDenial, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkPreEffectDenial, worth_store::physical_runtime::PhysicalWorkReadiness};
-pub use {worth_store_io_scheduler::admit_secure_io_scope_for_scheduler, worth_store_io_scheduler::admit_security_scope_for_scheduler, worth_store_io_scheduler::foreground_reservation::ForegroundIoLaneKind, worth_store_io_scheduler::IoSchedulerBackendCapabilityAdmission, worth_store_io_scheduler::QueueDurabilityClass, worth_store_io_scheduler::QueueExecutionAdmissionDenial, worth_store_io_scheduler::SecureIoOperation, worth_store_io_scheduler::SecureIoPreservationRequest};
+pub use tempfile::tempdir;
+pub use worth_foundational::FoundationalPerformanceWorkClass;
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_store::physical_runtime::PhysicalEffectObligation,
+    worth_store::physical_runtime::PhysicalSchedulerDemand,
+    worth_store::physical_runtime::PhysicalSchedulerDenial,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
+    worth_store::physical_runtime::PhysicalWorkReadiness,
+};
+pub use {
+    worth_store_io_scheduler::admit_secure_io_scope_for_scheduler,
+    worth_store_io_scheduler::admit_security_scope_for_scheduler,
+    worth_store_io_scheduler::foreground_reservation::ForegroundIoLaneKind,
+    worth_store_io_scheduler::IoSchedulerBackendCapabilityAdmission,
+    worth_store_io_scheduler::QueueDurabilityClass,
+    worth_store_io_scheduler::QueueExecutionAdmissionDenial,
+    worth_store_io_scheduler::SecureIoOperation,
+    worth_store_io_scheduler::SecureIoPreservationRequest,
+};
 
-pub use {crate::physical_record_journeys::physical_work::fixture::mutation_pair::foreground_saturation_fixture, crate::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, crate::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+pub use {
+    crate::physical_record_journeys::physical_work::fixture::mutation_pair::foreground_saturation_fixture,
+    crate::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    crate::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
-
-
-
-pub use {crate::physical_work::scheduler::policy_evidence::mismatched_policy_receipt};
-pub use {crate::physical_work::scheduler::policy_evidence::exhausted_policy_receipt, crate::physical_work::scheduler::policy_evidence::policy_receipt, crate::physical_work::scheduler::policy_evidence::policy_receipt_for};
+pub use crate::physical_work::scheduler::policy_evidence::mismatched_policy_receipt;
+pub use {
+    crate::physical_work::scheduler::policy_evidence::exhausted_policy_receipt,
+    crate::physical_work::scheduler::policy_evidence::policy_receipt,
+    crate::physical_work::scheduler::policy_evidence::policy_receipt_for,
+};
 
 pub fn write_demand(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
     ready: worth_store::physical_runtime::ReadyPhysicalWork,
 ) -> PhysicalSchedulerDemand {
-    worth_store::physical_runtime::PhysicalSchedulerDemand::foreground(ready, crate::physical_work::scheduler_reservation::reserved_page_write(serving), None).unwrap()
+    worth_store::physical_runtime::PhysicalSchedulerDemand::foreground(
+        ready,
+        crate::physical_work::scheduler_reservation::reserved_page_write(serving),
+        None,
+    )
+    .unwrap()
 }
 
 pub fn secure_demand(
@@ -37,11 +63,13 @@ pub fn secure_demand(
     } else {
         worth_store_io_scheduler::SecureIoOperation::BatchedWrite
     };
-    let secure_io = admit_secure_io_scope_for_scheduler(worth_store_io_scheduler::SecureIoPreservationRequest::new(
-        operation,
-        &scheduler_security,
-        backend,
-    ))
+    let secure_io = admit_secure_io_scope_for_scheduler(
+        worth_store_io_scheduler::SecureIoPreservationRequest::new(
+            operation,
+            &scheduler_security,
+            backend,
+        ),
+    )
     .expect("the physical-work fixture binds secure I/O to its exact scope and backend");
     demand.with_secure_io(secure_io)
 }

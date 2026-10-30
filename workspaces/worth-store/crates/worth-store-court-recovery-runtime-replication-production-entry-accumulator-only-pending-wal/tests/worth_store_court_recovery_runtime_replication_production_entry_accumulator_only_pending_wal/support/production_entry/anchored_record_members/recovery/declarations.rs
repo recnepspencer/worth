@@ -2,9 +2,9 @@
 //! recovery, and a member whose durable bytes are damaged refuses with a
 //! typed failure instead of reading as content or as absence.
 
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store::physical_runtime::AnchoredRecordMemberReadFailure};
+pub(crate) use worth_store::physical_runtime::AnchoredRecordMemberReadFailure;
 
 pub(crate) use {crate::production_entry::anchored_record_members::assert_value, crate::production_entry::anchored_record_members::carried, crate::production_entry::anchored_record_members::content, crate::production_entry::anchored_record_members::new_member, crate::production_entry::anchored_record_members::publish_with_members};
 pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::anchored_records::assert_journal, worth_store_testkit_recovery_runtime::production_entry::anchored_records::name, worth_store_testkit_recovery_runtime::production_entry::anchored_records::publish_journal_entry, worth_store_testkit_recovery_runtime::production_entry::anchored_records::value, worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT};
@@ -27,14 +27,20 @@ pub(crate) fn first_contents() -> Vec<Vec<u8>> {
 pub(crate) fn store_checkpoint(serving: &worth_store::physical_runtime::ServingPhysicalRuntime) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0xa7; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(60_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(60_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("the checkpoint must start");
     };
     let outcome = handle.wait();
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "{outcome:?}"
     );
 }

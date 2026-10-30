@@ -1,4 +1,4 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
 pub(crate) fn assert_candidate_prefix(
     root: &Path,
@@ -92,7 +92,9 @@ pub(crate) fn record_kinds(bytes: &[u8]) -> Vec<u8> {
     kinds
 }
 
-pub(crate) fn find_candidate(snapshot: &crate::checkpoint_crash::evidence::snapshot::DirectorySnapshot) -> Option<&str> {
+pub(crate) fn find_candidate(
+    snapshot: &crate::checkpoint_crash::evidence::snapshot::DirectorySnapshot,
+) -> Option<&str> {
     let candidates = snapshot
         .keys()
         .filter(|path| path.starts_with("staging/") && path.ends_with(".candidate"))

@@ -1,26 +1,7 @@
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_reachability::*;
-use {std::num::NonZeroU16, std::num::NonZeroU64};
 
-use worth_proof::AdmittedBlobReleaseProof;
-
-use worth_store_blob_chunks::BlobChunkSize;
-use worth_store_contracts::DurableArtifactFamilyId;
-use {
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobReachabilityLimits,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::BlobReclaimLimits,
-    worth_store::physical_runtime::BlobReclaimRequest,
-    worth_store::physical_runtime::BlobRecordReachability,
-    worth_store::physical_runtime::PhysicalIndexPointKey,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-};
-use {
-    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
-    worth_store_physical_format::DerivedFamilyRootDirectoryV1,
-};
+use worth_store_physical_format::decode_blob_record;
 
 use {
     crate::physical_blob_journeys::blob_abort::deadline,
@@ -207,7 +188,6 @@ fn held_root_keeps_displaced_catalog_node_held_only() {
     serving.close();
 }
 
-#[cfg(all())]
 #[test]
 fn released_indexed_publication_defers_current_residue_to_recovery_hold() {
     const CHUNK: usize = 64 << 10;
@@ -368,6 +348,5 @@ fn released_indexed_publication_defers_current_residue_to_recovery_hold() {
     assert!(after_release.retained_roots_scanned() > 0);
     serving.close();
 }
-#[cfg(all())]
 #[path = "reuse/mod.rs"]
 pub(crate) mod reuse;

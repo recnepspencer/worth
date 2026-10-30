@@ -1,6 +1,3 @@
-use crate::phase_eight_process::comparison;
-use crate::phase_eight_process::production::harness::ProcessWorld;
-
 #[test]
 fn independent_observers_converge_and_recovery_runtime_identity_changes() {
     let world = crate::phase_eight_process::production::harness::ProcessWorld::start(

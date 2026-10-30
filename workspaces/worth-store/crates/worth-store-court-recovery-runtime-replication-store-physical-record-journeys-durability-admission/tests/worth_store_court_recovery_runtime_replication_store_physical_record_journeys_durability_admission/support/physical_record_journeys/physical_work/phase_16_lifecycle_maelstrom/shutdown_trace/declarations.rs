@@ -1,8 +1,25 @@
 pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {worth_store::physical_runtime::certification::CertificationPhysicalSignalPauseGate, worth_store::physical_runtime::CertificationFrameReadFailure, worth_store::physical_runtime::CertificationFrameWorkFailure, worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalResidencyCertification, worth_store::physical_runtime::PhysicalStoreCloseOutcome, worth_store::physical_runtime::PhysicalStoreClosePhase, worth_store::physical_runtime::PhysicalStoreClosePlan, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkExecution, worth_store::physical_runtime::PhysicalWorkExecutionOutcome, worth_store::physical_runtime::PhysicalWorkIdentity, worth_store::physical_runtime::PhysicalWorkPreEffectDenial};
-pub(crate) use {worth_store_physical_backend::MediaPauseGate};
-pub(crate) use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+pub(crate) use worth_store_physical_backend::MediaPauseGate;
+pub(crate) use {
+    worth_store::physical_runtime::certification::CertificationPhysicalSignalPauseGate,
+    worth_store::physical_runtime::CertificationFrameReadFailure,
+    worth_store::physical_runtime::CertificationFrameWorkFailure,
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalResidencyCertification,
+    worth_store::physical_runtime::PhysicalStoreCloseOutcome,
+    worth_store::physical_runtime::PhysicalStoreClosePhase,
+    worth_store::physical_runtime::PhysicalStoreClosePlan,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkExecution,
+    worth_store::physical_runtime::PhysicalWorkExecutionOutcome,
+    worth_store::physical_runtime::PhysicalWorkIdentity,
+    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
+};
+pub(crate) use {
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
 pub(crate) use {crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::joined_execution::JoinedTrace, crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::world::MaelstromWorld, crate::physical_work::phase_16_lifecycle_maelstrom::LifecycleMaelstromModel};
 
@@ -15,7 +32,8 @@ pub(crate) fn close_and_finish(
     let close_read = crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::workflows::ready_read(&world.serving, world.fixture.reads[0].clone());
     let close_read = crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::workflows::admit_read(&world.serving, close_read);
     let close_read_identity = close_read.intent().identity();
-    let close_read = worth_store::physical_runtime::PhysicalExecutorCommand::read(close_read).unwrap();
+    let close_read =
+        worth_store::physical_runtime::PhysicalExecutorCommand::read(close_read).unwrap();
     let close_execution = world.serving.physical_work_execution();
     let hot_pin = prewarmed_writeback_pin(&world.serving);
     let abandoned = crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::workflows::ready_read(&world.serving, world.fixture.reads[0].clone());
@@ -40,7 +58,10 @@ pub(crate) fn close_and_finish(
         close_read.settled().evidence().fate(),
         worth_store::physical_runtime::PhysicalWorkEffectFate::ReadCompleted
     );
-    assert!(matches!(closed, worth_store::physical_runtime::PhysicalStoreCloseOutcome::Closed { .. }));
+    assert!(matches!(
+        closed,
+        worth_store::physical_runtime::PhysicalStoreCloseOutcome::Closed { .. }
+    ));
     assert_shutdown(&closed, &trace, abandoned_identity, close_read_identity);
     let fresh = fresh.open_after_close();
     assert_ne!(fresh.process.get(), std::process::id());
@@ -65,8 +86,12 @@ pub(crate) fn prewarmed_writeback_pin(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
 ) -> HotPinFence {
     let residency = serving.certification_physical_residency();
-    let coordinate =
-        worth_store_physical_format::RecordFrameCoordinate::new(worth_store_physical_format::RecordArtifactFile::BootstrapCatalog, 8, 8).unwrap();
+    let coordinate = worth_store_physical_format::RecordFrameCoordinate::new(
+        worth_store_physical_format::RecordArtifactFile::BootstrapCatalog,
+        8,
+        8,
+    )
+    .unwrap();
     let hot = residency.pin_exact(coordinate).unwrap();
     assert_eq!(hot.physical_work_count(), 0);
     drop(hot);
@@ -93,7 +118,10 @@ pub(crate) fn execute_dispatched_close(
             .and_then(|context| context.operation())
             .expect("dispatched close gate must bind an identified operation");
         let closing = scope.spawn(move || close.execute());
-        wait_until(|| progress.reached(worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped));
+        wait_until(|| {
+            progress
+                .reached(worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped)
+        });
         assert!(matches!(
             hot_pin.residency.pin_exact(hot_pin.coordinate),
             Err(worth_store::physical_runtime::CertificationFrameReadFailure::PhysicalWork(
@@ -102,9 +130,13 @@ pub(crate) fn execute_dispatched_close(
                 )
             ))
         ));
-        assert!(!progress.reached(worth_store::physical_runtime::PhysicalStoreClosePhase::DispatchSettlementComplete));
-        assert!(!progress.reached(worth_store::physical_runtime::PhysicalStoreClosePhase::SignalDisposed));
-        assert!(!progress.reached(worth_store::physical_runtime::PhysicalStoreClosePhase::MediaReleased));
+        assert!(!progress.reached(
+            worth_store::physical_runtime::PhysicalStoreClosePhase::DispatchSettlementComplete
+        ));
+        assert!(!progress
+            .reached(worth_store::physical_runtime::PhysicalStoreClosePhase::SignalDisposed));
+        assert!(!progress
+            .reached(worth_store::physical_runtime::PhysicalStoreClosePhase::MediaReleased));
         media_gate.release();
         signal_gate.release();
         let closed = closing.join().unwrap();

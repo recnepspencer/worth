@@ -1,8 +1,21 @@
 pub(crate) use {std::io::Write, std::path::Path};
 
-pub(crate) use {worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits};
+pub(crate) use {
+    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::serving_from_initialization, worth_store_testkit_store::physical_record_journeys::serving_from_open, worth_store_testkit_store::child_process::locator_codec::hex, worth_store_testkit_store::child_process::locator_codec::unhex, worth_store_testkit_store::child_process::LOCATOR_ENV};
+pub(crate) use {
+    worth_store_testkit_store::child_process::locator_codec::hex,
+    worth_store_testkit_store::child_process::locator_codec::unhex,
+    worth_store_testkit_store::child_process::LOCATOR_ENV,
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+    worth_store_testkit_store::physical_record_journeys::serving_from_open,
+};
 
 pub(crate) fn writer(root: &Path) {
     let (_, placement, _) = configuration();
@@ -10,8 +23,12 @@ pub(crate) fn writer(root: &Path) {
     let published = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("cross-process-record-round-trip", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"alpha".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "cross-process-record-round-trip",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"alpha".as_slice()])
+            .unwrap(),
     );
     let first = worth_store::physical_runtime::ExternalPhysicalRecordLocator::new(
         serving.store_identity(),
@@ -20,8 +37,12 @@ pub(crate) fn writer(root: &Path) {
     let successor = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("cross-process-record-round-trip", 2),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"beta".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "cross-process-record-round-trip",
+            2,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"beta".as_slice()])
+            .unwrap(),
     );
     let second = worth_store::physical_runtime::ExternalPhysicalRecordLocator::new(
         serving.store_identity(),
@@ -37,13 +58,17 @@ pub(crate) fn reader(root: &Path) {
     let serving = serving_from_open(root);
     let locators = std::env::var(LOCATOR_ENV).unwrap();
     for (index, encoded) in locators.split(',').enumerate() {
-        let locator = worth_store::physical_runtime::ExternalPhysicalRecordLocator::decode(unhex(encoded)).unwrap();
+        let locator =
+            worth_store::physical_runtime::ExternalPhysicalRecordLocator::decode(unhex(encoded))
+                .unwrap();
         let mut record = serving
             .records()
             .expect("read protection admission")
             .open_external(
                 locator,
-                worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(1024).unwrap()),
+                worth_store::physical_runtime::RecordReadLimits::new(
+                    worth_store::physical_runtime::RecordByteLimit::new(1024).unwrap(),
+                ),
             )
             .unwrap();
         let label = if index == 0 {

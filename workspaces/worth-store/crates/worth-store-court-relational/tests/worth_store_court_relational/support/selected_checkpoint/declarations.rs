@@ -1,8 +1,8 @@
 //! Which home checkpoint Store has selected: the generation of the
 //! `relational.checkpoint` anchored record, read through the home's Store.
 
-pub(crate) use {worth_store::physical_runtime::AnchoredRecordName};
-pub(crate) use {worth_store_relational::RelationalStoreHome};
+pub(crate) use worth_store::physical_runtime::AnchoredRecordName;
+pub(crate) use worth_store_relational::RelationalStoreHome;
 
 pub(crate) const ANCHOR: &str = "relational.checkpoint";
 
@@ -11,7 +11,10 @@ pub(crate) fn generation(home: &RelationalStoreHome) -> u64 {
     home.certification_serving()
         .anchored_records()
         .expect("anchored records")
-        .read(worth_store::physical_runtime::AnchoredRecordName::new(ANCHOR).unwrap(), 1 << 30)
+        .read(
+            worth_store::physical_runtime::AnchoredRecordName::new(ANCHOR).unwrap(),
+            1 << 30,
+        )
         .expect("the checkpoint anchor reads")
         .map_or(0, |record| record.version().generation())
 }

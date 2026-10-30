@@ -1,8 +1,25 @@
 pub use {std::num::NonZeroU32, std::num::NonZeroU64};
 
+pub use worth_signal::facade::TemporalDuration;
 pub use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-pub use {worth_signal::facade::TemporalDuration};
-pub use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalWalFrameWriteDisposition, worth_store::physical_runtime::PhysicalWalGroupAppendFailureCause, worth_store::physical_runtime::PhysicalWalGroupAppendOutcome, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::PhysicalWalReservationDenial, worth_store::physical_runtime::PreparedPhysicalMutation, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::SealedPhysicalDurabilityGroupMembers, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
+pub use {
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalWalFrameWriteDisposition,
+    worth_store::physical_runtime::PhysicalWalGroupAppendFailureCause,
+    worth_store::physical_runtime::PhysicalWalGroupAppendOutcome,
+    worth_store::physical_runtime::PhysicalWalPolicy,
+    worth_store::physical_runtime::PhysicalWalReservationDenial,
+    worth_store::physical_runtime::PreparedPhysicalMutation,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::SealedPhysicalDurabilityGroupMembers,
+    worth_store::physical_runtime::WalSegmentByteLimit,
+    worth_store::physical_runtime::WalSegmentInventoryLimit,
+};
 
 pub use {crate::physical_record_journeys::configuration, crate::physical_record_journeys::durability_with_wal_policy, crate::physical_record_journeys::media, crate::physical_record_journeys::success};
 pub use {crate::physical_record_journeys::durability_admission::independent_wal_oracle::segment_inventory::inspect_wal_inventory};
@@ -14,8 +31,12 @@ pub const SEGMENT_BYTES: u64 = 35_304;
 
 pub fn wal_policy(inventory: u32) -> PhysicalWalPolicy {
     worth_store::physical_runtime::PhysicalWalPolicy::segmented(
-        worth_store::physical_runtime::WalSegmentByteLimit::new(std::num::NonZeroU64::new(SEGMENT_BYTES).unwrap()),
-        worth_store::physical_runtime::WalSegmentInventoryLimit::new(std::num::NonZeroU32::new(inventory).unwrap()),
+        worth_store::physical_runtime::WalSegmentByteLimit::new(
+            std::num::NonZeroU64::new(SEGMENT_BYTES).unwrap(),
+        ),
+        worth_store::physical_runtime::WalSegmentInventoryLimit::new(
+            std::num::NonZeroU32::new(inventory).unwrap(),
+        ),
     )
 }
 
@@ -26,7 +47,9 @@ pub fn prepared(
     payload: &[u8],
 ) -> PreparedPhysicalMutation {
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([identity; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([identity; 32]),
+        )
         .unwrap();
     match submission
         .prepare_durable_append(
@@ -34,14 +57,16 @@ pub fn prepared(
             placement,
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::at(worth_signal::facade::TemporalDuration::temporal_duration(1_000).unwrap()),
+                worth_store::physical_runtime::PhysicalMutationDeadline::at(
+                    worth_signal::facade::TemporalDuration::temporal_duration(1_000).unwrap(),
+                ),
             ),
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
         _ => panic!("rotation fixture mutation preparation must succeed"),
     }
 }
@@ -53,9 +78,13 @@ pub fn append_group(
     let members = worth_proof::NonEmpty::try_from_vec(members)
         .unwrap_or_else(|_| unreachable!("rotation fixture groups are nonempty"));
     match submission.append_prepared_wal_group(members) {
-        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::Appended(appended) => appended,
+        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::Appended(appended) => {
+            appended
+        }
         worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::NotStarted(continuation)
-        | worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::PartiallyAppended(continuation) => panic!(
+        | worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::PartiallyAppended(
+            continuation,
+        ) => panic!(
             "the admitted whole group must append: cause={:?}, appended={}, remaining={}, wal={:?}",
             continuation.cause(),
             continuation.appended_member_count(),
@@ -67,10 +96,14 @@ pub fn append_group(
                 wal.valid_prefix_bytes(),
             )),
         ),
-        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::NotAdmitted { cause, .. } => {
+        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::NotAdmitted {
+            cause, ..
+        } => {
             panic!("group was not admitted: {cause:?}")
         }
-        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::AdmissionRejected(rejected) => {
+        worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::AdmissionRejected(
+            rejected,
+        ) => {
             panic!("group admission was rejected: {:?}", rejected.cause())
         }
         worth_store::physical_runtime::PhysicalWalGroupAppendOutcome::Indeterminate(_) => {

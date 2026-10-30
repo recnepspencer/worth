@@ -1,10 +1,13 @@
-use {worth_store_contracts::StableArtifactId};
-use {worth_store_snapshots::reject_snapshot_bundle_layout_authority, worth_store_snapshots::snapshot_semantic_authority, worth_store_snapshots::SnapshotId, worth_store_snapshots::SnapshotImageBundle, worth_store_snapshots::SnapshotLayoutAccessDenialKind, worth_store_snapshots::SnapshotReadRequest};
+use {
+    worth_store_snapshots::reject_snapshot_bundle_layout_authority,
+    worth_store_snapshots::snapshot_semantic_authority,
+};
 
 #[test]
 fn snapshot_family_binds_snapshot_reads_to_admitted_image_authority() {
-    let snapshot_id =
-        worth_store_snapshots::SnapshotId::from_artifact_id(worth_store_contracts::StableArtifactId::new("phase23-snapshot").unwrap());
+    let snapshot_id = worth_store_snapshots::SnapshotId::from_artifact_id(
+        worth_store_contracts::StableArtifactId::new("phase23-snapshot").unwrap(),
+    );
     let handle = snapshot_semantic_authority().publish_snapshot_image(
         snapshot_id.clone(),
         "sha256:image",
@@ -27,7 +30,8 @@ fn snapshot_family_binds_snapshot_reads_to_admitted_image_authority() {
     assert_eq!(report.support_estimate().planned_maintenance_reads(), 1);
     assert_eq!(report.support_estimate().planned_page_touches(), 5);
 
-    let bundle = worth_store_snapshots::SnapshotImageBundle::new(snapshot_id.clone(), "sha256:image", 8);
+    let bundle =
+        worth_store_snapshots::SnapshotImageBundle::new(snapshot_id.clone(), "sha256:image", 8);
     let denial = reject_snapshot_bundle_layout_authority(&bundle).unwrap_err();
     assert_eq!(
         denial.kind(),
@@ -42,7 +46,9 @@ fn snapshot_family_binds_snapshot_reads_to_admitted_image_authority() {
     );
 
     let mismatched = worth_store_snapshots::SnapshotReadRequest::new(
-        worth_store_snapshots::SnapshotId::from_artifact_id(worth_store_contracts::StableArtifactId::new("phase23-other-snapshot").unwrap()),
+        worth_store_snapshots::SnapshotId::from_artifact_id(
+            worth_store_contracts::StableArtifactId::new("phase23-other-snapshot").unwrap(),
+        ),
         4,
     );
     let denial = handle.admit_layout_support(&mismatched).unwrap_err();

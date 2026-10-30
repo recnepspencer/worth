@@ -1,24 +1,49 @@
-pub(crate) use {std::io::Write};
-pub(crate) use {std::path::Path};
+pub(crate) use std::io::Write;
+pub(crate) use std::path::Path;
 
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecoveryJournalCounters, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_backend::MediaCounterSnapshot, worth_store_physical_backend::MediaOperationRole};
+pub(crate) use {
+    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecoveryJournalCounters,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanRequest,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_backend::MediaCounterSnapshot,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
 pub(crate) fn writer(root: &Path, locators: std::path::PathBuf, oracle: std::path::PathBuf) {
     let records = crate::courtroom_oracle::read(&oracle);
     assert_eq!(records.len(), 1_402);
     let (format, placement, access) = worth_store_testkit_store::physical_record_journeys::scenario_configuration::courtroom_configuration();
-    let serving = worth_store_testkit_store::physical_record_journeys::success(initialize_record_store!(worth_store_testkit_store::physical_record_journeys::media(root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
-    }));
+    let serving =
+        worth_store_testkit_store::physical_record_journeys::success(initialize_record_store!(
+            worth_store_testkit_store::physical_record_journeys::media(root),
+            |durability| {
+                worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                    format, placement, access, durability,
+                )
+            }
+        ));
     let counters_before_workload = serving.media_counters();
-    let mut publications = crate::physical_record_journeys::courtroom_child::PublicationBarriers::start(&serving);
+    let mut publications =
+        crate::physical_record_journeys::courtroom_child::PublicationBarriers::start(&serving);
     let first = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("c5-mixed-record-courtroom", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload(records[0])]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "c5-mixed-record-courtroom",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload(records[0])])
+            .unwrap(),
     );
     publications.mark(&serving);
     let first_id = first.settled_members()[0].record_id(0).unwrap();
@@ -26,27 +51,39 @@ pub(crate) fn writer(root: &Path, locators: std::path::PathBuf, oracle: std::pat
     let inline = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("c5-mixed-record-courtroom", 2),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "c5-mixed-record-courtroom",
+            2,
+        ),
         worth_store::physical_runtime::RecordAppendBatch::try_from_iter(inline).unwrap(),
     );
     publications.mark(&serving);
     let boundary = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("c5-mixed-record-courtroom", 3),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload(records[1_400])]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "c5-mixed-record-courtroom",
+            3,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload(records[1_400])])
+            .unwrap(),
     );
     publications.mark(&serving);
     let large = records[1_401];
     let large = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("c5-mixed-record-courtroom", 4),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "c5-mixed-record-courtroom",
+            4,
+        ),
         worth_store::physical_runtime::RecordAppendBatch::builder()
-            .push_source(worth_store_testkit_store::stream_fixture::RepeatedByteSource::new(
-                large.payload_bytes as u64,
-                large.byte,
-            ))
+            .push_source(
+                worth_store_testkit_store::stream_fixture::RepeatedByteSource::new(
+                    large.payload_bytes as u64,
+                    large.byte,
+                ),
+            )
             .build()
             .unwrap(),
     );
@@ -84,24 +121,28 @@ pub(crate) fn writer(root: &Path, locators: std::path::PathBuf, oracle: std::pat
         counters
             .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
             .saturating_sub(
-                counters_before_workload.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+                counters_before_workload.attempts_for(
+                    worth_store_physical_backend::MediaOperationRole::PositionedWrite
+                ),
             ),
         counters
             .attempts_for(worth_store_physical_backend::MediaOperationRole::SynchronizeFileState)
-            .saturating_sub(
-                counters_before_workload.attempts_for(worth_store_physical_backend::MediaOperationRole::SynchronizeFileState),
-            ),
+            .saturating_sub(counters_before_workload.attempts_for(
+                worth_store_physical_backend::MediaOperationRole::SynchronizeFileState
+            ),),
         counters
             .attempts_for(worth_store_physical_backend::MediaOperationRole::AtomicReplace)
             .saturating_sub(
-                counters_before_workload.attempts_for(worth_store_physical_backend::MediaOperationRole::AtomicReplace),
+                counters_before_workload
+                    .attempts_for(worth_store_physical_backend::MediaOperationRole::AtomicReplace),
             ),
         counters
-            .attempts_for(worth_store_physical_backend::MediaOperationRole::SynchronizeDirectoryPublication)
-            .saturating_sub(
-                counters_before_workload
-                    .attempts_for(worth_store_physical_backend::MediaOperationRole::SynchronizeDirectoryPublication,)
-            ),
+            .attempts_for(
+                worth_store_physical_backend::MediaOperationRole::SynchronizeDirectoryPublication
+            )
+            .saturating_sub(counters_before_workload.attempts_for(
+                worth_store_physical_backend::MediaOperationRole::SynchronizeDirectoryPublication,
+            )),
     );
     std::io::stdout().flush().unwrap();
     std::process::exit(0);
@@ -138,8 +179,9 @@ impl PublicationBarriers {
         let delta = |role| media.attempts_for(role) - last_media.attempts_for(role);
         let replacements = delta(worth_store_physical_backend::MediaOperationRole::AtomicReplace);
         let journal_barriers = journal.directory_barriers() - last_journal.directory_barriers();
-        let namespace_barriers =
-            delta(worth_store_physical_backend::MediaOperationRole::SynchronizeDirectoryPublication) - journal_barriers;
+        let namespace_barriers = delta(
+            worth_store_physical_backend::MediaOperationRole::SynchronizeDirectoryPublication,
+        ) - journal_barriers;
         self.rows
             .push((replacements, namespace_barriers, journal_barriers));
         self.last = (media, journal);
@@ -154,9 +196,12 @@ impl PublicationBarriers {
 
 pub(crate) fn reopener(root: &Path, evidence: std::path::PathBuf) {
     let (format, _, access) = worth_store_testkit_store::physical_record_journeys::scenario_configuration::courtroom_configuration();
-    let serving = worth_store_testkit_store::physical_record_journeys::success(open_record_store!(worth_store_testkit_store::physical_record_journeys::media(root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
-    }));
+    let serving = worth_store_testkit_store::physical_record_journeys::success(open_record_store!(
+        worth_store_testkit_store::physical_record_journeys::media(root),
+        |durability| {
+            worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+        }
+    ));
     let mut rows = std::fs::read_to_string(evidence)
         .unwrap()
         .lines()
@@ -171,7 +216,9 @@ pub(crate) fn reopener(root: &Path, evidence: std::path::PathBuf) {
             .expect("read protection admission")
             .open_external(
                 *locator,
-                worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(u32::MAX).unwrap()),
+                worth_store::physical_runtime::RecordReadLimits::new(
+                    worth_store::physical_runtime::RecordByteLimit::new(u32::MAX).unwrap(),
+                ),
             )
             .unwrap();
         let mut buffer = vec![0_u8; 65_536];
@@ -244,7 +291,12 @@ pub(crate) fn write_locator(
     record: worth_store::physical_runtime::PhysicalRecordId,
 ) {
     let locator = worth_store::physical_runtime::ExternalPhysicalRecordLocator::new(store, record);
-    writeln!(writer, "{}", worth_store_testkit_store::child_process::locator_codec::hex(&locator.encode())).unwrap();
+    writeln!(
+        writer,
+        "{}",
+        worth_store_testkit_store::child_process::locator_codec::hex(&locator.encode())
+    )
+    .unwrap();
 }
 
 pub(crate) fn parse_locator(line: &str) -> ExternalPhysicalRecordLocator {

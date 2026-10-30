@@ -1,9 +1,9 @@
 //! Bound setup by completed work and report the last stalled writer phase.
 
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard};
+pub(crate) use worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard;
 
 pub(crate) fn wait(
     child: &mut ProcessChildGuard,
@@ -30,7 +30,9 @@ pub(crate) fn wait(
             phase = next;
             last_progress = std::time::Instant::now();
         }
-        if started.elapsed() >= ceiling || last_progress.elapsed() >= std::time::Duration::from_secs(60) {
+        if started.elapsed() >= ceiling
+            || last_progress.elapsed() >= std::time::Duration::from_secs(60)
+        {
             return Err(format!(
                 "C8 writer setup stalled: phase={phase}, elapsed={:?}, inactive={:?}, operations={operation_count}, marker={}",
                 started.elapsed(), last_progress.elapsed(), ready.display()

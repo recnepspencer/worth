@@ -1,13 +1,8 @@
 use crate::{
-    phase_4_literal_vectors::checkpoint_stream, phase_4_literal_vectors::pending_operation,
     phase_4_literal_vectors::wal_range, store_offline_integrity_observer_support::request,
     support::fixtures::clean_store,
 };
-use worth_foundational::PhysicalArtifactFamily as Family;
-use worth_store_offline_integrity_observer::{
-    observe_store, OfflineArtifactDuplicateEvidence, OfflineIntegrityOutcome as Outcome,
-    OfflinePhysicalDamageCause as Cause, OfflineUnknownPhysicalReason as Unknown,
-};
+use worth_store_offline_integrity_observer::observe_store;
 
 #[test]
 fn unaddressed_declared_block_does_not_hide_self_contained_damage_or_claim_parent_scope() {

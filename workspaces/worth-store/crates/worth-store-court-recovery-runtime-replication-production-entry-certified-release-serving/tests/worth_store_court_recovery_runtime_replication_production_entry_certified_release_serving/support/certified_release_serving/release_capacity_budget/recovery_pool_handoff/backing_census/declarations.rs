@@ -1,8 +1,12 @@
 //! Actual native backing disposed when the real handoff is consumed into Core.
 
-pub(crate) use {worth_store::physical_runtime::PhysicalResidencyDimension as Dimension};
-pub(crate) use {worth_store_recovery_physics::CheckpointCoveredWalArtifact, worth_store_recovery_physics::PhysicalWalFrameFacts, worth_store_recovery_physics::PhysicalWalSegmentCandidate};
-pub(crate) use {worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff};
+pub(crate) use worth_store::physical_runtime::PhysicalResidencyDimension as Dimension;
+pub(crate) use worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff;
+pub(crate) use {
+    worth_store_recovery_physics::CheckpointCoveredWalArtifact,
+    worth_store_recovery_physics::PhysicalWalFrameFacts,
+    worth_store_recovery_physics::PhysicalWalSegmentCandidate,
+};
 
 pub(crate) fn assert_disposed(
     boundary: &str,

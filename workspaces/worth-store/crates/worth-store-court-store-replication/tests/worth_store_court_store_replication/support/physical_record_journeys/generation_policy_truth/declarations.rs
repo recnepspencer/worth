@@ -1,11 +1,30 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PageFillPercent, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::SegmentPageCount};
-pub(crate) use {worth_store_offline_verifier::OfflineDurableManifestWalk, worth_store_offline_verifier::OfflineRecordPlacement};
-pub(crate) use {worth_store_physical_backend::MediaOperationRole};
-pub(crate) use {worth_store_physical_format::RecordAllocationClass};
+pub(crate) use worth_store_physical_backend::MediaOperationRole;
+pub(crate) use worth_store_physical_format::RecordAllocationClass;
+pub(crate) use {
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PageFillPercent,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::SegmentPageCount,
+};
+pub(crate) use {
+    worth_store_offline_verifier::OfflineDurableManifestWalk,
+    worth_store_offline_verifier::OfflineRecordPlacement,
+};
 
-pub(crate) use {worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::read_record, worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration, worth_store_testkit_store::physical_record_journeys::success};
+pub(crate) use {
+    worth_store_testkit_store::durable_publication,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::read_record,
+    worth_store_testkit_store::physical_record_journeys::scenario_configuration::dense_configuration,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 pub(crate) fn placement(
     format: worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
@@ -25,7 +44,9 @@ pub(crate) fn decode_root(
     generation: u64,
     format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
 ) -> OfflineDurableManifestWalk {
-    worth_store_testkit_store::physical_record_journeys::manifest_fixture::decode_routing_tree(root, generation, format, 128)
+    worth_store_testkit_store::physical_record_journeys::manifest_fixture::decode_routing_tree(
+        root, generation, format, 128,
+    )
 }
 
 pub(crate) fn inline(
@@ -56,7 +77,9 @@ pub(crate) fn inline(
             page_generation,
             segment_page_capacity,
         },
-        worth_store_offline_verifier::OfflineRecordPlacement::Extent { .. } => panic!("inline record routed to extent"),
+        worth_store_offline_verifier::OfflineRecordPlacement::Extent { .. } => {
+            panic!("inline record routed to extent")
+        }
     }
 }
 

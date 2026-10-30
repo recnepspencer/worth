@@ -1,5 +1,5 @@
-pub(crate) use {std::path::Path};
-pub(crate) use {std::process::Command};
+pub(crate) use std::path::Path;
+pub(crate) use std::process::Command;
 
 pub(crate) fn assert_evacuated_arena_offline(root: &Path, directory: &Path) {
     let executable = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();

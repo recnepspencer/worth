@@ -2,8 +2,47 @@
 //! the current production encoder, including the C.11 certified schema and
 //! its certificate (custody) records.
 
-pub(crate) use {worth_store_physical_format::checkpoint_certificate_frame_bytes, worth_store_physical_format::store_namespace::StableStoreIdentity, worth_store_physical_format::CheckpointBindingCompactionHeader, worth_store_physical_format::CheckpointDirtyFrameBasis, worth_store_physical_format::CheckpointStreamEncoder, worth_store_physical_format::PhysicalCheckpointSource, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate, worth_store_physical_format::CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, worth_store_physical_format::CHECKPOINT_BINDING_RECORD_PREFIX_BYTES, worth_store_physical_format::CHECKPOINT_CERTIFICATE_PREFIX_BYTES, worth_store_physical_format::CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES, worth_store_physical_format::CHECKPOINT_CERTIFIED_SCHEMA, worth_store_physical_format::CHECKPOINT_DIRTY_FRAME_RECORD_BYTES, worth_store_physical_format::CHECKPOINT_STREAM_FOOTER_RECORD_BYTES, worth_store_physical_format::CHECKPOINT_STREAM_HEADER_RECORD_BYTES};
-pub(crate) use {worth_store_physical_integrity::project_checkpoint_binding_frame_length, worth_store_physical_integrity::validate_checkpoint_binding, worth_store_physical_integrity::validate_checkpoint_binding_compaction, worth_store_physical_integrity::validate_checkpoint_dirty_basis, worth_store_physical_integrity::validate_checkpoint_footer, worth_store_physical_integrity::validate_checkpoint_footer_envelope, worth_store_physical_integrity::validate_checkpoint_stream_header, worth_store_physical_integrity::CheckpointBindingCompactionIntegrityValidation, worth_store_physical_integrity::CheckpointBindingIntegrityValidation, worth_store_physical_integrity::CheckpointDirtyBasisIntegrityValidation, worth_store_physical_integrity::CheckpointFooterEnvelopeIntegrityValidation, worth_store_physical_integrity::CheckpointFooterIntegrityValidation, worth_store_physical_integrity::CheckpointFooterValidationBasis, worth_store_physical_integrity::CheckpointStreamHeaderIntegrityValidation, worth_store_physical_integrity::CheckpointStreamHeaderScopeIdentity, worth_store_physical_integrity::IntegrityValidatedCheckpointBinding, worth_store_physical_integrity::IntegrityValidatedCheckpointBindingCompaction, worth_store_physical_integrity::IntegrityValidatedCheckpointDirtyBasis, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+pub(crate) use {
+    worth_store_physical_format::checkpoint_certificate_frame_bytes,
+    worth_store_physical_format::store_namespace::StableStoreIdentity,
+    worth_store_physical_format::CheckpointBindingCompactionHeader,
+    worth_store_physical_format::CheckpointDirtyFrameBasis,
+    worth_store_physical_format::CheckpointStreamEncoder,
+    worth_store_physical_format::PhysicalCheckpointSource,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+    worth_store_physical_format::CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES,
+    worth_store_physical_format::CHECKPOINT_BINDING_RECORD_PREFIX_BYTES,
+    worth_store_physical_format::CHECKPOINT_CERTIFICATE_PREFIX_BYTES,
+    worth_store_physical_format::CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES,
+    worth_store_physical_format::CHECKPOINT_CERTIFIED_SCHEMA,
+    worth_store_physical_format::CHECKPOINT_DIRTY_FRAME_RECORD_BYTES,
+    worth_store_physical_format::CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
+    worth_store_physical_format::CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
+};
+pub(crate) use {
+    worth_store_physical_integrity::project_checkpoint_binding_frame_length,
+    worth_store_physical_integrity::validate_checkpoint_binding,
+    worth_store_physical_integrity::validate_checkpoint_binding_compaction,
+    worth_store_physical_integrity::validate_checkpoint_dirty_basis,
+    worth_store_physical_integrity::validate_checkpoint_footer,
+    worth_store_physical_integrity::validate_checkpoint_footer_envelope,
+    worth_store_physical_integrity::validate_checkpoint_stream_header,
+    worth_store_physical_integrity::CheckpointBindingCompactionIntegrityValidation,
+    worth_store_physical_integrity::CheckpointBindingIntegrityValidation,
+    worth_store_physical_integrity::CheckpointDirtyBasisIntegrityValidation,
+    worth_store_physical_integrity::CheckpointFooterEnvelopeIntegrityValidation,
+    worth_store_physical_integrity::CheckpointFooterIntegrityValidation,
+    worth_store_physical_integrity::CheckpointFooterValidationBasis,
+    worth_store_physical_integrity::CheckpointStreamHeaderIntegrityValidation,
+    worth_store_physical_integrity::CheckpointStreamHeaderScopeIdentity,
+    worth_store_physical_integrity::IntegrityValidatedCheckpointBinding,
+    worth_store_physical_integrity::IntegrityValidatedCheckpointBindingCompaction,
+    worth_store_physical_integrity::IntegrityValidatedCheckpointDirtyBasis,
+    worth_store_physical_integrity::PhysicalArtifactScope,
+    worth_store_physical_integrity::PhysicalByteRange,
+    worth_store_physical_integrity::UntrustedPhysicalArtifact,
+};
 
 pub(crate) fn replace_with_distinct_valid_checkpoint(
     root: &std::path::Path,
@@ -19,12 +58,18 @@ pub(crate) fn replace_with_distinct_valid_checkpoint(
     };
     let mut replacement = header;
     for ordinal in 0..original.dirty_records {
-        let coordinate =
-            worth_store_physical_format::RecordFrameCoordinate::new(worth_store_physical_format::RecordArtifactFile::BootstrapCatalog, ordinal, 1).unwrap();
-        replacement.extend_from_slice(&encoder.encode_dirty_basis(worth_store_physical_format::CheckpointDirtyFrameBasis::new(
-            coordinate,
-            ordinal.saturating_add(17),
-        )));
+        let coordinate = worth_store_physical_format::RecordFrameCoordinate::new(
+            worth_store_physical_format::RecordArtifactFile::BootstrapCatalog,
+            ordinal,
+            1,
+        )
+        .unwrap();
+        replacement.extend_from_slice(&encoder.encode_dirty_basis(
+            worth_store_physical_format::CheckpointDirtyFrameBasis::new(
+                coordinate,
+                ordinal.saturating_add(17),
+            ),
+        ));
     }
     let header = worth_store_physical_format::CheckpointBindingCompactionHeader::new(
         original.compaction_generation.saturating_add(1),
@@ -59,10 +104,11 @@ pub(crate) struct AdmittedOriginal {
 
 pub(crate) fn admit_original(bytes: &[u8], store: StableStoreIdentity) -> AdmittedOriginal {
     let header_range = range(0, CHECKPOINT_STREAM_HEADER_RECORD_BYTES);
-    let header_scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_stream_header(
-        worth_store_physical_integrity::CheckpointStreamHeaderScopeIdentity::staged(store),
-        header_range,
-    );
+    let header_scope =
+        worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_stream_header(
+            worth_store_physical_integrity::CheckpointStreamHeaderScopeIdentity::staged(store),
+            header_range,
+        );
     let worth_store_physical_integrity::CheckpointStreamHeaderIntegrityValidation::Intact(header) =
         validate_checkpoint_stream_header(input(bytes, header_range), header_scope).0
     else {
@@ -72,7 +118,10 @@ pub(crate) fn admit_original(bytes: &[u8], store: StableStoreIdentity) -> Admitt
     let identity = source.identity();
     let certified = bytes[8] == CHECKPOINT_CERTIFIED_SCHEMA;
     let (footer_range, footer) = admit_footer_envelope(bytes, identity, certified);
-    let footer_scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_footer(identity, footer_range);
+    let footer_scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_footer(
+        identity,
+        footer_range,
+    );
     let (dirty, offset) =
         admit_dirty_records(bytes, identity, &footer, header_range.end_exclusive());
     let (compaction, offset) = admit_compaction(bytes, identity, offset);
@@ -85,13 +134,19 @@ pub(crate) fn admit_original(bytes: &[u8], store: StableStoreIdentity) -> Admitt
     );
     assert_eq!(certificates.len() as u64, footer.certificate_record_count());
     assert!(certified || certificates.is_empty());
-    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Intact(_) = validate_checkpoint_footer(
-        input(bytes, footer_range),
-        footer_scope,
-        worth_store_physical_integrity::CheckpointFooterValidationBasis::new(&header, &dirty, &compaction, &bindings)
+    let worth_store_physical_integrity::CheckpointFooterIntegrityValidation::Intact(_) =
+        validate_checkpoint_footer(
+            input(bytes, footer_range),
+            footer_scope,
+            worth_store_physical_integrity::CheckpointFooterValidationBasis::new(
+                &header,
+                &dirty,
+                &compaction,
+                &bindings,
+            )
             .with_certificates(&certificates),
-    )
-    .0
+        )
+        .0
     else {
         panic!("original checkpoint aggregate must be admitted")
     };
@@ -120,9 +175,13 @@ pub(crate) fn admit_footer_envelope(
         CHECKPOINT_STREAM_FOOTER_RECORD_BYTES
     };
     let footer_range = range(bytes.len() - footer_bytes, footer_bytes);
-    let footer_scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_footer(identity, footer_range);
-    let worth_store_physical_integrity::CheckpointFooterEnvelopeIntegrityValidation::Intact(envelope) =
-        validate_checkpoint_footer_envelope(input(bytes, footer_range), footer_scope).0
+    let footer_scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_footer(
+        identity,
+        footer_range,
+    );
+    let worth_store_physical_integrity::CheckpointFooterEnvelopeIntegrityValidation::Intact(
+        envelope,
+    ) = validate_checkpoint_footer_envelope(input(bytes, footer_range), footer_scope).0
     else {
         panic!("original checkpoint footer envelope must be admitted")
     };
@@ -164,7 +223,10 @@ pub(crate) fn admit_dirty_records<'a>(
     let mut records = Vec::new();
     for _ in 0..footer.dirty_record_count() {
         let record_range = range(offset as usize, CHECKPOINT_DIRTY_FRAME_RECORD_BYTES);
-        let scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_dirty_basis(identity, record_range);
+        let scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_dirty_basis(
+            identity,
+            record_range,
+        );
         let worth_store_physical_integrity::CheckpointDirtyBasisIntegrityValidation::Intact(record) =
             validate_checkpoint_dirty_basis(input(bytes, record_range), scope).0
         else {
@@ -185,9 +247,14 @@ pub(crate) fn admit_compaction<'a>(
         offset as usize,
         CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES,
     );
-    let scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_binding_compaction(identity, record_range);
-    let worth_store_physical_integrity::CheckpointBindingCompactionIntegrityValidation::Intact(record) =
-        validate_checkpoint_binding_compaction(input(bytes, record_range), scope).0
+    let scope =
+        worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_binding_compaction(
+            identity,
+            record_range,
+        );
+    let worth_store_physical_integrity::CheckpointBindingCompactionIntegrityValidation::Intact(
+        record,
+    ) = validate_checkpoint_binding_compaction(input(bytes, record_range), scope).0
     else {
         panic!("binding compaction must be admitted")
     };
@@ -204,12 +271,19 @@ pub(crate) fn admit_bindings<'a>(
     let mut payloads = Vec::new();
     for _ in 0..count {
         let prefix = range(offset as usize, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES);
-        let prefix_scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_binding(identity, prefix);
+        let prefix_scope =
+            worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_binding(
+                identity, prefix,
+            );
         let encoded = project_checkpoint_binding_frame_length(input(bytes, prefix), prefix_scope)
             .unwrap()
             .encoded_bytes();
-        let record_range = worth_store_physical_integrity::PhysicalByteRange::new(offset, encoded).unwrap();
-        let scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_binding(identity, record_range);
+        let record_range =
+            worth_store_physical_integrity::PhysicalByteRange::new(offset, encoded).unwrap();
+        let scope = worth_store_physical_integrity::PhysicalArtifactScope::checkpoint_binding(
+            identity,
+            record_range,
+        );
         let record_input = input(bytes, record_range);
         let worth_store_physical_integrity::CheckpointBindingIntegrityValidation::Intact(record) =
             validate_checkpoint_binding(record_input, scope).0
@@ -224,7 +298,10 @@ pub(crate) fn admit_bindings<'a>(
     (records, payloads)
 }
 
-pub(crate) fn offset_of_footer(bindings: &[IntegrityValidatedCheckpointBinding<'_>], initial: u64) -> u64 {
+pub(crate) fn offset_of_footer(
+    bindings: &[IntegrityValidatedCheckpointBinding<'_>],
+    initial: u64,
+) -> u64 {
     bindings.last().map_or(initial, |binding| {
         binding.scope().byte_range().end_exclusive()
     })

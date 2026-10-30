@@ -1,11 +1,13 @@
 pub(crate) use {std::collections::BTreeMap, std::collections::BTreeSet};
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
-pub(crate) use {worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity};
-pub(crate) use {worth_store_physical_format::RecordArtifactFile};
-pub(crate) use {worth_store_recovery_runtime::RecoveryCleanupDispositionKind, worth_store_recovery_runtime::RecoveryCleanupEvidence, worth_store_recovery_runtime::RecoveryCleanupTarget};
-
-
+pub(crate) use worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity;
+pub(crate) use worth_store_physical_format::RecordArtifactFile;
+pub(crate) use {
+    worth_store_recovery_runtime::RecoveryCleanupDispositionKind,
+    worth_store_recovery_runtime::RecoveryCleanupEvidence,
+    worth_store_recovery_runtime::RecoveryCleanupTarget,
+};
 
 pub(crate) struct ArtifactSnapshot {
     pub(crate) required_preexisting: BTreeSet<PathBuf>,
@@ -16,7 +18,10 @@ pub(crate) struct ArtifactSnapshot {
 impl ArtifactSnapshot {
     pub(crate) fn capture(root: &Path) -> Self {
         let mut required_preexisting = std::collections::BTreeSet::new();
-        crate::artifact_snapshot::process_context::selected_records::capture(root, &mut required_preexisting);
+        crate::artifact_snapshot::process_context::selected_records::capture(
+            root,
+            &mut required_preexisting,
+        );
         collect_file(
             &root.join("families/checkpoint.current"),
             &mut required_preexisting,
@@ -115,11 +120,15 @@ pub(crate) fn disposition_paths(
     let mut paths = std::collections::BTreeMap::new();
     for disposition in evidence.dispositions() {
         let path = match disposition.target() {
-            worth_store_recovery_runtime::RecoveryCleanupTarget::Record(artifact) => record_artifact_path(root, *artifact),
+            worth_store_recovery_runtime::RecoveryCleanupTarget::Record(artifact) => {
+                record_artifact_path(root, *artifact)
+            }
             worth_store_recovery_runtime::RecoveryCleanupTarget::Wal(artifact) => {
                 root.join("families/wal").join(artifact.file_name())
             }
-            worth_store_recovery_runtime::RecoveryCleanupTarget::Checkpoint(_) => root.join("families/checkpoint.current"),
+            worth_store_recovery_runtime::RecoveryCleanupTarget::Checkpoint(_) => {
+                root.join("families/checkpoint.current")
+            }
             worth_store_recovery_runtime::RecoveryCleanupTarget::Residue { name, .. } => {
                 root.join("families/wal").join(name.as_ref())
             }
@@ -189,16 +198,26 @@ pub(crate) fn record_artifact_path(root: &Path, artifact: RecordArtifactFile) ->
         | worth_store_physical_format::RecordArtifactFile::CurrentRootSelector
         | worth_store_physical_format::RecordArtifactFile::PreviousRootSelector => records,
         worth_store_physical_format::RecordArtifactFile::RootSelectorCandidate { .. }
-        | worth_store_physical_format::RecordArtifactFile::CatalogCandidate { .. } => root.join("staging/records"),
+        | worth_store_physical_format::RecordArtifactFile::CatalogCandidate { .. } => {
+            root.join("staging/records")
+        }
         worth_store_physical_format::RecordArtifactFile::RootManifest { .. }
         | worth_store_physical_format::RecordArtifactFile::RootRoutingBlock { .. }
-        | worth_store_physical_format::RecordArtifactFile::ReleaseCustodyHeadBlock { .. } => records.join("roots"),
+        | worth_store_physical_format::RecordArtifactFile::ReleaseCustodyHeadBlock { .. } => {
+            records.join("roots")
+        }
         worth_store_physical_format::RecordArtifactFile::Segment { .. } => records.join("segments"),
         worth_store_physical_format::RecordArtifactFile::SegmentManifest { .. }
-        | worth_store_physical_format::RecordArtifactFile::SegmentMembershipBlock { .. } => records.join("segment-manifests"),
-        worth_store_physical_format::RecordArtifactFile::ExtentArena { .. } => records.join("arenas"),
+        | worth_store_physical_format::RecordArtifactFile::SegmentMembershipBlock { .. } => {
+            records.join("segment-manifests")
+        }
+        worth_store_physical_format::RecordArtifactFile::ExtentArena { .. } => {
+            records.join("arenas")
+        }
         worth_store_physical_format::RecordArtifactFile::FreeSpaceManifest { .. }
-        | worth_store_physical_format::RecordArtifactFile::FreeSpaceMembershipBlock { .. } => records.join("free-space"),
+        | worth_store_physical_format::RecordArtifactFile::FreeSpaceMembershipBlock { .. } => {
+            records.join("free-space")
+        }
     };
     directory.join(artifact.file_name())
 }

@@ -1,7 +1,7 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 pub(crate) use {std::time::Duration, std::time::Instant};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard};
+pub(crate) use worth_store_testkit_recovery_runtime::child_lifecycle::ProcessChildGuard;
 
 pub(crate) fn c8_writer_binary_path() -> std::path::PathBuf {
     crate::support_binaries::phase_eight_process_binaries()

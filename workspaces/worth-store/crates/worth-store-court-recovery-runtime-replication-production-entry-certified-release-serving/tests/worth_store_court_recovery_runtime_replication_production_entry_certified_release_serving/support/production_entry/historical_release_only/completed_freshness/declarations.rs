@@ -1,10 +1,21 @@
 //! A completed-history seal must freshly inspect both selected head and
 //! ordinary-ingest control media before it can become Serving.
 
-pub(crate) use {std::path::Path, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_physical_format::RecordArtifactFile, worth_store_recovery_runtime::WorthStoreRecovery, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, std::fs, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, crate::production_entry::historical_release_only::selected_generation};
-pub(crate) use {std::path::PathBuf};
-pub(crate) use {worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalResidencyDimension, worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody};
-pub(crate) use {worth_store_physical_format::DurablePhysicalRootManifest};
+pub(crate) use std::path::PathBuf;
+pub(crate) use worth_store_physical_format::DurablePhysicalRootManifest;
+pub(crate) use {
+    crate::production_entry::historical_release_only::selected_generation, std::fs,
+    std::path::Path, worth_store_physical_format::RecordArtifactFile,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
+};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalResidencyDimension,
+    worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody,
+};
 
 pub(crate) fn selected_head_block(root: &Path) -> PathBuf {
     let roots = root.join("families/records/roots");
@@ -17,7 +28,8 @@ pub(crate) fn selected_head_block(root: &Path) -> PathBuf {
         ),
     )
     .unwrap();
-    let (manifest, _) = worth_store_physical_format::DurablePhysicalRootManifest::decode(&bytes, u16::MAX).unwrap();
+    let (manifest, _) =
+        worth_store_physical_format::DurablePhysicalRootManifest::decode(&bytes, u16::MAX).unwrap();
     let head = manifest
         .release_custody_head_root()
         .expect("actual selected completed head tree");
@@ -50,8 +62,9 @@ pub(crate) fn deny_changed_media_then_retry(root: &Path, path: &Path, byte: usiz
     );
     let seal = fresh_completed_seal(root);
     let allocations = seal.certification_residency_allocations();
-    let recovery =
-        worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery);
+    let recovery = worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(
+        worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery,
+    );
     assert!(
         allocations
             .snapshot()

@@ -3,41 +3,6 @@
 
 #[allow(unused_imports)]
 use crate::production_entry::retired_tail_append::*;
-use {std::fs, std::path::Path};
-
-use {
-    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
-    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
-};
-use {
-    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
-    worth_store::physical_runtime::ManifestEntryCapacity,
-    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
-    worth_store::physical_runtime::PhysicalMutationOutcome,
-    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
-    worth_store::physical_runtime::PhysicalMutationRequest,
-    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
-    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
-    worth_store::physical_runtime::RecordAppendBatch,
-};
-use {
-    worth_store_physical_format::durable_artifact_checksum,
-    worth_store_physical_format::inspect_inline_page_records,
-    worth_store_physical_format::BlobRecordKind,
-    worth_store_physical_format::CurrentPhysicalRecordPlacement,
-    worth_store_physical_format::DurablePhysicalRootManifest,
-    worth_store_physical_format::DurableRootSelector,
-    worth_store_physical_format::PhysicalRootRoutingBlock,
-    worth_store_physical_format::PhysicalSegmentMembershipBlock,
-    worth_store_physical_format::RecordArtifactFile,
-    worth_store_physical_format::RecordSegmentPageManifestEntry,
-    worth_store_physical_format::SelectedRecordContentClass,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::WorthStoreRecovery,
-};
 
 #[test]
 fn retired_physical_tail_slot_forces_fresh_page_with_integrity_admissible_wal() {

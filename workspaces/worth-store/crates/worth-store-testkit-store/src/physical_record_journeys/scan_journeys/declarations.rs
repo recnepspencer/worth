@@ -1,5 +1,21 @@
-pub use {crate::durable_publication::root::publish_single, crate::physical_record_journeys::media, crate::physical_record_journeys::scenario_configuration::dense_configuration, crate::physical_record_journeys::success};
-pub use {worth_store::physical_runtime::ExternalRecordScanCursor, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordScanCounterSnapshot, worth_store::physical_runtime::RecordScanDenial, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest};
+pub use {
+    crate::durable_publication::root::publish_single, crate::physical_record_journeys::media,
+    crate::physical_record_journeys::scenario_configuration::dense_configuration,
+    crate::physical_record_journeys::success,
+};
+pub use {
+    worth_store::physical_runtime::ExternalRecordScanCursor,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordCountLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::RecordScanCounterSnapshot,
+    worth_store::physical_runtime::RecordScanDenial,
+    worth_store::physical_runtime::RecordScanOutcome,
+    worth_store::physical_runtime::RecordScanRequest,
+};
 
 pub fn collect_scan(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
@@ -18,7 +34,9 @@ pub fn collect_scan_evidence(
         .records()
         .expect("read protection admission")
         .scan(
-            worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(width).unwrap()),
+            worth_store::physical_runtime::RecordScanRequest::from_start().with_batch_limit(
+                worth_store::physical_runtime::RecordCountLimit::new(width).unwrap(),
+            ),
         )
         .unwrap();
     collect_session(scan, scratch_bytes)
@@ -34,8 +52,9 @@ pub fn collect_resume(
         .records()
         .expect("read protection admission")
         .scan(
-            worth_store::physical_runtime::RecordScanRequest::resume(cursor)
-                .with_batch_limit(worth_store::physical_runtime::RecordCountLimit::new(width).unwrap()),
+            worth_store::physical_runtime::RecordScanRequest::resume(cursor).with_batch_limit(
+                worth_store::physical_runtime::RecordCountLimit::new(width).unwrap(),
+            ),
         )
         .unwrap();
     collect_session(scan, scratch_bytes).records
@@ -48,7 +67,9 @@ pub fn collect_session(
     let mut scratch = vec![0_u8; scratch_bytes];
     let mut found = Vec::new();
     let mut batches = Vec::new();
-    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) = scan.read_next_into(&mut scratch).unwrap() {
+    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) =
+        scan.read_next_into(&mut scratch).unwrap()
+    {
         for index in 0..batch.records().len() {
             found.push((
                 batch.records()[index].record_id(),

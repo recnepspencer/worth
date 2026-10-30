@@ -1,10 +1,7 @@
-use {worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PhysicalRetirementDenial, worth_store::physical_runtime::SegmentPageCount};
-use {worth_store_physical_backend::MediaOperationRole};
-
-use {worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetirementAction};
+use worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads;
 use {worth_store_testkit_store::durability_admission::managed_mutation::published_segments::segment_identity, worth_store_testkit_store::durability_admission::managed_mutation::published_segments::segment_names};
 use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::selected_segment_rewrite::prepare_rewrite};
-use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendBatch, worth_signal::facade::TemporalDuration, worth_proof::TransitionOutcome, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare_records, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare_records, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
 use {worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route};
 
 #[test]
@@ -36,7 +33,8 @@ fn retirement_waits_for_the_source_reader_then_releases_charge() {
                 worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause::RetentionPressure
             );
         }
-        worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_) | worth_store::physical_runtime::PhysicalMutationOutcome::Indeterminate(_) => {
+        worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_)
+        | worth_store::physical_runtime::PhysicalMutationOutcome::Indeterminate(_) => {
             panic!("retained garbage must deny the next rewrite at the growth limit")
         }
     }
@@ -172,11 +170,13 @@ fn reopened_store_keeps_a_rewrite_routing_bound_at_the_height_boundary() {
         .unwrap();
     let media = worth_store_testkit_store::physical_record_journeys::media(&root);
     let durability = worth_store_testkit_store::physical_record_journeys::durability(&media);
-    let serving = worth_store_testkit_store::physical_record_journeys::success(media.initialize_record_store(
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(
-            format, placement, access, durability,
+    let serving = worth_store_testkit_store::physical_record_journeys::success(
+        media.initialize_record_store(
+            worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                format, placement, access, durability,
+            ),
         ),
-    ));
+    );
     for ordinal in 0_u8..2 {
         let mut material = [77_u8; 32];
         material[0] = ordinal;
@@ -209,11 +209,13 @@ fn reopened_store_keeps_a_capacity_transition_routing_bound() {
         .unwrap();
     let media = worth_store_testkit_store::physical_record_journeys::media(&root);
     let durability = worth_store_testkit_store::physical_record_journeys::durability(&media);
-    let serving = worth_store_testkit_store::physical_record_journeys::success(media.initialize_record_store(
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(
-            format, wide, access, durability,
+    let serving = worth_store_testkit_store::physical_record_journeys::success(
+        media.initialize_record_store(
+            worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                format, wide, access, durability,
+            ),
         ),
-    ));
+    );
     let mut records = Vec::new();
     for ordinal in 0_u8..8 {
         records.push(vec![ordinal, 9, 9, 9]);

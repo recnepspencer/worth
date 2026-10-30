@@ -1,8 +1,12 @@
 pub(crate) use {std::io::Write, std::path::Path};
 
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore};
-pub(crate) use {worth_store_physical_backend::FilesystemAccessPosture};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store_physical_backend::FilesystemAccessPosture;
+pub(crate) use {
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore,
+};
 
 pub(crate) fn run(root: &Path) {
     let admitted = worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root)

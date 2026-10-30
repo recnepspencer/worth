@@ -1,4 +1,3 @@
-#[cfg(all())]
 #[path = "anchored_records_oracle/mod.rs"]
 pub(crate) mod anchored_records_oracle;
 #[path = "certified_release_serving/mod.rs"]

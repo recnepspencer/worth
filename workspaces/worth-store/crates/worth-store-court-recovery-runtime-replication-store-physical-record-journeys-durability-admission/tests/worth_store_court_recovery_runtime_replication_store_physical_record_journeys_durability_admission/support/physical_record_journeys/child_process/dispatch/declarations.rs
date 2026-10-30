@@ -1,6 +1,11 @@
-pub(crate) use {std::path::PathBuf};
+pub(crate) use std::path::PathBuf;
 
-pub(crate) use {worth_store_testkit_store::child_process::LOCATOR_ENV, worth_store_testkit_store::child_process::ORACLE_ENV, worth_store_testkit_store::child_process::ROLE_ENV, worth_store_testkit_store::child_process::ROOT_ENV};
+pub(crate) use {
+    worth_store_testkit_store::child_process::LOCATOR_ENV,
+    worth_store_testkit_store::child_process::ORACLE_ENV,
+    worth_store_testkit_store::child_process::ROLE_ENV,
+    worth_store_testkit_store::child_process::ROOT_ENV,
+};
 
 pub(crate) fn dispatch(role: &str, root: &std::path::Path) {
     match role {

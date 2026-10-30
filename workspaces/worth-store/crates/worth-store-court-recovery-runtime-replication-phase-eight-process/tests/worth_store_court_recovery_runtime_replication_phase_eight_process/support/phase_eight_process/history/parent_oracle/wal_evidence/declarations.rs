@@ -1,4 +1,9 @@
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::observe_artifact_at_path, crate::phase_eight_process::history::parent_oracle::wal_topology, crate::history::parent_oracle::evidence_digest::DigestBuilder, crate::phase_eight_process::history::parent_oracle::artifact_facts::WalFacts};
+pub(crate) use {
+    crate::history::parent_oracle::evidence_digest::DigestBuilder,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::observe_artifact_at_path,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::WalFacts,
+    crate::phase_eight_process::history::parent_oracle::wal_topology,
+};
 
 pub(crate) struct WalEvidence {
     pub(crate) segment_count: u64,
@@ -18,7 +23,9 @@ pub(crate) fn derive(files: &[(String, Vec<u8>)]) -> Result<WalEvidence, String>
     let mut frame_count = 0;
     let mut first_lsn = None;
     let mut last_lsn = None;
-    let mut digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.wal-prefix.v1");
+    let mut digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.wal-prefix.v1",
+    );
     for (path, bytes) in files {
         if let Some(value) = observe_artifact_at_path(path, bytes).wal {
             observations.push(value);

@@ -16,9 +16,7 @@ pub(crate) mod mutation_proof;
 #[allow(dead_code, unused_imports)]
 #[path = "observer_comparison/mod.rs"]
 pub(crate) mod observer_comparison;
-#[allow(dead_code, unused_imports)]
-#[path = "oracle/mod.rs"]
-pub(crate) mod oracle;
+
 #[allow(dead_code, unused_imports)]
 #[path = "teardown/mod.rs"]
 pub(crate) mod teardown;

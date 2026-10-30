@@ -1,4 +1,9 @@
-pub use {crate::durability_admission::independent_wal_oracle::BindingField, crate::durability_admission::independent_wal_oracle::BindingInspectionDenial, crate::durability_admission::independent_wal_oracle::ByteCursor, crate::durability_admission::independent_wal_oracle::target_claim::IndependentRedoTargetClaim};
+pub use {
+    crate::durability_admission::independent_wal_oracle::target_claim::IndependentRedoTargetClaim,
+    crate::durability_admission::independent_wal_oracle::BindingField,
+    crate::durability_admission::independent_wal_oracle::BindingInspectionDenial,
+    crate::durability_admission::independent_wal_oracle::ByteCursor,
+};
 
 pub const REDO_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
 pub const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v16";
@@ -38,8 +43,12 @@ pub fn independent_canonical_redo(
 pub fn independent_recovery_projection(
     canonical_redo: &[u8],
 ) -> Result<&[u8], BindingInspectionDenial> {
-    let mut cursor = crate::durability_admission::independent_wal_oracle::ByteCursor::new(canonical_redo);
-    if cursor.field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)? != REDO_DOMAIN {
+    let mut cursor =
+        crate::durability_admission::independent_wal_oracle::ByteCursor::new(canonical_redo);
+    if cursor
+        .field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?
+        != REDO_DOMAIN
+    {
         return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::DomainMismatch);
     }
     let record_count = cursor.read_u64()?;
@@ -47,19 +56,33 @@ pub fn independent_recovery_projection(
         return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame);
     }
     for _ in 0..record_count {
-        cursor.take(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload, 4)?;
-        cursor.take(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload, 8)?;
+        cursor.take(
+            crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload,
+            4,
+        )?;
+        cursor.take(
+            crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload,
+            8,
+        )?;
         let target_count = cursor.read_u64()?;
         if target_count == 0 {
             return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame);
         }
         for _ in 0..target_count {
-            cursor.field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?;
-            cursor.take(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload, 32)?;
+            cursor.field(
+                crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload,
+            )?;
+            cursor.take(
+                crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload,
+                32,
+            )?;
         }
-        cursor.field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?;
+        cursor.field(
+            crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload,
+        )?;
     }
-    let projection = cursor.field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?;
+    let projection = cursor
+        .field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?;
     cursor.finish()?;
 
     inspect_recovery_projection(projection)?;
@@ -67,12 +90,18 @@ pub fn independent_recovery_projection(
 }
 
 pub fn inspect_recovery_projection(projection: &[u8]) -> Result<(), BindingInspectionDenial> {
-    let mut cursor = crate::durability_admission::independent_wal_oracle::ByteCursor::new(projection);
-    let domain = cursor.field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?;
+    let mut cursor =
+        crate::durability_admission::independent_wal_oracle::ByteCursor::new(projection);
+    let domain = cursor
+        .field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?;
     if domain != CURRENT_PROJECTION_DOMAIN {
         return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::DomainMismatch);
     }
-    if cursor.read_u64()? == 0 || cursor.field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?.is_empty() {
+    if cursor.read_u64()? == 0
+        || cursor
+            .field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?
+            .is_empty()
+    {
         return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame);
     }
     read_sequence(&mut cursor)?; // selected record identities
@@ -99,7 +128,9 @@ pub fn inspect_recovery_projection(projection: &[u8]) -> Result<(), BindingInspe
 pub fn read_sequence(cursor: &mut ByteCursor<'_>) -> Result<(), BindingInspectionDenial> {
     let count = cursor.read_u64()?;
     for _ in 0..count {
-        cursor.field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?;
+        cursor.field(
+            crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload,
+        )?;
     }
     Ok(())
 }
@@ -108,7 +139,8 @@ pub fn inspect_operation(
     cursor: &mut ByteCursor<'_>,
     source_copy: bool,
 ) -> Result<(), BindingInspectionDenial> {
-    let bytes = cursor.field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?;
+    let bytes = cursor
+        .field(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload)?;
     let Some((&tag, binding)) = bytes.split_first() else {
         return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame);
     };
@@ -126,7 +158,8 @@ pub fn inspect_operation(
         return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame);
     }
     if tag == 6 {
-        let mut extra = crate::durability_admission::independent_wal_oracle::ByteCursor::new(&binding[64..]);
+        let mut extra =
+            crate::durability_admission::independent_wal_oracle::ByteCursor::new(&binding[64..]);
         match extra.take(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload, 1)? {
             [0] => {}
             [1] => {
@@ -186,13 +219,26 @@ pub fn inspect_directory_replacement(
         [1] => {}
         _ => return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame),
     }
-    if cursor.take(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload, 1)? != [1] {
+    if cursor.take(
+        crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload,
+        1,
+    )? != [1]
+    {
         return Err(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::InvalidFrame);
     }
-    cursor.take(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload, 24)?; // previous directory record
+    cursor.take(
+        crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload,
+        24,
+    )?; // previous directory record
     inspect_publication(cursor)?;
-    cursor.take(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload, 32)?; // previous payload digest
-    cursor.take(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload, 64)?; // next directory binding
+    cursor.take(
+        crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload,
+        32,
+    )?; // previous payload digest
+    cursor.take(
+        crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload,
+        64,
+    )?; // next directory binding
     inspect_publication(cursor)?;
     match cursor.take(crate::durability_admission::independent_wal_oracle::BindingField::RedoPayload, 1)? {
         [0 | 1] => Ok(()),

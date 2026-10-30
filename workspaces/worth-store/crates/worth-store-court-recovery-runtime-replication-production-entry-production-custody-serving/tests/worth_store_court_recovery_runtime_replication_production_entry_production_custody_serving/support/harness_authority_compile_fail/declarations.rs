@@ -1,6 +1,9 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store_test_support::compiler_boundary::cargo_dependency_manifest, worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite};
+pub(crate) use {
+    worth_store_test_support::compiler_boundary::cargo_dependency_manifest,
+    worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite,
+};
 
 pub(crate) const PHYSICAL_FIXTURES: &[(&str, &[&str])] = &[
     (
@@ -70,8 +73,11 @@ pub(crate) fn production_environment(root: &Path) -> String {
 }
 
 pub(crate) fn store_workspace_root() -> &'static Path {
-    std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-store-test-support"))
-        .ancestors()
-        .nth(2)
-        .expect("test-support crate lives under the Store workspace")
+    std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../worth-store-test-support"
+    ))
+    .ancestors()
+    .nth(2)
+    .expect("test-support crate lives under the Store workspace")
 }

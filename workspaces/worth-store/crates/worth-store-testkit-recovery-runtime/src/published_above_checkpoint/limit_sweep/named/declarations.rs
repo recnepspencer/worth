@@ -2,9 +2,20 @@
 //! phase that keeps its reader's failure names a limit only where that
 //! reader ran out of recovery's own observation bytes.
 
-pub use {worth_store::physical_runtime::FilesystemObservationBound, worth_store::physical_runtime::RecoveryDiscoveryFailure};
-pub use {worth_store_recovery_physics::PhysicalRedoPlanningDenial};
-pub use {worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial as Planning, worth_store_recovery_runtime::PhysicalRecoveryReleaseHeadControlDenial as Control, worth_store_recovery_runtime::PhysicalRecoveryReleaseHeadReadDenial as HeadRead, worth_store_recovery_runtime::PhysicalRecoveryReleaseHeadWalkDenial as HeadWalk, worth_store_recovery_runtime::PhysicalRecoverySelectedRecordReadDenial as RecordRead, worth_store_recovery_runtime::PhysicalRecoverySelectedReleaseHeadDenial as Head, worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial as Candidate};
+pub use worth_store_recovery_physics::PhysicalRedoPlanningDenial;
+pub use {
+    worth_store::physical_runtime::FilesystemObservationBound,
+    worth_store::physical_runtime::RecoveryDiscoveryFailure,
+};
+pub use {
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial as Planning,
+    worth_store_recovery_runtime::PhysicalRecoveryReleaseHeadControlDenial as Control,
+    worth_store_recovery_runtime::PhysicalRecoveryReleaseHeadReadDenial as HeadRead,
+    worth_store_recovery_runtime::PhysicalRecoveryReleaseHeadWalkDenial as HeadWalk,
+    worth_store_recovery_runtime::PhysicalRecoverySelectedRecordReadDenial as RecordRead,
+    worth_store_recovery_runtime::PhysicalRecoverySelectedReleaseHeadDenial as Head,
+    worth_store_recovery_runtime::PhysicalRecoverySuccessorCandidateDenial as Candidate,
+};
 
 pub fn reader(failure: &RecoveryDiscoveryFailure) -> bool {
     matches!(

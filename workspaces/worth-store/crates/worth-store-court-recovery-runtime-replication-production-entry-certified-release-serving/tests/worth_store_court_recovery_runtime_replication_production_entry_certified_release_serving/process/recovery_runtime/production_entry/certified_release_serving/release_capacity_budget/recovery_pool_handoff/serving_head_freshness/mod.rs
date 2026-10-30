@@ -1,8 +1,7 @@
 //! A real recovered seal cannot authorize externally changed selected head bytes.
 
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_proof::TransitionOutcome, crate::certified_release_serving::release_capacity_budget::recovery_pool_handoff::backing_census, crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::checkpoint, std::fs, crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::open_with_policy, crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::recover_core, worth_store_testkit_recovery_runtime::production_entry::release_reopen, crate::production_entry::certified_release_serving::release_capacity_budget::snapshot_family};
-use {worth_store::physical_runtime::RecordBootstrapDenial};
-use {worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::PhysicalCheckpointSource, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::CHECKPOINT_STREAM_HEADER_RECORD_BYTES};
+use {crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::checkpoint, crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::open_with_policy, crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::recover_core, crate::production_entry::certified_release_serving::release_capacity_budget::snapshot_family};
+use worth_store_physical_format::CHECKPOINT_STREAM_HEADER_RECORD_BYTES;
 
 #[test]
 fn sealed_serving_rereads_funded_head_and_denies_post_seal_corruption() {

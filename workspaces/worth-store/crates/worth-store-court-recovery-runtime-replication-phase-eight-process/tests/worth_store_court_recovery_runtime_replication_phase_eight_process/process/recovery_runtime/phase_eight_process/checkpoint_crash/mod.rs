@@ -1,6 +1,5 @@
-
-
-#[allow(unused_imports)] use crate::checkpoint_crash::*;
+#[allow(unused_imports)]
+use crate::checkpoint_crash::*;
 #[test]
 fn killed_checkpoint_writer_reopens_and_observes_each_persisted_effect_frontier() {
     let seeds = scenario_seeds();
@@ -15,7 +14,12 @@ fn killed_checkpoint_writer_reopens_and_observes_each_persisted_effect_frontier(
             perturbations.insert(seed.perturbation),
             "duplicate checkpoint perturbation seed"
         );
-        crate::phase_eight_process::checkpoint_crash::case::run_checkpoint_case(index, scenario, seed.schedule, seed.perturbation);
+        crate::phase_eight_process::checkpoint_crash::case::run_checkpoint_case(
+            index,
+            scenario,
+            seed.schedule,
+            seed.perturbation,
+        );
     }
     assert_eq!(schedules.len(), SCENARIO_COUNT);
     assert_eq!(perturbations.len(), SCENARIO_COUNT);
@@ -28,6 +32,10 @@ fn candidate_footer_a_checkpoint_crash_diagnostic() {
     let scenario = SCENARIOS[INDEX];
     assert_eq!(scenario.id, "c8-checkpoint-footer-a");
     let seed = scenario_seeds()[INDEX];
-    crate::phase_eight_process::checkpoint_crash::case::run_checkpoint_case(INDEX, scenario, seed.schedule, seed.perturbation);
+    crate::phase_eight_process::checkpoint_crash::case::run_checkpoint_case(
+        INDEX,
+        scenario,
+        seed.schedule,
+        seed.perturbation,
+    );
 }
-use {sha2::Digest, sha2::Sha256};

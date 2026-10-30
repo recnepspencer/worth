@@ -20,7 +20,8 @@ pub(crate) fn run() {
     let policy = serving.residency_observation().admitted_policy();
     assert_eq!(policy.operation_bytes(), 32 << 20);
     assert_eq!(
-        policy.scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery),
+        policy
+            .scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery),
         32 << 20
     );
 
@@ -54,7 +55,10 @@ pub(crate) fn run() {
     assert!(!a_batch.terminal());
     assert_eq!(initial_a_accumulator.base().cumulative_dropped(), 1);
     let initial_a_heads =
-        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), initial_a_accumulator);
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            initial_a_accumulator,
+        );
     let [initial_a_head] = initial_a_heads.as_slice() else {
         panic!(
             "A's covering checkpoint must select one head, got {}",
@@ -73,8 +77,9 @@ pub(crate) fn run() {
         a_batch.descriptor_frame_sha256()
     );
 
-    let gate =
-        serving.pause_physical_checkpoint_at(worth_store::physical_runtime::production::PhysicalCheckpointStep::CandidateSynchronization);
+    let gate = serving.pause_physical_checkpoint_at(
+        worth_store::physical_runtime::production::PhysicalCheckpointStep::CandidateSynchronization,
+    );
     let checkpoint = start(serving, 0x7e);
     let captured = checkpoint.source();
     // The pause probe waits five seconds per call; the admitted checkpoint has
@@ -111,15 +116,19 @@ pub(crate) fn run() {
     gate.release();
     let outcome = checkpoint.wait();
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "captured A prefix must complete despite B's later root: {outcome:?}"
     );
 
     let bytes = std::fs::read(world.root().join("families/checkpoint.current")).unwrap();
-    let selected_source = worth_store_physical_format::PhysicalCheckpointSource::decode_stream_header_record(
-        &bytes[..CHECKPOINT_STREAM_HEADER_RECORD_BYTES],
-    )
-    .unwrap();
+    let selected_source =
+        worth_store_physical_format::PhysicalCheckpointSource::decode_stream_header_record(
+            &bytes[..CHECKPOINT_STREAM_HEADER_RECORD_BYTES],
+        )
+        .unwrap();
     assert_eq!(selected_source, captured);
     let (carried_batches, a_accumulator) =
         worth_store_testkit_recovery_runtime::production_entry::release_reopen::selected_release_certificates_from_bytes(&bytes);
@@ -150,7 +159,11 @@ pub(crate) fn run() {
         a_accumulator.head_roster_digest(),
         initial_a_accumulator.head_roster_digest()
     );
-    let a_heads = worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), a_accumulator);
+    let a_heads =
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            a_accumulator,
+        );
     let [a_head] = a_heads.as_slice() else {
         panic!("captured A source must have exactly one selected head");
     };
@@ -161,7 +174,10 @@ pub(crate) fn run() {
 
     let outcome = start(serving, 0x7f).wait();
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "B's retained tail must remain checkpointable: {outcome:?}"
     );
     let bytes = std::fs::read(world.root().join("families/checkpoint.current")).unwrap();
@@ -185,7 +201,11 @@ pub(crate) fn run() {
         b_accumulator.base().prior_checkpoint_sequence(),
         a_accumulator.base().checkpoint().sequence().get()
     );
-    let heads = worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(world.root(), b_accumulator);
+    let heads =
+        worth_store_testkit_recovery_runtime::release_reopen::selected_head_oracle::selected_heads(
+            world.root(),
+            b_accumulator,
+        );
     assert_eq!(heads.len(), 2);
     assert!(
         heads.contains(a_head),
@@ -224,7 +244,8 @@ pub(crate) fn publish(
     const CHUNK: usize = 64 << 10;
     let scope = admitted_blob_scope("c11.recovery.release.scope");
     let blobs = world.serving().blobs().unwrap();
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
     let object = blobs
         .issue_object_id(limits)
         .expect("genuine object identity");
@@ -234,7 +255,8 @@ pub(crate) fn publish(
         (2 * CHUNK) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -262,7 +284,8 @@ pub(crate) fn publish(
         [issuer_evidence; 32],
     )
     .unwrap();
-    let key = worth_store_physical_format::ReleaseCustodyHeadKeyV1::new(object.bytes(), generation).unwrap();
+    let key = worth_store_physical_format::ReleaseCustodyHeadKeyV1::new(object.bytes(), generation)
+        .unwrap();
     (proof, key, record)
 }
 
@@ -273,7 +296,8 @@ pub(crate) fn partial_drop(
     let request = worth_store::physical_runtime::BlobReclaimRequest::released(
         proof,
         world.placement(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(1024).unwrap(),
             std::num::NonZeroU64::new(64 << 20).unwrap(),
@@ -289,7 +313,10 @@ pub(crate) fn partial_drop(
         .expect("genuine release admission")
         .wait()
         .expect("partial drop completes");
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert_eq!(receipt.dropped_records().len(), 1);
     assert!(receipt.remaining_payload_records() > 0);
     receipt
@@ -298,11 +325,14 @@ pub(crate) fn partial_drop(
 pub(crate) fn start(serving: &ServingPhysicalRuntime, key: u8) -> PhysicalCheckpointHandle {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([key; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     match serving.checkpoints().start(request).into_raw() {
         worth_proof::TransitionOutcome::Success(handle) => handle,
-        worth_proof::TransitionOutcome::Failed(failure) => panic!("overlapping checkpoint failed: {failure:?}"),
+        worth_proof::TransitionOutcome::Failed(failure) => {
+            panic!("overlapping checkpoint failed: {failure:?}")
+        }
         _ => panic!("overlapping checkpoint must admit"),
     }
 }
@@ -311,5 +341,7 @@ pub(crate) fn recovery_bytes(serving: &ServingPhysicalRuntime) -> u64 {
     serving
         .residency_observation()
         .counters()
-        .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery)
+        .active_operation_bytes_for(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery,
+        )
 }

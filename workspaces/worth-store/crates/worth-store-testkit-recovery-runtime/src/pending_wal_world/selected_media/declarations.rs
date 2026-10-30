@@ -3,7 +3,17 @@
 
 pub use {std::fs, std::path::Path};
 
-pub use {worth_store_physical_format::durable_artifact_checksum, worth_store_physical_format::BlobRecordKind, worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::DurableRootSelector, worth_store_physical_format::ExtentArenaRange, worth_store_physical_format::PhysicalRootRoutingBlock, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::SelectedRecordContentClass};
+pub use {
+    worth_store_physical_format::durable_artifact_checksum,
+    worth_store_physical_format::BlobRecordKind,
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::DurableRootSelector,
+    worth_store_physical_format::ExtentArenaRange,
+    worth_store_physical_format::PhysicalRootRoutingBlock,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::SelectedRecordContentClass,
+};
 
 pub struct Snapshot {
     pub generation: u64,
@@ -13,7 +23,10 @@ pub struct Snapshot {
 pub fn read(root: &Path) -> Snapshot {
     let records = root.join("families/records");
     let selector = worth_store_physical_format::DurableRootSelector::decode(
-        &std::fs::read(records.join(worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name())).unwrap(),
+        &std::fs::read(records.join(
+            worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name(),
+        ))
+        .unwrap(),
     )
     .unwrap();
     let manifest_path = records.join("roots").join(
@@ -22,8 +35,11 @@ pub fn read(root: &Path) -> Snapshot {
         }
         .file_name(),
     );
-    let (manifest, format) =
-        worth_store_physical_format::DurablePhysicalRootManifest::decode(&std::fs::read(manifest_path).unwrap(), u16::MAX).unwrap();
+    let (manifest, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(
+        &std::fs::read(manifest_path).unwrap(),
+        u16::MAX,
+    )
+    .unwrap();
     assert_eq!(format, selector.format());
     let mut pending = manifest.routing_root().into_iter().collect::<Vec<_>>();
     let mut routes = Vec::new();
@@ -37,15 +53,23 @@ pub fn read(root: &Path) -> Snapshot {
         );
         let bytes = std::fs::read(path).unwrap();
         let (block, observed_format) =
-            worth_store_physical_format::PhysicalRootRoutingBlock::decode(&bytes, manifest.node_capacity()).unwrap();
+            worth_store_physical_format::PhysicalRootRoutingBlock::decode(
+                &bytes,
+                manifest.node_capacity(),
+            )
+            .unwrap();
         assert_eq!(observed_format, format);
         assert_eq!(
             block.reference(durable_artifact_checksum(&bytes)),
             reference
         );
         match block {
-            worth_store_physical_format::PhysicalRootRoutingBlock::Leaf { entries, .. } => routes.extend(entries),
-            worth_store_physical_format::PhysicalRootRoutingBlock::Branch { children, .. } => pending.extend(children),
+            worth_store_physical_format::PhysicalRootRoutingBlock::Leaf { entries, .. } => {
+                routes.extend(entries)
+            }
+            worth_store_physical_format::PhysicalRootRoutingBlock::Branch { children, .. } => {
+                pending.extend(children)
+            }
         }
     }
     routes.sort_unstable_by_key(|route| route.record());
@@ -62,7 +86,10 @@ pub fn read(root: &Path) -> Snapshot {
 pub fn selected_session_declared_extent(root: &Path) -> ExtentArenaRange {
     let snapshot = read(root);
     let selected = snapshot.routes.into_iter().find(|route| {
-        route.content_class() == worth_store_physical_format::SelectedRecordContentClass::Blob(worth_store_physical_format::BlobRecordKind::SessionDeclared)
+        route.content_class()
+            == worth_store_physical_format::SelectedRecordContentClass::Blob(
+                worth_store_physical_format::BlobRecordKind::SessionDeclared,
+            )
     });
     let worth_store_physical_format::CurrentPhysicalRecordPlacement::Extent(extent) =
         selected.expect("real selected SessionDeclared control")
@@ -82,7 +109,9 @@ pub fn assert_distinct_ingest_step(before: &Snapshot, after: &Snapshot) {
         .iter()
         .filter(|route| {
             route.content_class()
-                == worth_store_physical_format::SelectedRecordContentClass::Blob(worth_store_physical_format::BlobRecordKind::ReclaimDescriptorV3)
+                == worth_store_physical_format::SelectedRecordContentClass::Blob(
+                    worth_store_physical_format::BlobRecordKind::ReclaimDescriptorV3,
+                )
         })
         .collect::<Vec<_>>();
     assert!(
@@ -103,7 +132,9 @@ pub fn assert_distinct_ingest_step(before: &Snapshot, after: &Snapshot) {
         .iter()
         .filter(|route| {
             route.content_class()
-                == worth_store_physical_format::SelectedRecordContentClass::Blob(worth_store_physical_format::BlobRecordKind::GenerationPublished)
+                == worth_store_physical_format::SelectedRecordContentClass::Blob(
+                    worth_store_physical_format::BlobRecordKind::GenerationPublished,
+                )
                 && !before
                     .routes
                     .iter()

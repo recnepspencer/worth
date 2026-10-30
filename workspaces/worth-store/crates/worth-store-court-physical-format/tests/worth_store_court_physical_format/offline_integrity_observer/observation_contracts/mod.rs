@@ -1,15 +1,9 @@
-use worth_foundational::{PhysicalArtifactFamily, PhysicalIntegrityPosture};
 use worth_store_offline_integrity_observer::{
-    encode_offline_integrity_report, observe_store, OfflineIntegrityObservationLimits,
-    OfflineIntegrityObservationLimitsDenial, OFFLINE_INTEGRITY_ROOT_PROTOCOL_DECLARATIONS,
+    encode_offline_integrity_report, observe_store, OFFLINE_INTEGRITY_ROOT_PROTOCOL_DECLARATIONS,
     PHYSICAL_INTEGRITY_OBSERVATION_PROTOCOL_IDENTITY,
     PHYSICAL_INTEGRITY_OBSERVATION_PROTOCOL_VERSION,
 };
 use worth_store_physical_format::integrity_declarations::families::NAMESPACE_IDENTITY_INTEGRITY_DECLARATION;
-use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
-use worth_store_physical_format::integrity_declarations::{
-    PhysicalIntegrityAlgorithm, PhysicalIntegrityCoverageBoundary,
-};
 
 use crate::{
     store_offline_integrity_observer_support::request, support::fixtures::clean_store,

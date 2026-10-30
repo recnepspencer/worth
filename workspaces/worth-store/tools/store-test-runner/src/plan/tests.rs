@@ -29,7 +29,7 @@ fn scenario_sharding_uses_nextests_stable_hash_partition() {
         .any(|pair| pair == ["--partition", "hash:2/3"]));
 }
 
-const DURABILITY_COURT: &str = "binary_id(=worth-store-court-store-physical-record-journeys-durability-admission::worth_store_court_store_physical_record_journeys_durability_admission)";
+const DURABILITY_COURT: &str = "binary_id(=worth-store-court-store-replication-physical-record-journeys-durability-admission::worth_store_court_store_replication_physical_record_journeys_durability_admission)";
 const PHASE_EIGHT_COURT: &str = "binary_id(=worth-store-court-recovery-runtime-replication-phase-eight-process::worth_store_court_recovery_runtime_replication_phase_eight_process)";
 const MAINTENANCE_COURT: &str = "binary_id(=worth-store-court-maintenance-recovery-runtime-replication::worth_store_court_maintenance_recovery_runtime_replication)";
 

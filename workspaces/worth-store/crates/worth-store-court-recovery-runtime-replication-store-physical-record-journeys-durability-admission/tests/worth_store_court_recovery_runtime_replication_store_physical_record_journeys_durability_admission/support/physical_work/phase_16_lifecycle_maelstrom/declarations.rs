@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 pub(crate) const MODEL: LifecycleMaelstromModel = LifecycleMaelstromModel {
     disjoint_read_effects: 2,
     retry_write_attempts: 2,

@@ -1,6 +1,6 @@
-pub use {std::path::Path};
+pub use std::path::Path;
 
-pub use {crate::durability_admission::independent_wal_oracle::BindingInspectionDenial};
+pub use crate::durability_admission::independent_wal_oracle::BindingInspectionDenial;
 
 pub const RETIREMENT_DOMAIN: &[u8] = b"store.physical.retirement.v2";
 pub const REWRITE_DOMAIN: &[u8] = b"store.physical.rewrite-redo.v2";
@@ -43,7 +43,9 @@ pub struct IndependentRetirementRedo {
 pub fn inspect_retirement_redo(
     payload: &[u8],
 ) -> Result<IndependentRetirementRedo, BindingInspectionDenial> {
-    let length = payload.get(..8).ok_or(crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated)?;
+    let length = payload.get(..8).ok_or(
+        crate::durability_admission::independent_wal_oracle::BindingInspectionDenial::Truncated,
+    )?;
     let length = u64::from_le_bytes(length.try_into().expect("fixed u64"));
     if length != RETIREMENT_DOMAIN.len() as u64
         || payload.get(8..8 + RETIREMENT_DOMAIN.len()) != Some(RETIREMENT_DOMAIN)

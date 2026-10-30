@@ -1,9 +1,15 @@
-use {worth_store_physical_integrity::PhysicalIntegrityObservationOutcome, worth_store_physical_integrity::PhysicalIntegrityRejection, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress as Progress, worth_store_testkit_store::integrity_scrub::assert_released, worth_store_testkit_store::integrity_scrub::request, worth_store_testkit_store::integrity_scrub::target};
+use {
+    worth_store_testkit_store::integrity_scrub::assert_released,
+    worth_store_testkit_store::integrity_scrub::request,
+    worth_store_testkit_store::integrity_scrub::target,
+};
 
 #[test]
 fn short_actual_read_counts_only_prefix_without_validating_zero_padding() {
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let target = target(&serving, parent.path());
     let path = parent.path().join("families/records/root-current.selector");
     let prefix_length = u64::from(target.declared_bytes()) / 2;
@@ -35,7 +41,9 @@ fn short_actual_read_counts_only_prefix_without_validating_zero_padding() {
 #[test]
 fn absent_expected_source_is_unknown_and_does_not_revoke_serving() {
     let parent = tempfile::tempdir().unwrap();
-    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(parent.path());
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_initialization(
+        parent.path(),
+    );
     let target = target(&serving, parent.path());
     let path = parent.path().join("families/records/root-current.selector");
     std::fs::remove_file(&path).unwrap();

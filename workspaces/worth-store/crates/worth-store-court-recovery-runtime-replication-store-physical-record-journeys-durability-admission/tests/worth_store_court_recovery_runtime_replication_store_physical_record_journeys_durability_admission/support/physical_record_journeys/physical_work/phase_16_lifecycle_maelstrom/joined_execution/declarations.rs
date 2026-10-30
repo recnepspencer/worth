@@ -1,9 +1,29 @@
-pub(crate) use {std::collections::HashSet, std::sync::mpsc, std::time::Duration, std::time::Instant};
+pub(crate) use {
+    std::collections::HashSet, std::sync::mpsc, std::time::Duration, std::time::Instant,
+};
 
-pub(crate) use {worth_store::physical_runtime::PhysicalEffectObligation, worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalSignalSettlementOutcome, worth_store::physical_runtime::PhysicalWorkConcurrencyRelation, worth_store::physical_runtime::PhysicalWorkConsumerHandle, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkIdentity, worth_store::physical_runtime::PhysicalWorkPreEffectDenial, worth_store::physical_runtime::ReadyPhysicalWork, worth_store::physical_runtime::ResourceAdmittedPhysicalWork, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_backend::MediaOperationRole, worth_store_physical_backend::MediaPauseGate};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalEffectObligation,
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalSignalSettlementOutcome,
+    worth_store::physical_runtime::PhysicalWorkConcurrencyRelation,
+    worth_store::physical_runtime::PhysicalWorkConsumerHandle,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkIdentity,
+    worth_store::physical_runtime::PhysicalWorkPreEffectDenial,
+    worth_store::physical_runtime::ReadyPhysicalWork,
+    worth_store::physical_runtime::ResourceAdmittedPhysicalWork,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_backend::MediaOperationRole, worth_store_physical_backend::MediaPauseGate,
+};
 
-pub(crate) use {crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::fixture::MaelstromPauseGates, crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::world::MaelstromWorld, crate::physical_work::phase_16_lifecycle_maelstrom::LifecycleMaelstromModel};
+pub(crate) use {
+    crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::fixture::MaelstromPauseGates,
+    crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::world::MaelstromWorld,
+    crate::physical_work::phase_16_lifecycle_maelstrom::LifecycleMaelstromModel,
+};
 
 pub(crate) struct JoinedTrace {
     pub(crate) denial: PhysicalWorkIdentity,
@@ -63,7 +83,10 @@ pub(crate) fn apply_one_slice_delta(
     (first, second, write)
 }
 
-pub(crate) fn revalidate(serving: &ServingPhysicalRuntime, ready: ReadyPhysicalWork) -> ReadyPhysicalWork {
+pub(crate) fn revalidate(
+    serving: &ServingPhysicalRuntime,
+    ready: ReadyPhysicalWork,
+) -> ReadyPhysicalWork {
     crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::workflows::expect_ready(serving.revalidate_physical_work(ready).unwrap())
 }
 
@@ -131,12 +154,16 @@ pub(crate) fn prove_clock_retry(
     let after = world.serving.media_counters();
     assert_eq!(
         after.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
         model.retry_write_attempts
     );
     assert_eq!(
-        after.completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.completed_operations_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+        after.completed_operations_for(
+            worth_store_physical_backend::MediaOperationRole::PositionedWrite
+        ) - before.completed_operations_for(
+            worth_store_physical_backend::MediaOperationRole::PositionedWrite
+        ),
         model.retry_write_completions
     );
     identity
@@ -155,7 +182,8 @@ pub(crate) fn prove_exact_writeback(
     let after = world.serving.media_counters();
     assert_eq!(
         after.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
         model.exact_writeback_effects
     );
     assert_eq!(
@@ -228,13 +256,17 @@ pub(crate) fn execute_reordered_reads(
             worth_store::physical_runtime::PhysicalEffectObligation::SettlementContinues
         );
         gates.second_read.release();
-        let second = observed.recv_timeout(std::time::Duration::from_secs(3)).unwrap();
+        let second = observed
+            .recv_timeout(std::time::Duration::from_secs(3))
+            .unwrap();
         if second.0 != 2 {
             gates.first_read.release();
             panic!("the released disjoint read must complete first");
         }
         gates.first_read.release();
-        let first = observed.recv_timeout(std::time::Duration::from_secs(3)).unwrap();
+        let first = observed
+            .recv_timeout(std::time::Duration::from_secs(3))
+            .unwrap();
         assert_eq!(first.0, 1);
         (first.1.unwrap(), second.1.unwrap(), commands.first_identity)
     })
@@ -256,7 +288,10 @@ pub(crate) fn prepare_reordered_reads(
     }
 }
 
-pub(crate) fn assert_disjoint(first: &ResourceAdmittedPhysicalWork, second: &ResourceAdmittedPhysicalWork) {
+pub(crate) fn assert_disjoint(
+    first: &ResourceAdmittedPhysicalWork,
+    second: &ResourceAdmittedPhysicalWork,
+) {
     assert_eq!(
         first
             .concurrency_scope()

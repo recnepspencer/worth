@@ -1,10 +1,15 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::durability_admission::managed_mutation::phase_five_lifecycle::*;
-use {worth_signal::facade::ClockAdvanceRequest, worth_signal::facade::ClockDomain, worth_signal::facade::ClockTick, worth_signal::facade::TemporalDuration};
-use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint};
-use {worth_store::physical_runtime::PhysicalMutationCancellationOutcome, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationIndeterminateStage, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::durability_admission::managed_mutation::phase_five_lifecycle::*;
 
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::serving_from_initialization, worth_store_testkit_store::physical_record_journeys::serving_from_open};
-use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare};
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::serving_from_initialization,
+    worth_store_testkit_store::physical_record_journeys::serving_from_open,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed,
+    worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare,
+};
 
 #[test]
 fn cancellation_timeout_abandonment_close_and_reopen_settle_once() {
@@ -43,10 +48,12 @@ fn cancellation_timeout_abandonment_close_and_reopen_settle_once() {
     }
 
     serving
-        .certification_advance_physical_signal_clock(worth_signal::facade::ClockAdvanceRequest::new(
-            worth_signal::facade::ClockDomain::MonotonicExecution,
-            worth_signal::facade::ClockTick::new(7),
-        ))
+        .certification_advance_physical_signal_clock(
+            worth_signal::facade::ClockAdvanceRequest::new(
+                worth_signal::facade::ClockDomain::MonotonicExecution,
+                worth_signal::facade::ClockTick::new(7),
+            ),
+        )
         .unwrap();
     match prepare_with_deadline(&serving, placement, [0xA3; 32], b"together-timeout", 7).execute() {
         worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(fate) => assert_eq!(
@@ -65,10 +72,12 @@ fn cancellation_timeout_abandonment_close_and_reopen_settle_once() {
         prepare_with_deadline(&serving, placement, [0xA4; 32], b"together-effectful", 20).start();
     assert!(post_effect.await_arrival());
     serving
-        .certification_advance_physical_signal_clock(worth_signal::facade::ClockAdvanceRequest::new(
-            worth_signal::facade::ClockDomain::MonotonicExecution,
-            worth_signal::facade::ClockTick::new(20),
-        ))
+        .certification_advance_physical_signal_clock(
+            worth_signal::facade::ClockAdvanceRequest::new(
+                worth_signal::facade::ClockDomain::MonotonicExecution,
+                worth_signal::facade::ClockTick::new(20),
+            ),
+        )
         .unwrap();
     assert!(matches!(
         effectful.request_cancellation(),
@@ -122,7 +131,8 @@ fn cancellation_timeout_abandonment_close_and_reopen_settle_once() {
                 worth_store::physical_runtime::PhysicalMutationIndeterminateStage::RuntimeUnavailable
             );
         }
-        worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_) | worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(_) => {
+        worth_store::physical_runtime::PhysicalMutationOutcome::Completed(_)
+        | worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(_) => {
             panic!("a completion after close must stay stale")
         }
     }

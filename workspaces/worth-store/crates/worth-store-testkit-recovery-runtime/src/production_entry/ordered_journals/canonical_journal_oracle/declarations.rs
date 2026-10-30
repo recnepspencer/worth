@@ -9,18 +9,44 @@
 //! readmits through Relational; `resolve` agrees with the prefix; the suffix
 //! publishes; and a second recovery reaches the same journal.
 
-pub use {std::num::NonZeroU64};
-pub use {std::path::Path};
+pub use std::num::NonZeroU64;
+pub use std::path::Path;
 
 pub use {sha2::Digest, sha2::Sha256};
-pub use {worth_store::physical_runtime::certification::CertificationMediaFaultActivation, worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-pub use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::FilesystemAccessPosture, worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::OrderedJournalPublication, worth_store::physical_runtime::OrderedJournalPublicationFailure, worth_store::physical_runtime::OrderedJournalResolution, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+pub use {
+    worth_store::physical_runtime::certification::CertificationMediaFaultActivation,
+    worth_store::physical_runtime::certification::MediaFaultDirective,
+    worth_store::physical_runtime::certification::MediaOperationRole,
+};
+pub use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::FilesystemAccessPosture,
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::OrderedJournalPublication,
+    worth_store::physical_runtime::OrderedJournalPublicationFailure,
+    worth_store::physical_runtime::OrderedJournalResolution,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalStore,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
-pub use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_proof::TransitionOutcome, crate::production_entry::certified_release_serving};
+pub use {
+    crate::production_entry::certified_release_serving, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
-
-pub use {crate::ordered_journals::canonical_journal_oracle::relational_reference::RelationalReference};
+pub use crate::ordered_journals::canonical_journal_oracle::relational_reference::RelationalReference;
 
 pub const SEED: u64 = 0x5eed_0001;
 pub const COMMITS: usize = 6;
@@ -35,7 +61,11 @@ pub fn placement() -> AdmittedRecordPlacementPolicy {
 }
 
 pub fn format() -> AdmittedPhysicalRecordFormat {
-    worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap())
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
+    )
 }
 
 pub fn deadline() -> PhysicalMutationDeadline {
@@ -50,12 +80,14 @@ pub fn publish(
     serving
         .canonical_commits()
         .map_err(|_| worth_store::physical_runtime::OrderedJournalPublicationFailure::EmptyPayload)?
-        .publish(worth_store::physical_runtime::OrderedJournalPublication::new(
-            position,
-            bytes.to_vec(),
-            placement(),
-            deadline(),
-        ))
+        .publish(
+            worth_store::physical_runtime::OrderedJournalPublication::new(
+                position,
+                bytes.to_vec(),
+                placement(),
+                deadline(),
+            ),
+        )
         .map(|_| ())
 }
 
@@ -69,8 +101,9 @@ pub fn open_with_faults(
     ServingPhysicalRuntime,
     Vec<CertificationMediaFaultActivation>,
 )> {
-    let admission =
-        worth_store::physical_runtime::FilesystemMediaAdmission::certification(worth_store::physical_runtime::FilesystemAccessPosture::CoordinatedServiceAccount);
+    let admission = worth_store::physical_runtime::FilesystemMediaAdmission::certification(
+        worth_store::physical_runtime::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
     let authority = admission.fault_schedule_authority();
     let activations: Vec<_> = faults
         .iter()
@@ -86,7 +119,10 @@ pub fn open_with_faults(
         })
         .collect();
     let schedule = authority.schedule(rules).ok()?;
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).unwrap()).unwrap();
+    let runtime = worth_store::physical_runtime::PhysicalStore::admit(
+        worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).unwrap(),
+    )
+    .unwrap();
     let worth_proof::TransitionOutcome::Success(media) = runtime
         .try_admit_filesystem_media(admission.with_fault_schedule(schedule))
         .into_raw()
@@ -94,9 +130,11 @@ pub fn open_with_faults(
         panic!("fault-scheduled media must admit")
     };
     let worth_proof::TransitionOutcome::Success(durability) =
-        crate::production_entry::certified_release_serving::serving_durability(std::num::NonZeroU64::new(16 << 20).unwrap())
-            .admit(media.physical_durability_admission_basis().unwrap())
-            .into_raw()
+        crate::production_entry::certified_release_serving::serving_durability(
+            std::num::NonZeroU64::new(16 << 20).unwrap(),
+        )
+        .admit(media.physical_durability_admission_basis().unwrap())
+        .into_raw()
     else {
         panic!("durability must admit")
     };
@@ -105,17 +143,18 @@ pub fn open_with_faults(
         .unwrap();
     let worth_proof::TransitionOutcome::Success(serving) = media
         .open_record_store(
-            worth_store::physical_runtime::PhysicalRecordOpen::new(format(), access, durability).with_journal_registry(
-                worth_store::physical_runtime::OrderedJournalRegistry::declare(
-                    2,
-                    &[
-                        worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS,
-                        worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS,
-                    ],
-                    &["home", "relational.checkpoint"],
-                )
-                .unwrap(),
-            ),
+            worth_store::physical_runtime::PhysicalRecordOpen::new(format(), access, durability)
+                .with_journal_registry(
+                    worth_store::physical_runtime::OrderedJournalRegistry::declare(
+                        2,
+                        &[
+                            worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS,
+                            worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS,
+                        ],
+                        &["home", "relational.checkpoint"],
+                    )
+                    .unwrap(),
+                ),
         )
         .into_raw()
     else {
@@ -145,7 +184,9 @@ pub fn prepared_store(
 }
 
 pub fn serve(root: &Path, stage: &str) -> ServingPhysicalRuntime {
-    let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(crate::production_entry::certified_release_serving::recovery_request::request(root));
+    let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(
+        crate::production_entry::certified_release_serving::recovery_request::request(root),
+    );
     let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("{stage} did not recover: {outcome:?}");
     };
@@ -168,7 +209,10 @@ pub fn assert_prefix(serving: &ServingPhysicalRuntime, reference: &RelationalRef
         let digest: [u8; 32] = sha2::Sha256::digest(expected).into();
         let resolution = journal.resolve(position, digest).unwrap();
         if position <= head {
-            assert!(matches!(resolution, worth_store::physical_runtime::OrderedJournalResolution::Committed(_)));
+            assert!(matches!(
+                resolution,
+                worth_store::physical_runtime::OrderedJournalResolution::Committed(_)
+            ));
             let read = journal.read(position, 1 << 24).unwrap();
             assert!(
                 read.bytes() == expected.as_slice(),
@@ -176,7 +220,10 @@ pub fn assert_prefix(serving: &ServingPhysicalRuntime, reference: &RelationalRef
             );
             reference.assert_readmits(position, read.bytes());
         } else {
-            assert_eq!(resolution, worth_store::physical_runtime::OrderedJournalResolution::NotCommitted { head });
+            assert_eq!(
+                resolution,
+                worth_store::physical_runtime::OrderedJournalResolution::NotCommitted { head }
+            );
         }
     }
 }
@@ -188,10 +235,11 @@ pub fn measure(reference: &RelationalReference, target: u64) -> Vec<(MediaOperat
     let faults: Vec<_> = worth_store::physical_runtime::certification::MediaOperationRole::ALL
         .iter()
         .map(|role| {
-            let never = worth_store::physical_runtime::certification::MediaFaultDirective::FailBefore {
-                kind: std::io::ErrorKind::Other,
-                raw_os_error: None,
-            };
+            let never =
+                worth_store::physical_runtime::certification::MediaFaultDirective::FailBefore {
+                    kind: std::io::ErrorKind::Other,
+                    raw_os_error: None,
+                };
             (*role, std::num::NonZeroU64::MAX, never)
         })
         .collect();

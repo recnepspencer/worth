@@ -1,6 +1,5 @@
-use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::EXTENT_PAYLOAD_BYTES, worth_store_testkit_store::physical_record_journeys::manifest_fixture::IndependentExtentRoute, worth_store::physical_runtime::PhysicalRetirementDenial, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::extent_frame_fixture::arena_range_bytes, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::extent_frame_fixture::extent_payload, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::prepare_extent_rewrite, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::read_from_reader, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::read_record, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
-use {worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::ExtentArenaId, worth_store_physical_format::ExtentArenaRange, worth_store_physical_format::PhysicalExtentId, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority};
-use {worth_store_physical_integrity::validate_extent_arena_frame, worth_store_physical_integrity::ExtentArenaFrameExpectation, worth_store_physical_integrity::ExtentArenaFrameIntegrityValidation, worth_store_physical_integrity::PhysicalArtifactScope, worth_store_physical_integrity::PhysicalByteRange, worth_store_physical_integrity::UntrustedPhysicalArtifact};
+use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::EXTENT_PAYLOAD_BYTES, worth_store_testkit_store::physical_record_journeys::manifest_fixture::IndependentExtentRoute, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::extent_frame_fixture::arena_range_bytes, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::extent_frame_fixture::extent_payload, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::prepare_extent_rewrite, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::read_from_reader, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::read_record, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use worth_store_physical_integrity::validate_extent_arena_frame;
 
 #[test]
 fn held_reader_prevents_reuse_and_reused_frame_rejects_forged_old_route() {
@@ -71,7 +70,9 @@ fn held_reader_prevents_reuse_and_reused_frame_rejects_forged_old_route() {
     );
     assert!(matches!(
         validate_extent_arena_frame(
-            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&frame[..104]),
+            worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+                &frame[..104]
+            ),
             worth_store_physical_integrity::ExtentArenaFrameExpectation::Manifest(new_scope),
         )
         .0,
@@ -86,7 +87,9 @@ fn held_reader_prevents_reuse_and_reused_frame_rejects_forged_old_route() {
     assert!(
         matches!(
             validate_extent_arena_frame(
-                worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(&frame[..104]),
+                worth_store_physical_integrity::UntrustedPhysicalArtifact::from_bounded_bytes(
+                    &frame[..104]
+                ),
                 worth_store_physical_integrity::ExtentArenaFrameExpectation::Manifest(old_scope),
             )
             .0,

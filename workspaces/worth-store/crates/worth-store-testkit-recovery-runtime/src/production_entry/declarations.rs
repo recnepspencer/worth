@@ -1,36 +1,59 @@
+pub use std::path::Path;
+pub use std::process::Command;
 pub use {std::num::NonZeroU16, std::num::NonZeroU64};
-pub use {std::path::Path};
-pub use {std::process::Command};
 
-pub use {worth_foundational::aspects, worth_foundational::AspectValue, worth_foundational::ContractValidationInput, worth_foundational::InternedString, worth_foundational::ScalarAspectType};
+pub use worth_store_authority::require_current_store_authority;
+pub use worth_store_blob_chunks::BlobChunkSize;
+pub use {
+    worth_foundational::aspects, worth_foundational::AspectValue,
+    worth_foundational::ContractValidationInput, worth_foundational::InternedString,
+    worth_foundational::ScalarAspectType,
+};
 pub use {worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome};
-pub use {worth_store::aspect_native::StoreAspectAuthorityInput, worth_store::aspect_native::StoreAspectBoundaryFact, worth_store::aspect_native::StoreAspectIdentity, worth_store::aspect_native::StorePhysicalAuthorityWitness, worth_store::aspect_native::StorePhysicalBoundaryWitness, worth_store::aspect_native::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE};
-pub use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline};
-pub use {worth_store_authority::require_current_store_authority};
-pub use {worth_store_blob_chunks::BlobChunkSize};
-pub use {worth_store_security::admit_store_security_scope, worth_store_security::StoreAuthenticityRequirement, worth_store_security::StoreAuthenticityRequirementClass, worth_store_security::StoreCustodyPosture, worth_store_security::StoreKeyScope, worth_store_security::StoreKeyVersionPosture, worth_store_security::StoreSecurityScopeAdmissionExpectation, worth_store_security::StoreSecurityScopeAdmissionRequest, worth_store_security::StoreTenantScope};
-pub use {worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub use {
+    worth_store::aspect_native::StoreAspectAuthorityInput,
+    worth_store::aspect_native::StoreAspectBoundaryFact,
+    worth_store::aspect_native::StoreAspectIdentity,
+    worth_store::aspect_native::StorePhysicalAuthorityWitness,
+    worth_store::aspect_native::StorePhysicalBoundaryWitness,
+    worth_store::aspect_native::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
+};
+pub use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobIngestFailure,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
+pub use {
+    worth_store_security::admit_store_security_scope,
+    worth_store_security::StoreAuthenticityRequirement,
+    worth_store_security::StoreAuthenticityRequirementClass,
+    worth_store_security::StoreCustodyPosture, worth_store_security::StoreKeyScope,
+    worth_store_security::StoreKeyVersionPosture,
+    worth_store_security::StoreSecurityScopeAdmissionExpectation,
+    worth_store_security::StoreSecurityScopeAdmissionRequest,
+    worth_store_security::StoreTenantScope,
+};
+pub use {
+    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
+pub use crate::production_entry::blob_scope_admission::admitted_blob_scope;
 
-
-
-pub use {crate::production_entry::blob_scope_admission::admitted_blob_scope};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#[cfg(all())]
-pub use {crate::production_entry::ordered_journals::canonical_journal, crate::production_entry::ordered_journals::canonical_journal_oracle};
+pub use {
+    crate::production_entry::ordered_journals::canonical_journal,
+    crate::production_entry::ordered_journals::canonical_journal_oracle,
+};
 
 pub fn run_entry(root: &Path) -> std::process::Output {
     std::process::Command::new(worth_store_testkit_executables::physical_store_recover())
@@ -55,7 +78,8 @@ pub fn initialized_recovery_world(label: &str) -> PhysicalResidencyStoreWorld {
     canonical_physical_mutation_acknowledgment(&world, [0x41; 32], b"production-entry-redo");
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x42; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(5_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(request).into_raw()

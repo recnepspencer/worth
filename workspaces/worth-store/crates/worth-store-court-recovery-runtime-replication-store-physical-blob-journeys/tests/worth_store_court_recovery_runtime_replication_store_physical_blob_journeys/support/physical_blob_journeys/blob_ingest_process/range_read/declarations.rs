@@ -1,8 +1,29 @@
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store::physical_runtime::BlobReadSession, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_backend::MediaCounterSnapshot, worth_store_physical_backend::MediaOperationRole};
+pub(crate) use {
+    worth_store::physical_runtime::BlobReadSession,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_backend::MediaCounterSnapshot,
+    worth_store_physical_backend::MediaOperationRole,
+};
 
-pub(crate) use {worth_store_testkit_store::fixture::admitted_blob_scope, crate::physical_blob_journeys::blob_ingest_process::expected_byte, crate::physical_blob_journeys::blob_ingest_process::hex, worth_store_testkit_store::fixture::serving_from_open, crate::physical_blob_journeys::blob_ingest_process::unhex_16, worth_store::physical_runtime::BlobReadLimits, std::num::NonZeroU64, std::path::Path, crate::physical_blob_journeys::blob_ingest_process::OBJECT_BYTES, crate::physical_blob_journeys::blob_ingest_process::PROCESS_PREFIX, crate::physical_blob_journeys::blob_ingest_process::PUBLICATION_ENV, crate::physical_blob_journeys::blob_ingest_process::READ_END, crate::physical_blob_journeys::blob_ingest_process::READ_PREFIX, crate::physical_blob_journeys::blob_ingest_process::READ_START, crate::physical_blob_journeys::blob_ingest_process::SCOPE_KEY, crate::physical_blob_journeys::blob_ingest_process::SELECTED_SCAN_LIMIT};
+pub(crate) use {
+    crate::physical_blob_journeys::blob_ingest_process::expected_byte,
+    crate::physical_blob_journeys::blob_ingest_process::hex,
+    crate::physical_blob_journeys::blob_ingest_process::unhex_16,
+    crate::physical_blob_journeys::blob_ingest_process::OBJECT_BYTES,
+    crate::physical_blob_journeys::blob_ingest_process::PROCESS_PREFIX,
+    crate::physical_blob_journeys::blob_ingest_process::PUBLICATION_ENV,
+    crate::physical_blob_journeys::blob_ingest_process::READ_END,
+    crate::physical_blob_journeys::blob_ingest_process::READ_PREFIX,
+    crate::physical_blob_journeys::blob_ingest_process::READ_START,
+    crate::physical_blob_journeys::blob_ingest_process::SCOPE_KEY,
+    crate::physical_blob_journeys::blob_ingest_process::SELECTED_SCAN_LIMIT, std::num::NonZeroU64,
+    std::path::Path, worth_store::physical_runtime::BlobReadLimits,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 pub(crate) fn reader(root: &Path) {
     println!("{PROCESS_PREFIX}{}", std::process::id());
@@ -12,7 +33,9 @@ pub(crate) fn reader(root: &Path) {
     let generation: u64 = generation.parse().unwrap();
     let serving = serving_from_open(root);
     let scope = admitted_blob_scope(SCOPE_KEY);
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(SELECTED_SCAN_LIMIT).unwrap());
+    let limits = worth_store::physical_runtime::BlobReadLimits::new(
+        std::num::NonZeroU64::new(SELECTED_SCAN_LIMIT).unwrap(),
+    );
     let blobs = serving.blobs().unwrap();
     let published = blobs
         .resolve_publication(object, generation, &scope, limits)
@@ -46,8 +69,10 @@ pub(crate) fn reader(root: &Path) {
     );
     let read_attempts =
         after_media.positioned_read_attempts() - before_media.positioned_read_attempts();
-    let media_bytes = after_media.completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-        - before_media.completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead);
+    let media_bytes = after_media
+        .completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
+        - before_media
+            .completed_bytes_for(worth_store_physical_backend::MediaOperationRole::PositionedRead);
     assert!(
         media_bytes < OBJECT_BYTES as u64,
         "partial read loaded whole blob"
@@ -106,6 +131,9 @@ pub(crate) fn stream_expected_range(
 }
 
 pub(crate) fn traversal_io_attempts(counters: MediaCounterSnapshot) -> u64 {
-    counters.identified_operation_attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-        + counters.identified_operation_attempts_for(worth_store_physical_backend::MediaOperationRole::ReadMetadata)
+    counters.identified_operation_attempts_for(
+        worth_store_physical_backend::MediaOperationRole::PositionedRead,
+    ) + counters.identified_operation_attempts_for(
+        worth_store_physical_backend::MediaOperationRole::ReadMetadata,
+    )
 }

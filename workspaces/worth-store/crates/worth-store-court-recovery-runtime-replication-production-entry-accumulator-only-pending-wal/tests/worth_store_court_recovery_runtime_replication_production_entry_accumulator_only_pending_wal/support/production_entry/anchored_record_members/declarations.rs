@@ -3,15 +3,30 @@
 //! without rewriting them, membership is checked against the current value
 //! on every read and carry, and every refusal precedes any effect.
 
+pub(crate) use worth_store::physical_runtime::certification::MediaOperationRole;
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store::physical_runtime::certification::MediaOperationRole};
-pub(crate) use {worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::AnchoredRecordMember, worth_store::physical_runtime::AnchoredRecordMemberLocator, worth_store::physical_runtime::AnchoredRecordMemberReadFailure, worth_store::physical_runtime::AnchoredRecordName, worth_store::physical_runtime::AnchoredRecordPublication, worth_store::physical_runtime::AnchoredRecordPublicationFailure, worth_store::physical_runtime::AnchoredRecordPublished, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::AnchoredRecordMember,
+    worth_store::physical_runtime::AnchoredRecordMemberLocator,
+    worth_store::physical_runtime::AnchoredRecordMemberReadFailure,
+    worth_store::physical_runtime::AnchoredRecordName,
+    worth_store::physical_runtime::AnchoredRecordPublication,
+    worth_store::physical_runtime::AnchoredRecordPublicationFailure,
+    worth_store::physical_runtime::AnchoredRecordPublished,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::anchored_records::name, worth_store_testkit_recovery_runtime::production_entry::anchored_records::value, worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT};
-pub(crate) use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_store_testkit_recovery_runtime::production_entry::anchored_records};
-
-
-
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+    worth_store_testkit_recovery_runtime::production_entry::anchored_records,
+};
+pub(crate) use {
+    worth_store_testkit_recovery_runtime::production_entry::anchored_records::name,
+    worth_store_testkit_recovery_runtime::production_entry::anchored_records::value,
+    worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT,
+};
 
 pub(crate) const READ_LIMIT: u64 = 8 << 20;
 pub(crate) const MANIFEST_BYTES: usize = 900;
@@ -52,7 +67,10 @@ pub(crate) fn publish_with_members(
                 expected_generation,
                 payload,
                 placement,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(
+                    120_000,
+                )
+                .unwrap(),
             )
             .with_members(members),
         )
@@ -89,8 +107,11 @@ pub(crate) fn assert_value(
 /// Bytes the media completed writing, by positioned write or append.
 pub(crate) fn written_bytes(serving: &ServingPhysicalRuntime) -> u64 {
     let counters = serving.media_counters();
-    counters.completed_bytes_for(worth_store::physical_runtime::certification::MediaOperationRole::PositionedWrite)
-        + counters.completed_bytes_for(worth_store::physical_runtime::certification::MediaOperationRole::Append)
+    counters.completed_bytes_for(
+        worth_store::physical_runtime::certification::MediaOperationRole::PositionedWrite,
+    ) + counters.completed_bytes_for(
+        worth_store::physical_runtime::certification::MediaOperationRole::Append,
+    )
 }
 
 /// Two hundred members of mixed sizes up to 2 MiB.

@@ -1,9 +1,5 @@
-#![cfg(all())]
-
-#[allow(unused_imports)] use crate::phase_four_planning::phase_six_publication_counters::*;
-use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-use {worth_store::physical_runtime::PhysicalRecoveryPublicationCommandIndeterminate, worth_store::physical_runtime::PhysicalRecoveryPublicationCommandStage, worth_store::physical_runtime::PhysicalRecoveryPublicationSettlementFailure, worth_store::physical_runtime::PhysicalSignalSettlementOutcome};
-use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPublicationIndeterminate, worth_store_recovery_runtime::PhysicalRecoveryPublicationSettlement};
+#[allow(unused_imports)]
+use crate::phase_four_planning::phase_six_publication_counters::*;
 
 #[test]
 fn second_candidate_materialization_failure_retains_the_first_completed_candidate() {
@@ -11,7 +7,9 @@ fn second_candidate_materialization_failure_retains_the_first_completed_candidat
         "c8-phase6-candidate-materialization-prefix",
         worth_store::physical_runtime::certification::MediaOperationRole::PositionedWrite,
         2,
-        worth_store::physical_runtime::certification::MediaFaultDirective::AllowPrefix { bytes: 31 },
+        worth_store::physical_runtime::certification::MediaFaultDirective::AllowPrefix {
+            bytes: 31,
+        },
     );
     let worth_store_recovery_runtime::PhysicalRecoveryPublicationSettlement::Indeterminate(
         worth_store::physical_runtime::PhysicalRecoveryPublicationCommandIndeterminate::CandidateMaterialization {
@@ -64,7 +62,9 @@ fn candidate_sync_denial_retains_the_escaped_materialization_prefix() {
 
 #[test]
 fn candidate_sync_scheduler_failure_retains_the_completed_materialization() {
-    let retained_root = crate::phase_four_planning::prepare_ordinary_recovery_root("c8-phase6-candidate-sync-signal");
+    let retained_root = crate::phase_four_planning::prepare_ordinary_recovery_root(
+        "c8-phase6-candidate-sync-signal",
+    );
     let staged = crate::phase_four_planning::selected_ordinary_recovery(retained_root.path())
         .plan()
         .unwrap()
@@ -73,7 +73,10 @@ fn candidate_sync_scheduler_failure_retains_the_completed_materialization() {
     staged.certification_fail_publication_scheduler_settlement_at(
         worth_store::physical_runtime::PhysicalRecoveryPublicationCommandStage::CandidateSynchronization,
     );
-    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(outcome)) = staged.publish() else {
+    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+        outcome,
+    )) = staged.publish()
+    else {
         panic!("candidate synchronization scheduler failure must be indeterminate")
     };
     assert!(matches!(
@@ -87,7 +90,8 @@ fn candidate_sync_scheduler_failure_retains_the_completed_materialization() {
 
 #[test]
 fn namespace_scheduler_failure_retains_candidates_and_root_protocol() {
-    let retained_root = crate::phase_four_planning::prepare_ordinary_recovery_root("c8-phase6-namespace-scheduler");
+    let retained_root =
+        crate::phase_four_planning::prepare_ordinary_recovery_root("c8-phase6-namespace-scheduler");
     let staged = crate::phase_four_planning::selected_ordinary_recovery(retained_root.path())
         .plan()
         .unwrap()
@@ -97,7 +101,10 @@ fn namespace_scheduler_failure_retains_candidates_and_root_protocol() {
     staged.certification_fail_publication_scheduler_settlement_at(
         worth_store::physical_runtime::PhysicalRecoveryPublicationCommandStage::RecordNamespaceSynchronization,
     );
-    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(outcome)) = staged.publish() else {
+    let Err(worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+        outcome,
+    )) = staged.publish()
+    else {
         panic!("namespace scheduler failure must retain the completed publication prefix")
     };
     assert!(matches!(

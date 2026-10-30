@@ -1,14 +1,9 @@
 //! Reopens a real namespace-durable group before its in-memory root advance.
 
-#[allow(unused_imports)] use crate::physical_record_journeys::maintenance_interference::publication_charge::cutover::*;
-use {std::collections::BTreeMap};
-use {std::num::NonZeroU32, std::num::NonZeroU64};
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::maintenance_interference::publication_charge::cutover::*;
 
-use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalDataSettlementOutcome, worth_store::physical_runtime::PhysicalDurabilityStateReopenFailure, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalReadProtectionPolicy, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PhysicalRootNamespaceDurabilityOutcome, worth_store::physical_runtime::PhysicalRootPublicationPreparationOutcome, worth_store::physical_runtime::PhysicalRootReplacementOutcome, worth_store::physical_runtime::PhysicalSignalConstructionFailure, worth_store::physical_runtime::PhysicalWalGroupAppendOutcome, worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordBootstrapFailure, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest, worth_store::physical_runtime::ServingPhysicalRuntime, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
-
-use {worth_store_testkit_store::publication_metadata_oracle as oracle, crate::physical_record_journeys::maintenance_interference::publication_charge::prepared, crate::physical_record_journeys::maintenance_interference::publication_charge::require_dispatched, crate::physical_record_journeys::maintenance_interference::publication_charge::EXTENT_SEED};
+use crate::physical_record_journeys::maintenance_interference::publication_charge::EXTENT_SEED;
 
 #[test]
 fn conflicting_complete_groups_reject_reopen_before_owner_installation() {
@@ -32,17 +27,26 @@ fn conflicting_complete_groups_reject_reopen_before_owner_installation() {
     );
     let before = file_inventory(&root);
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
-    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .admit(format)
+        .unwrap();
     let media = worth_store_testkit_store::physical_record_journeys::media(&root);
-    let durability = worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy(
-        &media,
-        worth_store::physical_runtime::PhysicalWalPolicy::segmented(
-            worth_store::physical_runtime::WalSegmentByteLimit::new(std::num::NonZeroU64::new(512 * 1024).unwrap()),
-            worth_store::physical_runtime::WalSegmentInventoryLimit::new(std::num::NonZeroU32::new(64).unwrap()),
-        ),
-    );
+    let durability =
+        worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy(
+            &media,
+            worth_store::physical_runtime::PhysicalWalPolicy::segmented(
+                worth_store::physical_runtime::WalSegmentByteLimit::new(
+                    std::num::NonZeroU64::new(512 * 1024).unwrap(),
+                ),
+                worth_store::physical_runtime::WalSegmentInventoryLimit::new(
+                    std::num::NonZeroU32::new(64).unwrap(),
+                ),
+            ),
+        );
     let result = media
         .open_record_store(
             worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
@@ -107,10 +111,16 @@ fn namespace_durable_group_reopens_without_memory_advance() {
         b"generation=3"
     );
 
-    let format = worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    let format = worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+        .admit()
+        .unwrap();
     let expected = worth_store_testkit_store::publication_metadata_oracle::wal_file_bytes(&root)
-        + worth_store_testkit_store::publication_metadata_oracle::actual_publication_metadata(&root, 2, format)
-        + worth_store_testkit_store::publication_metadata_oracle::actual_publication_metadata(&root, 3, format);
+        + worth_store_testkit_store::publication_metadata_oracle::actual_publication_metadata(
+            &root, 2, format,
+        )
+        + worth_store_testkit_store::publication_metadata_oracle::actual_publication_metadata(
+            &root, 3, format,
+        );
     let reopened = worth_store_testkit_store::physical_record_journeys::maintenance_interference::reopen::open_interference(&root);
     assert_eq!(
         reopened

@@ -1,9 +1,31 @@
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_store::physical_runtime::PhysicalReadWorkRequest, worth_store::physical_runtime::PhysicalWorkCapacity, worth_store::physical_runtime::PhysicalWorkCapacityDimension, worth_store::physical_runtime::PhysicalWorkReadiness, worth_store::physical_runtime::RecordSchedulerReservationDenial, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub use {worth_store_io_scheduler::foreground_reservation::BandwidthToken, worth_store_io_scheduler::foreground_reservation::DirtyPageBudget, worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration, worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope, worth_store_io_scheduler::foreground_reservation::ForegroundReservationAdmissionDenial, worth_store_io_scheduler::foreground_reservation::ForegroundReservationResourceShortfall, worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget, worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundAdmissionDenial, worth_store_io_scheduler::foreground_reservation::QueueSlot, worth_store_io_scheduler::foreground_reservation::WorkerPermit, worth_store_io_scheduler::foreground_reservation::WriteBackWindow};
-pub use {worth_store_physical_backend::MediaOperationRole};
+pub use worth_proof::TransitionOutcome;
+pub use worth_store_physical_backend::MediaOperationRole;
+pub use {
+    worth_store::physical_runtime::PhysicalReadWorkRequest,
+    worth_store::physical_runtime::PhysicalWorkCapacity,
+    worth_store::physical_runtime::PhysicalWorkCapacityDimension,
+    worth_store::physical_runtime::PhysicalWorkReadiness,
+    worth_store::physical_runtime::RecordSchedulerReservationDenial,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub use {
+    worth_store_io_scheduler::foreground_reservation::BandwidthToken,
+    worth_store_io_scheduler::foreground_reservation::DirtyPageBudget,
+    worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration,
+    worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope,
+    worth_store_io_scheduler::foreground_reservation::ForegroundReservationAdmissionDenial,
+    worth_store_io_scheduler::foreground_reservation::ForegroundReservationResourceShortfall,
+    worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget,
+    worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundAdmissionDenial,
+    worth_store_io_scheduler::foreground_reservation::QueueSlot,
+    worth_store_io_scheduler::foreground_reservation::WorkerPermit,
+    worth_store_io_scheduler::foreground_reservation::WriteBackWindow,
+};
 
-pub use {crate::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, crate::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+pub use {
+    crate::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    crate::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 pub struct HeldReadySlots<'a> {
     pub serving: &'a ServingPhysicalRuntime,
@@ -26,7 +48,9 @@ impl HeldReadySlots<'_> {
                     .expect("cancelling a ready read releases its slot");
                 drop(ready);
             }
-            worth_store::physical_runtime::PhysicalWorkReadiness::Blocked(_) => panic!("ready read blocked before dispatch"),
+            worth_store::physical_runtime::PhysicalWorkReadiness::Blocked(_) => {
+                panic!("ready read blocked before dispatch")
+            }
         }
     }
 }
@@ -45,7 +69,9 @@ impl Drop for HeldReadySlots<'_> {
                         .expect("cancelling a ready read releases its slot");
                     drop(ready);
                 }
-                worth_store::physical_runtime::PhysicalWorkReadiness::Blocked(_) => panic!("ready read blocked before dispatch"),
+                worth_store::physical_runtime::PhysicalWorkReadiness::Blocked(_) => {
+                    panic!("ready read blocked before dispatch")
+                }
             }
         }
     }

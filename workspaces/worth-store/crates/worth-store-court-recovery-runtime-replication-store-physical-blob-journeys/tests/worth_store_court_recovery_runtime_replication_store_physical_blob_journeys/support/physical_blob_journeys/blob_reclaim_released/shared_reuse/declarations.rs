@@ -1,15 +1,35 @@
 pub(crate) use {std::num::NonZeroU16, std::num::NonZeroU64};
 
-pub(crate) use {worth_proof::AdmittedBlobReleaseProof};
-pub(crate) use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimReceipt, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PublishedBlobGeneration, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::IndexedThroughBlobPublication};
+pub(crate) use worth_proof::AdmittedBlobReleaseProof;
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReadOpenFailure,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimReceipt,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PublishedBlobGeneration,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::IndexedThroughBlobPublication,
+};
 
-
-
-
-
-pub(crate) use {crate::physical_blob_journeys::blob_reclaim_released::publish_one, crate::physical_blob_journeys::blob_reclaim_released::shared_format, crate::physical_blob_journeys::blob_reclaim_released::shared_placement, crate::physical_blob_journeys::blob_reclaim_released::SHARED_CHUNK as CHUNK};
-pub(crate) use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::serving_from_initialization_with_format_and_placement};
+pub(crate) use {
+    crate::physical_blob_journeys::blob_reclaim_released::publish_one,
+    crate::physical_blob_journeys::blob_reclaim_released::shared_format,
+    crate::physical_blob_journeys::blob_reclaim_released::shared_placement,
+    crate::physical_blob_journeys::blob_reclaim_released::SHARED_CHUNK as CHUNK,
+};
+pub(crate) use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::serving_from_initialization_with_format_and_placement,
+};
 
 pub(crate) fn source_first() {
     let directory = tempfile::tempdir().unwrap();
@@ -72,7 +92,8 @@ pub(crate) fn request(
     worth_store::physical_runtime::BlobReclaimRequest::released(
         proof,
         shared_placement(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(512).unwrap(),
             std::num::NonZeroU64::new(64 << 20).unwrap(),
@@ -94,12 +115,18 @@ pub(crate) fn release(
         .unwrap()
         .wait()
         .unwrap();
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     receipt
 }
 
 pub(crate) fn assert_retired(receipt: &BlobReclaimReceipt) {
-    assert_eq!(receipt.retirement(), worth_store::physical_runtime::BlobReclaimRetirement::Completed);
+    assert_eq!(
+        receipt.retirement(),
+        worth_store::physical_runtime::BlobReclaimRetirement::Completed
+    );
     assert!(receipt.bytes_released() > 0);
     assert_eq!(
         receipt.bytes_released(),
@@ -124,8 +151,10 @@ pub(crate) fn assert_invisible(
     );
     match result {
         Err(worth_store::physical_runtime::BlobReadOpenFailure::PublicationNotFound) => {}
-        Err(worth_store::physical_runtime::BlobReadOpenFailure::Read(worth_store::physical_runtime::BlobReadFailure::RecordRead(error)))
-            if error.denial() == worth_store::physical_runtime::RecordReadDenial::RecordNotFound => {}
+        Err(worth_store::physical_runtime::BlobReadOpenFailure::Read(
+            worth_store::physical_runtime::BlobReadFailure::RecordRead(error),
+        )) if error.denial() == worth_store::physical_runtime::RecordReadDenial::RecordNotFound => {
+        }
         other => panic!("released publication has wrong visibility: {other:?}"),
     }
 }
@@ -143,7 +172,9 @@ pub(crate) fn assert_bytes_exact(
             scope,
             0,
             expected.len() as u64,
-            worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(1).unwrap()),
+            worth_store::physical_runtime::BlobReadLimits::new(
+                std::num::NonZeroU64::new(1).unwrap(),
+            ),
         )
         .unwrap();
     let mut bytes = vec![0_u8; expected.len()];
@@ -167,13 +198,15 @@ pub(crate) fn multi_chunk_payload() -> Vec<u8> {
 
 pub(crate) fn assert_selected_reuse_claim(serving: &ServingPhysicalRuntime) {
     assert_eq!(
-        worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(serving)
-            .iter()
-            .filter(|(_, bytes)| matches!(
-                decode_blob_record(bytes),
-                Ok(worth_store_physical_format::BlobRecordV1::ChunkReuseClaimV2(_))
-            ))
-            .count(),
+        worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(
+            serving
+        )
+        .iter()
+        .filter(|(_, bytes)| matches!(
+            decode_blob_record(bytes),
+            Ok(worth_store_physical_format::BlobRecordV1::ChunkReuseClaimV2(_))
+        ))
+        .count(),
         2
     );
 }

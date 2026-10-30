@@ -1,11 +1,9 @@
 //! Physical membership, rather than encoded-byte estimates, proves reuse.
-#[allow(unused_imports)] use crate::residency_capture::*;
-use {worth_execution::ExecutionRequest};
-use {worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::MutationIntent};
-use {worth_store::physical_runtime::AnchoredRecordMemberLocator, worth_store::physical_runtime::AnchoredRecordName};
-use {worth_store_relational::RelationalStoreHome};
-
-use {crate::batches, crate::durable_run, crate::workload};
+#[allow(unused_imports)]
+use crate::residency_capture::*;
+use {
+    worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId,
+};
 
 #[test]
 fn a_one_partition_commit_publishes_constant_new_members_and_capture_reads_nothing() {
@@ -17,7 +15,10 @@ fn a_one_partition_commit_publishes_constant_new_members_and_capture_reads_nothi
     let branch = BranchId("main".into());
     for partition in 0..48_u32 {
         let mut batch = crate::batches::create(partition as usize);
-        let worth_relational::facade::transactions::MutationIntent::Create(worth_relational::facade::transactions::CreateIntent::Entity(spec)) = &mut batch.intents[0] else {
+        let worth_relational::facade::transactions::MutationIntent::Create(
+            worth_relational::facade::transactions::CreateIntent::Entity(spec),
+        ) = &mut batch.intents[0]
+        else {
             panic!("entity create")
         };
         spec.partition_id = PartitionId(partition);
@@ -35,7 +36,13 @@ fn a_one_partition_commit_publishes_constant_new_members_and_capture_reads_nothi
         first.len() >= 48 * 2,
         "head and history are separate members, deduplicated across root and mirror"
     );
-    crate::workload::commit(home.runtime(), &execution, &branch, crate::batches::create(1000)).unwrap();
+    crate::workload::commit(
+        home.runtime(),
+        &execution,
+        &branch,
+        crate::batches::create(1000),
+    )
+    .unwrap();
     let reads = home.cold_storage_reads();
     home.checkpoint(&execution).unwrap();
     assert_eq!(home.cold_storage_reads(), reads);

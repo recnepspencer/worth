@@ -1,14 +1,30 @@
+pub use std::path::Path;
 pub use {std::num::NonZeroU32, std::num::NonZeroU64};
-pub use {std::path::Path};
 
+pub use worth_store_physical_backend::MediaOperationRole;
 pub use {sha2::Digest, sha2::Sha256};
 pub use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-pub use {worth_store::physical_runtime::PhysicalDurabilityStateReopenFailure, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalSignalConstructionFailure, worth_store::physical_runtime::PhysicalWalGroupAppendOutcome, worth_store::physical_runtime::PhysicalWalOpenFailure, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::RecordBootstrapFailure, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
-pub use {worth_store_physical_backend::MediaOperationRole};
+pub use {
+    worth_store::physical_runtime::PhysicalDurabilityStateReopenFailure,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalSignalConstructionFailure,
+    worth_store::physical_runtime::PhysicalWalGroupAppendOutcome,
+    worth_store::physical_runtime::PhysicalWalOpenFailure,
+    worth_store::physical_runtime::PhysicalWalPolicy,
+    worth_store::physical_runtime::RecordBootstrapFailure,
+    worth_store::physical_runtime::WalSegmentByteLimit,
+    worth_store::physical_runtime::WalSegmentInventoryLimit,
+};
 pub use {worth_store_wal::WalArtifactStoreDenial, worth_store_wal::WalTopologyDenialKind};
 
-pub use {crate::physical_record_journeys::configuration, crate::physical_record_journeys::durability_with_wal_policy, crate::physical_record_journeys::media, crate::physical_record_journeys::success};
-pub use {crate::physical_record_journeys::durability_admission::wal_append::prepared};
+pub use crate::physical_record_journeys::durability_admission::wal_append::prepared;
+pub use {
+    crate::physical_record_journeys::configuration,
+    crate::physical_record_journeys::durability_with_wal_policy,
+    crate::physical_record_journeys::media, crate::physical_record_journeys::success,
+};
 
 // One two-member group fills the current projection segment exactly.
 // Keep this aligned with the independent rotation inventory oracle.
@@ -39,24 +55,40 @@ impl HostileInventory {
 
     pub fn expected(self) -> PhysicalWalOpenFailure {
         match self {
-            Self::InventoryLimit => worth_store::physical_runtime::PhysicalWalOpenFailure::InventoryLimitExceeded,
-            Self::NonCanonicalName => worth_store::physical_runtime::PhysicalWalOpenFailure::NonCanonicalArtifact,
-            Self::EmptySegment => worth_store::physical_runtime::PhysicalWalOpenFailure::EmptySegment,
-            Self::SegmentIdentityMismatch => worth_store::physical_runtime::PhysicalWalOpenFailure::SegmentInspection(
-                worth_store_wal::WalArtifactStoreDenial::StoreBindingMismatch,
-            ),
+            Self::InventoryLimit => {
+                worth_store::physical_runtime::PhysicalWalOpenFailure::InventoryLimitExceeded
+            }
+            Self::NonCanonicalName => {
+                worth_store::physical_runtime::PhysicalWalOpenFailure::NonCanonicalArtifact
+            }
+            Self::EmptySegment => {
+                worth_store::physical_runtime::PhysicalWalOpenFailure::EmptySegment
+            }
+            Self::SegmentIdentityMismatch => {
+                worth_store::physical_runtime::PhysicalWalOpenFailure::SegmentInspection(
+                    worth_store_wal::WalArtifactStoreDenial::StoreBindingMismatch,
+                )
+            }
             Self::TornFrame => {
-                worth_store::physical_runtime::PhysicalWalOpenFailure::SegmentInspection(worth_store_wal::WalArtifactStoreDenial::InvalidFrame)
+                worth_store::physical_runtime::PhysicalWalOpenFailure::SegmentInspection(
+                    worth_store_wal::WalArtifactStoreDenial::InvalidFrame,
+                )
             }
             Self::PayloadDigestMismatch => {
-                worth_store::physical_runtime::PhysicalWalOpenFailure::SegmentInspection(worth_store_wal::WalArtifactStoreDenial::DigestMismatch)
+                worth_store::physical_runtime::PhysicalWalOpenFailure::SegmentInspection(
+                    worth_store_wal::WalArtifactStoreDenial::DigestMismatch,
+                )
             }
-            Self::SegmentGap => {
-                worth_store::physical_runtime::PhysicalWalOpenFailure::Topology(worth_store_wal::WalTopologyDenialKind::NonContiguousSegment)
-            }
-            Self::LsnGap => worth_store::physical_runtime::PhysicalWalOpenFailure::Topology(worth_store_wal::WalTopologyDenialKind::Gap),
+            Self::SegmentGap => worth_store::physical_runtime::PhysicalWalOpenFailure::Topology(
+                worth_store_wal::WalTopologyDenialKind::NonContiguousSegment,
+            ),
+            Self::LsnGap => worth_store::physical_runtime::PhysicalWalOpenFailure::Topology(
+                worth_store_wal::WalTopologyDenialKind::Gap,
+            ),
             Self::GenerationMismatch => {
-                worth_store::physical_runtime::PhysicalWalOpenFailure::Topology(worth_store_wal::WalTopologyDenialKind::WrongGeneration)
+                worth_store::physical_runtime::PhysicalWalOpenFailure::Topology(
+                    worth_store_wal::WalTopologyDenialKind::WrongGeneration,
+                )
             }
         }
     }
@@ -117,11 +149,11 @@ pub fn build_three_segment_inventory_with_policy(
     let durability =
         durability_with_wal_policy(&media_owner, wal_policy(segment_bytes, inventory_limit));
     let (format, placement, access) = configuration();
-    let serving = success(
-        media_owner.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
+    let serving = success(media_owner.initialize_record_store(
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
             format, placement, access, durability,
-        )),
-    );
+        ),
+    ));
     let submission = serving.certification_record_submission();
     append_group(
         &submission,
@@ -139,13 +171,17 @@ pub fn build_three_segment_inventory_with_policy(
                 prepared(
                     &submission,
                     placement,
-                    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([first; 32]),
+                    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(
+                        [first; 32],
+                    ),
                     payload,
                 ),
                 prepared(
                     &submission,
                     placement,
-                    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([second; 32]),
+                    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(
+                        [second; 32],
+                    ),
                     payload,
                 ),
             ],
@@ -158,11 +194,11 @@ pub fn initialize_empty_store(store_root: &Path) {
     let media_owner = media(store_root);
     let durability = durability_with_wal_policy(&media_owner, wal_policy(SEGMENT_BYTES, 3));
     let (format, placement, access) = configuration();
-    success(
-        media_owner.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
+    success(media_owner.initialize_record_store(
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
             format, placement, access, durability,
-        )),
-    )
+        ),
+    ))
     .close();
 }
 
@@ -211,8 +247,12 @@ pub fn open_failure_from_media(
 
 pub fn wal_policy(bytes: u64, inventory: u32) -> PhysicalWalPolicy {
     worth_store::physical_runtime::PhysicalWalPolicy::segmented(
-        worth_store::physical_runtime::WalSegmentByteLimit::new(std::num::NonZeroU64::new(bytes).unwrap()),
-        worth_store::physical_runtime::WalSegmentInventoryLimit::new(std::num::NonZeroU32::new(inventory).unwrap()),
+        worth_store::physical_runtime::WalSegmentByteLimit::new(
+            std::num::NonZeroU64::new(bytes).unwrap(),
+        ),
+        worth_store::physical_runtime::WalSegmentInventoryLimit::new(
+            std::num::NonZeroU32::new(inventory).unwrap(),
+        ),
     )
 }
 

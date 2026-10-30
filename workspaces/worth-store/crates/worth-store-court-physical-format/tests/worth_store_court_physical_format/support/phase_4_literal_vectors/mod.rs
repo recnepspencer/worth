@@ -7,9 +7,7 @@ pub(crate) mod checkpoint_records;
 #[allow(dead_code, unused_imports)]
 #[path = "durable_frames/mod.rs"]
 pub(crate) mod durable_frames;
-#[allow(dead_code, unused_imports)]
-#[path = "oracle/mod.rs"]
-pub(crate) mod oracle;
+
 #[allow(dead_code, unused_imports)]
 #[path = "page_frames/mod.rs"]
 pub(crate) mod page_frames;

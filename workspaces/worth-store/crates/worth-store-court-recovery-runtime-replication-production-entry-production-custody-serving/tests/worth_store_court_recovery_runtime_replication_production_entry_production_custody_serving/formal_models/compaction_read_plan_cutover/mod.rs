@@ -1,6 +1,8 @@
-use {worth_store_formal_models::map_compaction_observation, worth_store_formal_models::CompactionVisibilityAction};
-use {worth_store_physical_isolation::CompactionReadPlanCompletion};
-use {worth_store_test_support::harness::physical_isolation::compaction::admitted_compaction_plan, worth_store_test_support::harness::physical_isolation::compaction::published_compaction};
+use worth_store_formal_models::map_compaction_observation;
+use {
+    worth_store_test_support::harness::physical_isolation::compaction::admitted_compaction_plan,
+    worth_store_test_support::harness::physical_isolation::compaction::published_compaction,
+};
 
 #[test]
 fn completed_local_plans_map_to_cutover_validation_not_recovery_visibility() {
@@ -13,7 +15,12 @@ fn completed_local_plans_map_to_cutover_validation_not_recovery_visibility() {
         .into_execution_ready_handle()
         .complete_plan();
     let completion =
-        worth_store_physical_isolation::CompactionReadPlanCompletion::from_publication(publication, pre, post).unwrap();
+        worth_store_physical_isolation::CompactionReadPlanCompletion::from_publication(
+            publication,
+            pre,
+            post,
+        )
+        .unwrap();
     assert_eq!(
         map_compaction_observation(completion.owner_case_observation()),
         worth_store_formal_models::CompactionVisibilityAction::ValidateReadPlanCutover

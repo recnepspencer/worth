@@ -1,9 +1,34 @@
 //! Genuine failed-ingest cleanup can coexist with selected NoRelease custody.
 
-pub(crate) use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store_blob_chunks::BlobChunkSize, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, std::num::NonZeroU16, std::num::NonZeroU64, std::path::Path, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_proof::TransitionOutcome, worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, worth_store_testkit_recovery_runtime::production_entry::initialized_recovery_world};
-pub(crate) use {worth_store::physical_runtime::BlobTerminalLimits};
-pub(crate) use {worth_store_physical_format::BlobRecordKind, worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::SelectedRecordContentClass};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+pub(crate) use worth_store::physical_runtime::BlobTerminalLimits;
+pub(crate) use {
+    std::num::NonZeroU16, std::num::NonZeroU64, std::path::Path, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_blob_chunks::BlobChunkSize,
+    worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+    worth_store_testkit_recovery_runtime::production_entry::initialized_recovery_world,
+};
+pub(crate) use {
+    worth_store_physical_format::BlobRecordKind,
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::SelectedRecordContentClass,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 pub(crate) const CHUNK: usize = 64 << 10;
 
@@ -19,7 +44,8 @@ pub(crate) fn exercise(tier: bool, mutate_after_seal: bool) {
         "c11.recovery.no-release.failed.scope"
     });
     let blobs = world.serving().blobs().expect("blob owner");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let object = blobs.issue_object_id(limits).expect("object identity");
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         object,
@@ -27,7 +53,8 @@ pub(crate) fn exercise(tier: bool, mutate_after_seal: bool) {
         (2 * CHUNK) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -41,27 +68,38 @@ pub(crate) fn exercise(tier: bool, mutate_after_seal: bool) {
             token,
             &scope,
             world.placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
-            worth_store::physical_runtime::BlobTerminalLimits::new(std::num::NonZeroU64::new(128).unwrap()),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
+            worth_store::physical_runtime::BlobTerminalLimits::new(
+                std::num::NonZeroU64::new(128).unwrap(),
+            ),
         )
         .expect("selected failure terminal");
     let receipt = blobs
-        .reclaim(worth_store::physical_runtime::BlobReclaimRequest::abandoned(
-            token,
-            &scope,
-            world.placement(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
-            worth_store::physical_runtime::BlobReclaimLimits::new(
-                std::num::NonZeroU64::new(128).unwrap(),
-                std::num::NonZeroU64::new(8 << 20).unwrap(),
-                std::num::NonZeroU16::new(1).unwrap(),
-            )
-            .unwrap(),
-        ))
+        .reclaim(
+            worth_store::physical_runtime::BlobReclaimRequest::abandoned(
+                token,
+                &scope,
+                world.placement(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(
+                    120_000,
+                )
+                .unwrap(),
+                worth_store::physical_runtime::BlobReclaimLimits::new(
+                    std::num::NonZeroU64::new(128).unwrap(),
+                    std::num::NonZeroU64::new(8 << 20).unwrap(),
+                    std::num::NonZeroU16::new(1).unwrap(),
+                )
+                .unwrap(),
+            ),
+        )
         .expect("failed-ingest reclaim admission")
         .wait()
         .expect("failed-ingest drop");
-    assert_eq!(receipt.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        receipt.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert_eq!(receipt.dropped_records().len(), 1);
     if tier {
         world
@@ -70,8 +108,13 @@ pub(crate) fn exercise(tier: bool, mutate_after_seal: bool) {
             .expect("tier activation");
     }
     let checkpoint = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
-        worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new(if tier { [0xb1; 32] } else { [0xb2; 32] }),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new(if tier {
+            [0xb1; 32]
+        } else {
+            [0xb2; 32]
+        }),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let worth_proof::TransitionOutcome::Success(handle) =
         world.serving().checkpoints().start(checkpoint).into_raw()

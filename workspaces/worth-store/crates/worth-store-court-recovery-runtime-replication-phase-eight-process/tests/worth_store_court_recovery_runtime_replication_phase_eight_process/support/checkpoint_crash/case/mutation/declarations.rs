@@ -1,4 +1,4 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
 pub(crate) const PERSISTED_WAL_FRAME_BYTE_FLIP: &str = "WalFrameHeaderByteFlip";
 

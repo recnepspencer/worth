@@ -6,15 +6,32 @@
 //! boundary its own commits recorded. A registry with other kind contracts
 //! refuses before service.
 
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_relational::facade::identity::KindId};
-pub(crate) use {worth_relational::facade::runtime::RelationalRuntimeApi};
-pub(crate) use {worth_relational::facade::schema::EntityKindRegistration, worth_relational::facade::schema::KindAspectContractDeclarations, worth_relational::facade::schema::RelationalSchemaRegistry, worth_relational::facade::schema::SchemaId, worth_relational::facade::schema::SchemaVersionId};
-pub(crate) use {worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeOpenRefusal, worth_store_relational::RelationalStoreHomeRequest};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use worth_relational::facade::identity::KindId;
+pub(crate) use worth_relational::facade::runtime::RelationalRuntimeApi;
+pub(crate) use {
+    worth_relational::facade::schema::EntityKindRegistration,
+    worth_relational::facade::schema::KindAspectContractDeclarations,
+    worth_relational::facade::schema::RelationalSchemaRegistry,
+    worth_relational::facade::schema::SchemaId, worth_relational::facade::schema::SchemaVersionId,
+};
+pub(crate) use {
+    worth_store_relational::RelationalStoreHome,
+    worth_store_relational::RelationalStoreHomeOpenRefusal,
+    worth_store_relational::RelationalStoreHomeRequest,
+};
 
-pub(crate) use {crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::open, crate::durable_run::open_declaring, crate::durable_run::recorded_schema, crate::durable_run::served_schema, crate::durable_run::steps_after, crate::durable_run::steps_before};
-pub(crate) use {crate::schema_transition::basis_of, crate::schema_transition::SOURCE, crate::schema_transition::TARGET};
+pub(crate) use {
+    crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::open,
+    crate::durable_run::open_declaring, crate::durable_run::recorded_schema,
+    crate::durable_run::served_schema, crate::durable_run::steps_after,
+    crate::durable_run::steps_before,
+};
+pub(crate) use {
+    crate::schema_transition::basis_of, crate::schema_transition::SOURCE,
+    crate::schema_transition::TARGET,
+};
 pub(crate) use {crate::workload, crate::workload::Script};
 
 pub(crate) const SEED: u64 = 0x5eed_0202;
@@ -35,7 +52,8 @@ pub(crate) fn foreign_registry() -> RelationalSchemaRegistry {
             kind_name: "other.entity".to_string(),
             schema_id: SchemaId("other".to_string()),
             schema_version_id: SchemaVersionId(1),
-            aspect_contract_declarations: worth_relational::facade::schema::KindAspectContractDeclarations::default(),
+            aspect_contract_declarations:
+                worth_relational::facade::schema::KindAspectContractDeclarations::default(),
         })
         .expect("the foreign registry")
 }

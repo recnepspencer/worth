@@ -1,6 +1,3 @@
-
-
-
 pub(crate) const LEAF_ENTRY_BYTES: usize = 88;
 
 #[derive(Debug, Clone, Copy)]
@@ -46,7 +43,10 @@ pub(crate) fn parse_placement(entry: &[u8], schema: u8) -> Result<Placement, Str
         allocation_epoch: entry[..16]
             .try_into()
             .map_err(|_| "record identity is truncated")?,
-        ordinal: crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64(entry, 16).ok_or("record ordinal is truncated")?,
+        ordinal: crate::phase_eight_process::history::parent_oracle::artifact_facts::read_u64(
+            entry, 16,
+        )
+        .ok_or("record ordinal is truncated")?,
     };
     match entry[24] {
         1 => Ok(crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::Placement::Inline {

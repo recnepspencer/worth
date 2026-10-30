@@ -1,11 +1,9 @@
-
-
-
-use {crate::store_recovery_runtime_context::process_context::assert_child_succeeded, crate::store_recovery_runtime_context::process_context::ProcessWorld};
+use crate::store_recovery_runtime_context::process_context::assert_child_succeeded;
 
 #[test]
 fn post_publication_cleanup_removes_only_the_exact_checkpoint_covered_wal() {
-    let world = crate::store_recovery_runtime_context::process_context::ProcessWorld::write("settled");
+    let world =
+        crate::store_recovery_runtime_context::process_context::ProcessWorld::write("settled");
     let candidate = world.oldest_wal();
     let bytes = std::fs::metadata(&candidate).unwrap().len();
     let cleanup = world.cleanup(bytes, "complete", &candidate);
@@ -16,7 +14,8 @@ fn post_publication_cleanup_removes_only_the_exact_checkpoint_covered_wal() {
 
 #[test]
 fn cleanup_limit_defers_the_exact_candidate_without_invalidating_recovery() {
-    let world = crate::store_recovery_runtime_context::process_context::ProcessWorld::write("settled");
+    let world =
+        crate::store_recovery_runtime_context::process_context::ProcessWorld::write("settled");
     let candidate = world.oldest_wal();
     let bytes = std::fs::metadata(&candidate).unwrap().len();
     let cleanup = world.cleanup(bytes - 1, "byte-limit", &candidate);
@@ -26,7 +25,8 @@ fn cleanup_limit_defers_the_exact_candidate_without_invalidating_recovery() {
 
 #[test]
 fn unresolved_operation_fate_retains_checkpoint_covered_wal() {
-    let world = crate::store_recovery_runtime_context::process_context::ProcessWorld::write("unresolved");
+    let world =
+        crate::store_recovery_runtime_context::process_context::ProcessWorld::write("unresolved");
     let candidate = world.oldest_wal();
     let bytes = std::fs::metadata(&candidate).unwrap().len();
     let cleanup = world.cleanup(bytes, "unresolved", &candidate);
@@ -36,7 +36,9 @@ fn unresolved_operation_fate_retains_checkpoint_covered_wal() {
 
 #[test]
 fn cleanup_candidate_limit_removes_only_the_admitted_prefix() {
-    let world = crate::store_recovery_runtime_context::process_context::ProcessWorld::write("multiple-settled");
+    let world = crate::store_recovery_runtime_context::process_context::ProcessWorld::write(
+        "multiple-settled",
+    );
     let wal = world.wal_files();
     assert!(
         wal.len() >= 3,
@@ -52,7 +54,8 @@ fn cleanup_candidate_limit_removes_only_the_admitted_prefix() {
 
 #[test]
 fn cleanup_cancellation_before_first_effect_defers_every_candidate() {
-    let world = crate::store_recovery_runtime_context::process_context::ProcessWorld::write("settled");
+    let world =
+        crate::store_recovery_runtime_context::process_context::ProcessWorld::write("settled");
     let candidate = world.oldest_wal();
     let bytes = std::fs::metadata(&candidate).unwrap().len();
     let cleanup = world.cleanup_with_cancellation(bytes, 0, &candidate);
@@ -62,7 +65,9 @@ fn cleanup_cancellation_before_first_effect_defers_every_candidate() {
 
 #[test]
 fn cleanup_cancellation_between_effects_retains_the_exact_completed_prefix() {
-    let world = crate::store_recovery_runtime_context::process_context::ProcessWorld::write("multiple-settled");
+    let world = crate::store_recovery_runtime_context::process_context::ProcessWorld::write(
+        "multiple-settled",
+    );
     let wal = world.wal_files();
     assert!(wal.len() >= 3);
     let bytes = wal

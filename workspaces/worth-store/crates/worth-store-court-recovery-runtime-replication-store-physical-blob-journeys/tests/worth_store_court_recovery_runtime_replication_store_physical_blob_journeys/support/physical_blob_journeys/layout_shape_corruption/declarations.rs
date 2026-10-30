@@ -1,14 +1,35 @@
-#![cfg(all())]
-
 pub(crate) use {std::fs, std::num::NonZeroU64, std::path::Path, std::time::Duration};
 
-pub(crate) use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest, worth_store::physical_runtime::PhysicalIndexPointKey, worth_store::physical_runtime::PhysicalLayoutDenial, worth_store::physical_runtime::PhysicalMutationDeadline};
-pub(crate) use {worth_store_blob_chunks::BlobChunkSize};
-pub(crate) use {worth_store_contracts::DurableArtifactFamilyId};
-pub(crate) use {worth_store_physical_format::BTreeNodeCellV1, worth_store_physical_format::BTreeNodeKind, worth_store_physical_format::BTreeNodeV1};
-pub(crate) use {worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalFormatField, worth_store_physical_integrity::PhysicalIntegrityObservationOutcome, worth_store_physical_integrity::PhysicalIntegrityRejection};
+pub(crate) use worth_store_blob_chunks::BlobChunkSize;
+pub(crate) use worth_store_contracts::DurableArtifactFamilyId;
+pub(crate) use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress,
+    worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest,
+    worth_store::physical_runtime::PhysicalIndexPointKey,
+    worth_store::physical_runtime::PhysicalLayoutDenial,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
+pub(crate) use {
+    worth_store_physical_format::BTreeNodeCellV1, worth_store_physical_format::BTreeNodeKind,
+    worth_store_physical_format::BTreeNodeV1,
+};
+pub(crate) use {
+    worth_store_physical_integrity::PhysicalDamageCause,
+    worth_store_physical_integrity::PhysicalFormatField,
+    worth_store_physical_integrity::PhysicalIntegrityObservationOutcome,
+    worth_store_physical_integrity::PhysicalIntegrityRejection,
+};
 
-pub(crate) use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+pub(crate) use {
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 pub(crate) const PAGE_BYTES: usize = 16 * 1024;
 pub(crate) const C5_HEADER: usize = 48;
@@ -35,8 +56,12 @@ pub(crate) fn reshape_selected_catalog_leaf(root: &Path, report: &serde_json::Va
     assert_eq!(&media[frame_start..frame_start + 8], b"WRC5FRM\0");
     assert_eq!(media[frame_start + 8], 3);
     assert!(offset + length <= frame_start + PAGE_BYTES);
-    let original = worth_store_physical_format::BTreeNodeV1::decode(&media[offset..offset + length]).unwrap();
-    assert_eq!(original.kind(), worth_store_physical_format::BTreeNodeKind::Leaf);
+    let original =
+        worth_store_physical_format::BTreeNodeV1::decode(&media[offset..offset + length]).unwrap();
+    assert_eq!(
+        original.kind(),
+        worth_store_physical_format::BTreeNodeKind::Leaf
+    );
     assert_eq!(original.family_code(), 1);
     assert_eq!(original.cells().len(), 1);
     let cell = &original.cells()[0];
@@ -46,7 +71,10 @@ pub(crate) fn reshape_selected_catalog_leaf(root: &Path, report: &serde_json::Va
     value.push(cell.key()[23]);
     let replacement = worth_store_physical_format::BTreeNodeV1::leaf(
         1,
-        vec![worth_store_physical_format::BTreeNodeCellV1::leaf(cell.key()[..23].to_vec(), value)],
+        vec![worth_store_physical_format::BTreeNodeCellV1::leaf(
+            cell.key()[..23].to_vec(),
+            value,
+        )],
         original.previous_sibling(),
         original.next_sibling(),
     )
@@ -66,7 +94,9 @@ pub(crate) fn reshape_selected_catalog_leaf(root: &Path, report: &serde_json::Va
     row["identity"].as_str().unwrap().to_owned()
 }
 
-pub(crate) fn index_identity(record: worth_store_physical_format::PersistedRecordIdentity) -> String {
+pub(crate) fn index_identity(
+    record: worth_store_physical_format::PersistedRecordIdentity,
+) -> String {
     format!(
         "index-record:{}:{:016x}",
         record

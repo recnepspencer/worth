@@ -2,11 +2,36 @@
 //! media by Store. A structurally valid substitute frame keeps every C.8/C.9
 //! proof intact, so only Store's independent media rejoin can deny it.
 
-pub(crate) use {std::fs, std::io::Read, std::io::Seek, std::io::SeekFrom, std::io::Write, std::path::Path};
+pub(crate) use {
+    std::fs, std::io::Read, std::io::Seek, std::io::SeekFrom, std::io::Write, std::path::Path,
+};
 
-pub(crate) use {worth_store::physical_runtime::PhysicalRecoverySelectedRejoinMismatch, worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial};
-pub(crate) use {worth_store_physical_format::decode_extent_chunk, worth_store_physical_format::durable_artifact_checksum, worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DerivedFamilyRootDirectoryV1, worth_store_physical_format::DerivedFamilyRootEntry, worth_store_physical_format::DurableExtentManifest, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::ExtentArenaFrameLayout, worth_store_physical_format::ExtentChunkCoordinate, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalRootRoutingBlock, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES, worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES, worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalRecoverySelectedRejoinMismatch,
+    worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_extent_chunk,
+    worth_store_physical_format::durable_artifact_checksum,
+    worth_store_physical_format::encode_extent_chunk,
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DerivedFamilyRootDirectoryV1,
+    worth_store_physical_format::DerivedFamilyRootEntry,
+    worth_store_physical_format::DurableExtentManifest,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::ExtentArenaFrameLayout,
+    worth_store_physical_format::ExtentChunkCoordinate,
+    worth_store_physical_format::PersistedRecordIdentity,
+    worth_store_physical_format::PhysicalRootRoutingBlock,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES,
+    worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES,
+    worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 pub(crate) fn root_manifests(root: &Path) -> Vec<DurablePhysicalRootManifest> {
     let roots = root.join("families/records/roots");
@@ -21,7 +46,8 @@ pub(crate) fn root_manifests(root: &Path) -> Vec<DurablePhysicalRootManifest> {
             )
         })
         .collect::<Vec<_>>();
-    found.sort_unstable_by_key(worth_store_physical_format::DurablePhysicalRootManifest::generation);
+    found
+        .sort_unstable_by_key(worth_store_physical_format::DurablePhysicalRootManifest::generation);
     found
 }
 
@@ -43,15 +69,22 @@ pub(crate) fn routes(
             ),
         )
         .unwrap();
-        let (block, _) =
-            worth_store_physical_format::PhysicalRootRoutingBlock::decode(&bytes, manifest.node_capacity()).unwrap();
+        let (block, _) = worth_store_physical_format::PhysicalRootRoutingBlock::decode(
+            &bytes,
+            manifest.node_capacity(),
+        )
+        .unwrap();
         assert_eq!(
             block.reference(durable_artifact_checksum(&bytes)),
             reference
         );
         match block {
-            worth_store_physical_format::PhysicalRootRoutingBlock::Leaf { entries, .. } => routes.extend(entries),
-            worth_store_physical_format::PhysicalRootRoutingBlock::Branch { children, .. } => pending.extend(children),
+            worth_store_physical_format::PhysicalRootRoutingBlock::Leaf { entries, .. } => {
+                routes.extend(entries)
+            }
+            worth_store_physical_format::PhysicalRootRoutingBlock::Branch { children, .. } => {
+                pending.extend(children)
+            }
         }
     }
     routes
@@ -78,14 +111,17 @@ pub(crate) fn substitute_directory(root: &Path, route: CurrentPhysicalRecordPlac
         .unwrap();
     let mut manifest_bytes = [0; EXTENT_ARENA_MANIFEST_FRAME_BYTES];
     file.read_exact(&mut manifest_bytes).unwrap();
-    let (manifest, format) = worth_store_physical_format::DurableExtentManifest::decode(&manifest_bytes).unwrap();
+    let (manifest, format) =
+        worth_store_physical_format::DurableExtentManifest::decode(&manifest_bytes).unwrap();
     assert_eq!(manifest.record(), extent.record());
     assert_eq!(
         manifest.chunk_count(),
         1,
         "a directory is one bounded chunk"
     );
-    let layout = worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment()).unwrap();
+    let layout =
+        worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment())
+            .unwrap();
     let coordinate = worth_store_physical_format::ExtentChunkCoordinate::new(
         extent.record(),
         extent.extent_cell(),
@@ -104,7 +140,8 @@ pub(crate) fn substitute_directory(root: &Path, route: CurrentPhysicalRecordPlac
     file.seek(std::io::SeekFrom::Start(chunk_offset)).unwrap();
     file.read_exact(&mut original).unwrap();
     let (payload, _) = decode_extent_chunk(&original, coordinate).unwrap();
-    let directory = worth_store_physical_format::DerivedFamilyRootDirectoryV1::decode(payload).unwrap();
+    let directory =
+        worth_store_physical_format::DerivedFamilyRootDirectoryV1::decode(payload).unwrap();
     assert!(directory.indexed_through_blob_publication().is_none());
     let mut entries = directory.entries().to_vec();
     let first = entries.first_mut().expect("replacement keeps family roots");
@@ -112,7 +149,11 @@ pub(crate) fn substitute_directory(root: &Path, route: CurrentPhysicalRecordPlac
     epoch[0] ^= 0x80;
     *first = worth_store_physical_format::DerivedFamilyRootEntry::new(
         first.family(),
-        worth_store_physical_format::PersistedRecordIdentity::new(epoch, first.root_record().ordinal()).unwrap(),
+        worth_store_physical_format::PersistedRecordIdentity::new(
+            epoch,
+            first.root_record().ordinal(),
+        )
+        .unwrap(),
     )
     .unwrap();
     let changed = worth_store_physical_format::DerivedFamilyRootDirectoryV1::new(entries)

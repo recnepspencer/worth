@@ -1,10 +1,21 @@
-pub use {sha2::Digest};
-pub use {tempfile::tempdir};
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalStoreCloseOutcome, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkRecoveryAdmissionOutcome, worth_store::physical_runtime::PhysicalWorkRecoveryIngressRejection};
-pub use {worth_store_physical_backend::MediaFaultDirective};
+pub use sha2::Digest;
+pub use tempfile::tempdir;
+pub use worth_proof::TransitionOutcome;
+pub use worth_store_physical_backend::MediaFaultDirective;
+pub use {
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalStoreCloseOutcome,
+    worth_store::physical_runtime::PhysicalWorkOperationFamily,
+    worth_store::physical_runtime::PhysicalWorkRecoveryAdmissionOutcome,
+    worth_store::physical_runtime::PhysicalWorkRecoveryIngressRejection,
+};
 
-pub use {crate::physical_record_journeys::physical_work::executor::admitted_write, crate::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile, crate::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault, crate::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture};
+pub use {
+    crate::physical_record_journeys::physical_work::executor::admitted_write,
+    crate::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault,
+    crate::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+    crate::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture,
+};
 
 pub fn crash_writer(root: &std::path::Path) {
     let (profile, _, mutation_request) = work_fixture();
@@ -17,7 +28,9 @@ pub fn crash_writer(root: &std::path::Path) {
         worth_store_physical_backend::MediaFaultDirective::PanicAfter,
     );
     let admitted = admitted_write(&serving, mutation_request);
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, payload).unwrap();
+    let command =
+        worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, payload)
+            .unwrap();
     let _ = serving.execute_physical_work(command);
     panic!("fault schedule did not terminate the target effect");
 }
@@ -25,21 +38,28 @@ pub fn crash_writer(root: &std::path::Path) {
 pub fn crash_reopener(root: &std::path::Path) {
     let (profile, _, _) = work_fixture();
     let (format, _, access) = crate::physical_record_journeys::configuration();
-    let serving = match open_record_store!(crate::physical_record_journeys::media(root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
-            .with_physical_work_profile(profile)
-    },)
-    .into_raw()
-    {
-        worth_proof::TransitionOutcome::Success(serving) => serving,
-        worth_proof::TransitionOutcome::Denied(_) => panic!("recovery reopener admission denied"),
-        worth_proof::TransitionOutcome::Deferred(_) => panic!("recovery reopener admission deferred"),
-        worth_proof::TransitionOutcome::Stale(_) => panic!("recovery reopener admission stale"),
-        worth_proof::TransitionOutcome::RebindRequired(_) => {
-            panic!("recovery reopener admission requires rebind")
-        }
-        worth_proof::TransitionOutcome::Failed(_) => panic!("recovery reopener admission requires inspection"),
-    };
+    let serving =
+        match open_record_store!(crate::physical_record_journeys::media(root), |durability| {
+            worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)
+                .with_physical_work_profile(profile)
+        },)
+        .into_raw()
+        {
+            worth_proof::TransitionOutcome::Success(serving) => serving,
+            worth_proof::TransitionOutcome::Denied(_) => {
+                panic!("recovery reopener admission denied")
+            }
+            worth_proof::TransitionOutcome::Deferred(_) => {
+                panic!("recovery reopener admission deferred")
+            }
+            worth_proof::TransitionOutcome::Stale(_) => panic!("recovery reopener admission stale"),
+            worth_proof::TransitionOutcome::RebindRequired(_) => {
+                panic!("recovery reopener admission requires rebind")
+            }
+            worth_proof::TransitionOutcome::Failed(_) => {
+                panic!("recovery reopener admission requires inspection")
+            }
+        };
     let obligations = serving.physical_recovery_obligations();
     assert_eq!(obligations.len(), 1);
     let locator = obligations[0];

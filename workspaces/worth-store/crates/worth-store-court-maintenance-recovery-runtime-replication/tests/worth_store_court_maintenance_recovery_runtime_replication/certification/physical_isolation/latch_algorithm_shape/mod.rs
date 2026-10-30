@@ -1,11 +1,5 @@
-#[allow(unused_imports)] use crate::latch_algorithm_shape::*;
-use {worth_store_test_support::harness::physical_isolation::epoch_scope as support};
-
-use {std::collections::HashSet};
-use {std::hash::BuildHasher, std::hash::Hasher};
-
-use {worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_segment_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority, worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout};
-use {worth_store_physical_isolation::lower_latch_acquisition_plan, worth_store_physical_isolation::CanonicalLatchAcquisitionOrder, worth_store_physical_isolation::LatchAcquisitionDenial, worth_store_physical_isolation::LatchAcquisitionRequest, worth_store_physical_isolation::LatchAcquisitionStep, worth_store_physical_isolation::LatchUpgradeAuthority, worth_store_physical_isolation::LatchWaitForGraph, worth_store_physical_isolation::LatchWaitForGraphAdmissionDenial, worth_store_physical_isolation::PhysicalLatchClass, worth_store_physical_isolation::PhysicalLatchDeadlockPolicy, worth_store_physical_isolation::PhysicalLatchFamilyDeadlockPolicy, worth_store_physical_isolation::PhysicalLatchKey, worth_store_physical_isolation::PhysicalLatchWaitEdge};
+#[allow(unused_imports)]
+use crate::latch_algorithm_shape::*;
 
 #[test]
 fn canonical_latch_order_survives_permutation_hash_seed_and_rebuild() {
@@ -29,17 +23,31 @@ fn canonical_latch_order_survives_permutation_hash_seed_and_rebuild() {
 fn canonical_comparator_preserves_mode_and_action_tiebreakers() {
     let keys = algorithm_latch_keys();
     let exclusive = worth_store_physical_isolation::LatchAcquisitionStep::exclusive(keys.page_a);
-    let upgrade = worth_store_physical_isolation::LatchAcquisitionStep::upgrade(keys.page_a, upgrade_authority());
+    let upgrade = worth_store_physical_isolation::LatchAcquisitionStep::upgrade(
+        keys.page_a,
+        upgrade_authority(),
+    );
     let shared = worth_store_physical_isolation::LatchAcquisitionStep::shared(keys.page_a);
 
-    assert!(worth_store_physical_isolation::CanonicalLatchAcquisitionOrder::compare_steps(&shared, &exclusive).is_lt());
-    assert!(worth_store_physical_isolation::CanonicalLatchAcquisitionOrder::compare_steps(&exclusive, &upgrade).is_lt());
+    assert!(
+        worth_store_physical_isolation::CanonicalLatchAcquisitionOrder::compare_steps(
+            &shared, &exclusive
+        )
+        .is_lt()
+    );
+    assert!(
+        worth_store_physical_isolation::CanonicalLatchAcquisitionOrder::compare_steps(
+            &exclusive, &upgrade
+        )
+        .is_lt()
+    );
 }
 
 #[test]
 fn latch_family_policy_is_explicit_for_every_class() {
     for class in all_latch_classes() {
-        let prevention = worth_store_physical_isolation::PhysicalLatchFamilyDeadlockPolicy::for_class(class);
+        let prevention =
+            worth_store_physical_isolation::PhysicalLatchFamilyDeadlockPolicy::for_class(class);
         let detection =
             worth_store_physical_isolation::PhysicalLatchFamilyDeadlockPolicy::detect_with_bounded_wait_for_graph(class);
 
@@ -68,7 +76,9 @@ fn bounded_detection_policy_denies_with_exact_counter_evidence() {
     )
     .unwrap_err();
 
-    let worth_store_physical_isolation::LatchWaitForGraphAdmissionDenial::BoundExceeded(evidence) = denial else {
+    let worth_store_physical_isolation::LatchWaitForGraphAdmissionDenial::BoundExceeded(evidence) =
+        denial
+    else {
         panic!("bound excess must deny with pre-wait evidence");
     };
     assert_eq!(

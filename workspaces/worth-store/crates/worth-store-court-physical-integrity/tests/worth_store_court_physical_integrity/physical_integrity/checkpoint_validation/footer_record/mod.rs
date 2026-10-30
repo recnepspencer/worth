@@ -1,9 +1,4 @@
-use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
-use worth_store_physical_integrity::{
-    validate_checkpoint_footer, CheckpointFooterIntegrityValidation,
-    CheckpointFooterValidationBasis, PhysicalBlastRadius, PhysicalDamageCause, PhysicalFormatField,
-    PhysicalIntegrityRejectionClass, UntrustedPhysicalArtifact,
-};
+use worth_store_physical_integrity::validate_checkpoint_footer;
 
 use crate::checkpoint_validation::support::{
     assert_damage, binding_scope, compaction_scope, dirty_scope, field_range, footer_scope,

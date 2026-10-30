@@ -1,13 +1,19 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_reachability::reuse::*;
-use {std::num::NonZeroU16, std::num::NonZeroU64};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_reachability::reuse::*;
 
-use {worth_proof::AdmittedBlobReleaseProof};
-use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::BlobRecordReachability, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalPageSizeClass, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PublishedBlobGeneration, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1};
+use worth_store_physical_format::decode_blob_record;
 
-use {crate::physical_blob_journeys::blob_reachability::class_of, crate::physical_blob_journeys::blob_abort::deadline, crate::physical_blob_journeys::blob_reachability::inspection_limits, crate::physical_blob_journeys::blob_reachability::persisted, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records};
-use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::serving_from_initialization_with_format_and_placement};
+use {
+    crate::physical_blob_journeys::blob_abort::deadline,
+    crate::physical_blob_journeys::blob_reachability::class_of,
+    crate::physical_blob_journeys::blob_reachability::inspection_limits,
+    crate::physical_blob_journeys::blob_reachability::persisted,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+};
+use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::serving_from_initialization_with_format_and_placement,
+};
 
 #[test]
 fn released_source_chunk_stays_reachable_through_live_v2_reuse() {
@@ -42,7 +48,9 @@ fn released_source_chunk_stays_reachable_through_live_v2_reuse() {
                 return None;
             }
             match decode_blob_record(bytes) {
-                Ok(worth_store_physical_format::BlobRecordV1::GenerationPublished(value)) => Some(value.session()),
+                Ok(worth_store_physical_format::BlobRecordV1::GenerationPublished(value)) => {
+                    Some(value.session())
+                }
                 _ => None,
             }
         })
@@ -50,7 +58,9 @@ fn released_source_chunk_stays_reachable_through_live_v2_reuse() {
     let source_path_nodes = selected
         .iter()
         .filter_map(|(record, bytes)| match decode_blob_record(bytes) {
-            Ok(worth_store_physical_format::BlobRecordV1::TreeNode(value)) if value.occurrence().session() == source_session => {
+            Ok(worth_store_physical_format::BlobRecordV1::TreeNode(value))
+                if value.occurrence().session() == source_session =>
+            {
                 Some(persisted(*record))
             }
             _ => None,
@@ -63,7 +73,9 @@ fn released_source_chunk_stays_reachable_through_live_v2_reuse() {
     let source_chunks = selected
         .iter()
         .filter_map(|(_, bytes)| match decode_blob_record(bytes) {
-            Ok(worth_store_physical_format::BlobRecordV1::ChunkReuseClaimV2(value)) => Some(value.claim().selected_chunk()),
+            Ok(worth_store_physical_format::BlobRecordV1::ChunkReuseClaimV2(value)) => {
+                Some(value.claim().selected_chunk())
+            }
             _ => None,
         })
         .collect::<Vec<_>>();
@@ -126,7 +138,9 @@ fn released_source_chunk_stays_reachable_through_live_v2_reuse() {
             &scope,
             0,
             payload.len() as u64,
-            worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap()),
+            worth_store::physical_runtime::BlobReadLimits::new(
+                std::num::NonZeroU64::new(128).unwrap(),
+            ),
         )
         .unwrap();
     let mut bytes = vec![0; payload.len()];

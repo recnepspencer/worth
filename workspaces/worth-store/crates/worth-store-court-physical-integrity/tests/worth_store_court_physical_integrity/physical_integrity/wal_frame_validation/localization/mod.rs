@@ -1,10 +1,3 @@
-use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
-use worth_store_physical_integrity::{
-    PhysicalArtifactScope, PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause,
-    PhysicalFormatField, PhysicalIntegrityRejection, PhysicalIntegrityRejectionClass,
-    PhysicalIntegrityVersionAxis,
-};
-
 use crate::wal_frame_validation::support::{
     assert_damage, assert_independent_frame_checksums, assert_rejected_counters, literal,
     rejection, scope, store, CLEAN_HEX, FOOTER_CHECKSUM_HEX, FRAME_OFFSET, GENERATION_HEX,

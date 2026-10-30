@@ -1,6 +1,5 @@
 #[path = "phase_four_denial_counters/mod.rs"]
 pub(crate) mod phase_four_denial_counters;
-#[cfg(all())]
 #[path = "phase_six_reopen_faults/mod.rs"]
 pub(crate) mod phase_six_reopen_faults;
 #[path = "phase_six_reopen_media/mod.rs"]

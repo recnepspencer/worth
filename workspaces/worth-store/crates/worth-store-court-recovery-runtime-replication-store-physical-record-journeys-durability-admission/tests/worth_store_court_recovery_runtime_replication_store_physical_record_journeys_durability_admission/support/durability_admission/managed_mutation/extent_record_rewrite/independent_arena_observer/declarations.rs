@@ -1,4 +1,7 @@
-pub(crate) use {std::path::Path, std::process::Command, std::sync::atomic::AtomicU64, std::sync::atomic::Ordering};
+pub(crate) use {
+    std::path::Path, std::process::Command, std::sync::atomic::AtomicU64,
+    std::sync::atomic::Ordering,
+};
 
 pub(crate) static NEXT_REPORT: AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 

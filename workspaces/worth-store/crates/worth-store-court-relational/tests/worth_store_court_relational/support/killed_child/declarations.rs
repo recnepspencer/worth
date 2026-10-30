@@ -3,10 +3,10 @@
 //! The child announces by renaming a fully written file into place, so the
 //! parent never reads a partial announcement.
 
-pub(crate) use {std::fs};
-pub(crate) use {std::path::Path};
+pub(crate) use std::fs;
+pub(crate) use std::path::Path;
+pub(crate) use std::thread;
 pub(crate) use {std::process::Command, std::process::Stdio};
-pub(crate) use {std::thread};
 pub(crate) use {std::time::Duration, std::time::Instant};
 
 pub(crate) const PARK_DEADLINE: Duration = std::time::Duration::from_secs(240);

@@ -1,6 +1,12 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store_test_support::compiler_boundary::run_ui_proof_suite, worth_store_test_support::compiler_boundary::ExpectedCompilerDenial, worth_store_test_support::compiler_boundary::UiFixtureDeclaration, worth_store_test_support::compiler_boundary::UiProofEnvironment, worth_store_test_support::compiler_boundary::UiProofSuiteDeclaration};
+pub(crate) use {
+    worth_store_test_support::compiler_boundary::run_ui_proof_suite,
+    worth_store_test_support::compiler_boundary::ExpectedCompilerDenial,
+    worth_store_test_support::compiler_boundary::UiFixtureDeclaration,
+    worth_store_test_support::compiler_boundary::UiProofEnvironment,
+    worth_store_test_support::compiler_boundary::UiProofSuiteDeclaration,
+};
 
 pub(crate) fn suite(root: &Path) -> UiProofSuiteDeclaration {
     let source_root = root.join(
@@ -19,8 +25,12 @@ pub(crate) fn suite(root: &Path) -> UiProofSuiteDeclaration {
         .collect();
     worth_store_test_support::compiler_boundary::UiProofSuiteDeclaration::new(
         "recovery-read-authority",
-        worth_store_test_support::compiler_boundary::UiProofEnvironment::cargo(dependency_manifest(root), "production", "diagnostic-test")
-            .unwrap(),
+        worth_store_test_support::compiler_boundary::UiProofEnvironment::cargo(
+            dependency_manifest(root),
+            "production",
+            "diagnostic-test",
+        )
+        .unwrap(),
         fixtures,
     )
     .unwrap()
@@ -102,10 +112,13 @@ pub(crate) fn dependency_manifest(root: &Path) -> String {
 }
 
 pub(crate) fn store_workspace_root() -> &'static Path {
-    std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-store-certification"))
-        .ancestors()
-        .nth(2)
-        .expect("certification crate lives under the Store workspace")
+    std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../worth-store-certification"
+    ))
+    .ancestors()
+    .nth(2)
+    .expect("certification crate lives under the Store workspace")
 }
 
 pub(crate) fn manifest_path(path: &Path) -> String {

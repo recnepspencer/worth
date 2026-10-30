@@ -1,4 +1,4 @@
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::case::independent_recoveries::RecoverySet};
+pub(crate) use crate::phase_eight_process::checkpoint_crash::case::independent_recoveries::RecoverySet;
 
 pub(crate) fn remove(recoveries: RecoverySet) {
     std::fs::remove_dir_all(&recoveries.crash.fixture.root)

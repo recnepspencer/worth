@@ -1,4 +1,4 @@
-pub use {crate::physical_record_journeys::manifest_fixture::IndependentExtentRoute};
+pub use crate::physical_record_journeys::manifest_fixture::IndependentExtentRoute;
 
 pub fn extent_payload() -> Vec<u8> {
     (0..crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::EXTENT_PAYLOAD_BYTES)

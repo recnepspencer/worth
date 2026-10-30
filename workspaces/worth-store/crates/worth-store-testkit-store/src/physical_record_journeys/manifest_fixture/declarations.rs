@@ -1,7 +1,13 @@
-pub use {std::path::Path};
+pub use std::path::Path;
 
-pub use {worth_store_offline_verifier::OfflineDurableManifestWalk};
-pub use {worth_store_physical_format::DurableFreeSpaceManifestHeader, worth_store_physical_format::FreeSpaceBlockReference, worth_store_physical_format::PhysicalFreeSpaceMembershipBlock, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::RecordFreeSpaceManifestEntry};
+pub use worth_store_offline_verifier::OfflineDurableManifestWalk;
+pub use {
+    worth_store_physical_format::DurableFreeSpaceManifestHeader,
+    worth_store_physical_format::FreeSpaceBlockReference,
+    worth_store_physical_format::PhysicalFreeSpaceMembershipBlock,
+    worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    worth_store_physical_format::RecordFreeSpaceManifestEntry,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IndependentExtentRoute {
@@ -90,7 +96,9 @@ pub fn decode_free_space_tree(
         "families/records/free-space/free-space-{generation:016x}.manifest"
     )))
     .unwrap();
-    let (header, found_format) = worth_store_physical_format::DurableFreeSpaceManifestHeader::decode(&bytes, capacity).unwrap();
+    let (header, found_format) =
+        worth_store_physical_format::DurableFreeSpaceManifestHeader::decode(&bytes, capacity)
+            .unwrap();
     assert_eq!(found_format, format);
     let mut entries = Vec::new();
     if let Some(reference) = header.root() {
@@ -113,7 +121,9 @@ pub fn walk_free_space_block(
         reference.block(),
     )))
     .unwrap();
-    let (block, found_format) = worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::decode(&bytes, capacity).unwrap();
+    let (block, found_format) =
+        worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::decode(&bytes, capacity)
+            .unwrap();
     assert_eq!(found_format, format);
     assert_eq!(
         block.reference(worth_store_physical_format::durable_artifact_checksum(

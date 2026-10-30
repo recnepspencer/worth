@@ -1,7 +1,15 @@
-pub(crate) use {worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity};
-pub(crate) use {worth_store_recovery_runtime::RecoveryCleanupDeferralReason, worth_store_recovery_runtime::RecoveryCleanupDisposition, worth_store_recovery_runtime::RecoveryCleanupDispositionKind, worth_store_recovery_runtime::RecoveryCleanupPosture};
+pub(crate) use worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity;
+pub(crate) use {
+    worth_store_recovery_runtime::RecoveryCleanupDeferralReason,
+    worth_store_recovery_runtime::RecoveryCleanupDisposition,
+    worth_store_recovery_runtime::RecoveryCleanupDispositionKind,
+    worth_store_recovery_runtime::RecoveryCleanupPosture,
+};
 
-pub(crate) use {crate::store_recovery_runtime_context::process_context::required_text, crate::store_recovery_runtime_context::process_context::EXPECTED_POSTURE};
+pub(crate) use {
+    crate::store_recovery_runtime_context::process_context::required_text,
+    crate::store_recovery_runtime_context::process_context::EXPECTED_POSTURE,
+};
 
 pub(crate) fn assert_expected_posture(
     posture: &RecoveryCleanupPosture,
@@ -29,7 +37,10 @@ pub(crate) fn assert_expected_posture(
             worth_store_recovery_runtime::RecoveryCleanupDeferralReason::UnresolvedOperationFate,
         ),
         "candidate-limit" => {
-            assert!(matches!(posture, worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(_)));
+            assert!(matches!(
+                posture,
+                worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(_)
+            ));
             assert_eq!(
                 disposition.kind(),
                 worth_store_recovery_runtime::RecoveryCleanupDispositionKind::SafelyRemoved
@@ -59,9 +70,14 @@ pub(crate) fn assert_cancelled(
     settled_actions: u64,
 ) {
     let evidence = posture.evidence();
-    assert!(matches!(posture, worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(_)));
+    assert!(matches!(
+        posture,
+        worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(_)
+    ));
     let expected_kind = if settled_actions == 0 {
-        worth_store_recovery_runtime::RecoveryCleanupDispositionKind::Deferred(worth_store_recovery_runtime::RecoveryCleanupDeferralReason::Cancelled)
+        worth_store_recovery_runtime::RecoveryCleanupDispositionKind::Deferred(
+            worth_store_recovery_runtime::RecoveryCleanupDeferralReason::Cancelled,
+        )
     } else {
         worth_store_recovery_runtime::RecoveryCleanupDispositionKind::SafelyRemoved
     };
@@ -87,7 +103,10 @@ pub(crate) fn assert_complete(
     expected_revalidation_bytes: u64,
 ) {
     let evidence = posture.evidence();
-    assert!(matches!(posture, worth_store_recovery_runtime::RecoveryCleanupPosture::Complete(_)));
+    assert!(matches!(
+        posture,
+        worth_store_recovery_runtime::RecoveryCleanupPosture::Complete(_)
+    ));
     assert_eq!(
         disposition.kind(),
         worth_store_recovery_runtime::RecoveryCleanupDispositionKind::SafelyRemoved
@@ -122,7 +141,10 @@ pub(crate) fn assert_deferred(
     disposition: &RecoveryCleanupDisposition,
     reason: RecoveryCleanupDeferralReason,
 ) {
-    assert!(matches!(posture, worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(_)));
+    assert!(matches!(
+        posture,
+        worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(_)
+    ));
     assert_eq!(
         disposition.kind(),
         worth_store_recovery_runtime::RecoveryCleanupDispositionKind::Deferred(reason)

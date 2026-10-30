@@ -1,4 +1,4 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
 pub(crate) fn observe_copy_media(root: &Path, directory: &Path, stage: &str) {
     let report = worth_store_testkit_recovery_runtime::support::observe_arena_in_separate_process(

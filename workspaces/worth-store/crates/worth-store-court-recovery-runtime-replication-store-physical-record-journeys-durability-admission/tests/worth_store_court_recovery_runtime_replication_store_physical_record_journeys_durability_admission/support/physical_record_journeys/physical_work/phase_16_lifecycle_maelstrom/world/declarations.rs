@@ -1,9 +1,15 @@
-pub(crate) use {std::path::PathBuf};
+pub(crate) use std::path::PathBuf;
 
-pub(crate) use {worth_store::physical_runtime::PhysicalWorkObservation, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_backend::MediaOperationRole};
+pub(crate) use worth_store_physical_backend::MediaOperationRole;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalWorkObservation,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::fixture::MaelstromFixture, crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::fixture::MaelstromPauseGates};
+pub(crate) use {
+    crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::fixture::MaelstromFixture,
+    crate::physical_record_journeys::physical_work::phase_16_lifecycle_maelstrom::fixture::MaelstromPauseGates,
+};
 
 pub(crate) struct MaelstromWorld {
     pub(crate) _parent: tempfile::TempDir,
@@ -29,10 +35,12 @@ pub(crate) fn open() -> MaelstromWorld {
     let calibration =
         worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_open_with_work_profile(&root, fixture.profile.clone());
     let calibration_counters = calibration.media_counters();
-    let identified_reads_after_open =
-        calibration_counters.identified_operation_attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead);
-    let identified_writes_after_open =
-        calibration_counters.identified_operation_attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite);
+    let identified_reads_after_open = calibration_counters.identified_operation_attempts_for(
+        worth_store_physical_backend::MediaOperationRole::PositionedRead,
+    );
+    let identified_writes_after_open = calibration_counters.identified_operation_attempts_for(
+        worth_store_physical_backend::MediaOperationRole::PositionedWrite,
+    );
     calibration.close();
     let catalog_path = root.join("families/records/bootstrap.catalog");
     let original_writeback = std::fs::read(&catalog_path).unwrap()[8..16].to_vec();
@@ -66,15 +74,15 @@ pub(crate) fn assert_open_counters(
     identified_writes: u64,
 ) {
     assert_eq!(
-        serving
-            .media_counters()
-            .identified_operation_attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead),
+        serving.media_counters().identified_operation_attempts_for(
+            worth_store_physical_backend::MediaOperationRole::PositionedRead
+        ),
         identified_reads
     );
     assert_eq!(
-        serving
-            .media_counters()
-            .identified_operation_attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+        serving.media_counters().identified_operation_attempts_for(
+            worth_store_physical_backend::MediaOperationRole::PositionedWrite
+        ),
         identified_writes
     );
 }

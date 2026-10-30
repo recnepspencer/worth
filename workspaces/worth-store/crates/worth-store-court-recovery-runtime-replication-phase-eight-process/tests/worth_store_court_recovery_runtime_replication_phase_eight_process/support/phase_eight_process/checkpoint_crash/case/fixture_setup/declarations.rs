@@ -1,12 +1,15 @@
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::path::PathBuf};
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use std::path::PathBuf;
 
-pub(crate) use {worth_store_offline_verifier::RecoveryObserverReport};
+pub(crate) use worth_store_offline_verifier::RecoveryObserverReport;
 
-pub(crate) use {worth_store_testkit_recovery_runtime::child_lifecycle, crate::history};
-pub(crate) use {crate::checkpoint_crash::evidence::snapshot::snapshot_directory};
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::process::writer_process::spawn_writer, crate::phase_eight_process::checkpoint_crash::process::writer_process::wait_for_writer_ready};
-pub(crate) use {crate::checkpoint_crash::CheckpointCrashScenario};
+pub(crate) use crate::checkpoint_crash::evidence::snapshot::snapshot_directory;
+pub(crate) use crate::checkpoint_crash::CheckpointCrashScenario;
+pub(crate) use {crate::history, worth_store_testkit_recovery_runtime::child_lifecycle};
+pub(crate) use {
+    crate::process::support::checkpoint_crash::writer_process::spawn_writer,
+    crate::process::support::checkpoint_crash::writer_process::wait_for_writer_ready,
+};
 
 pub(crate) struct CheckpointFixture {
     pub(crate) scenario_index: usize,
@@ -32,12 +35,13 @@ pub(crate) fn prepare(
         "checkpoint-root-{scenario_index}-{}-{schedule_seed}",
         scenario.id
     ));
-    let operation_program = crate::phase_eight_process::history::schedule::create_checkpoint_operation_program(
-        parent.path(),
-        schedule_seed,
-        perturbation_seed,
-    )
-    .expect("write C8 submitted operation program");
+    let operation_program =
+        crate::phase_eight_process::history::schedule::create_checkpoint_operation_program(
+            parent.path(),
+            schedule_seed,
+            perturbation_seed,
+        )
+        .expect("write C8 submitted operation program");
     let start_marker = parent.path().join("checkpoint-start");
     let reached_marker = parent.path().join("checkpoint-reached");
     let mut child = spawn_writer(
@@ -61,7 +65,11 @@ pub(crate) fn prepare(
         .expect("bind submitted operations from persisted authority");
     let baseline_snapshot = snapshot_directory(&root);
     let baseline_observer =
-        crate::phase_eight_process::checkpoint_crash::process::observer_report::fresh_observer(&parent, &root, "baseline-observer");
+        crate::process::support::checkpoint_crash::observer_report::fresh_observer(
+            &parent,
+            &root,
+            "baseline-observer",
+        );
 
     CheckpointFixture {
         scenario_index,

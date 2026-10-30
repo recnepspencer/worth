@@ -1,11 +1,7 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_occurrence_corruption::*;
-use {std::fs, std::num::NonZeroU64, std::path::Path};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_occurrence_corruption::*;
 
-use {sha2::Digest, sha2::Sha256};
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::PhysicalMutationDeadline};
-use {worth_store_blob_chunks::BlobChunkSize};
-
-use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+use crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named;
 
 #[test]
 fn missing_occurrence_on_real_extent_fails_independent_offline_custody() {

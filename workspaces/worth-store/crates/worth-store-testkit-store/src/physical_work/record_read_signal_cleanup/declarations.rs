@@ -1,10 +1,8 @@
 pub use {std::time::Duration, std::time::Instant};
 
-pub use {worth_store::physical_runtime::PhysicalWorkCounterStage};
+pub use worth_store::physical_runtime::PhysicalWorkCounterStage;
 
-pub fn await_read_signal_cleanup(
-    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
-) {
+pub fn await_read_signal_cleanup(serving: &worth_store::physical_runtime::ServingPhysicalRuntime) {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
     loop {
         let observation = serving.physical_signal_observation().unwrap();

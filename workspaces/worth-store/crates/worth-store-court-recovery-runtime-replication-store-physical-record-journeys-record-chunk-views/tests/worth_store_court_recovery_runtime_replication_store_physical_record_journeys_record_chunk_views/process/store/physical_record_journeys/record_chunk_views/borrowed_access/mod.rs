@@ -1,8 +1,4 @@
-use {worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits};
-use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
-
-use {worth_store_testkit_store::durable_publication::root::publish_single};
-use {worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture};
+use worth_store_testkit_store::durable_publication::root::publish_single;
 
 #[test]
 fn inline_view_exposes_only_the_record_payload_and_observational_basis() {
@@ -14,7 +10,8 @@ fn inline_view_exposes_only_the_record_payload_and_observational_basis() {
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([172; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
     );
     let record = published.settled_members()[0].record_id(0).unwrap();
     let store = serving.store_identity();
@@ -25,7 +22,9 @@ fn inline_view_exposes_only_the_record_payload_and_observational_basis() {
         .expect("read protection admission")
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
 
@@ -66,7 +65,8 @@ fn external_locator_view_retains_the_readmitted_record_basis_without_copying() {
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([172; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
     );
     let record = published.settled_members()[0].record_id(0).unwrap();
     let store = serving.store_identity();
@@ -78,7 +78,9 @@ fn external_locator_view_retains_the_readmitted_record_basis_without_copying() {
         .expect("read protection admission")
         .open_external(
             locator,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
 
@@ -120,7 +122,8 @@ fn extent_views_stream_one_resident_frame_at_a_time_without_pool_copies() {
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([172; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
     );
     let record = published.settled_members()[0].record_id(0).unwrap();
     let generation = serving.residency_observation().store_generation();
@@ -130,7 +133,9 @@ fn extent_views_stream_one_resident_frame_at_a_time_without_pool_copies() {
         .expect("read protection admission")
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
     let mut logical_offset = 0_u64;
@@ -151,7 +156,10 @@ fn extent_views_stream_one_resident_frame_at_a_time_without_pool_copies() {
             (expected.len() - expected_payload_start).min(worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::CHUNK_PAYLOAD_BYTES);
         let coordinate = worth_store_physical_format::RecordFrameCoordinate::new(
             artifact,
-            worth_store_testkit_store::durable_frame_oracle::first_arena_chunk_offset(&arena_bytes, frame_index),
+            worth_store_testkit_store::durable_frame_oracle::first_arena_chunk_offset(
+                &arena_bytes,
+                frame_index,
+            ),
             (decoded_payload_offset + expected_payload_bytes) as u32,
         )
         .unwrap();
@@ -201,7 +209,8 @@ fn dropping_a_partially_consumed_extent_releases_its_session_frame_and_allocatio
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([172; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
     );
     let operation_bytes_before_read = serving
         .residency_observation()
@@ -212,7 +221,9 @@ fn dropping_a_partially_consumed_extent_releases_its_session_frame_and_allocatio
         .expect("read protection admission")
         .open(
             published.settled_members()[0].record_id(0).unwrap(),
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
     {

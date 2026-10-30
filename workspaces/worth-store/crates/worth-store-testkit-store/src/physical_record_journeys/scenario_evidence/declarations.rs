@@ -1,4 +1,7 @@
-pub use {crate::scenario_process_evidence::emit_process, crate::scenario_process_evidence::ScenarioProcessEvidence};
+pub use {
+    crate::scenario_process_evidence::emit_process,
+    crate::scenario_process_evidence::ScenarioProcessEvidence,
+};
 
 pub fn assert_distinct_processes(processes: &[ScenarioProcessEvidence]) {
     let process_ids = processes

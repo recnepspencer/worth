@@ -8,17 +8,26 @@
 //! script then runs to completion on the reference states; and a fresh
 //! recovery reaches the same history.
 
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::durability::RelationalCanonicalCommitArtifact, worth_relational::facade::durability::RelationalCanonicalCommitArtifactDigest, worth_relational::facade::durability::RelationalDurabilityUnresolved, worth_relational::facade::durability::RelationalDurabilityUnresolvedSubject};
-pub(crate) use {worth_relational::facade::history::CommitId};
-pub(crate) use {worth_relational::facade::publication::PatchStreamPosition};
-pub(crate) use {worth_store_relational::RelationalStoreCommitFate};
-pub(crate) use {worth_store_relational::RelationalStoreHome};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_relational::facade::history::CommitId;
+pub(crate) use worth_relational::facade::publication::PatchStreamPosition;
+pub(crate) use worth_store_relational::RelationalStoreCommitFate;
+pub(crate) use worth_store_relational::RelationalStoreHome;
+pub(crate) use {
+    worth_relational::facade::durability::RelationalCanonicalCommitArtifact,
+    worth_relational::facade::durability::RelationalCanonicalCommitArtifactDigest,
+    worth_relational::facade::durability::RelationalDurabilityUnresolved,
+    worth_relational::facade::durability::RelationalDurabilityUnresolvedSubject,
+};
 
-pub(crate) use {crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::assert_lifecycle_prefix, crate::durable_run::assert_reference_artifacts, crate::durable_run::open_declaring, crate::durable_run::served_schema};
-pub(crate) use {crate::identity_safety};
+pub(crate) use crate::identity_safety;
+pub(crate) use {
+    crate::durable_run::apply, crate::durable_run::assert_holds,
+    crate::durable_run::assert_lifecycle_prefix, crate::durable_run::assert_reference_artifacts,
+    crate::durable_run::open_declaring, crate::durable_run::served_schema,
+};
 pub(crate) use {crate::workload, crate::workload::Script};
 
 /// What the stopped run knew about the commit in flight when it stopped.
@@ -103,15 +112,21 @@ pub(crate) fn assert_recovered(
             .unwrap_or_else(|refusal| panic!("{case}: resolve {next}: {refusal:?}"));
         let expected = match recovered.get(held) {
             Some(_) => worth_store_relational::RelationalStoreCommitFate::Committed,
-            None => worth_store_relational::RelationalStoreCommitFate::NotCommitted { head: held as u64 },
+            None => worth_store_relational::RelationalStoreCommitFate::NotCommitted {
+                head: held as u64,
+            },
         };
         assert_eq!(resolution, expected, "{case}: resolve {next}");
     }
     match in_flight {
-        crate::crash_oracle::InFlight::Nothing | crate::crash_oracle::InFlight::Refused | crate::crash_oracle::InFlight::NotDurable => {
+        crate::crash_oracle::InFlight::Nothing
+        | crate::crash_oracle::InFlight::Refused
+        | crate::crash_oracle::InFlight::NotDurable => {
             assert_eq!(extra, 0, "{case}: {in_flight:?} was recovered")
         }
-        crate::crash_oracle::InFlight::Durable => assert_eq!(extra, 1, "{case}: a durable commit was lost"),
+        crate::crash_oracle::InFlight::Durable => {
+            assert_eq!(extra, 1, "{case}: a durable commit was lost")
+        }
         crate::crash_oracle::InFlight::Unresolved(fate) => {
             let (position, commit_id, digest) = commit_subject(fate);
             assert_eq!(position.0, next, "{case}: the fate's position");

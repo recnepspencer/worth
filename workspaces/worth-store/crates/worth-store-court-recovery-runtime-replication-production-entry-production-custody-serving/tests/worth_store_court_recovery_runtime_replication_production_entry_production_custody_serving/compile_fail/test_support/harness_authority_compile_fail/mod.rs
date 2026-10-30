@@ -1,7 +1,7 @@
-#[allow(unused_imports)] use crate::harness_authority_compile_fail::*;
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::harness_authority_compile_fail::*;
 
-use {worth_store_test_support::compiler_boundary::cargo_dependency_manifest, worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite};
+use worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite;
 
 #[test]
 fn courtroom_test_authority_cannot_satisfy_production_surfaces() {

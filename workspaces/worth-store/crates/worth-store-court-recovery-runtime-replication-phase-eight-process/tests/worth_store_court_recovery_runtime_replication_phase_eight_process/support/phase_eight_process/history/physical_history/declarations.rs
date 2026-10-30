@@ -1,10 +1,17 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
+pub(crate) use worth_store_offline_verifier::RecoveryObserverReport;
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store_offline_verifier::RecoveryObserverReport};
 
-pub(crate) use {crate::phase_eight_process::history::artifacts::artifact_identity_digest, crate::phase_eight_process::history::artifacts::artifact_set_digest, crate::phase_eight_process::history::artifacts::collect_files};
-pub(crate) use {crate::history::parent_oracle, crate::phase_eight_process::history::writer_history::expected_history::ExpectedWriterHistory};
+pub(crate) use {
+    crate::history::parent_oracle,
+    crate::phase_eight_process::history::writer_history::expected_history::ExpectedWriterHistory,
+};
+pub(crate) use {
+    crate::phase_eight_process::history::artifacts::artifact_identity_digest,
+    crate::phase_eight_process::history::artifacts::artifact_set_digest,
+    crate::phase_eight_process::history::artifacts::collect_files,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ParentHistoryMismatch {
@@ -23,7 +30,8 @@ pub(crate) struct ParentPhysicalHistory {
     pub(crate) artifact_identity_digest: [u8; 32],
     pub(crate) publication_artifact_set_digest: [u8; 32],
     pub(crate) artifacts: Box<[(String, u64, [u8; 32])]>,
-    pub(crate) evidence: crate::phase_eight_process::history::parent_oracle::evidence::ParentPhysicalEvidence,
+    pub(crate) evidence:
+        crate::phase_eight_process::history::parent_oracle::evidence::ParentPhysicalEvidence,
 }
 
 impl ParentPhysicalHistory {
@@ -73,7 +81,8 @@ impl ParentPhysicalHistory {
                 false
             }
         };
-        let evidence = crate::phase_eight_process::history::parent_oracle::derivation::derive(&files)?;
+        let evidence =
+            crate::phase_eight_process::history::parent_oracle::derivation::derive(&files)?;
         let contents = files
             .into_iter()
             .map(|(path, bytes)| {

@@ -1,5 +1,3 @@
-use {crate::compile_fail_support};
-
 #[test]
 fn caller_defined_rules_cannot_open_wal_layouts() {
     crate::compile_fail_support::assert_compile_fails_in_ui_dir(

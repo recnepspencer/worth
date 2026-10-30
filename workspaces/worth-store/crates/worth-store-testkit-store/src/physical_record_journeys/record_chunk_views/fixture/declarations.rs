@@ -1,9 +1,23 @@
-pub use {std::path::Path};
+pub use std::path::Path;
 
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy, worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalSpeculativeWorkKind, worth_store::physical_runtime::RecordServingOwnerDisposition, worth_store::physical_runtime::RecordServingTerminalPosture, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind,
+    worth_store::physical_runtime::RecordServingOwnerDisposition,
+    worth_store::physical_runtime::RecordServingTerminalPosture,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub use {crate::physical_record_journeys::media, crate::physical_record_journeys::scenario_configuration::dense_configuration};
+pub use {
+    crate::physical_record_journeys::media,
+    crate::physical_record_journeys::scenario_configuration::dense_configuration,
+};
 
 pub const FRAME_BYTES: u64 = 16_384;
 pub const EXTENT_METADATA_BYTES: usize = 64;
@@ -20,12 +34,13 @@ pub fn initialize_with_protection(
     protection: worth_store::physical_runtime::PhysicalReadProtectionPolicy,
 ) -> (ServingPhysicalRuntime, AdmittedRecordPlacementPolicy) {
     let (format, placement, access) = dense_configuration(4);
-    let outcome =
-        initialize_record_store!(media(root), |durability| worth_store::physical_runtime::PhysicalRecordInitialization::new(
-            format, placement, access, durability
+    let outcome = initialize_record_store!(media(root), |durability| {
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
         )
         .with_residency_policy(residency_policy(format))
-        .with_read_protection_policy(protection),);
+        .with_read_protection_policy(protection)
+    },);
     let serving = match outcome.into_raw() {
         worth_proof::TransitionOutcome::Success(serving) => serving,
         _ => panic!("the chunk-view fixture must admit a real physical Store"),
@@ -36,8 +51,8 @@ pub fn initialize_with_protection(
 pub fn residency_policy(
     format: AdmittedPhysicalRecordFormat,
 ) -> AdmittedPhysicalRecordResidencyPolicy {
-    use {worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope};
-    use {worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation};
+    use worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope;
+    use worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation;
 
     let operation_bytes = 16 * 1024 * 1024;
     worth_store::physical_runtime::PhysicalRecordResidencyPolicy::builder()

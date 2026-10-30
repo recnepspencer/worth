@@ -1,11 +1,19 @@
-pub(crate) use {worth_store_offline_verifier::RecoveryObserverReport};
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportOutcome};
+pub(crate) use worth_store_offline_verifier::RecoveryObserverReport;
+pub(crate) use worth_store_recovery_runtime::RecoveryReportOutcome;
 
-pub(crate) use {crate::history};
-pub(crate) use {crate::checkpoint_crash::evidence::snapshot::assert_snapshot_preserved, crate::phase_eight_process::checkpoint_crash::evidence::frontier::assert_stage_frontier, crate::phase_eight_process::checkpoint_crash::evidence::frontier::derive_expected_frontier, crate::checkpoint_crash::evidence::snapshot::snapshot_directory};
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::process::observer_report::fresh_observer, crate::phase_eight_process::checkpoint_crash::process::writer_process::wait_for_marker};
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::case::fixture_setup::CheckpointFixture};
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::case::oracle::independently_classify_in_flight};
+pub(crate) use crate::history;
+pub(crate) use crate::oracle::support::checkpoint_recovery::independently_classify_in_flight;
+pub(crate) use crate::phase_eight_process::checkpoint_crash::case::fixture_setup::CheckpointFixture;
+pub(crate) use {
+    crate::checkpoint_crash::evidence::snapshot::assert_snapshot_preserved,
+    crate::checkpoint_crash::evidence::snapshot::snapshot_directory,
+    crate::phase_eight_process::checkpoint_crash::evidence::frontier::assert_stage_frontier,
+    crate::phase_eight_process::checkpoint_crash::evidence::frontier::derive_expected_frontier,
+};
+pub(crate) use {
+    crate::process::support::checkpoint_crash::observer_report::fresh_observer,
+    crate::process::support::checkpoint_crash::writer_process::wait_for_marker,
+};
 
 pub(crate) struct CrashObservation {
     pub(crate) fixture: CheckpointFixture,
@@ -13,7 +21,8 @@ pub(crate) struct CrashObservation {
     pub(crate) expected_outcome: RecoveryReportOutcome,
     pub(crate) candidate_is_residue: bool,
     pub(crate) crash_observer: RecoveryObserverReport,
-    pub(crate) crash_history: crate::phase_eight_process::history::physical_history::ParentPhysicalHistory,
+    pub(crate) crash_history:
+        crate::phase_eight_process::history::physical_history::ParentPhysicalHistory,
 }
 
 pub(crate) fn observe(mut fixture: CheckpointFixture) -> CrashObservation {
@@ -74,8 +83,11 @@ pub(crate) fn observe(mut fixture: CheckpointFixture) -> CrashObservation {
         stage.label(),
     );
     let crash_history =
-        crate::phase_eight_process::history::physical_history::ParentPhysicalHistory::capture(&fixture.root, &fixture.operation_program.expected)
-            .expect("capture parent history at killed checkpoint");
+        crate::phase_eight_process::history::physical_history::ParentPhysicalHistory::capture(
+            &fixture.root,
+            &fixture.operation_program.expected,
+        )
+        .expect("capture parent history at killed checkpoint");
     let in_flight_fate = fixture
         .operation_program
         .expected

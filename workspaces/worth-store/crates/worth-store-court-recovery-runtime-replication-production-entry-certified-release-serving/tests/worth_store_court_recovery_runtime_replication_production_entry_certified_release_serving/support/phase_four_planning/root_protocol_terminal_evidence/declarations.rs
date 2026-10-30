@@ -1,10 +1,27 @@
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery, worth_store_testkit_recovery_runtime::phase_three_support::initialize_store, crate::phase_four_planning::publish_secured_synthetic_checkpoint, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_covered_wal, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis};
-pub(crate) use {worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalIntegrityRejection};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryRootProtocolArtifact, worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial, worth_store_recovery_runtime::PhysicalRecoverySourceDenial, worth_store_recovery_runtime::SelectedPhysicalRecovery};
+pub(crate) use {
+    crate::phase_four_planning::publish_secured_synthetic_checkpoint,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
+    worth_store_testkit_recovery_runtime::phase_three_support::initialize_store,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_covered_wal,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis,
+};
+pub(crate) use {
+    worth_store_physical_integrity::PhysicalDamageCause,
+    worth_store_physical_integrity::PhysicalIntegrityRejection,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolArtifact,
+    worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial,
+    worth_store_recovery_runtime::PhysicalRecoverySourceDenial,
+    worth_store_recovery_runtime::SelectedPhysicalRecovery,
+};
 
 /// The selection, and the directory that holds its store until the test
 /// drops it.
-pub(crate) fn selected_with_damaged_previous(label: &str) -> (tempfile::TempDir, SelectedPhysicalRecovery) {
+pub(crate) fn selected_with_damaged_previous(
+    label: &str,
+) -> (tempfile::TempDir, SelectedPhysicalRecovery) {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join(label);
     let store = initialize_store(&root);

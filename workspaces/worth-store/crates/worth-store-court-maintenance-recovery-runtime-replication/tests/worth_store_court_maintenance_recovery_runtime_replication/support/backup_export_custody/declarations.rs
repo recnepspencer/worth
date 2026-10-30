@@ -1,11 +1,44 @@
-pub(crate) use {worth_foundational::aspects, worth_foundational::AspectContract, worth_foundational::AspectKey, worth_foundational::AspectValue, worth_foundational::InternedString, worth_foundational::ScalarAspectType};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store_aspect_native::StoreAspectAuthorityInput, worth_store_aspect_native::StoreAspectBoundaryFact, worth_store_aspect_native::StoreAspectIdentity, worth_store_aspect_native::StorePhysicalBoundaryWitness};
-pub(crate) use {worth_store_authority::require_current_store_authority, worth_store_authority::StoreCurrentAuthorityWitness};
-pub(crate) use {worth_store_contracts::StorePhysicalAuthorityWitness, worth_store_contracts::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE};
-pub(crate) use {worth_store_offline_verifier::OfflineCustodyCapsuleObservation};
-pub(crate) use {worth_store_operations::BackupExportCapsuleEmission, worth_store_operations::BackupExportCustodyDeclaration, worth_store_operations::BackupExportCustodyMode, worth_store_operations::BackupExportCustodyReadiness, worth_store_operations::BackupImportCustodyReadmission};
-pub(crate) use {worth_store_security::store_backup_restore_boundary_fact, worth_store_security::StoreAuthenticityRequirement, worth_store_security::StoreAuthenticityRequirementClass, worth_store_security::StoreBackupRestoreAfterKeyRotationBoundaryEvidence, worth_store_security::StoreBackupRestoreAfterKeyRotationBoundaryFact, worth_store_security::StoreCustodyPosture, worth_store_security::StoreKeyScope, worth_store_security::StoreKeyVersionPosture, worth_store_security::StoreRawSecurityScopeDeclaration, worth_store_security::StoreSecurityScopeAdmissionExpectation, worth_store_security::StoreTenantScope, worth_store_security::StoreTrustBoundaryReadmissionTrigger};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store_offline_verifier::OfflineCustodyCapsuleObservation;
+pub(crate) use {
+    worth_foundational::aspects, worth_foundational::AspectContract, worth_foundational::AspectKey,
+    worth_foundational::AspectValue, worth_foundational::InternedString,
+    worth_foundational::ScalarAspectType,
+};
+pub(crate) use {
+    worth_store_aspect_native::StoreAspectAuthorityInput,
+    worth_store_aspect_native::StoreAspectBoundaryFact,
+    worth_store_aspect_native::StoreAspectIdentity,
+    worth_store_aspect_native::StorePhysicalBoundaryWitness,
+};
+pub(crate) use {
+    worth_store_authority::require_current_store_authority,
+    worth_store_authority::StoreCurrentAuthorityWitness,
+};
+pub(crate) use {
+    worth_store_contracts::StorePhysicalAuthorityWitness,
+    worth_store_contracts::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
+};
+pub(crate) use {
+    worth_store_operations::BackupExportCapsuleEmission,
+    worth_store_operations::BackupExportCustodyDeclaration,
+    worth_store_operations::BackupExportCustodyMode,
+    worth_store_operations::BackupExportCustodyReadiness,
+    worth_store_operations::BackupImportCustodyReadmission,
+};
+pub(crate) use {
+    worth_store_security::store_backup_restore_boundary_fact,
+    worth_store_security::StoreAuthenticityRequirement,
+    worth_store_security::StoreAuthenticityRequirementClass,
+    worth_store_security::StoreBackupRestoreAfterKeyRotationBoundaryEvidence,
+    worth_store_security::StoreBackupRestoreAfterKeyRotationBoundaryFact,
+    worth_store_security::StoreCustodyPosture, worth_store_security::StoreKeyScope,
+    worth_store_security::StoreKeyVersionPosture,
+    worth_store_security::StoreRawSecurityScopeDeclaration,
+    worth_store_security::StoreSecurityScopeAdmissionExpectation,
+    worth_store_security::StoreTenantScope,
+    worth_store_security::StoreTrustBoundaryReadmissionTrigger,
+};
 
 pub(crate) fn backup_restore_trigger(
     raw: StoreRawSecurityScopeDeclaration,
@@ -89,8 +122,9 @@ pub(crate) fn validated_scalar_value(
     match aspects()
         .validate()
         .against(contract)
-        .value(worth_foundational::AspectValue::String(worth_foundational::InternedString::from(raw_value)))
-    {
+        .value(worth_foundational::AspectValue::String(
+            worth_foundational::InternedString::from(raw_value),
+        )) {
         worth_proof::TransitionOutcome::Success(value) => value,
         outcome => panic!("validation should succeed: {outcome:?}"),
     }
