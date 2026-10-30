@@ -2578,12 +2578,18 @@ delivery state.
 
 Keep one pending acceptance inside the model that owns the mutable head. The
 [compiled ingress](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/ingress.rs)
-freshly admits reads and the incoming frozen edits, then resolves the native
+freshly admits reads and the incoming frozen edits, then attempts to resolve the native
 registration key before inspecting that slot or a cached result. Only an unseen
 key with an empty slot may start a new acceptance. A registered key with no result
 and no live continuation refuses; missing delivery is not permission to fork.
 An occupied slot retains its original input until registration has established
 a native intent binding. A different incoming input cannot replace it.
+
+If native resolution returns `ProviderUnavailable` after that same fresh
+admission, the compiled ingress can advance only the matching retained Claim
+recovery owner. Changed meaning under the same key still receives native intent
+drift. Missing or initial operation custody cannot use this recovery path or
+start a replacement attempt.
 
 Advance the retained acceptance with fresh requests. After adoption, retain the
 actual adoption owner while recording and reading back the result, then close

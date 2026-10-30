@@ -1,5 +1,6 @@
 //! Fresh disclosure and native key resolution precede every protected slot or result lookup.
 use super::*;
+use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind;
 impl<'host> Model<'host> {
     pub fn accept(
         &mut self,
@@ -11,9 +12,23 @@ impl<'host> Model<'host> {
         let rows = storage
             .admit_attempt(self, caller, loaded)
             .map_err(Failure::Admission)?;
-        let resolution = storage
-            .resolve_claim(caller, &loaded.input(key), key)
-            .map_err(Failure::Resolution)?;
+        let resolution = match storage.resolve_claim(caller, &loaded.input(key), key) {
+            Ok(resolution) => resolution,
+            Err(cause) => {
+                if matches!(&cause,
+                    WorthQueryApplicationRecoveryRequestDenial::Idempotency(denial)
+                    if denial.kind() == WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable)
+                    && self.pending.as_ref().is_some_and(|attempt| {
+                        attempt.matches(loaded, key) && attempt.has_claim_recovery()
+                    })
+                {
+                    // Fresh admission succeeded; only the existing native owner may recover.
+                    drop(rows);
+                    return self.advance_pending(storage, caller);
+                }
+                return Err(Failure::Resolution(cause));
+            }
+        };
         if matches!(resolution, Resolution::IntentDrift) {
             return Err(Failure::IntentDrift);
         }
@@ -25,10 +40,8 @@ impl<'host> Model<'host> {
             if !pending.matches(loaded, key) {
                 return Err(Failure::OriginalContinuationRetained);
             }
-            let attempt = self.pending.take().expect("exclusive pending attempt");
-            let (pending, event) = attempt.advance(self, storage, caller);
-            self.pending = pending;
-            return event;
+            drop(rows);
+            return self.advance_pending(storage, caller);
         }
         if matches!(resolution, Resolution::AlreadyCommitted(_)) {
             let claim = storage
@@ -53,6 +66,16 @@ impl<'host> Model<'host> {
             phase: Phase::Claim(operation),
         });
         Ok(Event::Progress)
+    }
+    fn advance_pending(
+        &mut self,
+        storage: &Storage<'host>,
+        caller: &Caller<'_>,
+    ) -> Result<Event, Failure> {
+        let attempt = self.pending.take().expect("exclusive pending attempt");
+        let (pending, event) = attempt.advance(self, storage, caller);
+        self.pending = pending;
+        event
     }
     pub fn inspect_attempt(
         &self,
@@ -80,6 +103,13 @@ impl<'host> Model<'host> {
     }
 }
 impl<'host> Attempt<'host> {
+    fn has_claim_recovery(&self) -> bool {
+        matches!(&self.phase, Phase::Claim(operation) if matches!(operation.posture(),
+            WorthQuerySourceOnlyPosture::ProductUnpublished
+            | WorthQuerySourceOnlyPosture::RecoveryPerformed
+            | WorthQuerySourceOnlyPosture::Indeterminate
+            | WorthQuerySourceOnlyPosture::RetainedDeliveryPending))
+    }
     fn advance(
         self,
         model: &mut Model<'host>,

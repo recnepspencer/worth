@@ -2110,6 +2110,14 @@ authorized request. The control may not inject an outcome, modify command meanin
 mint authority or substitute a second runtime. Keep this caller closed in
 `control-callers.txt`; ordinary application sources cannot arm it.
 
+The exact `application/acceptance/publication_tests.rs` consumer court may obtain
+the installed runtime's World compare pause through Execution and arm that same
+World receiver. It cancels the real request after component effects, releases and
+joins the worker before assertions, and observes genuine unpublished custody.
+Its private application-state inspection is read-only; all business execution,
+admission and recovery still use the ordinary Decl/Host application paths. Keep
+both control-owner caller entries exact and closed.
+
 The [existing expected-source cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance.rs),
 [adoption cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/adoption.rs)
 and [stored-basis cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/stored_basis.rs)

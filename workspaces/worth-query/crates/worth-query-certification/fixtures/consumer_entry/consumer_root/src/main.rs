@@ -1,4 +1,6 @@
 #![forbid(unsafe_code)]
+// Threaded owner tests derive Send/Sync through nested persistent graph storage.
+#![recursion_limit = "256"]
 // Query's public denials are deliberately rich, so its workspace allows large
 // error variants; this consumer returns them unchanged.
 #![allow(clippy::result_large_err)]
