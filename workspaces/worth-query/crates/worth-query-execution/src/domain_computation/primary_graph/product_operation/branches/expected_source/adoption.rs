@@ -123,7 +123,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
             &expected,
             candidate.observation(),
             self,
-            |candidate, _source, _candidate| match execution.check_live() {
+            |candidate, _source, _candidate_branch| match execution.check_live() {
                 Ok(()) => Ok((std::mem::replace(head, candidate.branch), candidate)),
                 Err(stop) => Err((candidate, stop)),
             },

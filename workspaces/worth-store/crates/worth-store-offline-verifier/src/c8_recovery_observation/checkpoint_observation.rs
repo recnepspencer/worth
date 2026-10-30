@@ -92,7 +92,11 @@ pub(super) fn observe(bytes: &[u8]) -> RecoveryObserverArtifactEvidence {
     let mut page_digest = EvidenceDigestBuilder::new(b"worth.store.recovery-observer.page-lsn.v1");
     let mut minimum = u64::MAX;
     let mut maximum = 0_u64;
-    for row in bytes[HEADER_BYTES..rows_end].chunks_exact(PAGE_ROW_BYTES) {
+    for row in bytes[HEADER_BYTES..rows_end]
+        .as_chunks::<PAGE_ROW_BYTES>()
+        .0
+        .iter()
+    {
         let Some(segment) = physical_format::read_u64(row, 0) else {
             return physical_format::residue(bytes);
         };

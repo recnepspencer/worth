@@ -19,7 +19,7 @@ impl PhysicalScenarioFixtureSet {
             return Err(PhysicalScenarioDefinitionDenial::MissingAspectNativeFixture);
         }
         let mut fixtures = canonical_fixture_entries(fixtures)?;
-        fixtures.sort_by(|left, right| left.sort_key.cmp(&right.sort_key));
+        fixtures.sort_by_key(|fixture| fixture.sort_key);
         require_unique_fixture_sort_keys(&fixtures)?;
         let fixtures = fixtures
             .into_iter()

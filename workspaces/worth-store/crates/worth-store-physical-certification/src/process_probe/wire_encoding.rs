@@ -86,7 +86,9 @@ mod hex {
         }
         value
             .as_bytes()
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| {
                 let high = digit(pair[0])?;
                 let low = digit(pair[1])?;

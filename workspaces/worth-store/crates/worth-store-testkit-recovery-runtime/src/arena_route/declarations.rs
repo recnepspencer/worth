@@ -43,7 +43,7 @@ pub fn selected_routes(root: &Path) -> Vec<RoutedExtent> {
         match bytes[68] {
             1 => {
                 assert_eq!(bytes.len(), 88 + count * 88);
-                for entry in bytes[88..].chunks_exact(88) {
+                for entry in bytes[88..].as_chunks::<88>().0.iter() {
                     if entry[24] != 2 {
                         continue;
                     }
@@ -69,7 +69,13 @@ pub fn selected_routes(root: &Path) -> Vec<RoutedExtent> {
             }
             2 => {
                 assert_eq!(bytes.len(), 88 + count * 72);
-                pending.extend(bytes[88..].chunks_exact(72).map(<[u8]>::to_vec));
+                pending.extend(
+                    bytes[88..]
+                        .as_chunks::<72>()
+                        .0
+                        .iter()
+                        .map(|chunk| chunk.to_vec()),
+                );
             }
             _ => panic!("unknown C11 root-tree node kind"),
         }

@@ -297,9 +297,25 @@ impl PhysicalWorkTerminalEvent {
 }
 
 fn saturating_increment(counter: &AtomicU64) {
-    let _ = counter.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-        Some(value.saturating_add(1))
-    });
+    let _ = {
+        let update_counter = counter;
+        let mut value = update_counter.load(Ordering::Relaxed);
+        loop {
+            let next_value = Some(value.saturating_add(1));
+            let Some(updated_value) = next_value else {
+                break Err(value);
+            };
+            match update_counter.compare_exchange_weak(
+                value,
+                updated_value,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => value = reloaded_value,
+            }
+        }
+    };
 }
 
 fn sort_identities(identities: &mut [PhysicalWorkIdentity]) {

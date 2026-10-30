@@ -140,7 +140,9 @@ pub(crate) fn decode_hex(value: &str) -> Vec<u8> {
     assert_eq!(value.len() % 2, 0);
     value
         .as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| {
             u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16)
                 .expect("literal vector contains a hexadecimal byte")
@@ -183,11 +185,11 @@ pub(crate) fn sha256_bytes(bytes: &[u8]) -> [u8; 32] {
     padded[bytes.len()] = 0x80;
     padded[padded_length - 8..].copy_from_slice(&bit_length.to_be_bytes());
     let mut state = INITIAL;
-    for block in padded.chunks_exact(64) {
+    for block in padded.as_chunks::<64>().0.iter() {
         compress(&mut state, block);
     }
     let mut digest = [0_u8; 32];
-    for (target, word) in digest.chunks_exact_mut(4).zip(state) {
+    for (target, word) in digest.as_chunks_mut::<4>().0.iter_mut().zip(state) {
         target.copy_from_slice(&word.to_be_bytes());
     }
     digest
@@ -261,8 +263,8 @@ pub(crate) fn compress(state: &mut [u32; 8], block: &[u8]) {
         0xc671_78f2,
     ];
     let mut words = [0_u32; 64];
-    for (index, source) in block.chunks_exact(4).enumerate() {
-        words[index] = u32::from_be_bytes(source.try_into().unwrap());
+    for (index, source) in block.as_chunks::<4>().0.iter().enumerate() {
+        words[index] = u32::from_be_bytes(*source);
     }
     for index in 16..64 {
         let first = words[index - 15].rotate_right(7)

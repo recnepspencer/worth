@@ -171,8 +171,7 @@ fn second_intent_invariant_refusal_retains_the_first_staged_edit_and_original_mo
         .unwrap();
     let failure = staging
         .close(&reviewer)
-        .err()
-        .expect("a real held reader defers retired history cleanup");
+        .expect_err("a real held reader defers retired history cleanup");
     let CloseRefusal::Candidate(
         WorthQueryApplicationProductBranchCloseDenial::OwnerCleanupPending(native),
     ) = &failure.cause

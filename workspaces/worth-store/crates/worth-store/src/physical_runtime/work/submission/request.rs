@@ -168,12 +168,26 @@ fn admit_submission_contracts(
 pub(super) fn allocate_operation_identity(
     shared: &PhysicalSubmissionState,
 ) -> Result<PhysicalWorkIdentity, PhysicalWorkSubmissionFailure> {
-    let sequence = shared
-        .next_operation
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-            value.checked_add(1)
-        })
-        .map_err(|_| PhysicalWorkSubmissionFailure::OperationIdentityExhausted)?;
+    let sequence = {
+        let update_counter = &shared.next_operation;
+        let mut value = update_counter.load(Ordering::Relaxed);
+        loop {
+            let next_value = value.checked_add(1);
+            let Some(updated_value) = next_value else {
+                break Err(value);
+            };
+            match update_counter.compare_exchange_weak(
+                value,
+                updated_value,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => value = reloaded_value,
+            }
+        }
+    }
+    .map_err(|_| PhysicalWorkSubmissionFailure::OperationIdentityExhausted)?;
     let sequence = NonZeroU64::new(sequence)
         .expect("physical operation sequence starts at one and only increments");
     Ok(PhysicalWorkIdentity::from_instance_owner(

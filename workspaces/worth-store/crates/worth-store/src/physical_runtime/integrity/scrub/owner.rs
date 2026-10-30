@@ -35,12 +35,26 @@ impl PhysicalIntegrityScrubOwner {
         if registrations.len() >= 16 {
             return Err(PhysicalIntegrityScrubRequestDenial::ActiveHandleLimitExceeded);
         }
-        let identity = self
-            .next_identity
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |identity| {
-                identity.checked_add(1)
-            })
-            .map_err(|_| PhysicalIntegrityScrubRequestDenial::ActiveHandleLimitExceeded)?;
+        let identity = {
+            let update_counter = &self.next_identity;
+            let mut identity = update_counter.load(Ordering::Acquire);
+            loop {
+                let next_value = identity.checked_add(1);
+                let Some(updated_value) = next_value else {
+                    break Err(identity);
+                };
+                match update_counter.compare_exchange_weak(
+                    identity,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => identity = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| PhysicalIntegrityScrubRequestDenial::ActiveHandleLimitExceeded)?;
         let registration = Arc::new(ScrubRegistration {
             cancelled: AtomicBool::new(false),
             closed: AtomicBool::new(false),

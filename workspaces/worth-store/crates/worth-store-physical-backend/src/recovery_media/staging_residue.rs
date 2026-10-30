@@ -81,13 +81,12 @@ fn parse_candidate(name: &str) -> Option<RecordArtifactFile> {
             role: RootSelectorRole::Current,
             publication: publication(rest)?,
         }
-    } else if let Some(rest) = name.strip_prefix("root-previous-") {
+    } else {
+        let rest = name.strip_prefix("root-previous-")?;
         RecordArtifactFile::RootSelectorCandidate {
             role: RootSelectorRole::Previous,
             publication: publication(rest)?,
         }
-    } else {
-        return None;
     };
     (candidate.file_name() == name).then_some(candidate)
 }

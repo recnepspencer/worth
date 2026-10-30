@@ -59,7 +59,7 @@ impl RequestWorkBudget {
         self.with_remaining_work(
             budget.work_ceiling(),
             |remaining| {
-                // The child copies its admitted parent's policy and only reduces
+                // Proof: the child copies its admitted parent's policy and only reduces
                 // remaining work; it adds no invalid limit or deadline relation.
                 let child = lease
                     .child(LeaseRequest {

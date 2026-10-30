@@ -54,7 +54,7 @@ pub fn current_extent_route(
         match bytes[68] {
             1 => {
                 assert_eq!(bytes.len(), 88 + count * 88);
-                for entry in bytes[88..].chunks_exact(88) {
+                for entry in bytes[88..].as_chunks::<88>().0.iter() {
                     if entry[..16] != record.allocation_epoch()
                         || u64_at(entry, 16) != record.ordinal()
                     {
@@ -73,7 +73,13 @@ pub fn current_extent_route(
             }
             2 => {
                 assert_eq!(bytes.len(), 88 + count * 72);
-                pending.extend(bytes[88..].chunks_exact(72).map(<[u8]>::to_vec));
+                pending.extend(
+                    bytes[88..]
+                        .as_chunks::<72>()
+                        .0
+                        .iter()
+                        .map(|chunk| chunk.to_vec()),
+                );
             }
             _ => panic!("unknown root node kind"),
         }

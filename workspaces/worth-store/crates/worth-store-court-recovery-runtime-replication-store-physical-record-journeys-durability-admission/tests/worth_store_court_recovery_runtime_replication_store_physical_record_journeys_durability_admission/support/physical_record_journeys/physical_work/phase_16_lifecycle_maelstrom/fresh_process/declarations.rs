@@ -112,7 +112,9 @@ pub(crate) fn decode_hex(encoded: &str) -> Vec<u8> {
     assert_eq!(encoded.len() % 2, 0);
     encoded
         .as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| {
             let pair = std::str::from_utf8(pair).unwrap();
             u8::from_str_radix(pair, 16).unwrap()

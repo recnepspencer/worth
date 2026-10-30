@@ -49,7 +49,7 @@ impl<'host> PreviousCloseFailure<'host> {
             )) => {
                 let Adopted { evidence, previous } = adopted;
                 let host = previous.host;
-                drop(previous); // This bare branch has already retired; it cannot close again.
+                // This bare branch has already retired; it cannot close again.
                 Ok(RetiredAdoption::from_retired(
                     evidence,
                     host,

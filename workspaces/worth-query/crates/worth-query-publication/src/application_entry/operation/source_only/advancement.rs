@@ -34,10 +34,10 @@ where
         let runtime = phase_keepalive.runtime();
         match runtime.with_application_advancement(request.scope, |phase| {
             let result = self.step(&phase, request, maximum_history_work);
-            if matches!(&result, Ok(Step::Completed)) {
-                if let Some(control) = &self.completion_handoff {
-                    control.pause();
-                }
+            if matches!(&result, Ok(Step::Completed))
+                && let Some(control) = &self.completion_handoff
+            {
+                control.pause();
             }
             result
         }) {

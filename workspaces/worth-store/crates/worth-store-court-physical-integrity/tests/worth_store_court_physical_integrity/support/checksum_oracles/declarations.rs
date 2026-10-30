@@ -28,11 +28,11 @@ pub(crate) fn sha256(bytes: &[u8]) -> [u8; 32] {
         padded.push(0);
     }
     padded.extend_from_slice(&bit_length.to_be_bytes());
-    for chunk in padded.chunks_exact(64) {
+    for chunk in padded.as_chunks::<64>().0.iter() {
         compress(&mut state, chunk);
     }
     let mut digest = [0; 32];
-    for (word, target) in state.iter().zip(digest.chunks_exact_mut(4)) {
+    for (word, target) in state.iter().zip(digest.as_chunks_mut::<4>().0.iter_mut()) {
         target.copy_from_slice(&word.to_be_bytes());
     }
     digest

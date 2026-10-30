@@ -23,7 +23,7 @@ mod ingress;
 mod publication_tests;
 mod registration;
 mod staging;
-pub use disposal::{DisposalClass, DisposalEvent, DisposalView, Disposed};
+pub use disposal::{DisposalClass, DisposalEvent, DisposalView};
 
 pub(super) struct Attempt<'host> {
     loaded: LoadedProposal,

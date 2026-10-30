@@ -182,7 +182,6 @@ fn registered_disposal_uses_owned_custody_after_storage_has_really_retired() {
         )
     ));
     let cleanup = native.into_cleanup();
-    drop(closed.owner);
     assert!(matches!(
         host.request(&reviewer.principal, reviewer.scope)
             .on_branch(branch)
