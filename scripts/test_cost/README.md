@@ -7,6 +7,7 @@ decide whether a test passes.
 ```text
 python scripts/test_cost/census.py --all --check-sources
 python scripts/test_cost/run_lane.py --workspace store
+python scripts/test_cost/llvm_measure.py --workspace store --cargo-profile ci-test
 python scripts/ci/root_gate.py
 python scripts/ci/query_gate.py --list
 python -m unittest discover -s scripts/test_cost -p test_*.py
@@ -14,7 +15,8 @@ python -m unittest discover -s scripts/test_cost -p test_*.py
 
 `run_lane.py` executes every nonignored partition by default, including ordinary
 cost cases and doctests. It never runs scheduled scale cases or ignored tests.
-Filtered runs prove only their selected subset. A complete nextest inventory is
+An explicit `--all --output PATH` source census writes one report under each
+workspace subdirectory of PATH. Filtered runs prove only their selected subset. A complete nextest inventory is
 not evidence that those tests executed: `executed-coverage.json` separately
 compares terminal observations with the requested identities.
 
@@ -50,11 +52,20 @@ compares terminal observations with the requested identities.
   tests. Their bodies remain compiled by their owning court. Duplicate textual
   copies of root Proof supported fixtures have one source owner; crash sweep
   continuations are never deduplicated.
+* `llvm_measure.py` measures the complete workspace feature graph with one
+  `cargo test --workspace --all-targets --no-run` invocation. Measurement-only
+  compiler flags emit IR and retain linking; no test body executes. Exact Cargo
+  source, target, profile, features and hashed artifact filenames identify each
+  IR file. `cargo llvm-lines --files` attributes generic instances without more
+  compiler sessions. IR size is a compile-cost proxy, not elapsed build time.
 * CPU accounting includes child processes. Generated slot reservations use
   measured CPU/wall ratios; missing CPU accounting stays unmeasured. Existing
   reservations remain until measurements exist. Committed sparse reservations
   retain provenance in `slots/<workspace>`. Hashed sample archives preserve
-  measurements in fresh checkouts without historical `target` files. Partial
+  measurements in fresh checkouts without historical `target` files. Bounded
+  schema-2 catalog trees retain every immutable sample and source header without
+  growing index files. Nextest reservations use the actual pool clamp; standalone
+  executables retain CPU observations without a nextest reservation. Partial
   runs retain earlier samples and use the maximum successful observation.
   Explicit claim resolutions change pending notes independently of CPU timing.
 * `coverage.py` proves structural selection; `complete_coverage.py` adds
@@ -74,8 +85,8 @@ compares terminal observations with the requested identities.
 |---|---|
 | Build artifacts and duplicate causes | `test_logs.py`, `test_ratchet.py`, `test_cargo_capture.py` |
 | Nested compiler-call source boundary | `test_source_scan.py`, `test_rust_calls.py`, `test_workspace.py` |
-| LLVM totals and helper attribution | `test_llvm_measure.py`, `test_logs.py` |
-| CPU/slots and generated policy | `test_account.py`, `test_account_windows.py`, `test_telemetry.py`, `test_measured_slots.py`, `test_reservations.py` |
+| LLVM totals and helper attribution | `test_llvm_measure.py`, `test_llvm_artifacts.py`, `test_llvm_bulk.py`, `llvm_probe.py`, `test_logs.py` |
+| CPU/slots and generated policy | `test_account.py`, `test_account_windows.py`, `test_telemetry.py`, `test_measured_slots.py`, `test_policy_catalog.py`, `test_slot_policy_catalog.py`, `test_reservations.py` |
 | Repeated construction observations | `test_telemetry.py`; Store recovery-runtime court setup recorder tests |
 | Sleep, timeout and polling census | `test_source_scan.py` |
 | Exact nonignored selection and execution | `test_coverage.py`, `test_complete_coverage.py`, `test_executed_coverage.py`, `test_doc_contracts.py` |
