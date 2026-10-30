@@ -147,6 +147,10 @@ fn activated_selector_can_choose_the_second_matching_identified_operation() {
     assert!(!rule.matches(identified_read_context(20)));
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: activated selector is one shot under concurrent matching operations; source: worth-store-physical-backend::filesystem_media::tests::fault_selector::activated_selector_is_one_shot_under_concurrent_matching_operations; lexical counts: std::thread::spawn=0, std::thread::scope=1, std::thread::Scope::spawn=1, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn activated_selector_is_one_shot_under_concurrent_matching_operations() {
     let activation = CertificationMediaFaultActivation::for_certification();

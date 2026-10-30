@@ -18,6 +18,10 @@ pub(crate) fn main() {
     let _input = UntrustedPhysicalArtifact::from_bounded_bytes(b"untrusted");
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_checkpoint_header<'media>(
     validated: IntegrityValidatedCheckpointStreamHeader<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -31,6 +35,10 @@ fn valid_checkpoint_header<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_checkpoint_dirty<'media>(
     validated: IntegrityValidatedCheckpointDirtyBasis<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -43,6 +51,10 @@ fn valid_checkpoint_dirty<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_checkpoint_compaction<'media>(
     validated: IntegrityValidatedCheckpointBindingCompaction<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -56,6 +68,10 @@ fn valid_checkpoint_compaction<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_checkpoint_binding<'media>(
     validated: IntegrityValidatedCheckpointBinding<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -72,6 +88,10 @@ fn valid_checkpoint_binding<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_checkpoint_footer<'media>(
     validated: IntegrityValidatedCheckpointFooter<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -84,6 +104,10 @@ fn valid_checkpoint_footer<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_checkpoint_progression<'records, 'media>(
     header: &'records IntegrityValidatedCheckpointStreamHeader<'media>,
     dirty: &'records [IntegrityValidatedCheckpointDirtyBasis<'media>],
@@ -96,6 +120,10 @@ fn valid_checkpoint_progression<'records, 'media>(
     let _footer_basis = CheckpointFooterValidationBasis::new(header, dirty, compaction, bindings);
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn selector_scope(store: StableStoreIdentity) -> PhysicalArtifactScope {
     PhysicalArtifactScope::current_root_selector(
         store,
@@ -106,6 +134,10 @@ fn selector_scope(store: StableStoreIdentity) -> PhysicalArtifactScope {
     )
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_current<'media>(
     validated: IntegrityValidatedCurrentRootSelector<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -117,6 +149,10 @@ fn valid_current<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_previous<'media>(
     validated: IntegrityValidatedPreviousRootSelector<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -128,6 +164,10 @@ fn valid_previous<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_manifest<'media>(
     validated: IntegrityValidatedRootManifest<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -139,6 +179,10 @@ fn valid_manifest<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_physical_work<'media>(
     validated: IntegrityValidatedPhysicalWorkObligation<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -154,6 +198,10 @@ fn valid_physical_work<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_page<'media>(
     validated: IntegrityValidatedPageFrame<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -168,6 +216,10 @@ fn valid_page<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_wal<'media>(
     validated: IntegrityValidatedWalFrame<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -184,6 +236,10 @@ fn valid_wal<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_extent_manifest<'media>(
     validated: IntegrityValidatedExtentManifest<'media>,
     input: UntrustedPhysicalArtifact<'media>,
@@ -195,6 +251,10 @@ fn valid_extent_manifest<'media>(
     record
 }
 
+#[expect(
+    dead_code,
+    reason = "Positive compile-only consumer of an owner-issued validated witness; the complete signature and body are typechecked while main executes the bounded untrusted-input construction"
+)]
 fn valid_extent_chunk<'media>(
     validated: IntegrityValidatedExtentChunkFrame<'media>,
     input: UntrustedPhysicalArtifact<'media>,

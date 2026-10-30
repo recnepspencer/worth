@@ -17,6 +17,10 @@ impl ProcessContender {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: spawn contender; source: worth-store-physical-backend::filesystem_media::tests::mutation_ownership_process::spawn_contender; lexical counts: std::thread::spawn=1, std::thread::scope=0, std::thread::Scope::spawn=0, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 pub(super) fn spawn_contender(root: &std::path::Path, index: usize) -> ProcessContender {
     use std::io::BufRead;
     use std::process::Stdio;
