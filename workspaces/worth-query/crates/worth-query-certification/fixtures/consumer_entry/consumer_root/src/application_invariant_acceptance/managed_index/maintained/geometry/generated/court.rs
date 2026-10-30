@@ -11,6 +11,7 @@ use worth_query_host::facade::{
     admission::authenticated_principal::*, application_entry::*, primary_graph::*,
 };
 mod cancellation;
+mod cold_history;
 mod population;
 mod reconstruction;
 

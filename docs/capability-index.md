@@ -460,6 +460,12 @@ memberships, and rejects B's third enclosure. Exact geometry restoration perform
 no build/update. Original suspension cancellation retains the available basis and
 fresh physical reads; `execution_control_stop()` exposes the typed stop while
 preserving the owning Native preparation denial.
+Generated cold-B coverage evicts a previously attached B and closes its public
+registration. Cold construction cancellation leaves it cold; retry builds it
+before either rule. Fresh pinned ordinary Source queries keep current principal
+admission: they refuse during suspension, then read the original endpoint after
+a changed lawful restoration. Retained managed Parent mode remains unsupported;
+old data cannot supply fresh security or select a current managed root.
 See the
 [current limits](build-an-application.md#prepare-candidate-structural-source-changes)
 and [Native audience](../workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md).

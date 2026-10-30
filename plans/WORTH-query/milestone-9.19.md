@@ -652,8 +652,24 @@ entry preserves complete owned in-phase outcomes; its borrowed control-stop
 projection retains the original Native denial and shares classification with
 restoration. All 28 public managed-index controls and exact final-owner allocation
 balance pass. See [the generated geometry slice](milestone-9.19-phase2-generated-geometry-plan.md).
-Cold B, fresh historical query admission, late-success/pending recovery execution
-and wider recovery/growth controls remain open.
+Generated cold-B preparation and retained ordinary Source admission are now
+qualified separately. B is previously attached, evicted through its admitted
+Parent and closed publicly; one-shot Parent reads still prove RootUnavailable
+before provider query while ordinary Native Source rows remain available. An
+actual cold build-node cancellation reaches no geometry or sibling rule, preserves
+selection and leaves B cold. Retry rebuilds B exactly once before both actual
+scope callbacks. This does not redefine the earlier never-opened-B evidence.
+Fresh retained ordinary Source queries preserve current principal/scope admission:
+suspension returns the exact current BranchMaterializationSuspended refusal.
+After lawful endpoint-20 restoration, fresh current Source/Parent answers contain
+20 while fresh retained ordinary Source answers contain original 10. Retained
+managed Parent mode stays UnsupportedMode before provider callbacks; no historical
+security replay or current-root fallback is introduced. All 29 public managed-index
+controls and the warmed exact final-owner balance pass. See
+[the cold/history slice](milestone-9.19-phase2-generated-cold-history-plan.md).
+Historical managed execution and successful historical READ under suspended
+current security remain unqualified; this slice does not widen their admission.
+Late-success/pending recovery execution and wider recovery/growth controls remain open.
 Remaining lifecycle/affinity hostile controls, materialization/recovery composition
 and the required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication

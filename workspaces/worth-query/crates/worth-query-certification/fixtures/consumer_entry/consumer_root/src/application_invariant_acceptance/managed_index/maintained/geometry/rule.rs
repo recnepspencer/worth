@@ -48,6 +48,7 @@ pub struct Record {
     pub before: Option<Vec<query::Row>>,
     pub after: Vec<query::Row>,
     pub updates_before_callback: usize,
+    pub builds_before_callback: usize,
     pub source_before: Option<Vec<query::Row>>,
     pub source_after: Option<Vec<query::Row>>,
 }
@@ -96,6 +97,7 @@ impl Rule {
             return Err(execution("original geometry request stopped"));
         }
         let updates_before_callback = self.calls.provider.updates.load(Ordering::SeqCst);
+        let builds_before_callback = self.calls.provider.builds.load(Ordering::SeqCst);
         let pair = context
             .managed_index(scope)
             .map_err(|cause| execution(format!("{cause:?}")))?;
@@ -142,6 +144,7 @@ impl Rule {
             before,
             after,
             updates_before_callback,
+            builds_before_callback,
             source_before,
             source_after,
         });

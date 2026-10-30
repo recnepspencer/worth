@@ -245,6 +245,16 @@ The suspension entry preserves the complete owned in-phase result across its
 outer control handoff. Its borrowed typed control projection shares preparation
 execution classification with restoration and retains the original Native error.
 This court does not qualify a late-success interruption or pending recovery run.
+The [cold/history court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/generated/court/cold_history.rs)
+first evicts previously attached B through admitted Parent cleanup and closes
+that public registration. A real cold-node cancellation leaves availability,
+selection and cold cache unchanged; retry reconstructs committed B before either
+logical rule. Ordinary Source still reads available Native rows while the derived
+cache is cold. Fresh retained ordinary queries resolve current principal/scope
+before selecting old data, so suspension preserves the exact current principal
+refusal. After restoring endpoint 20, fresh retained Source execution returns
+endpoint 10 independently of the current result. Retained Parent mode remains
+UnsupportedMode; this evidence does not widen historical managed support.
 
 Native stages provider roots before its first dependent invariant. Each actual
 observation reborrows its own Source loan. The existing SourceInvalidationOwner

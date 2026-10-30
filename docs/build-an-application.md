@@ -5647,6 +5647,19 @@ public reads, then a fresh suspension succeeds. Use
 `WorthQueryGeneratedOutputSuspensionFailure::execution_control_stop()` to borrow
 its typed request stop; a preparation failure still owns its original Native
 denial. These are integer enclosure and Source lifecycle checks.
+The [cold generated Source court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/generated/court/cold_history.rs)
+evicts previously attached B, closes its public registration and proves its
+derived material stays cold while ordinary Native Source rows remain readable.
+Original cold-build cancellation reaches no rule; retry reconstructs B before
+both scope callbacks. This is separate evidence from never-opened B.
+
+A fresh `request.at(&observation).query(source).execute()` still resolves its
+principal and scope on the current product. During suspension it preserves
+`BranchMaterializationSuspended`; historical data cannot replace current security.
+After lawful endpoint-20 restoration, a fresh retained ordinary Source query
+returns the original endpoint 10 while current reads return 20. Managed Parent
+queries in retained mode continue to refuse `UnsupportedMode` before provider
+callbacks. Retaining decoded rows is a separate immutable-result property.
 The compiled endpoint shape preserves each actual `Starts` and `Ends` relation
 occurrence and checks its declared cardinality before provider maintenance:
 
