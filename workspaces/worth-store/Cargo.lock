@@ -332,12 +332,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
-
-[[package]]
 name = "hashbrown"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -801,6 +795,9 @@ checksum = "5c0e04424e733e69714ca1bbb9204c1a57f09f5493439520f9f68c132ad25eec"
 [[package]]
 name = "store-test-runner"
 version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
 
 [[package]]
 name = "syn"
@@ -837,12 +834,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "target-tuple"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "876fef147edbcbddc8ac5cbbba92c7b86519e314e86638596c09673b2ed01e7f"
-
-[[package]]
 name = "tempfile"
 version = "3.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -853,15 +844,6 @@ dependencies = [
  "once_cell",
  "rustix 1.1.5",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "termcolor"
-version = "1.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
-dependencies = [
- "winapi-util",
 ]
 
 [[package]]
@@ -908,21 +890,6 @@ name = "tracking-allocator"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b61e0cb3385e17df7db29c565b40fd0350dfe8a076c7eea83d416e30cfd0581"
-
-[[package]]
-name = "trybuild"
-version = "1.0.122"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62db9c92d704393fbf2132041720cc80b689f2d3f28521015c2ac866223c11b8"
-dependencies = [
- "glob",
- "serde",
- "serde_derive",
- "serde_json",
- "target-tuple",
- "termcolor",
- "toml",
-]
 
 [[package]]
 name = "typenum"
@@ -1617,10 +1584,10 @@ name = "worth-store-court-physical-integrity"
 version = "0.1.0"
 dependencies = [
  "sha2",
- "trybuild",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-testkit-executables",
+ "worth-testkit-compiler",
 ]
 
 [[package]]
@@ -1635,10 +1602,10 @@ dependencies = [
 name = "worth-store-court-recovery-runtime"
 version = "0.1.0"
 dependencies = [
- "trybuild",
  "worth-store-recovery-runtime",
  "worth-store-testkit-executables",
  "worth-store-testkit-recovery-runtime",
+ "worth-testkit-compiler",
 ]
 
 [[package]]
@@ -1838,6 +1805,7 @@ dependencies = [
  "worth-store",
  "worth-store-physical-format",
  "worth-store-relational",
+ "worth-store-test-support",
  "worth-store-testkit-executables",
 ]
 
@@ -1863,9 +1831,9 @@ name = "worth-store-court-store-entry"
 version = "0.1.0"
 dependencies = [
  "stats_alloc",
- "trybuild",
  "worth-store",
  "worth-store-testkit-executables",
+ "worth-testkit-compiler",
 ]
 
 [[package]]
@@ -1877,7 +1845,6 @@ dependencies = [
  "stats_alloc",
  "tempfile",
  "tracking-allocator",
- "trybuild",
  "worth-foundational",
  "worth-proof",
  "worth-signal",
@@ -1892,6 +1859,7 @@ dependencies = [
  "worth-store-security",
  "worth-store-testkit-executables",
  "worth-store-testkit-store",
+ "worth-testkit-compiler",
 ]
 
 [[package]]
@@ -1921,7 +1889,6 @@ version = "0.1.0"
 dependencies = [
  "sha2",
  "tempfile",
- "trybuild",
  "worth-foundational",
  "worth-proof",
  "worth-signal",
@@ -1935,6 +1902,7 @@ dependencies = [
  "worth-store-security",
  "worth-store-testkit-executables",
  "worth-store-testkit-store",
+ "worth-testkit-compiler",
 ]
 
 [[package]]
@@ -2472,6 +2440,13 @@ dependencies = [
  "worth-store-modes",
  "worth-store-physical-format",
  "worth-store-security",
+]
+
+[[package]]
+name = "worth-testkit-compiler"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]
