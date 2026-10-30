@@ -12,6 +12,7 @@ mod copied;
 mod iteration;
 mod native;
 mod patch;
+mod performed_fields;
 pub(in crate::domain_computation::primary_graph) use patch::NativeFactPatchBuilder;
 
 mod sequence;

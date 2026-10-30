@@ -26,6 +26,9 @@ pub(super) fn validate_program_target_identifiers(
     target: &ApplicationOperationProgramTarget,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     match target {
+        ApplicationOperationProgramTarget::RemoveAspect { entity, aspect } => {
+            validate_identifiers([entity, aspect])
+        }
         ApplicationOperationProgramTarget::Create { entity }
         | ApplicationOperationProgramTarget::Delete { entity } => {
             validate_simple_identifier(entity)

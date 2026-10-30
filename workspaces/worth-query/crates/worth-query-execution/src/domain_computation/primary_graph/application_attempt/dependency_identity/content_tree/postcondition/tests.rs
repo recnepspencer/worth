@@ -108,3 +108,35 @@ fn growing_own_effect_preserves_original_and_publishes_a_distinct_funded_body() 
     })
     .unwrap();
 }
+
+#[test]
+fn own_parent_removal_normalizes_to_aspect_absence_without_erasing_original_read_values() {
+    with_bootstrap_advancement(ExecutionRequestPolicy::for_workers(ExecutionPosture::Serial, DeterminismContract::CanonicalBitwise, std::num::NonZeroUsize::MIN), |phase| {
+        let request = phase.execution_request();
+        let control = StorageControl::new(request.allocation_policy(), None);
+        let entity_id = EntityId::new(PartitionId::main(), 8, 3);
+        let kind = KindId(7);
+        let aspect = AspectKey::new("input").unwrap();
+        let fields: Vec<_> = ["bias", "sibling"].map(|field| planned_single_field_locator(aspect.clone(), FieldKey::new(field).unwrap())).into();
+        let mut original: Vec<_> = fields.iter().zip([4, 40]).map(|(locator, value)| Fact::Field {
+            entity_id, kind, locator: locator.clone(), value: AspectValue::UInt64(value),
+        }).collect();
+        original.push(Fact::AspectPresence { entity_id, kind, aspect: aspect.clone(), present: true });
+        let mut builder = crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPayloadBuilder::allocate_completed_read(original.len(), control).unwrap();
+        for fact in &original { builder.push(fact.clone()).unwrap(); }
+        let body = builder.seal().unwrap();
+        let (content, _) = FactContent::build(body.clone(), control).unwrap();
+        let effects = [Effect::RemoveAspect { entity: "Entry".into(), entity_id,
+            contract: worth_foundational::facade::PortableAspectContractBasis::new(aspect,
+                worth_foundational::facade::AspectIdentity(17), worth_foundational::facade::AspectContractRevision(1)),
+            fields: fields.clone() }];
+        let (after, next, moved, _) = content.postcondition(&effects, &[0, 1], control).unwrap();
+        let mut expected: Vec<_> = fields.into_iter().map(|locator| Fact::OptionalAspectAbsent { entity_id, kind, locator }).collect();
+        expected.push(Fact::AspectPresence { entity_id, kind, aspect: AspectKey::new("input").unwrap(), present: false });
+        assert_eq!(after.iter().cloned().collect::<Vec<_>>(), expected);
+        assert_eq!(body.iter().cloned().collect::<Vec<_>>(), original);
+        assert_eq!(moved, [0, 1]);
+        assert!(!body.same_backing(&after));
+        assert!(next.same_body(&after));
+    }).unwrap();
+}

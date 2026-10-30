@@ -5,7 +5,7 @@ mod compilation;
 mod denial;
 mod locus;
 mod projection;
-pub use projection::declared_application_aspect_contract;
+pub use projection::declared_application_aspect;
 
 pub use aspect_contract::WorthQueryInstalledApplicationAspectContract;
 pub use catalog::{

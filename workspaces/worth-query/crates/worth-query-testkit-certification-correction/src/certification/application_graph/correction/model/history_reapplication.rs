@@ -113,6 +113,7 @@ pub fn consumed_edge_survives_reconstruction() {
     assert_eq!(
         host::read(&host),
         [super::query::Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]
@@ -149,6 +150,7 @@ pub fn consumed_edge_survives_reconstruction() {
     assert_eq!(
         host::read(&host),
         [super::query::Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]

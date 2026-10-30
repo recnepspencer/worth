@@ -14,7 +14,7 @@ pub use crate::domain_computation::primary_graph::application_resource::{
 /// Read-only aggregate lineage vocabulary and original commit occurrence diagnostics.
 pub use worth_foundational::facade::AggregateLineageKind;
 /// Original Native commit occurrence; lineage diagnostics grant no authority.
-pub use worth_relational::facade::history::CommitId;
+pub use worth_relational::facade::history::{CommitId, RelationalAuthoredWriteDenial};
 
 pub use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
@@ -36,7 +36,41 @@ pub use crate::domain_computation::primary_graph::{
     place_managed_computations_on_this_thread_for_test,
     principal_target_reads_on_this_thread_for_test,
     query_read_kernel_entries_by_root_on_this_thread_for_test,
-    query_read_kernel_entries_on_this_thread_for_test, test_execution_workers_for_test,
+    query_read_kernel_entries_on_this_thread_for_test, query_test_execution_authority_for_test,
+    test_execution_workers_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest, WorthQueryExecutionPlacementForTest,
+    WorthQueryFactVerificationForTest, WorthQueryInputCutoffCandidateForTest,
+    WorthQueryInputCutoffForTest, WorthQueryInputCutoffGateForTest,
+    WorthQueryInputCutoffNativeBasisForTest, WorthQueryInputCutoffNoRowReasonForTest,
+    WorthQueryInputCutoffOutcomeForTest, WorthQueryInputCutoffSettlementForTest,
+    WorthQueryInputCutoffSettlementPostureForTest, WorthQueryMarkedOutputForTest,
+    WorthQueryNativeMarkingForTest, WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
+    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
+    WorthQueryRecoveredProgramSourceDeliveryForTest, WorthQueryRegistryCustodyForTest,
+    WorthQueryRegistryCustodyTransitionForTest,
+};
+
+pub use worth_relational::facade::{
+    indexes::{
+        DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest,
+        DerivedIndexId,
+    },
+    lineage::{LineageEventKind, LineageEventRecord},
+    mvcc::{
+        CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
+    },
+    publication::RecordStructuralChange,
+    runtime::{
+        HistoricalVisibilityDenial, RelationalProjectionContractDenial, StructuralWalkDenialKind,
+    },
+    storage::{
+        RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
+    },
+    transactions::RelationalExecutionDenialCause,
+};
+
+pub use crate::domain_computation::primary_graph::{
     CandidateWriter, CheckpointAllocatorInspection, CheckpointRecordFrontier,
     CheckpointRecordIdentity, CheckpointReservationAdvanceDenial, DecisionReader, ExecutionRequest,
     HandlerExecutionDenial, HandlerFailure, HandlerInterruption, HandlerResult,
@@ -47,8 +81,6 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
     WorthQueryAdmittedDisclosedApplicationResult, WorthQueryAdmittedInboundOccurrence,
     WorthQueryAdmittedOutputDemand, WorthQueryAdmittedProgramMigration,
-    WorthQueryAdvancementEventForTest, WorthQueryAdvancementEventKindForTest,
-    WorthQueryAdvancementIdentityForTest, WorthQueryAdvancementObservationForTest,
     WorthQueryAftermathCausalityReadDenial, WorthQueryAggregateIdentity,
     WorthQueryAggregateLineage, WorthQueryAggregateLineageEvent,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
@@ -164,10 +196,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryElevationClosureKind, WorthQueryElevationRequestOutcome,
     WorthQueryElevationRequestProgram, WorthQueryEntityResolutionDenial,
     WorthQueryEntityResolutionDenialKind, WorthQueryEntityResolutionRefusalKind,
-    WorthQueryExecutionLeaseDenial, WorthQueryExecutionPlacementForTest,
-    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
-    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
-    WorthQueryFactVerificationForTest, WorthQueryGeneratedEntity,
+    WorthQueryExecutionLeaseDenial, WorthQueryExternalDispatchAttemptDenial,
+    WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
+    WorthQueryExternalTransportInstallationDenial, WorthQueryGeneratedEntity,
     WorthQueryGeneratedOutputInvariantAdmissionDenial,
     WorthQueryGeneratedOutputPublicationNoEffect,
     WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
@@ -191,10 +222,6 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
     WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
     WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
-    WorthQueryInputCutoffCandidateForTest, WorthQueryInputCutoffForTest,
-    WorthQueryInputCutoffGateForTest, WorthQueryInputCutoffNativeBasisForTest,
-    WorthQueryInputCutoffNoRowReasonForTest, WorthQueryInputCutoffOutcomeForTest,
-    WorthQueryInputCutoffSettlementForTest, WorthQueryInputCutoffSettlementPostureForTest,
     WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantAggregate,
     WorthQueryInvariantAggregateDenial, WorthQueryInvariantAggregateDenialKind,
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
@@ -224,10 +251,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop, WorthQueryManagedIndexWorkDenial,
     WorthQueryMandatoryReview, WorthQueryMandatoryReviewAuthorizationDenial,
     WorthQueryMandatoryReviewOutcome, WorthQueryMandatoryReviewProgram,
-    WorthQueryMarkedOutputForTest, WorthQueryMutationHandlerExecutionReport,
-    WorthQueryMutationHandlerProjectionWork, WorthQueryMutationHandlerWork,
-    WorthQueryMutationPreconditionComparisonEvidence, WorthQueryNativeMarkingForTest,
-    WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
+    WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
+    WorthQueryMutationHandlerWork, WorthQueryMutationPreconditionComparisonEvidence,
     WorthQueryObservedApplicationRelation, WorthQueryObservedOutputAvailability,
     WorthQueryObservedResultSet, WorthQueryObservedSource, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
@@ -269,9 +294,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryPublicationFaultGuardForTest, WorthQueryPublicationFaultRegistrationDenial,
     WorthQueryReconstructedOutputEntity, WorthQueryRecordReservationObservation,
     WorthQueryRecordReservationObservationDenial, WorthQueryRecordReservationObservationFailure,
-    WorthQueryRecordReservationReport, WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
-    WorthQueryRecoveredProgramSourceDeliveryForTest, WorthQueryRegistryCustodyForTest,
-    WorthQueryRegistryCustodyTransitionForTest, WorthQueryRequestedElevation,
+    WorthQueryRecordReservationReport, WorthQueryRequestedElevation,
     WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
     WorthQueryReservedRecord, WorthQueryRestoredGeneratedOutput,
     WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryRetainedGeneratedOutputEntity,
@@ -294,28 +317,6 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryUnpublishedGeneratedOutputRestoration, WorthQueryValueDecodeDenial,
     WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
     WorthQueryWorkflowInstanceDisposition,
-};
-
-pub use crate::domain_computation::primary_graph::query_test_execution_authority_for_test;
-
-pub use worth_relational::facade::runtime::{
-    HistoricalVisibilityDenial, RelationalProjectionContractDenial, StructuralWalkDenialKind,
-};
-pub use worth_relational::facade::storage::{
-    RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
-};
-pub use worth_relational::facade::{
-    history::RelationalAuthoredWriteDenial,
-    indexes::{
-        DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest,
-        DerivedIndexId,
-    },
-    lineage::{LineageEventKind, LineageEventRecord},
-    mvcc::{
-        CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
-    },
-    publication::RecordStructuralChange,
-    transactions::RelationalExecutionDenialCause,
 };
 
 pub use crate::domain_computation::application_aftermath::{

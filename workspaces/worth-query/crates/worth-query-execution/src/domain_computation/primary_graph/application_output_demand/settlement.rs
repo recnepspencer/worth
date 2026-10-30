@@ -3,7 +3,11 @@ use producer_identity::SettlementProducerIdentity;
 mod current_commit;
 use current_commit::reacquire_current_committed_output;
 mod current_accepted;
+pub(super) mod observation;
+mod producing_publication;
+pub(in crate::domain_computation::primary_graph) use producing_publication::OriginalProducingPublication;
 mod receipt_custody;
+mod reused;
 use receipt_custody::SettlementReceiptCustody;
 use std::sync::Arc;
 
@@ -88,11 +92,10 @@ impl WorthQueryOutputDemandSettlement {
             && self.schema_binding == runtime.installed_schema.binding_identity()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn from_commit<Schema>(
+    pub(in crate::domain_computation::primary_graph) fn from_committed_ready<Schema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        receipt: &WorthQueryApplicationCommitReceipt,
-        readiness_delivery: &WorthQueryOutputReadinessDeliveryEvidence,
+        completion: &ReadyCompletion,
         producer_identity: &str,
         output_family_identity: &str,
         producer_contacts_in_this_demand: usize,
@@ -100,6 +103,13 @@ impl WorthQueryOutputDemandSettlement {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
+        let WorthQueryAcceptedOutputAuthority::Committed(receipt) = &completion.authority else {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                "committed settlement requires its actual Ready completion",
+            ));
+        };
+        let readiness_delivery = &completion.readiness;
         let _held_world_observations =
             if runtime.primary_provider.take_ready_read_snapshot_pressure() {
                 Some(runtime.hold_world_snapshot_pressure_for_test(receipt.product_branch()))
@@ -125,7 +135,16 @@ impl WorthQueryOutputDemandSettlement {
             restored_source: None,
             readiness_delivery: Some(readiness_delivery.clone()),
             producer_contacts_in_this_demand,
-            observation: WorthQueryApplicationReadObservation::from_product(runtime, observation),
+            observation: WorthQueryApplicationReadObservation::from_settled_product(
+                runtime,
+                observation::OriginalSettledProducerObservation::ready(
+                    execution,
+                    runtime,
+                    completion,
+                    &observation,
+                )?,
+                observation,
+            ),
         }))
     }
 
@@ -180,86 +199,6 @@ impl WorthQueryOutputDemandSettlement {
     #[doc(hidden)]
     pub fn retained_read(&self) -> Arc<WorthQueryApplicationReadObservation> {
         Arc::clone(&self.observation)
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn from_restoration<Schema>(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        restored: &super::WorthQueryRestoredAcceptedOutput,
-        output_family_identity: &str,
-        producer_contacts_in_this_demand: usize,
-    ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial>
-    where
-        Schema: worth_query_installation::facade::ApplicationSchema,
-    {
-        let authority = runtime
-            .product_runtime
-            .recovered_root_authority
-            .as_ref()
-            .filter(|authority| authority.product_branch() == &restored.observation)
-            .ok_or_else(|| {
-                WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    "restored output is not bound to this World's recovered root authority",
-                )
-            })?;
-        let product = runtime
-            .product_runtime
-            .lease_from_observation(authority.product_branch().clone())
-            .map_err(|error| {
-                WorthQueryOutputDemandDenial::product_selection(
-                    error,
-                    "recovered output root is no longer current",
-                )
-            })?;
-        Ok(Arc::new(Self {
-            posture: restored.settlement_posture(),
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            schema_binding: runtime.installed_schema.binding_identity(),
-            producer_identity: SettlementProducerIdentity::from_checkpoint(&restored.checkpoint),
-            output_family_identity: output_family_identity.to_owned(),
-            receipt: None,
-            stable: None,
-            output_correspondence: Arc::clone(&restored.correspondence),
-            restored_source: Some(restored.into()),
-            readiness_delivery: None,
-            producer_contacts_in_this_demand,
-            observation: WorthQueryApplicationReadObservation::from_product(
-                runtime,
-                product.read_lease(),
-            ),
-        }))
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn from_stable<Schema>(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        stable: &super::super::output_lineage::PublishedStableLineage,
-        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-        producer_identity: &str,
-        output_family_identity: &str,
-        producer_contacts_in_this_demand: usize,
-    ) -> Arc<Self>
-    where
-        Schema: worth_query_installation::facade::ApplicationSchema,
-    {
-        Arc::new(Self {
-            posture: WorthQueryOutputSettlementPosture::StableReused,
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            schema_binding: runtime.installed_schema.binding_identity(),
-            producer_identity: producer_identity.to_owned().into(),
-            output_family_identity: output_family_identity.to_owned(),
-            receipt: None,
-            stable: Some(stable.clone()),
-            output_correspondence: Arc::clone(stable.output_correspondence()),
-            restored_source: None,
-            readiness_delivery: Some(
-                WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
-            ),
-            producer_contacts_in_this_demand,
-            observation: WorthQueryApplicationReadObservation::from_product(
-                runtime,
-                selected.product().read_lease(),
-            ),
-        })
     }
 }
 

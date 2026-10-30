@@ -1,6 +1,8 @@
 //! Injected provider terminal-outcome boundary.
 
 use std::sync::Arc;
+mod cancellation;
+use cancellation::BoundaryCancellation;
 
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFault {
@@ -36,6 +38,22 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryPrimaryGraphFau
     #[cfg(test)]
     fn aftermath_ready_for_sealing(&self) {}
 
+    fn output_comparison_completed(&self) {}
+    fn inspection_materialization_prepared(&self) {}
+    fn cancel_after_next_inspection_materialization_for_test(
+        &self,
+        _source:worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> bool {
+        false
+    }
+
+    fn cancel_after_next_output_comparison_for_test(
+        &self,
+        _source: worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> bool {
+        false
+    }
+
     fn schedule_for_test(&self, _fault: WorthQueryPrimaryGraphFault) -> bool {
         false
     }
@@ -51,9 +69,29 @@ pub(in crate::domain_computation::primary_graph) fn production_fault_port(
 #[derive(Default)]
 struct WorthQueryScriptedPrimaryGraphFaults {
     scheduled: std::sync::atomic::AtomicU16,
+    output_comparison_cancellation: BoundaryCancellation,
+    inspection_materialization_cancellation: BoundaryCancellation,
 }
 
 impl WorthQueryPrimaryGraphFaultPort for WorthQueryScriptedPrimaryGraphFaults {
+    fn output_comparison_completed(&self) {
+        self.output_comparison_cancellation.fire();
+    }
+    fn inspection_materialization_prepared(&self) {
+        self.inspection_materialization_cancellation.fire();
+    }
+    fn cancel_after_next_output_comparison_for_test(
+        &self,
+        source:worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> bool {
+        self.output_comparison_cancellation.arm(source)
+    }
+    fn cancel_after_next_inspection_materialization_for_test(
+        &self,
+        source:worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> bool {
+        self.inspection_materialization_cancellation.arm(source)
+    }
     fn take(&self, fault: WorthQueryPrimaryGraphFault) -> bool {
         let mask = fault_mask(fault);
         let mut scheduled = self.scheduled.load(std::sync::atomic::Ordering::Acquire);
@@ -154,5 +192,39 @@ impl super::WorthQueryPrimaryGraphProvider {
         fault: WorthQueryPrimaryGraphFault,
     ) -> bool {
         self.publication_fault_control.take(fault) || self.fault_port.take(fault)
+    }
+}
+
+#[cfg(test)]
+mod output_comparison_cancellation_tests {
+    use super::*;
+    use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
+    #[test]
+    fn materialization_and_output_comparison_cancel_only_their_own_boundary() {
+        let port = WorthQueryScriptedPrimaryGraphFaults::default();
+        let comparison = WorthQueryCancellationSource::new();
+        let materialization = WorthQueryCancellationSource::new();
+        assert!(port.cancel_after_next_output_comparison_for_test(comparison.clone()));
+        assert!(port.cancel_after_next_inspection_materialization_for_test(materialization.clone()));
+        port.output_comparison_completed();
+        assert!(comparison.token().is_cancelled());
+        assert!(!materialization.token().is_cancelled());
+        port.inspection_materialization_prepared();
+        assert!(materialization.token().is_cancelled());
+    }
+    #[test]
+    fn comparison_cancellation_is_one_shot_and_refuses_pending_replacement() {
+        let port = WorthQueryScriptedPrimaryGraphFaults::default();
+        let first = WorthQueryCancellationSource::new();
+        let second = WorthQueryCancellationSource::new();
+        assert!(port.cancel_after_next_output_comparison_for_test(first.clone()));
+        assert!(!port.cancel_after_next_output_comparison_for_test(second.clone()));
+        port.output_comparison_completed();
+        assert!(first.token().is_cancelled());
+        assert!(!second.token().is_cancelled());
+        assert!(port.cancel_after_next_output_comparison_for_test(second.clone()));
+        port.output_comparison_completed();
+        assert!(second.token().is_cancelled());
+        port.output_comparison_completed();
     }
 }

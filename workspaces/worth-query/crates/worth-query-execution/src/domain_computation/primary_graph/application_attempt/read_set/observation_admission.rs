@@ -136,13 +136,12 @@ pub(super) fn graph_read_scope_matches_key(
                 entity, locator, ..
             },
         ) => {
+            let [field] = locator.field_path().fields() else {
+                return false;
+            };
             scope.entity().semantic_key() == entity
                 && scope.aspect() == locator.aspect().aspect_key()
-                && scope
-                    .projection()
-                    .mask()
-                    .paths()
-                    .contains(locator.field_path())
+                && scope.admits_field(field)
         }
         (
             WorthQueryOperationGraphReadScope::Relation(scope),
@@ -174,10 +173,10 @@ pub(super) fn graph_reads_exactly_cover_fact_keys<'key>(
             WorthQueryOperationGraphReadScope::Entity(_)
             | WorthQueryOperationGraphReadScope::Relation(_) => 1,
             WorthQueryOperationGraphReadScope::NativeProjection(scope) => {
-                if scope.projection().mask().is_whole_aspect() {
+                let Some(count) = scope.atomic_field_count() else {
                     return false;
-                }
-                scope.projection().mask().paths().len()
+                };
+                count
             }
         };
         expected = match expected.checked_add(atomic_count) {

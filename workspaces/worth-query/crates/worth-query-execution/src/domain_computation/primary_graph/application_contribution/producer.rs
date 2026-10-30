@@ -28,6 +28,13 @@ pub use denial_value::{
 mod execution;
 pub(in crate::domain_computation::primary_graph) use execution::prepared_plan::OwnerPlan;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
+mod output_equivalence_contract;
+mod output_evaluation;
+pub use output_equivalence_contract::WorthQueryProducerOutputEquivalence;
+pub use output_evaluation::WorthQueryProducerEvaluationIneligibility;
+pub(in crate::domain_computation::primary_graph) use output_evaluation::{
+    ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
+};
 mod input_reuse_contract;
 pub use input_reuse_contract::{
     WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
@@ -256,6 +263,13 @@ where
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement];
     const REUSE_POLICY: &'static str;
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
+
+    /// Opt in to a bounded actual output-field evaluation. The field must belong
+    /// to this producer's exactly-one output role; this grants no disclosure.
+    fn output_equivalence() -> Option<WorthQueryProducerOutputEquivalence<Schema, Self::OutputRole>>
+    {
+        None
+    }
 }
 
 mod registry;

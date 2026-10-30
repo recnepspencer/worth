@@ -74,6 +74,12 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationReali
         relation_id: RelationId,
     },
     Emit(WorthQueryApplicationEmission),
+    RemoveAspect {
+        entity: String,
+        entity_id: EntityId,
+        contract: PortableAspectContractBasis,
+        fields: Vec<AspectFieldLocator>,
+    },
 }
 
 /// A finished effect program: the sealed read set plus the effects authored

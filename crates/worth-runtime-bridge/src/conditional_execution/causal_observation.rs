@@ -22,6 +22,20 @@ impl BridgeConditionalCausalObservation {
         Self { observation }
     }
 
+    /// Reads only the actual optional history owner; immutable Native custody is separate.
+    pub fn history_availability(&self) -> crate::diagnostics::BridgeConditionalHistoryAvailability {
+        self.observation.history.availability()
+    }
+    /// Rechecks the history owner now; earlier availability is not a retention lease.
+    pub fn history_detail(
+        &self,
+    ) -> Result<
+        crate::diagnostics::BridgeConditionalHistoryDetail,
+        crate::diagnostics::BridgeConditionalHistoryAvailability,
+    > {
+        self.observation.history.detail()
+    }
+
     pub fn belongs_to(&self, owner: &BridgeOwnedSignalRuntime) -> bool {
         self.observation.bridge_runtime_key == owner.bridge.signal_runtime_key
     }
@@ -42,6 +56,21 @@ impl BridgeConditionalCausalObservation {
 
     pub fn signal_class(&self) -> worth_signal::facade::SignalConditionalDecisionClass {
         self.observation.signal.class()
+    }
+
+    /// Borrows the original Signal computed effect; passive decisions have none.
+    /// Its meaning belongs to this exact installed lowering and source observation.
+    pub fn computed_evaluation(
+        &self,
+    ) -> Option<&worth_signal::facade::diagnostics::AppliedEffectReport> {
+        self.observation.signal.computed_evaluation()
+    }
+
+    pub fn signal_output_versions(&self) -> (u64, u64) {
+        (
+            self.observation.signal.output_version_before(),
+            self.observation.signal.output_version(),
+        )
     }
 
     pub fn attempt(&self) -> u64 {

@@ -389,3 +389,6 @@ mod historical_reader;
 
 #[path = "derived_index_checkpoint/deleted_branch_reader.rs"]
 mod deleted_branch_reader;
+
+#[path = "derived_index_checkpoint/artifact_affinity.rs"]
+mod artifact_affinity;

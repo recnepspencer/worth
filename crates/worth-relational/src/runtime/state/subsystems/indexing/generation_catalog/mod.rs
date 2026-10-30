@@ -2,8 +2,10 @@
 mod admitted_publication;
 mod admitted_selection;
 mod discard;
+mod incremental_retirement;
 mod insertion_quote;
 mod scope;
+mod selection_retention;
 mod selection_work;
 pub(in crate::runtime::state::subsystems::indexing) use admitted_selection::navigation_work;
 #[cfg(test)]
@@ -29,6 +31,8 @@ pub(super) struct GenerationCatalog {
     scopes: BTreeMap<DerivedIndexId, BTreeMap<Option<BranchId>, GenerationScope>>,
     commits: BTreeMap<CommitId, BTreeSet<DerivedIndexGenerationId>>,
     versions: BTreeMap<VersionId, BTreeSet<DerivedIndexGenerationId>>,
+    retirement_cursor: Option<DerivedIndexGenerationId>,
+    retirement_cycle_end: Option<DerivedIndexGenerationId>,
     work: selection_work::SelectionWork,
 }
 
@@ -93,17 +97,6 @@ impl GenerationCatalog {
             )
             .chain(retained.historical_versions.iter().copied())
             .collect::<BTreeSet<_>>();
-        let latest = self.entries.values().fold(
-            BTreeMap::<(DerivedIndexId, BranchId), DerivedIndexGenerationId>::new(),
-            |mut latest, generation| {
-                let key = (generation.index_id, generation.source_branch_id.clone());
-                latest
-                    .entry(key)
-                    .and_modify(|id| *id = (*id).max(generation.generation_id))
-                    .or_insert(generation.generation_id);
-                latest
-            },
-        );
         self.entries
             .iter()
             .filter(|(id, generation)| {
@@ -124,24 +117,15 @@ impl GenerationCatalog {
                             schema,
                         ))
                 };
-                let branch = (!global_indexes.contains(&generation.index_id))
-                    .then_some(&generation.applicability.branch_id);
-                let scope = self.scope(generation.index_id, branch);
-                let exact = basis_retained
-                    && (scope.and_then(|scope| scope.exact(version, schema)) == Some(**id)
-                        || scope.and_then(|scope| {
-                            scope.published_for_commit(generation.source_commit_id, version)
-                        }) == Some(**id)
-                        || (generation.status
-                            == crate::indexes::data::DerivedIndexPublicationStatus::BuildFailed
-                            && scope.and_then(|scope| scope.candidate(false, version, schema))
-                                == Some(**id)));
-                exact
-                    || retained
+                self.selected_for_retention(
+                    **id,
+                    generation,
+                    global_indexes.contains(&generation.index_id),
+                    basis_retained,
+                    retained
                         .latest_branches
-                        .contains(&generation.source_branch_id)
-                        && latest.get(&(generation.index_id, generation.source_branch_id.clone()))
-                            == Some(id)
+                        .contains(&generation.source_branch_id),
+                )
             })
             .map(|(id, _)| *id)
             .collect()
@@ -157,6 +141,12 @@ impl GenerationCatalog {
     }
 
     pub(super) fn insert(&mut self, generation: DerivedIndexGeneration) {
+        assert_eq!(
+            /* Proof: Native construction binds both branch axes to the admitted basis; checkpoint and envelope readmission reject mismatched transported axes before reaching this private catalog installation. */
+            generation.source_branch_id,
+            generation.applicability.branch_id,
+            "generation source and applicability share one admitted branch"
+        );
         self.generation_high_water = self.generation_high_water.max(generation.generation_id.0);
         if let Some(previous) = self.entries.remove(&generation.generation_id) {
             self.remove_bindings(&previous);

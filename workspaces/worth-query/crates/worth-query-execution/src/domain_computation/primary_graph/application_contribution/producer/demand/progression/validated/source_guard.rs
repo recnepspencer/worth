@@ -160,13 +160,23 @@ where
             });
         }
 
-        self.refresh_output_demand(
-            execution,
-            demand,
-            disclosure.value(),
-            disclosure.source().clone(),
-            held,
-        )?;
+        if let Some(completion) = ready.as_ref() {
+            self.refresh_ready_output_demand(
+                execution,
+                demand,
+                disclosure.value(),
+                disclosure.source().clone(),
+                completion,
+            )?;
+        } else {
+            self.refresh_output_demand(
+                execution,
+                demand,
+                disclosure.value(),
+                disclosure.source().clone(),
+                None,
+            )?;
+        }
         // Carry source custody unchanged; the admitted successor supplies its seal.
         Ok(OwnStages::Refreshed(disclosure))
     }

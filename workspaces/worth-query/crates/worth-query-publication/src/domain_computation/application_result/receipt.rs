@@ -79,6 +79,14 @@ impl WorthQueryApplicationQueryPublicationReceipt {
         }
     }
 
+    pub(super) fn observation(
+        &self,
+    ) -> Option<
+        &worth_query_execution::facade::causal_inspection::WorthQueryApplicationQueryObservation,
+    > {
+        self.observation.as_ref()
+    }
+
     pub const fn inspect(&self) -> WorthQueryApplicationQueryPublicationInspection<'_> {
         WorthQueryApplicationQueryPublicationInspection::new(self)
     }

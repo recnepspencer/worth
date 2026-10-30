@@ -3,6 +3,8 @@
 pub(crate) mod cost;
 #[path = "worth_court_relational_certification/determinism/mod.rs"]
 pub(crate) mod determinism;
+#[path = "worth_court_relational_certification/support/index_retirement/mod.rs"]
+pub(crate) mod index_retirement;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_relational_certification/support/leased_preparation/mod.rs"]
 pub(crate) mod leased_preparation;

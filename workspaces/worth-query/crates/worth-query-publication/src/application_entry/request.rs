@@ -14,6 +14,7 @@ use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicat
 
 mod branch_set;
 mod current_read;
+mod inspection;
 mod resources;
 mod workflow_history;
 mod workflow_pages;

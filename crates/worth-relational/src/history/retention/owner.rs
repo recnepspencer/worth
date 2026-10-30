@@ -40,9 +40,10 @@ pub(super) struct RelationalBranchRetentionOwnerInner {
     pub(super) retirement_slot_count: AtomicUsize,
     pub(super) retired_root_count: AtomicUsize,
     pub(super) retired_roots: DashMap<usize, RelationalRetiredBranchRoot>,
-    pub(super) retired_roots_by_commit: DashMap<crate::history::data::CommitId, (usize, u64)>,
+    pub(super) retired_root_locators: super::root_locators::RetiredRootLocators,
     pub(super) retired_root_order: SegQueue<(usize, u64)>,
     pub(super) retired_enqueue_count: AtomicU64,
+    pub(super) index_retention_roots_examined: AtomicU64,
     pub(super) maintenance_counters: Mutex<RelationalRetentionCostCounters>,
 }
 
@@ -73,6 +74,9 @@ impl RelationalBranchRetentionOwner {
     pub(crate) fn retained_index_roots(&self) -> super::RetainedIndexRoots {
         let mut retained = super::RetainedIndexRoots::default();
         for mut entry in self.inner.retired_roots.iter_mut() {
+            self.inner
+                .index_retention_roots_examined
+                .fetch_add(1, Ordering::Relaxed);
             if !entry.retired {
                 continue;
             }
@@ -132,9 +136,10 @@ impl RelationalBranchRetentionOwner {
                 retirement_slot_count: AtomicUsize::new(0),
                 retired_root_count: AtomicUsize::new(0),
                 retired_roots: DashMap::new(),
-                retired_roots_by_commit: DashMap::new(),
+                retired_root_locators: Default::default(),
                 retired_root_order: SegQueue::new(),
                 retired_enqueue_count: AtomicU64::new(0),
+                index_retention_roots_examined: AtomicU64::new(0),
                 maintenance_counters: Mutex::new(RelationalRetentionCostCounters::default()),
             }),
         }
@@ -189,6 +194,10 @@ impl RelationalBranchRetentionOwner {
         counters.head_installs = self.inner.head_install_count.load(Ordering::Relaxed);
         counters.head_transfers = self.inner.head_transfer_count.load(Ordering::Relaxed);
         counters.retired_root_enqueues = self.inner.retired_enqueue_count.load(Ordering::Relaxed);
+        counters.index_retention_roots_examined = self
+            .inner
+            .index_retention_roots_examined
+            .load(Ordering::Relaxed);
         counters
     }
 
@@ -201,20 +210,20 @@ impl RelationalBranchRetentionOwner {
     > {
         let Some((root, binding)) = self
             .inner
-            .retired_roots_by_commit
-            .get(&commit_id)
-            .and_then(|indexed| {
-                let (root_key, generation) = *indexed.value();
+            .retired_root_locators
+            .snapshot(commit_id)
+            .into_iter()
+            .find_map(|(root_key, generation)| {
                 self.inner
                     .retired_roots
                     .get(&root_key)
                     .filter(|retired| retired.generation == generation)
-            })
-            .map(|retired| {
-                (
-                    Arc::clone(&retired.root),
-                    retired.historical_binding.clone(),
-                )
+                    .map(|retired| {
+                        (
+                            Arc::clone(&retired.root),
+                            retired.historical_binding.clone(),
+                        )
+                    })
             })
         else {
             return Ok(None);

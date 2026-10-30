@@ -1,3 +1,4 @@
+use crate::application_query::ApplicationQueryResultFieldPresence;
 use std::marker::PhantomData;
 
 use worth_foundational::facade::ScalarAspectType;
@@ -6,8 +7,8 @@ use super::result_slot_key::ApplicationQueryResultFieldSlotContract;
 use super::ApplicationQueryMarkerIdentity;
 use super::ApplicationQueryResultSlotKey;
 use crate::application_schema::{
-    ApplicationFieldPresence, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationScalarValueBinding, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding,
+    OptionalApplicationFieldValue, RequiredApplicationFieldValue,
 };
 use crate::portable_identity::WorthQueryPortableType;
 
@@ -152,8 +153,8 @@ where
         Field::Binding::SCALAR_FAMILY
     }
 
-    pub const fn presence(&self) -> ApplicationFieldPresence {
-        ApplicationFieldPresence::Required
+    pub const fn presence(&self) -> ApplicationQueryResultFieldPresence {
+        ApplicationQueryResultFieldPresence::Required
     }
 
     pub fn value_type(&self) -> &'static str {
@@ -189,7 +190,7 @@ where
                 output_name: self.output_name,
                 scalar_family: Field::Binding::SCALAR_FAMILY,
                 value_type: Field::Binding::IDENTITY,
-                presence: ApplicationFieldPresence::Required,
+                presence: ApplicationQueryResultFieldPresence::Required,
             },
         )
     }
@@ -246,8 +247,8 @@ where
         Field::Binding::SCALAR_FAMILY
     }
 
-    pub const fn presence(&self) -> ApplicationFieldPresence {
-        ApplicationFieldPresence::Optional
+    pub const fn presence(&self) -> ApplicationQueryResultFieldPresence {
+        ApplicationQueryResultFieldPresence::Optional
     }
 
     pub fn value_type(&self) -> &'static str {
@@ -283,7 +284,7 @@ where
                 output_name: self.output_name,
                 scalar_family: Field::Binding::SCALAR_FAMILY,
                 value_type: Field::Binding::IDENTITY,
-                presence: ApplicationFieldPresence::Optional,
+                presence: ApplicationQueryResultFieldPresence::Optional,
             },
         )
     }

@@ -1,110 +1,105 @@
-# Causal Inspection
+# Causal Inspection Application DX
 
-> **Retained engine API, not the ordinary application SDK.** Operational causal
-> inspection lives in `worth-query-execution` under
-> `domain_computation/primary_graph/causal_inspection/`. The older engine translates
-> its supported receipts through that single owner. The examples below describe
-> that retained engine entrance; they do not authorize an application to import
-> Bridge or replace the planned fresh Decl/Host entrance. Current application
-> status and Native observation custody are documented in
-> [Cross-Runtime Causal Inspection](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md).
+The ordinary application contract uses `worth-query-decl` and `worth-query-host`.
+A genuine performed source receipt or completed query observation supplies original
+evidence; it supplies no current permission. Fresh Host requests own READ, metadata,
+diagnostics, currentness, funding and their consuming terminal.
 
-Causal inspection answers questions like “why did this observation change?” from an existing `QueryObservationReceipt` and the Query-minted inspection basis that authorizes that scope.
+The executable consumer is
+[application_runtime_surface](../../workspaces/worth-query/crates/worth-query-host/tests/application_runtime_surface.rs),
+including [inspection](../../workspaces/worth-query/crates/worth-query-host/tests/application_runtime_surface/inspection.rs)
+and [rich signatures](../../workspaces/worth-query/crates/worth-query-host/tests/application_runtime_surface/inspection/rich.rs).
+It installs the existing schema through public Host `in_memory` construction with
+explicit resources and real build identity. It requires no internal Execution
+factory. The
+[integrated correction journey](../../workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/history.rs)
+executes actual source/producer/query handoffs. Signature compilation alone is
+not its runtime evidence.
 
-Before building a plan, callers can inspect the supported families and later-milestone debt:
+## Retain the original and admit a new request
 
-```rust
-let support = CausalInspection::support();
-let rows = support.rows();
-let explanation = support.explain();
-```
+Keep `result.receipt().inspect().observation().unwrap().clone()` before dropping
+the result. Query executions opt into `.retain_projection_for_inspection()` when
+later comparison or original values are needed. Complete empty results retain a
+real empty projection; absent capture is NotRetained. Clones share the original
+payer and immutable owners, with no snapshot reader or current read permission.
 
-Use the common path when you want a finished Query inspection artifact:
+Use `fresh.inspect::<Binding>(&original).why_observed().reference_only()` with
+the binding's current metadata admission. This establishes Observed, not Changed.
+A paired `.why_changed(&before)` independently admits both originals and their
+diagnostics. Source-only inspection uses
+`fresh.inspect_source::<SourceDisclosure>(&receipt).why_performed()`.
 
-```rust
-let inspection_basis = basis_lifecycle()
-    .current_head()
-    .inspect()?;
+The [capability guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
+owns exact signatures, declarations, supported shapes and refusal handling. The
+[application guide](../../docs/build-an-application.md#inspect-original-source-and-query-evidence)
+connects acquisition, admission, rich views and close.
 
-let plan = CausalInspection::for_observation(receipt, inspection_basis)
-    .why_changed()
-    .reference_only()
-    .include_all_retained_evidence()
-    .plan()?;
+## Select the intended causal meaning
 
-let artifact = plan.materialize_with_bridge(&bridge)?;
-```
+| Intent | Public request and evidence |
+| --- | --- |
+| Inspect one original | `why_observed()`; genuine original binding, scope, parameters and basis |
+| Compare original results | `why_changed(&before)`; both complete original projections, with current diagnostics |
+| Establish creation | `caused_by::<SourceDisclosure>(&source)`; independent source/query admissions and both exact Native joins |
+| Explain a performed output comparison | `evaluated_by::<SourceDisclosure>(&source)`; actual qualified Native/Signal pair, Changed or Equivalent |
+| Materialize original query values | `materialize(Detail::family(QueryInspection))`; original Native disclosed tree and current diagnostics |
+| Materialize canonical source effects | `Detail::source_effects()` or `.with_source_effects()`; original canonical owner and exact source scope |
+| Include the actual connection/evaluation | `.with_producer_evidence()` on a connected rich request |
+| Read optional supplier history | `Detail::conditional_history()` or `.with_conditional_history()` on connected rich inspection; exact owner association and both diagnostics |
 
-The receipt and scoped basis must match the pairing captured when the observation receipt was created. A mismatch returns a typed `BasisMismatch` before anchoring, evidence resolution, or bridge-envelope assembly.
+The source input need not appear in the output query, and the two subjects can
+differ. Neither binding lends governance to the other. Equal rewrites, no-op
+clears, unrelated producers, replaced generations and current head values cannot
+stand in for the actual source-created occurrence. Equivalent output preserves
+its observed revision and cannot become a new creation connection. Stable input
+reuse and checkpoint restoration do not recreate a performed evaluation.
 
-The plan is intentionally cheap. It anchors the observation, resolves Query evidence references, builds the inspection target, creates the inspection request, and runs Query admission. It does not ask the runtime bridge to assemble a causal envelope until `materialize_with_bridge`.
+Supported output equivalence is the qualified Required standard-u64 field on an
+exactly-one Preserve role with installed `output_equivalence()`. Other supported
+connection shapes and source-effect limits remain explicit in the guide; this
+handoff does not expand them by rendering a generic narrative.
 
-## Plan Before Materialize
+## Availability, loss and close
 
-Inspect the plan when a caller needs to understand the posture before touching bridge-owned retained records:
+Availability is frozen once after current metadata admission and fed to both the
+published payload and query anchor v3. Report getters do no later owner lookup.
+Projection, committed/stable/restored supplier custody and conditional Native
+observation remain distinct. Original immutable custody has no TTL.
 
-```rust
-let posture = plan.support_posture();
-let evidence = plan.required_evidence();
-let trace = plan.decision_trace();
-let cost = plan.estimated_cost();
-let explanation = plan.explain();
-let basis = plan.inspection_basis();
-```
+Optional conditional history belongs to the actual Bridge diagnostics owner.
+The owner issues it at successful execution, funds its fixed slot from that
+request and applies its real recording/retention policy. Minimal tier alone does
+not mean omission. Actual recording-disabled policy, finite capture denial,
+retention eviction and owner closure have separate typed outcomes. A later rich
+lookup independently rechecks the same original; earlier available metadata is
+no lease. Rich materialization v3 binds its request, actual outcome and supplied
+readonly facts. History describes supplier readiness, not the output-comparison
+pair.
 
-`estimated_cost()` exposes the planned anchor, reference-resolution, admission,
-bridge-assembly, and evidence-reference counts. A denied Query-admission plan
-reports zero bridge-envelope assembly before materialization.
+A new source execution can evict history while the original source, query and
+performed evaluation survive. An earlier admitted rich snapshot remains usable.
+Requested-but-unprovided modes and unrequested facets stay explicit, with no
+empty-list inference or invented absence. Plain query/source-only mode cannot
+acquire connected history; generic Signal forensic/replay and legacy Bridge
+record families are not relabeled into this facet.
 
-Read-only reporting projections are available for certification and diagnostics:
+Revoked metadata refuses before protected discovery. Wrong diagnostics cannot
+be borrowed from the other subject. Actual cancellation after private body
+assembly prevents publication and releases fresh funding; it is not evidence
+expiry. Close each report and the last original holder. Closing one sibling
+leaves the survivor usable, and owner eviction detaches successor custody.
 
-```rust
-let anchor = plan.anchor_for_reporting();
-let references = plan.reference_set_digest();
-let request = plan.request_for_reporting();
-let admission = plan.admission_digest();
-```
+## Retained platform audience
 
-## Outcomes
+The older `worth-query` engine keeps its separately authorized legacy
+`QueryObservationReceipt` plus `ScopedInspectionBasis` orchestration. It is not
+an application entrance for current original observations. Publication forwards
+current observations through the narrow `application_inspection` contract; Host's
+inspection namespace cannot import the legacy builder/basis. Query and Bridge
+Native-materialization fences require the fresh application route.
 
-Admitted plans materialize through the runtime bridge and produce admitted Query artifacts.
-
-Advisory plans are still materializable, but the plan exposes the narrowed posture before bridge materialization. A materialized-detail request currently narrows to reference-only until the bridge envelope is assembled.
-
-Denied Query-admission plans materialize directly as denied Query artifacts. They do not assemble a runtime bridge envelope.
-
-If Query admission succeeds but runtime bridge envelope assembly is denied, materialization returns a denied Query artifact carrying the bridge denial kind, family, and digest.
-
-## Reading Artifacts
-
-The artifact enum exposes the common inspection surface without requiring callers to stitch Query, bridge, signal, or relational APIs together:
-
-```rust
-let result = artifact.primary_result();
-let warnings = artifact.warnings();
-let trace = artifact.decision_trace();
-let bindings = artifact.authority_bindings();
-let evidence = artifact.evidence();
-let integrity = artifact.integrity();
-let receipt = artifact.receipt();
-let denial = artifact.denial_reason();
-let advisory = artifact.advisory_reason();
-```
-
-Authority bindings and evidence are Query-owned artifact views over the bridge envelope bindings. Relational and signal evidence remain owned by their authority crates; Query reports references and bridge-bound evidence summaries rather than rebuilding those authority APIs.
-
-## Advanced Inspection
-
-Use the common `CausalInspection` builder for product, operator, and downstream-domain workflows. Query keeps observation anchoring, reference resolution, request assembly, and admission transitions internal so they cannot become a second public authority path. Certification code exercises those boundaries through its dedicated tooling surface.
-
-## Boundary Rule
-
-Do not stitch runtime bridge, signal, or relational APIs directly to answer causal-inspection questions. The common path preserves the boundary:
-
-- Query owns scoped inspection admission, observation anchoring, evidence references, request admission, and Query artifacts.
-- Runtime bridge owns causal envelope assembly.
-- Signal and relational crates own their evidence and authority records.
-
-## Later Debt
-
-Durable causal archives, store-backed replay reconstruction, restart-stable reload, and persisted causal narrative materialization are deferred. Current causal inspection reports those families as denied or later-milestone posture instead of inventing a partial archive.
+Preserve that legacy receipt audience rather than creating a second application
+engine or requiring raw Bridge/Signal/Relational handles. Durable causal archives,
+restart-stable narrative reload and generic forensic reconstruction remain later
+work. They are not implied by these in-memory original/reference/rich guarantees.

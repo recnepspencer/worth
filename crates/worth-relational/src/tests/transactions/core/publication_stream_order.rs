@@ -91,6 +91,8 @@ fn preparation_order_does_not_reserve_a_subscriber_stream_gap() {
     let prepared_first = prepare_publication(execution, &mut runtime, "prepared-first", "write-a");
     let published_first =
         prepare_publication(execution, &mut runtime, "published-first", "write-b");
+    let routes = runtime.history.canonical_checkpoint_gate();
+    assert_eq!(routes.has_unsettled_performed_publication(), None);
     let published_first = match runtime
         .publication_port()
         .compare_and_publish(execution, published_first)
@@ -99,6 +101,8 @@ fn preparation_order_does_not_reserve_a_subscriber_stream_gap() {
         outcome => panic!("candidate B publishes first: {outcome:?}"),
     };
     let position_b = published_first.patch_position();
+    let commit_b = published_first.canonical_commit().commit.commit_id;
+    assert_eq!(routes.has_unsettled_performed_publication(), Some(commit_b));
     let before_a = runtime
         .publication()
         .read_patch_stream(
@@ -123,6 +127,8 @@ fn preparation_order_does_not_reserve_a_subscriber_stream_gap() {
             < published_first.canonical_commit().commit.commit_id
     );
     assert!(position_b < prepared_first.patch_position());
+    let commit_a = prepared_first.canonical_commit().commit.commit_id;
+    assert_eq!(routes.has_unsettled_performed_publication(), Some(commit_a));
 
     let after_a = runtime
         .publication()
@@ -144,10 +150,14 @@ fn preparation_order_does_not_reserve_a_subscriber_stream_gap() {
         .settle_performed_publication(published_first)
         .expect("published-first branch settles explicitly");
     release_test_commit_snapshot(&runtime, &committed_b);
+    assert_eq!(routes.has_unsettled_performed_publication(), Some(commit_a));
     let committed_a = runtime
         .settle_performed_publication(prepared_first)
         .expect("prepared-first branch settles explicitly");
     release_test_commit_snapshot(&runtime, &committed_a);
+    let before = routes.settlement_route_visit_count();
+    assert_eq!(routes.has_unsettled_performed_publication(), None);
+    assert_eq!(routes.settlement_route_visit_count() - before, 0);
 }
 
 #[test]
@@ -215,6 +225,10 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
         .durability_recovery()
         .recover(execution, plan)
         .expect("fresh recovery replays A after checkpointed B");
+    let routes = recovered.history.canonical_checkpoint_gate();
+    let before = routes.settlement_route_visit_count();
+    assert_eq!(routes.has_unsettled_performed_publication(), None);
+    assert_eq!(routes.settlement_route_visit_count() - before, 0);
     assert_eq!(
         recovered
             .history()

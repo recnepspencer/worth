@@ -13,6 +13,21 @@ pub enum ApplicationQueryObservableInfluence {
     LiveMembership,
 }
 
+impl ApplicationQueryObservableInfluence {
+    /// The complete closed vocabulary used by disclosure and its work bounds.
+    pub const ALL: [Self; 9] = [
+        Self::RowPresence,
+        Self::Ordering,
+        Self::Pagination,
+        Self::Count,
+        Self::Aggregate,
+        Self::Explanation,
+        Self::HistoricalMembership,
+        Self::Preview,
+        Self::LiveMembership,
+    ];
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationQueryInfluenceContract {
     permitted: BTreeSet<ApplicationQueryObservableInfluence>,
@@ -32,17 +47,7 @@ impl ApplicationQueryInfluenceContract {
     }
 
     pub fn permit_all() -> Self {
-        Self::permit([
-            ApplicationQueryObservableInfluence::RowPresence,
-            ApplicationQueryObservableInfluence::Ordering,
-            ApplicationQueryObservableInfluence::Pagination,
-            ApplicationQueryObservableInfluence::Count,
-            ApplicationQueryObservableInfluence::Aggregate,
-            ApplicationQueryObservableInfluence::Explanation,
-            ApplicationQueryObservableInfluence::HistoricalMembership,
-            ApplicationQueryObservableInfluence::Preview,
-            ApplicationQueryObservableInfluence::LiveMembership,
-        ])
+        Self::permit(ApplicationQueryObservableInfluence::ALL)
     }
 
     pub fn permits(&self, surface: ApplicationQueryObservableInfluence) -> bool {

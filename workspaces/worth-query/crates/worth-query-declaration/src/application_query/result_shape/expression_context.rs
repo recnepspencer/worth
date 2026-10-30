@@ -1,7 +1,7 @@
 //! Pure record vocabulary shared by authored requirements and installed reads.
 use super::ApplicationQueryResultShape;
 use crate::application_query::{ApplicationQueryCardinality, ApplicationQueryResultField};
-use crate::application_schema::{ApplicationFieldPresence, ApplicationSchemaMember};
+use crate::application_schema::ApplicationSchemaMember;
 use worth_foundational::expression_api::{
     ExpressionDenial, ExpressionSchema, ExpressionSchemaBuilder, ExpressionType, ExpressionTypeName,
 };
@@ -59,7 +59,7 @@ fn record(
         let ty = ExpressionType::from_scalar_family(field.scalar_family())?;
         fields.push((
             field.output_name(),
-            if field.presence() == ApplicationFieldPresence::Optional {
+            if field.presence().is_optional_result() {
                 ExpressionType::option(ty)
             } else {
                 ty

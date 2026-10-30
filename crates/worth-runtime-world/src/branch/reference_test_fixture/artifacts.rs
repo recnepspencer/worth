@@ -20,7 +20,9 @@ pub(crate) fn history_catalog(
             },
             history: crate::budget::RuntimeWorldHistoryBudgetInstallation {
                 retained_composite_commits: 16,
-                history_metadata_bytes: 4096,
+                // Several real heads, including their slot navigation, fit in
+                // this compare/custody fixture. Catalog courts test exhaustion.
+                history_metadata_bytes: 8 * 1024,
             },
             observations: crate::budget::RuntimeWorldObservationBudgetInstallation {
                 active_observations: 8,

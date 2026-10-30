@@ -1,4 +1,4 @@
-//! Whole-struct effects use the validated candidate's actual two retained roots.
+//! Entity aspect patches resolve through the validated proposal's exact native binding.
 use super::{collection::TouchCollection, *};
 use crate::storage::overlay::{CurrentPartitionAccess, WorkingState};
 use crate::transactions::data::EntityMutationIntent;
@@ -14,7 +14,7 @@ pub(super) fn project<'p>(
     work: &mut ValidatedMutationTouchProjectionWork,
 ) -> Result<(), ValidatedMutationTouchProjectionError> {
     let EntityMutationIntent::ApplyAspectPatch(spec) = intent else {
-        unreachable!(/* Proof: The enclosing private dispatcher has already handled whole-struct effects and admits only this field-effect discriminant to this function. */ )
+        unreachable!(/* Proof: preparation::run dispatches only EntityMutationIntent::ApplyAspectPatch to this receiver. */ )
     };
     work.owner_state_lookups += 1;
     let kind = proposal
@@ -46,7 +46,7 @@ pub(super) fn project<'p>(
         if let Some(plan) = proposal.prepared.schema_authority.entity_aspect_plan(kind) {
             (sink.checkpoint)(plan.executable_bindings.len() as u64)?;
         }
-        let contract = proposal
+        let binding = proposal
             .prepared
             .schema_authority
             .entity_aspect_plan(kind)
@@ -59,16 +59,37 @@ pub(super) fn project<'p>(
                 let b = bindings.next()?;
                 (bindings.next().is_none()
                     && matches!(b.target, AspectBinding::EntityField { .. })
-                    && matches!(b.contract.shape(), AspectShape::Struct(_))
                     && b.contract.identity() == basis.identity()
                     && b.contract.revision() == basis.revision())
-                .then_some(&b.contract)
+                .then_some(b)
             });
-        let Some(contract) = contract else {
+        let Some(binding) = binding else {
             sink.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
             continue;
         };
+        let contract = &binding.contract;
         (sink.checkpoint)(contract.semantic_byte_width() as u64)?;
+        if let (
+            AspectShape::Scalar(_),
+            AspectBinding::EntityField { field },
+            Op::SetWhole {
+                value: ContractValidationInput::Scalar(_),
+                ..
+            },
+        ) = (contract.shape(), &binding.target, operation)
+        {
+            // This is the sole actual bound field, including equal authored sets.
+            // Clearing a scalar parent is not an ordinary field-write grant.
+            sink.selected_field(kind, basis, field);
+            if let Some(error) = sink.failure.take() {
+                return Err(error);
+            }
+            continue;
+        }
+        if !matches!(contract.shape(), AspectShape::Struct(_)) {
+            sink.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
+            continue;
+        }
         work.owner_state_lookups += 2;
         let before = aspect(&proposal.prepared.working_state, spec.entity_id, contract);
         let after = aspect(proposal.proposed_mutation.state(), spec.entity_id, contract);

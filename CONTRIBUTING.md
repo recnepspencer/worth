@@ -37,10 +37,10 @@ Keep ordinary ordering and actual comparison counts unchanged: counts participat
 in canonical material, so a changed algorithm requires the canonical compatibility
 owner's version decision. Run the existing ordering, digest, admission and typed
 refusal courts on emitted artifacts, then update the repository/CI pins together.
-Qualify the same immutable SDK and development compiler through Proprietary's
-correction probe, installed consumer courts and mandatory repository gates before
-acceptance. Retain older exact entries only while their compatibility commitment
-remains valid; a wildcard, version comparison or disabled guard is insufficient.
+Qualify the public correction probe, installed consumer courts and mandatory
+repository gates with that same compiler. Retain older exact entries only while
+their compatibility commitment remains valid; a wildcard, version comparison or
+disabled guard is insufficient.
 
 ## Build and test speed
 

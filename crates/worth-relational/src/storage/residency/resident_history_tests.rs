@@ -41,6 +41,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
     let prepared = PreparedResidentRegion::incremental(
         RegionCaptureBasis {
             retention: &prior,
+            kind_commitment: fixture.cold.kind_authority,
             inventory: original.partition.allocation_inventory(),
             unavailable_records: original
                 .partition
@@ -59,6 +60,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         &candidate_symbols,
     )
     .unwrap();
+    assert_eq!(prepared.kind_commitment, fixture.cold.kind_authority);
     let head = prepared.retention;
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), before);
     assert!(head.cell().lease_resident_full().unwrap().is_none());

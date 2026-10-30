@@ -1,5 +1,6 @@
 use worth_runtime_bridge::facade::{
-    BridgeCausalEvidenceFamily, BridgeCausalEvidenceOwner, BridgeCausalExplanationEnvelope,
+    BridgeCausalEvidenceBindingClass, BridgeCausalEvidenceFamily, BridgeCausalEvidenceOwner,
+    BridgeCausalExplanationEnvelope,
 };
 
 use super::policy::{
@@ -10,12 +11,39 @@ use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentity;
 use crate::domain_computation::evidence_identity::WorthQueryEvidenceTag;
 use crate::domain_computation::primary_graph::causal_inspection::inventory::CausalEvidenceFamily;
 
+#[cfg(test)]
+mod tests;
+
+pub(super) fn require_legacy_materialization_source(
+    envelope: &BridgeCausalExplanationEnvelope,
+) -> Result<(), CausalInspectionMaterializationError> {
+    if envelope.bindings().iter().any(|binding| {
+        matches!(
+            binding.binding_class(),
+            BridgeCausalEvidenceBindingClass::RetainedNativeObservation
+                | BridgeCausalEvidenceBindingClass::QueryObservationReport
+        )
+    }) {
+        return Err(CausalInspectionMaterializationError::new(
+            CausalInspectionMaterializationErrorKind::NativeInspectionAdmissionRequired,
+            |identity| {
+                identity.field_value(
+                    WorthQueryEvidenceTag::new("envelope"),
+                    envelope.envelope_for_reporting(),
+                )
+            },
+        ));
+    }
+    Ok(())
+}
+
 pub(super) fn validate_materialization_contract(
     query_observation_identity: &WorthQueryEvidenceIdentity,
     requested_families: &[CausalEvidenceFamily],
     envelope: &BridgeCausalExplanationEnvelope,
     materialization_policy: CausalInspectionMaterializationPolicy,
 ) -> Result<(), CausalInspectionMaterializationError> {
+    require_legacy_materialization_source(envelope)?;
     if envelope.bindings().is_empty() {
         return Err(CausalInspectionMaterializationError::new(
             CausalInspectionMaterializationErrorKind::MaterializationPolicyOverclaim,

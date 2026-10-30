@@ -78,7 +78,8 @@ fn lower<'a>(
         let kind = facts.field_kind(id, &locator)?;
         let absent = facts.aspect_absent(id, &locator)?;
         let aspect = locator.aspect().aspect_key();
-        let contract = contracts(entity, aspect).ok_or_else(progression_denial)?;
+        let binding = contracts(entity, aspect).ok_or_else(progression_denial)?;
+        let contract = &binding.contract;
         let basis = PortableAspectContractBasis::from_contract(contract);
         if authored.as_ref().is_some_and(|authored| authored != &basis) {
             return Err(progression_denial());
@@ -86,6 +87,11 @@ fn lower<'a>(
         let [field] = locator.field_path().fields() else {
             return Err(progression_denial());
         };
+        if matches!(contract.shape(), AspectShape::Scalar(_))
+            && !matches!(&binding.binding, worth_foundational::facade::AspectBinding::EntityField { field: physical } if physical == field)
+        {
+            return Err(progression_denial());
+        }
         if let Some(value) = &value {
             unique.admit(facts, kind, Some(id), &locator, value)?;
         }
@@ -118,6 +124,32 @@ fn lower<'a>(
     let mut operations = Vec::new();
     for group in groups.into_values() {
         let basis = PortableAspectContractBasis::from_contract(group.contract);
+        if matches!(group.contract.shape(), AspectShape::Scalar(_)) {
+            if group.selected.len() != 1
+                || group.sets.len() != 1
+                || !group.clears.is_empty()
+                || (group.absent && group.contract.absence() != AbsenceLaw::Optional)
+            {
+                return Err(progression_denial());
+            }
+            let value = group
+                .sets
+                .into_values()
+                .next()
+                .expect("one actual scalar field set");
+            let input = ContractValidationInput::Scalar(value);
+            if !matches!(
+                worth_foundational::facade::validate_aspect_value(group.contract, input.clone()),
+                worth_proof::TransitionOutcome::Success(_)
+            ) {
+                return Err(progression_denial());
+            }
+            operations.push(PortableAspectPatchOperation::SetWhole {
+                basis,
+                value: input,
+            });
+            continue;
+        }
         if group.absent {
             if group.contract.absence() != AbsenceLaw::Optional
                 || !matches!(group.contract.shape(), AspectShape::Struct(_))

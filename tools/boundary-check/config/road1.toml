@@ -701,6 +701,7 @@ exclude_paths = [
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure/native_funding.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure/compiler_qualification.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/tests/receipt_affinity.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/capability_governed_input/funded_capture.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/aftermath_causality/correction_history/page_allocation/tests.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/fixture/correction_source.rs",

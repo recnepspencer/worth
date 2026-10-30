@@ -10,6 +10,7 @@ pub(crate) struct WorthQueryCompiledApplicationQueryBinding {
     descriptor: ApplicationQueryBindingDescriptor,
     query: Arc<WorthQueryCompiledApplicationQuery>,
     limits: WorthQueryInstalledApplicationQueryLimits,
+    inspection: Option<Arc<crate::application_query::inspection::CompiledInspectionMeaning>>,
 }
 
 impl WorthQueryCompiledApplicationQueryBinding {
@@ -22,6 +23,7 @@ impl WorthQueryCompiledApplicationQueryBinding {
             descriptor,
             query,
             limits,
+            inspection: None,
         }
     }
 
@@ -45,5 +47,23 @@ impl WorthQueryCompiledApplicationQueryBinding {
 
     pub(crate) const fn limits(&self) -> WorthQueryInstalledApplicationQueryLimits {
         self.limits
+    }
+
+    /// Called once while the catalog still uniquely owns this unpublished binding.
+    pub(super) fn finish_inspection(
+        &mut self,
+        inspection: crate::application_query::inspection::CompiledInspectionMeaning,
+    ) {
+        assert!(
+            self.inspection.is_none(),
+            "inspection meaning is finished once"
+        );
+        self.inspection = Some(Arc::new(inspection));
+    }
+
+    pub(super) fn inspection_meaning(
+        &self,
+    ) -> Option<Arc<crate::application_query::inspection::CompiledInspectionMeaning>> {
+        self.inspection.as_ref().map(Arc::clone)
     }
 }

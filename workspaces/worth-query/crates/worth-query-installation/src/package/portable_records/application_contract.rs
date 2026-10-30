@@ -178,6 +178,11 @@ pub enum WorthQueryPortableOperationTouchScope {
         from: String,
         to: String,
     },
+    RemoveAspect {
+        schema: String,
+        entity: String,
+        contract: AspectContract,
+    },
 }
 
 impl WorthQueryPortableOperationTouchScope {
@@ -188,7 +193,9 @@ impl WorthQueryPortableOperationTouchScope {
             | Self::WriteField { schema, .. }
             | Self::LinkRelation { schema, .. }
             | Self::UnlinkRelation { schema, .. } => schema,
-            Self::InitializeRelationField { schema, .. } => schema,
+            Self::InitializeRelationField { schema, .. } | Self::RemoveAspect { schema, .. } => {
+                schema
+            }
         }
     }
 
@@ -277,6 +284,18 @@ impl WorthQueryPortableOperationTouchScope {
                     .then_with(|| left_to.cmp(right_to))
                     .then_with(|| left_contract.key().cmp(right_contract.key()))
                     .then_with(|| left_path.cmp(right_path)),
+                (
+                    Self::RemoveAspect {
+                        entity: a,
+                        contract: ac,
+                        ..
+                    },
+                    Self::RemoveAspect {
+                        entity: b,
+                        contract: bc,
+                        ..
+                    },
+                ) => a.cmp(b).then_with(|| ac.key().cmp(bc.key())),
                 _ => Ordering::Equal,
             })
     }
@@ -290,6 +309,7 @@ fn portable_touch_rank(scope: &WorthQueryPortableOperationTouchScope) -> u8 {
         WorthQueryPortableOperationTouchScope::LinkRelation { .. } => 3,
         WorthQueryPortableOperationTouchScope::UnlinkRelation { .. } => 4,
         WorthQueryPortableOperationTouchScope::InitializeRelationField { .. } => 5,
+        WorthQueryPortableOperationTouchScope::RemoveAspect { .. } => 6,
     }
 }
 

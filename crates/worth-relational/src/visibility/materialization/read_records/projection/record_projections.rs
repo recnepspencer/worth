@@ -14,7 +14,11 @@ impl VisibilityProjectionView {
             self.authoritative_entity_records(execution, T::KIND)?
                 .into_iter()
                 .filter_map(|record| {
-                    T::from_record(EntityProjectionRecord::new(&record, &projection_scope))
+                    T::from_record(EntityProjectionRecord::new(
+                        &record,
+                        &projection_scope,
+                        self.entity_aspect_plan(record.kind.kind_id),
+                    ))
                 })
                 .collect()
         })
@@ -30,7 +34,11 @@ impl VisibilityProjectionView {
             self.authoritative_entity_records_in(execution, partition_id, T::KIND)?
                 .into_iter()
                 .filter_map(|record| {
-                    T::from_record(EntityProjectionRecord::new(&record, &projection_scope))
+                    T::from_record(EntityProjectionRecord::new(
+                        &record,
+                        &projection_scope,
+                        self.entity_aspect_plan(record.kind.kind_id),
+                    ))
                 })
                 .collect()
         })
@@ -61,7 +69,11 @@ impl VisibilityProjectionView {
             self.authoritative_entity_records(execution, kind_id)?
                 .into_iter()
                 .filter_map(|record| {
-                    project(EntityProjectionRecord::new(&record, &projection_scope))
+                    project(EntityProjectionRecord::new(
+                        &record,
+                        &projection_scope,
+                        self.entity_aspect_plan(record.kind.kind_id),
+                    ))
                 })
                 .collect()
         })

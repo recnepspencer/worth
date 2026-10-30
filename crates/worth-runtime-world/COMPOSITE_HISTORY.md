@@ -27,7 +27,7 @@ lookup index authorizes equivalence. Equal descriptors with distinct component
 admission identities do not compare as the same composite basis.
 
 Root bootstrap is the only operation that can establish the initial product
-reference. Later history is single-parent in this milestone. The mutable
+reference. Subsequent commits have one parent. The mutable
 product reference is not the immutable commit, and history insertion alone is
 not a product-reference movement.
 
@@ -70,6 +70,21 @@ head movement within that occurrence. An older occurrence cannot retire a
 recreated name. The live registry needs no historical retired-name set.
 
 ## Public history and maintenance
+
+`lifecycle_port().retire_changed_history()` performs owner-wide automatic
+retirement from changed reachability slots. Unchanged protected history is not
+walked. A commit retires only with no direct protection, no forming child, one
+actual installed child and no unconsumed publication delivery. Dropping a read
+or consumed receipt marks its own slot for a later pass; it does not traverse
+the catalog. The owner splices eligible interiors while preserving generation
+spans and releases component pins outside its locks. The returned identities
+are exactly the commits retired, with no ordering guarantee.
+
+Use `lifecycle_port().retire_unprotected_history(&keep)` for an explicit
+ancestry-scoped pass. It traverses that selected ancestry and leaves unrelated
+sibling history alone. Both operations preserve held observations, receipts,
+fork points and pending publication custody. A commit descriptor alone grants
+no protection against either operation.
 
 `inspection_port().trace_ancestry(commit, maximum)` returns a bounded managed
 traversal. It protects its selected start and ancestry while live; drop it before

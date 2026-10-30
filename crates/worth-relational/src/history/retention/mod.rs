@@ -2,11 +2,15 @@ mod cost_counters;
 mod head_cell;
 mod head_obligation;
 mod head_retirement;
+mod index_liveness;
 mod lane;
 mod lease;
 mod obligation;
 mod owner;
+mod publication_reclamation;
 mod reclamation;
+mod root_locators;
+mod storage_inventory;
 mod terminal_accounting;
 
 pub use cost_counters::RelationalRetentionCostCounters;
@@ -33,4 +37,5 @@ pub(crate) use obligation::{
 pub(crate) use owner::{RelationalBranchRetentionOwner, RelationalRetentionAcquisitionDenial};
 pub use reclamation::RelationalBranchRootReclamationOutcome;
 pub(crate) use reclamation::RetainedIndexRoots;
+pub(crate) use storage_inventory::RelationalRetiredRootStorageSnapshot;
 pub(crate) use terminal_accounting::RelationalExternalRetentionTerminalAccounting;

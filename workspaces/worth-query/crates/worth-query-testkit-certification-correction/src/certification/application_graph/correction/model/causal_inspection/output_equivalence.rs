@@ -1,0 +1,33 @@
+//! Actual parity equivalence is explained only through fresh source/query diagnostics.
+pub mod calculation;
+mod demand;
+mod journey;
+pub mod program;
+pub mod readiness;
+pub use journey::parity_source_and_output_evaluation;
+
+mod lifecycle;
+pub use lifecycle::evaluation_rechecks_each_subject_and_releases_request_funding;
+
+mod retry;
+pub use retry::completed_comparison_survives_late_cancellation_and_checkpoint_retry;
+
+mod restoration;
+mod reuse;
+pub use restoration::restored_output_has_no_original_in_memory_evaluation;
+pub use reuse::stable_input_reuse_has_no_performed_output_evaluation;
+
+mod rich_query;
+pub use rich_query::rich_original_query_survives_head_change_and_private_assembly_cancellation;
+
+mod rich_connected;
+pub use rich_connected::rich_source_and_producer_keep_original_values_both_authorities_and_release;
+
+mod rich_source;
+pub use rich_source::source_only_rich_survives_receipt_drop_and_rechecks_diagnostics_cancellation_and_release;
+
+mod history;
+pub use history::{
+    history_omission_diagnostics_and_actual_private_cancellation_remain_distinct,
+    real_history_eviction_preserves_original_projection_source_and_evaluation,
+};

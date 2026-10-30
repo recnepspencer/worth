@@ -15,7 +15,7 @@ type FamilySourceQuery<Schema, Family> =
 
 pub(in crate::domain_computation::primary_graph) use progression::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use progression::CurrentProof;
-mod bridge_denial;
+pub(super) mod bridge_denial;
 mod checkpoint_delivery;
 mod denial_diagnostic;
 mod denial_posture;
@@ -84,6 +84,12 @@ where
     limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
 
     producer_contacts_in_this_demand: usize,
+    // Only an unsettled refresh at its own selected publication can carry this.
+    original_producing_publication: Option<
+        std::sync::Arc<
+            super::super::super::application_output_demand::OriginalProducingPublication,
+        >,
+    >,
 
     // Whether an advance of this demand has settled. Until one does, a cached
     // Ready it joined at its start is still cache: see `caller_custody`.
@@ -150,6 +156,7 @@ where
         self.required_continuations = RequiredContinuations::default();
         self.interest.take();
         self.settled_at_observation.take();
+        self.original_producing_publication.take();
     }
 }
 
@@ -162,6 +169,7 @@ where
         self.required_continuations = RequiredContinuations::default();
         self.interest.take();
         self.settled_at_observation.take();
+        self.original_producing_publication.take();
     }
 }
 

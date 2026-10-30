@@ -53,6 +53,28 @@ impl<'a, 'request, 'authority> MaterialCompletion<'a, 'request, 'authority> {
     pub(super) fn slots<T>(&self, count: usize) -> Result<(), Cause> {
         self.allocation.claim_slice::<T>(self.execution, count)
     }
+    pub(super) fn original_metadata(
+        &self,
+        query: &str,
+        branch: &worth_relational::facade::history::BranchId,
+    ) -> Result<(), Cause> {
+        self.arc::<super::super::super::observed_source::WorthQueryRetainedObservedParameters>()?;
+        self.arc::<String>()?;
+        self.text(query)?;
+        self.arc::<worth_relational::facade::history::BranchId>()?;
+        self.text(&branch.0)
+    }
+    pub(super) fn source_headers<Query>(
+        &self,
+        count: usize,
+    ) -> Result<Vec<super::super::super::WorthQueryObservedSource<Query>>, Cause> {
+        self.slots::<super::super::super::WorthQueryObservedSource<Query>>(count)?;
+        let mut sources = Vec::new();
+        sources
+            .try_reserve_exact(count)
+            .map_err(|_| Cause::AllocationFailed)?;
+        Ok(sources)
+    }
     pub(in crate::domain_computation::primary_graph::application_query) fn arc<T>(
         &self,
     ) -> Result<(), Cause> {

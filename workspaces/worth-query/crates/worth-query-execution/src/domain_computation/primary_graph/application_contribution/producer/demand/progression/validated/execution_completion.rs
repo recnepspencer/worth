@@ -43,6 +43,10 @@ pub(super) fn finish(
     readiness: super::super::required_wave::performed::PublicationReadiness,
     runtime_identity: u64,
     root: worth_relational::facade::identity::EntityId,
+    original_publication: Option<std::sync::Arc<
+        crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication,
+    >>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<CheckpointProgress, CompletionRefusal> {
     let receipt = match result.map(|prepared| prepared.into_parts()) {
         Ok((execution::ProducerExecutionOutcome::Committed(receipt), ready_backing)) => {
@@ -89,8 +93,19 @@ pub(super) fn finish(
         root,
     );
     let _ = (recorded, runtime_identity, root);
-    let mut receipt = (receipt.into_receipt(), ready_backing);
+    let receipt = receipt.into_receipt();
     drop(record);
+    let retained = crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication::for_successor(
+        execution, original_publication, &receipt,
+    );
+    let (original_publication, continuation_denial) = match retained {
+        Ok(original) => (original, None),
+        Err(denial) => (None, Some(denial)),
+    };
+    let mut receipt = (
+        receipt,
+        ready_backing.bind_original_producing_publication(original_publication),
+    );
     #[cfg(test)]
     own_effect_observation::record(Stage::Published);
     let publication = OwnPublication(receipt.0.committed_product_publication().clone());
@@ -105,6 +120,11 @@ pub(super) fn finish(
             delivery,
             ready_backing: receipt.1,
         };
+    if let Some(denial) = continuation_denial {
+        // The effect already exists. Keep its receipt, delivery and prepaid
+        // Ready backing in the ordinary retry/cleanup owner even on late stop.
+        return Err(CompletionRefusal::unpublished(denial, checkpoint));
+    }
     if let Err((denial, checkpoint)) = selected_execution_finish.publish(checkpoint) {
         return Err(CompletionRefusal::unpublished(denial, checkpoint));
     }

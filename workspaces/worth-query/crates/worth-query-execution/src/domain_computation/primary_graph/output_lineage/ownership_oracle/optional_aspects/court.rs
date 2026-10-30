@@ -6,6 +6,7 @@ use worth_relational::facade::{
     transactions::EntityReference,
 };
 mod ordinary;
+pub(super) mod output_revision;
 mod own_effect;
 mod publication_state;
 pub(super) use ordinary::assert_ordinary;
@@ -160,6 +161,13 @@ fn readmit_with_ordinary<Schema: BirthSchema>(
 }
 
 pub(super) fn edit_source<Schema: BirthSchema>(runtime: &installation::Application<Schema>) {
+    edit_source_to(runtime, 2);
+}
+
+pub(super) fn edit_source_to<Schema: BirthSchema>(
+    runtime: &installation::Application<Schema>,
+    value: u64,
+) {
     use worth_relational::facade::transactions::*;
     let scope = primary_graph::tests::fixture::live_scope();
     runtime
@@ -192,7 +200,7 @@ pub(super) fn edit_source<Schema: BirthSchema>(runtime: &installation::Applicati
                         entity_id: source.entity_id(),
                         fields: AspectFieldPatch::from(std::collections::BTreeMap::from([(
                             locator,
-                            U64ApplicationValueBinding::encode(&2).unwrap(),
+                            U64ApplicationValueBinding::encode(&value).unwrap(),
                         )])),
                     }),
                 ));

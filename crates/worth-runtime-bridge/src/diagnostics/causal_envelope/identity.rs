@@ -14,6 +14,22 @@ pub struct BridgeCausalEnvelopeIdentity {
 }
 
 impl BridgeCausalEnvelopeIdentity {
+    pub(super) fn query_observation_reporting(
+        request_identity: BridgeIdentityEvidence,
+        causal_observation_anchor_identity: BridgeIdentityEvidence,
+        evidence_binding_identity: BridgeIdentityEvidence,
+        counter_identity: BridgeIdentityEvidence,
+        envelope_identity: BridgeIdentityEvidence,
+    ) -> Self {
+        Self {
+            request_identity,
+            causal_observation_anchor_identity,
+            evidence_binding_identity,
+            counter_identity,
+            envelope_identity,
+        }
+    }
+
     pub(super) fn new(
         request_identity: BridgeIdentityEvidence,
         causal_observation_anchor_identity: BridgeIdentityEvidence,

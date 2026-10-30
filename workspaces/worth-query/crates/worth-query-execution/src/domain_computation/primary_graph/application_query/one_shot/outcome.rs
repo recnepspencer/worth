@@ -25,6 +25,7 @@ pub(in crate::domain_computation::primary_graph::application_query) mod material
 pub(in crate::domain_computation::primary_graph::application_query) use completed::CompletedOneShotRead;
 mod decode_denial;
 mod result_set_footprint;
+pub(in crate::domain_computation::primary_graph::application_query) mod source_storage;
 pub(in crate::domain_computation::primary_graph::application_query) use decode_denial::value_decode_denial;
 use result_set_footprint::ResultSetFootprint;
 pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_capture<
@@ -133,21 +134,8 @@ where
     } else {
         None
     };
-    let mut source_footprints = std::mem::take(&mut kernel.raw.source_footprints);
-    let result_set_selection =
-        std::sync::Arc::clone(kernel.raw.result_set_source.as_ref().ok_or_else(|| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::ProjectionUnavailable,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?);
-    // A single row can feed an output demand. Its output depends on the
-    // complete query selection as well as the row: a newly matching root must
-    // invalidate reuse even when this row's local path remains unchanged.
-    if let [footprint] = source_footprints.as_mut_slice() {
-        footprint.root_selection = Some(std::sync::Arc::clone(&result_set_selection));
-    }
+    let (source_footprints, result_set_selection) = ResultSetFootprint::take_rows(&mut kernel)
+        .map_err(|kind| denial(kind, plan.query.name(), plan.query.name()))?;
     let set_footprint = ResultSetFootprint::prepare(
         plan.scope.entity_id(),
         result_set_selection,
@@ -166,6 +154,18 @@ where
     let parameter_binding_identity = *plan.parameters.identity();
     admit_request(request, plan.query.name())?;
     let capture = capture(&kernel.raw.rows, &plan)?;
+    let retained_projection = if plan.retain_projection_for_inspection {
+        Some(super::super::projection::retained_projection::retain(
+            execution,
+            &mut kernel.raw,
+            plan.query.read_graph(),
+            &plan.governance,
+            plan.query.binding_observation().is_some(),
+            plan.query.name(),
+        )?)
+    } else {
+        None
+    };
     let scope_selector = if material.is_some() {
         material::retain_scope(execution, plan.scope, plan.query.name())?
     } else {
@@ -173,21 +173,9 @@ where
     };
     if let Some(material) = &material {
         material
-            .arc::<super::super::observed_source::WorthQueryRetainedObservedParameters>()
-            .map_err(material_failure)?;
-        material.arc::<String>().map_err(material_failure)?;
-        material.text(plan.query.name()).map_err(material_failure)?;
-        material
-            .arc::<worth_relational::facade::history::BranchId>()
-            .map_err(material_failure)?;
-        material
-            .text(&basis_identity.branch_id().0)
-            .map_err(material_failure)?;
+            .original_metadata(plan.query.name(), basis_identity.branch_id())
+            .map_err(&material_failure)?;
     }
-    let source_parameters = std::sync::Arc::new(
-        super::super::observed_source::WorthQueryRetainedObservedParameters::new(plan.parameters),
-    );
-
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
     let result_set_footprint = set_footprint.materialize();
     let branch = std::sync::Arc::new(basis_identity.branch_id().clone());
@@ -209,28 +197,13 @@ where
                 execution,
                 &source_control,
             )
-            .map_err(|cause| {
-                super::map_authorized_read_denial(
-                    super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
-                        super::super::read_execution::relational_read_denial(
-                            cause,
-                            plan.query.name(),
-                        ),
-                    ),
-                    plan.query.name(),
-                )
-            })
+            .map_err(&material_failure)
         };
-    let mut observed_sources = if let Some(material) = &material {
-        material
-            .slots::<super::super::WorthQueryObservedSource<Query>>(source_footprints.len())
-            .map_err(material_failure)?;
-        let mut sources = Vec::new();
-        sources.try_reserve_exact(source_footprints.len()).map_err(|_| material_failure(worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed))?;
-        sources
-    } else {
-        Vec::with_capacity(source_footprints.len())
-    };
+    let mut row_meanings = worth_execution::ExecutionRequestArrayBuilder::allocate(
+        *execution,
+        source_footprints.len(),
+    )
+    .map_err(|cause| source_storage::denied(cause, plan.query.name()))?;
     for footprint in source_footprints {
         admit_request(request, plan.query.name())?;
         let selection = basis_identity.selection().clone();
@@ -261,6 +234,32 @@ where
                 plan.query.name(),
             )
         })?;
+        row_meanings
+            .push(source_meaning)
+            .map_err(|cause| source_storage::denied(cause, plan.query.name()))?;
+    }
+    let row_meanings = row_meanings
+        .seal()
+        .map_err(|cause| source_storage::denied(cause, plan.query.name()))?;
+    let source_parameters = std::sync::Arc::new(
+        super::super::observed_source::WorthQueryRetainedObservedParameters::new(
+            plan.parameters,
+            plan.query.binding_observation().cloned(),
+            row_meanings,
+            plan.controls
+                .original_settled_producer_for(plan.basis.selected_product().observation()),
+            retained_projection,
+        ),
+    );
+    let mut observed_sources = if let Some(material) = &material {
+        material
+            .source_headers(source_parameters.row_meanings().len())
+            .map_err(&material_failure)?
+    } else {
+        Vec::with_capacity(source_parameters.row_meanings().len())
+    };
+    for source_meaning in source_parameters.row_meanings() {
+        admit_request(request, plan.query.name())?;
         observed_sources.push(super::super::WorthQueryObservedSource {
             expression_context: expression_context.clone(),
             runtime_authority: plan.runtime_authority.as_u64(),
@@ -270,9 +269,9 @@ where
             parameters: std::sync::Arc::clone(&source_parameters),
             query_identifier: std::sync::Arc::clone(&query_identifier),
             branch: std::sync::Arc::clone(&branch),
-            selection,
+            selection: basis_identity.selection().clone(),
             model_root: plan.scope.entity_id(),
-            source_meaning,
+            source_meaning: std::sync::Arc::clone(source_meaning),
             scope_selector: std::sync::Arc::clone(&scope_selector),
 
             _marker: PhantomData,

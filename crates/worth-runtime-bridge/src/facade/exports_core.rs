@@ -33,7 +33,7 @@ pub use crate::conditional_execution::{
     BridgeConditionalRuntimeBuilder, BridgeConditionalRuntimeLifecycleProbe,
     BridgeConditionalRuntimeReconstitutionReport, BridgeConditionalSemanticObservation,
     BridgeConditionalSignalBasisBinding, BridgeConditionalTriggerProvider,
-    BridgeConditionalWakeProvider, BridgeInstalledConditionalLowering,
+    BridgeConditionalWakeProvider, BridgeExactOutputComparison, BridgeInstalledConditionalLowering,
     BridgeInstalledConditionalLoweringCounters, BridgeLiveConditionalLowering,
     BridgeManagedClockAcceptedObservation, BridgeManagedClockBinding, BridgeManagedClockClosure,
     BridgeManagedClockInstallationParts, BridgeManagedClockObservationOutcome,
@@ -42,16 +42,17 @@ pub use crate::conditional_execution::{
     BridgeManagedDueWakeIntoIter, BridgeManagedTemporalDenial, BridgeManagedTemporalDenialKind,
     BridgeManagedTemporalIntentIdentity, BridgeManagedTemporalIntentLifecycle,
     BridgeManagedTemporalIntentReconciliation, BridgeManagedTemporalIntentReconciliationParts,
-    BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncCompletionAdmission,
-    BridgeOwnedAsyncEffectsIndeterminateIssuer, BridgeOwnedAsyncManagedDenial,
-    BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncManagedRevalidation,
-    BridgeOwnedAsyncReleasedResource, BridgeOwnedAsyncRequestAdmission,
-    BridgeOwnedAsyncRequestResponseDeclaration, BridgeOwnedAsyncResourceReleaseRefusal,
-    BridgeOwnedAsyncRetryAdmission, BridgeOwnedAsyncRetrySchedule,
-    BridgeOwnedAsyncRevalidationAdmission, BridgeOwnedAsyncSupersessionAdmission,
-    BridgeOwnedAsyncTimeoutAdmission, BridgeOwnedConditionalInstallationRequest,
-    BridgeOwnedSignalRuntime, BridgePreparedConditionalInstallationExtension,
-    BridgeRetainedConditionalDecisionSeed, BridgeSealedRuntimeAssembly, BridgeSignalDenial,
+    BridgeOutputComparisonDenial, BridgeOutputComparisonStage, BridgeOwnedAsyncCommittedCompletion,
+    BridgeOwnedAsyncCompletionAdmission, BridgeOwnedAsyncEffectsIndeterminateIssuer,
+    BridgeOwnedAsyncManagedDenial, BridgeOwnedAsyncManagedRequestAdmission,
+    BridgeOwnedAsyncManagedRevalidation, BridgeOwnedAsyncReleasedResource,
+    BridgeOwnedAsyncRequestAdmission, BridgeOwnedAsyncRequestResponseDeclaration,
+    BridgeOwnedAsyncResourceReleaseRefusal, BridgeOwnedAsyncRetryAdmission,
+    BridgeOwnedAsyncRetrySchedule, BridgeOwnedAsyncRevalidationAdmission,
+    BridgeOwnedAsyncSupersessionAdmission, BridgeOwnedAsyncTimeoutAdmission,
+    BridgeOwnedConditionalInstallationRequest, BridgeOwnedSignalRuntime,
+    BridgePreparedConditionalInstallationExtension, BridgeRetainedConditionalDecisionSeed,
+    BridgeSealedRuntimeAssembly, BridgeSignalDenial,
 };
 pub use crate::continuity::{
     BridgeContinuityArtifact, BridgeContinuityAuthorityBasis, BridgeContinuityAuthorityKind,
@@ -93,8 +94,8 @@ pub use crate::diagnostics::{
     BridgeCausalEvidenceBindingClass, BridgeCausalEvidenceFamily, BridgeCausalEvidenceOwner,
     BridgeCausalEvidenceReference, BridgeCausalEvidenceReferenceIdentity,
     BridgeCausalExplanationEnvelope, BridgeCausalInspectionAdmissionSummary,
-    BridgeCausalInspectionAdmissionSummaryKind, BridgeContinuityExplanation,
-    BridgeContinuityReplaySummary, BridgeContractDiagnosticsRecord,
+    BridgeCausalInspectionAdmissionSummaryKind, BridgeConditionalCausalEnvelopeRequest,
+    BridgeContinuityExplanation, BridgeContinuityReplaySummary, BridgeContractDiagnosticsRecord,
     BridgeDeliveredContinuityResult, BridgeDiagnosticsFacade, BridgeDiagnosticsHandle,
     BridgeFailureClass, BridgeFailureEvidenceAttachment, BridgeFailureEvidenceAttachmentSet,
     BridgeFailureLocalizationRequest, BridgeFailureRecord, BridgeHistoricalEvaluationCounters,
@@ -107,8 +108,10 @@ pub use crate::diagnostics::{
     BridgeMergeExplanation, BridgeMergeRecord, BridgeMergeRecordIdentity, BridgeMergeReplaySummary,
     BridgePolicyExplanation, BridgePolicyExplanationRow, BridgePolicyRejectionExplanation,
     BridgePreviewDiscardExplanation, BridgePreviewExecutionExplanation,
-    BridgePreviewPromotionExplanation, BridgePreviewReplayExplanation, BridgeReplayRecord,
-    BridgeReplaySummary, BridgeRouteExplanation, BridgeRouteExplanationEntry, BridgeRouteRecord,
+    BridgePreviewPromotionExplanation, BridgePreviewReplayExplanation,
+    BridgeQueryObservationReportingInputDenial, BridgeQueryObservationReportingRequest,
+    BridgeQueryObservationReportingStop, BridgeReplayRecord, BridgeReplaySummary,
+    BridgeRouteExplanation, BridgeRouteExplanationEntry, BridgeRouteRecord,
     BridgeRouteRecordEntityIdentity, BridgeRouteRecordEntry, BridgeRouteRecordMatch,
     BridgeRouteSourceRecord, BridgeRoutingDiagnosticsRecord, BridgeSourceFailureExplanation,
     BridgeSourceMaterializationExplanation, BridgeStreamCheckpointExplanation,
@@ -133,6 +136,9 @@ pub use crate::diagnostics::{
     BRIDGE_CANONICAL_MERGE_RECORD_SCHEMA_V1, BRIDGE_CANONICAL_ROUTE_RECORD_SCHEMA_V3,
     BRIDGE_CANONICAL_STRUCTURAL_BRANCH_COMPARISON_RECORD_SCHEMA_V1,
     BRIDGE_CANONICAL_STRUCTURAL_REMAP_RECORD_SCHEMA_V1,
+};
+pub use crate::diagnostics::{
+    BridgeConditionalHistoryAvailability, BridgeConditionalHistoryDetail,
 };
 pub use crate::error::{
     BridgeBuildError, BridgeBuildErrorKind, BridgeContinuityError, BridgeContinuityErrorKind,
@@ -369,6 +375,7 @@ pub use crate::temporal::{
     BridgeTemporalCdcCursorIdentity, BridgeTemporalSignalBasis, BridgeTemporalSignalBasisDenial,
     BridgeTemporalTruthBasisDenial, BridgeTemporalTruthViewBasis, BridgeTemporalWakeEvidence,
 };
+pub use worth_signal::facade::SignalConditionalDecisionClass as BridgeConditionalHistoryDecisionClass;
 
 pub use crate::conditional_execution::BridgePreparedConditionalReconstitution;
 

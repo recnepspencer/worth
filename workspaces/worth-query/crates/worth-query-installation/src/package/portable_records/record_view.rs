@@ -1,10 +1,7 @@
 //! Installation-facing projections of retained portable operation meaning.
 
-use worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget;
-
 use super::{
-    WorthQueryPortableApplicationOperationContractRecord,
-    WorthQueryPortableOperationGraphReadScope, WorthQueryPortablePackageRecord,
+    WorthQueryPortableApplicationOperationContractRecord, WorthQueryPortablePackageRecord,
     WorthQueryPortablePackageRecordFamily,
 };
 
@@ -40,50 +37,6 @@ impl<'a> WorthQueryPortablePackageRecordView<'a> {
 }
 
 impl WorthQueryPortableApplicationOperationContractRecord {
-    pub(crate) fn decision_read_targets(
-        &self,
-    ) -> Result<Vec<ApplicationOperationDecisionReadTarget>, ()> {
-        let mut targets = Vec::new();
-        for read in self.graph_reads() {
-            match read {
-                // Component scope has its own installed grant and original
-                // selection evidence. It is never an atomic relation target.
-                WorthQueryPortableOperationGraphReadScope::Components { .. }
-                | WorthQueryPortableOperationGraphReadScope::DerivedSource { .. } => {}
-                WorthQueryPortableOperationGraphReadScope::Entity { entity, .. } => {
-                    targets.push(ApplicationOperationDecisionReadTarget::Entity {
-                        entity: entity.clone(),
-                    });
-                }
-                WorthQueryPortableOperationGraphReadScope::NativeProjection {
-                    entity,
-                    aspect,
-                    mask,
-                    ..
-                } => {
-                    for path in mask.paths() {
-                        let [field] = path.fields() else {
-                            return Err(());
-                        };
-                        targets.push(ApplicationOperationDecisionReadTarget::Field {
-                            entity: entity.clone(),
-                            aspect: aspect.as_str().to_owned(),
-                            field: field.as_str().to_owned(),
-                        });
-                    }
-                }
-                WorthQueryPortableOperationGraphReadScope::Relation {
-                    relation, from, to, ..
-                } => targets.push(ApplicationOperationDecisionReadTarget::Relation {
-                    relation: relation.clone(),
-                    from: from.clone(),
-                    to: to.clone(),
-                }),
-            }
-        }
-        Ok(targets)
-    }
-
     pub(crate) fn authored_program_width(&self) -> Option<usize> {
         self.touches().len().checked_add(self.emissions().len())
     }

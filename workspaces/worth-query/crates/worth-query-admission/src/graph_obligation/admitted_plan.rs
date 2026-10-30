@@ -48,6 +48,9 @@ impl WorthQueryGraphWorkPlanIdentity {
 }
 
 pub(super) enum WorthQueryGraphWorkAdmissionMechanics {
+    ApplicationInspectionRead {
+        capacity: WorthQueryReservedGraphProviderCapacity,
+    },
     ManagedIndexRead {
         capacity: WorthQueryReservedGraphProviderCapacity,
     },
@@ -113,6 +116,7 @@ impl WorthQueryAdmittedGraphWorkPlan {
             WorthQueryGraphWorkAdmissionMechanics::ManagedIndexRead { .. }
             | WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { .. }
             | WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. }
+            | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { .. }
             | WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { .. } => None,
         }
     }
@@ -141,6 +145,7 @@ impl WorthQueryAdmittedGraphWorkPlan {
             WorthQueryGraphWorkAdmissionMechanics::ManagedIndexRead { .. }
             | WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { .. }
             | WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. }
+            | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { .. }
             | WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { .. } => None,
         }
     }
@@ -161,7 +166,23 @@ impl WorthQueryAdmittedGraphWorkPlan {
         }
     }
 
-    /// Consumes only a genuine ManagedIndex purpose reservation at its own terminal.
+    /// Consume only the genuine metadata-inspection reservation at its terminal.
+    #[doc(hidden)]
+    pub fn complete_application_inspection(
+        self,
+    ) -> Option<(
+        WorthQueryGraphWorkPlanIdentity,
+        WorthQueryExecutionCapacityReleaseReceipt,
+    )> {
+        match self.mechanics {
+            WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { capacity } => {
+                Some((self.identity, capacity.release()))
+            }
+            _ => None,
+        }
+    }
+
+    /// Consumes only a genuine managed-index reservation at its own terminal.
     #[doc(hidden)]
     pub fn complete_managed_index(
         self,
@@ -181,8 +202,9 @@ impl WorthQueryAdmittedGraphWorkPlan {
         match &self.mechanics {
             WorthQueryGraphWorkAdmissionMechanics::ApplicationQuery { .. } => 1,
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { .. } => 1,
-            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. } => 1,
-            WorthQueryGraphWorkAdmissionMechanics::ManagedIndexRead { .. } => 1,
+            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. }
+            | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { .. }
+            | WorthQueryGraphWorkAdmissionMechanics::ManagedIndexRead { .. } => 1,
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { capacity } => {
                 capacity.as_ref().map_or(
                     0,
@@ -216,8 +238,9 @@ impl WorthQueryAdmittedGraphWorkPlan {
         match &mut self.mechanics {
             WorthQueryGraphWorkAdmissionMechanics::ApplicationQuery { .. } => None,
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { .. } => None,
-            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. } => None,
-            WorthQueryGraphWorkAdmissionMechanics::ManagedIndexRead { .. } => None,
+            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { .. }
+            | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { .. }
+            | WorthQueryGraphWorkAdmissionMechanics::ManagedIndexRead { .. } => None,
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { capacity } => {
                 capacity.take()
             }
@@ -233,8 +256,9 @@ impl WorthQueryAdmittedGraphWorkPlan {
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { capacity } => {
                 capacity.release()
             }
-            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { capacity } => capacity.release(),
-            WorthQueryGraphWorkAdmissionMechanics::ManagedIndexRead { capacity } => {
+            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { capacity }
+            | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { capacity }
+            | WorthQueryGraphWorkAdmissionMechanics::ManagedIndexRead { capacity } => {
                 capacity.release()
             }
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { capacity } => capacity

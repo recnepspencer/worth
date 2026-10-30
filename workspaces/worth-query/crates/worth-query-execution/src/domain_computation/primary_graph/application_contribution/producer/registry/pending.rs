@@ -62,6 +62,7 @@ where
             Schema,
             Binding::Operation,
         >,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
         source_query: worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding<
             Schema,
             super::super::ProducerSourceBinding<Schema, Binding>,
@@ -77,7 +78,7 @@ where
     {
         let declared = self
             .declared
-            .get(Binding::IDENTITY)
+            .get_mut(Binding::IDENTITY)
             .ok_or_else(|| denial(DenialKind::ForeignProducerBinding, Binding::IDENTITY))?;
         if declared.owner != owner {
             return Err(denial(
@@ -107,6 +108,18 @@ where
                 Binding::IDENTITY,
             ));
         }
+        declared.installed_output_equivalence = declared
+            .output_equivalence
+            .as_ref()
+            .map(|field| {
+                super::super::output_equivalence_contract::seal(
+                    Binding::IDENTITY,
+                    &declared.output_role,
+                    field,
+                    installed,
+                )
+            })
+            .transpose()?;
         let provider = Arc::new(provider);
         self.providers.insert(
             Binding::IDENTITY.to_owned(),

@@ -113,6 +113,7 @@ lower-runtime internals.
 |---|---|
 | `application_installation` | Install a validated program: `in_memory_program`, or `in_memory_rostered_program` with successor revisions. See [Build an Application §4](build-an-application.md#4-install-the-application-graph) |
 | `application_entry` | The request API: `application.request(&principal, &scope)` via `WorthQueryApplicationRequestExt`, then `.query(..)`, mutations, `.on_branch(..)`, `.corrections()` for [recorded correction and reapplication](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), `.programs()` for adoption ([§7](build-an-application.md#7-adopt-a-new-program-on-a-branch)), and the `prepare_workflow_*` lifecycle calls ([§6](build-an-application.md#6-author-publish-and-run-workflows)) |
+| `causal_inspection` | Original query/source reports, comparisons and materialized evidence. Start from `request.inspect::<Binding>(&original)` or `request.inspect_source::<Disclosure>(&receipt)`; see [inspection](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md) for acquisition and current permissions. |
 | `application_contribution` | Contribution-composed applications: `ApplicationSchemaContribution`, `WorthQueryApplicationContribution`, handler and invariant setup |
 | `application_discovery` | Discover what an installed application offers |
 | `application_invariants` | Invariant factories and their execution points |

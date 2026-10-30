@@ -26,10 +26,12 @@ fn supply_chain_semantic_world_target_is_present() {
 
 #[allow(unused_imports)]
 pub(crate) use worth_testkit_relational::shared_relational_certification_test_execution_policy as test_execution_policy;
+mod aspect_storage;
 #[path = "baseline_layers/mod.rs"]
 pub(crate) mod baseline_layers;
 #[path = "basis_observation/mod.rs"]
 pub(crate) mod basis_observation;
+mod index_retirement;
 #[path = "observation_contracts/mod.rs"]
 pub(crate) mod observation_contracts;
 #[path = "owner_service_completion/mod.rs"]

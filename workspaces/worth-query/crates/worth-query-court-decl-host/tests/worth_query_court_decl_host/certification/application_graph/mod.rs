@@ -1,4 +1,5 @@
 pub(crate) mod canonical_admission;
+pub(crate) mod cell_history;
 
 pub(crate) mod canonical_identity;
 

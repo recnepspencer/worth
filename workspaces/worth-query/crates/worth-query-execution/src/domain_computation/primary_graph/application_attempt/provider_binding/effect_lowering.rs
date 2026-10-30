@@ -18,13 +18,14 @@ use crate::domain_computation::{
     WorthQueryProvisionalEffectAction, WorthQueryProvisionalEffectStep,
 };
 
+mod aspect_removal;
 mod entity_field_patch;
 mod observed_fact_index;
 mod optional_field_patch;
 pub(super) type AspectContracts<'a> = dyn Fn(
         &str,
         &worth_foundational::facade::AspectKey,
-    ) -> Option<&'a worth_foundational::facade::AspectContract>
+    ) -> Option<&'a worth_relational::facade::schema::DeclaredAspectContractBinding>
     + 'a;
 mod unique_values;
 pub(super) use observed_fact_index::ObservedFactIndex;
@@ -152,6 +153,12 @@ pub(super) fn lower_provider_effect(
                 optional_field_patch::lower(facts, unique, entity_id, fields)
             }
         }
+        WorthQueryApplicationRealizedEffect::RemoveAspect {
+            entity,
+            entity_id,
+            contract,
+            fields,
+        } => aspect_removal::lower(facts, contracts, &entity, entity_id, contract, fields),
         WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id } => {
             lower_delete_entity(facts, entity_id)
         }

@@ -14,6 +14,10 @@ pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>) {
                     GrantPurpose::reference(),
                     "numeric-administration".to_owned(),
                 )
+                .field(
+                    super::super::causal_inspection::capability::Disclosure::reference(),
+                    "numeric-administration".to_owned(),
+                )
                 .field(GrantStatus::reference(), "active".to_owned())
                 .field(GrantScopeKey::reference(), "numeric".to_owned())
                 .field(GrantNotBefore::reference(), 0_u64)

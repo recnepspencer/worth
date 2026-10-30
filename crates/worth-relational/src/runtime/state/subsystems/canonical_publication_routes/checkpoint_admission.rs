@@ -7,8 +7,22 @@ use super::{
     RelationalCanonicalPublicationRoutes,
 };
 
+#[cfg(test)]
+mod tests {
+    use super::RelationalCanonicalPublicationRoutes;
+
+    #[test]
+    fn branch_transition_excludes_settled_owner_inventory_until_release() {
+        let routes = RelationalCanonicalPublicationRoutes::default();
+        let transition = routes.begin_branch_transition();
+        assert_eq!(routes.with_settled_publication_snapshot(|| ()), None);
+        drop(transition);
+        assert_eq!(routes.with_settled_publication_snapshot(|| ()), Some(()));
+    }
+}
+
 impl RelationalCanonicalPublicationRoutes {
-    pub(crate) fn with_quiescent_index_reclamation<R>(
+    pub(crate) fn with_settled_publication_snapshot<R>(
         &self,
         reclaim: impl FnOnce() -> R,
     ) -> Option<R> {
@@ -20,14 +34,26 @@ impl RelationalCanonicalPublicationRoutes {
     }
 
     pub(crate) fn mark_settled(&self, commit_id: CommitId) -> bool {
-        self.by_commit.get(&commit_id).is_some_and(|route| {
-            route.mark_settled();
-            true
-        })
+        let Some(route) = self
+            .by_commit
+            .get(&commit_id)
+            .map(|route| std::sync::Arc::clone(route.value()))
+        else {
+            return false;
+        };
+        route.mark_settled();
+        self.pending_settlement.withdraw(&route);
+        true
     }
 
     pub(crate) fn has_unsettled_performed_publication(&self) -> Option<CommitId> {
-        self.performed_stream.first_unsettled_commit()
+        self.pending_settlement
+            .first_unsettled_commit(&self.settlement_route_visits)
+    }
+
+    pub(crate) fn settlement_route_visit_count(&self) -> u64 {
+        self.settlement_route_visits
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub(crate) fn checkpoint_selection(
@@ -82,7 +108,10 @@ impl RelationalCanonicalPublicationRoutes {
     }
 
     fn reject_unsettled(&self) -> Result<(), CanonicalCheckpointAdmissionError> {
-        match self.performed_stream.first_unsettled_commit() {
+        match self
+            .pending_settlement
+            .first_unsettled_commit(&self.settlement_route_visits)
+        {
             Some(commit_id) => Err(
                 CanonicalCheckpointAdmissionError::PerformedPublicationRequiresSettlement(
                     commit_id,

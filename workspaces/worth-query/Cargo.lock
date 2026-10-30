@@ -579,6 +579,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "tracking-allocator"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b61e0cb3385e17df7db29c565b40fd0350dfe8a076c7eea83d416e30cfd0581"
+
+[[package]]
 name = "typenum"
 version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -779,15 +785,18 @@ name = "worth-query-court-decl-host-package-archive-replay-application-graph"
 version = "0.1.0"
 dependencies = [
  "sha2",
+ "tracking-allocator",
  "worth-execution",
  "worth-foundational",
  "worth-query-execution",
  "worth-query-host",
  "worth-query-installation",
  "worth-query-package-archive",
+ "worth-query-replay",
  "worth-query-testkit-certification-application-graph",
  "worth-query-testkit-document-retention",
  "worth-query-testkit-host",
+ "worth-relational",
 ]
 
 [[package]]
@@ -993,6 +1002,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "sha2",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-query-admission",

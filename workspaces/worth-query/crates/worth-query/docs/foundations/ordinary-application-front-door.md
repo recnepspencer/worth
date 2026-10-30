@@ -19,6 +19,7 @@ plumbing.
 - request bounded produced outputs and consume their exact retained occurrence;
 - perform source-bound edits and current, exact, or live reads through one request;
 - [correct a recorded operation](../execution/recorded-source-correction.md) under current authority while preserving intervening disjoint edits;
+- [explain original results and source operations](../capabilities/cross-runtime-causal-inspection.md) with fresh permission, including producer comparisons and saved values;
 - keep transport code descriptive rather than authoritative.
 
 ## Stable Entry Points

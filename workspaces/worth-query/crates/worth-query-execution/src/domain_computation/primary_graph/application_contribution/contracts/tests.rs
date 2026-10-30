@@ -152,6 +152,8 @@ fn producer(
 
         reuse_policy: "exact-source".to_owned(),
         input_reuse: None,
+        output_equivalence: None,
+        installed_output_equivalence: None,
         binding_type: TypeId::of::<()>(),
         source_type: TypeId::of::<()>(),
         provider_type: TypeId::of::<()>(),

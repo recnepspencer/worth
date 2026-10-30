@@ -329,7 +329,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
         }
     }
 
-    fn omission(
+    pub(super) fn omission(
         &self,
         slot: &worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey,
     ) -> Option<WorthQueryApplicationOmission> {

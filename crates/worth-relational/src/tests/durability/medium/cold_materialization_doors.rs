@@ -193,4 +193,12 @@ fn residency_load_free_sharing_and_ledger_refuse_cold_payloads_without_inventing
         before,
         "load-free inspection has no request with which to demand payloads"
     );
+    assert!(matches!(fixture.runtime.observe_retained_storage(),
+        Err(crate::inspection::mvcc::retained_storage::RelationalRetainedStorageInspectionDenial::OwnerInventory(
+            crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::StorageUnavailable(_)))));
+    assert_eq!(
+        fixture.source.reads.load(Ordering::Relaxed),
+        before,
+        "the all-retained census also refuses without demanding cold payloads"
+    );
 }

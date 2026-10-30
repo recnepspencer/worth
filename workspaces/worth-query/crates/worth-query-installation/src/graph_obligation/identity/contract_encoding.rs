@@ -160,6 +160,17 @@ pub(super) fn encode_resources(
     resources: &WorthQueryInstalledGraphObligationResourcePosture,
 ) -> Result<(), CanonicalDigestDerivationDenial> {
     match resources {
+        WorthQueryInstalledGraphObligationResourcePosture::ApplicationInspection {
+            meaning,
+            maximum_authorization_facts,
+        } => {
+            basis.text("resources.kind", "application-inspection")?;
+            basis.digest("resources.inspection-meaning", *meaning)?;
+            basis.unsigned_usize(
+                "resources.maximum-authorization-facts",
+                *maximum_authorization_facts,
+            )?;
+        }
         WorthQueryInstalledGraphObligationResourcePosture::ApplicationManagedIndex {
             maximum_source_results,
         } => {
@@ -280,6 +291,15 @@ fn encode_touch_scope(
     scope: &WorthQueryOperationTouchScope,
 ) -> Result<(), CanonicalDigestDerivationDenial> {
     match scope {
+        WorthQueryOperationTouchScope::RemoveAspect(scope) => {
+            basis.text(format!("{prefix}.kind"), "remove-aspect")?;
+            encode_binding(basis, prefix, scope.schema())?;
+            basis.text(format!("{prefix}.entity"), scope.entity())?;
+            basis.embedded_basis(
+                &format!("{prefix}.contract"),
+                scope.canonical_contract_basis(),
+            )?;
+        }
         WorthQueryOperationTouchScope::InitializeRelationField(field) => {
             basis.text(format!("{prefix}.kind"), "initialize-relation-field")?;
             let relation = field.relation();

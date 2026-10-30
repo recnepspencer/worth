@@ -196,6 +196,11 @@ impl HistorySubsystem {
         self.canonical_publication_routes.mark_settled(commit_id)
     }
 
+    pub(crate) fn settlement_route_visit_count(&self) -> u64 {
+        self.canonical_publication_routes
+            .settlement_route_visit_count()
+    }
+
     pub(crate) fn publication_requires_settlement(&self, commit_id: CommitId) -> bool {
         self.canonical_publication_routes
             .requires_settlement(commit_id)

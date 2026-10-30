@@ -5785,7 +5785,28 @@ unrelated prefix. Phase 8 is accepted on 2026-10-27: installed typed resources
 use the ordinary Decl/Host start, fresh inspection, progression and close path,
 with finite provider/ingress/result custody and genuine owned-effect recovery.
 Its combined workflow qualifies populated forks, burned prepared adoptions and
-sibling publications against the actual Native source. Phase 9 remains unfinished.
+sibling publications against the actual Native source. Phase 9 is accepted on
+2026-10-30 in the qualified scopes below.
+
+Phase 9 is subdivided into [capability subphases 9.1-9.11](./milestone-9.18.1.md#phase-9-subphase-plan).
+Original observation/reference reports (9.1), paired original comparison (9.2),
+performed-source/producer connections (9.3), independent admission (9.4) and
+canonical field absence/currentness proof transfer (9.5) are complete in their
+qualified bounded scopes. Optional whole-aspect removal and parent-optional reads
+(9.6) are complete.
+Remaining connection shapes (9.7), actual exact-u64 performed suppression with
+Stable/restored contrasts (9.8), original query/connected/source-only rich views
+(9.9), fresh availability and real optional-owner eviction/release (9.10), and
+integrated Decl/Host consumer qualification (9.11) are now accepted. One actual
+installed source/producer journey composes Equivalent and Changed output, original
+values, independent admissions, owner loss, cancellation and final release. The
+existing Host fixture installs through public APIs and needs only Decl/Host;
+legacy Native materialization fences remain. Final scoped evidence includes 62
+public correction tests, 4 Host runtime tests and 6 Host doctests, with required
+gates and independent QA. Query/Native owner evidence is carried in its reviewed
+scope. Parent Phase 9 is complete; generic forensic/durable archives and later
+milestone work remain separate. Later phases keep their numbers, and no
+phase-by-phase private SDK adoption is introduced.
 
 Consecutive original-source correction reverses later sources before earlier
 ones. Retain each original receipt and the required endpoint read observation;
@@ -5801,13 +5822,24 @@ mandatory current Rust qualification. Index implementation and its dependent CAD
 locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
 Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
 19 for consecutive source undo after verified correction/restoration.
-The retained scope has seventeen implementation phases; 9, 16 and 18
-remain unfinished.
+The retained scope has seventeen implementation phases. Phase 18 is complete at
+the public boundary: official stable Rust 1.99.1, full compiler commit
+`58cf8f9c35b355199727627d07ae34a4e2846d67`, preserves the qualified canonical sort
+bounds and version. Public canonicalization, admission, correction, documentation
+and repository gates qualify that compiler; private repositories and SDK pins
+are outside this public certification.
 Phase 17 is complete at the public application boundary: versioned domain intent
 enters fresh governed READ and mutation admission, exact selected-source creation
 and actual-head adoption. Native attempt resolution preserves frozen input and
 effect-free cached retries; publication, delivery and cleanup retain their real
 owners through typed refusals and fresh-request continuation.
+Phase 16 is complete at the public application boundary: genuine Native cell
+versions preserve complete retained-step and current answers through field edits,
+replacement, retirement, retry and opaque checkpoint readmission. Independent
+1/100/10,000-step and live-cell axes qualify local publication including receiving
+World, Native index and canonical settlement maintenance. Current, held, queued
+and catalog owner footprints, instrumented requested-object peaks, historical
+answers and cold readmission retain their separate measured scopes.
 
 ### Goal
 
@@ -5822,8 +5854,12 @@ domain-neutral and reached through Query declarations and ordinary governed
 requests, never through raw runtime handles or receipt-reconstructed authority.
 The retained follow-through adds honest failure causes, measured
 cell-version/history cost, public proposal acceptance and current stable Rust
-qualification. Phase 17 is certified at the public application boundary without
-requiring private adoption. The general index extension and spatial-dependent locality are
+qualification. Phases 16–17 are certified at the public application boundary.
+Neither requires private
+adoption. Cell-history qualification selects genuine
+retained feature-step custody, varies history and live body size independently,
+and distinguishes head-only bytes from held-history allocations. The general
+index extension and spatial-dependent locality are
 governed by 9.19 with its final integrated private cutover.
 P1 correction follow-through makes an earlier source reversible again once all
 later overlapping occurrences have been genuinely reversed; live or reapplied
@@ -5859,7 +5895,8 @@ The governing milestone spec is
   identity authority and standalone Bridge APIs remain supported
 - typed compiler-qualification and unobserved-field-write causes preserved to
   ordinary callers instead of accounting overflow or cause-erased rejection
-- cell-version/storage/live-at-k evidence at 1, 100 and 10,000 features, without
+- cell-version/storage/live-at-k evidence at 1, 100 and 10,000 retained feature
+  steps and independently varied live cell counts, without
   private platform workarounds; spatial-dependent locality is required in 9.19
 - proposal acceptance reissuing fresh ordinary requests from versioned domain
   intents, with exact Native/World expected-source fork/adoption and genuine

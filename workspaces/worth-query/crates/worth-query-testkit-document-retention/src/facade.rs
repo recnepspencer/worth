@@ -1,4 +1,6 @@
 //! The document-retention world and its schema-neutral resources.
+#[path = "certification/application_graph/cell_history.rs"]
+pub mod cell_history;
 #[allow(
     ambiguous_glob_reexports,
     hidden_glob_reexports,

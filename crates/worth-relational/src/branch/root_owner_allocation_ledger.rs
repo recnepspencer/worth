@@ -19,7 +19,9 @@ impl RelationalBranchRoot {
     ) -> Vec<RelationalRootOwnerAllocationLedgerEntry> {
         let mut entries = vec![RelationalRootOwnerAllocationLedgerEntry {
             kind: RelationalRootAuthoritativeAllocationKind::RootMetadata,
-            owner_id: self.id,
+            // Allocation identity, independent of the semantic root identity
+            // that a separately allocated readmission can preserve.
+            owner_id: self as *const Self as usize as u64,
             authoritative_bytes: std::mem::size_of::<Self>() as u64,
         }];
         entries.push(RelationalRootOwnerAllocationLedgerEntry {

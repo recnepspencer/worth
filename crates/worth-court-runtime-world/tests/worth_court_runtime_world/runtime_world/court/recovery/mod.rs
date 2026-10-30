@@ -147,18 +147,60 @@ fn performed_capability_loss_reopens_one_claim_and_consumption_closes_it() {
         .recover_performed(&identity)
         .is_err());
     drop(done);
+    let first_head = court.observe(&root);
+    let next = court.publish_cargo(&first_head, "6");
+    let latest = next.commit().identity().clone();
+    drop(first_head);
+    assert!(
+        !court
+            .world
+            .lifecycle_port()
+            .retire_changed_history()
+            .unwrap()
+            .contains(&identity),
+        "available unconsumed delivery survives after a later actual head movement"
+    );
     let recovered = court
         .world
         .recovery_port()
         .recover_performed(&identity)
         .unwrap();
+    assert!(
+        !court
+            .world
+            .lifecycle_port()
+            .retire_changed_history()
+            .unwrap()
+            .contains(&identity),
+        "a claimed original delivery remains live"
+    );
     let receipt = recovered.consume();
+    assert!(
+        !court
+            .world
+            .lifecycle_port()
+            .retire_changed_history()
+            .unwrap()
+            .contains(&identity),
+        "consumption transfers rather than discards the delivery's actual protection"
+    );
     assert!(court
         .world
         .recovery_port()
         .recover_performed(&identity)
         .is_err());
-    assert_eq!(court.observe(&root).selected_commit(), &identity);
-    drop((root, receipt));
+    assert_eq!(court.observe(&root).selected_commit(), &latest);
+    drop(receipt);
+    assert!(
+        court
+            .world
+            .lifecycle_port()
+            .retire_changed_history()
+            .unwrap()
+            .contains(&identity),
+        "dropping the consumed owner wakes the actual retired interior"
+    );
+    assert_eq!(court.observe(&root).selected_commit(), &latest);
+    drop((root, next));
     court.finish();
 }

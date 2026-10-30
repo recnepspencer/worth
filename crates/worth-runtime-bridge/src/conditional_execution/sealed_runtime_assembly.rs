@@ -1,3 +1,4 @@
+mod causal_inspection;
 mod conditional_dispatch;
 mod owned_async;
 mod process_local_release;

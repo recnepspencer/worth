@@ -21,7 +21,11 @@ impl VisibilityProjectionView {
             let Some(record) = self.authoritative_entity_record(execution, entity)? else {
                 return Ok(None);
             };
-            return project(EntityProjectionRecord::new(&record, scope));
+            return project(EntityProjectionRecord::new(
+                &record,
+                scope,
+                self.entity_aspect_plan(record.kind.kind_id),
+            ));
         };
         self.demand_regions_head(execution, [entity.partition_id])?;
         let resolved = super::super::read_work::point(
@@ -88,11 +92,13 @@ impl VisibilityProjectionView {
             .entity_arena()
             .created_at_for_slot(entity.slot_index())
             .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "visible entity slot has creation metadata");
+        let aspect_plan = self.entity_aspect_plan(kind.kind_id);
         Some(SelectedEntityProjection {
             actual,
             slot,
             kind,
             created,
+            aspect_plan,
         })
     }
 }
@@ -102,6 +108,7 @@ struct SelectedEntityProjection<'a> {
     slot: crate::storage::substrate::SlotView<'a, crate::storage::substrate::EntityRecordKind>,
     kind: crate::schema::data::KindResolution,
     created: crate::identity::data::VersionId,
+    aspect_plan: Option<&'a crate::schema::data::LoweredAspectContractPlan>,
 }
 
 impl SelectedEntityProjection<'_> {
@@ -119,6 +126,7 @@ impl SelectedEntityProjection<'_> {
             &self.kind,
             self.created,
             scope,
+            self.aspect_plan,
         ))
     }
 }
