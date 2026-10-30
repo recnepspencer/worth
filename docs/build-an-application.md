@@ -2608,6 +2608,21 @@ the committed continuation. Use acceptance for result recording and normal
 previous-head close. Inspect retained close failures through the admitted
 `inspect_attempt` entrance.
 
+If previous-head close returns `OwnerCleanupPending`, the head has already
+retired. Keep the performed adoption evidence and stored result while transferring
+that exact failure into its cleanup owner. The
+[compiled recovery](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/candidate/adoption/retired.rs)
+retries the original cleanup with a fresh scope, retaining its actual refusal
+while readers still hold history. Release those readers and retry the same owner.
+The selected new head stays in place throughout.
+
+The example's `FinishedAdoption` distinguishes an ordinary previous-head close
+receipt from a settled retired-head cleanup receipt. Inspect the corresponding
+variant; cleanup settlement supplies its actual cleanup receipt. Keep adoption,
+retirement and cleanup handoff denials with their respective outcomes. If cleanup
+succeeds before a late handoff refusal, retain that settled outcome and deliver
+the recorded result on retry.
+
 #### Record an actual adoption result
 
 Keep canonical result data separate from the command that records it. In the

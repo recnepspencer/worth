@@ -6,7 +6,7 @@ use super::super::{
 use super::{
     candidate::{
         self,
-        adoption::{Adopted, Performed, PreviousCloseFailure},
+        adoption::{Adopted, FinishedAdoption, PreviousCloseFailure, RetiredAdoption},
         PreparationFailure, ReadyToAdopt, Staging,
     },
     model::Model,
@@ -54,6 +54,10 @@ enum Phase<'host> {
         failure: PreviousCloseFailure<'host>,
         result: StoredResult,
     },
+    RetiredPrevious {
+        owner: RetiredAdoption<'host>,
+        result: StoredResult,
+    },
     Disposing(disposal::State<'host>),
 }
 struct Registration {
@@ -69,7 +73,7 @@ enum Delivery {
 }
 pub struct Accepted {
     pub result: StoredResult,
-    pub performed: Performed,
+    pub performed: FinishedAdoption,
 }
 pub enum Event {
     Progress,
@@ -130,6 +134,7 @@ pub enum View<'a, 'host> {
         terminal: &'a ResultTerminal,
     },
     PreviousClose(&'a PreviousCloseFailure<'host>),
+    RetiredPrevious(&'a RetiredAdoption<'host>),
     Disposal(DisposalView<'a>),
 }
 impl std::fmt::Debug for Attempt<'_> {
@@ -163,6 +168,7 @@ impl<'host> Attempt<'host> {
                 },
             },
             Phase::PreviousClose { failure, .. } => View::PreviousClose(failure),
+            Phase::RetiredPrevious { owner, .. } => View::RetiredPrevious(owner),
             Phase::Disposing(state) => View::Disposal(state.view()),
         }
     }

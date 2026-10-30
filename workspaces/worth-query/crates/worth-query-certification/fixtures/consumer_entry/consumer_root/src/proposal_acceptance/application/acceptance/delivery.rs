@@ -1,5 +1,6 @@
 //! The actual adoption owner survives recording, readback and previous-head close gaps.
 use super::*;
+mod previous;
 pub(super) fn advance<'host>(
     phase: Phase<'host>,
     model: &Model<'host>,
@@ -8,6 +9,12 @@ pub(super) fn advance<'host>(
     loaded: &LoadedProposal,
     key: u64,
 ) -> (Option<Phase<'host>>, Result<Event, Failure>) {
+    let phase = match phase {
+        phase @ (Phase::PreviousClose { .. } | Phase::RetiredPrevious { .. }) => {
+            return previous::advance(phase, caller)
+        }
+        phase => phase,
+    };
     let Phase::Adopted {
         registration,
         adopted,
@@ -18,7 +25,13 @@ pub(super) fn advance<'host>(
     };
     if let Delivery::Written(result) = delivery {
         return match adopted.close_previous(caller) {
-            Ok(performed) => (None, Ok(Event::Completed(Accepted { result, performed }))),
+            Ok(performed) => (
+                None,
+                Ok(Event::Completed(Accepted {
+                    result,
+                    performed: FinishedAdoption::PreviousClosed(performed),
+                })),
+            ),
             Err(failure) => (
                 Some(Phase::PreviousClose { failure, result }),
                 Ok(Event::Stopped),

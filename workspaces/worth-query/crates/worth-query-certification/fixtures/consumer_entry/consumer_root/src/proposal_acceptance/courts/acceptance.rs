@@ -16,6 +16,7 @@ use worth_query_host::facade::{
 };
 mod arbitration;
 mod disposal;
+mod previous;
 
 fn progress(event: Result<Event, Failure>) {
     assert!(matches!(event.unwrap(), Event::Progress));
@@ -180,7 +181,12 @@ fn ingress_adopts_once_and_recovers_a_result_read_gap_with_the_same_owner() {
         accepted.result.steps,
         vec![super::super::attempts::data::StoredStepOutcome::Fresh { days: 3 }]
     );
-    assert!(accepted.performed.previous_close().handoff.is_none());
+    assert!(accepted
+        .performed
+        .previous_close()
+        .unwrap()
+        .handoff
+        .is_none());
     let expected = storage
         .read_result(&model, &reviewer, &loaded, &accepted.result.claim)
         .unwrap();

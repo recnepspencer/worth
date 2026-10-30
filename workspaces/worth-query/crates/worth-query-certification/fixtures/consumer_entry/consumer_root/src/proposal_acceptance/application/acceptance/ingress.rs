@@ -94,7 +94,9 @@ impl<'host> Attempt<'host> {
             phase @ (Phase::Registered(_) | Phase::Staging { .. } | Phase::Ready { .. }) => {
                 staging::advance(phase, model, storage, caller, &loaded, key)
             }
-            phase @ Phase::Adopted { .. } => {
+            phase @ (Phase::Adopted { .. }
+            | Phase::PreviousClose { .. }
+            | Phase::RetiredPrevious { .. }) => {
                 delivery::advance(phase, model, storage, caller, &loaded, key)
             }
             phase => (Some(phase), Ok(Event::Stopped)),
