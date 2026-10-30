@@ -17,6 +17,15 @@ pub struct WorthQueryConnectedApplicationInspection<'original> {
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl<'a> WorthQueryConnectedApplicationInspection<'a> {
+    /// Immutable original custody admitted by this report's fresh metadata session.
+    /// This grants no field access and makes no claim about evictable diagnostics.
+    pub fn evidence_availability(
+        &self,
+    ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
+        super::super::availability::WorthQueryInspectionEvidenceAvailability::from_original(
+            self.original,
+        )
+    }
     pub fn observation(&self) -> &'a WorthQueryApplicationQueryObservation {
         self.original
     }
@@ -109,6 +118,15 @@ pub struct WorthQueryEvaluatedApplicationInspection<'original> {
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl<'a> WorthQueryEvaluatedApplicationInspection<'a> {
+    /// Immutable original custody admitted by this report's fresh metadata session.
+    /// This grants no field access and makes no claim about evictable diagnostics.
+    pub fn evidence_availability(
+        &self,
+    ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
+        super::super::availability::WorthQueryInspectionEvidenceAvailability::from_original(
+            self.original,
+        )
+    }
     pub fn observation(&self) -> &'a WorthQueryApplicationQueryObservation {
         self.original
     }

@@ -14,6 +14,15 @@ pub struct WorthQueryMaterializedApplicationInspection<'o> {
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl<'o> WorthQueryMaterializedApplicationInspection<'o> {
+    /// Immutable original custody admitted by this report's fresh metadata session.
+    /// This grants no field access and makes no claim about evictable diagnostics.
+    pub fn evidence_availability(
+        &self,
+    ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
+        super::super::availability::WorthQueryInspectionEvidenceAvailability::from_original(
+            self.original,
+        )
+    }
     pub fn observation(&self) -> &'o WorthQueryApplicationQueryObservation {
         self.original
     }

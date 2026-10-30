@@ -13,6 +13,20 @@ pub struct WorthQueryComparedApplicationInspection<'original> {
 }
 
 impl<'original> WorthQueryComparedApplicationInspection<'original> {
+    pub fn before_evidence_availability(
+        &self,
+    ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
+        super::super::availability::WorthQueryInspectionEvidenceAvailability::from_original(
+            self.before,
+        )
+    }
+    pub fn after_evidence_availability(
+        &self,
+    ) -> super::super::availability::WorthQueryInspectionEvidenceAvailability {
+        super::super::availability::WorthQueryInspectionEvidenceAvailability::from_original(
+            self.after,
+        )
+    }
     pub fn before(&self) -> &'original WorthQueryApplicationQueryObservation {
         self.before
     }

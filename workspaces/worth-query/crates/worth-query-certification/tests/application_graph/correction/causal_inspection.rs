@@ -157,3 +157,13 @@ fn rich_connected_originals_keep_canonical_source_effects_and_exact_producer_evi
 fn rich_source_only_keeps_original_effects_without_query_or_producer_claims() {
     super::model::causal_inspection::output_equivalence::source_only_rich_survives_receipt_drop_and_rechecks_diagnostics_cancellation_and_release();
 }
+
+#[test]
+fn original_evidence_availability_requires_fresh_metadata_and_keeps_actual_custody() {
+    journey::original_evidence_availability_requires_fresh_metadata();
+}
+
+#[test]
+fn availability_closes_siblings_independently_and_releases_original_query_funding() {
+    journey::availability_keeps_sibling_custody_and_releases_final_funding();
+}

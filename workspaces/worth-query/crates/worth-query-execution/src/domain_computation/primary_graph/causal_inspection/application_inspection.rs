@@ -1,4 +1,9 @@
 //! Fresh application inspection owns admission, original target and its terminal.
+mod availability;
+pub use availability::{
+    WorthQueryInspectionEvidenceAvailability, WorthQueryInspectionRetainedEvidence,
+    WorthQueryInspectionSupplierEvidence,
+};
 mod admission;
 mod connection;
 mod source_original;

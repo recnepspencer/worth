@@ -640,3 +640,38 @@ The existing Host doctest lane checks the admitted signature, absence of a
 capability-free execution method, and private success construction. Signal tier
 availability, actual owner expiry and integrated consumer handoff remain Phases
 9.10 and 9.11.
+
+
+## Original evidence availability
+
+A freshly admitted query report exposes `evidence_availability()`. Compared
+reports expose `before_evidence_availability()` and `after_evidence_availability()`.
+The same metadata is available on connected, evaluated and rich query reports.
+It describes the immutable original owners, with no allocation or body traversal:
+
+- `projection()` distinguishes Retained from NotRetained; an intentionally
+  captured empty projection is Retained.
+- `supplier()` distinguishes CommittedOutput, StableInputReuse,
+  CheckpointRestoration and NotRetained. None establishes a source connection
+  or a performed output comparison by itself.
+- `native_observation()` describes custody of the original conditional Native
+  observation. Retained does not promise every optional Signal diagnostic family.
+
+Missing custody does not establish expiry, no producer or suppression. These
+originals retain strong immutable owners and have no TTL. Closing a reader or
+one observation clone cannot invalidate another clone. The final original holder
+releases the original query backing and payer; reports close their separate fresh
+request reservations. A later rich request must independently admit diagnostics.
+Cancelling a request or withdrawing metadata access refuses that request and
+cannot turn retained evidence into expired evidence.
+
+The query report anchor uses `query.application-inspection.observation-anchor.v2`
+to bind the actual custody states. The underlying observation identity is
+unchanged. The compiled availability and sibling-release journeys live in
+[the existing correction model](../../../worth-query-certification/examples/application_correction_support/causal_inspection/journey/availability.rs); their grouped court is
+`application_graph::correction::causal_inspection`.
+
+This metadata does not query evictable Signal diagnostic history or retained
+Bridge record stores. Their omitted/inactive/unavailable outcomes and actual
+owner-loss handoff remain separate 9.10 work; NotRetained must not stand in for
+those states.

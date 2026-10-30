@@ -25,7 +25,11 @@ use worth_query_host::facade::{
     },
     runtime::ExecutionAllocationPolicy,
 };
+mod availability;
+mod availability_lifecycle;
 mod retained_query;
+pub use availability::original_evidence_availability_requires_fresh_metadata;
+pub use availability_lifecycle::availability_keeps_sibling_custody_and_releases_final_funding;
 type Access = WorthQueryAdmittedApplicationCapabilityAccess<
     NumericSchema,
     capability::Inspect,

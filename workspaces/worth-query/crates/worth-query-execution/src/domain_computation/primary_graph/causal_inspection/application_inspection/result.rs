@@ -37,6 +37,13 @@ pub struct WorthQueryObservedApplicationInspection<'original> {
 }
 
 impl<'original> WorthQueryObservedApplicationInspection<'original> {
+    /// Immutable original custody admitted by this report's fresh metadata session.
+    /// This grants no field access and makes no claim about evictable diagnostics.
+    pub fn evidence_availability(
+        &self,
+    ) -> super::availability::WorthQueryInspectionEvidenceAvailability {
+        super::availability::WorthQueryInspectionEvidenceAvailability::from_original(self.original)
+    }
     /// The actual original immutable observation; it supplies no read authority.
     pub fn observation(&self) -> &'original WorthQueryApplicationQueryObservation {
         self.original

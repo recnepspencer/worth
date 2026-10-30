@@ -1382,7 +1382,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
 | 9.8 | Genuine equivalent-output suppression explanations | Complete for qualified exact-u64 performed evaluation, Stable/restored contrasts and Native non-compute protection | 9.9 optional rich materialization |
 | 9.9 | Optional rich materialization | Complete for original-query, connected creation/evaluation and source-only rich modes | Freshly admitted, demand-driven views from existing evidence owners |
-| 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
+| 9.10 | Evidence availability, expiry and retention lifecycle | In progress; immutable original custody qualified | Optional owner detail and actual loss handoff |
 | 9.11 | Integrated application qualification and consumer handoff | Open | Coherent public capability, executable guidance and phase acceptance |
 
 The table is the current capability summary, not an execution journal. A
@@ -1691,7 +1691,7 @@ synchronous explanatory work on ordinary commits is required.
 
 #### Phase 9.10: Evidence Availability, Expiry And Retention Lifecycle
 
-**Status: in progress; retained-availability Source remains unqualified.
+**Status: in progress; immutable original custody qualified; optional owner loss remains open.
 Depends on: 9.1 and 9.4; integrate with 9.9 where materialization owns retention.**
 The separately held unqualified candidate describes actual retained projection/supplier/Native
 observation custody after fresh metadata admission. Qualify that real Host path,
@@ -1701,6 +1701,20 @@ suppression; request expiry is not evidence expiry. Strong immutable originals
 have no invented TTL. Exercise actual supported expiry/release, revocation before
 availability lookup and final-holder cleanup without a parallel retention
 registry or a new durable-restart promise.
+
+Qualified immutable-custody increment (2026-10-30): fresh reference, compared,
+connected, evaluated and rich Query reports expose the actual retained projection,
+committed/stable/restored supplier and conditional Native observation owners.
+The query report anchor v2 binds these custody meanings; original observation
+identity remains unchanged. This path is allocation-free and requires the existing
+fresh EvidenceAvailability metadata facet. No retention registry or TTL is added.
+The grouped correction journeys qualify omitted capture, real supplier variants,
+operational reader release, sibling custody, current grant withdrawal, cancellation
+and original query funding through final close. Existing owner weak-reference
+proof checks actual original backing destruction. Verification: 60 scoped public
+correction tests and 23 scoped Query owner tests passed, with boundary/context,
+line-cap, function-review and diff checks. Evictable optional owner detail
+and its actual loss handoff remain required before 9.10 closes.
 
 #### Phase 9.11: Integrated Application Qualification And Consumer Handoff
 

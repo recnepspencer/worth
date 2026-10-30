@@ -11,8 +11,24 @@ pub(super) fn read(
     scope: &WorthQueryRequestScope,
     observation: &WorthQueryApplicationReadObservation,
 ) -> (WorthQueryApplicationQueryObservation, query::Row) {
+    read_funded(
+        application,
+        external,
+        scope,
+        observation,
+        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    )
+}
+
+pub(super) fn read_funded(
+    application: &host::OutputHost,
+    external: &WorthQueryAuthenticatedExternalPrincipal<NumericSchema>,
+    scope: &WorthQueryRequestScope,
+    observation: &WorthQueryApplicationReadObservation,
+    allocation: worth_query_host::facade::runtime::ExecutionAllocationPolicy<'_, '_>,
+) -> (WorthQueryApplicationQueryObservation, query::Row) {
     application
-        .with_host_advancement(|phase| {
+        .with_funded_host_advancement(allocation, |phase| {
             let runtime = application.runtime();
             let selected = runtime
                 .on_branch(application.current_world())

@@ -106,6 +106,32 @@ pub fn restored_output_has_no_original_in_memory_evaluation() {
         observation::read(&application, &principal, &scope, &read, "observer-decoy");
     assert_eq!(row.references, vec![("observer".to_owned(), 0)]);
     drop(read);
+    let availability = application
+        .runtime()
+        .request(&principal, &scope)
+        .inspect::<super::super::distinct_subjects::query::Binding>(&original)
+        .why_observed()
+        .reference_only()
+        .execute_governed(super::super::distinct_subjects::access(
+            &application,
+            &principal,
+            &scope,
+            "observer-decoy",
+        ))
+        .unwrap();
+    assert_eq!(
+        availability.evidence_availability().projection(),
+        WorthQueryInspectionRetainedEvidence::Retained
+    );
+    assert_eq!(
+        availability.evidence_availability().supplier(),
+        WorthQueryInspectionSupplierEvidence::CheckpointRestoration
+    );
+    assert_eq!(
+        availability.evidence_availability().native_observation(),
+        WorthQueryInspectionRetainedEvidence::NotRetained
+    );
+    availability.close();
     let denial = inspect(&application, &principal, &scope, &original, &source)
         .err()
         .expect("restoration cannot recreate an original in-memory comparison");

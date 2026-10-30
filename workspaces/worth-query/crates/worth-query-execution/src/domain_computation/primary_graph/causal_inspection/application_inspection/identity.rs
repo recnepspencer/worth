@@ -136,13 +136,19 @@ pub(super) fn identities<Stop>(
         ],
         admit,
     )?;
+    let availability =
+        super::availability::WorthQueryInspectionEvidenceAvailability::from_original(original);
+    let [projection, supplier, native] = availability.canonical_labels();
     let anchor = compose(
-        "query.application-inspection.observation-anchor.v1",
+        "query.application-inspection.observation-anchor.v2",
         &[
             Part::Text(observation.terminal_projection_for_reporting()),
             Part::Text(admission.terminal_projection_for_reporting()),
             Part::Text("why-observed"),
             Part::Text("reference-only"),
+            Part::Text(projection),
+            Part::Text(supplier),
+            Part::Text(native),
         ],
         admit,
     )?;
