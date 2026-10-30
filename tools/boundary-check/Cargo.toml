@@ -15,5 +15,7 @@ toml = { version = "1", default-features = false, features = ["std", "serde", "p
 debug = 0
 [profile.dev.package.boundary-check]
 opt-level = 1
+[profile.dev.package.serde_json]
+opt-level = 1
 [profile.test]
 debug = 0
