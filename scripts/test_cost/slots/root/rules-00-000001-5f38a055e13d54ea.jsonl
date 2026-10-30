@@ -1,0 +1,24 @@
+{"count": 23, "kind": "leaf"}
+{"binary": "worth-signal", "slots": 2, "test": "data::host_computed::response::tests::prepared_response_admits_as_committed_outcome"}
+{"binary": "worth-signal", "slots": 2, "test": "data::node::contract::checked_result_declaration_tests::optional_checked_result_limit_preserves_legacy_json_and_explicit_zero"}
+{"binary": "worth-signal", "slots": 2, "test": "data::proof::invalidation::output_commit::tests::exact_aspect_scopes_and_legacy_multi_aspect_union_are_distinguishable"}
+{"binary": "worth-signal", "slots": 2, "test": "diagnostics::model::replay::retained_charge::tests::replay_message_capacity_is_additional_to_complete_merge_witness_payloads"}
+{"binary": "worth-signal", "slots": 2, "test": "logic::checkpoint::tests::ensure_fresh_forces_single_domain_refresh"}
+{"binary": "worth-signal", "slots": 2, "test": "logic::transaction::tests::commit::begin_commit_applies_staged_state_once"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::adversarial_parallel::hostile_churn_parity::stress_repeated_parallel_parity_on_wide_branch_graph"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::domains::fintech::certification::invalidation::locality_receipt::tests::mismatched_fresh_oracle_and_scale_manifest_are_denied"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::domains::fintech::certification::workflow_certification_runner_keeps_serial_parallel_fintech_overlap_honest"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::domains::fintech::invalidation::locality_red_controls::sparse_book_fanout_index_disjoint_candidates_remain_flat"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::leased_execution::reversed_plan_order::reversed_public_stage_mints_the_same_artifacts_in_one_epoch_and_singletons"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::merge_adoption::source_adoption::merge_branch_counters_and_summary_surface_match_introduced_work"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::observability::explanation_states::explain_reports_missing_snapshot_and_dependency_removed"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::performance_profiles::measured_pressure::exhaustive::measured_idle_versus_introspective_records_diagnostic_pressure_benefit"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::phase3_semantics::partition_transactions::committed_partition_local_evaluation_preserves_changed_region_explanation_and_metrics"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::resource_runtime::completion_admission::staging_and_commit::resource_completion_staging_rejects_admitted_proof_after_cancellation"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::resource_runtime::revalidation::terminal_fulfilled::resource_fulfilled_lifecycle_revalidation_revalidates_fulfilled_node_when_policy_allows"}
+{"binary": "worth-signal", "slots": 2, "test": "tests::signal_contract::remove_dependency_preserves_other_aspects_between_same_nodes"}
+{"binary": "worth-signal-wasm", "slots": 2, "test": "runtime::placement::declaration_classification::tests::signal_tracked_callback_preserves_denied_main_thread_category"}
+{"binary": "worth-testkit-compiler", "slots": 2, "test": "normalization_tests::an_existing_constructor_count_placeholder_masks_only_the_numeric_tail"}
+{"binary": "worth-testkit-compiler", "slots": 2, "test": "relocated_snapshot_tests::moved_relative_fixture_paths_require_the_exact_current_court_and_owner"}
+{"binary": "worth-testkit-compiler", "slots": 2, "test": "tests::missing_empty_or_non_string_compiler_provenance_is_refused"}
+{"binary": "worth-testkit-compiler", "slots": 2, "test": "tests::unknown_schemas_and_missing_fixture_maps_are_refused"}
