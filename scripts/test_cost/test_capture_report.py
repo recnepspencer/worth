@@ -6,6 +6,8 @@ import unittest
 
 from capture_report import captured_selections, recover, retained_logs, telemetry_capture
 from cargo_capture import retention_name
+from compiler_units import declarations
+from test_compiler_units import event as compiler_event, graph, unit
 
 
 class CaptureRecoveryTests(unittest.TestCase):
@@ -31,10 +33,11 @@ class CaptureRecoveryTests(unittest.TestCase):
                     'testcases': {'case': {'ignored': False}}}}}
         for name in ('inventory', 'selection-owner-unit'):
             (source/f'build/{name}.json').write_text(json.dumps(native), encoding='utf-8')
-        artifact = {'reason': 'compiler-artifact', 'fresh': False, 'package_id': 'owner',
-                    'target': {'name': 'owner', 'kind': ['lib']}, 'features': [], 'profile': {'test': False},
-                    'filenames': [str(root/'target/debug/deps/libowner.rlib')]}
-        marker = json.dumps({'type': 'cargo-invocation', 'cargo_profile': 'dev', 'mode': 'build'})
+        required = unit('owner', mode='build')
+        required['target']['src_path'] = str(root/'src/lib.rs')
+        artifact = dict(compiler_event(required, linked=True), reason='compiler-artifact', fresh=False)
+        marker = json.dumps({'type': 'cargo-invocation', 'cargo_profile': 'dev', 'mode': 'build',
+                            'unit_plan': {'units': declarations(graph(required)), 'compiler_inputs': 'flags'}})
         self.capture(root, source/'build/binaries-build.log', ['cargo', 'test'], marker + '\n' + '\n'.join([json.dumps(artifact)]*2))
         event = {'type': 'test', 'event': 'failed', 'name': 'owner::owner$case', 'exec_time': 1.0}
         self.capture(root, source/'run-owner-unit.log', ['cargo', 'nextest', 'run'], json.dumps(event))

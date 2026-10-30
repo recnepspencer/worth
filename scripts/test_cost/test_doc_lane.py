@@ -7,6 +7,8 @@ from unittest.mock import patch
 
 from doc_lane import execute
 from run_lane import LaneExecutionFailure
+from compiler_units import declarations
+from test_compiler_units import event as compiler_event, graph, unit
 
 
 class DocLaneTests(unittest.TestCase):
@@ -19,12 +21,13 @@ class DocLaneTests(unittest.TestCase):
         def run(manifest, output, runner, profile):
             output.mkdir(parents=True)
             snippet = {'binary': 'owner::doc', 'test': 'src/lib.rs (line 1)', 'ignored': False}
-            artifact = {'reason': 'compiler-artifact', 'fresh': not fresh, 'package_id': 'owner',
-                        'target': {'name': 'owner', 'kind': ['lib']}, 'features': [],
-                        'profile': {'test': False}, 'filenames': [str(root / 'target/debug/deps/libowner.rlib')]}
+            required = unit('owner', mode='build')
+            required['target']['src_path'] = str(root/'src/lib.rs')
+            artifact = dict(compiler_event(required, linked=True), reason='compiler-artifact', fresh=not fresh)
             log = output / 'retained.log'
             lines = ['Command: ["cargo", "test", "--doc"]', json.dumps({
-                'type': 'cargo-invocation', 'mode': 'build', 'cargo_profile': profile})]
+                'type': 'cargo-invocation', 'mode': 'build', 'cargo_profile': profile,
+                'unit_plan': {'units': declarations(graph(required)), 'compiler_inputs': 'flags'}})]
             lines += [json.dumps(artifact)] * copies
             lines += [json.dumps({'type': 'test', 'event': event, 'name': 'owner::doc$src/lib.rs (line 1)'})]
             log.write_text('\n'.join(lines), encoding='utf-8')

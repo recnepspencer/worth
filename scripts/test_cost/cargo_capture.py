@@ -8,6 +8,9 @@ import subprocess
 import shutil
 import sys
 
+from compiler_units import CompilerUnitRefusal, attribute as attribute_unit
+from unit_plan import command_for, declare, verify
+
 
 def instrument(command):
     command = list(command)
@@ -76,10 +79,33 @@ class CargoRunner:
         self.logs = []
         self.target_directories = {}
 
+    def unit_plan(self, command, cwd, log_path):
+        graph_command = command_for(command)
+        if graph_command is None:
+            return None
+        import os
+        original = self.environment
+        self.environment = dict(os.environ if original is None else original)
+        # Only Cargo's non-compiling declaration subprocess admits the unstable
+        # graph output. The pinned compiler's real invocation never receives it.
+        self.environment['RUSTC_BOOTSTRAP'] = '1'
+        try:
+            graph = self(graph_command, cwd, log_path.with_name(log_path.stem + '-unit-plan.log'))
+        finally:
+            self.environment = original
+        if graph.returncode:
+            raise CompilerUnitRefusal('Cargo could not declare required compiler units: ' + graph.stderr)
+        plan = declare(command, cwd, self.environment, graph.stdout)
+        plan['graph_log'] = str(self.logs[-1])
+        log_path.with_name(log_path.stem + '-units.json').write_text(
+            json.dumps(plan, indent=2) + '\n', encoding='utf-8')
+        return plan
+
     def __call__(self, command, cwd, log_path):
         command = instrument(command)
         cwd, log_path = Path(cwd).resolve(), Path(log_path)
         log_path.parent.mkdir(parents=True, exist_ok=True)
+        plan = self.unit_plan(command, cwd, log_path)
         head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=self.repository, text=True).strip()
         clean = not subprocess.check_output(['git', 'status', '--short'], cwd=self.repository, text=True).strip()
         start = datetime.now(timezone.utc).isoformat()
@@ -89,6 +115,9 @@ class CargoRunner:
                   'mode': 'check' if command[1:2] in (['check'], ['clippy']) else 'build',
                   'target_dir': None,
                   'cargo_profile': compiler_profile(command)}
+        if plan is not None:
+            marker['unit_plan'] = {key: plan[key] for key in ('units', 'compiler_inputs', 'graph_log')}
+            marker['compiler_contract'] = plan['contract']
         if '--target-dir' in command:
             marker['target_dir'] = command[command.index('--target-dir') + 1]
         else:
@@ -102,6 +131,8 @@ class CargoRunner:
                       f'Git status --short empty: {clean}\nStart: {start}\n\n')
             log.write(json.dumps(marker) + '\n')
             log.flush()
+            if plan is not None:
+                verify(plan, command, cwd, self.environment)
             try:
                 result = subprocess.run(command, cwd=cwd, env=self.environment, stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT if ordered else subprocess.PIPE,
@@ -122,6 +153,12 @@ class CargoRunner:
             shutil.copyfile(log_path, retained)
         self.logs.append(retained)
         capture_record(self.environment, retained)
+        if plan is not None:
+            from logs import json_objects
+            verify(plan, command, cwd, self.environment)
+            for event in json_objects(result.stdout):
+                if event.get('reason') == 'compiler-artifact':
+                    attribute_unit(event, plan)
         if command[:2] == ['cargo', 'metadata'] and result.returncode == 0:
             metadata = json.loads(result.stdout)
             if 'workspace_root' in metadata and 'target_directory' in metadata:

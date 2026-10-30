@@ -1,6 +1,5 @@
 """Deterministic build and source budgets, never elapsed-time thresholds."""
 from collections import Counter
-import json
 
 
 def lane_budget(configuration, workspace, lanes, profile):
@@ -19,27 +18,36 @@ def build_violations(lane, budget):
     if lane['build_observation'] != 'json':
         return [{'kind': 'unmeasured-build', 'log': lane['log']}]
     counts = Counter()
-    directories, modes, violations = {}, {}, []
+    directories, units, compiler_inputs, violations = {}, {}, {}, []
     for artifact in lane['artifacts']:
-        # lib, libtest and each executable are distinct compiler units. A
-        # package's library appearing in two directories is a duplicate graph;
-        # two different binaries belonging to that package are not.
+        # Identity is declared from Cargo inputs before rustc executes. Output
+        # hashes and target directories never mint an additional budget unit.
         declared = budget.get('declared_cargo_profiles')
         if declared is not None and artifact.get('cargo_profile') not in declared:
             violations.append({'kind': 'undeclared-profile', 'package': artifact['package'],
                                'cargo_profile': artifact.get('cargo_profile')})
-        key = (artifact['package'], artifact['target'], tuple(artifact['kind']),
-               tuple(artifact['features']), json.dumps(artifact['profile'], sort_keys=True),
-               artifact.get('cargo_profile'))
+        unit = artifact.get('unit')
+        if unit is None or artifact.get('unit_refusal'):
+            violations.append({'kind': 'undeclared-compiler-unit', 'package': artifact['package'],
+                               'target': artifact['target'], 'reason': artifact.get('unit_refusal')})
+            continue
+        key = unit['identity']
         counts[key] += 1
+        units[key] = artifact
         directories.setdefault(key, set()).add(artifact['target_dir'])
-        modes.setdefault(key, set()).add(artifact['check_mode'])
+        compiler_inputs.setdefault(key, set()).add(unit['compiler_inputs'])
     for key, count in sorted(counts.items()):
+        artifact = units[key]
+        if len(compiler_inputs[key]) > 1:
+            violations.append({'kind': 'unplanned-compiler-input-drift', 'unit': key,
+                               'package': artifact['package'], 'target': artifact['target']})
         if count > budget['max_compiles_per_unit']:
-            violations.append({'kind': 'duplicate-graph', 'package': key[0], 'target': key[1],
-                               'features': list(key[3]), 'profile': json.loads(key[4]),
-                               'check_modes': sorted(modes[key]), 'compiles': count,
-                               'cargo_profile': key[5],
+            violations.append({'kind': 'duplicate-graph', 'unit': key,
+                               'package': artifact['package'], 'target': artifact['target'],
+                               'features': artifact['features'], 'profile': artifact['unit']['declared_profile'],
+                               'roles': artifact['unit']['roles'],
+                               'required_output': artifact['unit']['output'], 'compiles': count,
+                               'cargo_profile': artifact.get('cargo_profile'),
                                'target_dirs': sorted(str(p) for p in directories[key])})
     return violations
 

@@ -5,6 +5,8 @@ import json
 from pathlib import Path, PurePosixPath
 import re
 
+from compiler_units import CompilerUnitRefusal, attribute as attribute_unit
+
 
 def json_objects(text):
     """Accept JSONL amidst progress output; inspect captured test output as well."""
@@ -96,12 +98,20 @@ def artifact(event, context):
             target_dir = str(parent.parent)
     linked = any(name.endswith(('.rlib', '.dll', '.so', '.dylib', '.a', '.lib', '.exe', '.wasm')) for name in files)
     check_mode = 'build' if linked else 'check' if any(name.endswith('.rmeta') for name in files) else context.get('mode', 'unmeasured')
+    unit, refusal = None, None
+    if context.get('unit_plan') is not None:
+        try:
+            unit = attribute_unit(event, context['unit_plan'])
+        except (CompilerUnitRefusal, KeyError, TypeError) as error:
+            refusal = str(error)
+    else:
+        refusal = 'no preexecution Cargo unit declaration in this capture'
     return {'package': event['package_id'], 'target': event['target']['name'],
             'kind': sorted(event['target']['kind']), 'features': sorted(event['features']),
             'profile': event['profile'], 'target_dir': target_dir,
             'cargo_profile': context.get('cargo_profile'),
             'check_mode': check_mode, 'invocation_mode': context.get('mode'),
-            'filenames': files}
+            'filenames': files, 'unit': unit, 'unit_refusal': refusal}
 
 
 def duplicates(artifacts):

@@ -7,6 +7,7 @@ import subprocess
 from unittest.mock import patch
 
 from cargo_capture import CargoRunner, capture_record, compiler_profile, instrument, retention_name
+from test_compiler_units import graph, unit
 
 
 class CargoCaptureTests(unittest.TestCase):
@@ -22,11 +23,37 @@ class CargoCaptureTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             runner = CargoRunner(Path.cwd())
             stream = 'Doc-tests owner\nrunning 0 tests\ntest result: ok. 0 passed; 0 failed; 0 ignored\n'
-            with patch('cargo_capture.subprocess.run', return_value=subprocess.CompletedProcess([], 0, stream, None)) as child:
+            def execute(command, **kwargs):
+                output = json.dumps(graph(unit('owner'))) if '--unit-graph' in command else stream
+                return subprocess.CompletedProcess(command, 0, output, None)
+            with patch('cargo_capture.subprocess.run', side_effect=execute) as child:
                 observed = runner(['cargo', 'test', '--doc'], Path.cwd(), Path(temporary) / 'doc.log')
             self.assertEqual(child.call_args.kwargs['stderr'], subprocess.STDOUT)
             self.assertEqual(observed.stdout, stream)
             self.assertEqual(observed.stderr, '')
+
+    def test_bootstrap_applies_only_to_noncompiling_declaration_and_actual_plan_precedes_build(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            calls = []
+            environment = {'RUSTFLAGS': '-C overflow-checks=on'}
+            runner = CargoRunner(Path.cwd(), environment)
+
+            def execute(command, **kwargs):
+                if command[:1] == ['cargo']:
+                    calls.append((command, dict(kwargs['env'])))
+                output = json.dumps(graph(unit('owner'))) if '--unit-graph' in command else ''
+                return subprocess.CompletedProcess(command, 0, output, '')
+
+            with patch('cargo_capture.subprocess.run', side_effect=execute):
+                runner(['cargo', 'check'], Path.cwd(), Path(temporary) / 'check.log')
+            self.assertEqual(len(calls), 2)
+            self.assertIn('--unit-graph', calls[0][0])
+            self.assertEqual(calls[0][1]['RUSTC_BOOTSTRAP'], '1')
+            self.assertNotIn('RUSTC_BOOTSTRAP', calls[1][1])
+            self.assertIs(runner.environment, environment)
+            log = (Path(temporary) / 'check.log').read_text()
+            self.assertIn('"unit_plan":', log)
+            self.assertTrue((Path(temporary) / 'check-units.json').is_file())
 
     def test_repeated_invocations_cannot_overwrite_retained_lane_evidence(self):
         first = retention_name('test-cost/store/build.log', '0123456789abcdef', '2026-01-01T00:00:01Z')
