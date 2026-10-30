@@ -235,6 +235,16 @@ normal required-rule judgment and coordinated publication still apply. A changed
 unprojected field declines this conservative proof and rebuilds under AdmitRebuild.
 The court also cancels the original request after one real rule query and retries
 from the returned suspension custody without moving the selected basis.
+The [generated geometry counterpart](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/generated/court.rs)
+publishes all three Edge/Vertex roles and their actual relations together. Complete
+Source queries expose the generated edge even outside the domain rule's fixed
+probe. Original suspension cancellation follows a real committed/proposed query,
+leaves Native/World selection available and retries. Exact reconstruction shares
+backing; changed endpoint reconstruction reaches B's existing enclosure refusal.
+The suspension entry preserves the complete owned in-phase result across its
+outer control handoff. Its borrowed typed control projection shares preparation
+execution classification with restoration and retains the original Native error.
+This court does not qualify a late-success interruption or pending recovery run.
 
 Native stages provider roots before its first dependent invariant. Each actual
 observation reborrows its own Source loan. The existing SourceInvalidationOwner

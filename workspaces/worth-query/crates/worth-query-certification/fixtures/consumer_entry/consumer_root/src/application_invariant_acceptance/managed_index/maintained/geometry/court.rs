@@ -64,7 +64,7 @@ fn expected(
         .map(|(id, a, b)| (id.to_owned(), point(a), point(b)))
         .collect()
 }
-fn commit(
+pub(super) fn commit(
     world: &host::Host,
     principal: &Principal,
     scope: &WorthQueryRequestScope,

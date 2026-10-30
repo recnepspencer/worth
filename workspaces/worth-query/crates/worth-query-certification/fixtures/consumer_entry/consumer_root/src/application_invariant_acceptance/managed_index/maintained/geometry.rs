@@ -2,6 +2,7 @@
 pub(super) mod authoring;
 #[cfg(test)]
 mod court;
+pub(super) mod generated;
 pub(super) mod provider;
 pub(super) mod query;
 pub(super) mod refresh;

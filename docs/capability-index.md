@@ -454,6 +454,12 @@ Source payload without provider construction or maintenance, while publication
 mints a fresh available association. Any authoritative field difference declines
 this conservative proof and uses the declared cold policy. Original-request
 cancellation after a real rule query returns suspension custody for retry.
+Its generated geometry counterpart declares the Edge and both Vertex roles in
+one real output publication, reconstructs actual endpoint relations and both
+memberships, and rejects B's third enclosure. Exact geometry restoration performs
+no build/update. Original suspension cancellation retains the available basis and
+fresh physical reads; `execution_control_stop()` exposes the typed stop while
+preserving the owning Native preparation denial.
 See the
 [current limits](build-an-application.md#prepare-candidate-structural-source-changes)
 and [Native audience](../workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md).

@@ -48,16 +48,22 @@ pub struct Record {
     pub before: Option<Vec<query::Row>>,
     pub after: Vec<query::Row>,
     pub updates_before_callback: usize,
+    pub source_before: Option<Vec<query::Row>>,
+    pub source_after: Option<Vec<query::Row>>,
 }
 pub struct Calls {
     pub records: Mutex<Vec<Record>>,
     pub provider: Arc<provider::Calls>,
+    pub capture_complete_source: std::sync::atomic::AtomicBool,
+    pub after_first_observation: Mutex<Option<Box<dyn FnOnce() + Send>>>,
 }
 impl Calls {
     pub fn new(provider: Arc<provider::Calls>) -> Self {
         Self {
             records: Mutex::new(Vec::new()),
             provider,
+            capture_complete_source: std::sync::atomic::AtomicBool::new(false),
+            after_first_observation: Mutex::new(None),
         }
     }
 }
@@ -99,10 +105,25 @@ impl Rule {
             Err(cause) if cause.source_unavailable() => None,
             Err(cause) => return Err(execution(cause)),
         };
+        let (source_before, source_after) =
+            if self.calls.capture_complete_source.load(Ordering::SeqCst) {
+                let all = Coordinates::new(-1, -1, 100, 1);
+                let proposed = pair.proposed().query(&all).map_err(execution)?;
+                let committed = match pair.committed().query(&all) {
+                    Ok(rows) => Some(rows),
+                    Err(cause) if cause.source_unavailable() => None,
+                    Err(cause) => return Err(execution(cause)),
+                };
+                (committed, Some(proposed))
+            } else {
+                (None, None)
+            };
         let violation = after.len() > 2;
         let bytes = before
             .iter()
             .chain(std::iter::once(&after))
+            .chain(source_before.iter())
+            .chain(source_after.iter())
             .flat_map(|rows| rows.iter())
             .try_fold(size_of::<Record>() as u64, |bytes, row| {
                 bytes.checked_add((size_of::<query::Row>() + row.identity.capacity()) as u64)
@@ -121,7 +142,12 @@ impl Rule {
             before,
             after,
             updates_before_callback,
+            source_before,
+            source_after,
         });
+        if let Some(observe) = self.calls.after_first_observation.lock().unwrap().take() {
+            observe();
+        }
         Ok(if violation {
             WorthQueryApplicationInvariantVerdict::Violation(())
         } else {

@@ -5636,6 +5636,17 @@ change, which follows the declared cold-source policy. The same journey checks
 zero provider build/update calls on exact restoration, an ItemBounds change that
 rebuilds both scopes, and original-request cancellation after the first real rule
 query followed by a fresh retry.
+The [generated endpoint journey](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/generated/court.rs)
+publishes an Edge and both Vertices as declared output roles, including both
+Directory memberships and the real Starts/Ends relations. Full-range rule queries
+check the complete logical roster during suspension; changing a reconstructed
+endpoint reaches the existing enclosure rule in unopened B. Exact reconstruction
+reuses the same payload without provider build/update. Cancelling the original
+suspension request after a real rule query preserves selection and available
+public reads, then a fresh suspension succeeds. Use
+`WorthQueryGeneratedOutputSuspensionFailure::execution_control_stop()` to borrow
+its typed request stop; a preparation failure still owns its original Native
+denial. These are integer enclosure and Source lifecycle checks.
 The compiled endpoint shape preserves each actual `Starts` and `Ends` relation
 occurrence and checks its declared cardinality before provider maintenance:
 

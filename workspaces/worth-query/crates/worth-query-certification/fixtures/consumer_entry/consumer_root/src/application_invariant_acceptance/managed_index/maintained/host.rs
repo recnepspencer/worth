@@ -22,7 +22,7 @@ impl ApplicationSchemaContribution<Catalog> for Contribution {
     ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
         // Declare this root's typed Source, fields, index and public bindings.
         // Its fixed contribution adds the rule and original decision reads.
-        generated::declare(super::schema::declare(builder))
+        geometry::generated::declare(generated::declare(super::schema::declare(builder)))
             .operation_managed_index_read::<query::PrefixBinding, _, _>(
                 mutation::RenameItem::reference(),
             )
@@ -41,7 +41,8 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<Catalog>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        generated::contracts(contracts)
+        generated::contracts(contracts)?;
+        geometry::generated::contracts(contracts)
     }
     fn configure(
         configuration: Configuration,
@@ -49,6 +50,7 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         geometry::configure(configuration.geometry, setup)?;
         generated::configure(setup)?;
+        geometry::generated::configure(setup)?;
         setup.managed_index::<prefix::PrefixIndex, _>(prefix::Provider(configuration.prefix))?;
         setup.handler::<mutation::Binding, _>(Handler(configuration.decision_read))?;
         setup.handler::<authoring::Binding, _>(authoring::Handler)?;
@@ -67,7 +69,8 @@ impl ApplicationFeature<Catalog> for Feature {
 }
 impl ApplicationProgramDefinition<Catalog> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<generated::program::Root>;
+    type Outputs =
+        ApplicationProgramOutputs<(generated::program::Root, geometry::generated::program::Root)>;
     type Rules = ApplicationRuleList<
         ApplicationRuleAt<
             ApplicationSharedRuleRef<Catalog, rule::ReservedName>,
@@ -87,6 +90,9 @@ impl ApplicationProgramDefinition<Catalog> for Program {
         vec![
             ApplicationFeatureSpec::root::<Catalog, Feature>()
                 .provides::<generated::program::DirectoryOutput>()
+                .provides::<geometry::generated::program::DirectoryOutput>()
+                .action::<geometry::generated::request::Binding, geometry::generated::program::Delivery>()
+                .finish_action()
                 .action::<generated::source::operation::Binding, generated::program::Delivery>()
                 .finish_action()
                 .native_action::<mutation::Binding>()
@@ -99,6 +105,7 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 .finish_action()
                 .finish(),
             generated::program::feature(),
+            geometry::generated::program::feature(),
         ]
     }
 }

@@ -634,9 +634,26 @@ outer restoration owner retains the complete in-phase outcome across its final
 control handoff. Proof namespace and Native receiver controls pass alongside the
 public court's exact final-owner allocation balance. See
 [the correspondence slice](milestone-9.19-phase2-source-correspondence-plan.md).
-Geometry-generated composition, cold B, fresh historical query admission, the
-opposite availability-direction interruption and wider recovery/growth controls
-remain open.
+The generated endpoint counterpart is now qualified in that same Catalog and
+Program through a second real fixed output root. Its producer creates the Edge
+and both Vertex roles, both Directory memberships and Starts/Ends together;
+reconstruction uses all three actual role handles and retained endpoint custody.
+Independent native B edges expose the reconstructed endpoint at 50 as B's third
+probe enclosure, while complete-range rule queries prove the generated 0-to-10
+edge remains in the logical roster even outside the fixed probe. Both actual
+scoped logical views survive suspension; current physical reads refuse before
+provider query, and exact geometry restoration reuses payloads with zero builds
+or updates while both normal rules still run. Original suspension cancellation
+after one real committed/proposed rule query preserves exact Cancelled, available
+Native/World selection and fresh physical reads; a fresh selected suspension
+retries. Together with the prefix restoration stop, both availability directions
+have prepublication original-request interruption evidence. The suspension outer
+entry preserves complete owned in-phase outcomes; its borrowed control-stop
+projection retains the original Native denial and shares classification with
+restoration. All 28 public managed-index controls and exact final-owner allocation
+balance pass. See [the generated geometry slice](milestone-9.19-phase2-generated-geometry-plan.md).
+Cold B, fresh historical query admission, late-success/pending recovery execution
+and wider recovery/growth controls remain open.
 Remaining lifecycle/affinity hostile controls, materialization/recovery composition
 and the required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication
