@@ -14,6 +14,7 @@ pub(crate) struct Location {
 pub(crate) struct SourceContext {
     source: String,
     fixtures: Option<String>,
+    relative_fixtures: Option<String>,
     owner: Option<String>,
     workspace: Option<String>,
 }
@@ -22,6 +23,7 @@ impl SourceContext {
     pub(crate) fn new(source: &Path) -> Self {
         let source = source_key(source);
         let mut fixtures = None;
+        let mut relative_fixtures = None;
         let mut owner_name = None;
         for (offset, _) in source.match_indices("/tests/") {
             let tail = &source[offset + 7..];
@@ -30,6 +32,7 @@ impl SourceContext {
                     if let Some((owner, _)) = tail.split_once('/') {
                         let length = source.len() - tail.len() + owner.len() + 1;
                         fixtures = Some(source[..length].to_owned());
+                        relative_fixtures = Some(source[offset + 1..length].to_owned());
                         owner_name = Some(owner.replace('_', "-"));
                         break;
                     }
@@ -56,6 +59,7 @@ impl SourceContext {
         Self {
             source,
             fixtures,
+            relative_fixtures,
             owner,
             workspace,
         }
@@ -86,12 +90,26 @@ impl SourceContext {
 
     fn path(&self, path: &str) -> String {
         let symbolic = path.replace('\\', "/");
+        if let Some((workspace, relative)) = self
+            .workspace
+            .as_ref()
+            .zip(symbolic.strip_prefix("$WORKSPACE/"))
+        {
+            return self.path(&format!("{workspace}{relative}"));
+        }
         for marker in ["$WORKSPACE/", "$RUST/", "$CARGO/"] {
             if let Some(relative) = symbolic.strip_prefix(marker) {
                 return format!("{marker}{relative}");
             }
         }
         let key = source_key(Path::new(path));
+        if let Some(relative) = self
+            .relative_fixtures
+            .as_ref()
+            .and_then(|root| key.strip_prefix(root))
+        {
+            return format!("tests/{relative}");
+        }
         if let Some(relative) = self
             .fixtures
             .as_ref()

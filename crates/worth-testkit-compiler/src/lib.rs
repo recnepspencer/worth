@@ -17,6 +17,9 @@ mod source_locations;
 mod normalization_tests;
 
 #[cfg(test)]
+mod relocated_snapshot_tests;
+
+#[cfg(test)]
 mod tests;
 
 pub use denial::{denied, production_denial};

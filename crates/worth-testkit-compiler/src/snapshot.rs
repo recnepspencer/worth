@@ -12,7 +12,30 @@ pub(crate) fn compared(
     source: &Path,
 ) -> Result<(String, String), String> {
     let context = SourceContext::new(source);
-    let expected = expected.replace("\r\n", "\n");
+    let expected = crate::source_locations::normalize(expected, source);
+    // First remove unasserted line numbers without changing the compiler's
+    // gutter width. That retains the evidence needed by common-margin removal.
+    let observed = mask_external(&context, &expected, observed, GutterWidth::Compiler)?;
+    let expected = diagnostic_layout::unindent(&expected);
+    let observed = diagnostic_layout::unindent(&observed);
+    // Only now align masked external gutters with the normalized snapshot.
+    // Doing so earlier makes them influence the primary source's common margin.
+    let observed = mask_external(&context, &expected, &observed, GutterWidth::Snapshot)?;
+    let observed = crate::diagnostic_lists::normalize(&expected, &observed);
+    Ok((expected, observed))
+}
+
+enum GutterWidth {
+    Compiler,
+    Snapshot,
+}
+
+fn mask_external(
+    context: &SourceContext,
+    expected: &str,
+    observed: &str,
+    width: GutterWidth,
+) -> Result<String, String> {
     let lines = expected.lines().collect::<Vec<_>>();
     let headers = lines
         .iter()
@@ -49,9 +72,13 @@ pub(crate) fn compared(
             index += 1;
             actual.push(render(&location));
         } else if let Some((expected_width, actual_width)) = hide_gutter.zip(snippet_width(line)) {
+            let preserved_width = match width {
+                GutterWidth::Compiler => actual_width,
+                GutterWidth::Snapshot => expected_width,
+            };
             actual.push(format!(
                 "{}{}",
-                " ".repeat(expected_width),
+                " ".repeat(preserved_width),
                 &line[actual_width..]
             ));
         } else {
@@ -59,11 +86,7 @@ pub(crate) fn compared(
             actual.push(line.to_owned());
         }
     }
-    let expected = crate::source_locations::normalize(&expected, source);
-    let expected = diagnostic_layout::unindent(&expected);
-    let observed = diagnostic_layout::unindent(&actual.join("\n"));
-    let observed = crate::diagnostic_lists::normalize(&expected, &observed);
-    Ok((expected, observed))
+    Ok(actual.join("\n"))
 }
 
 fn render(location: &Location) -> String {
