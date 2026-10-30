@@ -94,12 +94,13 @@ def artifact(event, context):
             parent = parent.parent
         if parent.name in ('debug', 'release', 'ci-test', 'diagnostic-test'):
             target_dir = str(parent.parent)
+    linked = any(name.endswith(('.rlib', '.dll', '.so', '.dylib', '.a', '.lib', '.exe', '.wasm')) for name in files)
+    check_mode = 'build' if linked else 'check' if any(name.endswith('.rmeta') for name in files) else context.get('mode', 'unmeasured')
     return {'package': event['package_id'], 'target': event['target']['name'],
             'kind': sorted(event['target']['kind']), 'features': sorted(event['features']),
             'profile': event['profile'], 'target_dir': target_dir,
             'cargo_profile': context.get('cargo_profile'),
-            'check_mode': context.get('mode', 'check' if any(f.endswith('.rmeta') for f in files)
-                                      and not any(f.endswith('.rlib') for f in files) else 'build'),
+            'check_mode': check_mode, 'invocation_mode': context.get('mode'),
             'filenames': files}
 
 

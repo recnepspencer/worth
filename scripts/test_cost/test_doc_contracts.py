@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 from doc_contracts import (DocContractFailure, DocFailureKind, execute, owners_for,
-                           parse_output)
+                           owners_from_metadata, parse_output)
 
 
 def block(rows=(), failed=0, ignored=0):
@@ -71,7 +71,7 @@ class DocContractTests(unittest.TestCase):
         (root / 'owner/src/lib.rs').write_text('', encoding='utf-8')
         return root / 'Cargo.toml'
 
-    def test_owner_mapping_respects_actual_library_names_and_doctest_setting(self):
+    def test_explicit_doc_selection_uses_actual_library_name_even_when_default_doctests_are_disabled(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             manifest = self.workspace(root)
@@ -80,7 +80,21 @@ class DocContractTests(unittest.TestCase):
             package.write_text(package.read_text() + '[lib]\nname="public_api"\n', encoding='utf-8')
             self.assertEqual(owners_for(manifest), {'public_api': 'owner-pkg'})
             package.write_text(package.read_text() + 'doctest=false\n', encoding='utf-8')
+            self.assertEqual(owners_for(manifest), {'public_api': 'owner-pkg'})
+            package.write_text(package.read_text() + 'crate-type=["cdylib", "staticlib"]\n', encoding='utf-8')
             self.assertEqual(owners_for(manifest), {})
+
+    def test_captured_metadata_owners_include_disabled_defaults_but_only_doctestable_members(self):
+        def package(identity, crate_type='lib'):
+            return {'id': identity, 'name': identity, 'targets': [{'name': identity.replace('-', '_'),
+                    'kind': [crate_type], 'crate_types': [crate_type], 'doctest': False}]}
+        metadata = {'workspace_members': ['owner-pkg', 'dynamic'],
+                    'packages': [package('owner-pkg'), package('dynamic', 'cdylib'), package('dependency')]}
+        self.assertEqual(owners_from_metadata(metadata), {'owner_pkg': 'owner-pkg'})
+        metadata['workspace_members'].append('missing')
+        with self.assertRaises(DocContractFailure) as failure:
+            owners_from_metadata(metadata)
+        self.assertEqual(failure.exception.kind, DocFailureKind.MISSING_OWNER)
 
     def test_explicit_empty_library_is_honored_when_automatic_discovery_is_disabled(self):
         with tempfile.TemporaryDirectory() as temporary:

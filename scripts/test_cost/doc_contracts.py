@@ -21,6 +21,7 @@ class DocFailureKind(Enum):
     DUPLICATE = 'duplicate-test'
     UNSAFE_SELECTION = 'ignored-selection'
     MISSING_LOG = 'missing-command-log'
+    RETAINED_EVENTS = 'conflicting-retained-events'
 
 
 class DocContractFailure(ValueError):
@@ -40,13 +41,17 @@ MODES = re.compile(r' - (compile fail|compile|should panic)$')
 
 
 def owners_for(manifest):
-    """Cargo headings identify library targets; package names remain the identity."""
+    """Explicit --doc selects doctestable libs even when doctest=false.
+
+    Cargo 1.94 UnitGenerator::create_proposals checks doctested() only for the
+    default cargo test selection; explicit --doc uses is_lib + doctestable.
+    """
     owners = {}
     for package in members(manifest):
         path = package['manifest']
         configuration = tomllib.loads(filesystem_path(path).read_text(encoding='utf-8-sig'))
         library = configuration.get('lib', {})
-        if not library.get('doctest', True):
+        if not set(library.get('crate-type', ['lib'])) & {'lib', 'rlib', 'proc-macro'}:
             continue
         source = path.parent / library.get('path', 'src/lib.rs')
         explicit = 'lib' in configuration
@@ -56,10 +61,28 @@ def owners_for(manifest):
             if explicit:
                 raise DocContractFailure(DocFailureKind.MISSING_OWNER, f'library source missing: {source}')
             continue
-        crate = library.get('name', package['name'].replace('-', '_'))
+        crate = library.get('name', package['name']).replace('-', '_')
         if crate in owners:
             raise DocContractFailure(DocFailureKind.AMBIGUOUS_OWNER, f'Doc-tests {crate}')
         owners[crate] = package['name']
+    return owners
+
+
+def owners_from_metadata(metadata):
+    packages = {package['id']: package for package in metadata['packages']}
+    owners = {}
+    for identity in metadata['workspace_members']:
+        if identity not in packages:
+            raise DocContractFailure(DocFailureKind.MISSING_OWNER, identity)
+        package = packages[identity]
+        for target in package['targets']:
+            library = set(target['kind']) & {'lib', 'rlib', 'dylib', 'cdylib', 'staticlib', 'proc-macro'}
+            if not library or not set(target['crate_types']) & {'lib', 'rlib', 'proc-macro'}:
+                continue
+            crate = target['name'].replace('-', '_')
+            if crate in owners:
+                raise DocContractFailure(DocFailureKind.AMBIGUOUS_OWNER, f'Doc-tests {crate}')
+            owners[crate] = package['name']
     return owners
 
 
@@ -197,6 +220,42 @@ def parse_output(stdout, stderr, owners):
             'events': events, 'blocks': blocks, 'owners': headings}
 
 
+def retain_observation(parsed, exit_code, output_directory, destinations):
+    """Publish only derived actual observations; retries cannot repeat events."""
+    output = Path(output_directory)
+    output.mkdir(parents=True, exist_ok=True)
+    parsed['selections'] = [row for row in parsed['inventory'] if not row['ignored']]
+    parsed['exit_code'] = exit_code
+    parsed['counts'] = {event: sum(row['event'] == event for row in parsed['events'])
+                        for event in ('ok', 'failed', 'ignored')}
+    parsed['status'] = 'pass' if exit_code == 0 and not any(
+        event['event'] == 'failed' for event in parsed['events']) else 'fail'
+    pending = {}
+    for destination in {Path(path).resolve() for path in destinations}:
+        if not destination.is_file():
+            raise DocContractFailure(DocFailureKind.MISSING_LOG, str(destination))
+        existing = []
+        for line in destination.read_text(encoding='utf-8').splitlines():
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(event, dict) and event.get('test-cost', {}).get('execution') == 'rustdoc':
+                existing.append(event)
+        if existing != parsed['events'][:len(existing)]:
+            raise DocContractFailure(DocFailureKind.RETAINED_EVENTS, str(destination))
+        pending[destination] = parsed['events'][len(existing):]
+    for destination, events in pending.items():
+        if not events:
+            continue
+        with destination.open('a', encoding='utf-8') as stream:
+            stream.write('\n' + ''.join(json.dumps(event) + '\n' for event in events))
+    for name in ('inventory', 'selections'):
+        (output / f'{name}.json').write_text(json.dumps(parsed[name], indent=2) + '\n', encoding='utf-8')
+    (output / 'result.json').write_text(json.dumps(parsed, indent=2) + '\n', encoding='utf-8')
+    return parsed
+
+
 def execute(manifest, output_directory, runner, profile='dev'):
     manifest, output = Path(manifest).resolve(), Path(output_directory).resolve()
     owners = owners_for(manifest)
@@ -213,21 +272,7 @@ def execute(manifest, output_directory, runner, profile='dev'):
                '--', '--format', 'pretty']
     result = runner(command, manifest.parent, log)
     parsed = parse_output(result.stdout, result.stderr, owners)
-    parsed['selections'] = [row for row in parsed['inventory'] if not row['ignored']]
-    parsed['exit_code'] = result.returncode
-    parsed['counts'] = {event: sum(row['event'] == event for row in parsed['events'])
-                        for event in ('ok', 'failed', 'ignored')}
-    parsed['status'] = 'pass' if result.returncode == 0 and not any(
-        event['event'] == 'failed' for event in parsed['events']) else 'fail'
-    destinations = {log.resolve()}
+    destinations = [log]
     if getattr(runner, 'logs', []):
-        destinations.add(Path(runner.logs[-1]).resolve())
-    for destination in destinations:
-        if not destination.is_file():
-            raise DocContractFailure(DocFailureKind.MISSING_LOG, str(destination))
-        with destination.open('a', encoding='utf-8') as stream:
-            stream.write('\n' + ''.join(json.dumps(event) + '\n' for event in parsed['events']))
-    for name in ('inventory', 'selections'):
-        (output / f'{name}.json').write_text(json.dumps(parsed[name], indent=2) + '\n', encoding='utf-8')
-    (output / 'result.json').write_text(json.dumps(parsed, indent=2) + '\n', encoding='utf-8')
-    return parsed
+        destinations.append(runner.logs[-1])
+    return retain_observation(parsed, result.returncode, output, destinations)

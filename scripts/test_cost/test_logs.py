@@ -55,9 +55,16 @@ class ArtifactObservationTests(unittest.TestCase):
     def test_profile_target_directory_and_check_drift_are_distinguished(self):
         result = self.lane([compiled(),
                             dict(type='cargo-invocation', target_dir='alternate', mode='check'),
-                            compiled(profile={'test': False, 'opt_level': '2'})])
+                            compiled(profile={'test': False, 'opt_level': '2'}, filenames=['alternate/debug/deps/owner.rmeta'])])
         self.assertEqual(result['duplicates'][0]['causes'],
                          ['profile', 'target_dir', 'check_mode'])
+
+    def test_one_cargo_check_can_link_a_host_dependency_and_check_its_target_library(self):
+        result = self.lane([dict(type='cargo-invocation', mode='check'), compiled(),
+                            compiled(filenames=['C:/x/target/debug/deps/owner-456.rmeta'])])
+        self.assertEqual([row['check_mode'] for row in result['artifacts']], ['build', 'check'])
+        self.assertEqual([row['invocation_mode'] for row in result['artifacts']], ['check', 'check'])
+        self.assertEqual(result['duplicates'][0]['causes'], ['check_mode'])
 
     def test_text_only_build_is_unknown_rather_than_zero_duplicates(self):
         with tempfile.TemporaryDirectory() as directory:
