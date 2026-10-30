@@ -89,6 +89,17 @@ def pool_search(overrides, observed):
     return result
 
 
+def settle_pool_hypothesis(row, configuration_observed):
+    """Resolve a retained hypothesis only from a closed, fully evaluated search."""
+    searches = row['reservation_search']
+    if (configuration_observed and all(check['status'] == 'found' for check in row['checks'][:2])
+            and searches and all(search['status'] == 'no-matching-whole-pool-rule' for search in searches)):
+        row['checks'][-1].update(status='refuted', evidence=searches,
+            detail='Historical whole-pool hypothesis disproved by the supplied configuration; '
+                   'no reservation is added or inferred. Actual slot use remains telemetry.')
+        row.update(status='refuted', missing=[])
+
+
 def verified_environment(environment, documents):
     """Resolve the two named parameterized helper forms present in this corpus.
 
@@ -216,6 +227,11 @@ def validate(before, documents, lanes, raw_logs, environments=None, configuratio
             check('matching whole-pool reservation', reservations,
                   'No reservation is inferred from duration or from the task description.')])
         row['reservation_search'] = pool_search(overrides, observed)
+        # The original inventory supplied a hypothesis, not an assertion that
+        # may manufacture a reservation. Closed configuration counterevidence
+        # resolves that hypothesis while leaving absent/unsupported evidence
+        # unknown. A lexical loop says nothing about measured CPU parallelism.
+        settle_pool_hypothesis(row, configuration is not None)
         rows.append(row)
     workspace = [(name, lane) for name, lane in lanes.items() if 'workspace' in name]
     serial = [{'log': lane['log'], 'command': text.splitlines()[0] if text else ''}
@@ -244,10 +260,11 @@ def validate(before, documents, lanes, raw_logs, environments=None, configuratio
                                 'matched_binary_and_full_names': sorted(matches)})
     rows.append(case('serial-workspace-repeats-partitions', [check('workspace command', serial),
                                                            check('same binary and full test names repeated', repeats)]))
-    missing = [row['case'] for row in rows if row['status'] != 'found']
+    missing = [row['case'] for row in rows if row['status'] not in ('found', 'refuted')]
     return {'schema': 1, 'source_revision': before.get('source_revision'),
             'timing_relationship': before.get('source_timing_relationship'),
             'status': 'pass' if not missing else 'missing-evidence', 'missing': missing, 'cases': rows,
+            'refuted_hypotheses': [row['case'] for row in rows if row['status'] == 'refuted'],
             'limitations': ['Historical source/timing association does not measure causal build time.',
                             'Landing logs contain no CPU/slot or per-builder fingerprint telemetry.',
                             'Unknown reservation expressions cannot establish whole-pool ownership.']}
@@ -255,7 +272,9 @@ def validate(before, documents, lanes, raw_logs, environments=None, configuratio
 
 def markdown(result):
     lines = ['# Known test-cost discovery validation', '', f'Status: **{result["status"]}**.', '',
-             'Timings are historical telemetry, never gates. Source and timings may precede different court revisions.', '',
+             'Timings are historical telemetry, never gates. Source and timings may precede different court revisions. '
+             'Refuted means configuration counterevidence disproves the original reservation hypothesis; '
+             'it does not establish CPU parallelism or add a reservation.', '',
              '| Known case | Discovery | Missing evidence |', '|---|---|---|']
     lines += [f'| {row["case"]} | {row["status"]} | {", ".join(row["missing"]) or "none"} |' for row in result['cases']]
     for row in result['cases']:

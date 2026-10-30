@@ -102,11 +102,42 @@ class KnownDiscoveryTests(unittest.TestCase):
         config = {'profile': {'default': {'overrides': [
             {'filter': 'test(other_case)', 'threads-required': 'num-test-threads'}]}}}
         identity = 'sequential-pool:branch_transitions_oracle'
-        self.assertIn('matching whole-pool reservation', get(validate({}, source, observed, {}, configuration=config), identity)['missing'])
+        disproved = get(validate({}, source, observed, {}, configuration=config), identity)
+        self.assertEqual(disproved['status'], 'refuted')
+        self.assertEqual(disproved['missing'], [])
+        self.assertEqual(disproved['checks'][-1]['status'], 'refuted')
+        self.assertEqual(disproved['reservation_search'][0]['rules'][0]['matches'], False)
         config['profile']['default']['overrides'][0]['filter'] = 'test(branch_transitions_oracle)'
         self.assertEqual(get(validate({}, source, observed, {}, configuration=config), identity)['status'], 'found')
         self.assertIsNone(pool_match('not test(branch_transitions_oracle)', {'name': name}))
         self.assertFalse(pool_match('binary_id(=different) & test(branch_transitions_oracle)', {'name': name}))
+
+    def test_refuted_reservation_hypothesis_requires_closed_config_and_real_source_and_execution(self):
+        name = 'pkg::court$branch_transitions_oracle::all_points'
+        source = {'process/branch_transitions_oracle/mod.rs': 'for cut in cuts { run(cut); }'}
+        observed = {'scenario': lane([event(name)])}
+        identity = 'sequential-pool:branch_transitions_oracle'
+        for documents, lanes, config in [(source, observed, None), ({}, observed, {}),
+                                          (source, {}, {})]:
+            with self.subTest(documents=bool(documents), lanes=bool(lanes), config=config):
+                self.assertEqual(get(validate({}, documents, lanes, {}, configuration=config),
+                                     identity)['status'], 'missing-evidence')
+        result = validate({}, source, observed, {}, configuration={})
+        self.assertEqual(get(result, identity)['status'], 'refuted')
+        self.assertIn(identity, result['refuted_hypotheses'])
+        self.assertNotIn(identity, result['missing'])
+        self.assertIn('disproves the original reservation hypothesis', markdown(result))
+
+    def test_unsupported_reservation_grammar_keeps_the_hypothesis_unknown(self):
+        source = {'process/branch_transitions_oracle/mod.rs': 'for cut in cuts { run(cut); }'}
+        observed = {'scenario': lane([event('pkg::court$branch_transitions_oracle::all_points')])}
+        config = {'profile': {'default': {'overrides': [
+            {'filter': 'not test(other_case)', 'threads-required': 'num-test-threads'}]}}}
+        row = get(validate({}, source, observed, {}, configuration=config),
+                  'sequential-pool:branch_transitions_oracle')
+        self.assertEqual(row['status'], 'missing-evidence')
+        self.assertEqual(row['reservation_search'][0]['status'], 'unknown')
+        self.assertIn('matching whole-pool reservation', row['missing'])
 
     def test_formal_build_and_run_are_measured_separately_from_test_work(self):
         observations = {'formal': lane([event('formal::court$proof', .3)],

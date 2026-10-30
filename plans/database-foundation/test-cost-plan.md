@@ -85,3 +85,20 @@ govern compile size, test names and non-gating measurements respectively.
 Boundary-check is being replaced under `orchestration/m3/boundary_triage.md`.
 This slice does not edit that checker; its no-in-test-compilation rule is owned
 by `scripts/test_cost` for the coordinator's subsequent port.
+
+## Corrected historical reservation inventory
+
+The coordinator's 2026-10-30 ruling establishes that the original seven
+whole-pool entries were hypotheses. Retained Landing 1 configuration and
+executions refute six: `branch_transitions_oracle`, `canonical_journal_oracle`,
+`physical_checkpoint_oracle`, `limit_sweep`, `process_kill`, and
+`recovery_interruption`. Only `anchored_record_members::oracle` has the claimed
+matching whole-pool rule. No reservation is added to satisfy a false premise.
+
+`known_cases.py` preserves the source loops, execution events and every examined
+filter as counterevidence. A refuted hypothesis is resolved inventory, while
+missing source/execution/configuration or unsupported selector grammar remains
+unknown. Actual slot parallelism still requires CPU measurement; neither a
+serial source loop nor a matching reservation measures it. The original failed
+report remains byte-identical; the corrected verdict is a separately derived
+report under `target/test-cost/b3-corrections/known-cases.{json,md}`.
