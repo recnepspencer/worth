@@ -88,3 +88,11 @@ def changed_paths(repo, base, head, *, merge_base=False):
     # Disable rename collapsing: both the removed and added path can own inputs.
     return sorted(set(filter(None, run(['git', 'diff', '--no-renames', '--name-only', '-z',
                                        f'{base}{separator}{head}', '--'], repo).split('\0'))))
+
+
+def dirty_paths(repo):
+    """Keep staged and worktree changes independently, including opposite edits."""
+    commands = [['git', 'diff', '--cached', '--no-renames', '--name-only', '-z', '--'],
+                ['git', 'diff', '--no-renames', '--name-only', '-z', '--'],
+                ['git', 'ls-files', '--others', '--exclude-standard', '-z']]
+    return sorted({path for command in commands for path in run(command, repo).split('\0') if path})

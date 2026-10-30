@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from cargo_reach import changed_paths, consumer_documents, local_package_dirs, workspace_hits
+from cargo_reach import changed_paths, consumer_documents, dirty_paths, local_package_dirs, workspace_hits
 
 
 class CargoReachTests(unittest.TestCase):
@@ -72,6 +72,21 @@ class CargoReachTests(unittest.TestCase):
                 changed_paths(root, 'nonexistent-base', 'HEAD')
             with self.assertRaisesRegex(ValueError, 'comparison base'):
                 changed_paths(root, '0'*40, 'HEAD')
+
+    def test_opposite_staged_and_worktree_changes_remain_dirty_inputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            def git(*args):
+                return subprocess.check_output(['git', *args], cwd=root, text=True).strip()
+            git('init', '-q'); git('config', 'user.email', 'fixture@example.invalid')
+            git('config', 'user.name', 'Fixture')
+            source = root/'source.rs'; source.write_text('original\n')
+            git('add', '.'); git('commit', '-qm', 'before')
+            source.write_text('staged\n'); git('add', '.')
+            source.write_text('original\n')
+            (root/'untracked.rs').write_text('untracked\n')
+            self.assertEqual(git('diff', 'HEAD', '--name-only'), '')
+            self.assertEqual(dirty_paths(root), ['source.rs', 'untracked.rs'])
 
 
 if __name__ == '__main__':

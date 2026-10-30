@@ -591,3 +591,8 @@ matrices. Run explicit phase constitution/context/line checks, then independentl
 review the exact incremental cut with accepted unchanged-source evidence named.
 Hosted workflow selection, cache performance and whole-workspace qualification
 remain unrun by this routing-only cut.
+
+Independent review found a dirty-path design flaw: comparing HEAD directly to
+the working tree hides a staged edit canceled by an unstaged edit. Preserve both
+dimensions through the shared module's separate cached/worktree diffs, plus
+untracked files. A real Git fixture asserts that this `MM` source stays selected.
