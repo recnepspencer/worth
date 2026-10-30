@@ -141,9 +141,24 @@ workspace is needed to validate this infrastructure correction.
   recipes, using the optional non-gating transport documented in
   `scripts/test_cost/setup_observation.md`. Opaque and uninstrumented recipes
   stay unknown. No fixture sharing follows from a fingerprint alone.
-- The sweep threading finding remains open. The smallest proposed correction
-  reuses the physical Execution owner's existing leased pool through a narrow
-  owned control door, preserving exhaustive draining and canonical panic order.
-  Execution and checker changes are outside this round's allowed edit scope.
-  The queued combined-head integration and boundary gate remain mandatory;
-  this correction does not certify the complete landing.
+- The coordinator's `test_cost_pool_integration_ruling.md` supersedes the
+  physical-Execution control-door proposal. The existing independent harness
+  remains owned by `worth-store-test-support::sweep::run_jobs`; it introduces no
+  ambient leased semantic context around a Store case. Its only normal-graph
+  consumers must remain courts, certification harnesses and testkits; ordinary
+  product callers may reach it only through their development/test graph.
+- Register only that named function through the replacement performance law's
+  local `expect(clippy::disallowed_methods)` declaration: independent
+  certification harness, one width query, one scope and one spawn site. Keep
+  queue membership, ordered outputs, catch-per-case panic handling and final
+  canonical panic selection. Width zero/one drains the same queue directly on
+  the calling thread, without constructing a worker scope. Do not introduce
+  Execution doors, features, runtime dependencies or checker/config edits.
+- Focused evidence covers empty input, repeated equal inputs, direct one-worker
+  execution and complete draining after multiple panics at serial and parallel
+  widths. Qualify those tests and a real Store serial/nested-stop case only after
+  the supplied combined source and reviewed checker are integrated on the
+  pinned compiler. Verify the integrated consumer graph, strict Clippy,
+  boundaries, source caps, formatting and current nonignored membership;
+  unchanged exhaustive sweeps are not rerun for a local site declaration.
+  Earlier 1.94 captures remain references, not integrated 1.99.1 qualification.
