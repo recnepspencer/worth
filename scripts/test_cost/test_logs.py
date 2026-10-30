@@ -19,6 +19,45 @@ def compiled(**changes):
 
 
 class ArtifactObservationTests(unittest.TestCase):
+    def test_unsuccessful_build_without_error_target_is_unknown_not_zero_attempts(self):
+        marker, cached = self.declared(unit('owner'))
+        cached['fresh'] = True
+        for finished in (False, None):
+            events = [marker, cached]
+            if finished is not None:
+                events.append({'reason': 'build-finished', 'success': finished})
+            events.append({'type': 'cargo-result', 'exit_code': 101})
+            with self.subTest(finished=finished):
+                lane = self.lane(events)
+                self.assertEqual(lane['failed_compiler_attempts'], [])
+                self.assertEqual(lane['artifacts'], [])
+                self.assertEqual(lane['compiler_attempt_refusals'][0]['kind'], 'unattributed-compiler-outcome')
+
+    def test_build_success_then_test_runtime_failure_has_no_unknown_compile(self):
+        marker, cached = self.declared(unit('owner'))
+        marker['command'] = ['cargo', 'test']
+        cached['fresh'] = True
+        lane = self.lane([marker, cached, {'reason': 'build-finished', 'success': True},
+                          self.error(unit('foreign-runtime-print')), {'reason': 'build-finished', 'success': False},
+                          {'type': 'cargo-result', 'exit_code': 101}])
+        self.assertEqual(lane['compiler_attempt_refusals'], [])
+        self.assertEqual(lane['failed_compiler_attempts'], [])
+
+    def test_outcome_refusal_belongs_to_its_invocation_not_the_last_exit(self):
+        marker, cached = self.declared(unit('owner'))
+        cached['fresh'] = True
+        lane = self.lane([marker, cached, {'reason': 'build-finished', 'success': False},
+                          {'type': 'cargo-result', 'exit_code': 101}, marker, cached,
+                          {'reason': 'build-finished', 'success': True}, {'type': 'cargo-result', 'exit_code': 0}])
+        self.assertEqual(len(lane['compiler_attempt_refusals']), 1)
+        self.assertTrue(lane['compiler_attempt_refusals'][0]['invocation'].endswith('#0'))
+
+    def test_noncompiling_declaration_failure_does_not_invent_a_compiler_attempt(self):
+        lane = self.lane([{'type': 'cargo-invocation', 'command': ['cargo', 'check', '--unit-graph']},
+                          {'type': 'cargo-result', 'exit_code': 101}])
+        self.assertEqual(lane['failed_compiler_attempts'], [])
+        self.assertEqual(lane['compiler_attempt_refusals'], [])
+
     def error(self, row, level='error'):
         return {'reason': 'compiler-message', 'package_id': row['pkg_id'], 'target': row['target'],
                 'message': {'level': level, 'message': 'compiler denied this target'}}

@@ -16,7 +16,7 @@ def lane_budget(configuration, workspace, lanes, profile):
 
 def build_violations(lane, budget):
     if lane['build_observation'] != 'json':
-        return [{'kind': 'unmeasured-build', 'log': lane['log']}]
+        return list(lane.get('compiler_attempt_refusals', [])) or [{'kind': 'unmeasured-build', 'log': lane['log']}]
     counts = Counter()
     directories, units, compiler_inputs = {}, {}, {}
     violations = list(lane.get('compiler_attempt_refusals', []))

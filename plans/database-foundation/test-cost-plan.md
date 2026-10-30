@@ -75,7 +75,7 @@ govern compile size, test names and non-gating measurements respectively.
 | Production certification absence | `production_denial_refuses_a_certification_capture`; real `certification_authority_is_absent_in_the_production_environment`; prebuilder rejects resolved test features |
 | Successful fixtures compile and execute ordinarily | `test_ordinary_test_executes_the_program_and_preserves_a_moved_test_name`; emitted supported-program court tests |
 | Independently built process executables | `test_only_independently_compiled_binary_can_be_retained`; existing moved process courts consume the manifest |
-| Compile-count ratchet | `test_same_unit_recompiled_in_another_directory_exceeds_budget`; `test_identical_failed_unit_in_two_cargo_invocations_exceeds_unchanged_budget`; `test_multiple_error_messages_in_one_invocation_are_one_budgeted_attempt`; `test_cached_different_libraries_refuse_even_when_no_compilation_occurs`; committed `scripts/test_cost/budgets.json` |
+| Compile-count ratchet | `test_same_unit_recompiled_in_another_directory_exceeds_budget`; `test_identical_failed_unit_in_two_cargo_invocations_exceeds_unchanged_budget`; `test_multiple_error_messages_in_one_invocation_are_one_budgeted_attempt`; `test_unattributed_unsuccessful_outcome_is_refused_with_or_without_artifact_json`; `test_cached_different_libraries_refuse_even_when_no_compilation_occurs`; committed `scripts/test_cost/budgets.json` |
 | Measured slot reservations, never timing verdicts | `test_recommendation_uses_peak_observed_cpu_parallelism_without_a_timing_gate`; `test_generated_config_preserves_timeouts_and_places_measured_rule_first` |
 | Construction input fingerprints | Executable court tests under `setup_observation::`; only complete named recipes are instrumented |
 | Exhaustive independent worker sweeps | Store sweep tests and changed oracle/process parents; `test_rerunning_the_cutover_does_not_pool_a_worker_again` |
@@ -130,6 +130,10 @@ workspace is needed to validate this infrastructure correction.
   diagnostics do not multiply the count; cached warnings do not establish an
   attempt. Ambiguous target-to-unit attribution refuses rather than passing as
   zero compiler work. Artifact census counts retain their fresh:false meaning.
+  Unsuccessful compiler invocations without an attributable failed unit retain
+  an explicit unknown/refusal, including process failures without error JSON.
+  Successful build completion separates later test/run runtime failures from
+  compilation. Non-compiling graph declarations never mint compiler attempts.
 - Closed Root/Query/Bank testkits observe only complete named construction
   recipes, using the optional non-gating transport documented in
   `scripts/test_cost/setup_observation.md`. Opaque and uninstrumented recipes

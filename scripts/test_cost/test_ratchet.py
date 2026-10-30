@@ -57,6 +57,14 @@ class StructuralBudgetTests(unittest.TestCase):
         self.assertEqual(build_violations(lane, {'max_compiles_per_unit': 1})[0]['kind'],
                          'unattributed-failed-compiler-unit')
 
+    def test_unattributed_unsuccessful_outcome_is_refused_with_or_without_artifact_json(self):
+        for observation in ('json', 'unmeasured'):
+            lane = {'build_observation': observation, 'artifacts': [], 'compiler_attempt_refusals': [
+                {'kind': 'unattributed-compiler-outcome', 'reason': 'compiler process failed without unit diagnostics'}]}
+            with self.subTest(observation=observation):
+                self.assertEqual(build_violations(lane, {'max_compiles_per_unit': 1})[0]['kind'],
+                                 'unattributed-compiler-outcome')
+
     def test_aggregating_command_captures_preserves_failed_attempts_and_refusals(self):
         failed = self.failed_lane(2)
         refused = {'build_observation': 'json', 'artifacts': [],

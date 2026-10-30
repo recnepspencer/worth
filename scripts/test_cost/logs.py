@@ -29,27 +29,38 @@ def read_lane(path):
     result = {'log': str(path), 'artifacts': [], 'artifact_messages': 0, 'tests': [], 'suites': [], 'setup': [],
               'cpu': [], 'compiler_progress': [], 'telemetry': {}, 'headers': {},
               'failed_compiler_attempts': [], 'compiler_attempt_refusals': [], 'compiler_error_messages': 0}
-    context, failed, refused, invocation = {}, {}, set(), -1
+    context, failed, refused, invocation, states, state = {}, {}, set(), -1, [], None
     for event in json_objects(text):
         if event.get('type') == 'cargo-invocation':
             invocation += 1
             context = dict(event, observation_invocation=f'{Path(path).resolve()}#{invocation}')
-        if event.get('reason') == 'compiler-artifact':
+            state = {'context': context, 'build_success': None, 'exit_code': None,
+                     'failed_units': set(), 'refused': False}
+            states.append(state)
+        if (event.get('reason') == 'build-finished' and compiler_context(context)
+                and state is not None and state['build_success'] is None):
+            state['build_success'] = event.get('success')
+        if event.get('type') == 'cargo-result' and state is not None:
+            state['exit_code'] = event['exit_code']
+        active = state is None or state['build_success'] is None
+        if event.get('reason') == 'compiler-artifact' and active and (not context.get('command') or compiler_context(context)):
             result['artifact_messages'] += 1
             if not event['fresh']:
                 result['artifacts'].append(artifact(event, context))
         if (event.get('reason') == 'compiler-message' and event.get('message', {}).get('level') == 'error'
-                and compiler_context(context)):
+                and active and compiler_context(context)):
             result['compiler_error_messages'] += 1
             try:
                 attempted = denied_attempt(event, context)
                 failed.setdefault((attempted['invocation'], attempted['unit']['identity']), attempted)
+                state['failed_units'].add(attempted['unit']['identity'])
             except (CompilerUnitRefusal, KeyError, TypeError) as error:
                 key = (invocation, event.get('package_id'), json.dumps(event.get('target'), sort_keys=True))
                 if key not in refused:
                     refused.add(key)
                     result['compiler_attempt_refusals'].append({'kind': 'unattributed-failed-compiler-unit',
                         'package': event.get('package_id'), 'target': event.get('target'), 'reason': str(error)})
+                state['refused'] = True
         if event.get('type') == 'test' and event.get('event') in ('ok', 'failed', 'ignored'):
             result['tests'].append(event)
         if event.get('type') == 'suite' and event.get('event') in ('ok', 'failed'):
@@ -77,6 +88,17 @@ def read_lane(path):
         found = re.findall(rf'^{re.escape(field)}: (.+)$', text, re.M)
         result['headers'][field] = found[-1].strip() if found else None
     h = result['headers']
+    if states and states[-1]['exit_code'] is None and h['Exit code'] is not None:
+        states[-1]['exit_code'] = int(h['Exit code'])
+    for state in states:
+        unsuccessful = (state['build_success'] is False or
+                        state['exit_code'] not in (None, 0) and state['build_success'] is not True)
+        if (compiler_context(state['context']) and unsuccessful
+                and not state['failed_units'] and not state['refused']):
+            result['compiler_attempt_refusals'].append({'kind': 'unattributed-compiler-outcome',
+                'invocation': state['context']['observation_invocation'],
+                'build_success': state['build_success'], 'exit_code': state['exit_code'],
+                'reason': 'unsuccessful compiler invocation has no attributable failed unit'})
     if h['Start'] and h['End']:
         elapsed = (datetime.fromisoformat(h['End']) - datetime.fromisoformat(h['Start'])).total_seconds()
         result['telemetry']['capture_wall_seconds'] = elapsed
@@ -84,7 +106,9 @@ def read_lane(path):
     durations = [e['exec_time'] for e in result['tests'] if 'exec_time' in e]
     result['telemetry']['test_work_seconds'] = sum(durations) if durations else None
     # A textual Compiling line has no features/profile/target or fresh bit.
-    result['build_observation'] = 'json' if result['artifact_messages'] or result['compiler_error_messages'] else 'unmeasured'
+    structured = result['artifact_messages'] or result['compiler_error_messages'] or any(
+        state['build_success'] is not None for state in states if compiler_context(state['context']))
+    result['build_observation'] = 'json' if structured else 'unmeasured'
     emitted = {(row['invocation'], row['unit']['identity']) for row in result['artifacts'] if row['unit']}
     result['failed_compiler_attempts'] = [row for key, row in failed.items() if key not in emitted]
     result['duplicates'] = duplicates(result['artifacts'])
@@ -93,9 +117,14 @@ def read_lane(path):
 
 
 def compiler_context(context):
+    command = context.get('command', [])
+    if '--unit-graph' in command:
+        return False
     if context.get('unit_plan') is not None:
         return True
-    command = context.get('command', [])
+    if command[:2] == ['cargo', 'nextest']:
+        return not any(argument == '--binaries-metadata' or argument.startswith('--binaries-metadata=')
+                       for argument in command)
     return command[:1] == ['cargo'] and command[1:2] in (
         ['build'], ['check'], ['test'], ['rustc'], ['clippy'], ['run'])
 

@@ -7,12 +7,48 @@ import subprocess
 from unittest.mock import patch
 
 from cargo_capture import CargoRunner, capture_record, compiler_profile, instrument, retention_name
-from test_compiler_units import graph, unit
+from test_compiler_units import event, graph, unit
 from compiler_units import CompilerUnitRefusal
 from unit_plan import declare
 
 
 class CargoCaptureTests(unittest.TestCase):
+    def test_unattributed_unsuccessful_compiler_process_refuses_without_inventing_a_target(self):
+        for finished in (False, None):
+            with self.subTest(finished=finished), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                owner = unit('owner')
+                output = [dict(event(owner), reason='compiler-artifact', fresh=True)]
+                if finished is not None:
+                    output.append({'reason': 'build-finished', 'success': finished})
+                def execute(command, **kwargs):
+                    code, text = (0, json.dumps(graph(owner))) if '--unit-graph' in command else (101, '\n'.join(map(json.dumps, output)))
+                    return subprocess.CompletedProcess(command, code, text, 'compiler process failed')
+                runner = CargoRunner(Path.cwd(), {})
+                with patch('cargo_capture.subprocess.run', side_effect=execute), \
+                     patch('cargo_capture.subprocess.check_output', side_effect=['head\n', '']*2), \
+                     self.assertRaisesRegex(CompilerUnitRefusal, 'unattributed-compiler-outcome'):
+                    runner(['cargo', 'check'], root, root/'failed.log')
+                text = (root/'failed.log').read_text()
+                self.assertIn('Exit code: 101', text)
+                self.assertIn('"type": "cargo-result", "exit_code": 101', text)
+
+    def test_successful_build_followed_by_failed_test_runtime_does_not_refuse_compiler_zero(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            owner = unit('owner', mode='build')
+            output = [dict(event(owner, linked=True), reason='compiler-artifact', fresh=True),
+                      {'reason': 'build-finished', 'success': True},
+                      {'reason': 'compiler-message', 'package_id': 'printed-prebuilt', 'target': owner['target'],
+                       'message': {'level': 'error'}}, {'reason': 'build-finished', 'success': False}]
+            def execute(command, **kwargs):
+                code, text = (0, json.dumps(graph(owner))) if '--unit-graph' in command else (101, '\n'.join(map(json.dumps, output)))
+                return subprocess.CompletedProcess(command, code, text, 'test runtime failed')
+            runner = CargoRunner(Path.cwd(), {})
+            with patch('cargo_capture.subprocess.run', side_effect=execute), \
+                 patch('cargo_capture.subprocess.check_output', side_effect=['head\n', '']*2):
+                self.assertEqual(runner(['cargo', 'test', '--doc'], root, root/'runtime.log').returncode, 101)
+
     def test_runtime_nextest_profiles_cannot_disguise_the_same_compiler_graph(self):
         self.assertEqual(compiler_profile(['cargo', 'nextest', 'run', '--profile', 'ci']), 'test')
         self.assertEqual(compiler_profile(['cargo', 'nextest', 'run', '--profile', 'integration',

@@ -150,6 +150,7 @@ class CargoRunner:
                 result = subprocess.CompletedProcess(command, 127, '', str(error))
             log.write(result.stdout)
             log.write('\n' + result.stderr)
+            log.write('\n' + json.dumps({'type': 'cargo-result', 'exit_code': result.returncode}) + '\n')
             log.write(f'\nEnd: {datetime.now(timezone.utc).isoformat()}\nExit code: {result.returncode}\n')
         retained = log_path.resolve()
         target = self.repository / 'target'
@@ -164,14 +165,25 @@ class CargoRunner:
         if refusal is not None:
             raise refusal
         if plan is not None:
-            from logs import json_objects
+            from logs import json_objects, read_lane
             verify(plan, command, cwd, self.environment)
+            closed, unsuccessful_build = False, False
             for event in json_objects(result.stdout):
+                if closed:
+                    continue
+                if event.get('reason') == 'build-finished':
+                    closed = True
+                    unsuccessful_build = event.get('success') is False
+                    continue
                 if event.get('reason') == 'compiler-artifact':
                     attribute_unit(event, plan)
                 elif (event.get('reason') == 'compiler-message'
                       and event.get('message', {}).get('level') == 'error'):
                     failed_unit(event, plan)
+            if result.returncode or unsuccessful_build:
+                unknown = read_lane(retained)['compiler_attempt_refusals']
+                if unknown:
+                    raise CompilerUnitRefusal('compiler outcome cannot be attributed: ' + json.dumps(unknown))
         if command[:2] == ['cargo', 'metadata'] and result.returncode == 0:
             metadata = json.loads(result.stdout)
             if 'workspace_root' in metadata and 'target_directory' in metadata:

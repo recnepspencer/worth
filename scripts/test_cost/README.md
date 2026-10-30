@@ -64,6 +64,11 @@ compares terminal observations with the requested identities.
   fresh artifact compilations; the artifact census remains unchanged. Ambiguous
   failed-unit attribution refuses. Cached warnings and diagnostics printed by a
   running court do not establish new compiler attempts.
+  An unsuccessful build without an attributable failed unit is an explicit
+  unknown outcome, including a compiler process crash that emits no diagnostic
+  JSON. It cannot pass as measured zero work. A successful `build-finished`
+  closes compilation before a test/run runtime exit; failed non-compiling
+  unit-graph declarations remain preflight failures, not compiler attempts.
 * The runner builds process helpers as independent executable targets. Tests
   read typed prebuilt manifests and refuse missing or malformed observations.
   They never silently build a fallback.
