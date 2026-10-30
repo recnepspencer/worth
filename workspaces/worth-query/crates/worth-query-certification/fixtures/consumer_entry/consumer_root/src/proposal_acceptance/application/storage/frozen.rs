@@ -2,7 +2,7 @@
 use super::super::super::attempts::data::AttemptInput;
 use super::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LoadedProposal {
     source: WorthQueryProductBranch,
     reference: ProposalReference,

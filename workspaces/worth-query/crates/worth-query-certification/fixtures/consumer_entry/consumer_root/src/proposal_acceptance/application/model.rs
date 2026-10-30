@@ -12,6 +12,7 @@ pub struct Model<'host> {
     pub identity: ModelReference,
     pub target: TargetReference,
     pub(super) last_adoption: Option<super::candidate::AdoptionMetadata>,
+    pub(super) pending: Option<super::acceptance::Attempt<'host>>,
 }
 #[derive(Debug)]
 pub enum CreationFailure<'host> {
@@ -34,6 +35,7 @@ impl<'host> Model<'host> {
                 identity,
                 target,
                 last_adoption: None,
+                pending: None,
             }),
             Err(cause) => Err(CreationFailure::AfterFork(InitializationFailure {
                 owner,
@@ -113,9 +115,48 @@ impl<'host> Model<'host> {
     pub fn read(&self, caller: &Caller<'_>) -> Result<model_query::TargetRow, Failure> {
         read_target(self.owner.host, self.branch(), caller, &self.identity.label)
     }
-    pub fn close(self, caller: &Caller<'_>) -> Result<Closed, super::branch::CloseFailure<'host>> {
-        self.owner.close(caller)
+    pub fn close(self, caller: &Caller<'_>) -> Result<Closed, ModelCloseFailure<'host>> {
+        if self.pending.is_some() {
+            return Err(ModelCloseFailure {
+                model: self,
+                cause: ModelCloseRefusal::Pending,
+            });
+        }
+        let Self {
+            owner,
+            identity,
+            target,
+            last_adoption,
+            pending,
+        } = self;
+        owner.close(caller).map_err(|failure| ModelCloseFailure {
+            model: Self {
+                owner: failure.owner,
+                identity,
+                target,
+                last_adoption,
+                pending,
+            },
+            cause: ModelCloseRefusal::Head {
+                cause: failure.cause,
+                handoff: failure.handoff,
+            },
+        })
     }
+}
+#[derive(Debug)]
+pub enum ModelCloseRefusal {
+    Pending,
+    Head {
+        cause: Failure,
+        handoff:
+            Option<worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial>,
+    },
+}
+#[derive(Debug)]
+pub struct ModelCloseFailure<'host> {
+    pub model: Model<'host>,
+    pub cause: ModelCloseRefusal,
 }
 
 fn initialize(

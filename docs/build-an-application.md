@@ -2576,6 +2576,22 @@ that completed operation alongside the original input and actual cause. A normal
 equivalent retry returns recovered evidence; it need not pass through a pending
 delivery state.
 
+Keep one pending acceptance inside the model that owns the mutable head. The
+[compiled ingress](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/ingress.rs)
+freshly admits reads and the incoming frozen edits, then resolves the native
+registration key before inspecting that slot or a cached result. Only an unseen
+key with an empty slot may start a new acceptance. A registered key with no result
+and no live continuation refuses; missing delivery is not permission to fork.
+An occupied slot retains its original input until registration has established
+a native intent binding. A different incoming input cannot replace it.
+
+Advance the retained acceptance with fresh requests. After adoption, retain the
+actual adoption owner while recording and reading back the result, then close
+the previous owned head. A result-READ refusal leaves that same adoption pending;
+restore the ordinary grant and resume it. Successful retries read the recorded
+result without adopting again. Closing the model while an acceptance is pending
+returns the whole model so its operation and branch custody remain owned.
+
 #### Record an actual adoption result
 
 Keep canonical result data separate from the command that records it. In the

@@ -8,11 +8,11 @@ use super::{
 };
 use worth_query_host::facade::{application_entry::*, product::*};
 
-mod admission;
-mod claims;
+pub(in crate::proposal_acceptance::application) mod admission;
+pub(in crate::proposal_acceptance::application) mod claims;
 mod frozen;
 pub(in crate::proposal_acceptance::application) mod operations;
-mod results;
+pub(in crate::proposal_acceptance::application) mod results;
 pub use super::super::schema::data::ProposalReference;
 pub use admission::AdmissionFailure;
 pub use claims::{ClaimFailure, RegisteredClaim};
@@ -48,6 +48,16 @@ impl<'host> Storage<'host> {
     }
     pub fn branch(&self) -> WorthQueryProductBranch {
         self.owner.branch()
+    }
+    pub(in crate::proposal_acceptance::application) fn request<'storage, 'principal, 'scope>(
+        &'storage self,
+        caller: &'principal Caller<'scope>,
+    ) -> WorthQueryApplicationRequest<'storage, 'principal, 'scope, super::super::schema::Schema>
+    {
+        self.owner
+            .host
+            .request(&caller.principal, caller.scope)
+            .on_branch(self.branch())
     }
 
     pub fn record(

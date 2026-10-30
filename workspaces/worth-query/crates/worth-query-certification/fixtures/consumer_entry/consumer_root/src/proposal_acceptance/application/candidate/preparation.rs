@@ -52,9 +52,44 @@ pub(in crate::proposal_acceptance::application) fn authorize(
     caller: &Caller<'_>,
     proposal: &StoredProposal,
 ) -> Result<(), PreparationRefusal> {
+    authorize_attempt(model, caller, proposal)?;
+    eligible(model, caller, proposal)
+}
+pub(in crate::proposal_acceptance::application) fn authorize_attempt(
+    model: &Model<'_>,
+    caller: &Caller<'_>,
+    proposal: &StoredProposal,
+) -> Result<(), PreparationRefusal> {
     model
         .describe(caller)
         .map_err(PreparationRefusal::Request)?;
+    for AuthoredIntent::Retention(input) in &proposal.intents {
+        model
+            .owner
+            .host
+            .request(&caller.principal, caller.scope)
+            .on_branch(model.branch())
+            .advanced()
+            .mutate(input.clone())
+            .without_source()
+            .assess_current_capability_authorization()
+            .map_err(PreparationRefusal::Mutation)?;
+    }
+    Ok(())
+}
+pub(in crate::proposal_acceptance::application) fn eligible(
+    model: &Model<'_>,
+    caller: &Caller<'_>,
+    proposal: &StoredProposal,
+) -> Result<(), PreparationRefusal> {
+    if proposal.format_version != 1 {
+        return Err(PreparationRefusal::UnsupportedVersion(
+            proposal.format_version,
+        ));
+    }
+    if proposal.intents.is_empty() {
+        return Err(PreparationRefusal::EmptyProposal);
+    }
     if proposal.model != model.identity {
         return Err(PreparationRefusal::ModelMismatch);
     }
@@ -66,16 +101,6 @@ pub(in crate::proposal_acceptance::application) fn authorize(
         if input.target.occurrence != observed.occurrence || input.target.label != observed.name {
             return Err(PreparationRefusal::TargetMismatch);
         }
-        model
-            .owner
-            .host
-            .request(&caller.principal, caller.scope)
-            .on_branch(model.branch())
-            .advanced()
-            .mutate(input.clone())
-            .without_source()
-            .assess_current_capability_authorization()
-            .map_err(PreparationRefusal::Mutation)?;
     }
     Ok(())
 }
@@ -104,14 +129,6 @@ impl<'host> Staging<'host> {
                 .admit_loaded_proposal(caller, loaded)
                 .map_err(PreparationRefusal::Request)?;
             let proposal = loaded.proposal().clone();
-            if proposal.format_version != 1 {
-                return Err(PreparationRefusal::UnsupportedVersion(
-                    proposal.format_version,
-                ));
-            }
-            if proposal.intents.is_empty() {
-                return Err(PreparationRefusal::EmptyProposal);
-            }
             authorize(model, caller, &proposal)?;
             u64::try_from(proposal.intents.len()).map_err(PreparationRefusal::Ordinal)?;
             let description: WorthQueryExpectedProductBasisDescription =

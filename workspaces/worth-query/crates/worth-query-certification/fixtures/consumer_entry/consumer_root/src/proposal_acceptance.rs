@@ -14,6 +14,7 @@ mod schema;
 mod storage_query;
 
 mod application {
+    pub(super) mod acceptance;
     pub(super) mod branch;
     pub(super) mod candidate;
     pub(super) mod model;
@@ -23,6 +24,7 @@ mod application {
 
 #[cfg(test)]
 mod courts {
+    mod acceptance;
     mod attempts;
     mod candidate;
     mod disclosure;
