@@ -12,6 +12,30 @@ use worth_query_host::facade::{
 pub struct Program;
 pub struct Feature;
 pub struct RetentionDelivery;
+pub struct ClaimDelivery;
+pub struct ResultDelivery;
+impl ApplicationActionDelivery<Schema, attempts::claim::Binding> for ClaimDelivery {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "proposal-application.claim.delivery.v1";
+}
+impl ApplicationActionDelivery<Schema, attempts::recording::Binding> for ResultDelivery {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "proposal-application.result.delivery.v1";
+}
+pub type ClaimAction = ApplicationActionReference<
+    Schema,
+    ApplicationRootComposition,
+    Feature,
+    attempts::claim::Binding,
+    ClaimDelivery,
+>;
+pub type ResultAction = ApplicationActionReference<
+    Schema,
+    ApplicationRootComposition,
+    Feature,
+    attempts::recording::Binding,
+    ResultDelivery,
+>;
 impl ApplicationActionDelivery<Schema, retention::Binding> for RetentionDelivery {
     type Mode = ApplicationSourceCompletion;
     const IDENTITY: &'static str = "proposal-application.retention.delivery.v1";
@@ -45,9 +69,9 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .finish_action()
             .native_action::<recording::Binding>()
             .finish_action()
-            .native_action::<attempts::claim::Binding>()
+            .action::<attempts::claim::Binding, ClaimDelivery>()
             .finish_action()
-            .native_action::<attempts::recording::Binding>()
+            .action::<attempts::recording::Binding, ResultDelivery>()
             .finish_action()
             .native_action::<access::status::Binding>()
             .finish_action()

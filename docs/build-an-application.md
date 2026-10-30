@@ -2567,6 +2567,15 @@ results. A different readable storage product cannot substitute for the issuer.
 The [storage-affinity and revocation cases](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts/disclosure.rs)
 show these checks with real grant transitions and cached results.
 
+Declare registration and result recording as `ApplicationSourceCompletion`
+actions and construct their owning operations with `retain_operation`. Advance
+with a fresh request on the original storage branch. Keep the returned owner on
+progress or refusal, and close completed or terminal custody through its native
+close method. If a write succeeds but result readback or close refuses, retain
+that completed operation alongside the original input and actual cause. A normal
+equivalent retry returns recovered evidence; it need not pass through a pending
+delivery state.
+
 #### Record an actual adoption result
 
 Keep canonical result data separate from the command that records it. In the

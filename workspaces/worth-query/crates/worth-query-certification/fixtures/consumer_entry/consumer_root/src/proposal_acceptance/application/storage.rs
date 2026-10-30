@@ -11,6 +11,7 @@ use worth_query_host::facade::{application_entry::*, product::*};
 mod admission;
 mod claims;
 mod frozen;
+pub(in crate::proposal_acceptance::application) mod operations;
 mod results;
 pub use super::super::schema::data::ProposalReference;
 pub use admission::AdmissionFailure;

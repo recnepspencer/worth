@@ -162,8 +162,8 @@ fn cached_results_require_current_result_read_and_independent_mutation_authority
     let before = model.describe(&reviewer).unwrap();
     let retry = storage.claim(&model, &reviewer, &loaded, 823).unwrap();
     assert!(matches!(
-        retry.outcome(),
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
+        retry.evidence(),
+        WorthQuerySourceCompletion::Recovered { .. }
     ));
     drop(retry);
     assert_eq!(model.describe(&reviewer).unwrap(), before);

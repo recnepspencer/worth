@@ -4,10 +4,8 @@ use super::super::{
     candidate::adoption::Adopted,
 };
 use super::admission::{AdmissionFailure, ResultRows};
+use super::operations::*;
 use super::*;
-use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
-pub type RecordOutcome =
-    WorthQueryApplicationMutationOutcome<recording::Denial, recording::Recorded>;
 #[derive(Debug)]
 pub enum ResultReadFailure {
     ClaimMismatch,
@@ -16,25 +14,61 @@ pub enum ResultReadFailure {
     AssociationChanged,
     UnsupportedVersion(u16),
 }
-#[derive(Debug)]
 pub enum ResultFailure {
     Admission(AdmissionFailure),
     Correspondence(recording::CorrespondenceFailure),
     Read(ResultReadFailure),
-    Request(WorthQueryApplicationRequestMutationDenial),
-    Outcome(RecordOutcome),
+    Construction(ConstructionFailure),
+    Pending(ResultOperation),
+    Refused {
+        operation: ResultOperation,
+        cause: WorthQuerySourceOnlyDenial,
+    },
+    Terminal(ResultTerminal),
     RecordedObservation {
         original: StoredResult,
-        outcome: RecordOutcome,
+        completed: ResultCompleted,
         cause: ResultReadFailure,
     },
     RecordedAdmission {
         original: StoredResult,
-        outcome: RecordOutcome,
+        completed: ResultCompleted,
         cause: AdmissionFailure,
     },
+    Close {
+        original: StoredResult,
+        completed: ResultCompleted,
+        cause: WorthQueryOperationCloseDenial,
+    },
 }
-fn select_result(
+impl std::fmt::Debug for ResultFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Admission(cause) => f.debug_tuple("Admission").field(cause).finish(),
+            Self::Correspondence(cause) => f.debug_tuple("Correspondence").field(cause).finish(),
+            Self::Read(cause) => f.debug_tuple("Read").field(cause).finish(),
+            Self::Construction(cause) => f.debug_tuple("Construction").field(cause).finish(),
+            Self::Pending(operation) => f
+                .debug_tuple("Pending")
+                .field(&operation.posture())
+                .finish(),
+            Self::Refused { cause, .. } => f.debug_tuple("Refused").field(cause).finish(),
+            Self::Terminal(terminal) => f
+                .debug_tuple("Terminal")
+                .field(&terminal.native_outcome())
+                .field(&terminal.native_keyed_resolution())
+                .finish(),
+            Self::RecordedObservation { cause, .. } => {
+                f.debug_tuple("RecordedObservation").field(cause).finish()
+            }
+            Self::RecordedAdmission { cause, .. } => {
+                f.debug_tuple("RecordedAdmission").field(cause).finish()
+            }
+            Self::Close { cause, .. } => f.debug_tuple("Close").field(cause).finish(),
+        }
+    }
+}
+pub(in crate::proposal_acceptance::application) fn select_result(
     rows: &ResultRows,
     loaded: &LoadedProposal,
     claim: &ClaimReference,
@@ -86,39 +120,56 @@ impl Storage<'_> {
             .map_err(ResultFailure::Correspondence)?;
         let original = command.data().clone();
         let attempt = claim.data.input.attempt;
-        let outcome = self
+        let operation = self
+            .result_operation(caller, &command, attempt)
+            .map_err(ResultFailure::Construction)?;
+        let request = self
             .owner
             .host
             .request(&caller.principal, caller.scope)
-            .on_branch(self.branch())
-            .advanced()
-            .mutate(command)
-            .without_source()
-            .idempotency(&attempt)
-            .execute_in_program(self.owner.host, ExecutionAllocationPolicy::SystemAllocation)
-            .map_err(ResultFailure::Request)?;
-        if !matches!(
-            &outcome,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-                | WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
-                | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
-        ) {
-            return Err(ResultFailure::Outcome(outcome));
-        }
+            .on_branch(self.branch());
+        let completed = match operation.advance(&request) {
+            WorthQuerySourceOnlyAdvance::Progress(operation) => {
+                return Err(ResultFailure::Pending(operation))
+            }
+            WorthQuerySourceOnlyAdvance::Refused { operation, denial } => {
+                return Err(ResultFailure::Refused {
+                    operation,
+                    cause: denial,
+                })
+            }
+            WorthQuerySourceOnlyAdvance::Terminal(terminal) => {
+                return Err(ResultFailure::Terminal(terminal))
+            }
+            WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
+        };
         let rows = match self.admit_attempt(model, caller, loaded) {
             Ok(rows) => rows,
             Err(cause) => {
                 return Err(ResultFailure::RecordedAdmission {
                     original,
-                    outcome,
+                    completed,
                     cause,
                 })
             }
         };
-        select_result(&rows, loaded, claim).map_err(|cause| ResultFailure::RecordedObservation {
-            original,
-            outcome,
-            cause,
-        })
+        let result = match select_result(&rows, loaded, claim) {
+            Ok(result) => result,
+            Err(cause) => {
+                return Err(ResultFailure::RecordedObservation {
+                    original,
+                    completed,
+                    cause,
+                })
+            }
+        };
+        match completed.close(&request) {
+            Ok(_closed) => Ok(result),
+            Err((completed, cause)) => Err(ResultFailure::Close {
+                original,
+                completed,
+                cause,
+            }),
+        }
     }
 }

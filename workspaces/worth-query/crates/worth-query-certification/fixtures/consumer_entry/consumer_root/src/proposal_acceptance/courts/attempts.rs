@@ -84,8 +84,8 @@ fn stable_claim_binds_ordered_input_and_records_only_the_actual_adoption() {
     let source = model.describe(&reviewer).unwrap();
     let registered: RegisteredClaim = storage.claim(&model, &reviewer, &loaded, 804).unwrap();
     assert!(matches!(
-        registered.outcome(),
-        WorthQueryApplicationMutationOutcome::Committed { .. }
+        registered.evidence(),
+        WorthQuerySourceCompletion::Fresh { .. }
     ));
     let claim = registered.reference().clone();
     drop(registered);
@@ -112,69 +112,76 @@ fn stable_claim_binds_ordered_input_and_records_only_the_actual_adoption() {
             changed.proposal.expected_basis,
             original.proposal.expected_basis
         );
-        let outcome = host
+        let request = host
             .request(&reviewer.principal, reviewer.scope)
-            .on_branch(storage.branch())
-            .advanced()
-            .mutate(changed)
-            .without_source()
-            .idempotency(&804)
-            .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
-            .unwrap();
+            .on_branch(storage.branch());
+        let operation = storage.claim_operation(&reviewer, &changed, 804).unwrap();
+        let WorthQuerySourceOnlyAdvance::Terminal(terminal) = operation.advance(&request) else {
+            panic!("owning drift terminal")
+        };
         assert!(matches!(
-            outcome,
-            WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
+            terminal.native_outcome(),
+            Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
         ));
+        terminal
+            .close(&request)
+            .unwrap_or_else(|(_, cause)| panic!("close drift terminal: {cause:?}"));
     }
     let before_store = describe(&host, &reviewer, storage.branch());
     let mut changed = original.clone();
     changed.attempt = 807;
     let AuthoredIntent::Retention(edit) = &mut changed.proposal.intents[1];
     edit.days = 4;
-    let outcome = host
+    let request = host
         .request(&reviewer.principal, reviewer.scope)
-        .on_branch(storage.branch())
-        .advanced()
-        .mutate(changed)
-        .without_source()
-        .idempotency(&807)
-        .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+        .on_branch(storage.branch());
+    let operation = storage.claim_operation(&reviewer, &changed, 807).unwrap();
+    let WorthQuerySourceOnlyAdvance::Terminal(terminal) = operation.advance(&request) else {
+        panic!("changed body domain terminal")
+    };
     assert!(matches!(
-        outcome,
-        WorthQueryApplicationMutationOutcome::DomainDenied(
+        terminal.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::DomainDenied(
             attempts::claim::Denial::ProposalChanged
-        )
+        ))
     ));
+    terminal
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("close changed body terminal: {cause:?}"));
     let mut wrong_key = original.clone();
     wrong_key.attempt = 809;
-    let outcome = host
-        .request(&reviewer.principal, reviewer.scope)
-        .on_branch(storage.branch())
-        .advanced()
-        .mutate(wrong_key)
-        .without_source()
-        .idempotency(&810)
-        .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    let operation = storage.claim_operation(&reviewer, &wrong_key, 810).unwrap();
+    let WorthQuerySourceOnlyAdvance::Terminal(terminal) = operation.advance(&request) else {
+        panic!("key mismatch domain terminal")
+    };
     assert!(matches!(
-        outcome,
-        WorthQueryApplicationMutationOutcome::DomainDenied(
+        terminal.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::DomainDenied(
             attempts::claim::Denial::AttemptKeyMismatch
-        )
+        ))
     ));
+    terminal
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("close key mismatch terminal: {cause:?}"));
     assert_eq!(describe(&host, &reviewer, storage.branch()), before_store);
     assert_eq!(model.describe(&reviewer).unwrap(), source);
     let drift = storage
         .claim(&model, &author, &loaded, 804)
         .err()
         .expect("same key is not actor-local");
+    let super::super::application::storage::ClaimFailure::Terminal(terminal) = drift else {
+        panic!("cross-principal drift terminal: {drift:?}")
+    };
     assert!(matches!(
-        drift,
-        super::super::application::storage::ClaimFailure::Outcome(
-            WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
-        )
+        terminal.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
     ));
+    let author_request = host
+        .request(&author.principal, author.scope)
+        .on_branch(storage.branch());
+    terminal
+        .close(&author_request)
+        .unwrap_or_else(|(_, cause)| panic!("close cross-principal terminal: {cause:?}"));
     let another = storage.claim(&model, &reviewer, &loaded, 805).unwrap();
     let another_claim = another.reference().clone();
     drop(another);
@@ -199,21 +206,21 @@ fn stable_claim_binds_ordered_input_and_records_only_the_actual_adoption() {
         ]
     );
     let duplicate = attempts::recording::RecordResult::from_adopted(&claim, &adopted).unwrap();
-    let outcome = host
-        .request(&reviewer.principal, reviewer.scope)
-        .on_branch(storage.branch())
-        .advanced()
-        .mutate(duplicate)
-        .without_source()
-        .idempotency(&806)
-        .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
+    let operation = storage
+        .result_operation(&reviewer, &duplicate, 806)
         .unwrap();
+    let WorthQuerySourceOnlyAdvance::Terminal(terminal) = operation.advance(&request) else {
+        panic!("duplicate result domain terminal")
+    };
     assert!(matches!(
-        outcome,
-        WorthQueryApplicationMutationOutcome::DomainDenied(
+        terminal.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::DomainDenied(
             attempts::recording::Denial::AlreadyRecorded
-        )
+        ))
     ));
+    terminal
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("close duplicate result terminal: {cause:?}"));
     let performed = adopted
         .close_previous(&reviewer)
         .unwrap_or_else(|failure| panic!("close previous model: {:?}", failure.cause));
@@ -222,8 +229,8 @@ fn stable_claim_binds_ordered_input_and_records_only_the_actual_adoption() {
     let current = model.describe(&reviewer).unwrap();
     let retry = storage.claim(&model, &reviewer, &loaded, 804).unwrap();
     assert!(matches!(
-        retry.outcome(),
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
+        retry.evidence(),
+        WorthQuerySourceCompletion::Recovered { .. }
     ));
     assert_eq!(retry.reference(), &claim);
     drop(retry);
