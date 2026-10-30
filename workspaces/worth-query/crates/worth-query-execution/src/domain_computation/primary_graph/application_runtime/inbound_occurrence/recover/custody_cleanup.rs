@@ -5,10 +5,12 @@ use crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailur
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) fn finish_inbound_handoff(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         old: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
         next: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> RecoveryStep {
-        match self.release_product_publication_recovery(old, 0) {
+        match self.release_product_recovery_in_request(execution, old, 0, retirements) {
             Ok(_) => RecoveryStep::Retain(State::Active(next), Ok(Posture::AcceptedPending)),
             Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failed)) => {
                 RecoveryStep::Retain(
@@ -33,10 +35,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     pub(super) fn finish_inbound_published(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         old: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
         terminal: Arc<WorthQueryInboundTerminalOwnerResult>,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> RecoveryStep {
-        match self.release_product_publication_recovery(old, 0) {
+        match self.release_product_recovery_in_request(execution, old, 0, retirements) {
             Ok(_) => RecoveryStep::Terminal(terminal),
             Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failed)) => {
                 RecoveryStep::Retain(
@@ -61,9 +65,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     pub(super) fn finish_inbound_stale(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         old: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> RecoveryStep {
-        match self.release_product_publication_recovery(old, 0) {
+        match self.release_product_recovery_in_request(execution, old, 0, retirements) {
             Ok(_) => RecoveryStep::StaleReleased,
             Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failed)) => {
                 RecoveryStep::Retain(

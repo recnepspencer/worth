@@ -44,6 +44,9 @@ impl ManagedDerivedViewRegistry {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &ManagedIndexSourceForkPreparation<'_>,
     ) -> Result<Box<dyn std::any::Any + Send + Sync>, Stop> {
+        if self.native_runtime != Some(target.runtime_instance_id()) {
+            return Err(Stop::ForeignCell);
+        }
         execution
             .consult()
             .map_err(|cause| Stop::Execution(cause.into()))?;

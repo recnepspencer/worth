@@ -435,6 +435,10 @@ purpose admission. Cancellation before install preserves the previous cache; an 
 cache edit refuses the stale build. `ReuseExact` rebuilds its selected older
 component while newer main and fork material remain unchanged. The explicit cold
 lane pays for the ordinary Source query plus Native occurrence projection.
+After its Native component deletion completes, closing the owning product
+retires its live Source lookup; an existing
+`ReuseExact` alias can still read, evict and refill its retained selected image.
+Retained immutable custody does not permit fresh Native branch admission or writes.
 For default `Refuse`, fresh unpublished bootstrap explicitly calls
 `graph.initialize_managed_index::<Index>(phase)` for new scopes in its next seed
 attempt. Normal rules still judge it; selection is consumed even by an empty

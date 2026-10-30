@@ -18,6 +18,7 @@ use worth_query_host::facade::{
 
 mod affinity;
 mod cancellation;
+mod close;
 mod cold;
 mod rebuild;
 mod rewiring;

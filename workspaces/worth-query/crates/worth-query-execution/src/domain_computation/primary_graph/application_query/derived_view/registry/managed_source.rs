@@ -37,11 +37,42 @@ impl SourceBranchSlot {
 }
 
 impl ManagedDerivedViewRegistry {
+    pub(in crate::domain_computation::primary_graph) fn manages_native_sources(
+        &self,
+        branch: &worth_relational::facade::branch::RelationalBranchIdentity,
+    ) -> bool {
+        self.native_runtime == Some(branch.runtime_instance_id()) && !self.sources.is_empty()
+    }
+    /// Authenticate this actual Native receipt against the installed resource owner.
+    /// Notification is carried beyond all operation guards; final Drop is here.
+    pub(in crate::domain_computation::primary_graph) fn retire_source_branch(
+        &self,
+        deleted: &worth_relational::facade::branch::DeletedRelationalBranch,
+    ) {
+        if self.native_runtime != Some(deleted.identity().runtime_instance_id()) {
+            return;
+        }
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let retired = state.source_branches.remove(deleted.identity().branch_id());
+        let empty = state
+            .source_branches
+            .is_empty()
+            .then(|| std::mem::take(&mut state.source_branches));
+        drop(state);
+        drop(empty);
+        drop(retired);
+    }
     pub(in crate::domain_computation::primary_graph) fn prepare_sources(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &ManagedIndexSourcePreparation<'_>,
     ) -> Result<Vec<PreparedManagedIndexSourceRoot>, Denial> {
+        if self.native_runtime != Some(source.selected_basis().identity().runtime_instance_id()) {
+            return Err(Denial::ForeignSource);
+        }
         let service = self
             .sources
             .service(source.program())
@@ -122,6 +153,9 @@ impl ManagedDerivedViewRegistry {
     ) -> Result<Option<ReservedCompanionBranchCell<ManagedIndexBranchImage>>, Stop> {
         if self.sources.is_empty() {
             return Ok(None);
+        }
+        if self.native_runtime != Some(context.runtime_instance_id()) {
+            return Err(Stop::ForeignCell);
         }
         context.checkpoint()?;
         let mut state = self

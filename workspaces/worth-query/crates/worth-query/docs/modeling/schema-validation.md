@@ -240,6 +240,14 @@ Native coordination, publication and registration guards. Actual target World
 basis custody therefore selects the target association from its first read.
 A public close releases its access attachment; invariant and retained basis
 owners can still retain the canonical material.
+Successful Query owner cleanup uses the actual Native deletion receipt to remove
+that branch's live Source lookup. Receipt custody waits beyond the cleanup record
+and its outer coordination guards, including partial cleanup and late request
+interruption. Existing immutable bases extend retention only through their actual
+current Native history-retention owner; matching descriptors cannot substitute
+for it. Closing the original Native owner therefore preserves an existing
+`ReuseExact` alias's read, eviction and refill paths, while fresh Native branch
+admission, forks and writes still refuse.
 
 The exact selected image owns a disposable material directory separately from
 its immutable Source conditions. Cache eviction retains the condition and its

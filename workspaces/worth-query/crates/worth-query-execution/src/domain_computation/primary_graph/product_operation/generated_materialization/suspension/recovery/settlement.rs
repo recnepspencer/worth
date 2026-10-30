@@ -1,3 +1,4 @@
+use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -35,14 +36,16 @@ impl PublishedSuspensionSettlement {
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) fn finish_handoff(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         old: WorthQueryProductUnpublishedRecovery,
         next: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<
         super::WorthQuerySuspendedGeneratedOutput,
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     > {
-        match self.release_product_publication_recovery(old, 0) {
+        match self.release_product_recovery_in_request(execution, old, 0, retirements) {
             Ok(_) => Err(failure(
                 WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPublication,
                 RecoveryState::World {
@@ -79,13 +82,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     pub(super) fn finish_published(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         settlement: PublishedSuspensionSettlement,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<
         super::WorthQuerySuspendedGeneratedOutput,
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     > {
-        match self.release_product_publication_recovery(recovery, 0) {
+        match self.release_product_recovery_in_request(execution, recovery, 0, retirements) {
             Ok(_) => Ok(settlement.finish()),
             Err(
                 crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(

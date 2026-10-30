@@ -1,3 +1,4 @@
+use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::recovery::{
@@ -46,14 +47,16 @@ impl PublishedRestorationSettlement {
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) fn finish_restoration_handoff(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         old: WorthQueryProductUnpublishedRecovery,
         next: WorthQueryProductUnpublishedRecovery,
         retry: RestorationRetry,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<
         super::WorthQueryRestoredGeneratedOutput,
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
     > {
-        match self.release_product_publication_recovery(old, 0) {
+        match self.release_product_recovery_in_request(execution, old, 0, retirements) {
             Ok(_) => Err(failure(
                 WorthQueryGeneratedOutputRestorationRecoveryStage::AdoptionPublication,
                 RecoveryState::World {
@@ -93,11 +96,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         settlement: PublishedRestorationSettlement,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<
         super::WorthQueryRestoredGeneratedOutput,
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
     > {
-        match self.release_product_publication_recovery(recovery, 0) {
+        match self.release_product_recovery_in_request(execution, recovery, 0, retirements) {
             Ok(_) => Ok(settlement.finish(execution, self)),
             Err(
                 crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(

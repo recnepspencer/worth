@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldLifecyclePort};
 
 use super::WorthQueryPrimaryGraphProvider;
-use crate::domain_computation::execution_runtime::product_world::WorthQueryReleasedHistoryFollower;
+use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRetentionFollower;
 
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn has_outstanding_dispatch_for_branch(
@@ -113,9 +113,25 @@ impl WorthQueryPrimaryGraphProvider {
 }
 
 /// Every history release a branch or recovery cleanup makes reaches here.
-impl WorthQueryReleasedHistoryFollower for WorthQueryPrimaryGraphProvider {
+impl WorthQueryProductRetentionFollower for WorthQueryPrimaryGraphProvider {
     fn history_released(&self) {
         self.release_unretained_inherited_evidence();
+    }
+    fn manages_native_sources(
+        &self,
+        identity: &worth_relational::facade::branch::RelationalBranchIdentity,
+    ) -> bool {
+        self.graph
+            .managed_derived_views()
+            .manages_native_sources(identity)
+    }
+    fn native_branch_deleted(
+        &self,
+        deleted: &worth_relational::facade::branch::DeletedRelationalBranch,
+    ) {
+        self.graph
+            .managed_derived_views()
+            .retire_source_branch(deleted);
     }
 }
 

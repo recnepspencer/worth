@@ -1,3 +1,4 @@
+use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 mod advancement;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{
     WorthQueryProductPublicationDenial as PublicationDenial,
@@ -147,6 +148,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         retry: RestorationRetry,
         needs_settlement: bool,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<
         super::WorthQueryRestoredGeneratedOutput,
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
@@ -157,7 +159,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
-        self.adopt_settled_restoration(execution, recovery, retry, request)
+        self.adopt_settled_restoration(execution, recovery, retry, request, retirements)
     }
 
     fn adopt_settled_restoration(
@@ -166,6 +168,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: RestorationRetry,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<
         super::WorthQueryRestoredGeneratedOutput,
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
@@ -220,6 +223,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         commit,
                         retry,
                     },
+                    retirements,
                 )
             }
             Err(PublicationDenial::Stopped(stop)) => Err(failure(
@@ -236,7 +240,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 let next = self
                     .unpublished_materialization_from_binding(effects, &publication)
                     .into_recovery();
-                self.finish_restoration_handoff(recovery, next, retry)
+                self.finish_restoration_handoff(execution, recovery, next, retry, retirements)
             }
         }
     }

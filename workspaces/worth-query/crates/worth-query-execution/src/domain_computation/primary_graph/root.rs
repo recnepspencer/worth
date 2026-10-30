@@ -96,6 +96,7 @@ impl WorthQueryPrimaryGraph {
         let managed_derived_views = Arc::new(
             super::application_query::derived_view::ManagedDerivedViewRegistry::with_sources(
                 managed_sources,
+                &runtime.main_branch_identity(),
             ),
         );
         let invalidation_owner = Arc::new(super::SourceInvalidationOwner::with_managed_views(

@@ -69,11 +69,14 @@ fn managed_fork_cancelled_lookup_releases_the_actual_registry_entry() {
             aspect_contract_declarations: Default::default(),
         })
         .unwrap();
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(schema)
+    let mut runtime = RelationalRuntimeApi::builder()
+        .schema_registry(schema.clone())
         .build()
         .unwrap();
-    let registry = Arc::new(ManagedDerivedViewRegistry::default());
+    let registry = Arc::new(ManagedDerivedViewRegistry::with_sources(
+        Default::default(),
+        &runtime.main_branch_identity(),
+    ));
     let memory = SerialMemoryBudget::new(Some(64 * 1024 * 1024));
     let cancel = CancellationSource::new();
     let owner = Arc::new(Companion {
@@ -159,6 +162,65 @@ fn managed_fork_cancelled_lookup_releases_the_actual_registry_entry() {
         .admitted()
         .is_some());
     assert!(memory.charged_memory_bytes() > 0);
+    let allocation =
+        Arc::downgrade(&registry.state.lock().unwrap().source_branches[&target].allocation);
+    // A genuine deletion from another owner with the same name cannot retire it.
+    let mut foreign = RelationalRuntimeApi::builder()
+        .schema_registry(schema)
+        .build()
+        .unwrap();
+    let foreign_basis = foreign
+        .admit_branch_basis(&foreign.main_branch_identity())
+        .unwrap();
+    let mut foreign_seed = foreign
+        .begin_branch_transaction(&foreign_basis, RelationalTransactionIntent::ordinary())
+        .unwrap();
+    foreign_seed
+        .push_batch(
+            WorkerIntentBatch::new("foreign-anchor").push(MutationIntent::Create(
+                CreateIntent::Entity(EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_key: ClientKey::raw("foreign-anchor"),
+                    fields: Default::default(),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let _foreign_seed = foreign_seed.commit(&execution, &foreign).unwrap();
+    let (_, source) = foreign
+        .observe_fork_source(foreign.main_branch_identity().branch_id())
+        .unwrap();
+    foreign
+        .fork_branch(&execution, target.clone(), source)
+        .unwrap();
+    let foreign_identity = foreign.branch_identity(&target).unwrap();
+    let outcome = foreign
+        .delete_branch(&execution, &foreign_identity)
+        .unwrap();
+    registry.retire_source_branch(outcome.deleted().expect("real foreign deletion"));
+    assert!(allocation.upgrade().is_some());
+    let identity = runtime.branch_identity(&target).unwrap();
+    assert!(registry
+        .state
+        .lock()
+        .unwrap()
+        .source_branches
+        .contains_key(identity.branch_id()));
+    let outcome = runtime.delete_branch(&execution, &identity).unwrap();
+    registry.retire_source_branch(outcome.deleted().expect("real local deletion"));
+    assert!(!registry
+        .state
+        .lock()
+        .unwrap()
+        .source_branches
+        .contains_key(identity.branch_id()));
+    assert!(registry.state.lock().unwrap().source_branches.is_empty());
+    assert!(
+        allocation.upgrade().is_none(),
+        "actual retired Query lookup grant releases immediately"
+    );
     drop((basis, seed, runtime, registration, owner, registry));
     assert_eq!(memory.charged_memory_bytes(), 0);
 }

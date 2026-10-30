@@ -3,6 +3,7 @@ use super::{
     WorthQueryProductUnpublishedRecoveryReleaseDenial,
     WorthQueryProductUnpublishedRecoveryReleaseFailure,
 };
+use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use std::num::NonZeroUsize;
 use worth_query_installation::facade::ApplicationSchema;
@@ -50,9 +51,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
         WorthQueryProductUnpublishedRecoveryReleaseFailure,
     >{
-        self.prepare_product_publication_recovery_release(recovery, minimum_age_ticks)?
-            .retry()
-            .map_err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup)
+        let mut retirements = OwnerCleanupRetirements::default();
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(None),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        self.release_product_recovery_in_request(
+            &worth_execution::ExecutionRequest::serial(&host),
+            recovery,
+            minimum_age_ticks,
+            &mut retirements,
+        )
     }
 
     pub fn release_product_publication_recovery_in_advancement(
@@ -61,7 +71,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         recovery: WorthQueryProductUnpublishedRecovery,
         minimum_age_ticks: u64,
     ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductUnpublishedRecoveryReleaseFailure>{
-        use crate::domain_computation::primary_graph::application_contribution::execution_denial;
+        let mut retirements = OwnerCleanupRetirements::default();
         let execution = match phase.checked_execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
             Err(denial) => {
@@ -71,38 +81,58 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))
             }
         };
+        self.release_product_recovery_in_request(
+            &execution,
+            recovery,
+            minimum_age_ticks,
+            &mut retirements,
+        )
+    }
+
+    pub(crate) fn release_product_recovery_in_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        recovery: WorthQueryProductUnpublishedRecovery,
+        minimum_age_ticks: u64,
+        retirements: &mut OwnerCleanupRetirements,
+    ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductUnpublishedRecoveryReleaseFailure>{
+        use crate::domain_computation::primary_graph::application_contribution::execution_denial;
         let mut retained = Some(recovery);
+        let mut attempted = None;
         let outcome = execution.in_scope(|lease| {
             worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                 .run_with_checkpoint(lease, None, |context| {
-                    // One native recovery-record release; its subsequent owner cleanup
-                    // admits history and component retirement separately before effects.
-                    if let Err(stop) = context.checkpoint(1) {
-                        return Err(recovery_failure(
-                            retained
-                                .take()
-                                .expect("admitted release retains its original record"),
-                            WorthQueryProductUnpublishedRecoveryReleaseDenial::Execution(
-                                execution_denial::advancement_checkpoint_stop(stop),
-                            ),
-                        ));
-                    }
-                    self.prepare_product_publication_recovery_release(
-                        retained.take().expect("one admitted record release"),
-                        minimum_age_ticks,
-                    )?
-                    .retry_in_advancement(phase)
-                    .map_err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup)
+                    attempted = Some((|| {
+                        context.checkpoint(1).map_err(|stop| {
+                            recovery_failure(
+                                retained.take().expect("one refused release"),
+                                WorthQueryProductUnpublishedRecoveryReleaseDenial::Execution(
+                                    execution_denial::advancement_checkpoint_stop(stop),
+                                ),
+                            )
+                        })?;
+                        self.prepare_product_publication_recovery_release(
+                            retained.take().expect("one admitted record release"),
+                            minimum_age_ticks,
+                        )?
+                        .retry_in_request_with_retirements(execution, retirements)
+                        .map_err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup)
+                    })());
                 })
         });
+        // Once record release ran, its actual result owns either remaining
+        // recovery, pending cleanup or a complete receipt across the final poll.
+        if let Some(actual) = attempted {
+            return actual;
+        }
         match outcome {
-            Ok(Ok((outcome, _))) => outcome,
             Ok(Err(denial)) | Err(denial) => Err(recovery_failure(
-                retained.expect("refused release scope keeps record custody"),
+                retained.expect("unstarted release retains its record"),
                 WorthQueryProductUnpublishedRecoveryReleaseDenial::Execution(
                     execution_denial::advancement_scope_stop(denial),
                 ),
             )),
+            Ok(Ok(_)) => unreachable!("completed release callback ran"),
         }
     }
 

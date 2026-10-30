@@ -591,8 +591,21 @@ cache. The real Native publication/fork/deletion court relinquishes the actual
 participant lookup while retaining its admitted snapshot and observations; the
 live Core expires, selected read/evict/refill still works, and currentness/write
 conditions refuse. Original affinity/fork/snapshot grants balance after all owners
-close. This is the Native lifetime prerequisite only: automatic Query lookup
-retirement and public branch-close reclamation remain unqualified.
+close.
+Query owner cleanup now retires the live Source lookup on actual Native deletion,
+with receipt custody extending beyond cleanup-entry and outer operation guards.
+Actual partial cancellation preserves only unfinished Signal work; completed
+cleanup survives the real final poll. Original request funding releases with
+deferred metadata. The real registry court rejects foreign same-name deletion
+and releases its exact local lookup. The public geometry close/alias court proves
+fresh retained-alias reads, eviction and refill after the original Native owner
+closes, sibling isolation and exact final-owner allocation balance. All 26 public
+managed-index controls pass. Native retention extension authenticates the actual
+current history owner, including a strongly retained prior owner after reset;
+fresh observation, descriptor-only admission, fork and write paths still refuse
+the deleted branch. Four existing creation-recovery and three transport-recovery
+controls pass. Dedicated generated recovery runtime composition remains open;
+its carrier forwarding is typechecked and independently reviewed only.
 Remaining lifecycle/affinity hostile controls, materialization/recovery composition
 and the required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication
@@ -962,6 +975,51 @@ coordinated cutover. Completion transaction matching or a later restoration
 callback cannot make a root Ready.
 An ordinary valid non-suspended commit still publishes its prepared Ready root
 so a subsequent public open attaches it without consumer reconstruction.
+
+#### Retained Basis Extension After Native Branch Retirement
+
+Owning Source observations retain the actual cell affinity and scoped record,
+with a weak live-cell link that cannot keep a newer current cache alive. Consuming
+a Native write condition still requires that exact live cell.
+
+A current World ReuseExact alias may still own an exact admitted Native basis
+when the product occurrence that created its Native branch has closed. Fresh
+public alias selection, Source READ, cleanup and explicit rebuild must consume
+that actual retained basis. Native branch deletion cannot turn its physical
+Source into an empty view or make a branch-name lookup its replacement authority.
+
+Native retain_component_basis extends retention of a concrete already-admitted
+immutable basis. It requires the matching runtime and SameOwner between that
+basis's actual observation-retention guard and the receiving runtime's current
+history retention binding. It then acquires the external hold from the original
+binding/root. This is additional read retention, not fresh branch admission. A
+retention-owner reset refuses the old basis even if its runtime/branch/root
+numbers match and the old retention owner remains alive. Capacity and identity
+refusals remain typed. No descriptor, caller root id or Bridge cache can mint it.
+
+Fresh observe, descriptor-only readmission, currentness, transaction and fork
+paths retain their existing live-branch requirements. The pre-existing assertion
+that any fresh external hold on an admitted deleted-branch basis must fail is
+superseded by this narrower authority distinction; it must instead prove that
+fresh live admission still refuses while exact retained extension succeeds.
+No archive format, provider meaning, phase order or roadmap ownership changes.
+
+The decisive public court creates a genuine Native-owning geometry fork, edits
+its endpoint, creates a genuine ReuseExact alias and closes the owning occurrence.
+Fresh alias reads must still return its independent expected geometry, evict to
+typed cold refusal, and explicitly refill the same selected image without a
+logical publication. Main and retained results stay isolated. Native owner courts
+also keep an old retention owner alive across an actual owner reset, convict a
+runtime-id-only check, and preserve live observation/descriptor/write refusals.
+Final reader/resource release remains explicit and independently measured.
+
+The destination is the existing Native basis_retention.rs and observation
+obligation owner, consumed by existing retain_observation_snapshot, Bridge branch
+basis retention and Query product admission. Owner-reset evidence belongs beside
+history_retention.rs; the existing authored-history branch court preserves the
+fresh/live negative boundary. No second Bridge read path or selector is added.
+The application guide and capability index explain retained-alias read/cleanup/
+refill lifetime; Native method documentation states this precise hold contract.
 
 #### One Resource, Two Read Postures And Atomic Publication
 

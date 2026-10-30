@@ -81,6 +81,7 @@ struct RegistryState {
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct ManagedDerivedViewRegistry {
     state: Mutex<RegistryState>,
+    native_runtime: Option<u64>,
     sources: super::super::managed_index::ManagedSourceInstallation,
     initialization: Mutex<Weak<managed_source::initialization::InitializationSession>>,
 }
@@ -88,9 +89,11 @@ pub(in crate::domain_computation::primary_graph) struct ManagedDerivedViewRegist
 impl ManagedDerivedViewRegistry {
     pub(in crate::domain_computation::primary_graph) fn with_sources(
         sources: super::super::managed_index::ManagedSourceInstallation,
+        owner: &worth_relational::facade::branch::RelationalBranchIdentity,
     ) -> Self {
         Self {
             state: Mutex::new(RegistryState::default()),
+            native_runtime: Some(owner.runtime_instance_id()),
             sources,
             initialization: Mutex::new(Weak::new()),
         }

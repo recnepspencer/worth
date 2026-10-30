@@ -22,7 +22,7 @@ impl WorthQueryPrimaryGraphProvider {
             "one product World owns the provider's history"
         );
         let follower: std::sync::Weak<Self> = Arc::downgrade(self);
-        product.owner_cleanup.follow_history_releases(follower);
+        product.owner_cleanup.follow_product_retention(follower);
     }
 
     /// World retires every commit behind `settled` that nothing protects,

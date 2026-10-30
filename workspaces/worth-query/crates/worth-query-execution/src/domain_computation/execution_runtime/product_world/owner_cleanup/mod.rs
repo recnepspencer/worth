@@ -2,8 +2,11 @@
 
 mod admitted;
 mod component;
+mod follower;
 mod history;
 mod registry;
+mod retirement;
+pub(crate) use retirement::OwnerCleanupRetirements;
 
 use worth_runtime_world::facade::{
     CompositeCommitIdentity, OwnerRetirementWork, ProductBranchRetirementReport,
@@ -11,7 +14,7 @@ use worth_runtime_world::facade::{
 };
 
 use super::WorthQueryProductRuntime;
-pub(crate) use history::WorthQueryReleasedHistoryFollower;
+pub(crate) use follower::WorthQueryProductRetentionFollower;
 pub(crate) use registry::WorthQueryProductBranchOwnerCleanupReservation;
 pub(super) use registry::{CleanupScope, WorthQueryProductBranchOwnerCleanupRegistry};
 
@@ -112,10 +115,11 @@ impl WorthQueryProductBranchOwnerCleanup {
 
     pub(in crate::domain_computation) fn release_retired_history(
         &self,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
         self.runtime
             .owner_cleanup
-            .release_history(self.identity, &self.runtime)
+            .release_history(self.identity, &self.runtime, retirements)
     }
 
     pub(in crate::domain_computation) fn pending_signal_bases(
@@ -138,8 +142,19 @@ impl WorthQueryProductBranchOwnerCleanup {
         WorthQueryProductBranchOwnerCleanupReceipt,
         WorthQueryProductBranchOwnerCleanupFailure,
     > {
+        let mut retirements = OwnerCleanupRetirements::default();
+        self.retry_with_retirements(&mut retirements)
+    }
+
+    pub(crate) fn retry_with_retirements(
+        self,
+        retirements: &mut OwnerCleanupRetirements,
+    ) -> Result<
+        WorthQueryProductBranchOwnerCleanupReceipt,
+        WorthQueryProductBranchOwnerCleanupFailure,
+    > {
         let registry = self.runtime.owner_cleanup.clone();
-        match registry.retry(self.identity, &self.runtime) {
+        match registry.retry(self.identity, &self.runtime, retirements) {
             Ok(receipt) => Ok(receipt),
             Err(denial) => Err(WorthQueryProductBranchOwnerCleanupFailure {
                 denial,
@@ -209,6 +224,7 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryProductRuntime,
+        retirements: &mut OwnerCleanupRetirements,
         mut after_component_progress: impl FnMut(),
         mut checkpoint: impl FnMut(u64) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial>,
     ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
@@ -231,7 +247,7 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         self.release_retired_history(runtime)?;
         while let Some(work) = self.pending.first() {
             checkpoint(1)?;
-            runtime.retire_owner_component(execution, work)?;
+            runtime.retire_owner_component(execution, work, retirements)?;
             self.pending.remove(0);
             self.retired_component_count += 1;
             after_component_progress();

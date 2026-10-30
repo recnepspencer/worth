@@ -5579,6 +5579,14 @@ main and fork images remain warm. Earlier Native/World images and observations
 may retain their immutable temporal shares; eviction does not erase historical
 material. Physical backing releases after its last relevant owner closes.
 
+After its Native component deletion completes, closing the owning product also
+releases its live managed Source lookup.
+An existing `ReuseExact` alias retains its selected immutable component, so fresh
+admitted reads, eviction and refill through that alias remain available. This
+retained read custody grants no fresh Native branch admission, fork or write.
+The [close and alias court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/close.rs)
+checks the complete journey and final allocation balance.
+
 See the [authored maintained catalog](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/host.rs)
 and [its installed rule](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule.rs).
 
