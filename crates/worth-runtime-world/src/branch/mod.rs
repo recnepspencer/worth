@@ -6,6 +6,7 @@ mod history;
 mod name;
 pub(crate) mod observation;
 mod reference_cell;
+mod reference_description;
 #[cfg(test)]
 pub(crate) use reference_cell::publication_unwind;
 mod reference_snapshot;
@@ -45,6 +46,10 @@ pub(crate) use reference_cell::{
     ProductBranchHeadProtection, ProductBranchReferenceCell, ProductBranchReferenceLoss,
     ProductBranchReferenceMovement, ProductBranchReferenceObservationFailure,
     ProductBranchReferenceRetirement,
+};
+pub use reference_description::{
+    ProductBranchReferenceDescription, ProductBranchReferenceReadmissionDenial,
+    PRODUCT_BRANCH_REFERENCE_DESCRIPTION_VERSION,
 };
 pub use reference_snapshot::ProductBranchReferenceSnapshot;
 pub use retirement::RuntimeWorldBranchRetirementDenial;

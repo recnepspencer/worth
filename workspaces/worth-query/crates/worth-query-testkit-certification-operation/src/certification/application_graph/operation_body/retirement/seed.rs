@@ -1,5 +1,5 @@
 //! Bootstrap data only: test mutations execute installed bodies, never host cleanup.
-pub use super::{super::schema::*, declaration::*};
+pub use super::declaration::*;
 pub use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEntityKey as Key, WorthQueryApplicationEntitySeed as Entity,
     WorthQueryApplicationRelationSeed as Relation, WorthQueryPrimaryGraphBootstrap,

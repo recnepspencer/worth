@@ -211,10 +211,10 @@ fn merge_branch_catalog(
 ) {
     for (branch_id, branch_handle) in branch_catalog {
         match state.branch_catalog.get_mut(&branch_id) {
-            Some(existing) if branch_id != state.active_branch => {
-                if existing.head_snapshot_id.is_none() {
-                    existing.head_snapshot_id = branch_handle.head_snapshot_id;
-                }
+            Some(existing)
+                if branch_id != state.active_branch && existing.head_snapshot_id.is_none() =>
+            {
+                existing.head_snapshot_id = branch_handle.head_snapshot_id;
             }
             None => {
                 state.branch_catalog.insert(branch_id, branch_handle);

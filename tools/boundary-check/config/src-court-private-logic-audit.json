@@ -1,0 +1,71 @@
+{
+  "incoming": "f7aacfe3d3d8692df1efaf34e91f4cff94788140",
+  "audits": [
+    {
+      "constructors": [
+        "worth_execution::ExecutionRequest::<factory>",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::<factory>",
+        "worth_execution::SerialRequest::from_memory",
+        "worth_relational::RelationalRuntime::<factory>",
+        "worth_runtime_bridge::RuntimeBridge::<factory>",
+        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
+        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
+        "worth_signal::SignalGraph::<factory>",
+        "worth_signal::facade::SignalGraph::new"
+      ],
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/currentness_pair_tests.rs",
+      "test": "lifecycle::owner::branch_service::currentness_pair_tests::pair_currentness_locks_both_retirement_cells_only_through_installation",
+      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
+      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
+    },
+    {
+      "constructors": [
+        "worth_execution::ExecutionRequest::<factory>",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::<factory>",
+        "worth_execution::SerialRequest::from_memory",
+        "worth_relational::RelationalRuntime::<factory>",
+        "worth_runtime_bridge::RuntimeBridge::<factory>",
+        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
+        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
+        "worth_signal::SignalGraph::<factory>",
+        "worth_signal::facade::SignalGraph::new"
+      ],
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/currentness_pair_tests.rs",
+      "test": "lifecycle::owner::branch_service::currentness_pair_tests::pair_currentness_returns_identical_custody_when_candidate_retires_after_admission",
+      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
+      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
+    },
+    {
+      "constructors": [
+        "worth_execution::ExecutionRequest::<factory>",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::<factory>",
+        "worth_execution::SerialRequest::from_memory",
+        "worth_relational::RelationalRuntime::<factory>",
+        "worth_runtime_bridge::RuntimeBridge::<factory>",
+        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
+        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
+        "worth_signal::SignalGraph::<factory>",
+        "worth_signal::facade::SignalGraph::new"
+      ],
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/reference_description_tests.rs",
+      "test": "lifecycle::owner::branch_service::reference_description_tests::stored_reference_description_refuses_retirement_and_same_name_recreation",
+      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
+      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
+    },
+    {
+      "constructors": [
+        "worth_execution::ExecutionRequest::<factory>",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::<factory>",
+        "worth_execution::SerialRequest::from_memory"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/product_branch_creation_recovery/creation_release.rs",
+      "test": "domain_computation::primary_graph::tests::product_branch_creation_recovery::creation_release::creation_release_retains_live_recovery_and_defers_actual_owner_cleanup",
+      "audit": "Private-logic source audit under the existing ratchet rule, 2026-10-30; only the newly observed original Execution request constructors are admitted.",
+      "private_subject": "Creation recovery wrapper and genuine deferred owner cleanup: reaches the private installed primary graph/integration runtime to hold an actual fork operation, then proves the native cleanup receipt and last release. Moving it would require exposing private runtime access or weakening the control observation."
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+error: cannot construct `TruthWritebackReceipt` with struct literal syntax due to private fields
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_receipt_literal_private.rs:5:20
+   |
+ 5 |     let _receipt = TruthWritebackReceipt {
+   |                    ^^^^^^^^^^^^^^^^^^^^^
+ 6 |         outcome_class: BridgeWritebackOutcomeClass::AuthoritativeCommit,
+   |         --------------------------------------------------------------- private field
+ 7 |         failure_class: None,
+   |         ------------------- private field
+ 8 |         authoritative_artifact_digest: sealed_authority_placeholder(),
+   |         ------------------------------------------------------------- private field
+ 9 |         request_digest: sealed_authority_placeholder(),
+   |         ---------------------------------------------- private field
+10 |         canonical_basis: sealed_authority_placeholder(),
+   |         ----------------------------------------------- private field
+11 |         digest: sealed_authority_placeholder(),
+   |         -------------------------------------- private field
+   |
+   = note: ...and other private field `effect_intent` that was not provided
+help: you might have meant to use an associated function to build this type
+   |
+ 5 -     let _receipt = TruthWritebackReceipt {
+ 6 -         outcome_class: BridgeWritebackOutcomeClass::AuthoritativeCommit,
+ 7 -         failure_class: None,
+ 8 -         authoritative_artifact_digest: sealed_authority_placeholder(),
+ 9 -         request_digest: sealed_authority_placeholder(),
+10 -         canonical_basis: sealed_authority_placeholder(),
+11 -         digest: sealed_authority_placeholder(),
+12 -     };
+ 5 +     let _receipt = TruthWritebackReceipt::new(_, _);
+   |
+ 5 -     let _receipt = TruthWritebackReceipt {
+ 6 -         outcome_class: BridgeWritebackOutcomeClass::AuthoritativeCommit,
+ 7 -         failure_class: None,
+ 8 -         authoritative_artifact_digest: sealed_authority_placeholder(),
+ 9 -         request_digest: sealed_authority_placeholder(),
+10 -         canonical_basis: sealed_authority_placeholder(),
+11 -         digest: sealed_authority_placeholder(),
+12 -     };
+ 5 +     let _receipt = TruthWritebackReceipt::new_with_failure_class(_, _, _);
+   |
+ 5 -     let _receipt = TruthWritebackReceipt {
+ 6 -         outcome_class: BridgeWritebackOutcomeClass::AuthoritativeCommit,
+ 7 -         failure_class: None,
+ 8 -         authoritative_artifact_digest: sealed_authority_placeholder(),
+ 9 -         request_digest: sealed_authority_placeholder(),
+10 -         canonical_basis: sealed_authority_placeholder(),
+11 -         digest: sealed_authority_placeholder(),
+12 -     };
+ 5 +     let _receipt = TruthWritebackReceipt::canonical_noop_from_prior_receipt(_, _);
+   |
+ 5 -     let _receipt = TruthWritebackReceipt {
+ 6 -         outcome_class: BridgeWritebackOutcomeClass::AuthoritativeCommit,
+ 7 -         failure_class: None,
+ 8 -         authoritative_artifact_digest: sealed_authority_placeholder(),
+ 9 -         request_digest: sealed_authority_placeholder(),
+10 -         canonical_basis: sealed_authority_placeholder(),
+11 -         digest: sealed_authority_placeholder(),
+12 -     };
+ 5 +     let _receipt = TruthWritebackReceipt::from_derived_authoritative_artifact(_, _, _, _, _);
+   |

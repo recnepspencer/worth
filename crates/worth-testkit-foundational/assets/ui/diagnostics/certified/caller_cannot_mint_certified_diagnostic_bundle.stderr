@@ -1,0 +1,26 @@
+warning: unreachable expression
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/certified/caller_cannot_mint_certified_diagnostic_bundle.rs
+  |
+  |       let _ = FoundationalCertifiedDiagnosticBundle::<
+  |  _____________^
+  | |         CurrentBasisCommitReceiptArtifact,
+  | |         FoundationalDiagnosticSupportReport,
+  | |     > {
+  | |         inner: impossible_inner(),
+  | |                ------------------ any code following this expression is unreachable
+  | |     };
+  | |_____^ unreachable expression
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0451]: field `inner` of struct `FoundationalCertifiedDiagnosticBundle` is private
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/certified/caller_cannot_mint_certified_diagnostic_bundle.rs
+  |
+  |       let _ = FoundationalCertifiedDiagnosticBundle::<
+  |  _____________-
+  | |         CurrentBasisCommitReceiptArtifact,
+  | |         FoundationalDiagnosticSupportReport,
+  | |     > {
+  | |_____- in this type
+  |           inner: impossible_inner(),
+  |           ^^^^^ private field

@@ -1,16 +1,15 @@
 [package]
-name = "worth-proof"
-version = "0.1.0"
-edition = "2024"
-rust-version = "1.94"
+"name" = "worth-proof"
+"version" = "0.1.0"
+"edition" = "2024"
+"rust-version" = "1.94"
+"autotests" = false
+
 
 [features]
 certification-test-authority = []
 
 [dependencies]
-
-[dev-dependencies]
-trybuild.workspace = true
 
 [lints]
 workspace = true

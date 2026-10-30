@@ -25,11 +25,9 @@ FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",
 
 # One test build per group. Every suite of a group takes its binaries from
 # the same cargo selection, so the first-party chain is compiled once.
-ROOT_TESTS = [
-    *packages("worth-relational", "worth-signal", "worth-execution",
-              "worth-signal-wasm", "worth-server"),
-    "--lib", "--tests",
-]
+ROOT_TESTS = ["--workspace", "--lib", "--tests"]
+COURT_OWNERS = {'worth-court-execution': ['worth-execution'], 'worth-court-foundational-certification-boundary-artifacts': ['worth-foundational'], 'worth-court-foundational-expressions': ['worth-foundational'], 'worth-court-foundational-certification-boundary-evidence': ['worth-foundational'], 'worth-court-proof': ['worth-proof'], 'worth-court-relational-certification': ['worth-relational'], 'worth-court-relational-branch-reference-compile-time': ['worth-relational'], 'worth-court-runtime-bridge': ['worth-runtime-bridge'], 'worth-court-runtime-world': ['worth-runtime-world'], 'worth-court-server-certification-suite': ['worth-server'], 'worth-court-server-product-operation-phase-eleven': ['worth-server'], 'worth-court-server-product-operation-phase-thirteen-shared-read': ['worth-server'], 'worth-court-signal-owner-services': ['worth-signal'], 'worth-court-signal-branch-retention-contract': ['worth-signal'], 'worth-court-signal-wasm': ['worth-signal-wasm']}
+
 GROUPS = {
     "root": ROOT_TESTS,
     # Rust 1.94 repeatedly ICEs in this external schema host's incremental
@@ -66,7 +64,7 @@ def lib_of(*names):
 
 
 def package_of(*names):
-    return lambda binary: binary["package"] in names
+    return lambda binary: bool(set(names) & set(COURT_OWNERS.get(binary["package"], [binary["package"]])))
 
 def everything(_binary):
     return True
@@ -92,7 +90,7 @@ TEST_SUITES = {
 }
 # Category suites reuse the same build and select top-level path prefixes.
 CATEGORY_SUITES = {}
-for prefix in ("query", "bank"):
+for prefix in ("query", "bank", "root"):
     for label, category in (("process", "process"), ("exhaustive", "oracle"),
                             ("scale", "cost"), ("determinism", "determinism"),
                             ("compile-fail", "compile_fail")):

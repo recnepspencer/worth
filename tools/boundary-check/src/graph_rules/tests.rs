@@ -32,6 +32,21 @@ fn courts_have_one_canonical_target_and_remain_dependency_leaves() {
         },
     );
     assert!(check(&input).is_empty());
+    let graph = input.graphs.remove("workspaces/a/Cargo.toml").unwrap();
+    input.graphs.insert("Cargo.toml".into(), graph);
+    input
+        .files
+        .insert(format!("{CONFIG}test-workspaces.txt"), ". | a".into());
+    assert!(
+        check(&input).is_empty(),
+        "the root registration uses the same metadata session"
+    );
+    let graph = input.graphs.remove("Cargo.toml").unwrap();
+    input.graphs.insert("workspaces/a/Cargo.toml".into(), graph);
+    input.files.insert(
+        format!("{CONFIG}test-workspaces.txt"),
+        "workspaces/a | a".into(),
+    );
     input
         .graphs
         .get_mut("workspaces/a/Cargo.toml")

@@ -26,7 +26,9 @@ impl<Query> WorthQueryObservedSource<Query> {
         // Retained full source currentness still consumes the original bodies.
         (footprint.complete
             && footprint.root_selection.as_ref().is_some_and(|selection| {
-                selection.walks.is_none() && selection.components.is_none()
+                selection.walks.is_none()
+                    && selection.components.is_none()
+                    && selection.managed_index.is_none()
             }))
         .then(|| WorthQueryObservedSourceSelection {
             runtime_authority: self.runtime_authority,
@@ -121,6 +123,8 @@ fn same_root_selection(
         || right.walks.is_some()
         || left.components.is_some()
         || right.components.is_some()
+        || left.managed_index.is_some()
+        || right.managed_index.is_some()
     {
         return false;
     }

@@ -99,7 +99,7 @@ where
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
                 Schema,
             > + 'static,
-    {
+{
         self.authoring_capability.binding.matches_binding(
             std::any::TypeId::of::<Capability>(),
             Capability::IDENTIFIER,

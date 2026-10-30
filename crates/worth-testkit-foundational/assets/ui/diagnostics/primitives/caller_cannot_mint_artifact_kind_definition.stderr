@@ -1,0 +1,15 @@
+error[E0624]: associated function `new` is private
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/primitives/caller_cannot_mint_artifact_kind_definition.rs
+  |
+  |       let _definition = FoundationalDiagnosticArtifactKindDefinition::new(
+  |                                                                       ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-foundational/src/diagnostics/categories.rs
+  |
+  | /     pub(crate) const fn new(
+  | |         kind: FoundationalDiagnosticArtifactKind,
+  | |         name: &'static str,
+  | |         intended_use: &'static str,
+  | |         must_not_mean: &'static str,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here

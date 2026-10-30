@@ -1,0 +1,31 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/front_doors/raw_sequence_cannot_enter_front_door_comparison.rs
+  |
+  |         .left(left)
+  |          ---- ^^^^ expected `Artifact<..., ..., ..., ...>`, found `CanonicalBasisSequence`
+  |          |
+  |          arguments to this method are incorrect
+  |
+  = note: expected struct `worth_proof::artifact::carrier::Artifact<CanonicalBasisReady, CanonicalBasisSequence, worth_proof::proof::sets::ProofSetCons<worth_proof::proof::sets::Proof<worth_proof::proof::structural_facts::CanonicalOrder, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, worth_proof::proof::sets::ProofSetCons<worth_proof::proof::sets::Proof<worth_proof::proof::structural_facts::Uniqueness, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, worth_proof::proof::sets::ProofSetCons<worth_proof::proof::sets::Proof<CanonicalDomainCoherence, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, worth_proof::proof::sets::ProofSetCons<worth_proof::proof::sets::Proof<CanonicalRuleVersionBound, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, worth_proof::proof::sets::Proof<CanonicalizationCostObserved, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>>>>>, worth_proof::assumption::freshness::FreshnessScopedBasis<worth_proof::assumption::freshness::CurrentValidity, worth_proof::assumption::basis::AssumptionBasis<CanonicalizationRuleVersion>>>`
+             found struct `CanonicalBasisSequence`
+note: method defined here
+ --> $WORKSPACE/crates/worth-foundational/src/canonicalization/front_doors/comparison.rs
+  |
+  |     pub fn left(self, left: CanonicalBasisReadyArtifact) -> CanonicalComparisonRightStep {
+  |            ^^^^
+
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/front_doors/raw_sequence_cannot_enter_front_door_comparison.rs
+  |
+  |         .right(right)
+  |          ----- ^^^^^ expected `Artifact<..., ..., ..., ...>`, found `CanonicalBasisSequence`
+  |          |
+  |          arguments to this method are incorrect
+  |
+  = note: expected struct `worth_proof::artifact::carrier::Artifact<CanonicalBasisReady, CanonicalBasisSequence, worth_proof::proof::sets::ProofSetCons<worth_proof::proof::sets::Proof<worth_proof::proof::structural_facts::CanonicalOrder, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, worth_proof::proof::sets::ProofSetCons<worth_proof::proof::sets::Proof<worth_proof::proof::structural_facts::Uniqueness, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, worth_proof::proof::sets::ProofSetCons<worth_proof::proof::sets::Proof<CanonicalDomainCoherence, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, worth_proof::proof::sets::ProofSetCons<worth_proof::proof::sets::Proof<CanonicalRuleVersionBound, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, worth_proof::proof::sets::Proof<CanonicalizationCostObserved, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>>>>>, worth_proof::assumption::freshness::FreshnessScopedBasis<worth_proof::assumption::freshness::CurrentValidity, worth_proof::assumption::basis::AssumptionBasis<CanonicalizationRuleVersion>>>`
+             found struct `CanonicalBasisSequence`
+note: method defined here
+ --> $WORKSPACE/crates/worth-foundational/src/canonicalization/front_doors/comparison.rs
+  |
+  |     pub fn right(self, right: CanonicalBasisReadyArtifact) -> CanonicalComparisonBasisStep {
+  |            ^^^^^

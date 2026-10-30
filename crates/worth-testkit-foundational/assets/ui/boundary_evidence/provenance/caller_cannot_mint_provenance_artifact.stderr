@@ -1,0 +1,23 @@
+error[E0451]: fields `locality`, `freshness_posture`, `source_basis`, `authority_path`, `strategy_basis`, `profile_basis`, `comparison_basis`, `canonical_digest_basis` and `support_context_attachments` of struct `FoundationalBoundaryEvidenceProvenanceArtifact` are private
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/provenance/caller_cannot_mint_provenance_artifact.rs
+  |
+  |     let _artifact = FoundationalBoundaryEvidenceProvenanceArtifact {
+  |                     ---------------------------------------------- in this type
+  |         locality: FoundationalBoundaryEvidenceLocality::Current,
+  |         ^^^^^^^^ private field
+  |         freshness_posture: FoundationalBoundaryEvidenceFreshnessPosture::FreshRetained,
+  |         ^^^^^^^^^^^^^^^^^ private field
+  |         source_basis: impossible::<FoundationalBoundaryEvidenceSourceBasis>(),
+  |         ^^^^^^^^^^^^ private field
+  |         authority_path: Some(impossible::<FoundationalBoundaryEvidenceAuthorityPath>()),
+  |         ^^^^^^^^^^^^^^ private field
+  |         strategy_basis: Some(impossible::<FoundationalBoundaryEvidenceStrategyBasis>()),
+  |         ^^^^^^^^^^^^^^ private field
+  |         profile_basis: Some(impossible::<FoundationalBoundaryEvidenceProfileBasis>()),
+  |         ^^^^^^^^^^^^^ private field
+  |         comparison_basis: Some(impossible::<FoundationalBoundaryEvidenceComparisonBasis>()),
+  |         ^^^^^^^^^^^^^^^^ private field
+  |         canonical_digest_basis: Some(impossible::<FoundationalBoundaryEvidenceCanonicalDigestBasis>()),
+  |         ^^^^^^^^^^^^^^^^^^^^^^ private field
+  |         support_context_attachments: vec![
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field

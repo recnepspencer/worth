@@ -1,0 +1,13 @@
+error[E0451]: fields `structural_contract_digest`, `validated_declaration_digest`, `canonical_basis` and `digest` of struct `BridgePreviewStructuralBasis` are private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/preview_structural_basis_literal_private.rs:6:9
+  |
+5 |     let _basis = BridgePreviewStructuralBasis {
+  |                  ---------------------------- in this type
+6 |         structural_contract_digest: sealed_authority_placeholder(),
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+7 |         validated_declaration_digest: sealed_authority_placeholder(),
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+8 |         canonical_basis: sealed_authority_placeholder(),
+  |         ^^^^^^^^^^^^^^^ private field
+9 |         digest: sealed_authority_placeholder(),
+  |         ^^^^^^ private field

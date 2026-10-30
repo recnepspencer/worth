@@ -9,6 +9,8 @@ use worth_execution::{
 
 pub(super) fn storage_denial(cause: StoreDenial) -> Denial {
     let kind = match &cause {
+        StoreDenial::ExecutionRequest(stop) => Kind::ExecutionRequest(
+            crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop(*stop)),
         StoreDenial::Allocation(allocation) => match allocation.classify() {
             Class::Request(Request::Stopped(Stop::Cancelled)) => Kind::Cancelled,
             Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => Kind::TimedOut,

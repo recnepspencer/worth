@@ -1354,13 +1354,10 @@ name = "worth-store"
 version = "0.1.0"
 dependencies = [
  "getrandom",
- "serde",
  "serde_json",
  "sha2",
- "stats_alloc",
  "tempfile",
  "tracking-allocator",
- "trybuild",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -1373,15 +1370,12 @@ dependencies = [
  "worth-store-io-scheduler",
  "worth-store-layout-indexes",
  "worth-store-lsm-authority",
- "worth-store-offline-integrity-observer",
- "worth-store-offline-verifier",
  "worth-store-physical-backend",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-physical-isolation",
  "worth-store-recovery-physics",
  "worth-store-security",
- "worth-store-test-support",
  "worth-store-wal",
 ]
 
@@ -1478,12 +1472,9 @@ dependencies = [
 name = "worth-store-certification"
 version = "0.1.0"
 dependencies = [
- "serde_json",
  "sha2",
- "tempfile",
  "worth-foundational",
  "worth-proof",
- "worth-relational",
  "worth-store",
  "worth-store-aspect-native",
  "worth-store-authority",
@@ -1525,6 +1516,446 @@ name = "worth-store-contracts"
 version = "0.1.0"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "worth-store-court-aspect-native"
+version = "0.1.0"
+dependencies = [
+ "worth-store-aspect-native",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-branch-deltas"
+version = "0.1.0"
+dependencies = [
+ "worth-store-branch-deltas",
+ "worth-store-contracts",
+ "worth-store-live-query",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-buffer-pool"
+version = "0.1.0"
+dependencies = [
+ "worth-store-buffer-pool",
+ "worth-store-physical-format",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-layout-indexes"
+version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+ "worth-store-aspect-native",
+ "worth-store-budgets",
+ "worth-store-contracts",
+ "worth-store-layout-indexes",
+ "worth-store-physical-format",
+ "worth-store-security",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-layout-indexes-replication"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "tempfile",
+ "worth-store-offline-verifier",
+ "worth-store-physical-format",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-maintenance-recovery-runtime-replication"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-store",
+ "worth-store-aspect-native",
+ "worth-store-authority",
+ "worth-store-blob-chunks",
+ "worth-store-budgets",
+ "worth-store-certification",
+ "worth-store-contracts",
+ "worth-store-io-scheduler",
+ "worth-store-layout-indexes",
+ "worth-store-offline-verifier",
+ "worth-store-operations",
+ "worth-store-physical-backend",
+ "worth-store-physical-certification",
+ "worth-store-physical-format",
+ "worth-store-physical-isolation",
+ "worth-store-reclaim-policy",
+ "worth-store-security",
+ "worth-store-test-support",
+ "worth-store-testkit-executables",
+ "worth-store-tiering",
+]
+
+[[package]]
+name = "worth-store-court-physical-format"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "worth-foundational",
+ "worth-store-contracts",
+ "worth-store-offline-integrity-observer",
+ "worth-store-physical-format",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-physical-integrity"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "trybuild",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-physical-isolation"
+version = "0.1.0"
+dependencies = [
+ "worth-store-physical-isolation",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-recovery-runtime-replication"
+version = "0.1.0"
+dependencies = [
+ "trybuild",
+ "worth-store-recovery-runtime",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-recovery-runtime",
+]
+
+[[package]]
+name = "worth-store-court-recovery-runtime-replication-phase-eight-process"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "worth-foundational",
+ "worth-proof",
+ "worth-store",
+ "worth-store-authority",
+ "worth-store-blob-chunks",
+ "worth-store-offline-verifier",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-recovery-physics",
+ "worth-store-recovery-runtime",
+ "worth-store-security",
+ "worth-store-test-support",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-recovery-runtime",
+]
+
+[[package]]
+name = "worth-store-court-recovery-runtime-replication-production-entry-accumulator-only-pending-wal"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-store",
+ "worth-store-authority",
+ "worth-store-blob-chunks",
+ "worth-store-contracts",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-recovery-physics",
+ "worth-store-recovery-runtime",
+ "worth-store-security",
+ "worth-store-test-support",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-recovery-runtime",
+]
+
+[[package]]
+name = "worth-store-court-recovery-runtime-replication-production-entry-certified-release-serving"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-store",
+ "worth-store-authority",
+ "worth-store-blob-chunks",
+ "worth-store-contracts",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-recovery-physics",
+ "worth-store-recovery-runtime",
+ "worth-store-security",
+ "worth-store-test-support",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-recovery-runtime",
+]
+
+[[package]]
+name = "worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-store",
+ "worth-store-authority",
+ "worth-store-blob-chunks",
+ "worth-store-contracts",
+ "worth-store-formal-models",
+ "worth-store-layout-indexes",
+ "worth-store-lsm-authority",
+ "worth-store-physical-backend",
+ "worth-store-physical-certification",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-physical-isolation",
+ "worth-store-recovery-physics",
+ "worth-store-recovery-runtime",
+ "worth-store-security",
+ "worth-store-test-support",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-recovery-runtime",
+]
+
+[[package]]
+name = "worth-store-court-recovery-runtime-replication-store-physical-blob-journeys"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+ "stats_alloc",
+ "tempfile",
+ "tracking-allocator",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+ "worth-store",
+ "worth-store-authority",
+ "worth-store-blob-chunks",
+ "worth-store-buffer-pool",
+ "worth-store-contracts",
+ "worth-store-io-scheduler",
+ "worth-store-offline-integrity-observer",
+ "worth-store-offline-verifier",
+ "worth-store-physical-backend",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-recovery-physics",
+ "worth-store-security",
+ "worth-store-test-support",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-store",
+ "worth-store-wal",
+]
+
+[[package]]
+name = "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-durability-admission"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+ "stats_alloc",
+ "tempfile",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+ "worth-store",
+ "worth-store-contracts",
+ "worth-store-io-scheduler",
+ "worth-store-offline-verifier",
+ "worth-store-physical-backend",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-security",
+ "worth-store-test-support",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-store",
+ "worth-store-wal",
+]
+
+[[package]]
+name = "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "tempfile",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+ "worth-store",
+ "worth-store-contracts",
+ "worth-store-io-scheduler",
+ "worth-store-offline-verifier",
+ "worth-store-physical-backend",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-security",
+ "worth-store-test-support",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-store",
+]
+
+[[package]]
+name = "worth-store-court-relational"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "tempfile",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-store",
+ "worth-store-physical-format",
+ "worth-store-relational",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-snapshots"
+version = "0.1.0"
+dependencies = [
+ "worth-store-contracts",
+ "worth-store-snapshots",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-source"
+version = "0.1.0"
+dependencies = [
+ "store-test-runner",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-store"
+version = "0.1.0"
+dependencies = [
+ "stats_alloc",
+ "trybuild",
+ "worth-store",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-court-store-replication"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+ "worth-store",
+ "worth-store-io-scheduler",
+ "worth-store-offline-verifier",
+ "worth-store-physical-backend",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-store",
+]
+
+[[package]]
+name = "worth-store-court-store-replication-physical-blob-journeys"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "stats_alloc",
+ "tempfile",
+ "tracking-allocator",
+ "trybuild",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+ "worth-store",
+ "worth-store-authority",
+ "worth-store-blob-chunks",
+ "worth-store-contracts",
+ "worth-store-io-scheduler",
+ "worth-store-physical-backend",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-security",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-store",
+]
+
+[[package]]
+name = "worth-store-court-store-replication-physical-record-journeys-durability-admission"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "tempfile",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+ "worth-store",
+ "worth-store-contracts",
+ "worth-store-io-scheduler",
+ "worth-store-physical-backend",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-security",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-store",
+ "worth-store-wal",
+]
+
+[[package]]
+name = "worth-store-court-store-replication-physical-record-journeys-physical-work"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "tempfile",
+ "trybuild",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+ "worth-store",
+ "worth-store-buffer-pool",
+ "worth-store-contracts",
+ "worth-store-io-scheduler",
+ "worth-store-physical-backend",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-security",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-store",
 ]
 
 [[package]]
@@ -1597,7 +2028,6 @@ dependencies = [
  "worth-store-physical-isolation",
  "worth-store-recovery-physics",
  "worth-store-security",
- "worth-store-test-support",
  "worth-store-wal",
 ]
 
@@ -1628,7 +2058,6 @@ dependencies = [
  "worth-store",
  "worth-store-contracts",
  "worth-store-layout-indexes",
- "worth-store-physical-format",
  "worth-store-test-support",
 ]
 
@@ -1693,11 +2122,9 @@ dependencies = [
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-physical-isolation",
- "worth-store-readiness",
  "worth-store-recovery-physics",
  "worth-store-replication",
  "worth-store-security",
- "worth-store-test-support",
  "worth-store-tiering",
  "worth-store-wal",
 ]
@@ -1785,7 +2212,6 @@ name = "worth-store-physical-integrity"
 version = "0.1.0"
 dependencies = [
  "sha2",
- "trybuild",
  "worth-foundational",
  "worth-store-physical-format",
 ]
@@ -1849,24 +2275,14 @@ dependencies = [
 name = "worth-store-recovery-runtime"
 version = "0.1.0"
 dependencies = [
- "serde_json",
  "sha2",
  "tempfile",
- "trybuild",
- "worth-execution",
  "worth-foundational",
  "worth-proof",
- "worth-relational",
  "worth-store",
- "worth-store-authority",
- "worth-store-blob-chunks",
- "worth-store-contracts",
- "worth-store-offline-integrity-observer",
- "worth-store-offline-verifier",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-recovery-physics",
- "worth-store-security",
  "worth-store-test-support",
 ]
 
@@ -1877,7 +2293,6 @@ dependencies = [
  "sha2",
  "tempfile",
  "worth-execution",
- "worth-foundational",
  "worth-proof",
  "worth-relational",
  "worth-store",
@@ -1898,7 +2313,6 @@ dependencies = [
  "worth-store-physical-backend",
  "worth-store-physical-isolation",
  "worth-store-security",
- "worth-store-wal",
 ]
 
 [[package]]
@@ -1976,6 +2390,59 @@ dependencies = [
  "worth-store-physical-isolation",
  "worth-store-recovery-physics",
  "worth-store-recovery-runtime",
+ "worth-store-security",
+ "worth-store-wal",
+]
+
+[[package]]
+name = "worth-store-testkit-executables"
+version = "0.1.0"
+
+[[package]]
+name = "worth-store-testkit-recovery-runtime"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-store",
+ "worth-store-authority",
+ "worth-store-blob-chunks",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-recovery-physics",
+ "worth-store-recovery-runtime",
+ "worth-store-security",
+ "worth-store-test-support",
+ "worth-store-testkit-executables",
+]
+
+[[package]]
+name = "worth-store-testkit-store"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+ "stats_alloc",
+ "tempfile",
+ "tracking-allocator",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+ "worth-store",
+ "worth-store-authority",
+ "worth-store-blob-chunks",
+ "worth-store-contracts",
+ "worth-store-io-scheduler",
+ "worth-store-offline-verifier",
+ "worth-store-physical-backend",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
  "worth-store-security",
  "worth-store-wal",
 ]

@@ -1,0 +1,7 @@
+error[E0062]: field `support_posture` specified more than once
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/set_construction/duplicate_family_assignment_cannot_construct_profile_set.rs
+  |
+  |         support_posture: SupportPostureProfile::SupportReady,
+  |         ---------------------------------------------------- first use of `support_posture`
+  |         support_posture: SupportPostureProfile::SupportReady,
+  |         ^^^^^^^^^^^^^^^ used more than once

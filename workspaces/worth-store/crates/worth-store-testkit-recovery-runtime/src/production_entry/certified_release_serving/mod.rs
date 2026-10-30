@@ -1,0 +1,15 @@
+#[path = "declarations.rs"]
+mod declarations;
+pub use self::declarations::*;
+#[allow(dead_code, unused_imports)]
+#[path = "empty_no_release/mod.rs"]
+pub mod empty_no_release;
+#[allow(dead_code, unused_imports)]
+#[path = "plain_serving/mod.rs"]
+pub mod plain_serving;
+#[allow(dead_code, unused_imports)]
+#[path = "recovery/mod.rs"]
+pub mod recovery;
+#[allow(dead_code, unused_imports)]
+#[path = "recovery_request/mod.rs"]
+pub mod recovery_request;

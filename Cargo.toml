@@ -1,34 +1,8 @@
 [workspace]
-resolver = "3"
-# Road 1 sub-workspaces under workspaces own their own package membership.
-# Keep them out of the root workspace so whole-world orchestration must route
-# through explicit --manifest-path calls rather than silent root ownership.
-# Cargo does not expand globs in `exclude`, so "workspaces/*" alone excluded
-# nothing: every sub-workspace crate a root member depends on silently became a
-# root member, built with the root's lints and dependency table. The explicit
-# entries are what keep them out; the glob remains for the boundary check.
-exclude = [
-    "workspaces/*",
-    "workspaces/worth-contracts",
-    "workspaces/worth-query",
-    "workspaces/worth-query-bank-world",
-    "workspaces/worth-store",
-    "workspaces/worth-ui",
-]
-members = [
-    "crates/worth-harness",
-    "crates/worth-runtime-bridge",
-    "crates/worth-server",
-    "crates/worth-server-client-generation",
-    "crates/worth-foundational",
-    "crates/worth-value-shape-derive",
-    "crates/worth-proof",
-    "crates/worth-execution",
-    "crates/worth-signal",
-    "crates/worth-signal-wasm",
-    "crates/worth-relational",
-    "crates/worth-runtime-world",
-]
+"resolver" = "3"
+"exclude" = ["workspaces/*", "workspaces/worth-contracts", "workspaces/worth-query", "workspaces/worth-query-bank-world", "workspaces/worth-store", "workspaces/worth-ui"]
+"members" = ["crates/worth-court-execution", "crates/worth-court-foundational-certification-boundary-artifacts", "crates/worth-court-foundational-certification-boundary-evidence", "crates/worth-court-foundational-expressions", "crates/worth-court-proof", "crates/worth-court-relational-branch-reference-compile-time", "crates/worth-court-relational-certification", "crates/worth-court-runtime-bridge", "crates/worth-court-runtime-world", "crates/worth-court-server-certification-suite", "crates/worth-court-server-product-operation-phase-eleven", "crates/worth-court-server-product-operation-phase-thirteen-shared-read", "crates/worth-court-signal-branch-retention-contract", "crates/worth-court-signal-owner-services", "crates/worth-court-signal-wasm", "crates/worth-execution", "crates/worth-foundational", "crates/worth-harness", "crates/worth-proof", "crates/worth-relational", "crates/worth-runtime-bridge", "crates/worth-runtime-world", "crates/worth-server", "crates/worth-server-client-generation", "crates/worth-signal", "crates/worth-signal-wasm", "crates/worth-testkit-foundational", "crates/worth-testkit-relational", "crates/worth-testkit-server", "crates/worth-value-shape-derive"]
+
 
 [workspace.metadata.worth_topology]
 role = "thin_orchestrator"
@@ -116,6 +90,8 @@ worth-schema-graph.opt-level = 0
 
 [profile.test]
 opt-level = 0
+# Keep native owner/consumer test links below the documented Windows PDB limit.
+debug = 0
 
 [profile.test.package]
 "*".opt-level = 2

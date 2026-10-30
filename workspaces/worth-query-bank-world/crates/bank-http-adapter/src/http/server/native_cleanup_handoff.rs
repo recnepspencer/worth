@@ -19,13 +19,13 @@ impl super::mutation_executor::BankHttpMutationContinuation {
     pub async fn take_released_cleanup(
         &self,
         request: BankHttpMutationRequest,
-    ) -> Result<BankHttpReleasedCleanup, BankHttpMutationOutcome> {
+    ) -> Result<BankHttpReleasedCleanup, Box<BankHttpMutationOutcome>> {
         let command = admit(request, self.transport.maximum_deadline)?;
         if !matches!(command.command, MutationCommand::Close) {
-            return Err(reject(
+            return Err(Box::new(reject(
                 Some(command.request_id),
                 BankHttpDenialKind::MalformedRequest,
-            ));
+            )));
         }
         let request_id = command.request_id.clone();
         let custody_id = command.custody_id.clone();
@@ -57,14 +57,16 @@ impl super::mutation_executor::BankHttpMutationContinuation {
                     BankHttpDenialKind::Unavailable
                 }
             };
-            return Err(reject(Some(request_id), kind));
+            return Err(Box::new(reject(Some(request_id), kind)));
         }
         match response_wait.await {
-            Ok(Ok(result)) => result.map(super::native_cleanup_delivery::CleanupDelivery::receive),
-            _ => Err(BankHttpMutationOutcome::OutcomeUnknown {
+            Ok(Ok(result)) => result
+                .map(super::native_cleanup_delivery::CleanupDelivery::receive)
+                .map_err(Box::new),
+            _ => Err(Box::new(BankHttpMutationOutcome::OutcomeUnknown {
                 request_id,
                 custody_id,
-            }),
+            })),
         }
     }
 }

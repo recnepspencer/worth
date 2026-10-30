@@ -1,0 +1,27 @@
+[package]
+"name" = "worth-store-court-relational"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"sha2" = { "version" = "^0.10" }
+"tempfile" = { "version" = "^3" }
+"worth-execution" = { "path" = "../../../../crates/worth-execution" }
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+"worth-proof" = { "path" = "../../../../crates/worth-proof" }
+"worth-relational" = { "path" = "../../../../crates/worth-relational" }
+"worth-store" = { "path" = "../worth-store" }
+"worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
+"worth-store-relational" = { "path" = "../worth-store-relational", "features" = ["certification-test-authority"] }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_relational"
+path = "tests/worth_store_court_relational.rs"
+
+[lints]
+workspace = true

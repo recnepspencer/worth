@@ -45,6 +45,7 @@ pub enum ApplicationQueryDefinitionDenial {
     InvalidRootPath,
     InvalidOrbitShape,
     InvalidComponentShape,
+    InvalidManagedIndexShape,
     PreviewLaneWithoutBasisSupport,
     LiveLaneWithoutCauseContract,
     LiveCauseContractWithoutLane,
@@ -63,6 +64,20 @@ pub(crate) fn validate_portable_application_query_freshly(
     validate_result_and_root_selection(definition)?;
     orbit::validate(definition)?;
     components::validate(definition)?;
+    if let Some(index) = definition.managed_index()
+        && (index.validate().is_err()
+            || definition.orbit().is_some()
+            || definition.component_selection().is_some()
+            || !definition.root_paths().is_empty()
+            || definition.continuation().is_some()
+            || definition.live_cause().is_some()
+            || !definition
+                .parameters()
+                .iter()
+                .any(|parameter| parameter.name() == index.parts().probe_parameter))
+    {
+        return Err(ApplicationQueryDefinitionDenial::InvalidManagedIndexShape);
+    }
     validate_parameter_names(definition)?;
     if !canonical_ordering::is_canonical(definition) {
         return Err(ApplicationQueryDefinitionDenial::InvalidCanonicalOrdering);

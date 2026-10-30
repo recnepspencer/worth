@@ -1,7 +1,0 @@
-error: cannot construct `BridgeLocalizedTemporalAsyncFailure` with struct literal syntax due to private fields
- --> tests/ui/diagnostics_failure_localization_constructor_private.rs:4:13
-  |
-4 |     let _ = BridgeLocalizedTemporalAsyncFailure {};
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: private fields `failure_class`, `subcode`, `attachment_set`, `detail`, `counters` and `digest` that were not provided

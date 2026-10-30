@@ -115,8 +115,9 @@ where
             .map_err(HandlerExecutionDenial::new)
     }
 
-    /// Read the most recent preserved role, falling back to its initial create
-    /// role only when no preserve correspondence exists for `PreserveBinding`.
+    /// Read the latest publication of this installed family's preserve/create
+    /// pair at the exact selected scope and partition. A later genuine reissue
+    /// selects its create role; stale selected correspondence remains a denial.
     pub fn prior_output_preserved_or_created<PreserveBinding, Preserved, CreateBinding, Created>(
         &mut self,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Preserved::Entity>, HandlerExecutionDenial>
@@ -138,10 +139,14 @@ where
             Cardinality = WorthQueryExactlyOneOutput,
         >,
     {
-        select_prior_preserved_or_created(
-            self.prior_output_if_present::<PreserveBinding, Preserved>(),
-            || self.prior_output::<CreateBinding, Created>(),
-        )
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
+        self.reader.prior_output_preserved_or_created::<PreserveBinding, Preserved, CreateBinding, Created>()
     }
 
     /// Resolve the complete live inventory of the family `Family` that
@@ -366,16 +371,3 @@ where
             .map_err(HandlerExecutionDenial::new)
     }
 }
-
-fn select_prior_preserved_or_created<Value, Error>(
-    preserved: Result<Option<Value>, Error>,
-    created: impl FnOnce() -> Result<Value, Error>,
-) -> Result<Value, Error> {
-    match preserved? {
-        Some(value) => Ok(value),
-        None => created(),
-    }
-}
-
-#[cfg(test)]
-mod prior_output_selection_tests;

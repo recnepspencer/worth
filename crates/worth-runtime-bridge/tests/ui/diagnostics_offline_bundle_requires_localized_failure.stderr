@@ -1,8 +1,0 @@
-error[E0308]: mismatched types
- --> tests/ui/diagnostics_offline_bundle_requires_localized_failure.rs:4:70
-  |
-4 |       let _ = BridgeTemporalAsyncOfflineDiagnosisBundleDraft::new(vec![String::from(
-  |  ______________________________________________________________________^
-5 | |         "raw diagnostics strings are not localized failures",
-6 | |     )]);
-  | |_____^ expected `BridgeLocalizedTemporalAsyncFailure`, found `String`

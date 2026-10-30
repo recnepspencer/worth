@@ -2,6 +2,7 @@ pub use worth_foundational::facade::RelationDirection;
 
 mod application_capability_authoring;
 mod application_correction_authoring;
+mod application_managed_index_authoring;
 mod application_mutation_authoring;
 mod application_query_authoring;
 mod application_resource_authoring;

@@ -1,0 +1,5 @@
+error[E0432]: unresolved import `worth_relational::facade::history::CommitReference`
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/commit_reference_is_not_public.rs:1:5
+  |
+1 | use worth_relational::facade::history::CommitReference;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `CommitReference` in `facade::history`

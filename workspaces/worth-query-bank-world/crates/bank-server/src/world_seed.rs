@@ -74,6 +74,8 @@ pub struct BankWorldSeed {
     employees: Vec<BankEmployeeAssignmentSeed>,
     estate: Option<BankEstateWorld>,
     deployment_grants: Vec<BankProgramDeploymentGrantSeed>,
+    #[cfg(test)]
+    pub(crate) execution_policy: Option<worth_foundational::ExecutionRequestPolicy>,
 }
 
 impl BankWorldSeed {
@@ -85,7 +87,18 @@ impl BankWorldSeed {
             employees: Vec::new(),
             estate: None,
             deployment_grants: Vec::new(),
+            #[cfg(test)]
+            execution_policy: None,
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_execution_policy_for_test(
+        mut self,
+        policy: worth_foundational::ExecutionRequestPolicy,
+    ) -> Self {
+        self.execution_policy = Some(policy);
+        self
     }
 
     /// Issues only the explicitly supplied deployment permission at bootstrap.

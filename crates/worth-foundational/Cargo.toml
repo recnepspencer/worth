@@ -1,10 +1,12 @@
 [package]
-name = "worth-foundational"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Shared WORTH boundary vocabulary for canonical values, aspect state, identities, locators, and compatibility surfaces."
+"name" = "worth-foundational"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Shared WORTH boundary vocabulary for canonical values, aspect state, identities, locators, and compatibility surfaces."
+"autotests" = false
+
 
 [dependencies]
 worth-proof = { path = "../worth-proof" }
@@ -14,10 +16,6 @@ serde_json = { version = "1", features = ["unbounded_depth"] }
 serde_stacker = "0.1.14"
 stacker = "0.1.24"
 sha2 = "0.10"
-
-[dev-dependencies]
-stats_alloc = "=0.1.10"
-trybuild.workspace = true
 
 [lints]
 workspace = true

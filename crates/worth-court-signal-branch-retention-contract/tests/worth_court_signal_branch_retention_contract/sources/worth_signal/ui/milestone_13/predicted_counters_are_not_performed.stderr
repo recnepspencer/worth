@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/predicted_counters_are_not_performed.rs:9:66
+  |
+9 |     let _ = attach_foundational_invalidation_performance_receipt(predicted, expected);
+  |             ---------------------------------------------------- ^^^^^^^^^ expected `SignalInvalidationExecutionReceipt`, found `InvalidationPlanningEstimate`
+  |             |
+  |             arguments to this function are incorrect
+  |
+note: function defined here
+ --> $WORKSPACE/crates/worth-signal/src/data/proof/invalidation/foundational_receipt.rs
+  |
+  | pub fn attach_foundational_invalidation_performance_receipt(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

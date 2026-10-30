@@ -1,5 +1,0 @@
-error[E0599]: no method named `issue_receipt` found for struct `FoundationalMergeVerdict<T>` in the current scope
-  --> tests/ui/transitions/merge_admission/merge_verdict_has_no_receipt_api.rs:68:21
-   |
-68 |     let _ = verdict.issue_receipt();
-   |                     ^^^^^^^^^^^^^ method not found in `FoundationalMergeVerdict<&str>`

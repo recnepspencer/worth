@@ -1,20 +1,22 @@
 [package]
-workspace = "../.."
-name = "worth-store-authority"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Canonical Store authority records and artifact identity contracts."
+"workspace" = "../.."
+"name" = "worth-store-authority"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Canonical Store authority records and artifact identity contracts."
+"autotests" = false
+
 
 [dependencies]
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-store-aspect-native.workspace = true
 worth-store-contracts.workspace = true
 sha2 = "0.10"
-
 [dev-dependencies]
-worth-foundational = { path = "../../../../crates/worth-foundational" }
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+
 
 [lints]
 workspace = true

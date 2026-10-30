@@ -8,6 +8,36 @@ use worth_query_host::facade::primary_graph::*;
 pub struct Handler;
 #[macro_export]
 macro_rules! worlds_certification_application_graph_correction_model_authored_identity_handlers_rs_creation {
+    (@image $writer:ident, $target:ident, $image:ident) => {{
+        let parent = $writer
+            .projected_entity(&$target)
+            .map_err(HandlerExecutionDenial::new)?;
+        let entity = $writer
+            .create_entity_in_context(
+                &parent,
+                Number::reference(),
+                WorthQueryApplicationEntityKey::new(&$image.name)
+                    .map_err(HandlerExecutionDenial::new)?,
+            )
+            .map_err(HandlerExecutionDenial::new)?;
+        macro_rules! initialize {
+            ($Field:ty, $value:expr) => {
+                $writer
+                    .initialize_field(&entity, <$Field>::reference(), $value)
+                    .map_err(HandlerExecutionDenial::new)?
+            };
+        }
+        initialize!(Key, $image.name);
+        initialize!(Primary, $image.primary);
+        initialize!(Secondary, $image.secondary);
+        initialize!(ReadEnabled, $image.read_enabled);
+        initialize!(Ceiling, $image.ceiling);
+        initialize!(Calculated, $image.calculated);
+        $writer
+            .create_output::<Created>(&entity)
+            .map_err(HandlerExecutionDenial::new)?;
+        (parent, entity)
+    }};
     (@reference CreateBinding, $writer:ident, $parent:ident, $entity:ident, $input:ident) => {
         $writer.link(AuthoredReference::reference(), format!("authored-reference-{}", $input.name), &$parent, &$entity)
     };
@@ -43,34 +73,8 @@ macro_rules! worlds_certification_application_graph_correction_model_authored_id
             ) -> HandlerResult<Edited, MissingValue> {
                 let image: Restore = ($image)(input);
                 let result = (|| {
-                    let parent = writer
-                        .projected_entity(&target)
-                        .map_err(HandlerExecutionDenial::new)?;
-                    let entity = writer
-                        .create_entity_in_context(
-                            &parent,
-                            Number::reference(),
-                            WorthQueryApplicationEntityKey::new(&image.name)
-                                .map_err(HandlerExecutionDenial::new)?,
-                        )
-                        .map_err(HandlerExecutionDenial::new)?;
-                    macro_rules! initialize {
-                        ($Field:ty, $value:expr) => {
-                            writer
-                                .initialize_field(&entity, <$Field>::reference(), $value)
-                                .map_err(HandlerExecutionDenial::new)?
-                        };
-                    }
-                    initialize!(Key, image.name);
-                    initialize!(Primary, image.primary);
-                    initialize!(Secondary, image.secondary);
-                    initialize!(ReadEnabled, image.read_enabled);
-                    initialize!(Ceiling, image.ceiling);
-                    initialize!(Calculated, image.calculated);
-                    writer
-                        .create_output::<Created>(&entity)
-                        .map_err(HandlerExecutionDenial::new)?;
-                    creation!(@reference $Binding, writer, parent, entity, input)
+                    let (_parent, _entity) = creation!(@image writer, target, image);
+                    creation!(@reference $Binding, writer, _parent, _entity, input)
                         .map_err(HandlerExecutionDenial::new)
                 })();
                 match result {
@@ -82,6 +86,7 @@ macro_rules! worlds_certification_application_graph_correction_model_authored_id
     };
 }
 pub use crate::worlds_certification_application_graph_correction_model_authored_identity_handlers_rs_creation as creation;
+mod observed_clone;
 creation!(CreateBinding, Create, |input: &Create| Restore {
     key: input.key.clone(),
     name: input.name.clone(),

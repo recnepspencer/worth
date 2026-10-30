@@ -1,0 +1,67 @@
+error[E0624]: associated function `new` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_relational_source_before_build.rs:8:26
+  |
+8 |           BridgeMappingId::new("profile-name"),
+  |                            ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
+  |
+  | /     pub(crate) fn new(
+  | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here
+
+error[E0308]: mismatched types
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_relational_source_before_build.rs:8:30
+  |
+8 |         BridgeMappingId::new("profile-name"),
+  |         -------------------- ^^^^^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
+  |         |
+  |         arguments to this function are incorrect
+  |
+  = note: expected struct `FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
+          found reference `&'static str`
+note: associated function defined here
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
+  |
+  |     pub(crate) fn new(
+  |                   ^^^
+
+error[E0624]: associated function `new` is private
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_relational_source_before_build.rs:14:34
+   |
+14 |           SignalInvalidationScope::new("signal.profile"),
+   |                                    ^^^ private associated function
+   |
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
+   |
+   | /     pub(crate) fn new(
+   | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
+   | |     ) -> Self {
+   | |_____________- private associated function defined here
+
+error[E0308]: mismatched types
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_relational_source_before_build.rs:14:38
+   |
+14 |         SignalInvalidationScope::new("signal.profile"),
+   |         ---------------------------- ^^^^^^^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
+   |         |
+   |         arguments to this function are incorrect
+   |
+   = note: expected struct `FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
+           found reference `&'static str`
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
+   |
+   |     pub(crate) fn new(
+   |                   ^^^
+
+error[E0599]: no method named `build` found for struct `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::MissingCommittedPatchSource, worth_runtime_bridge::builder::states::MissingSnapshotReadSource, worth_runtime_bridge::builder::states::MissingSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>` in the current scope
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_relational_source_before_build.rs:21:21
+   |
+21 |     let _ = builder.build();
+   |                     ^^^^^ method not found in `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::MissingCommittedPatchSource, worth_runtime_bridge::builder::states::MissingSnapshotReadSource, worth_runtime_bridge::builder::states::MissingSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>`
+   |
+   = note: the method was found for
+           - `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::PresentCommittedPatchSource, worth_runtime_bridge::builder::states::PresentSnapshotReadSource, worth_runtime_bridge::builder::states::PresentSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>`
+           - `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::PresentCommittedPatchSource, worth_runtime_bridge::builder::states::PresentSnapshotReadSource, worth_runtime_bridge::builder::states::PresentSignalSink, worth_runtime_bridge::builder::states::PresentTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>`

@@ -38,7 +38,10 @@ impl WorthQueryApplicationContribution<AdmissionSchema> for AdmissionContributio
         setup.handler::<super::live::publish::PublishBinding, _>(super::live::publish::Handler)
     }
 }
-pub type Host = WorthQueryProgramApplicationRuntime<AdmissionSchema, Program>;
+pub struct Host {
+    pub program: WorthQueryProgramApplicationRuntime<AdmissionSchema, Program>,
+    pub request_work: u64,
+}
 pub fn install(work: u64) -> Host {
     install_owned(work, false).0
 }
@@ -68,7 +71,7 @@ pub fn install_owned(
         AdmissionSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        super::limits::limits(work),
+        super::limits::limits(work.max(super::FUNDED_WORK)),
         |_, graph, installed| {
             projection = Some(graph.retain_invariant_projection_authority());
             graph.bind_principal(
@@ -109,31 +112,42 @@ pub fn install_owned(
         },
     )
     .expect("ordinary canonical admission schema installs");
+    let projection = projection.expect("real bootstrap retains its native projection authority");
     (
-        host,
-        projection.expect("real bootstrap retains its native projection authority"),
+        Host {
+            program: host,
+            request_work: work,
+        },
+        projection,
     )
 }
+
 pub fn key(identity: &str) -> WorthQueryApplicationEntityKey<AdmissionSchema, Document> {
     WorthQueryApplicationEntityKey::new(identity).unwrap()
 }
 pub fn restore(checkpoint: WorthQueryApplicationCheckpoint, work: u64) -> Host {
-    in_memory_program_from_checkpoint(
+    let program = in_memory_program_from_checkpoint(
         ApplicationProgramAuthoring::<AdmissionSchema, Program>::begin()
             .validated_program()
             .unwrap(),
         AdmissionSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        super::limits::limits(work),
+        super::limits::limits(work.max(super::FUNDED_WORK)),
         checkpoint,
     )
-    .expect("current source restores without authored conversion")
+    .expect("current source restores without authored conversion");
+    Host {
+        program,
+        request_work: work,
+    }
 }
 pub fn capture(host: &Host) -> WorthQueryApplicationCheckpoint {
-    host.runtime()
+    host.program
+        .runtime()
         .with_host_advancement(|phase| {
-            host.runtime()
+            host.program
+                .runtime()
                 .capture_application_checkpoint(
                     &phase,
                     WorthQueryCheckpointCapturePolicy::SystemAllocation,
@@ -153,33 +167,36 @@ pub fn advance(
     operation::reset();
     super::opaque::reset();
     let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    host.runtime()
-        .request(&principal, &scope)
-        .on_branch(host.current_world())
-        .advanced()
-        .mutate(operation::Intent {
-            input: operation::Input { reads },
-        })
-        .without_source()
-        .idempotency(&idempotency)
-        .execute_in_program(
-            host,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+    let principal = authenticate_operator(host.program.installed_schema(), &scope);
+    super::request_funding::with_request(host, &scope, |phase| {
+        host.program
+            .runtime()
+            .request(&principal, &scope)
+            .on_branch(host.program.current_world())
+            .advanced()
+            .mutate(operation::Intent {
+                input: operation::Input { reads },
+            })
+            .without_source()
+            .idempotency(&idempotency)
+            .execute_in_program_in_advancement(&phase, &host.program)
+    })
 }
 pub fn read(host: &Host, identity: &str) -> query::Row {
     let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    host.runtime()
-        .request(&principal, &scope)
-        .on_branch(host.current_world())
-        .query(query::ReadValue {
-            identity: identity.to_owned(),
-        })
-        .execute()
-        .expect("ordinary query reads native source")
-        .rows()[0]
+    let principal = authenticate_operator(host.program.installed_schema(), &scope);
+    super::request_funding::with_request(host, &scope, |phase| {
+        host.program
+            .runtime()
+            .request(&principal, &scope)
+            .on_branch(host.program.current_world())
+            .query(query::ReadValue {
+                identity: identity.to_owned(),
+            })
+            .execute_in_advancement(&phase)
+    })
+    .expect("ordinary query reads native source")
+    .rows()[0]
         .clone()
 }
 
@@ -187,13 +204,16 @@ pub fn read_repeated(host: &Host) -> Result<query::Row, WorthQueryApplicationReq
     super::repeated_query::reset();
     super::opaque::reset();
     let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    host.runtime()
-        .request(&principal, &scope)
-        .on_branch(host.current_world())
-        .query(super::repeated_query::ReadRepeated {
-            identity: "root".to_owned(),
-        })
-        .execute()
-        .map(|result| result.rows()[0].clone())
+    let principal = authenticate_operator(host.program.installed_schema(), &scope);
+    super::request_funding::with_request(host, &scope, |phase| {
+        host.program
+            .runtime()
+            .request(&principal, &scope)
+            .on_branch(host.program.current_world())
+            .query(super::repeated_query::ReadRepeated {
+                identity: "root".to_owned(),
+            })
+            .execute_in_advancement(&phase)
+    })
+    .map(|result| result.rows()[0].clone())
 }

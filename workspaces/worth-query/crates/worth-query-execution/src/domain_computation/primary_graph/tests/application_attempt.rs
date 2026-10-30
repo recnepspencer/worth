@@ -86,9 +86,10 @@ mod unwind_custody;
 #[path = "application_attempt/validation_interruption.rs"]
 mod validation_interruption;
 
+pub(in crate::domain_computation::primary_graph) use program_fixture::admitted_program;
 use program_fixture::{
-    admitted_mutation_free_program, admitted_program, admitted_program_on_selected,
-    admitted_program_with_emit, admitted_program_with_expected_status,
+    admitted_mutation_free_program, admitted_program_on_selected, admitted_program_with_emit,
+    admitted_program_with_expected_status,
 };
 
 #[path = "application_attempt/decision_currentness.rs"]

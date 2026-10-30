@@ -14,6 +14,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         >,
         selected_override: Option<&crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation<'_, Schema>>,
+        purpose: SelectionPurpose,
         native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<SelectedWithEntry<'_, Schema>, WorthQueryOutputDemandDenial>
     where
@@ -261,6 +262,29 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                             Some(candidate.idempotency_key_identity);
                         selected.retained_output_binding = Some(candidate.binding);
                         return Ok((selected, entry));
+                    }
+                    // Output delivery may join the actual committed Ready of
+                    // this exact source epoch without an input-cutoff contract.
+                    // Keep the ordinary admission path: no retained key or
+                    // checkpoint/input-reuse authority is supplied here.
+                    let may_rejoin_ready = match purpose {
+                        SelectionPurpose::Lifecycle => false,
+                        SelectionPurpose::OutputDelivery => true,
+                    };
+                    if may_rejoin_ready && let Some(epoch) = source.output_source_epoch() {
+                        let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
+                            Family::IDENTITY, selected.identity.clone(), selected.applicability, epoch,
+                        );
+                        if self.output_demands.has_committed_ready(
+                            &key,
+                            scope,
+                            observation.lifecycle_incarnation(),
+                            candidate.correspondence.as_ref(),
+                            &candidate.idempotency_key_identity,
+                        ) {
+                            selected.exact_retained_output = false;
+                            return Ok((selected, entry));
+                        }
                     }
                 }
                 retained_output = true;

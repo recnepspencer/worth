@@ -78,6 +78,7 @@ mod tests {
             kind_id: KindId(1),
             plan_revision: AspectContractPlanRevision(1),
             structural_change: RecordStructuralChange::Created,
+            retained_relation_endpoints: None,
             changed_aspects: ordered_aspect_keys([AspectKey::new("name").unwrap()]),
             evaluated_bindings: smallvec::SmallVec::new(),
             contains_opaque_aspect: false,

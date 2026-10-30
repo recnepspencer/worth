@@ -155,7 +155,7 @@ where
     }
 }
 
-fn graph_obligation_denial(
+pub(in crate::application_query) fn graph_obligation_denial(
     subject: &str,
     denial: WorthQueryGraphObligationInstallationDenial,
 ) -> WorthQueryApplicationQueryInstallationDenial {

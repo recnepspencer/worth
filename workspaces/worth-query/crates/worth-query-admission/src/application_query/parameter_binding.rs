@@ -20,6 +20,8 @@ pub enum WorthQueryApplicationQueryParameterDenialKind {
     CanonicalEntryBudgetExceeded,
     CanonicalEncodedByteBudgetExceeded,
     CanonicalDigestSlotRejected,
+    /// Canonical preparation refused the actual compiler/target's sort qualification.
+    UnsupportedSortImplementation(worth_foundational::facade::CanonicalSortImplementationDenial),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

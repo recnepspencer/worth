@@ -1,0 +1,5 @@
+error[E0432]: unresolved import `worth_relational::facade::lineage::LineageFinalizationArtifact`
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/lineage/lineage_finalization_artifact_private.rs:1:5
+  |
+1 | use worth_relational::facade::lineage::LineageFinalizationArtifact;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `LineageFinalizationArtifact` in `facade::lineage`

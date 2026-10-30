@@ -117,6 +117,8 @@ mod serial {
             examples,
             BTreeSet::from([
                 "logical_relation_projection.rs".to_owned(),
+                "managed_prefix_index.rs".to_owned(),
+                "managed_box_index.rs".to_owned(),
                 "relation_law_declaration.rs".to_owned(),
                 "relation_law_request.rs".to_owned(),
                 "relation_pair_declaration.rs".to_owned(),

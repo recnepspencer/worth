@@ -1,0 +1,5 @@
+error[E0599]: no method named `issue_receipt` found for struct `FoundationalMergeCandidate<T>` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/receipt_boundaries/merge_candidate_has_no_receipt_api.rs
+  |
+  |     let _ = candidate.issue_receipt();
+  |                       ^^^^^^^^^^^^^ method not found in `FoundationalMergeCandidate<&str>`

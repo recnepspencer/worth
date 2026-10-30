@@ -1,0 +1,27 @@
+error[E0451]: fields `envelope_identity`, `contract_digest`, `family_kind`, `effect_class`, `strategy_class`, `strategy_descriptor_basis`, `causality_digest`, `mutation_subject_effect_intent_match`, `effect_intent`, `canonical_basis` and `digest` of struct `worth_runtime_bridge::facade::BridgeWritebackMapperEnvelope` are private
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_mapper_envelope_literal_private.rs:5:9
+   |
+ 4 |     let _ = BridgeWritebackMapperEnvelope {
+   |             ----------------------------- in this type
+ 5 |         envelope_identity: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^^^^ private field
+ 6 |         contract_digest: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^^ private field
+ 7 |         family_kind: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^ private field
+ 8 |         effect_class: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^ private field
+ 9 |         strategy_class: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^ private field
+10 |         strategy_descriptor_basis: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+11 |         causality_digest: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^^^ private field
+12 |         mutation_subject_effect_intent_match: false,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+13 |         effect_intent: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^ private field
+14 |         canonical_basis: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^^ private field
+15 |         digest: sealed_authority_placeholder(),
+   |         ^^^^^^ private field

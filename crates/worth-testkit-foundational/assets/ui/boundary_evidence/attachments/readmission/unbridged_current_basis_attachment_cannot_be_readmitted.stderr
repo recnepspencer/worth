@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/attachments/readmission/unbridged_current_basis_attachment_cannot_be_readmitted.rs
+  |
+  |     let _ = stronger_lane::readmission::readmit_current_basis_boundary_evidence_attachment_bundle_after_boundary(
+  |             ---------------------------------------------------------------------------------------------------- arguments to this function are incorrect
+  |         admitted,
+  |         ^^^^^^^^ expected `BoundaryBridgedCurrentBasisBoundaryEvidenceAttachmentBundle`, found `CurrentBasisBoundaryEvidenceAttachmentBundle`
+  |
+note: function defined here
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_evidence/attachments/readmission.rs
+  |
+  | pub fn readmit_current_basis_boundary_evidence_attachment_bundle_after_boundary(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

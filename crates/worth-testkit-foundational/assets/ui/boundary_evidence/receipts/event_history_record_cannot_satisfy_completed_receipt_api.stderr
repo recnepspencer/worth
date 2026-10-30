@@ -1,0 +1,17 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/receipts/event_history_record_cannot_satisfy_completed_receipt_api.rs
+  |
+  |     accepts_completed_receipt(&history);
+  |     ------------------------- ^^^^^^^^ expected `&...`, found `&SyntheticEventHistoryRecord`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected reference `&FoundationalBoundaryEvidenceCompletedReceiptArtifact`
+             found reference `&SyntheticEventHistoryRecord`
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/receipts/event_history_record_cannot_satisfy_completed_receipt_api.rs
+  |
+  | fn accepts_completed_receipt(
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |     _: &worth_foundational::FoundationalBoundaryEvidenceCompletedReceiptArtifact,
+  |     ----------------------------------------------------------------------------

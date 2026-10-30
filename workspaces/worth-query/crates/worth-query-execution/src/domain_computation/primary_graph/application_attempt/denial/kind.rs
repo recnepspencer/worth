@@ -20,6 +20,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     StorageUnavailable,
     ForeignPhase,
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    /// The original handler request refused retained effect backing or work.
+    EffectExecution(worth_execution::WorkCeilingDenial),
     Cancelled,
     DeadlineExceeded,
     ForeignApplication,
@@ -44,6 +46,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     SourceRetired,
     SourceChanged,
     AmbiguousRelation,
+    /// An existing field write has no exact completed decision observation.
+    UnobservedWrite,
     UndeclaredEffect,
     InvalidEffectValue,
     ForeignEffectTarget,

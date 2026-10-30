@@ -15,6 +15,7 @@ use super::WorthQueryPrimaryGraphProvider;
 mod canonical_record;
 mod correction_history;
 mod lineage_fields;
+mod restored_witness;
 mod source_fields;
 use crate::domain_computation::application_aftermath::{
     WorthQueryCommittedAftermathCausality, WorthQueryPendingAftermathCausality,

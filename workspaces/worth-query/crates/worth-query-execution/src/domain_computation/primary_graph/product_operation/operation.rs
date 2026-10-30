@@ -117,7 +117,7 @@ phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>
                 Value = Input,
             >,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
-    {
+{
         let execution = phase.execution_request_for(&self.application().product_runtime)
             .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "capability access"))?;
         self.admit_capability_access_with_request(&execution, principal, capability, input, request)
@@ -143,7 +143,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 Value = Input,
             >,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
-    {
+{
         crate::domain_computation::authorization::admit_capability_access(
             execution,
             self.application(),
@@ -260,7 +260,7 @@ phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>
                 Value = Input,
             >,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
-    {
+{
         let execution = phase.execution_request_for(&self.application().product_runtime)
             .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "approved elevation access"))?;
         self.admit_approved_elevation_access_with_request(
@@ -295,7 +295,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 Value = Input,
             >,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
-    {
+{
         crate::domain_computation::authorization::admit_capability_access(
             execution,
             self.application(),

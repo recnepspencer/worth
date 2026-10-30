@@ -1,0 +1,16 @@
+error[E0382]: use of moved value: `resource`
+  --> tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/linear_resource_cannot_terminate_twice.rs:21:19
+   |
+16 |     let resource = LinearResource::<_, End, RuntimeAuthority>::mint(
+   |         -------- move occurs because `resource` has type `LinearResource<u64, End, RuntimeAuthority>`, which does not implement the `Copy` trait
+...
+20 |     let _first = resource.terminate(End::Done);
+   |                           -------------------- `resource` moved due to this method call
+21 |     let _second = resource.terminate(End::Done);
+   |                   ^^^^^^^^ value used here after move
+   |
+note: `LinearResource::<Id, Terminal, Authority>::terminate` takes ownership of the receiver `self`, which moves `resource`
+  --> $WORKSPACE/crates/worth-proof/src/linear.rs
+   |
+   |     pub fn terminate(self, terminal: Terminal) -> TerminalReceipt<Id, Terminal, Authority> {
+   |                      ^^^^

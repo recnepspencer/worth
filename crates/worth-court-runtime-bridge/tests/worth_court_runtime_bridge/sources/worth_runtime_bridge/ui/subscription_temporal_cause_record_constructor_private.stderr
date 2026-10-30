@@ -1,0 +1,55 @@
+error: cannot construct `BridgeTemporalCauseRecord` with struct literal syntax due to private fields
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_temporal_cause_record_constructor_private.rs:10:13
+   |
+10 |     let _ = BridgeTemporalCauseRecord {
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^
+11 |         cause_record_identity: fake(),
+   |         ----------------------------- private field
+12 |         routing_lane_kind: BridgeTemporalRoutingLaneKind::Authoritative,
+   |         --------------------------------------------------------------- private field
+13 |         activation_lane_identity: fake(),
+   |         -------------------------------- private field
+14 |         temporal_basis_identity: fake(),
+   |         ------------------------------- private field
+15 |         preview_basis_identity: None,
+   |         ---------------------------- private field
+16 |         classification: BridgeTemporalCauseClassification::TimeOnly,
+   |         ----------------------------------------------------------- private field
+17 |         wake_id: fake(),
+   |         --------------- private field
+18 |         wake_ready_ordinal: fake(),
+   |         -------------------------- private field
+19 |         wake_tick: fake(),
+   |         ----------------- private field
+20 |         truth_patch_identity: None,
+   |         -------------------------- private field
+21 |         truth_patch_digest: None,
+   |         ------------------------ private field
+22 |         counters: fake(),
+   |         ---------------- private field
+23 |         canonical_basis: fake(),
+   |         ----------------------- private field
+24 |         digest: fake(),
+   |         -------------- private field
+   |
+   = note: ...and other private field `subscription_identity` that was not provided
+help: you might have meant to use the `route` associated function
+   |
+10 -     let _ = BridgeTemporalCauseRecord {
+11 -         cause_record_identity: fake(),
+12 -         routing_lane_kind: BridgeTemporalRoutingLaneKind::Authoritative,
+13 -         activation_lane_identity: fake(),
+14 -         temporal_basis_identity: fake(),
+15 -         preview_basis_identity: None,
+16 -         classification: BridgeTemporalCauseClassification::TimeOnly,
+17 -         wake_id: fake(),
+18 -         wake_ready_ordinal: fake(),
+19 -         wake_tick: fake(),
+20 -         truth_patch_identity: None,
+21 -         truth_patch_digest: None,
+22 -         counters: fake(),
+23 -         canonical_basis: fake(),
+24 -         digest: fake(),
+25 -     };
+10 +     let _ = BridgeTemporalCauseRecord::route(_);
+   |

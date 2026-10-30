@@ -1,0 +1,23 @@
+warning: unreachable call
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/identity_boundaries/raw_digest_cannot_satisfy_profile_identity_api.rs
+  |
+  |     let digest = derive_canonical_digest(panic!("type-check only"));
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^ ------------------------- any code following this expression is unreachable
+  |                  |
+  |                  unreachable call
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/identity_boundaries/raw_digest_cannot_satisfy_profile_identity_api.rs
+  |
+  |     requires_profile_identity(digest);
+  |     ------------------------- ^^^^^^ expected `FoundationalProfileIdentity`, found `CanonicalDerivedDigest`
+  |     |
+  |     arguments to this function are incorrect
+  |
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/identity_boundaries/raw_digest_cannot_satisfy_profile_identity_api.rs
+  |
+  | fn requires_profile_identity(_: FoundationalProfileIdentity) {}
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^ ------------------------------

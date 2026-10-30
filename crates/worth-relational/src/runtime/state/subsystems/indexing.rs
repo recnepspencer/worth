@@ -3,6 +3,9 @@ use std::sync::Arc;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 
+mod admitted_definition;
+mod definition_catalog;
+pub(crate) use definition_catalog::{IndexCatalogCoverage, IndexDefinitionCatalog};
 mod admitted_selection;
 mod cold_checkpoint;
 #[cfg(test)]
@@ -39,8 +42,7 @@ pub(crate) type UniqueEntityAspectFieldIndex = BTreeMap<
 #[derive(Debug, Clone)]
 pub(crate) struct IndexingState {
     cold_checkpoint: Option<Arc<cold_checkpoint::DeferredIndexImage>>,
-    pub(crate) definitions: BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>,
-    field_definitions: BTreeMap<AspectKey, BTreeMap<FieldKey, Vec<Arc<DerivedIndexDefinition>>>>,
+    catalog: Arc<IndexDefinitionCatalog>,
     generations: GenerationCatalog,
     pub(crate) entity_unique_aspect_field_index: UniqueEntityAspectFieldIndex,
     pub(crate) next_index_id: u64,
@@ -53,6 +55,7 @@ impl IndexingState {
         retained: &crate::history::retention::RetainedIndexRoots,
     ) -> Vec<Arc<DerivedIndexGeneration>> {
         let global_indexes = self
+            .catalog
             .definitions
             .values()
             .filter(|definition| !definition.branch_scoped)
@@ -64,8 +67,7 @@ impl IndexingState {
     fn empty() -> Self {
         Self {
             cold_checkpoint: None,
-            definitions: BTreeMap::new(),
-            field_definitions: BTreeMap::new(),
+            catalog: Arc::new(IndexDefinitionCatalog::default()),
             generations: GenerationCatalog::default(),
             entity_unique_aspect_field_index: BTreeMap::new(),
             next_index_id: 1,
@@ -77,30 +79,11 @@ impl IndexingState {
         self.next_index_id = self
             .next_index_id
             .max(definition.index_id.0.saturating_add(1));
-        if let Some(previous) = self.definitions.remove(&definition.index_id)
-            && let Some((aspect, field)) = field_index_locator(&previous.kind)
-            && let Some(fields) = self.field_definitions.get_mut(&aspect)
-        {
-            if let Some(definitions) = fields.get_mut(&field) {
-                definitions.retain(|entry| entry.index_id != previous.index_id);
-                if definitions.is_empty() {
-                    fields.remove(&field);
-                }
-            }
-            if fields.is_empty() {
-                self.field_definitions.remove(&aspect);
-            }
-        }
-        let definition = Arc::new(definition);
-        if let Some((aspect, field)) = field_index_locator(&definition.kind) {
-            self.field_definitions
-                .entry(aspect)
-                .or_default()
-                .entry(field)
-                .or_default()
-                .push(Arc::clone(&definition));
-        }
-        self.definitions.insert(definition.index_id, definition);
+        Arc::make_mut(&mut self.catalog).insert(definition);
+    }
+
+    pub(crate) fn definition(&self, index: DerivedIndexId) -> Option<&Arc<DerivedIndexDefinition>> {
+        self.catalog.definitions.get(&index)
     }
 
     pub(crate) fn restore_generation(&mut self, generation: DerivedIndexGeneration) {
@@ -152,14 +135,11 @@ impl IndexDefinitionReadBinding {
         field: &FieldKey,
         read: impl FnOnce(&[Arc<DerivedIndexDefinition>]) -> R,
     ) -> R {
-        let state = self.state.read();
-        read(
-            state
-                .field_definitions
-                .get(aspect)
-                .and_then(|fields| fields.get(field))
-                .map_or(&[], Vec::as_slice),
-        )
+        self.snapshot().with_field(aspect, field, read)
+    }
+
+    pub(crate) fn snapshot(&self) -> Arc<IndexDefinitionCatalog> {
+        Arc::clone(&self.state.read().catalog)
     }
 }
 
@@ -190,6 +170,7 @@ impl IndexingSubsystem {
     ) -> usize {
         let mut state = self.state.write();
         let global_indexes = state
+            .catalog
             .definitions
             .values()
             .filter(|definition| !definition.branch_scoped)
@@ -201,7 +182,8 @@ impl IndexingSubsystem {
     }
 
     /// Replace the whole subsystem, for checkpoint restore.
-    pub(crate) fn install(&self, state: IndexingState) {
+    pub(crate) fn install(&self, mut state: IndexingState) {
+        Arc::make_mut(&mut state.catalog).renew_incarnation();
         *self.state.write() = state;
     }
 
@@ -213,19 +195,25 @@ impl IndexingSubsystem {
         &self,
         index_id: DerivedIndexId,
     ) -> Option<Arc<DerivedIndexDefinition>> {
-        self.state.read().definitions.get(&index_id).map(Arc::clone)
+        self.state
+            .read()
+            .catalog
+            .definitions
+            .get(&index_id)
+            .map(Arc::clone)
     }
 
     pub(crate) fn with_definitions<R>(
         &self,
         read: impl FnOnce(&BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>) -> R,
     ) -> R {
-        read(&self.state.read().definitions)
+        read(&self.state.read().catalog.definitions)
     }
 
     pub(crate) fn definitions(&self) -> Vec<Arc<DerivedIndexDefinition>> {
         self.state
             .read()
+            .catalog
             .definitions
             .values()
             .map(Arc::clone)

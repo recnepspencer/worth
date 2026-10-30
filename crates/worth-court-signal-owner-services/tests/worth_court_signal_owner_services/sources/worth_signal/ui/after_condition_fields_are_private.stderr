@@ -1,0 +1,9 @@
+error[E0451]: fields `delay` and `clock_domain` of struct `AfterCondition` are private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/after_condition_fields_are_private.rs:5:9
+  |
+4 |     let _condition = AfterCondition {
+  |                      -------------- in this type
+5 |         delay: TemporalDuration::temporal_duration(5).unwrap(),
+  |         ^^^^^ private field
+6 |         clock_domain: ClockDomain::MonotonicExecution,
+  |         ^^^^^^^^^^^^ private field

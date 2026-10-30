@@ -1,0 +1,14 @@
+error[E0624]: associated function `new` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_contract_constructor_private.rs:4:50
+  |
+4 |       let _ctor = AdmittedBridgeWritebackContract::new;
+  |                                                    ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/writeback/contracts.rs
+  |
+  | /     pub(crate) fn new(
+  | |         validated_declaration: ValidatedBridgeWritebackDeclaration,
+  | |         authority_inputs: BridgeWritebackAuthorityInputs,
+  | |         lowered_policy: &LoweredBridgeExecutionPolicy,
+  | |     ) -> Result<Self, crate::error::BridgeWritebackError> {
+  | |_________________________________________________________- private associated function defined here

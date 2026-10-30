@@ -8,13 +8,76 @@ use crate::domain_computation::application_aftermath::{
 pub(super) fn selector(source: &WorthQueryCorrectionSourceCoordinates) -> AspectValue {
     // Branch length makes the scalar tuple unambiguous even for punctuation in a branch name.
     AspectValue::String(InternedString::from(format!(
-        "{}:{}:{}:{}:{}",
-        source.world_owner(),
-        source.world_commit(),
-        source.relational().branch_id.0.len(),
-        source.relational().branch_id.0,
-        source.relational().commit_id.0
+        "{}",
+        Selector {
+            owner: source.world_owner(),
+            commit: source.world_commit(),
+            receipt: source.relational(),
+        }
     )))
+}
+
+pub(super) fn selector_matches<Stop>(
+    source: &WorthQueryRecordedCorrectionSource,
+    value: Option<&AspectValue>,
+    mut admit: impl FnMut(u64) -> Result<(), Stop>,
+) -> Result<bool, Stop> {
+    use std::fmt::Write;
+    let Some(AspectValue::String(InternedString::Raw(value))) = value else {
+        return Ok(false);
+    };
+    // Four u64 decimal conversions have bounded stack output. Pay both actual
+    // branch/string traversals before the shared grammar writes comparisons.
+    admit(value.len() as u64)?;
+    admit(source.relational().branch_id.0.len() as u64)?;
+    admit(4 * 20 + 4)?;
+    let mut matching = SelectorMatch {
+        expected: value,
+        offset: 0,
+    };
+    let result = write!(
+        &mut matching,
+        "{}",
+        Selector {
+            owner: source.world().owner_identity().get(),
+            commit: source.world().ordinal(),
+            receipt: source.relational(),
+        }
+    );
+    Ok(result.is_ok() && matching.offset == value.len())
+}
+
+struct Selector<'a> {
+    owner: u64,
+    commit: u64,
+    receipt: &'a worth_relational::facade::history::RelationalCommitReceipt,
+}
+impl std::fmt::Display for Selector<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}:{}:{}:{}:{}",
+            self.owner,
+            self.commit,
+            self.receipt.branch_id.0.len(),
+            self.receipt.branch_id.0,
+            self.receipt.commit_id.0
+        )
+    }
+}
+struct SelectorMatch<'a> {
+    expected: &'a str,
+    offset: usize,
+}
+impl std::fmt::Write for SelectorMatch<'_> {
+    fn write_str(&mut self, part: &str) -> std::fmt::Result {
+        let remaining = self.expected.get(self.offset..).ok_or(std::fmt::Error)?;
+        if !remaining.starts_with(part) {
+            return Err(std::fmt::Error);
+        }
+        self.offset += part.len();
+        Ok(())
+    }
 }
 pub(super) fn consumption_selector(
     reversal: &worth_relational::facade::history::RelationalCommitReceipt,

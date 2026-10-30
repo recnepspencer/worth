@@ -1,0 +1,10 @@
+error[E0432]: unresolved import `worth_signal::AsyncKeyedNodeCapabilityBinding`
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_keyed_node_capability_binding_fields_are_private.rs:1:5
+  |
+1 | use worth_signal::AsyncKeyedNodeCapabilityBinding;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `AsyncKeyedNodeCapabilityBinding` in the root
+  |
+help: consider importing this struct instead
+  |
+1 | use worth_signal::facade::AsyncKeyedNodeCapabilityBinding;
+  |                   ++++++++

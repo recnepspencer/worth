@@ -1,9 +1,0 @@
-error[E0451]: fields `events` and `performance` of struct `ResourceObservationBatchReport` are private
-  --> tests/ui/resource_observation_batch_report_fields_are_private.rs:9:9
-   |
- 8 |     let _report = ResourceObservationBatchReport {
-   |                   ------------------------------ in this type
- 9 |         events: fake(),
-   |         ^^^^^^ private field
-10 |         performance: fake(),
-   |         ^^^^^^^^^^^ private field

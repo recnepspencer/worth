@@ -2,7 +2,7 @@ use super::*;
 #[test]
 fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(|graph| facts::seed_set(graph, "even", -0.0));
+    let application = install_counted_population(|graph| facts::seed_set(graph, "even", -0.0));
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut population = 0;
@@ -156,7 +156,7 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
         );
         demand(&request, &application);
     }
-    let first = growth[0].1[0];
+    let first = &growth[0].1[0];
     for (size, runs) in &growth {
         assert_eq!(
             runs[0].content_leaf_derivations, first.content_leaf_derivations,
@@ -228,7 +228,7 @@ fn one_entry_edit_gathers_and_computes_one_partition_at_every_size() {
     let _guard = checkpoint_recovery_test_guard();
     for size in SIZES {
         // Every entry is its own region, so every region is one partition.
-        let application = install(|graph| {
+        let application = install_counted_population(|graph| {
             facts::seed_set(graph, "even", -0.0);
             for place in 0..size {
                 let entry = RegionEntry {

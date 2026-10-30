@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/primitives/severity_cannot_satisfy_delivery_api.rs
+  |
+  |     needs_delivery(severity);
+  |     -------------- ^^^^^^^^ expected `FoundationalDiagnosticDeliveryClass`, found `FoundationalDiagnosticSeverity`
+  |     |
+  |     arguments to this function are incorrect
+  |
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/primitives/severity_cannot_satisfy_delivery_api.rs
+  |
+  | fn needs_delivery(_delivery: FoundationalDiagnosticDeliveryClass) {}
+  |    ^^^^^^^^^^^^^^ ----------------------------------------------

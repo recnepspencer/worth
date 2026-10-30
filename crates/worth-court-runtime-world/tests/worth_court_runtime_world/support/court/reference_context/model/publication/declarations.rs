@@ -1,0 +1,232 @@
+pub(crate) use crate::court::reference_context::model::driver::ModelRun;
+pub(crate) use {
+    crate::court::ordinary_context::relational,
+    crate::court::ordinary_context::routing::RoutingContext,
+    crate::court::reference_context::model, worth_runtime_world::facade::*,
+};
+pub(crate) use {
+    crate::court::ordinary_context::routing::INPUT, crate::court::ordinary_context::routing::ROUTED,
+};
+pub(crate) use {std::sync::Arc, std::sync::OnceLock};
+
+impl ModelRun {
+    pub(crate) fn publish(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        amount: Option<u64>,
+        signal: bool,
+    ) {
+        let policy = match self.court.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::from_policy(&policy),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
+        self.steps.push(format!("publish {amount:?}/{signal}"));
+        let head = self.heads["work"].clone();
+        self.model.publish("work", amount, signal);
+        let port = self.court.world.publication_port();
+        let token = RuntimeWorldCancellationSource::new().token();
+        let candidate = amount.map(|amount| {
+            self.court.records.candidate(
+                request_execution,
+                head.basis().relational_basis(),
+                "grain",
+                &amount.to_string(),
+            )
+        });
+        let outcome = if signal {
+            let mut intent = CompositePublicationIntent::with_signal(
+                amount.map(|_| RelationalTransactionIntent::ordinary()),
+            );
+            if let Some(candidate) = candidate {
+                intent = intent.with_prepared_relational_candidate(candidate);
+            }
+            let prepared = port
+                .prepare_with_signal(head.clone(), intent, &token, None)
+                .unwrap();
+            let records = std::sync::Arc::new(std::sync::OnceLock::new());
+            let mut context = RoutingContext {
+                records: std::sync::Arc::clone(&records),
+            };
+            let runtime = &self.court.records.runtime;
+            let branch = head.basis().relational_basis().identity().clone();
+            let nodes = self.court.nodes;
+            let expected = self.model.commits[&self.model.branches["work"].head]
+                .cargo
+                .route();
+            port.execute_with_signal(execution, prepared, &mut context, &token, |tx| {
+                // This isolated sequential branch has exactly one writer. Read
+                // the real settled Relational occurrence, never a predicted basis.
+                let basis = runtime.observe_branch(&branch).unwrap().1;
+                records
+                    .set(self.court.records.read(request_execution, &basis))
+                    .unwrap();
+                tx.mark_changed(nodes.source, INPUT)?;
+                let routed_version = tx.read(nodes.route, &|view| nodes.evaluate(view))?;
+                assert_eq!(
+                    routed_version.get(ROUTED),
+                    expected,
+                    "independent routed cargo"
+                );
+                Ok(())
+            })
+        } else {
+            let intent =
+                CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
+                    .with_prepared_relational_candidate(candidate.unwrap());
+            let prepared = port
+                .prepare_without_signal(head.clone(), intent, &token, None)
+                .unwrap();
+            port.execute_without_signal(execution, prepared, &token)
+        };
+        let RuntimeWorldPublicationOutcome::Performed(done) = outcome else {
+            panic!("pure model predicts successful publication");
+        };
+        drop(done.consume());
+        self.heads.insert("work".into(), self.court.observe(&head));
+        drop(head);
+        self.check(request_execution);
+    }
+    pub(crate) fn cancel(&mut self, request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
+        let policy = match self.court.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::from_policy(&policy),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
+        self.steps.push("prepare/cancel".into());
+        self.model.prepare(0, "work");
+        let prepared = self
+            .court
+            .prepare_cargo(request_execution, &self.heads["work"], "3");
+        self.check(request_execution);
+        let source = RuntimeWorldCancellationSource::new();
+        source.cancel();
+        self.model.finish_attempt(0);
+        let outcome = self.court.world.publication_port().execute_without_signal(
+            execution,
+            prepared,
+            &source.token(),
+        );
+        assert!(
+            matches!(outcome, RuntimeWorldPublicationOutcome::NoEffect(no) if no.cause() == NoEffectCause::CancelledBeforeEffect)
+        );
+        self.check(request_execution);
+    }
+    pub(crate) fn stale(&mut self, request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
+        let policy = match self.court.world.execution_placement() {
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                policy, ..
+            } => policy,
+        };
+        let serial_request = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::from_policy(&policy),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
+        self.steps.push("reserve stale contender".into());
+        self.model.prepare(0, "work");
+        let prepared = self
+            .court
+            .prepare_cargo(request_execution, &self.heads["work"], "2");
+        self.check(request_execution);
+        self.publish(request_execution, Some(7), false);
+        self.steps.push("execute stale contender".into());
+        self.model.finish_attempt(0);
+        let outcome = self.court.world.publication_port().execute_without_signal(
+            execution,
+            prepared,
+            &RuntimeWorldCancellationSource::new().token(),
+        );
+        assert!(
+            matches!(outcome, RuntimeWorldPublicationOutcome::NoEffect(no) if no.cause() == NoEffectCause::StaleExpectedProductHead)
+        );
+        self.check(request_execution);
+    }
+    pub(crate) fn partial_cleanup(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
+        self.steps
+            .push("Relational effect with Signal denial".into());
+        self.model.prepare(0, "work");
+        self.model.partial(0, "work");
+        let effects = self
+            .court
+            .partial_after_relational(request_execution, &self.heads["work"]);
+        let handle = effects.recovery_handle();
+        let keys = [
+            RuntimeWorldRetentionKey::relational(effects.successor_basis().unwrap()),
+            RuntimeWorldRetentionKey::signal(effects.successor_basis().unwrap()),
+        ];
+        assert_eq!(effects.owner_effect_count(), 1);
+        assert_eq!(
+            self.court
+                .records
+                .read(
+                    request_execution,
+                    effects.successor_basis().unwrap().relational_basis()
+                )
+                .records["grain"],
+            "5"
+        );
+        self.observer.check_unpublished(
+            request_execution,
+            &self.court,
+            &self.model,
+            self.model.partials[&0],
+            &effects,
+        );
+        self.check(request_execution);
+        self.steps.push("cleanup-only continuation".into());
+        self.court
+            .world
+            .recovery_port()
+            .continue_effects(effects)
+            .unwrap();
+        self.check(request_execution);
+        self.steps.push("release partial".into());
+        let unpublished = self.model.cleanup(0);
+        self.court
+            .world
+            .recovery_port()
+            .release_effects(&handle, 0)
+            .unwrap();
+        self.check(request_execution);
+        self.steps.push("reclaim unpublished successor".into());
+        assert!(self.model.reclaim(unpublished));
+        let identity = self.observer.commit(unpublished);
+        let released = self
+            .court
+            .world
+            .lifecycle_port()
+            .release_retired_branch_history(&identity)
+            .unwrap();
+        assert_eq!(released.reclaimed_commits(), &[identity]);
+        assert_eq!(released.held_commit(), None);
+        self.court
+            .world
+            .lifecycle_port()
+            .reclaim_retention(&keys, 2)
+            .unwrap();
+        self.check(request_execution);
+    }
+}

@@ -24,8 +24,7 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
         for generation in checkpoint.readmit()? {
             require_generation_below_frontier(generation.generation_id, generation_frontier)?;
             let definition = indexes
-                .definitions
-                .get(&generation.index_id)
+                .definition(generation.index_id)
                 .ok_or_else(|| corrupt("checkpoint index generation has no definition"))?;
             use crate::indexes::data::{DerivedIndexEntries as Entries, DerivedIndexKind as Kind};
             let matching_kind = matches!(

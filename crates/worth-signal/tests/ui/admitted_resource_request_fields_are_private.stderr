@@ -1,9 +1,0 @@
-error[E0451]: fields `handle` and `attempt` of struct `AdmittedResourceRequest` are private
-  --> tests/ui/admitted_resource_request_fields_are_private.rs:11:9
-   |
-10 |     let _ = AdmittedResourceRequest {
-   |             ----------------------- in this type
-11 |         handle: forged_handle(),
-   |         ^^^^^^ private field
-12 |         attempt: ResourceAttemptId::new(0),
-   |         ^^^^^^^ private field

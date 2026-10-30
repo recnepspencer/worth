@@ -1,0 +1,15 @@
+error[E0624]: associated function `publish` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_checkpoint_constructor_private.rs:4:54
+  |
+4 |       let _constructor = BridgeSubscriptionCheckpoint::publish;
+  |                                                        ^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/checkpoint/checkpoint.rs
+  |
+  | /     pub(crate) fn publish(
+  | |         ready: BridgeSubscriptionCheckpointReady,
+  | |         active_subscription: &BridgeActiveSubscription,
+  | |         duplicate_replay_policy_kind: BridgeSubscriptionDuplicateReplayPolicyKind,
+  | |         fanout_layout: Option<&BridgeSubscriptionFanoutLayout>,
+  | |     ) -> Result<Self, BridgeSubscriptionCheckpointRejection> {
+  | |____________________________________________________________- private associated function defined here

@@ -75,7 +75,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
     out.extend(splits::check(&splits));
     let mut registered = BTreeSet::new();
     for (workspace, stem) in input.courts() {
-        let Some(graph) = input.graphs.get(&format!("{workspace}/Cargo.toml")) else {
+        let Some(graph) = input.graphs.get(&workspace_manifest(workspace)) else {
             out.push(diagnostic(
                 Code::Topology,
                 workspace,

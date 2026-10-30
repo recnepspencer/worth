@@ -1,0 +1,19 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/grouped_surface_stronger_lane/plain_counter_backed_receipt_cannot_enter_grouped_stronger_lane_certified_api.rs
+  |
+  |     require_certified_bundle(&receipt);
+  |     ------------------------ ^^^^^^^^ expected `FoundationalCertifiedPerformanceBundle<...>`, found `FoundationalCounterBackedPerformanceReceipt<...>`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected reference `&FoundationalCertifiedPerformanceBundle<FoundationalCounterBackedPerformanceReceipt<FoundationalAuthoritativePerformanceClaim>>`
+             found reference `&FoundationalCounterBackedPerformanceReceipt<FoundationalAuthoritativePerformanceClaim>`
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/grouped_surface_stronger_lane/plain_counter_backed_receipt_cannot_enter_grouped_stronger_lane_certified_api.rs
+  |
+  |   fn require_certified_bundle(
+  |      ^^^^^^^^^^^^^^^^^^^^^^^^
+  | /     _bundle: &worth_foundational::FoundationalCertifiedPerformanceBundle<
+  | |         FoundationalCounterBackedPerformanceReceipt<FoundationalAuthoritativePerformanceClaim>,
+  | |     >,
+  | |_____-

@@ -10,6 +10,13 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
     let memory = SerialMemoryBudget::new(None);
     let host = SerialRequest::from_memory(memory.clone(), CancellationSource::new().token(), None);
     let execution = &ExecutionRequest::serial(&host);
+    let maintenance_memory = SerialMemoryBudget::new(None);
+    let maintenance_host = SerialRequest::from_memory(
+        maintenance_memory.clone(),
+        CancellationSource::new().token(),
+        None,
+    );
+    let maintenance_execution = &ExecutionRequest::serial(&maintenance_host);
     let runtime = runtime_with_index_field_aspects();
     let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
@@ -71,8 +78,7 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
     // Dropping this unperformed candidate publishes neither source nor generations.
     let initial_memory = memory.charged_memory_bytes();
     let mut measure = candidate_for_update(execution, &runtime, entity, "after");
-    let measure_baseline = memory.charged_memory_bytes();
-    let (prepared, report) = execution
+    let (prepared, report) = maintenance_execution
         .run(ExecutionWorkCeiling::new(None), |_| {
             runtime
                 .index_authority()
@@ -81,17 +87,18 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
                     &[field, join],
                     &before,
                     budget(0),
-                    execution,
+                    maintenance_execution,
                 )
         })
         .unwrap();
     prepared.unwrap();
     let required_work = report.charged_work();
-    let required_memory = memory.charged_memory_bytes() - measure_baseline;
+    let required_memory = maintenance_memory.charged_memory_bytes();
     assert!(required_work > 1);
     assert!(required_memory > 1);
     drop(measure);
     assert_eq!(memory.charged_memory_bytes(), initial_memory);
+    assert_eq!(maintenance_memory.charged_memory_bytes(), 0);
 
     let mut candidate = candidate_for_update(execution, &runtime, entity, "after");
     let candidate_baseline = memory.charged_memory_bytes();
@@ -102,7 +109,7 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
         .commit_id()
         .unwrap();
     // Near-complete work refusal exercises the late quote on the SAME candidate.
-    let (refused, _) = execution
+    let (refused, _) = maintenance_execution
         .run(ExecutionWorkCeiling::new(Some(required_work - 1)), |_| {
             runtime
                 .index_authority()
@@ -111,7 +118,7 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
                     &[field, join],
                     &before,
                     budget(0),
-                    execution,
+                    maintenance_execution,
                 )
         })
         .unwrap();
@@ -126,6 +133,7 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
         .derived_artifacts_for_commit(commit)
         .is_empty());
     assert_eq!(memory.charged_memory_bytes(), candidate_baseline);
+    assert_eq!(maintenance_memory.charged_memory_bytes(), 0);
     let restricted_memory = SerialMemoryBudget::new(Some(required_memory - 1));
     let unfunded = SerialRequest::from_memory(
         restricted_memory.clone(),
@@ -163,16 +171,14 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
             &[field, join],
             &before,
             budget(0),
-            execution,
+            maintenance_execution,
         )
         .unwrap();
     assert_eq!(work.cold_record_slots, 0);
     assert!(work.patch_records > 0);
     assert_eq!(work.generation_publications_reserved, 2);
-    assert_eq!(
-        memory.charged_memory_bytes(),
-        candidate_baseline + required_memory
-    );
+    assert_eq!(maintenance_memory.charged_memory_bytes(), required_memory);
+    assert_eq!(memory.charged_memory_bytes(), candidate_baseline);
     assert!(runtime
         .indexes
         .derived_artifacts_for_commit(commit)
@@ -232,11 +238,25 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
         )
         .is_none());
     assert_eq!(
-        memory.charged_memory_bytes(),
-        initial_memory,
+        maintenance_memory.charged_memory_bytes(),
+        0,
         "performed installation discharges the original reservation"
+    );
+    assert!(
+        memory.charged_memory_bytes() > initial_memory,
+        "canonical history retains its own payer"
     );
     runtime.snapshots().release_snapshot(&before).unwrap();
     release_test_commit_snapshot(&runtime, &first);
     release_test_commit_snapshot(&runtime, &second);
+    drop((
+        runtime,
+        initial_join,
+        generation,
+        first,
+        second,
+        basis,
+        before,
+    ));
+    assert_eq!(memory.charged_memory_bytes(), 0);
 }

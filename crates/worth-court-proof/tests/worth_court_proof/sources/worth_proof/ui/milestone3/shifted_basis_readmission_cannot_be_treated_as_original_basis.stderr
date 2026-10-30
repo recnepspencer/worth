@@ -1,0 +1,25 @@
+error[E0308]: mismatched types
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone3/shifted_basis_readmission_cannot_be_treated_as_original_basis.rs:34:40
+   |
+34 |     > = bridged.readmit_with_authority(11_u16, readmission_authority);
+   |                 ---------------------- ^^^^^^ expected `u8`, found `u16`
+   |                 |
+   |                 arguments to this method are incorrect
+   |
+help: the return type of this call is `u16` due to the type of the argument passed
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone3/shifted_basis_readmission_cannot_be_treated_as_original_basis.rs:34:9
+   |
+34 |     > = bridged.readmit_with_authority(11_u16, readmission_authority);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^------^^^^^^^^^^^^^^^^^^^^^^^^
+   |                                        |
+   |                                        this argument influences the return type of `readmit_with_authority`
+note: method defined here
+  --> $WORKSPACE/crates/worth-proof/src/assumption/readmission.rs
+   |
+   |     pub fn readmit_with_authority<Auth, NextB>(
+   |            ^^^^^^^^^^^^^^^^^^^^^^
+help: change the type of the numeric literal from `u16` to `u8`
+   |
+34 -     > = bridged.readmit_with_authority(11_u16, readmission_authority);
+34 +     > = bridged.readmit_with_authority(11_u8, readmission_authority);
+   |

@@ -1,0 +1,30 @@
+error[E0277]: the trait bound `FoundationalBoundaryArtifactCategory: FoundationalBoundaryCategorySurface` is not satisfied
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/categories/plain_label_cannot_satisfy_summary_surface_api.rs
+  |
+  |     let _ = boundary_summary_category_of(&label);
+  |             ---------------------------- ^^^^^^ the trait `FoundationalBoundaryCategorySurface` is not implemented for `FoundationalBoundaryArtifactCategory`
+  |             |
+  |             required by a bound introduced by this call
+  |
+help: the following other types implement trait `FoundationalBoundaryCategorySurface`
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/categories.rs
+  |
+  | impl FoundationalBoundaryCategorySurface for FoundationalBoundarySummarySurface {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundarySummarySurface`
+...
+  | impl<Row> FoundationalBoundaryCategorySurface for FoundationalBoundaryReportSurface<Row> {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundaryReportSurface<Row>`
+...
+  | impl<T> FoundationalBoundaryCategorySurface for FoundationalBoundaryArtifactSurface<T> {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundaryArtifactSurface<T>`
+...
+  | impl FoundationalBoundaryCategorySurface for FoundationalBoundaryReceiptSurface {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundaryReceiptSurface`
+note: required by a bound in `boundary_summary_category_of`
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/categories.rs
+  |
+  | pub fn boundary_summary_category_of<S>(surface: &S) -> FoundationalBoundaryArtifactCategory
+  |        ---------------------------- required by a bound in this function
+  | where
+  |     S: FoundationalBoundaryCategorySurface<Category = SummaryCategory>,
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `boundary_summary_category_of`

@@ -9,8 +9,8 @@ mod codec_retirement_preservation;
 pub(crate) use codec_retirement_closure::{
     capture_materialization_producers, derive_codec_retirement_closure,
     output_materialization_write_matches, prepare_materialization_continuity,
-    readmit_required_output_route, validate_codec_output_correspondence,
-    CodecRetirementClosureStop, OwnedCodecRetirementClosure,
+    readmit_required_output_route, select_authored_retirement,
+    validate_codec_output_correspondence, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
 mod canonical_record_allocation;
@@ -37,10 +37,10 @@ pub use aspect_history::{
     LineageAspectHistory, LineageAspectHistoryQueryResult, LineageAspectResolutionDigest,
 };
 pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
-#[cfg(test)]
 pub(crate) use canonical_commit_envelope::CanonicalOutputPublication;
 pub(crate) use canonical_commit_envelope::{
-    AuthoritativeArtifactEnvelopeRef, CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
+    AuthoritativeArtifactEnvelopeRef, CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites,
+    CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
 };
 pub(crate) use canonical_commit_envelope::{
     CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,

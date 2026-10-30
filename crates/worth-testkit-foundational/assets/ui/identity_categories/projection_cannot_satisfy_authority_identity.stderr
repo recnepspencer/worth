@@ -1,0 +1,17 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/projection_cannot_satisfy_authority_identity.rs
+  |
+  |     needs_authority(projection);
+  |     --------------- ^^^^^^^^^^ expected `FoundationalAuthorityIdentity<u64, ..., ...>`, found `FoundationalProjectionIdentity<..., ...>`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected struct `FoundationalAuthorityIdentity<u64, QueryIdentityAuthority, QueryCommitIdentityKind>`
+             found struct `FoundationalProjectionIdentity<std::string::String, QueryCommitIdentityKind>`
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/projection_cannot_satisfy_authority_identity.rs
+  |
+  | fn needs_authority(
+  |    ^^^^^^^^^^^^^^^
+  |     _identity: FoundationalAuthorityIdentity<u64, QueryIdentityAuthority, QueryCommitIdentityKind>,
+  |     ----------------------------------------------------------------------------------------------

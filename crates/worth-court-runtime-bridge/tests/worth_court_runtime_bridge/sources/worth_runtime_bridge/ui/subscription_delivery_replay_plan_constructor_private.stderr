@@ -1,0 +1,14 @@
+error[E0624]: associated function `plan` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_delivery_replay_plan_constructor_private.rs:4:62
+  |
+4 |       let _constructor = BridgeSubscriptionDeliveryReplayPlan::plan;
+  |                                                                ^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/retained_delivery/replay_plan.rs
+  |
+  | /     pub(crate) fn plan(
+  | |         active_subscription: &BridgeActiveSubscription,
+  | |         resume_admission: BridgeSubscriptionResumeAdmission,
+  | |         mut retained_window_seeds: Vec<BridgeSubscriptionRetainedDeliveryWindowSeed>,
+  | |     ) -> Result<Self, BridgeSubscriptionDeliveryReplayPlanRejection> {
+  | |____________________________________________________________________- private associated function defined here

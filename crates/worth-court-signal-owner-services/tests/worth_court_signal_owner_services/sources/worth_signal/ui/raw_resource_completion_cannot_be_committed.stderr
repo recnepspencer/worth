@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/raw_resource_completion_cannot_be_committed.rs:8:55
+  |
+8 |     let _ = runtime.commit_staged_resource_completion(raw_completion());
+  |                     --------------------------------- ^^^^^^^^^^^^^^^^ expected `StagedResourceCompletionEffect`, found `RawCompletionEnvelope`
+  |                     |
+  |                     arguments to this method are incorrect
+  |
+note: method defined here
+ --> $WORKSPACE/crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/resource/completion.rs
+  |
+  |     pub fn commit_staged_resource_completion(
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

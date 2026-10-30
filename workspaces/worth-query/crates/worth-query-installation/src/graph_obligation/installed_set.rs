@@ -18,6 +18,7 @@ use super::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledGraphObligationSubjectKind {
+    ApplicationManagedIndex,
     ApplicationQuery,
     ApplicationOperation,
     ApplicationResource,
@@ -25,6 +26,10 @@ pub enum WorthQueryInstalledGraphObligationSubjectKind {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum WorthQueryInstalledGraphObligationSubject {
+    ApplicationManagedIndex {
+        name: String,
+        parent_binding: String,
+    },
     ApplicationQuery {
         name: String,
         identity: WorthQueryInstalledApplicationQueryIdentity,
@@ -42,6 +47,10 @@ enum WorthQueryInstalledGraphObligationSubject {
 impl WorthQueryInstalledGraphObligationSubject {
     fn identity_fields(&self) -> (&'static str, &str, Option<&str>) {
         match self {
+            Self::ApplicationManagedIndex {
+                name,
+                parent_binding,
+            } => ("application-managed-index", name, Some(parent_binding)),
             Self::ApplicationQuery { name, .. } => ("application-query", name, None),
             Self::ApplicationOperation { name, input_type } => {
                 ("application-operation", name, Some(input_type))
@@ -186,6 +195,24 @@ impl WorthQueryInstalledGraphObligationSet {
         )
     }
 
+    pub(super) fn for_managed_index(
+        binding_identity: &ApplicationSchemaBindingIdentity,
+        name: String,
+        parent_binding: String,
+        contracts: Vec<WorthQueryInstalledGraphObligationContract>,
+        resources: WorthQueryInstalledGraphObligationResourcePosture,
+    ) -> Result<Self, CanonicalDigestDerivationDenial> {
+        Self::build(
+            binding_identity,
+            WorthQueryInstalledGraphObligationSubject::ApplicationManagedIndex {
+                name,
+                parent_binding,
+            },
+            contracts,
+            resources,
+        )
+    }
+
     pub(super) fn for_resource(
         binding_identity: &ApplicationSchemaBindingIdentity,
         name: String,
@@ -244,6 +271,9 @@ impl WorthQueryInstalledGraphObligationSet {
 
     pub const fn subject_kind(&self) -> WorthQueryInstalledGraphObligationSubjectKind {
         match self.subject {
+            WorthQueryInstalledGraphObligationSubject::ApplicationManagedIndex { .. } => {
+                WorthQueryInstalledGraphObligationSubjectKind::ApplicationManagedIndex
+            }
             WorthQueryInstalledGraphObligationSubject::ApplicationQuery { .. } => {
                 WorthQueryInstalledGraphObligationSubjectKind::ApplicationQuery
             }
@@ -258,7 +288,8 @@ impl WorthQueryInstalledGraphObligationSet {
 
     pub fn subject_name(&self) -> &str {
         match &self.subject {
-            WorthQueryInstalledGraphObligationSubject::ApplicationQuery { name, .. }
+            WorthQueryInstalledGraphObligationSubject::ApplicationManagedIndex { name, .. }
+            | WorthQueryInstalledGraphObligationSubject::ApplicationQuery { name, .. }
             | WorthQueryInstalledGraphObligationSubject::ApplicationOperation { name, .. }
             | WorthQueryInstalledGraphObligationSubject::ApplicationResource { name, .. } => name,
         }
@@ -296,7 +327,8 @@ impl WorthQueryInstalledGraphObligationSet {
             WorthQueryInstalledGraphObligationSubject::ApplicationQuery { identity, .. } => {
                 Some(identity)
             }
-            WorthQueryInstalledGraphObligationSubject::ApplicationOperation { .. }
+            WorthQueryInstalledGraphObligationSubject::ApplicationManagedIndex { .. }
+            | WorthQueryInstalledGraphObligationSubject::ApplicationOperation { .. }
             | WorthQueryInstalledGraphObligationSubject::ApplicationResource { .. } => None,
         }
     }

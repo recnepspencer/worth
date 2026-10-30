@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-physical-isolation"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 2 S.5 latches, epochs, stable read plans, and reclaim barriers."
+"workspace" = "../.."
+"name" = "worth-store-physical-isolation"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 2 S.5 latches, epochs, stable read plans, and reclaim barriers."
+"autotests" = false
+
 
 [dependencies]
 fs4 = "0.8"
@@ -25,11 +27,10 @@ worth-store-wal.workspace = true
 certification-authority = [
     "worth-store-wal/certification-authority",
 ]
-
 [dev-dependencies]
-tempfile = "3"
-worth-store-physical-backend = { workspace = true, features = ["certification-test-authority"] }
-worth-store-wal = { workspace = true, features = ["certification-authority"] }
+"tempfile" = "3"
+"worth-store-physical-backend" = { "workspace" = true, "features" = ["certification-test-authority"] }
+
 
 [lints]
 workspace = true

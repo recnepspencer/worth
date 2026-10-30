@@ -97,7 +97,7 @@ impl PartialEq for WorthQueryApplicationOneShotDenial {
 }
 impl Eq for WorthQueryApplicationOneShotDenial {}
 
-pub(super) fn denial(
+pub(in crate::domain_computation::primary_graph::application_query) fn denial(
     kind: WorthQueryApplicationOneShotDenialKind,
     query: impl Into<String>,
     subject: impl Into<String>,

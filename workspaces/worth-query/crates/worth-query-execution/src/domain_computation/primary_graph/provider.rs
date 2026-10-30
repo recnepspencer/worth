@@ -19,6 +19,10 @@ mod branch_commit_coordination;
 mod commit_causality;
 pub(super) mod committed_dispatch_outbox;
 mod completed_observation;
+mod correction_witness;
+pub(in crate::domain_computation::primary_graph) use correction_witness::{
+    CorrectionPerformedWitness, CorrectionWitnessDenial,
+};
 mod correction_idempotency;
 pub(in crate::domain_computation::primary_graph) use correction_idempotency::CorrectionIdempotencyObservation;
 mod decision_facts;
@@ -169,7 +173,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(super) fn application_resource_support_ref(
         &self,
     ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
-    {
+{
         self.resource_support.snapshot_ref()
     }
 

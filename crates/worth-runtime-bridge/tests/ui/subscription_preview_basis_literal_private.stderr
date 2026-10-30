@@ -1,7 +1,0 @@
-error: cannot construct `BridgeSubscriptionPreviewBasisBinding` with struct literal syntax due to private fields
- --> tests/ui/subscription_preview_basis_literal_private.rs:4:13
-  |
-4 |     let _ = BridgeSubscriptionPreviewBasisBinding {};
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: private fields that were not provided

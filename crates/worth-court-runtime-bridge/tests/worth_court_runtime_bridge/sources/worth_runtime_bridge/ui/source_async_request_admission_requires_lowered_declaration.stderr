@@ -1,0 +1,102 @@
+error[E0624]: associated function `new` is private
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_request_admission_requires_lowered_declaration.rs:14:30
+   |
+14 |           TruthBranchIdentity::new("truth-main"),
+   |                                ^^^ private associated function
+   |
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
+   |
+   | /     pub(crate) fn new(
+   | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
+   | |     ) -> Self {
+   | |_____________- private associated function defined here
+
+error[E0308]: mismatched types
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_request_admission_requires_lowered_declaration.rs:14:34
+   |
+14 |         TruthBranchIdentity::new("truth-main"),
+   |         ------------------------ ^^^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
+   |         |
+   |         arguments to this function are incorrect
+   |
+   = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
+           found reference `&'static str`
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
+   |
+   |     pub(crate) fn new(
+   |                   ^^^
+
+error[E0624]: associated function `new` is private
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_request_admission_requires_lowered_declaration.rs:15:30
+   |
+15 |           TruthCommitIdentity::new("commit-a"),
+   |                                ^^^ private associated function
+   |
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
+   |
+   | /     pub(crate) fn new(
+   | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
+   | |     ) -> Self {
+   | |_____________- private associated function defined here
+
+error[E0308]: mismatched types
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_request_admission_requires_lowered_declaration.rs:15:34
+   |
+15 |         TruthCommitIdentity::new("commit-a"),
+   |         ------------------------ ^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
+   |         |
+   |         arguments to this function are incorrect
+   |
+   = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
+           found reference `&'static str`
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
+   |
+   |     pub(crate) fn new(
+   |                   ^^^
+
+error[E0624]: associated function `new` is private
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_request_admission_requires_lowered_declaration.rs:16:32
+   |
+16 |           TruthSnapshotIdentity::new("snapshot-a"),
+   |                                  ^^^ private associated function
+   |
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
+   |
+   | /     pub(crate) fn new(
+   | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
+   | |     ) -> Self {
+   | |_____________- private associated function defined here
+
+error[E0308]: mismatched types
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_request_admission_requires_lowered_declaration.rs:16:36
+   |
+16 |         TruthSnapshotIdentity::new("snapshot-a"),
+   |         -------------------------- ^^^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
+   |         |
+   |         arguments to this function are incorrect
+   |
+   = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
+           found reference `&'static str`
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
+   |
+   |     pub(crate) fn new(
+   |                   ^^^
+
+error[E0308]: mismatched types
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_request_admission_requires_lowered_declaration.rs:18:46
+   |
+18 |     let _ = runtime.bind_async_request_basis(&validated, basis);
+   |                     ------------------------ ^^^^^^^^^^ expected `&LoweredBridgeAsyncSourceDeclaration`, found `&ValidatedBridgeAsyncSourceDeclaration`
+   |                     |
+   |                     arguments to this method are incorrect
+   |
+   = note: expected reference `&LoweredBridgeAsyncSourceDeclaration`
+              found reference `&ValidatedBridgeAsyncSourceDeclaration`
+note: method defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/source/async_request_identity.rs
+   |
+   |     pub fn bind_async_request_basis(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^

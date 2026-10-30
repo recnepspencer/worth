@@ -56,11 +56,24 @@ impl SignalGraph {
     #[cfg(test)]
     fn check_epoch_semantic_preparation_fault(&self) -> Result<(), SignalError> {
         let flag = 1 << (usize::BITS - 1);
-        let previous = self.epoch_output_preparation_fault_after.fetch_update(
-            std::sync::atomic::Ordering::SeqCst,
-            std::sync::atomic::Ordering::SeqCst,
-            |remaining| (remaining > flag).then(|| remaining - 1),
-        );
+        let previous = {
+            let update_counter = &self.epoch_output_preparation_fault_after;
+            let mut remaining = update_counter.load(std::sync::atomic::Ordering::SeqCst);
+            loop {
+                let Some(updated_value) = (remaining > flag).then(|| remaining - 1) else {
+                    break Err(remaining);
+                };
+                match update_counter.compare_exchange_weak(
+                    remaining,
+                    updated_value,
+                    std::sync::atomic::Ordering::SeqCst,
+                    std::sync::atomic::Ordering::SeqCst,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => remaining = reloaded_value,
+                }
+            }
+        };
         if matches!(previous, Ok(value) if value == flag + 1) {
             return Err(SignalError::internal(
                 "injected second semantic preparation failure",

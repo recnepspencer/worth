@@ -1,0 +1,22 @@
+[package]
+"name" = "worth-court-relational-certification"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"sha2" = { "version" = "^0.10" }
+"worth-execution" = { "path" = "../worth-execution" }
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-relational" = { "path" = "../worth-relational" }
+"worth-testkit-relational" = { "path" = "../worth-testkit-relational" }
+
+[[test]]
+name = "worth_court_relational_certification"
+path = "tests/worth_court_relational_certification.rs"
+
+[lints]
+workspace = true

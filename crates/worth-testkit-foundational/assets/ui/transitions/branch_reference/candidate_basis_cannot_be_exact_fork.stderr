@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/branch_reference/candidate_basis_cannot_be_exact_fork.rs
+  |
+  |     let _exact: FoundationalBranchForkBasis<Target> = FoundationalBranchForkBasis::new(candidate);
+  |                                                       -------------------------------- ^^^^^^^^^ expected `FoundationalBranchReferenceObservation<...>`, found `FoundationalBranchCandidateForkBasis`
+  |                                                       |
+  |                                                       arguments to this function are incorrect
+  |
+  = note: expected struct `FoundationalBranchReferenceObservation<Target>`
+             found struct `FoundationalBranchCandidateForkBasis`
+note: associated function defined here
+ --> $WORKSPACE/crates/worth-foundational/src/transitions/branches/fork.rs
+  |
+  |     pub fn new(source_observation: FoundationalBranchReferenceObservation<T>) -> Self {
+  |            ^^^

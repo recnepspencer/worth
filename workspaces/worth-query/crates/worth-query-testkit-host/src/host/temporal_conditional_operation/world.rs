@@ -218,7 +218,7 @@ impl CourtroomWorld {
         Provider: domain::WorthQueryHostConditionalPredicateProvider<TemporalReadyNode> + 'static,
     {
         worth_query_host::facade::application_contribution::with_bootstrap_advancement(
-            resources::execution_policy(),
+            resources::bootstrap_execution_policy(unrelated_row_count),
             |phase| {
 
         let declaration = TemporalHostSchema::declaration().unwrap();

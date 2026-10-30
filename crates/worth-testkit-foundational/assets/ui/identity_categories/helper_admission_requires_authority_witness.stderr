@@ -1,0 +1,20 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/helper_admission_requires_authority_witness.rs
+  |
+  |       let _identity = admit_foundational_authority_identity::<
+  |  _____________________-
+  | |         u64,
+  | |         QueryIdentityAuthority,
+  | |         QueryCommitIdentityKind,
+  | |     >(42, ());
+  | |     -     ^^ expected `AuthorityWitness<QueryIdentityAuthority>`, found `()`
+  | |_____|
+  |       arguments to this function are incorrect
+  |
+  = note: expected struct `worth_proof::AuthorityWitness<QueryIdentityAuthority>`
+          found unit type `()`
+note: function defined here
+ --> $WORKSPACE/crates/worth-foundational/src/identities/authority_identity/lifecycle.rs
+  |
+  | pub fn admit_foundational_authority_identity<Value, Authority, Kind>(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

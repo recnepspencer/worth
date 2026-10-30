@@ -83,7 +83,7 @@ where
         <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
             Schema, <Intent::Binding as ApplicationCapabilityMutationBinding<Schema>>::Capability,
             Scope = <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>,
-    {
+{
         self.assess_body_requirements_with(
             program,
             projection,
@@ -153,7 +153,7 @@ where
                     })?;
                 let mut admission = authorize(&phase, &mut self, &selected)
                     .map_err(WorthQueryCurrentBodyRequirementAssessmentDenial::Request)?;
-                source::bind(&mut self, &mut admission)
+                source::bind(&phase, &mut self, &mut admission)
                     .map_err(WorthQueryCurrentBodyRequirementAssessmentDenial::Request)?;
                 let findings = application
                     .assess_admitted_operation_body_requirements(

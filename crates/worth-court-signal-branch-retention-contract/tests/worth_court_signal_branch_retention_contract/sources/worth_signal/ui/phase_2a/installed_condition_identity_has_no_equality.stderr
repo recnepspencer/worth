@@ -1,0 +1,13 @@
+error[E0369]: binary operation `==` cannot be applied to type `&InstalledSignalConditionIdentity`
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/phase_2a/installed_condition_identity_has_no_equality.rs:7:13
+  |
+7 |     current == candidate
+  |     ------- ^^ --------- &InstalledSignalConditionIdentity
+  |     |
+  |     &InstalledSignalConditionIdentity
+  |
+note: `InstalledSignalConditionIdentity` does not implement `PartialEq`
+ --> $WORKSPACE/crates/worth-signal/src/data/node/condition.rs
+  |
+  | pub struct InstalledSignalConditionIdentity {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `InstalledSignalConditionIdentity` is defined in another crate

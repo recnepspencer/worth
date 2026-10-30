@@ -118,11 +118,13 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         collection_selection,
         super::ReadInterruption::Query(plan.controls.request_scope()),
         None,
+        None,
     )?;
     let actual_work = admitted_before_materialization.saturating_add(tree.work_units);
 
     Ok(RawLiveKernelOutcome {
         raw: RawOneShotRows {
+            material_source: None,
             rows: tree.rows,
             source_footprints: tree.source_footprints,
             result_set_source: selection.result_set_source,

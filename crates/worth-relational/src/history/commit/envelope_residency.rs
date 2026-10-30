@@ -1,5 +1,6 @@
 //! One envelope cell owns memory history or a journal-backed publication flight.
 mod artifact_export;
+mod authored_writes;
 use super::RelationalCommitIndexEntry;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::RelationalRecoveryStop;
@@ -28,6 +29,7 @@ enum EnvelopeBacking {
 }
 #[derive(Debug)]
 struct EnvelopeState {
+    authored_writes: Option<crate::runtime::AuthoredWriteGeneration>,
     backing: EnvelopeBacking,
     position: Option<RetainedCanonicalPosition>,
     damage: Option<RelationalStorageUnavailable>,
@@ -60,6 +62,7 @@ impl RelationalCommitEnvelopeResidency {
         let payload_digest = Sha256::digest(canonical_payload.as_ref()).into();
         Self {
             state: Mutex::new(EnvelopeState {
+                authored_writes: None,
                 lineage: Some(lineage_delta(&envelope)),
                 backing: EnvelopeBacking::Memory(envelope),
                 position: None,
@@ -77,6 +80,7 @@ impl RelationalCommitEnvelopeResidency {
     ) -> Self {
         Self {
             state: Mutex::new(EnvelopeState {
+                authored_writes: None,
                 backing: EnvelopeBacking::Journal {
                     entry: Arc::new(entry),
                     source,
@@ -292,9 +296,7 @@ impl RelationalCommitEnvelopeResidency {
             subject: RelationalStorageSubject::Envelope(entry.position),
             cause,
         };
-        let bytes = source
-            .read_commit(entry.position, limit)
-            .map_err(&failure)?;
+        let bytes = source.read_commit(entry.position, limit).map_err(failure)?;
         let artifact = RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes)
             .map_err(|_| failure(Cause::Damaged))?;
         if artifact.position() != entry.position

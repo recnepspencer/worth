@@ -174,7 +174,7 @@ pub(in crate::logic::planner) fn finalize_serial_stage_batch(
     };
     let mut task_records = Vec::with_capacity(applied_tasks.len());
 
-    for (seed, applied) in finalize_seeds.into_iter().zip(applied_tasks.into_iter()) {
+    for (seed, applied) in finalize_seeds.into_iter().zip(applied_tasks) {
         if seed.node != applied.node {
             return Err(SignalError::internal(
                 "serial finalize proof was violated: stage-ordered seed and applied node diverged",

@@ -1,0 +1,12 @@
+error: cannot construct `BridgeAsyncDeniedCompletion` with struct literal syntax due to private fields
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_denied_completion_constructor_private.rs:4:13
+  |
+4 |     let _ = BridgeAsyncDeniedCompletion {};
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: private fields that were not provided
+help: you might have meant to use the `new` associated function
+  |
+4 -     let _ = BridgeAsyncDeniedCompletion {};
+4 +     let _ = BridgeAsyncDeniedCompletion::new(_, _, _, _);
+  |

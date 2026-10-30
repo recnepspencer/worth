@@ -239,7 +239,7 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
         parent.reserve_memory(BUDGET).is_err(),
         "retained normalized footprint still owns backing"
     );
-    drop((retained, plan, committed));
+    drop((retained, plan, committed, runtime, basis));
     drop(
         parent
             .reserve_memory(BUDGET)

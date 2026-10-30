@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-readiness"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Worth Store foundational adoption and physical substrate readiness gates."
+"workspace" = "../.."
+"name" = "worth-store-readiness"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Worth Store foundational adoption and physical substrate readiness gates."
+"autotests" = false
+
 
 [dependencies]
 worth-foundational = { path = "../../../../crates/worth-foundational" }

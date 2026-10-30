@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-recovery-runtime"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Fresh-process physical Store recovery orchestration."
+"workspace" = "../.."
+"name" = "worth-store-recovery-runtime"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Fresh-process physical Store recovery orchestration."
+"autotests" = false
+
 
 [dependencies]
 sha2 = "0.10"
@@ -15,23 +17,13 @@ worth-store = { workspace = true, features = ["recovery-runtime-owner"] }
 worth-store-physical-format.workspace = true
 worth-store-physical-integrity.workspace = true
 worth-store-recovery-physics.workspace = true
-
 [dev-dependencies]
-tempfile = "3"
-trybuild = "1.0"
-serde_json = "1"
-worth-store = { workspace = true, features = ["certification-test-authority", "volatile-sync-for-tests", "test-support"] }
-worth-store-physical-integrity = { workspace = true, features = ["test-support"] }
-worth-store-recovery-physics = { workspace = true, features = ["test-support"] }
-worth-store-authority.workspace = true
-worth-store-blob-chunks.workspace = true
-worth-store-contracts.workspace = true
-worth-store-offline-verifier.workspace = true
-worth-store-offline-integrity-observer.workspace = true
-worth-store-security.workspace = true
-worth-store-test-support = { workspace = true, features = ["recovery-runtime-fixtures"] }
-worth-execution = { path = "../../../../crates/worth-execution" }
-worth-relational = { path = "../../../../crates/worth-relational" }
+"tempfile" = "3"
+"worth-store" = { "workspace" = true, "features" = ["certification-test-authority", "volatile-sync-for-tests", "test-support"] }
+"worth-store-physical-integrity" = { "workspace" = true, "features" = ["test-support"] }
+"worth-store-recovery-physics" = { "workspace" = true, "features" = ["test-support"] }
+"worth-store-test-support" = { "workspace" = true, "features" = ["recovery-runtime-fixtures"] }
+
 
 [features]
 certification-test-authority = ["worth-store/certification-test-authority"]

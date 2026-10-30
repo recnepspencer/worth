@@ -1,0 +1,21 @@
+error[E0451]: fields `handle`, `attempt`, `node`, `lifecycle`, `class`, `retention_descriptor_id`, `retention_decision_class` and `retention_decision_digest` of struct `ResourceRetainedHistoryAvailability` are private
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retained_history_availability_fields_are_private.rs:12:9
+   |
+11 |     let _availability = ResourceRetainedHistoryAvailability {
+   |                         ----------------------------------- in this type
+12 |         handle: fake(),
+   |         ^^^^^^ private field
+13 |         attempt: fake(),
+   |         ^^^^^^^ private field
+14 |         node: fake(),
+   |         ^^^^ private field
+15 |         lifecycle: fake(),
+   |         ^^^^^^^^^ private field
+16 |         class: ResourceRetainedHistoryAvailabilityClass::TerminalSummaryOnly,
+   |         ^^^^^ private field
+17 |         retention_descriptor_id: fake(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ private field
+18 |         retention_decision_class: ResourceRetentionDecisionClass::TerminalSummariesOnly,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ private field
+19 |         retention_decision_digest: fake(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^ private field

@@ -1,0 +1,11 @@
+error[E0603]: module `expressions` is private
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/expressions/expression_home_is_private.rs
+  |
+  | use worth_foundational::expressions::ExpressionDraft;
+  |                         ^^^^^^^^^^^ private module
+  |
+note: the module `expressions` is defined here
+ --> $WORKSPACE/crates/worth-foundational/src/lib.rs
+  |
+  | mod expressions;
+  | ^^^^^^^^^^^^^^^

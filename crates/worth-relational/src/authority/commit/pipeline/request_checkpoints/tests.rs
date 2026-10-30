@@ -99,7 +99,7 @@ fn cancellation_between_validation_and_publication_stops_without_publishing() {
 }
 
 #[test]
-fn a_completed_empty_commit_keeps_its_zero_data_work_charge() {
+fn a_completed_empty_commit_funds_its_retained_publication_metadata() {
     let runtime = runtime_with_test_schema();
     let backing = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
@@ -114,7 +114,28 @@ fn a_completed_empty_commit_keeps_its_zero_data_work_charge() {
         .unwrap();
     let result = result.unwrap();
     assert!(result.changed_records.is_empty());
-    // An empty batch supplies no rows, mutations, or patch fragments; the
-    // fixed-size publication metadata has no data-work fee on the base.
-    assert_eq!(report.charged_work(), 0);
+    assert!(report.charged_work() > 0);
+    assert!(backing.memory().unwrap().charged_memory_bytes() > 0);
+    let before = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap()
+        .0;
+    let (refused, _) = execution
+        .run(ExecutionWorkCeiling::new(Some(0)), |_| {
+            runtime.commit_branch_transaction(&execution, transaction(&runtime, 1))
+        })
+        .unwrap();
+    assert!(
+        matches!(refused, Err(TransactionCommitError::Execution { denial, .. })
+        if denial.kind == CommitExecutionDenialKind::Cause(crate::execution::RelationalExecutionDenialCause::WorkExhausted))
+    );
+    assert_eq!(
+        runtime
+            .observe_branch(&runtime.main_branch_identity())
+            .unwrap()
+            .0,
+        before
+    );
+    drop((runtime, result));
+    assert_eq!(backing.memory().unwrap().charged_memory_bytes(), 0);
 }

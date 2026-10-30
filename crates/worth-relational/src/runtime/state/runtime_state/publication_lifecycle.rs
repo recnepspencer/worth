@@ -124,21 +124,35 @@ impl RelationalRuntimePublicationBinding {
                 maximum_candidates,
             });
         }
-        let id = self
-            .lifecycle
-            .next_candidate_id
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                (current != 0).then(|| current.checked_add(1).unwrap_or(0))
-            })
-            .map_err(|_| RelationalCandidateRegistrationDenial::IdentityExhausted)?;
+        let id = {
+            let update_counter = &self.lifecycle.next_candidate_id;
+            let mut current = update_counter.load(Ordering::Relaxed);
+            loop {
+                let Some(updated_value) =
+                    (current != 0).then(|| current.checked_add(1).unwrap_or(0))
+                else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| RelationalCandidateRegistrationDenial::IdentityExhausted)?;
         assert_ne!(
-            /* Proof: register_candidate obtains the id from next_candidate_id.fetch_update, which rejects zero and permanently exhausts on wrap. That private allocator is never reset in a live binding, and registration/insertion holds the candidate-map Mutex throughout. */
+            /* Proof: register_candidate obtains the id from the checked next_candidate_id allocator, which rejects zero and permanently exhausts on wrap. That private allocator is never reset in a live binding, and registration/insertion holds the candidate-map Mutex throughout. */
             id,
             0,
             "candidate identity zero is reserved"
         );
         assert!(
-            /* Proof: register_candidate obtains the id from next_candidate_id.fetch_update, which rejects zero and permanently exhausts on wrap. That private allocator is never reset in a live binding, and registration/insertion holds the candidate-map Mutex throughout. */
+            /* Proof: register_candidate obtains the id from the checked next_candidate_id allocator, which rejects zero and permanently exhausts on wrap. That private allocator is never reset in a live binding, and registration/insertion holds the candidate-map Mutex throughout. */
             !candidates.contains_key(&id),
             "candidate identity allocator collided with a live candidate"
         );
@@ -150,7 +164,7 @@ impl RelationalRuntimePublicationBinding {
             },
         );
         debug_assert!(
-            /* Proof: register_candidate obtains the id from next_candidate_id.fetch_update, which rejects zero and permanently exhausts on wrap. That private allocator is never reset in a live binding, and registration/insertion holds the candidate-map Mutex throughout. */
+            /* Proof: register_candidate obtains the id from the checked next_candidate_id allocator, which rejects zero and permanently exhausts on wrap. That private allocator is never reset in a live binding, and registration/insertion holds the candidate-map Mutex throughout. */
             replaced.is_none()
         );
         Ok(id)

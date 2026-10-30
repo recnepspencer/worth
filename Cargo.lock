@@ -1381,14 +1381,214 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-court-execution"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "trybuild",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+]
+
+[[package]]
+name = "worth-court-foundational-certification-boundary-artifacts"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "trybuild",
+ "worth-foundational",
+ "worth-proof",
+ "worth-testkit-foundational",
+]
+
+[[package]]
+name = "worth-court-foundational-certification-boundary-evidence"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "worth-foundational",
+ "worth-proof",
+ "worth-testkit-foundational",
+]
+
+[[package]]
+name = "worth-court-foundational-expressions"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "stats_alloc",
+ "trybuild",
+ "worth-foundational",
+ "worth-proof",
+ "worth-testkit-foundational",
+]
+
+[[package]]
+name = "worth-court-proof"
+version = "0.1.0"
+dependencies = [
+ "trybuild",
+ "worth-proof",
+]
+
+[[package]]
+name = "worth-court-relational-branch-reference-compile-time"
+version = "0.1.0"
+dependencies = [
+ "rmp-serde",
+ "serde",
+ "sha2",
+ "stats_alloc",
+ "trybuild",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-testkit-relational",
+]
+
+[[package]]
+name = "worth-court-relational-certification"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-relational",
+ "worth-testkit-relational",
+]
+
+[[package]]
+name = "worth-court-runtime-bridge"
+version = "0.1.0"
+dependencies = [
+ "trybuild",
+ "worth-execution",
+ "worth-foundational",
+ "worth-runtime-bridge",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-court-runtime-world"
+version = "0.1.0"
+dependencies = [
+ "trybuild",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-court-server-certification-suite"
+version = "0.1.0"
+dependencies = [
+ "flate2",
+ "serde",
+ "serde_json",
+ "trybuild",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-host",
+ "worth-runtime-bridge",
+ "worth-server",
+ "worth-testkit-server",
+]
+
+[[package]]
+name = "worth-court-server-product-operation-phase-eleven"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "flate2",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "tower",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-host",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-server",
+ "worth-testkit-server",
+]
+
+[[package]]
+name = "worth-court-server-product-operation-phase-thirteen-shared-read"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower",
+ "trybuild",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-host",
+ "worth-runtime-bridge",
+ "worth-server",
+ "worth-testkit-server",
+]
+
+[[package]]
+name = "worth-court-signal-branch-retention-contract"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "trybuild",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-court-signal-owner-services"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "trybuild",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-court-signal-wasm"
+version = "0.1.0"
+dependencies = [
+ "trybuild",
+ "worth-proof",
+ "worth-signal",
+ "worth-signal-wasm",
+]
+
+[[package]]
 name = "worth-execution"
 version = "0.1.0"
 dependencies = [
  "allocator-api2",
  "rayon",
- "serde",
- "serde_json",
- "trybuild",
  "worth-foundational",
  "worth-proof",
 ]
@@ -1402,8 +1602,6 @@ dependencies = [
  "serde_stacker",
  "sha2",
  "stacker",
- "stats_alloc",
- "trybuild",
  "worth-proof",
  "worth-value-shape-derive",
 ]
@@ -1419,9 +1617,6 @@ dependencies = [
 [[package]]
 name = "worth-proof"
 version = "0.1.0"
-dependencies = [
- "trybuild",
-]
 
 [[package]]
 name = "worth-query"
@@ -1544,7 +1739,6 @@ dependencies = [
  "sized-chunks",
  "smallvec",
  "stats_alloc",
- "trybuild",
  "worth-execution",
  "worth-foundational",
  "worth-harness",
@@ -1558,7 +1752,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "trybuild",
  "worth-execution",
  "worth-foundational",
  "worth-harness",
@@ -1571,7 +1764,6 @@ dependencies = [
 name = "worth-runtime-world"
 version = "0.1.0"
 dependencies = [
- "trybuild",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -1596,15 +1788,11 @@ dependencies = [
  "serde_json",
  "sha2",
  "tokio",
- "tower",
- "trybuild",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-query",
  "worth-query-host",
- "worth-relational",
- "worth-runtime-bridge",
 ]
 
 [[package]]
@@ -1627,7 +1815,6 @@ dependencies = [
  "smallvec",
  "stats_alloc",
  "tracking-allocator",
- "trybuild",
  "wasm-bindgen",
  "worth-execution",
  "worth-foundational",
@@ -1647,12 +1834,47 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "sha2",
- "trybuild",
  "wasm-bindgen",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-signal",
+]
+
+[[package]]
+name = "worth-testkit-foundational"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-foundational",
+ "worth-proof",
+]
+
+[[package]]
+name = "worth-testkit-relational"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-testkit-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "serde",
+ "serde_json",
+ "tower",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-host",
+ "worth-runtime-bridge",
+ "worth-server",
 ]
 
 [[package]]

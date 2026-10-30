@@ -1,0 +1,63 @@
+error[E0599]: no method named `admit_owned_async_request` found for reference `&SignalConditionalExecutionPort<u32, u32, u32>` in the current scope
+  --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/owned_async_progression_requires_custody.rs:10:18
+   |
+10 |     let _ = port.admit_owned_async_request(source);
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: there is a method `admit_managed_owned_async_request` with a similar name, but with different arguments
+  --> $WORKSPACE/crates/worth-signal/src/branch/owner_services/conditional_execution/owned_async/managed_queue.rs
+   |
+   | /     pub fn admit_managed_owned_async_request(
+   | |         &self,
+   | |         binding: &SignalOwnedAsyncSourceBinding,
+   | |         queue_capacity: u64,
+   | |     ) -> Result<SignalOwnedAsyncManagedAdmission, SignalConditionalServiceExecutionDenial> {
+   | |__________________________________________________________________________________________^
+
+error[E0599]: no method named `advance_owned_async_request_to_timeout` found for reference `&SignalConditionalExecutionPort<u32, u32, u32>` in the current scope
+  --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/owned_async_progression_requires_custody.rs:11:18
+   |
+11 |     let _ = port.advance_owned_async_request_to_timeout(source, handle, 5);
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: there is a method `advance_managed_owned_async_request_to_timeout` with a similar name, but with different arguments
+  --> $WORKSPACE/crates/worth-signal/src/branch/owner_services/conditional_execution/owned_async/managed_replacement.rs
+   |
+   | /     pub fn advance_managed_owned_async_request_to_timeout(
+   | |         &self,
+   | |         owner: &mut SignalOwnedAsyncManagedAdmission,
+   | |         coordinate: u64,
+   | |     ) -> Result<SignalOwnedAsyncManagedProgress, SignalOwnedAsyncQueueDenial> {
+   | |_____________________________________________________________________________^
+
+error[E0599]: no method named `schedule_owned_async_retry` found for reference `&SignalConditionalExecutionPort<u32, u32, u32>` in the current scope
+  --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/owned_async_progression_requires_custody.rs:12:18
+   |
+12 |     let _ = port.schedule_owned_async_retry(source, handle);
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: there is a method `schedule_managed_owned_async_retry` with a similar name, but with different arguments
+  --> $WORKSPACE/crates/worth-signal/src/branch/owner_services/conditional_execution/owned_async/managed_replacement.rs
+   |
+   | /     pub fn schedule_managed_owned_async_retry(
+   | |         &self,
+   | |         owner: &mut SignalOwnedAsyncManagedAdmission,
+   | |     ) -> Result<SignalOwnedAsyncRetrySchedule, SignalOwnedAsyncQueueDenial> {
+   | |___________________________________________________________________________^
+
+error[E0599]: no method named `revalidate_owned_async_request` found for reference `&SignalConditionalExecutionPort<u32, u32, u32>` in the current scope
+  --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/owned_async_progression_requires_custody.rs:13:18
+   |
+13 |     let _ = port.revalidate_owned_async_request(source, intent);
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: there is a method `revalidate_managed_owned_async_request` with a similar name, but with different arguments
+  --> $WORKSPACE/crates/worth-signal/src/branch/owner_services/conditional_execution/owned_async/managed_replacement.rs
+   |
+   | /     pub fn revalidate_managed_owned_async_request(
+   | |         &self,
+   | |         target: &SignalOwnedAsyncSourceBinding,
+   | |         owner: &mut SignalOwnedAsyncManagedAdmission,
+   | |         intent: ResourceRevalidationIntent,
+   | |     ) -> Result<SignalOwnedAsyncManagedProgress, SignalOwnedAsyncQueueDenial> {
+   | |_____________________________________________________________________________^

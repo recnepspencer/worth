@@ -1,0 +1,15 @@
+error[E0560]: struct `BridgeCausalEnvelopeCounters` has no field named `counter_digest`
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_denial_and_counters_constructor_private.rs:16:9
+   |
+16 |         counter_digest: sealed_authority_placeholder(),
+   |         ^^^^^^^^^^^^^^ `BridgeCausalEnvelopeCounters` does not have this field
+   |
+   = note: all struct fields are already assigned
+
+error[E0277]: the trait bound `BridgeIdentityEvidence: From<&str>` is not satisfied
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_denial_and_counters_constructor_private.rs:24:37
+   |
+24 |         reference_identity: "route".into(),
+   |                                     ^^^^ the trait `From<&str>` is not implemented for `BridgeIdentityEvidence`
+   |
+   = note: required for `&str` to implement `Into<BridgeIdentityEvidence>`

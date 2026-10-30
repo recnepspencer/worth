@@ -1,19 +1,20 @@
 [package]
-workspace = "../.."
-name = "worth-store-physical-integrity"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 2 S.3 physical checksums, scrub, quarantine, and corruption localization."
+"workspace" = "../.."
+"name" = "worth-store-physical-integrity"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 2 S.3 physical checksums, scrub, quarantine, and corruption localization."
+"autotests" = false
+
 
 [dependencies]
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-store-physical-format.workspace = true
-
 [dev-dependencies]
-sha2 = "0.10"
-trybuild = "1.0"
+"sha2" = "0.10"
+
 
 [features]
 test-support = []

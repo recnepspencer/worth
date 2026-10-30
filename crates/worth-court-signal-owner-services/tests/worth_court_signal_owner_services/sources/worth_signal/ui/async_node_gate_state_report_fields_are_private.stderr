@@ -1,0 +1,27 @@
+error[E0451]: fields `node`, `upstream_dependency_count`, `downstream_subscriber_count`, `lifecycle_class`, `active_request_handle`, `committed_output_identity`, `output_continuity`, `latest_observation_match_count`, `downstream_dependence_facts`, `gate_digest` and `performance` of struct `AsyncNodeGateStateReport` are private
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_gate_state_report_fields_are_private.rs:9:9
+   |
+ 8 |     let _report = AsyncNodeGateStateReport {
+   |                   ------------------------ in this type
+ 9 |         node: fake(),
+   |         ^^^^ private field
+10 |         upstream_dependency_count: 0,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+11 |         downstream_subscriber_count: 0,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+12 |         lifecycle_class: fake(),
+   |         ^^^^^^^^^^^^^^^ private field
+13 |         active_request_handle: fake(),
+   |         ^^^^^^^^^^^^^^^^^^^^^ private field
+14 |         committed_output_identity: fake(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+15 |         output_continuity: fake(),
+   |         ^^^^^^^^^^^^^^^^^ private field
+16 |         latest_observation_match_count: 0,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+17 |         downstream_dependence_facts: fake(),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+18 |         gate_digest: fake(),
+   |         ^^^^^^^^^^^ private field
+19 |         performance: fake(),
+   |         ^^^^^^^^^^^ private field

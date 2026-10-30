@@ -1,0 +1,26 @@
+error[E0423]: cannot initialize a tuple struct which contains private fields
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/readiness_boundaries/diagnostic_readiness_authority_cannot_be_minted.rs
+  |
+  |     let _ = worth_foundational::FoundationalDiagnosticProductionReadinessAuthority(());
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+ ::: $WORKSPACE/crates/worth-foundational/src/diagnostics/mod.rs
+  |
+  | pub struct FoundationalDiagnosticProductionReadinessCertified;
+  | ------------------------------------------------------------- similarly named unit struct `FoundationalDiagnosticProductionReadinessCertified` defined here
+  |
+note: constructor is not visible here due to private fields
+ --> $WORKSPACE/crates/worth-foundational/src/diagnostics/readiness/authority.rs
+  |
+  | pub struct FoundationalDiagnosticProductionReadinessAuthority(());
+  |                                                               ^^ private field
+help: you might have meant to use the `certification_boundary` associated function
+  |
+2 -     let _ = worth_foundational::FoundationalDiagnosticProductionReadinessAuthority(());
+2 +     let _ = worth_foundational::FoundationalDiagnosticProductionReadinessAuthority::certification_boundary();
+  |
+help: a unit struct with a similar name exists
+  |
+2 -     let _ = worth_foundational::FoundationalDiagnosticProductionReadinessAuthority(());
+2 +     let _ = worth_foundational::FoundationalDiagnosticProductionReadinessCertified(());
+  |

@@ -1,0 +1,5 @@
+error[E0599]: no method named `completed_boundary` found for struct `FoundationalBoundaryEvidencePublishedSupportArtifact` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/support/published_support_cannot_satisfy_executed_receipt_api.rs
+  |
+  |     let _ = support.completed_boundary();
+  |                     ^^^^^^^^^^^^^^^^^^ method not found in `FoundationalBoundaryEvidencePublishedSupportArtifact`

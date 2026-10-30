@@ -141,7 +141,7 @@ impl<'a, S: ApplicationSchema> ApplicationReapplicationVisitor<S>
         C::Source: ApplicationCapabilityMutationBinding<S, Capability = Capability>,
         <C::Source as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync + ApplicationMutationInputScope<S, C::Source> + ApplicationCapabilityRequest<S, Capability, Scope = <<C::Source as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope>,
         <C::Source as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<S, <C::Source as ApplicationMutationBinding<S>>::PrincipalIdentity>,
-    {
+{
         self.prepare::<C, ApplicationCapabilityAdmission<Capability>>()
     }
 }

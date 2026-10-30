@@ -191,7 +191,7 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
             Schema,
             Binding,
         >,
-    {
+{
         let binding = std::any::TypeId::of::<Binding>();
         let correspondence = std::any::TypeId::of::<Correspondence>();
         self.actions
@@ -216,7 +216,7 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
         Schema: ApplicationSchema,
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema> + 'static,
         Rule: worth_query_declaration::facade::application_program::ApplicationEvaluatedRequirementRule<Schema, Operation>,
-    {
+{
         let rule_type = std::any::TypeId::of::<Rule>();
         let operation_type = std::any::TypeId::of::<Operation>();
         self.actions
@@ -241,7 +241,7 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
         Schema: ApplicationSchema,
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema> + 'static,
         Provider: worth_query_declaration::facade::application_program::ApplicationExternalInputProvider<Schema, Operation>,
-    {
+{
         let provider_type = std::any::TypeId::of::<Provider>();
         let operation_type = std::any::TypeId::of::<Operation>();
         self.actions

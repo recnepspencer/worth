@@ -53,6 +53,8 @@ pub struct ApplicationSchemaMemberProvenance {
     body_external_effects: Vec<super::ApplicationOperationBodyExternalEffectRecipe>,
     mutation_bindings: Vec<ApplicationMutationBindingDescriptor>,
     query_bindings: Vec<ApplicationQueryBindingDescriptor>,
+    managed_indexes: Vec<crate::application_query::ApplicationManagedIndexBindingDescriptor>,
+    managed_index_selections: Vec<crate::application_query::ApplicationManagedIndexSelectionRecipe>,
     histories: Vec<DeclaredApplicationMemberMarker>,
     resources: Vec<crate::application_resource::ApplicationResourceBindingDescriptor>,
 }
@@ -91,6 +93,8 @@ impl ApplicationSchemaMemberProvenance {
             && self.body_external_effects.is_empty()
             && self.mutation_bindings.is_empty()
             && self.query_bindings.is_empty()
+            && self.managed_indexes.is_empty()
+            && self.managed_index_selections.is_empty()
             && self.histories.is_empty()
             && self.resources.is_empty()
     }
@@ -138,6 +142,34 @@ impl ApplicationSchemaMemberProvenance {
 
     pub(super) fn register_query_binding(&mut self, descriptor: ApplicationQueryBindingDescriptor) {
         self.query_bindings.push(descriptor);
+    }
+
+    pub(super) fn register_managed_index(
+        &mut self,
+        descriptor: crate::application_query::ApplicationManagedIndexBindingDescriptor,
+    ) {
+        self.managed_indexes.push(descriptor);
+    }
+
+    /// Compiler-local provider/probe correspondence; portable parts alone never issue it.
+    pub fn managed_index_bindings(
+        &self,
+    ) -> &[crate::application_query::ApplicationManagedIndexBindingDescriptor] {
+        &self.managed_indexes
+    }
+
+    pub(super) fn register_managed_index_selection(
+        &mut self,
+        recipe: crate::application_query::ApplicationManagedIndexSelectionRecipe,
+    ) {
+        self.managed_index_selections.push(recipe);
+    }
+
+    /// Actual typed query selector correspondence; absent from portable records.
+    pub fn managed_index_selections(
+        &self,
+    ) -> &[crate::application_query::ApplicationManagedIndexSelectionRecipe] {
+        &self.managed_index_selections
     }
 
     pub(super) fn register_resource(
@@ -193,6 +225,14 @@ impl ApplicationSchemaMemberProvenance {
         self.operations.sort_by(order);
         self.effects.sort_by(order);
         self.histories.sort_by(order);
+        self.managed_indexes.sort_by(|left, right| {
+            left.meaning()
+                .parts()
+                .name
+                .cmp(&right.meaning().parts().name)
+        });
+        self.managed_index_selections
+            .sort_by(|left, right| left.query_name().cmp(right.query_name()));
         self.resources
             .sort_by(|left, right| left.identity().cmp(right.identity()));
         self.field_bindings

@@ -1,0 +1,10 @@
+error[E0616]: field `family` of struct `AsyncKeyedNodeCapabilityEquivalenceReport` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_keyed_node_capability_equivalence_report_fields_are_private.rs:9:20
+  |
+9 |     let _ = report.family;
+  |                    ^^^^^^ private field
+  |
+help: a method `family` also exists, call it with parentheses
+  |
+9 |     let _ = report.family();
+  |                          ++

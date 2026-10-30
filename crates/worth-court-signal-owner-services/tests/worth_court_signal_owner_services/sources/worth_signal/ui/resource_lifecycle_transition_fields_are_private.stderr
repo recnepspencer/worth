@@ -1,0 +1,17 @@
+error[E0451]: fields `node`, `from`, `to`, `kind`, `ordinal` and `output_continuity` of struct `ResourceLifecycleTransition` are private
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_transition_fields_are_private.rs:8:9
+   |
+ 7 |     let _ = ResourceLifecycleTransition {
+   |             --------------------------- in this type
+ 8 |         node: ResourceNodeId::from_node(worth_signal::facade::NodeId::new(0, 0)),
+   |         ^^^^ private field
+ 9 |         from: ResourceLifecycleClass::Unrequested,
+   |         ^^^^ private field
+10 |         to: ResourceLifecycleClass::Pending,
+   |         ^^ private field
+11 |         kind: ResourceLifecycleTransitionKind::RequestAdmitted,
+   |         ^^^^ private field
+12 |         ordinal: ResourceLifecycleOrdinal::ZERO,
+   |         ^^^^^^^ private field
+13 |         output_continuity: ResourceOutputContinuity::NoPriorOutput,
+   |         ^^^^^^^^^^^^^^^^^ private field

@@ -13,3 +13,5 @@ pub(crate) mod retained;
 pub(crate) mod stale_retry;
 
 pub(crate) mod unpublished;
+
+pub(crate) mod unobserved_write;

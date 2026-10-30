@@ -3,7 +3,7 @@ pub(crate) use worth_query_testkit_certification_canonical::facade::certificatio
 #[test]
 fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original_pin() {
     let (host, authority) = host::install_with_projection(super::FUNDED_WORK);
-    let runtime = host.runtime();
+    let runtime = host.program.runtime();
     let scope = request_scope();
     let completed = runtime
         .with_application_advancement(&scope, |phase| {

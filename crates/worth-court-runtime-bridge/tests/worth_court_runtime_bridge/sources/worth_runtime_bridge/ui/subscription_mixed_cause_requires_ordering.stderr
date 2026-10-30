@@ -1,0 +1,29 @@
+error[E0624]: associated function `plan` is private
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_mixed_cause_requires_ordering.rs:11:49
+   |
+11 |       let _ = BridgeMixedCauseDeliveryWindowPlan::plan(
+   |                                                   ^^^^ private associated function
+   |
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/mixed_cause/window.rs
+   |
+   | /     pub(crate) fn plan(
+   | |         ordering: &BridgeMixedCauseOrdering,
+   | |         delivery_family_kind: BridgeSubscriptionDeliveryFamilyKind,
+   | |     ) -> Result<Self, BridgeMixedCauseDeliveryWindowRejection> {
+   | |______________________________________________________________- private associated function defined here
+
+error[E0308]: mismatched types
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_mixed_cause_requires_ordering.rs:12:9
+   |
+11 |     let _ = BridgeMixedCauseDeliveryWindowPlan::plan(
+   |             ---------------------------------------- arguments to this function are incorrect
+12 |         &request,
+   |         ^^^^^^^^ expected `&BridgeMixedCauseOrdering`, found `&BridgeMixedCauseOrderingRequest`
+   |
+   = note: expected reference `&BridgeMixedCauseOrdering`
+              found reference `&BridgeMixedCauseOrderingRequest`
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/subscription/mixed_cause/window.rs
+   |
+   |     pub(crate) fn plan(
+   |                   ^^^^

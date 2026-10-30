@@ -1,0 +1,8 @@
+error[E0599]: no method named `build` found for struct `SignalRuntimeBuilder` in the current scope
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/runtime_builder_requires_complete_defaults.rs:5:50
+  |
+5 |     let _runtime = SignalRuntime::builder(graph).build();
+  |                                                  ^^^^^ method not found in `SignalRuntimeBuilder`
+  |
+  = note: the method was found for
+          - `SignalRuntimeBuilder<worth_signal::logic::transaction::runtime::state::builder::Present, worth_signal::logic::transaction::runtime::state::builder::Present, D, I, E, Ctx, T>`

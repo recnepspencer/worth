@@ -1,0 +1,75 @@
+error: cannot construct `BridgeCommittedPatchItem` with struct literal syntax due to private fields
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/committed_patch_item_literal_private.rs:8:17
+   |
+ 8 |       let _item = BridgeCommittedPatchItem {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 |           entity_identity: sealed_authority_placeholder(),
+   |           ----------------------------------------------- private field
+10 | /         target: BridgeCommittedPatchTarget::entity_field_path(
+11 | |             AspectLocator::new(
+12 | |                 LocatorAuthority::Authoritative,
+13 | |                 AspectKey::new("profile").expect("valid native aspect key"),
+...  |
+17 | |             ),
+18 | |         ),
+   | |_________- private field
+   |
+   = note: ...and other private fields `relational_record_identity` and `semantic_change` that were not provided
+help: you might have meant to use an associated function to build this type
+   |
+ 8 -     let _item = BridgeCommittedPatchItem {
+ 9 -         entity_identity: sealed_authority_placeholder(),
+10 -         target: BridgeCommittedPatchTarget::entity_field_path(
+11 -             AspectLocator::new(
+12 -                 LocatorAuthority::Authoritative,
+13 -                 AspectKey::new("profile").expect("valid native aspect key"),
+14 -             ),
+15 -             CanonicalFieldPath::single(
+16 -                 FieldKey::new("name".to_owned()).expect("valid native field key"),
+17 -             ),
+18 -         ),
+19 -     };
+ 8 +     let _item = BridgeCommittedPatchItem::with_target(_, _);
+   |
+ 8 -     let _item = BridgeCommittedPatchItem {
+ 9 -         entity_identity: sealed_authority_placeholder(),
+10 -         target: BridgeCommittedPatchTarget::entity_field_path(
+11 -             AspectLocator::new(
+12 -                 LocatorAuthority::Authoritative,
+13 -                 AspectKey::new("profile").expect("valid native aspect key"),
+14 -             ),
+15 -             CanonicalFieldPath::single(
+16 -                 FieldKey::new("name".to_owned()).expect("valid native field key"),
+17 -             ),
+18 -         ),
+19 -     };
+ 8 +     let _item = BridgeCommittedPatchItem::from_relational_record_parts(_, _, _, _);
+   |
+ 8 -     let _item = BridgeCommittedPatchItem {
+ 9 -         entity_identity: sealed_authority_placeholder(),
+10 -         target: BridgeCommittedPatchTarget::entity_field_path(
+11 -             AspectLocator::new(
+12 -                 LocatorAuthority::Authoritative,
+13 -                 AspectKey::new("profile").expect("valid native aspect key"),
+14 -             ),
+15 -             CanonicalFieldPath::single(
+16 -                 FieldKey::new("name".to_owned()).expect("valid native field key"),
+17 -             ),
+18 -         ),
+19 -     };
+ 8 +     let _item = BridgeCommittedPatchItem::with_relational_record_target(_, _);
+   |
+ 8 -     let _item = BridgeCommittedPatchItem {
+ 9 -         entity_identity: sealed_authority_placeholder(),
+10 -         target: BridgeCommittedPatchTarget::entity_field_path(
+11 -             AspectLocator::new(
+12 -                 LocatorAuthority::Authoritative,
+13 -                 AspectKey::new("profile").expect("valid native aspect key"),
+14 -             ),
+15 -             CanonicalFieldPath::single(
+16 -                 FieldKey::new("name".to_owned()).expect("valid native field key"),
+17 -             ),
+18 -         ),
+19 -     };
+ 8 +     let _item = BridgeCommittedPatchItem::with_relational_semantic_change(_, _, _);
+   |

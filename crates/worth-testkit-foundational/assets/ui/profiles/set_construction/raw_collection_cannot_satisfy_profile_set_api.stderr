@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/set_construction/raw_collection_cannot_satisfy_profile_set_api.rs
+  |
+  |     requires_profile_set(entries);
+  |     -------------------- ^^^^^^^ expected `FoundationalProfileSet`, found `Vec<DiagnosticRichnessProfile>`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected struct `FoundationalProfileSet`
+             found struct `Vec<DiagnosticRichnessProfile>`
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/set_construction/raw_collection_cannot_satisfy_profile_set_api.rs
+  |
+  | fn requires_profile_set(_: FoundationalProfileSet) {}
+  |    ^^^^^^^^^^^^^^^^^^^^ -------------------------

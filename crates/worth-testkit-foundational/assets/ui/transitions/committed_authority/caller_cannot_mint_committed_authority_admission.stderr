@@ -1,0 +1,10 @@
+error[E0624]: associated function `milestone_5_phase_3` is private
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/committed_authority/caller_cannot_mint_committed_authority_admission.rs
+  |
+  |     let _ = FoundationalCommittedAuthorityAdmission::milestone_5_phase_3();
+  |                                                      ^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-foundational/src/transitions/commits/authority.rs
+  |
+  |     pub(crate) const fn milestone_5_phase_3() -> Self {
+  |     ------------------------------------------------- private associated function defined here

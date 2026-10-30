@@ -283,7 +283,7 @@ where
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
                 Schema,
             > + 'static,
-    {
+{
         self.advance_capability.binding.matches_binding(
             TypeId::of::<Capability>(),
             Capability::IDENTIFIER,
@@ -308,7 +308,7 @@ where
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
                 Schema,
             > + 'static,
-    {
+{
         let marker = TypeId::of::<Operation>();
         let input_type = <Operation::InputBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::IDENTITY;
         self.operations.iter().any(|operation| {
@@ -331,7 +331,7 @@ where
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
                 Schema,
             > + 'static,
-    {
+{
         self.instance_start_capability.binding.matches_binding(
             TypeId::of::<Capability>(),
             Capability::IDENTIFIER,
@@ -359,7 +359,7 @@ where
         Operation: worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
                 Schema,
             > + 'static,
-    {
+{
         self.authoring_capability.binding.matches_binding(
             TypeId::of::<Capability>(),
             Capability::IDENTIFIER,

@@ -1,0 +1,13 @@
+error[E0451]: fields `version`, `domain`, `entries` and `cost` of struct `CanonicalBasisSequence` are private
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/basis/construction/sequence_fields_are_private.rs
+  |
+  |     let _sequence = CanonicalBasisSequence {
+  |                     ---------------------- in this type
+  |         version: CanonicalizationRuleVersion::new("m2.phase1").unwrap(),
+  |         ^^^^^^^ private field
+  |         domain: CanonicalBasisDomain::Value,
+  |         ^^^^^^ private field
+  |         entries: Vec::new(),
+  |         ^^^^^^^ private field
+  |         cost: CanonicalizationCost::default(),
+  |         ^^^^ private field

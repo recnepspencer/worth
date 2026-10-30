@@ -1,5 +1,0 @@
-error[E0599]: no method named `execute_replay` found for reference `&BridgeSubscriptionDeliveryWindowReplayReadiness` in the current scope
- --> tests/ui/subscription_replay_readiness_not_executable.rs:4:23
-  |
-4 |     let _ = readiness.execute_replay();
-  |                       ^^^^^^^^^^^^^^ method not found in `&BridgeSubscriptionDeliveryWindowReplayReadiness`

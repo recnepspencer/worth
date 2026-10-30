@@ -1,0 +1,10 @@
+error[E0599]: no method named `strong_basis` found for struct `Recipe<worth_proof::Lowered, &str, FreshnessScopedBasis<worth_proof::StaleReadable, AssumptionBasis<u8>>>` in the current scope
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone3/stale_readable_recipe_rejects_strong_basis_api.rs:19:24
+   |
+19 |     let _basis = stale.strong_basis();
+   |                        ^^^^^^^^^^^^
+   |
+help: there is a method `has_strong_basis` with a similar name
+   |
+19 |     let _basis = stale.has_strong_basis();
+   |                        ++++

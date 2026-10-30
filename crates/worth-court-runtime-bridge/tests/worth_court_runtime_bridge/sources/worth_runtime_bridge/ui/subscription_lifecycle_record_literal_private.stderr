@@ -1,0 +1,16 @@
+error: cannot construct `BridgeSubscriptionLifecycleRecord` with struct literal syntax due to private fields
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_lifecycle_record_literal_private.rs:4:13
+  |
+4 |     let _ = BridgeSubscriptionLifecycleRecord {
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 |         state_kind: sealed_authority_placeholder(),
+  |         ------------------------------------------ private field
+  |
+  = note: ...and other private fields `lifecycle_identity`, `admitted_subscription_identity`, `counters`, `canonical_basis` and `digest` that were not provided
+help: you might have meant to use the `new` associated function
+  |
+4 -     let _ = BridgeSubscriptionLifecycleRecord {
+5 -         state_kind: sealed_authority_placeholder(),
+6 -     };
+4 +     let _ = BridgeSubscriptionLifecycleRecord::new(_, _);
+  |

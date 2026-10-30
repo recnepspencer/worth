@@ -212,8 +212,20 @@ guidance = "only the worth-store composition owner may bind physical mechanisms 
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
 governed_source_prefixes = ["worth-store"]
 target = "worth-signal"
-allowed_sources = ["worth-store"]
-guidance = "ordinary and recovery physical Signal composition remain behind Store-owned construction ports"
+# Relocated Store courts retain clock, duration, aspect and subscription vocabulary.
+# Leaf courts and testkits cannot become production construction callers.
+allowed_sources = [
+  "worth-store",
+  "worth-store-court-recovery-runtime-replication-store-physical-blob-journeys",
+  "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-durability-admission",
+  "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views",
+  "worth-store-court-store-replication-physical-blob-journeys",
+  "worth-store-court-store-replication-physical-record-journeys-durability-admission",
+  "worth-store-court-store-replication-physical-record-journeys-physical-work",
+  "worth-store-court-store-replication",
+  "worth-store-testkit-store",
+]
+guidance = "ordinary and recovery physical Signal composition remain behind Store-owned construction ports; the closed relocated test audience consumes only their clock, duration, aspect and subscription vocabulary"
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
@@ -688,6 +700,7 @@ exclude_paths = [
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/currentness.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure/native_funding.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure/compiler_qualification.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/capability_governed_input/funded_capture.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/aftermath_causality/correction_history/page_allocation/tests.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/fixture/correction_source.rs",

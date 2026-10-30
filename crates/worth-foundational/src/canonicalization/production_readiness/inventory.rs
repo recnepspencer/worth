@@ -26,54 +26,54 @@ pub(super) fn certified_surface_evidence() -> Vec<CanonicalCertifiedSurfaceEvide
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::BasisGrammar,
             CanonicalSyntheticRuntimePressure::OrderedAuthorityProducer,
-            "tests/worth_foundational/fast/certification/canonicalization/basis/basis_grammar.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/basis/basis_grammar/mod.rs"),
             CanonicalCompileFailBoundary::RawBasisCannotSatisfyReadiness,
-            "tests/ui/canonicalization/basis/readiness/raw_sequence_cannot_satisfy_ready_basis_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/canonicalization/basis/readiness/raw_sequence_cannot_satisfy_ready_basis_api.rs"),
             CanonicalCostCounterEvidence::BasisSequenceConstruction,
             Some(CanonicalGoldenArtifactEvidence::AspectContractBasis),
         ),
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::MilestoneOneBasisBuilders,
             CanonicalSyntheticRuntimePressure::ReorderedCompatibilityProducer,
-            "tests/worth_foundational/fast/certification/canonicalization/digest_preparation/canonical_basis_builders.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/digest_preparation/canonical_basis_builders/mod.rs"),
             CanonicalCompileFailBoundary::RawBasisCannotSatisfyReadiness,
-            "tests/ui/digest_preparation/non_ready_state_cannot_satisfy_digest_basis_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/digest_preparation/non_ready_state_cannot_satisfy_digest_basis_api.rs"),
             CanonicalCostCounterEvidence::MilestoneOneSurfaceLowering,
             Some(CanonicalGoldenArtifactEvidence::AuthoritativeStateBasis),
         ),
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::EquivalenceBasis,
             CanonicalSyntheticRuntimePressure::BlindMismatchConsumer,
-            "tests/worth_foundational/fast/certification/canonicalization/equivalence/comparison_readiness.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/equivalence/comparison_readiness/mod.rs"),
             CanonicalCompileFailBoundary::RawComparisonCannotSatisfyEquivalence,
-            "tests/ui/canonicalization/equivalence/raw_ready_basis_cannot_satisfy_comparison_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/canonicalization/equivalence/raw_ready_basis_cannot_satisfy_comparison_api.rs"),
             CanonicalCostCounterEvidence::BasisSequenceConstruction,
             Some(CanonicalGoldenArtifactEvidence::EquivalenceBasis),
         ),
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::MismatchBasis,
             CanonicalSyntheticRuntimePressure::BlindMismatchConsumer,
-            "tests/worth_foundational/fast/certification/canonicalization/equivalence/comparison_readiness.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/equivalence/comparison_readiness/mod.rs"),
             CanonicalCompileFailBoundary::RawComparisonCannotSatisfyEquivalence,
-            "tests/ui/canonicalization/equivalence/raw_ready_basis_cannot_satisfy_comparison_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/canonicalization/equivalence/raw_ready_basis_cannot_satisfy_comparison_api.rs"),
             CanonicalCostCounterEvidence::BasisSequenceConstruction,
             Some(CanonicalGoldenArtifactEvidence::MismatchBasis),
         ),
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::ExportBundles,
             CanonicalSyntheticRuntimePressure::SupportExportConsumer,
-            "tests/worth_foundational/fast/certification/canonicalization/export/export_ready_fixtures.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/export/export_ready_fixtures/mod.rs"),
             CanonicalCompileFailBoundary::BoundaryExportRequiresReadmission,
-            "tests/ui/canonicalization/export/boundary_bridged_export_cannot_satisfy_current_export_api.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/canonicalization/export/boundary_bridged_export_cannot_satisfy_current_export_api.rs"),
             CanonicalCostCounterEvidence::ExportManifestRows,
             Some(CanonicalGoldenArtifactEvidence::ExportBundleManifest),
         ),
         CanonicalCertifiedSurfaceEvidence::new(
             CanonicalCertifiedSurface::DigestAlgorithmSlots,
             CanonicalSyntheticRuntimePressure::CategoryAdjacentHostileProducer,
-            "tests/worth_foundational/fast/certification/canonicalization/digest_slots/digest_derivation.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/digest_slots/digest_derivation/mod.rs"),
             CanonicalCompileFailBoundary::DigestDerivationRequiresReadyArtifact,
-            "tests/ui/canonicalization/digest_slots/raw_bytes_cannot_satisfy_digest_derivation.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/canonicalization/digest_slots/raw_bytes_cannot_satisfy_digest_derivation.rs"),
             CanonicalCostCounterEvidence::DigestInputMetadata,
             Some(CanonicalGoldenArtifactEvidence::DigestSlotDerivedValue),
         ),
@@ -132,37 +132,37 @@ pub(super) fn property_seed_evidence() -> Vec<CanonicalPropertySeedEvidence> {
         CanonicalPropertySeedEvidence::new(
             CanonicalPropertySeed::OrderingIndependence,
             "basis entries canonicalize across insertion and builder order",
-            "basis/basis_grammar.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/basis/basis_grammar/mod.rs"),
             CanonicalHarnessExpansionPoint::CanonicalBasisReplayLane,
         ),
         CanonicalPropertySeedEvidence::new(
             CanonicalPropertySeed::CategoryAdjacency,
             "storage-equal values in adjacent semantic categories remain distinct",
-            "digest_slots/digest_derivation.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/digest_slots/digest_derivation/mod.rs"),
             CanonicalHarnessExpansionPoint::DigestSlotHostilityLane,
         ),
         CanonicalPropertySeedEvidence::new(
             CanonicalPropertySeed::CompatibilityLoweringParity,
             "native state and compatibility-lowered state share canonical truth",
-            "digest_preparation/canonical_basis_builders.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/digest_preparation/canonical_basis_builders/mod.rs"),
             CanonicalHarnessExpansionPoint::RuntimeParityRunMatrix,
         ),
         CanonicalPropertySeedEvidence::new(
             CanonicalPropertySeed::EquivalenceScope,
             "exact and compatibility-lowered equivalence are declared before comparison",
-            "equivalence/comparison_readiness.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/equivalence/comparison_readiness/mod.rs"),
             CanonicalHarnessExpansionPoint::CanonicalBasisReplayLane,
         ),
         CanonicalPropertySeedEvidence::new(
             CanonicalPropertySeed::MismatchLocus,
             "blind consumers receive smallest canonical mismatch loci",
-            "equivalence/comparison_readiness.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/equivalence/comparison_readiness/mod.rs"),
             CanonicalHarnessExpansionPoint::CanonicalBasisReplayLane,
         ),
         CanonicalPropertySeedEvidence::new(
             CanonicalPropertySeed::DigestSlotHostility,
             "wrong domain, shape, version, and raw-byte digest inputs fail closed",
-            "digest_slots/digest_derivation.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/digest_slots/digest_derivation/mod.rs"),
             CanonicalHarnessExpansionPoint::DigestSlotHostilityLane,
         ),
     ]
@@ -217,27 +217,27 @@ pub(super) fn phase_gates() -> Vec<CanonicalPhaseGateEvidence> {
     vec![
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::BasisGrammar,
-            "tests/worth_foundational/fast/certification/canonicalization/basis",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/basis"),
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::MilestoneOneBasisBuilders,
-            "tests/worth_foundational/fast/certification/canonicalization/digest_preparation",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/digest_preparation"),
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::EquivalenceAndMismatch,
-            "tests/worth_foundational/fast/certification/canonicalization/equivalence",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/equivalence"),
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::ExportFixtures,
-            "tests/worth_foundational/fast/certification/canonicalization/export",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/export"),
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::DigestSlots,
-            "tests/worth_foundational/fast/certification/canonicalization/digest_slots",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/digest_slots"),
         ),
         CanonicalPhaseGateEvidence::new(
             CanonicalMilestone2PhaseGate::ProductionReadiness,
-            "tests/worth_foundational/fast/certification/canonicalization/production_readiness",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/production_readiness"),
         ),
     ]
 }
@@ -246,57 +246,57 @@ pub(super) fn fixture_manifest() -> Vec<CanonicalFixtureManifestEvidence> {
     vec![
         CanonicalFixtureManifestEvidence::new(
             CanonicalGoldenArtifactEvidence::ValueFamilies,
-            "golden_artifacts/value_families.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/golden_artifacts/value_families/mod.rs"),
             CanonicalHarnessExpansionPoint::CanonicalBasisReplayLane,
         ),
         CanonicalFixtureManifestEvidence::new(
             CanonicalGoldenArtifactEvidence::AspectContractBasis,
-            "golden_artifacts/boundary_digest_bases.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/golden_artifacts/boundary_digest_bases/mod.rs"),
             CanonicalHarnessExpansionPoint::CanonicalBasisReplayLane,
         ),
         CanonicalFixtureManifestEvidence::new(
             CanonicalGoldenArtifactEvidence::AspectMaskBasis,
-            "golden_artifacts/boundary_digest_bases.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/golden_artifacts/boundary_digest_bases/mod.rs"),
             CanonicalHarnessExpansionPoint::CanonicalBasisReplayLane,
         ),
         CanonicalFixtureManifestEvidence::new(
             CanonicalGoldenArtifactEvidence::AuthoritativeStateBasis,
-            "golden_artifacts/boundary_digest_bases.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/golden_artifacts/boundary_digest_bases/mod.rs"),
             CanonicalHarnessExpansionPoint::CanonicalBasisReplayLane,
         ),
         CanonicalFixtureManifestEvidence::new(
             CanonicalGoldenArtifactEvidence::AuthoritativePatchBasis,
-            "golden_artifacts/boundary_digest_bases.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/golden_artifacts/boundary_digest_bases/mod.rs"),
             CanonicalHarnessExpansionPoint::CanonicalBasisReplayLane,
         ),
         CanonicalFixtureManifestEvidence::new(
             CanonicalGoldenArtifactEvidence::CompatibilityLoweredStateBasis,
-            "golden_artifacts/boundary_digest_bases.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/golden_artifacts/boundary_digest_bases/mod.rs"),
             CanonicalHarnessExpansionPoint::RuntimeParityRunMatrix,
         ),
         CanonicalFixtureManifestEvidence::new(
             CanonicalGoldenArtifactEvidence::IdentityAndLocator,
-            "golden_artifacts/identity_and_locator.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/golden_artifacts/identity_and_locator/mod.rs"),
             CanonicalHarnessExpansionPoint::CanonicalBasisReplayLane,
         ),
         CanonicalFixtureManifestEvidence::new(
             CanonicalGoldenArtifactEvidence::EquivalenceBasis,
-            "golden_artifacts/equivalence_and_mismatch.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/golden_artifacts/equivalence_and_mismatch/mod.rs"),
             CanonicalHarnessExpansionPoint::CanonicalBasisReplayLane,
         ),
         CanonicalFixtureManifestEvidence::new(
             CanonicalGoldenArtifactEvidence::MismatchBasis,
-            "golden_artifacts/equivalence_and_mismatch.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/golden_artifacts/equivalence_and_mismatch/mod.rs"),
             CanonicalHarnessExpansionPoint::CanonicalBasisReplayLane,
         ),
         CanonicalFixtureManifestEvidence::new(
             CanonicalGoldenArtifactEvidence::ExportBundleManifest,
-            "export/export_ready_fixtures.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/export/export_ready_fixtures/mod.rs"),
             CanonicalHarnessExpansionPoint::ExportFixtureReplayLane,
         ),
         CanonicalFixtureManifestEvidence::new(
             CanonicalGoldenArtifactEvidence::DigestSlotDerivedValue,
-            "golden_artifacts/digest_slots.rs",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/golden_artifacts/digest_slots/mod.rs"),
             CanonicalHarnessExpansionPoint::DigestSlotHostilityLane,
         ),
     ]
@@ -307,9 +307,9 @@ pub(super) fn public_surface_inventory() -> Vec<CanonicalPublicSurfaceEntry> {
 }
 
 pub(super) const fn public_surface_evidence_path() -> &'static str {
-    "tests/worth_foundational/fast/certification/canonicalization/grouped_surface.rs"
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-court-foundational-certification-boundary-artifacts/tests/worth_court_foundational_certification_boundary_artifacts/foundational/certification/canonicalization/grouped_surface/mod.rs")
 }
 
 pub(super) const fn public_surface_compile_fail_path() -> &'static str {
-    "tests/ui/canonicalization/grouped_surface/raw_sequence_cannot_enter_grouped_common_path_comparison.rs"
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-foundational/assets/ui/canonicalization/grouped_surface/raw_sequence_cannot_enter_grouped_common_path_comparison.rs")
 }

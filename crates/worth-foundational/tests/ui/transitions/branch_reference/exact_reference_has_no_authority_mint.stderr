@@ -1,5 +1,0 @@
-error[E0599]: no method named `mint_authority` found for struct `FoundationalBranchReferenceObservation<T>` in the current scope
-  --> tests/ui/transitions/branch_reference/exact_reference_has_no_authority_mint.rs:22:34
-   |
-22 |     let _authority = observation.mint_authority();
-   |                                  ^^^^^^^^^^^^^^ method not found in `FoundationalBranchReferenceObservation<Target>`

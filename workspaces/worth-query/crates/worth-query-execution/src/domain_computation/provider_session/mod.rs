@@ -5,7 +5,9 @@ mod execution_attempt_identity;
 mod graph_obligation;
 pub(in crate::domain_computation) use graph_obligation::{
     WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
-    WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+    WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
+    WorthQueryManagedIndexSessionDenial, WorthQueryPreparedQueryPin,
+    WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
     WorthQueryResourceReadCompletion, WorthQuerySessionResourceReadProof,
 };
 pub(crate) mod graph_provider;
@@ -25,17 +27,18 @@ pub(in crate::domain_computation) use direct_attempt::{
 };
 pub(in crate::domain_computation) use execution_attempt_identity::WorthQueryClosedExecutionAttemptIdentity;
 pub use execution_attempt_identity::WorthQueryExecutionAttemptIdentity;
+pub(in crate::domain_computation) use graph_obligation::{
+    WorthQueryCompletedSourceRead, WorthQueryGraphReadOwnerPort,
+    WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
+    WorthQueryMutationRunBinding, WorthQueryObservedGraphReadWork,
+    WorthQueryPreparedProductReadSessionIdentity, WorthQueryProviderSessionBoundMutationRun,
+    WorthQueryQuerySourceContext, WorthQuerySessionGraphReadProof,
+};
 pub use graph_obligation::{
     WorthQueryGraphReadCompletion, WorthQueryGraphReadDependencyEvidence,
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
     WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind,
     WorthQueryMutationGraphWorkCompletion,
-};
-pub(in crate::domain_computation) use graph_obligation::{
-    WorthQueryGraphReadOwnerPort, WorthQueryGraphWorkAccessContextAffinity,
-    WorthQueryManagedGraphWorkSession, WorthQueryMutationRunBinding,
-    WorthQueryObservedGraphReadWork, WorthQueryPreparedProductReadSessionIdentity,
-    WorthQueryProviderSessionBoundMutationRun, WorthQuerySessionGraphReadProof,
 };
 pub use graph_provider::*;
 pub use protocol::*;

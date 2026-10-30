@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-formal-models"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Checked physical protocol semantics and owner-to-model refinement bindings."
+"workspace" = "../.."
+"name" = "worth-store-formal-models"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Checked physical protocol semantics and owner-to-model refinement bindings."
+"autotests" = false
+
 
 [dependencies]
 sha2 = "0.10"
@@ -24,8 +26,7 @@ worth-store-wal.workspace = true
 
 [lints]
 workspace = true
-
 [dev-dependencies]
-tempfile = "3"
-worth-store-contracts.workspace = true
-worth-store-test-support = { workspace = true, features = ["layout-fixtures", "physical-compaction-fixtures"] }
+"tempfile" = "3"
+"worth-store-contracts" = { "workspace" = true }
+"worth-store-test-support" = { "workspace" = true, "features" = ["layout-fixtures", "physical-compaction-fixtures"] }

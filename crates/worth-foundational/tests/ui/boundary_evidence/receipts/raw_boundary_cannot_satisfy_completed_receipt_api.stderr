@@ -1,5 +1,0 @@
-error[E0599]: no method named `completed_boundary` found for enum `FoundationalBoundaryEvidenceReceiptBoundary` in the current scope
-  --> tests/ui/boundary_evidence/receipts/raw_boundary_cannot_satisfy_completed_receipt_api.rs:14:22
-   |
-14 |     let _ = boundary.completed_boundary();
-   |                      ^^^^^^^^^^^^^^^^^^ method not found in `FoundationalBoundaryEvidenceReceiptBoundary`

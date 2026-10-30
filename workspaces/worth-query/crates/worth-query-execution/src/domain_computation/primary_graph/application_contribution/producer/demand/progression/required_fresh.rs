@@ -52,7 +52,7 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
         WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
-    {
+{
         let execution = phase
             .execution_request_for(&self.product_runtime)
             .map_err(|cause| {

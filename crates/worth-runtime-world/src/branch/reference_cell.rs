@@ -338,7 +338,7 @@ impl ProductBranchReferenceCell {
     /// Whether a writer would block right now: true exactly while some guard
     /// on this cell is held. Non-blocking, so a guarded section may ask it.
     #[cfg(test)]
-    fn writers_are_locked_out_for_test(&self) -> bool {
+    pub(crate) fn writers_are_locked_out_for_test(&self) -> bool {
         matches!(
             self.state.current.try_write(),
             Err(std::sync::TryLockError::WouldBlock)

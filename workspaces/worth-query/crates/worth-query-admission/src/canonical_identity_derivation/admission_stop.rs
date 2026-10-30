@@ -15,7 +15,7 @@ pub enum WorthQueryCanonicalIdentityStop<Stop> {
     },
     AccountingOverflow,
     AllocationUnavailable,
-    UnsupportedSortImplementation,
+    UnsupportedSortImplementation(worth_foundational::facade::CanonicalSortImplementationDenial),
 }
 
 impl<Stop> From<crate::graph_read_access::AdmittedDigestTextStop<Stop>>
@@ -58,8 +58,8 @@ impl<Stop> From<worth_foundational::facade::CanonicalBasisPreparationStop<Self>>
                 cause.with_canonical_quote(quote)
             }
             CanonicalBasisPreparationStop::AccountingOverflow => Self::AccountingOverflow,
-            CanonicalBasisPreparationStop::UnsupportedSortImplementation => {
-                Self::UnsupportedSortImplementation
+            CanonicalBasisPreparationStop::UnsupportedSortImplementation(cause) => {
+                Self::UnsupportedSortImplementation(cause)
             }
         }
     }

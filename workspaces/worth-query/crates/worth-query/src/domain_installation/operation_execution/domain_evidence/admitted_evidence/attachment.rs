@@ -17,7 +17,7 @@ impl WorthQueryCompletedDomainEvidenceAdmissionDenial {
     pub(in crate::domain_installation::operation_execution) fn kind(
         &self,
     ) -> worth_query_publication::facade::domain_computation::WorthQueryDomainEvidenceAdmissionDenialKind
-    {
+{
         match self {
             Self::Content(denial) => denial.kind(),
             Self::OutputOccurrenceMismatch { .. } => {

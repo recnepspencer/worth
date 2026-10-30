@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-retention"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 1 retention, compaction, and reclamation contracts."
+"workspace" = "../.."
+"name" = "worth-store-retention"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 1 retention, compaction, and reclamation contracts."
+"autotests" = false
+
 
 [dependencies]
 worth-store-authority.workspace = true
@@ -14,3 +16,6 @@ worth-store-physical-isolation.workspace = true
 
 [lints]
 workspace = true
+
+[lib]
+"test" = false

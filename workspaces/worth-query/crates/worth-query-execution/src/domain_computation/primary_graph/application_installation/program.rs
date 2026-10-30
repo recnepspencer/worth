@@ -1,3 +1,5 @@
+mod bootstrap_installation;
+pub use bootstrap_installation::in_memory_rostered_program_in_advancement;
 mod checkpoint;
 mod checkpoint_transition;
 pub use checkpoint_transition::{

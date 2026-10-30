@@ -13,6 +13,7 @@ pub(in crate::domain_computation::primary_graph) use change_summary::changes_fro
 pub(in crate::domain_computation::primary_graph) use publication::{
     ViewChange, ViewPublicationBasis,
 };
+pub(in crate::domain_computation::primary_graph::application_query) use registry::RegisteredDerivedView;
 pub(in crate::domain_computation::primary_graph) use registry::{
     ManagedDerivedViewRegistry, PreparedManagedViewPublication,
 };

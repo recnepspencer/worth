@@ -1,5 +1,5 @@
 //! The only effect boundary: Git enumeration, shared reads and Cargo metadata.
-use crate::config::{string, table, Files, Metadata, CONFIG};
+use crate::config::{string, table, workspace_manifest, Files, Metadata, CONFIG};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
@@ -135,7 +135,7 @@ impl Inputs {
             workspaces.extend(
                 table(&config, key)
                     .iter()
-                    .map(|v| format!("{}/Cargo.toml", string(v, "path"))),
+                    .map(|v| workspace_manifest(string(v, "path"))),
             );
         }
         workspaces.extend(
@@ -143,7 +143,7 @@ impl Inputs {
                 .lines()
                 .filter(|l| !l.trim_start().starts_with('#'))
                 .filter_map(|l| l.split_once('|'))
-                .map(|(p, _)| format!("{}/Cargo.toml", p.trim())),
+                .map(|(p, _)| workspace_manifest(p.trim())),
         );
         for key in [
             "dependency_denials",

@@ -187,3 +187,55 @@ where
         read_proof,
     )
 }
+
+pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_projection<
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Projected,
+>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    decode: &ValueDecodeState,
+    plan: WorthQueryAdmittedApplicationQueryPlan<
+        '_,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >,
+    kernel: RawNonLiveKernelOutcome,
+    authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
+    read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
+    project: impl FnOnce(
+        RawNonLiveKernelOutcome,
+        &super::super::super::disclosure::WorthQueryApplicationQueryGovernance,
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        &str,
+    ) -> Result<
+        super::super::super::read_execution::ProjectedNonLiveKernelOutcome<Projected>,
+        WorthQueryApplicationOneShotDenial,
+    >,
+) -> Result<CompletedOneShotRead<Query, Projected>, WorthQueryApplicationOneShotDenial>
+where
+    Schema: ApplicationSchema,
+{
+    complete_one_shot_with_capture(
+        execution,
+        application,
+        decode,
+        plan,
+        kernel,
+        authorization_work,
+        read_proof,
+        project,
+        |_, _| Ok(()),
+    )
+}

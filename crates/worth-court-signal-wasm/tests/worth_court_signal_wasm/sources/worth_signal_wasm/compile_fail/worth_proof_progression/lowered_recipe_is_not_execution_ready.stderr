@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/worth_court_signal_wasm/sources/worth_signal_wasm/compile_fail/worth_proof_progression/lowered_recipe_is_not_execution_ready.rs:10:35
+   |
+10 |     requires_execution_ready_plan(lowered_plan());
+   |     ----------------------------- ^^^^^^^^^^^^^^ expected `ExecutionReadyRecipe<&str, ...>`, found `Recipe<Lowered, &str>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+   = note: expected struct `ExecutionReadyRecipe<&'static str, NoAssumptionBasis>`
+              found struct `Recipe<worth_proof::Lowered, &'static str>`
+note: function defined here
+  --> tests/worth_court_signal_wasm/sources/worth_signal_wasm/compile_fail/worth_proof_progression/lowered_recipe_is_not_execution_ready.rs:7:4
+   |
+ 7 | fn requires_execution_ready_plan(_: ExecutionReadyRecipe<&'static str, NoAssumptionBasis>) {}
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ --------------------------------------------------------

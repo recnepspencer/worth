@@ -26,6 +26,12 @@ pub(super) fn validate(
 fn validate_root_selection(
     definition: &ErasedApplicationQueryDefinition,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
+    if let Some(index) = definition.managed_index() {
+        validate_identifiers([
+            index.parts().index.as_str(),
+            index.parts().probe_parameter.as_str(),
+        ])?;
+    }
     if let Some(orbit) = definition.orbit() {
         validate_identifiers([
             orbit.relation(),

@@ -2,6 +2,7 @@
 
 #[derive(Debug)]
 pub(super) enum DenialCause {
+    UnobservedWrite(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationUnobservedWrite),
     SigningLifecycleAttempt(
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     ),

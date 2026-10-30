@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/branch_basis_descriptor_cannot_retain.rs:5:44
+  |
+5 |     let _ = runtime.retain_component_basis(descriptor);
+  |                     ---------------------- ^^^^^^^^^^ expected `&AdmittedRelationalBranchBasis`, found `&RelationalBranchBasisDescriptor`
+  |                     |
+  |                     arguments to this method are incorrect
+  |
+  = note: expected reference `&AdmittedRelationalBranchBasis`
+             found reference `&RelationalBranchBasisDescriptor`
+note: method defined here
+ --> $WORKSPACE/crates/worth-relational/src/branch/basis_retention.rs
+  |
+  |     pub fn retain_component_basis(
+  |            ^^^^^^^^^^^^^^^^^^^^^^

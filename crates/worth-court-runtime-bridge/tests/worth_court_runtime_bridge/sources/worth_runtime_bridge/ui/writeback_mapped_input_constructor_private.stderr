@@ -1,0 +1,10 @@
+error[E0624]: associated function `from_mapper_envelope` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_mapped_input_constructor_private.rs:4:51
+  |
+4 |     let _ctor = BridgeMappedWritebackFamilyInput::from_mapper_envelope;
+  |                                                   ^^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/writeback/mapper/mapped_input.rs
+  |
+  |     pub(crate) fn from_mapper_envelope(envelope: &BridgeWritebackMapperEnvelope) -> Self {
+  |     ------------------------------------------------------------------------------------ private associated function defined here

@@ -179,7 +179,8 @@ fn classify_kind(kind: Kind) -> Outcome {
                 Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
             }
         },
-        Kind::ProviderRejected
+        Kind::UnobservedWrite
+        | Kind::ProviderRejected
         | Kind::CustomInvariantDenied
         | Kind::WorkflowSettlementDenied { .. }
         | Kind::ProductBasisStale

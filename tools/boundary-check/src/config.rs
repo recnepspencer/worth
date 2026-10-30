@@ -6,6 +6,13 @@ use serde::{
 use std::collections::BTreeMap;
 
 pub const CONFIG: &str = "tools/boundary-check/config/";
+pub fn workspace_manifest(directory: &str) -> String {
+    if directory == "." {
+        "Cargo.toml".into()
+    } else {
+        format!("{directory}/Cargo.toml")
+    }
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Code {
     Dependency,

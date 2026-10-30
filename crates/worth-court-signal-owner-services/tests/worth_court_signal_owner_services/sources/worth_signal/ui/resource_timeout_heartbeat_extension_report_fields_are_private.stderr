@@ -1,0 +1,32 @@
+error[E0616]: field `extended_heartbeat` of struct `ResourceTimeoutHeartbeatExtensionReport` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_timeout_heartbeat_extension_report_fields_are_private.rs:4:20
+  |
+4 |     let _ = report.extended_heartbeat;
+  |                    ^^^^^^^^^^^^^^^^^^ private field
+  |
+help: a method `extended_heartbeat` also exists, call it with parentheses
+  |
+4 |     let _ = report.extended_heartbeat();
+  |                                      ++
+
+error[E0616]: field `denied_extension` of struct `ResourceTimeoutHeartbeatExtensionReport` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_timeout_heartbeat_extension_report_fields_are_private.rs:5:20
+  |
+5 |     let _ = report.denied_extension;
+  |                    ^^^^^^^^^^^^^^^^ private field
+  |
+help: a method `denied_extension` also exists, call it with parentheses
+  |
+5 |     let _ = report.denied_extension();
+  |                                    ++
+
+error[E0616]: field `performance` of struct `ResourceTimeoutHeartbeatExtensionReport` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_timeout_heartbeat_extension_report_fields_are_private.rs:6:20
+  |
+6 |     let _ = report.performance;
+  |                    ^^^^^^^^^^^ private field
+  |
+help: a method `performance` also exists, call it with parentheses
+  |
+6 |     let _ = report.performance();
+  |                               ++

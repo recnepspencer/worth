@@ -97,6 +97,12 @@ pub fn admit_application_query_parameters_admitted<
             Parameters(canonical_work_denial(query.name(), stop))
         }
         ParameterBasisPreparationStop::AccountingOverflow => AccountingOverflow,
+        ParameterBasisPreparationStop::UnsupportedSortImplementation(cause) => {
+            Parameters(WorthQueryApplicationQueryParameterDenial::new(
+                WorthQueryApplicationQueryParameterDenialKind::UnsupportedSortImplementation(cause),
+                query.name(),
+            ))
+        }
     })?;
     Ok(WorthQueryAdmittedApplicationQueryParameters {
         canonical,
