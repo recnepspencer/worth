@@ -1,5 +1,5 @@
 error[E0451]: fields `validated_advance`, `frontier_before`, `frontier_after`, `promoted_wake_count` and `ready_selection_deferred` of struct `TemporalClockAdvanceSummary` are private
-  --> tests/ui/temporal_clock_advance_summary_fields_are_private.rs:18:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/temporal_clock_advance_summary_fields_are_private.rs:18:9
    |
 17 |     let _forged = TemporalClockAdvanceSummary {
    |                   --------------------------- in this type

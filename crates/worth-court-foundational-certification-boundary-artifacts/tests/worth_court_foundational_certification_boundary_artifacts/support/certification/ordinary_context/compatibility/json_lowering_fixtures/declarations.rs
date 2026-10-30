@@ -1,6 +1,20 @@
-pub(crate) use {worth_foundational::AbsenceLaw, worth_foundational::AspectContract, worth_foundational::AspectFieldLocator, worth_foundational::AspectKey, worth_foundational::AspectLocator, worth_foundational::BoundarySourceLocator, worth_foundational::CanonicalFieldPath, worth_foundational::FieldDeclaration, worth_foundational::FieldKey, worth_foundational::FieldRequirement, worth_foundational::JsonCompatibilityAspectInput, worth_foundational::LocatorAuthority, worth_foundational::ScalarAspectType, worth_foundational::StructAspectShape};
+pub(crate) use {
+    worth_foundational::AbsenceLaw, worth_foundational::AspectContract,
+    worth_foundational::AspectFieldLocator, worth_foundational::AspectKey,
+    worth_foundational::AspectLocator, worth_foundational::BoundarySourceLocator,
+    worth_foundational::CanonicalFieldPath, worth_foundational::FieldDeclaration,
+    worth_foundational::FieldKey, worth_foundational::FieldRequirement,
+    worth_foundational::JsonCompatibilityAspectInput, worth_foundational::LocatorAuthority,
+    worth_foundational::ScalarAspectType, worth_foundational::StructAspectShape,
+};
 
-pub(crate) use {worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::scalar_contract};
+pub(crate) use {
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::scalar_contract,
+};
 
 pub(crate) fn task_summary_contract() -> AspectContract {
     let shape = worth_foundational::StructAspectShape::new([
@@ -31,7 +45,12 @@ pub(crate) fn task_summary_contract() -> AspectContract {
     ])
     .expect("unique fields");
 
-    worth_foundational::AspectContract::struct_aspect(key("task.summary"), identity(20), revision(1), shape)
+    worth_foundational::AspectContract::struct_aspect(
+        key("task.summary"),
+        identity(20),
+        revision(1),
+        shape,
+    )
 }
 
 pub(crate) fn source_for(name: &str) -> BoundarySourceLocator {
@@ -42,11 +61,15 @@ pub(crate) fn source_for(name: &str) -> BoundarySourceLocator {
 }
 
 pub(crate) fn field_source_for(aspect: &str, field: &str) -> BoundarySourceLocator {
-    worth_foundational::BoundarySourceLocator::aspect_field(worth_foundational::AspectFieldLocator::new(
-        worth_foundational::LocatorAuthority::SupportOnly,
-        worth_foundational::AspectKey::new(aspect).expect("valid aspect key"),
-        worth_foundational::CanonicalFieldPath::single(worth_foundational::FieldKey::new(field).expect("valid field key")),
-    ))
+    worth_foundational::BoundarySourceLocator::aspect_field(
+        worth_foundational::AspectFieldLocator::new(
+            worth_foundational::LocatorAuthority::SupportOnly,
+            worth_foundational::AspectKey::new(aspect).expect("valid aspect key"),
+            worth_foundational::CanonicalFieldPath::single(
+                worth_foundational::FieldKey::new(field).expect("valid field key"),
+            ),
+        ),
+    )
 }
 
 pub(crate) fn scalar_input(
@@ -54,5 +77,9 @@ pub(crate) fn scalar_input(
     scalar: ScalarAspectType,
     value: serde_json::Value,
 ) -> JsonCompatibilityAspectInput {
-    worth_foundational::JsonCompatibilityAspectInput::new(scalar_contract(name, 1, scalar), source_for(name), value)
+    worth_foundational::JsonCompatibilityAspectInput::new(
+        scalar_contract(name, 1, scalar),
+        source_for(name),
+        value,
+    )
 }

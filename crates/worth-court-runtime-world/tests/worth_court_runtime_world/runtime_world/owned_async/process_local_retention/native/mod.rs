@@ -1,7 +1,3 @@
-use {crate::owned_async::ordinary_context::native_service::NativeServiceCourt};
-use {worth_signal::facade::branch::SignalOwnedAsyncManagedProgress as Progress, worth_signal::facade::branch::SignalOwnedAsyncQueueDenial as Denial};
-use {worth_signal::facade::ResourceLifecycleClass};
-
 #[test]
 fn exact_process_local_release_bounds_repeated_storage_without_expiring_a_rich_producer() {
     let (court, other_node) = crate::owned_async::ordinary_context::native_service::NativeServiceCourt::process_local_two_nodes();
@@ -200,7 +196,10 @@ fn exact_process_local_release_bounds_repeated_storage_without_expiring_a_rich_p
         .release_process_local_managed_request(old, None)
         .err()
         .unwrap();
-    assert!(matches!(refusal.cause(), worth_signal::facade::branch::SignalOwnedAsyncQueueDenial::CleanupPending));
+    assert!(matches!(
+        refusal.cause(),
+        worth_signal::facade::branch::SignalOwnedAsyncQueueDenial::CleanupPending
+    ));
     let (mut old, completion, _) = refusal.into_parts();
     assert!(completion.is_none());
     assert_eq!(observe(), before);

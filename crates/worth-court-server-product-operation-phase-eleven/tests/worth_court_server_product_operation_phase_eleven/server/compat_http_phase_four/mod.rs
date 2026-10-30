@@ -1,18 +1,30 @@
-#[allow(unused_imports)] use crate::compat_http_phase_four::ordinary_context::*;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_compat_http_phase_four_assertions as compat_http_phase_four_assertions};
+use crate::compat_http_phase_four::ordinary_context::*;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_compat_http_phase_four_runtime as compat_http_phase_four_runtime};
+use worth_testkit_server::shared_support_compat_http_phase_four_assertions as compat_http_phase_four_assertions;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime};
+use worth_testkit_server::shared_support_compat_http_phase_four_runtime as compat_http_phase_four_runtime;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime;
+#[allow(unused_imports)]
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {worth_proof::TransitionOutcome};
-use {worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerStreamCancellationKind, worth_server::WorthServerStreamFinishError, worth_server::WorthServerStreamingResponse};
-
-use {worth_testkit_server::shared_support_compat_http_phase_four_assertions::assert_cancellation_counters, worth_testkit_server::shared_support_compat_http_phase_four_assertions::assert_cancellation_kind, worth_testkit_server::shared_support_compat_http_phase_four_assertions::assert_export_counters, worth_testkit_server::shared_support_compat_http_phase_four_assertions::assert_read_artifact_parity, worth_testkit_server::shared_support_compat_http_phase_four_assertions::collect_stream_bytes};
-use {worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::build_phase_four_server, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::build_phase_four_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::compat_read_input, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::compat_stream_input, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::default_stream_selection, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::oversized_streaming_provider, worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::streaming_response_success};
+use {
+    worth_testkit_server::shared_support_compat_http_phase_four_assertions::assert_cancellation_counters,
+    worth_testkit_server::shared_support_compat_http_phase_four_assertions::assert_cancellation_kind,
+    worth_testkit_server::shared_support_compat_http_phase_four_assertions::assert_export_counters,
+    worth_testkit_server::shared_support_compat_http_phase_four_assertions::assert_read_artifact_parity,
+    worth_testkit_server::shared_support_compat_http_phase_four_assertions::collect_stream_bytes,
+};
+use {
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::build_phase_four_server,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::build_phase_four_server_with_workspace_provider,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::compat_read_input,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::compat_stream_input,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::default_stream_selection,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::oversized_streaming_provider,
+    worth_testkit_server::shared_support_compat_http_phase_four_runtime::request_support::streaming_response_success,
+};
 
 #[test]
 fn compat_http_streaming_matches_buffered_read_on_canonical_artifacts() {
@@ -163,14 +175,18 @@ fn compat_http_streaming_localizes_disconnect_backpressure_and_caller_cancellati
     let server =
         build_phase_four_server_with_workspace_provider(oversized_streaming_provider(8, 64));
 
-    let disconnect =
-        cancel_after_first_chunk(&server, worth_server::WorthServerStreamCancellationKind::ClientDisconnect);
+    let disconnect = cancel_after_first_chunk(
+        &server,
+        worth_server::WorthServerStreamCancellationKind::ClientDisconnect,
+    );
     let backpressure = cancel_after_first_chunk(
         &server,
         worth_server::WorthServerStreamCancellationKind::DownstreamBackpressure,
     );
-    let caller =
-        cancel_after_first_chunk(&server, worth_server::WorthServerStreamCancellationKind::CallerCancelled);
+    let caller = cancel_after_first_chunk(
+        &server,
+        worth_server::WorthServerStreamCancellationKind::CallerCancelled,
+    );
 
     assert_cancellation_kind(
         &disconnect,
@@ -206,7 +222,10 @@ fn compat_http_streaming_localizes_disconnect_backpressure_and_caller_cancellati
             0,
         ],
     );
-    assert_cancellation_kind(&caller, worth_server::WorthServerStreamCancellationKind::CallerCancelled);
+    assert_cancellation_kind(
+        &caller,
+        worth_server::WorthServerStreamCancellationKind::CallerCancelled,
+    );
     assert_cancellation_counters(
         &caller,
         [

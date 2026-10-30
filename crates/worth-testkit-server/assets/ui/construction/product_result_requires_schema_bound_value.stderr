@@ -1,17 +1,17 @@
 error[E0277]: the trait bound `Value: WorthServerProductResultValue` is not satisfied
-  --> tests/ui/construction/product_result_requires_schema_bound_value.rs:15:9
-   |
-12 |     let _ = WorthServerProductOperationSuccess::publish_json(
-   |             ------------------------------------------------ required by a bound introduced by this call
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/product_result_requires_schema_bound_value.rs
+  |
+  |     let _ = WorthServerProductOperationSuccess::publish_json(
+  |             ------------------------------------------------ required by a bound introduced by this call
 ...
-15 |         &naked_json,
-   |         ^^^^^^^^^^^ the trait `WorthServerProductResultValue` is not implemented for `Value`
-   |
+  |         &naked_json,
+  |         ^^^^^^^^^^^ the trait `WorthServerProductResultValue` is not implemented for `Value`
+  |
 note: required by a bound in `WorthServerProductOperationSuccess::publish_json`
-  --> src/product_adapter/outcome.rs
-   |
-   |     pub fn publish_json<T>(
-   |            ------------ required by a bound in this associated function
+ --> $WORKSPACE/crates/worth-server/src/product_adapter/outcome.rs
+  |
+  |     pub fn publish_json<T>(
+  |            ------------ required by a bound in this associated function
 ...
-   |         T: crate::WorthServerProductResultValue,
-   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `WorthServerProductOperationSuccess::publish_json`
+  |         T: crate::WorthServerProductResultValue,
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `WorthServerProductOperationSuccess::publish_json`

@@ -1,10 +1,10 @@
 error[E0624]: associated function `issued` is private
- --> tests/ui/private_snapshot_token_constructor.rs:4:34
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/private_snapshot_token_constructor.rs:4:34
   |
 4 |       let _ = BridgeSnapshotToken::issued(TruthSnapshotIdentity::new("snapshot"), "token");
   |                                    ^^^^^^ private associated function
   |
- ::: src/snapshot/token.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/snapshot/token.rs
   |
   | /     pub(crate) fn issued(
   | |         snapshot_identity: TruthSnapshotIdentity,
@@ -13,12 +13,12 @@ error[E0624]: associated function `issued` is private
   | |_____________- private associated function defined here
 
 error[E0624]: associated function `new` is private
- --> tests/ui/private_snapshot_token_constructor.rs:4:64
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/private_snapshot_token_constructor.rs:4:64
   |
 4 |       let _ = BridgeSnapshotToken::issued(TruthSnapshotIdentity::new("snapshot"), "token");
   |                                                                  ^^^ private associated function
   |
- ::: src/identity.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
   |
   | /     pub(crate) fn new(
   | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -26,7 +26,7 @@ error[E0624]: associated function `new` is private
   | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
- --> tests/ui/private_snapshot_token_constructor.rs:4:68
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/private_snapshot_token_constructor.rs:4:68
   |
 4 |     let _ = BridgeSnapshotToken::issued(TruthSnapshotIdentity::new("snapshot"), "token");
   |                                         -------------------------- ^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
@@ -36,7 +36,7 @@ error[E0308]: mismatched types
   = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
           found reference `&'static str`
 note: associated function defined here
- --> src/identity.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
   |
   |     pub(crate) fn new(
   |                   ^^^

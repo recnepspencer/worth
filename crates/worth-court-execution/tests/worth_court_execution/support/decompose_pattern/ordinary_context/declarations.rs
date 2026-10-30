@@ -1,5 +1,11 @@
-pub(crate) use {worth_execution::BackInput, worth_execution::DecomposeFailure, worth_execution::DecomposeInputDenial, worth_execution::DecomposeKernelEditions, worth_execution::ExecutionDecompose, worth_execution::ExecutionMap, worth_execution::InterfaceSolution, worth_execution::InteriorResult, worth_execution::MapKernelFailure, worth_execution::MapPartition};
-pub(crate) use {worth_foundational::PartitionIdentity};
+pub(crate) use worth_foundational::PartitionIdentity;
+pub(crate) use {
+    worth_execution::BackInput, worth_execution::DecomposeFailure,
+    worth_execution::DecomposeInputDenial, worth_execution::DecomposeKernelEditions,
+    worth_execution::ExecutionDecompose, worth_execution::ExecutionMap,
+    worth_execution::InterfaceSolution, worth_execution::InteriorResult,
+    worth_execution::MapKernelFailure, worth_execution::MapPartition,
+};
 
 pub(crate) const EDITIONS: DecomposeKernelEditions = DecomposeKernelEditions {
     interior: 1,
@@ -140,7 +146,10 @@ pub(crate) fn decomposer() -> ExecutionDecompose<
     impl Fn(&InterfaceEquation, &InterfaceEquation) -> InterfaceEquation + Clone,
 > {
     worth_execution::ExecutionDecompose::try_new(
-        vec![worth_foundational::PartitionIdentity::new(1), worth_foundational::PartitionIdentity::new(2)],
+        vec![
+            worth_foundational::PartitionIdentity::new(1),
+            worth_foundational::PartitionIdentity::new(2),
+        ],
         InterfaceEquation {
             diagonal: 0.0,
             rhs: 0.0,

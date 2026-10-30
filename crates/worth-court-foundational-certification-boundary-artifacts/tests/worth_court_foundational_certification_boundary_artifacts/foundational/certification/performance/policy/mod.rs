@@ -1,16 +1,4 @@
-use {
-    worth_foundational::performance, worth_foundational::performance_api,
-    worth_foundational::FoundationalPerformanceAccessPatternPosture,
-    worth_foundational::FoundationalPerformanceBoundary,
-    worth_foundational::FoundationalPerformanceBreadthLocalityPosture,
-    worth_foundational::FoundationalPerformanceBudgetKind,
-    worth_foundational::FoundationalPerformanceEvidenceStrength,
-    worth_foundational::FoundationalPerformanceExecutionTemperature,
-    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
-    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
-    worth_foundational::FoundationalPerformanceWorkClass,
-    worth_foundational::FoundationalPolicyAdmissionReceiptConstructionDenial,
-};
+use worth_foundational::performance;
 
 #[test]
 fn common_path_and_lower_lane_expose_the_same_budget_surface() {

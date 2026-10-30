@@ -1,7 +1,20 @@
 pub(crate) use {std::num::NonZeroUsize, std::sync::Arc, std::sync::Mutex, std::sync::OnceLock};
 
-pub(crate) use {worth_execution::Bisection, worth_execution::CancellationSource, worth_execution::CancellationToken, worth_execution::ComponentPartitioner, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop, worth_execution::PartitionItemId, worth_execution::PartitionUpdateDenial, worth_execution::WeightedEdge, worth_execution::WeightedItem};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    worth_execution::Bisection, worth_execution::CancellationSource,
+    worth_execution::CancellationToken, worth_execution::ComponentPartitioner,
+    worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig,
+    worth_execution::ExecutionMap, worth_execution::LeaseRequest,
+    worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition,
+    worth_execution::MapStop, worth_execution::PartitionItemId,
+    worth_execution::PartitionUpdateDenial, worth_execution::WeightedEdge,
+    worth_execution::WeightedItem,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 pub(crate) fn item(id: u64) -> PartitionItemId {
     PartitionItemId(id)
@@ -51,7 +64,11 @@ pub(crate) fn lease<'a>(
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Serial,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), Some(memory), Some(ceiling)),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::new(1).unwrap(),
+                    Some(memory),
+                    Some(ceiling),
+                ),
             ),
             deadline: None,
             cancellation,
@@ -69,7 +86,6 @@ pub(crate) fn component_chain(count: u64) -> ComponentPartitioner {
     }
     components
 }
-
 
 pub(crate) fn weighted_root(count: u64, max_leaf_weight: u64) -> Bisection {
     let mut bisection = worth_execution::Bisection::new(max_leaf_weight, 2).unwrap();

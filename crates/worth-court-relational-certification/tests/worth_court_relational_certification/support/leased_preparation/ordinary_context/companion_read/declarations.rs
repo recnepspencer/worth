@@ -1,7 +1,33 @@
 // The prepared native owner retains the read image through actual cutover.
-pub(crate) use {worth_execution::ExecutionAllocationPolicy as AllocationPolicy, worth_relational::facade::transactions::AspectFieldPatch, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::EntitySpec, worth_relational::facade::identity::KindId, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::identity::PartitionId, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::transactions::WorkerIntentBatch, crate::leased_preparation::ordinary_context::serial, crate::leased_preparation::ordinary_context::support};
-pub(crate) use {std::sync::atomic::AtomicBool, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
-pub(crate) use {worth_relational::facade::mvcc::CompanionBranchCell, worth_relational::facade::mvcc::CompanionCellEditStop, worth_relational::facade::mvcc::CompanionPreflightStop, worth_relational::facade::mvcc::PreparedPublicationCompanionEffect, worth_relational::facade::mvcc::PublicationCompanionPreflight, worth_relational::facade::mvcc::RelationalPublicationCompanion, worth_relational::facade::mvcc::RelationalPublicationDeferred, worth_relational::facade::mvcc::RelationalPublicationOutcome, worth_relational::facade::runtime::RelationalRuntime};
+pub(crate) use {
+    crate::leased_preparation::ordinary_context::serial,
+    crate::leased_preparation::ordinary_context::support,
+    worth_execution::ExecutionAllocationPolicy as AllocationPolicy,
+    worth_relational::facade::identity::KindId, worth_relational::facade::identity::PartitionId,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+    worth_relational::facade::runtime::RelationalRuntimeApi,
+    worth_relational::facade::symbols::ClientKey,
+    worth_relational::facade::transactions::AspectFieldPatch,
+    worth_relational::facade::transactions::CreateIntent,
+    worth_relational::facade::transactions::EntitySpec,
+    worth_relational::facade::transactions::MutationIntent,
+    worth_relational::facade::transactions::WorkerIntentBatch,
+};
+pub(crate) use {
+    std::sync::atomic::AtomicBool, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
+    std::sync::Arc,
+};
+pub(crate) use {
+    worth_relational::facade::mvcc::CompanionBranchCell,
+    worth_relational::facade::mvcc::CompanionCellEditStop,
+    worth_relational::facade::mvcc::CompanionPreflightStop,
+    worth_relational::facade::mvcc::PreparedPublicationCompanionEffect,
+    worth_relational::facade::mvcc::PublicationCompanionPreflight,
+    worth_relational::facade::mvcc::RelationalPublicationCompanion,
+    worth_relational::facade::mvcc::RelationalPublicationDeferred,
+    worth_relational::facade::mvcc::RelationalPublicationOutcome,
+    worth_relational::facade::runtime::RelationalRuntime,
+};
 
 pub(crate) struct Publisher {
     pub(crate) cell: CompanionBranchCell<u64>,
@@ -21,15 +47,20 @@ impl RelationalPublicationCompanion for Publisher {
         context: &mut PublicationCompanionPreflight<'_>,
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
         let reserved = self.cell.reserve_preflight(context)?;
-        if self.edit_under_reservation.load(std::sync::atomic::Ordering::Acquire) {
-            let result = self
-                .cell
-                .replace_derived_root_at_same_position(self.cell.read_image(), std::sync::Arc::new(99));
+        if self
+            .edit_under_reservation
+            .load(std::sync::atomic::Ordering::Acquire)
+        {
+            let result = self.cell.replace_derived_root_at_same_position(
+                self.cell.read_image(),
+                std::sync::Arc::new(99),
+            );
             assert!(matches!(
                 result,
                 Err(worth_relational::facade::mvcc::CompanionCellEditStop::PreflightPending)
             ));
-            self.refused_edits.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
+            self.refused_edits
+                .fetch_add(1, std::sync::atomic::Ordering::AcqRel);
         }
         let payload = std::sync::Arc::clone(reserved.current().payload());
         context.seal_replacement(reserved, payload)
@@ -81,18 +112,23 @@ pub(crate) fn candidate(
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
     let mut transaction = runtime
-        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .unwrap();
     transaction
         .push_batch(
-            worth_relational::facade::transactions::WorkerIntentBatch::new(key).push(worth_relational::facade::transactions::MutationIntent::Create(worth_relational::facade::transactions::CreateIntent::Entity(
-                EntitySpec {
-                    partition_id: worth_relational::facade::identity::PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: worth_relational::facade::symbols::ClientKey::raw(key),
-                    fields: worth_relational::facade::transactions::AspectFieldPatch::default(),
-                },
-            ))),
+            worth_relational::facade::transactions::WorkerIntentBatch::new(key).push(
+                worth_relational::facade::transactions::MutationIntent::Create(
+                    worth_relational::facade::transactions::CreateIntent::Entity(EntitySpec {
+                        partition_id: worth_relational::facade::identity::PartitionId::main(),
+                        kind_id: KindId(1),
+                        client_key: worth_relational::facade::symbols::ClientKey::raw(key),
+                        fields: worth_relational::facade::transactions::AspectFieldPatch::default(),
+                    }),
+                ),
+            ),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();

@@ -1,5 +1,5 @@
 error[E0423]: cannot initialize a tuple struct which contains private fields
- --> tests/ui/branch_reference/forged_branch_authority.rs:4:18
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/forged_branch_authority.rs:4:18
   |
 4 |     let marker = SignalBranchBasisAuthorityMarker(());
   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -10,7 +10,7 @@ note: constructor is not visible here due to private fields
   |         $vis struct $name(::core::marker::PhantomData<()>);
   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
   |
- ::: src/branch/authority.rs
+ ::: $WORKSPACE/crates/worth-signal/src/branch/authority.rs
   |
   | worth_proof::authority_marker!(pub SignalBranchBasisAuthorityMarker);
   | -------------------------------------------------------------------- in this macro invocation

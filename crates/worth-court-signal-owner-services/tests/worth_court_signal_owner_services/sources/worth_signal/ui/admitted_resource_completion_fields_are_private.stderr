@@ -1,5 +1,5 @@
 error[E0451]: fields `handle`, `attempt`, `node`, `descriptor_id`, `completion_ordinal`, `payload_byte_len` and `lifecycle_transition` of struct `AdmittedResourceCompletion` are private
-  --> tests/ui/admitted_resource_completion_fields_are_private.rs:20:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/admitted_resource_completion_fields_are_private.rs:20:9
    |
 19 |     let _ = AdmittedResourceCompletion {
    |             -------------------------- in this type

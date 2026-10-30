@@ -1,5 +1,15 @@
-pub(crate) use {worth_signal::facade::branch::validate_signal_branch_name, worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::SignalBranchBasisPort, worth_signal::facade::branch::SignalBranchLifecyclePort, worth_signal::facade::branch::SignalBranchMutationPort, worth_signal::facade::branch::SignalOwnerCancellationSource};
-pub(crate) use {worth_signal::facade::Aspect, worth_signal::facade::DependencyEdge, worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
+pub(crate) use {
+    worth_signal::facade::branch::validate_signal_branch_name,
+    worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    worth_signal::facade::branch::SignalBranchBasisPort,
+    worth_signal::facade::branch::SignalBranchLifecyclePort,
+    worth_signal::facade::branch::SignalBranchMutationPort,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+};
+pub(crate) use {
+    worth_signal::facade::Aspect, worth_signal::facade::DependencyEdge,
+    worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime,
+};
 
 pub(crate) type Runtime = SignalRuntime<(), (), (), (), ()>;
 pub(crate) type BasisPort = SignalBranchBasisPort<(), (), ()>;
@@ -19,7 +29,10 @@ pub(crate) struct AdversarialWorld {
 
 impl AdversarialWorld {
     pub(crate) fn new() -> Self {
-        let mut runtime = crate::signal_owner_services::ordinary_context::adversarial::world::Runtime::builder(populated_graph())
+        let mut runtime =
+            crate::signal_owner_services::ordinary_context::adversarial::world::Runtime::builder(
+                populated_graph(),
+            )
             .with_kernel_defaults()
             .build();
         let root_basis = runtime
@@ -59,14 +72,23 @@ impl AdversarialWorld {
 
 pub(crate) fn populated_graph() -> SignalGraph {
     let mut graph = worth_signal::facade::SignalGraph::new();
-    let input = graph.node().produces_aspects(worth_signal::facade::Aspect::new(0)).build();
+    let input = graph
+        .node()
+        .produces_aspects(worth_signal::facade::Aspect::new(0))
+        .build();
     let derived = graph
         .node()
         .on_demand()
         .produces_aspects(worth_signal::facade::Aspect::new(1))
         .build();
     graph
-        .set_dependencies(derived, [worth_signal::facade::DependencyEdge::new(input, worth_signal::facade::Aspect::new(0))])
+        .set_dependencies(
+            derived,
+            [worth_signal::facade::DependencyEdge::new(
+                input,
+                worth_signal::facade::Aspect::new(0),
+            )],
+        )
         .expect("the adversarial graph has one valid dependency");
     graph
 }

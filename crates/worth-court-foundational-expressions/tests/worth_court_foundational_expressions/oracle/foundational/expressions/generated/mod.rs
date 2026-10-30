@@ -1,10 +1,15 @@
 // Seeded property generation over the parser and codec. Every generated
 // input denies or round-trips exactly, and source and decoded drafts agree
 // on admission; failures reproduce from the fixed seeds.
-#[allow(unused_imports)] use crate::expressions::reference_context::generated::*;
-pub(crate) use {worth_foundational::expression_api::expressions, worth_foundational::expression_api::ExpressionFunctionCatalog, worth_foundational::expression_api::ExpressionProfile, worth_foundational::expression_api::ExpressionSchema, worth_foundational::expression_api::ExpressionType};
+#[allow(unused_imports)]
+use crate::expressions::reference_context::generated::*;
+pub(crate) use worth_foundational::expression_api::expressions;
 
-pub(crate) use {crate::expressions::ordinary_context::draft, crate::expressions::ordinary_context::empty_catalog, crate::expressions::ordinary_context::function, crate::expressions::ordinary_context::schema};
+pub(crate) use {
+    crate::expressions::ordinary_context::draft,
+    crate::expressions::ordinary_context::empty_catalog,
+    crate::expressions::ordinary_context::schema,
+};
 
 #[test]
 fn mutated_encodings_deny_or_round_trip_exactly() {
@@ -37,8 +42,16 @@ fn mutated_encodings_deny_or_round_trip_exactly() {
                 decoded_count += 1;
                 assert_eq!(decoded.encode(), bytes, "{source}, round {round}");
                 // Admission of a mutated draft is deterministic either way.
-                let first = decoded.admit(&schema, &catalog, worth_foundational::expression_api::ExpressionProfile::interactive());
-                let again = decoded.admit(&schema, &catalog, worth_foundational::expression_api::ExpressionProfile::interactive());
+                let first = decoded.admit(
+                    &schema,
+                    &catalog,
+                    worth_foundational::expression_api::ExpressionProfile::interactive(),
+                );
+                let again = decoded.admit(
+                    &schema,
+                    &catalog,
+                    worth_foundational::expression_api::ExpressionProfile::interactive(),
+                );
                 match (first, again) {
                     (Ok(first), Ok(again)) => assert_eq!(first.identity(), again.identity()),
                     (Err(first), Err(again)) => assert_eq!(first.detail(), again.detail()),
@@ -75,8 +88,16 @@ fn generated_sources_deny_or_admit_consistently() {
             .decode(&draft.encode())
             .expect("encodings decode");
         assert_eq!(decoded.encode(), draft.encode(), "round {round}: {source}");
-        let parsed = draft.admit(&schema, &catalog, worth_foundational::expression_api::ExpressionProfile::interactive());
-        let rebuilt = decoded.admit(&schema, &catalog, worth_foundational::expression_api::ExpressionProfile::interactive());
+        let parsed = draft.admit(
+            &schema,
+            &catalog,
+            worth_foundational::expression_api::ExpressionProfile::interactive(),
+        );
+        let rebuilt = decoded.admit(
+            &schema,
+            &catalog,
+            worth_foundational::expression_api::ExpressionProfile::interactive(),
+        );
         match (parsed, rebuilt) {
             (Ok(parsed), Ok(rebuilt)) => {
                 admitted_count += 1;

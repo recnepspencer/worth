@@ -1,6 +1,11 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::profiles::phase2_resolution_adversarial::*;
-use {worth_foundational::admit_requested_foundational_profile_with_resolutions, worth_foundational::foundational_profile_progression_authority, worth_foundational::materialize_admitted_foundational_profile_with_resolutions, worth_foundational::request_foundational_profile_set, worth_foundational::AdmissionReadinessProfile, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::ExecutionObjectiveProfile, worth_foundational::FoundationalProfileProgressionDenial, worth_foundational::FoundationalProfileResolutionFamily, worth_foundational::FoundationalProfileResolutionLedger, worth_foundational::FoundationalProfileResolutionLedgerDenial, worth_foundational::FoundationalProfileResolutionRecord, worth_foundational::FoundationalProfileResolutionRelation, worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput, worth_foundational::ObservationActivationProfile, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::profiles::phase2_resolution_adversarial::*;
+use {
+    worth_foundational::admit_requested_foundational_profile_with_resolutions,
+    worth_foundational::foundational_profile_progression_authority,
+    worth_foundational::materialize_admitted_foundational_profile_with_resolutions,
+    worth_foundational::request_foundational_profile_set,
+};
 
 #[test]
 fn resolution_ledger_rejects_duplicates_and_wrong_relations() {
@@ -13,9 +18,11 @@ fn resolution_ledger_rejects_duplicates_and_wrong_relations() {
     ledger.insert(objective).expect("first objective record");
     assert_eq!(
         ledger.insert(objective),
-        Err(worth_foundational::FoundationalProfileResolutionLedgerDenial::DuplicateFamily(
-            worth_foundational::FoundationalProfileResolutionFamily::ExecutionObjective,
-        ))
+        Err(
+            worth_foundational::FoundationalProfileResolutionLedgerDenial::DuplicateFamily(
+                worth_foundational::FoundationalProfileResolutionFamily::ExecutionObjective,
+            )
+        )
     );
 
     let requested = base_profile(
@@ -32,11 +39,13 @@ fn resolution_ledger_rejects_duplicates_and_wrong_relations() {
         .insert(objective)
         .expect("objective family is unique");
     wrong_relation
-        .insert(worth_foundational::FoundationalProfileResolutionRecord::new(
-            worth_foundational::FoundationalProfileResolutionFamily::ObservationActivation,
-            worth_foundational::FoundationalProfileResolutionRelation::ObjectiveSelection,
-            "wrong relation",
-        ))
+        .insert(
+            worth_foundational::FoundationalProfileResolutionRecord::new(
+                worth_foundational::FoundationalProfileResolutionFamily::ObservationActivation,
+                worth_foundational::FoundationalProfileResolutionRelation::ObjectiveSelection,
+                "wrong relation",
+            ),
+        )
         .expect("activation family is unique");
     assert_eq!(
         admit_requested_foundational_profile_with_resolutions(
@@ -52,20 +61,25 @@ fn resolution_ledger_rejects_duplicates_and_wrong_relations() {
         )
     );
 
-    let mut wrong_objective_relation = worth_foundational::FoundationalProfileResolutionLedger::empty();
+    let mut wrong_objective_relation =
+        worth_foundational::FoundationalProfileResolutionLedger::empty();
     wrong_objective_relation
-        .insert(worth_foundational::FoundationalProfileResolutionRecord::new(
-            worth_foundational::FoundationalProfileResolutionFamily::ExecutionObjective,
-            worth_foundational::FoundationalProfileResolutionRelation::ActivationSelection,
-            "wrong objective relation",
-        ))
+        .insert(
+            worth_foundational::FoundationalProfileResolutionRecord::new(
+                worth_foundational::FoundationalProfileResolutionFamily::ExecutionObjective,
+                worth_foundational::FoundationalProfileResolutionRelation::ActivationSelection,
+                "wrong objective relation",
+            ),
+        )
         .expect("objective family is unique");
     wrong_objective_relation
-        .insert(worth_foundational::FoundationalProfileResolutionRecord::new(
-            worth_foundational::FoundationalProfileResolutionFamily::ObservationActivation,
-            worth_foundational::FoundationalProfileResolutionRelation::ActivationSelection,
-            "activation selected",
-        ))
+        .insert(
+            worth_foundational::FoundationalProfileResolutionRecord::new(
+                worth_foundational::FoundationalProfileResolutionFamily::ObservationActivation,
+                worth_foundational::FoundationalProfileResolutionRelation::ActivationSelection,
+                "activation selected",
+            ),
+        )
         .expect("activation family is unique");
     assert_eq!(
         admit_requested_foundational_profile_with_resolutions(
@@ -102,11 +116,13 @@ fn resolution_ledger_rejects_duplicates_and_wrong_relations() {
         .insert(objective)
         .expect("objective family is unique");
     unexpected
-        .insert(worth_foundational::FoundationalProfileResolutionRecord::new(
-            worth_foundational::FoundationalProfileResolutionFamily::DiagnosticRichness,
-            worth_foundational::FoundationalProfileResolutionRelation::Narrowing,
-            "unexpected family",
-        ))
+        .insert(
+            worth_foundational::FoundationalProfileResolutionRecord::new(
+                worth_foundational::FoundationalProfileResolutionFamily::DiagnosticRichness,
+                worth_foundational::FoundationalProfileResolutionRelation::Narrowing,
+                "unexpected family",
+            ),
+        )
         .expect("unexpected family is unique");
     assert_eq!(
         admit_requested_foundational_profile_with_resolutions(
@@ -139,18 +155,22 @@ fn resolution_records_are_canonical_and_survive_materialization() {
     );
     let mut reverse = worth_foundational::FoundationalProfileResolutionLedger::empty();
     reverse
-        .insert(worth_foundational::FoundationalProfileResolutionRecord::new(
-            worth_foundational::FoundationalProfileResolutionFamily::ObservationActivation,
-            worth_foundational::FoundationalProfileResolutionRelation::ActivationSelection,
-            "activation selected",
-        ))
+        .insert(
+            worth_foundational::FoundationalProfileResolutionRecord::new(
+                worth_foundational::FoundationalProfileResolutionFamily::ObservationActivation,
+                worth_foundational::FoundationalProfileResolutionRelation::ActivationSelection,
+                "activation selected",
+            ),
+        )
         .expect("activation family");
     reverse
-        .insert(worth_foundational::FoundationalProfileResolutionRecord::new(
-            worth_foundational::FoundationalProfileResolutionFamily::ExecutionObjective,
-            worth_foundational::FoundationalProfileResolutionRelation::ObjectiveSelection,
-            "objective selected",
-        ))
+        .insert(
+            worth_foundational::FoundationalProfileResolutionRecord::new(
+                worth_foundational::FoundationalProfileResolutionFamily::ExecutionObjective,
+                worth_foundational::FoundationalProfileResolutionRelation::ObjectiveSelection,
+                "objective selected",
+            ),
+        )
         .expect("objective family");
     let admitted = admit_with_resolutions(requested, admitted_profile, reverse);
     let records: Vec<_> = admitted

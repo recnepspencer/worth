@@ -1,4 +1,8 @@
-use {worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalDigestAlgorithmId, crate::certification::ordinary_context::boundary_evidence::attachments::ExpectTransitionSuccess, crate::certification::ordinary_context::boundary_evidence::attachments::materialized_mixed_bundle_from_common_path, crate::certification::ordinary_context::boundary_evidence::attachments::materialized_mixed_bundle_from_direct_path, crate::certification::ordinary_context::boundary_evidence::attachments::support};
+use {
+    crate::certification::ordinary_context::boundary_evidence::attachments::materialized_mixed_bundle_from_common_path,
+    crate::certification::ordinary_context::boundary_evidence::attachments::materialized_mixed_bundle_from_direct_path,
+    crate::certification::ordinary_context::boundary_evidence::attachments::ExpectTransitionSuccess,
+};
 
 #[test]
 fn mixed_family_attachment_bundle_preserves_semantics_across_canonical_and_digest_participation() {

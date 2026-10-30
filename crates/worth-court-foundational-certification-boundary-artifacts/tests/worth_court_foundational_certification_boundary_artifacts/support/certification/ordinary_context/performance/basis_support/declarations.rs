@@ -1,6 +1,21 @@
-pub(crate) use {worth_foundational::canonicalization, worth_foundational::performance, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalDerivedDigest, worth_foundational::CanonicalDigestAlgorithmId, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::FoundationalPerformanceAccessPatternPosture, worth_foundational::FoundationalPerformanceBoundary, worth_foundational::FoundationalPerformanceBreadthLocalityPosture, worth_foundational::FoundationalPerformanceEvidenceStrength, worth_foundational::FoundationalPerformanceExecutionTemperature, worth_foundational::FoundationalPerformanceFallbackDebtPosture, worth_foundational::FoundationalPerformanceFreshnessRetentionPosture, worth_foundational::FoundationalPerformanceWorkClass};
+pub(crate) use {
+    worth_foundational::canonicalization, worth_foundational::performance,
+    worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry,
+    worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalComparisonOutcome,
+    worth_foundational::CanonicalDerivedDigest, worth_foundational::CanonicalDigestAlgorithmId,
+    worth_foundational::CanonicalEquivalenceBasis,
+    worth_foundational::FoundationalPerformanceAccessPatternPosture,
+    worth_foundational::FoundationalPerformanceBoundary,
+    worth_foundational::FoundationalPerformanceBreadthLocalityPosture,
+    worth_foundational::FoundationalPerformanceEvidenceStrength,
+    worth_foundational::FoundationalPerformanceExecutionTemperature,
+    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
+    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
+    worth_foundational::FoundationalPerformanceWorkClass,
+};
 
-pub(crate) fn authoritative_claim() -> worth_foundational::FoundationalAuthoritativePerformanceClaim {
+pub(crate) fn authoritative_claim() -> worth_foundational::FoundationalAuthoritativePerformanceClaim
+{
     performance()
         .claim()
         .authoritative_execution()
@@ -35,10 +50,10 @@ pub(crate) fn exact_compare(
 pub(crate) fn derive_digest(
     ready: worth_foundational::CanonicalBasisReadyArtifact,
 ) -> CanonicalDerivedDigest {
-    let digest_ready = match canonicalization()
-        .digest()
-        .for_sequence(ready, worth_foundational::CanonicalDigestAlgorithmId::sha256())
-    {
+    let digest_ready = match canonicalization().digest().for_sequence(
+        ready,
+        worth_foundational::CanonicalDigestAlgorithmId::sha256(),
+    ) {
         worth_proof::TransitionOutcome::Success(ready) => ready,
         _ => panic!("expected digest readiness"),
     };
@@ -58,7 +73,10 @@ pub(crate) fn performance_text_entry(
     )
 }
 
-pub(crate) fn assert_entries_present(entries: &[CanonicalBasisEntry], expected: &[CanonicalBasisEntry]) {
+pub(crate) fn assert_entries_present(
+    entries: &[CanonicalBasisEntry],
+    expected: &[CanonicalBasisEntry],
+) {
     for entry in expected {
         assert!(
             entries.contains(entry),

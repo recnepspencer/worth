@@ -1,13 +1,12 @@
 // The checked door refuses before any callback or graph publication.
-pub(crate) use {crate::request_differential::ordinary_context::authority, crate::request_differential::ordinary_context::graph};
-pub(crate) use {std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionRequest, worth_execution::LeaseRequest, worth_execution::MemoryLimitLevel};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy};
-pub(crate) use {worth_signal::facade::AspectVersion, worth_signal::facade::RunMode, worth_signal::facade::SignalError, worth_signal::facade::SignalExecutionStopReason, worth_signal::facade::SignalLeaseDenial};
 
 #[test]
 fn declared_result_refusal_never_runs_the_callback() {
-    use {worth_signal::facade::adapters::NodeContract, worth_signal::facade::Aspect, worth_signal::facade::BoundedSignalInputs, worth_signal::facade::NodeEvaluationResult, worth_signal::facade::SignalGraph};
+    use {
+        worth_signal::facade::adapters::NodeContract, worth_signal::facade::Aspect,
+        worth_signal::facade::BoundedSignalInputs, worth_signal::facade::NodeEvaluationResult,
+        worth_signal::facade::SignalGraph,
+    };
 
     for bound in [64, 1 << 20] {
         let mut graph = SignalGraph::new();
@@ -48,13 +47,16 @@ fn declared_result_refusal_never_runs_the_callback() {
                 7
             );
         } else {
-            let worth_signal::facade::SignalError::ExecutionStopped(stop) = outcome.unwrap_err() else {
+            let worth_signal::facade::SignalError::ExecutionStopped(stop) = outcome.unwrap_err()
+            else {
                 panic!("declared result admission retains its typed memory stop");
             };
             assert!(matches!(
                 stop.reason(),
                 worth_signal::facade::SignalExecutionStopReason::PreparationMemoryExhausted { .. }
-                    | worth_signal::facade::SignalExecutionStopReason::Admission(worth_signal::facade::SignalLeaseDenial::MemoryExhausted(_))
+                    | worth_signal::facade::SignalExecutionStopReason::Admission(
+                        worth_signal::facade::SignalLeaseDenial::MemoryExhausted(_)
+                    )
             ));
             assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
             assert_eq!(

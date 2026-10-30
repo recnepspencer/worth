@@ -1,5 +1,5 @@
 error[E0451]: fields `request_id` and `class` of struct `DeniedResourceRejection` are private
- --> tests/ui/denied_resource_rejection_fields_are_private.rs:7:9
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_rejection_fields_are_private.rs:7:9
   |
 6 |     let _ = DeniedResourceRejection {
   |             ----------------------- in this type

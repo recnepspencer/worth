@@ -1,8 +1,14 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::profiles::milestone10_vocabulary::*;
-use {worth_foundational::derive_foundational_profile_identity, worth_foundational::foundational_profile_progression_authority, worth_foundational::request_foundational_profile_set, worth_foundational::FoundationalProfileResolutionFamily, worth_foundational::FoundationalProfileResolutionLedger, worth_foundational::FoundationalProfileResolutionRecord, worth_foundational::FoundationalProfileResolutionRelation};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::profiles::milestone10_vocabulary::*;
+use {
+    worth_foundational::foundational_profile_progression_authority,
+    worth_foundational::request_foundational_profile_set,
+};
 
-use {crate::certification::ordinary_context::profiles::support::admit_same_profile, crate::certification::ordinary_context::profiles::support::profile};
+use {
+    crate::certification::ordinary_context::profiles::support::admit_same_profile,
+    crate::certification::ordinary_context::profiles::support::profile,
+};
 
 #[test]
 fn objective_and_activation_have_independent_resolution_records() {
@@ -30,18 +36,22 @@ fn objective_and_activation_have_independent_resolution_records() {
 
     let mut resolutions = worth_foundational::FoundationalProfileResolutionLedger::empty();
     resolutions
-        .insert(worth_foundational::FoundationalProfileResolutionRecord::new(
-            worth_foundational::FoundationalProfileResolutionFamily::ExecutionObjective,
-            worth_foundational::FoundationalProfileResolutionRelation::ObjectiveSelection,
-            "select throughput objective",
-        ))
+        .insert(
+            worth_foundational::FoundationalProfileResolutionRecord::new(
+                worth_foundational::FoundationalProfileResolutionFamily::ExecutionObjective,
+                worth_foundational::FoundationalProfileResolutionRelation::ObjectiveSelection,
+                "select throughput objective",
+            ),
+        )
         .expect("objective family is unique");
     resolutions
-        .insert(worth_foundational::FoundationalProfileResolutionRecord::new(
-            worth_foundational::FoundationalProfileResolutionFamily::ObservationActivation,
-            worth_foundational::FoundationalProfileResolutionRelation::ActivationSelection,
-            "select on-demand activation",
-        ))
+        .insert(
+            worth_foundational::FoundationalProfileResolutionRecord::new(
+                worth_foundational::FoundationalProfileResolutionFamily::ObservationActivation,
+                worth_foundational::FoundationalProfileResolutionRelation::ActivationSelection,
+                "select on-demand activation",
+            ),
+        )
         .expect("activation family is unique");
 
     let outcome = worth_foundational::admit_requested_foundational_profile_with_resolutions(
@@ -89,11 +99,13 @@ fn resolution_admission_reuses_monotonic_profile_progression_rules() {
     );
     let mut resolutions = worth_foundational::FoundationalProfileResolutionLedger::empty();
     resolutions
-        .insert(worth_foundational::FoundationalProfileResolutionRecord::new(
-            worth_foundational::FoundationalProfileResolutionFamily::DiagnosticRichness,
-            worth_foundational::FoundationalProfileResolutionRelation::Narrowing,
-            "forged widening must not become an admitted resolution",
-        ))
+        .insert(
+            worth_foundational::FoundationalProfileResolutionRecord::new(
+                worth_foundational::FoundationalProfileResolutionFamily::DiagnosticRichness,
+                worth_foundational::FoundationalProfileResolutionRelation::Narrowing,
+                "forged widening must not become an admitted resolution",
+            ),
+        )
         .expect("diagnostic family is unique");
 
     let outcome = worth_foundational::admit_requested_foundational_profile_with_resolutions(

@@ -1,5 +1,5 @@
 error[E0451]: fields `parent` and `cancelled_dependents` of struct `ResourceDependentCancellationPropagation` are private
-  --> tests/ui/resource_dependent_cancellation_propagation_fields_are_private.rs:13:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_dependent_cancellation_propagation_fields_are_private.rs:13:9
    |
 12 |     let _ = ResourceDependentCancellationPropagation {
    |             ---------------------------------------- in this type

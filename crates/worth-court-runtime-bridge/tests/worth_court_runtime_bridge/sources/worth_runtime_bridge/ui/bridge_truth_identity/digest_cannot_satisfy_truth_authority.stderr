@@ -1,5 +1,5 @@
 warning: unreachable call
- --> tests/ui/bridge_truth_identity/digest_cannot_satisfy_truth_authority.rs:8:18
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/digest_cannot_satisfy_truth_authority.rs:8:18
   |
 8 |     let digest = bridge_truth_digest_identity_evidence_from_external_token(token, todo!());
   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ------- any code following this expression is unreachable
@@ -9,7 +9,7 @@ warning: unreachable call
   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
 
 error[E0308]: mismatched types
-  --> tests/ui/bridge_truth_identity/digest_cannot_satisfy_truth_authority.rs:10:69
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/digest_cannot_satisfy_truth_authority.rs:10:69
    |
 10 |     let _evidence = BridgeIdentityEvidence::from_external_authority(digest);
    |                     ----------------------------------------------- ^^^^^^ expected `FoundationalExternalIdentityToken<..., ...>`, found `FoundationalDigestIdentityEvidence<..., ..., ...>`
@@ -19,7 +19,7 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::external::FoundationalExternalIdentityToken<Arc<str>, BridgeEvidenceReferenceIdentityKind>`
               found struct `worth_foundational::identities::authority_identity::derived::FoundationalDigestIdentityEvidence<BridgeCanonicalDigestIdentityBasis, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
 note: associated function defined here
-  --> src/identity/evidence.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity/evidence.rs
    |
    |     pub fn from_external_authority(
    |            ^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,5 +1,11 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_runtime_world::facade::*, worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest as Boundary, crate::court::ordinary_context::CompositeSupplyChainCourt, crate::court::ordinary_context::operation_control::WAIT, crate::court::ordinary_context::operation_control::combined_cancellation::combined_candidate, crate::court::ordinary_context::operation_control::serial_request};
+pub(crate) use {
+    crate::court::ordinary_context::operation_control::combined_cancellation::combined_candidate,
+    crate::court::ordinary_context::operation_control::serial_request,
+    crate::court::ordinary_context::operation_control::WAIT,
+    crate::court::ordinary_context::CompositeSupplyChainCourt, worth_runtime_world::facade::*,
+    worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest as Boundary,
+};
 
 #[test]
 fn combined_cancellation_retains_actual_owners_without_a_mixed_world() {
@@ -35,7 +41,9 @@ fn combined_cancellation_retains_actual_owners_without_a_mixed_world() {
             let pause = control.arm_pause_once_for_test(boundary);
             let worker = scope.spawn(move || {
                 port.execute_with_signal(
-                    worth_execution::ExecutionRequest::serial(&crate::court::ordinary_context::operation_control::serial_request(policy)),
+                    worth_execution::ExecutionRequest::serial(
+                        &crate::court::ordinary_context::operation_control::serial_request(policy),
+                    ),
                     prepared,
                     &mut context,
                     &token,

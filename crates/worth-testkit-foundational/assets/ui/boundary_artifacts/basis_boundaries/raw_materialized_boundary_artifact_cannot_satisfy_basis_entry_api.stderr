@@ -1,15 +1,15 @@
 error[E0308]: mismatched types
-  --> tests/ui/boundary_artifacts/basis_boundaries/raw_materialized_boundary_artifact_cannot_satisfy_basis_entry_api.rs:54:59
-   |
-54 |     let _ = foundational_boundary_canonical_basis_entries(&materialized);
-   |             --------------------------------------------- ^^^^^^^^^^^^^ expected `&Artifact<..., ..., ..., ...>`, found `&...`
-   |             |
-   |             arguments to this function are incorrect
-   |
-   = note: expected reference `&worth_proof::Artifact<CanonicalBasisReady, CanonicalBasisSequence, ProofSetCons<Proof<CanonicalOrder, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, ProofSetCons<Proof<Uniqueness, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, ProofSetCons<Proof<CanonicalDomainCoherence, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, ProofSetCons<Proof<CanonicalRuleVersionBound, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, Proof<CanonicalizationCostObserved, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>>>>>, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<CanonicalizationRuleVersion>>>`
-              found reference `&FoundationalMaterializedBoundaryArtifact<FoundationalBoundaryArtifactSurface<Vec<u8>>>`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/basis_boundaries/raw_materialized_boundary_artifact_cannot_satisfy_basis_entry_api.rs
+  |
+  |     let _ = foundational_boundary_canonical_basis_entries(&materialized);
+  |             --------------------------------------------- ^^^^^^^^^^^^^ expected `&Artifact<..., ..., ..., ...>`, found `&...`
+  |             |
+  |             arguments to this function are incorrect
+  |
+  = note: expected reference `&worth_proof::Artifact<CanonicalBasisReady, CanonicalBasisSequence, ProofSetCons<Proof<CanonicalOrder, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, ProofSetCons<Proof<Uniqueness, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, ProofSetCons<Proof<CanonicalDomainCoherence, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, ProofSetCons<Proof<CanonicalRuleVersionBound, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, Proof<CanonicalizationCostObserved, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>>>>>, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<CanonicalizationRuleVersion>>>`
+             found reference `&FoundationalMaterializedBoundaryArtifact<FoundationalBoundaryArtifactSurface<Vec<u8>>>`
 note: function defined here
-  --> src/boundary_artifacts/basis.rs
-   |
-   | pub fn foundational_boundary_canonical_basis_entries(
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/basis.rs
+  |
+  | pub fn foundational_boundary_canonical_basis_entries(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

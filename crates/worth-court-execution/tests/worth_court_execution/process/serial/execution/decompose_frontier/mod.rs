@@ -1,10 +1,7 @@
-#[allow(unused_imports)] use crate::decompose_frontier::isolated_context::*;
 #[allow(unused_imports)]
-pub(crate) use {crate::reducer_overlap};
-use {std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::OnceLock};
-
-use {worth_execution::BackInput, worth_execution::CancellationToken, worth_execution::DecomposeKernelEditions, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionDecompose, worth_execution::ExecutionMap, worth_execution::InterfaceSolution, worth_execution::InteriorResult, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapPartition};
-use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+use crate::decompose_frontier::isolated_context::*;
+#[allow(unused_imports)]
+pub(crate) use crate::reducer_overlap;
 
 #[test]
 fn leased_full_decomposition_uses_parallel_reduction_frontier() {
@@ -13,7 +10,9 @@ fn leased_full_decomposition_uses_parallel_reduction_frontier() {
     }
 
     let input = input(64);
-    let ids = (1..=64).map(worth_foundational::PartitionIdentity::new).collect();
+    let ids = (1..=64)
+        .map(worth_foundational::PartitionIdentity::new)
+        .collect();
     let mut serial = worth_execution::ExecutionDecompose::try_new(
         ids,
         0_u64,
@@ -40,7 +39,9 @@ fn leased_full_decomposition_uses_parallel_reduction_frontier() {
         left + right
     };
     let mut native = worth_execution::ExecutionDecompose::try_new(
-        (1..=64).map(worth_foundational::PartitionIdentity::new).collect(),
+        (1..=64)
+            .map(worth_foundational::PartitionIdentity::new)
+            .collect(),
         0_u64,
         combine,
         1024,

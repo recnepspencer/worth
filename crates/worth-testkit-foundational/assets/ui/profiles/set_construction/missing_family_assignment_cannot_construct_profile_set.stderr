@@ -1,5 +1,5 @@
 error[E0063]: missing fields `execution_objective` and `observation_activation` in initializer of `FoundationalProfileSetInput`
- --> tests/ui/profiles/set_construction/missing_family_assignment_cannot_construct_profile_set.rs:8:41
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/set_construction/missing_family_assignment_cannot_construct_profile_set.rs
   |
-8 |     let _ = FoundationalProfileSet::new(FoundationalProfileSetInput {
+  |     let _ = FoundationalProfileSet::new(FoundationalProfileSetInput {
   |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing `execution_objective` and `observation_activation`

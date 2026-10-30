@@ -1,23 +1,23 @@
 error[E0451]: fields `locality`, `freshness_posture`, `source_basis`, `authority_path`, `strategy_basis`, `profile_basis`, `comparison_basis`, `canonical_digest_basis` and `support_context_attachments` of struct `FoundationalBoundaryEvidenceProvenanceArtifact` are private
-  --> tests/ui/boundary_evidence/provenance/caller_cannot_mint_provenance_artifact.rs:15:9
-   |
-14 |     let _artifact = FoundationalBoundaryEvidenceProvenanceArtifact {
-   |                     ---------------------------------------------- in this type
-15 |         locality: FoundationalBoundaryEvidenceLocality::Current,
-   |         ^^^^^^^^ private field
-16 |         freshness_posture: FoundationalBoundaryEvidenceFreshnessPosture::FreshRetained,
-   |         ^^^^^^^^^^^^^^^^^ private field
-17 |         source_basis: impossible::<FoundationalBoundaryEvidenceSourceBasis>(),
-   |         ^^^^^^^^^^^^ private field
-18 |         authority_path: Some(impossible::<FoundationalBoundaryEvidenceAuthorityPath>()),
-   |         ^^^^^^^^^^^^^^ private field
-19 |         strategy_basis: Some(impossible::<FoundationalBoundaryEvidenceStrategyBasis>()),
-   |         ^^^^^^^^^^^^^^ private field
-20 |         profile_basis: Some(impossible::<FoundationalBoundaryEvidenceProfileBasis>()),
-   |         ^^^^^^^^^^^^^ private field
-21 |         comparison_basis: Some(impossible::<FoundationalBoundaryEvidenceComparisonBasis>()),
-   |         ^^^^^^^^^^^^^^^^ private field
-22 |         canonical_digest_basis: Some(impossible::<FoundationalBoundaryEvidenceCanonicalDigestBasis>()),
-   |         ^^^^^^^^^^^^^^^^^^^^^^ private field
-23 |         support_context_attachments: vec![
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/provenance/caller_cannot_mint_provenance_artifact.rs
+  |
+  |     let _artifact = FoundationalBoundaryEvidenceProvenanceArtifact {
+  |                     ---------------------------------------------- in this type
+  |         locality: FoundationalBoundaryEvidenceLocality::Current,
+  |         ^^^^^^^^ private field
+  |         freshness_posture: FoundationalBoundaryEvidenceFreshnessPosture::FreshRetained,
+  |         ^^^^^^^^^^^^^^^^^ private field
+  |         source_basis: impossible::<FoundationalBoundaryEvidenceSourceBasis>(),
+  |         ^^^^^^^^^^^^ private field
+  |         authority_path: Some(impossible::<FoundationalBoundaryEvidenceAuthorityPath>()),
+  |         ^^^^^^^^^^^^^^ private field
+  |         strategy_basis: Some(impossible::<FoundationalBoundaryEvidenceStrategyBasis>()),
+  |         ^^^^^^^^^^^^^^ private field
+  |         profile_basis: Some(impossible::<FoundationalBoundaryEvidenceProfileBasis>()),
+  |         ^^^^^^^^^^^^^ private field
+  |         comparison_basis: Some(impossible::<FoundationalBoundaryEvidenceComparisonBasis>()),
+  |         ^^^^^^^^^^^^^^^^ private field
+  |         canonical_digest_basis: Some(impossible::<FoundationalBoundaryEvidenceCanonicalDigestBasis>()),
+  |         ^^^^^^^^^^^^^^^^^^^^^^ private field
+  |         support_context_attachments: vec![
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field

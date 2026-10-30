@@ -1,4 +1,7 @@
-pub(crate) use {worth_server::WorthServerCompatibilityFileEnvelope, worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryHandoffDenialCode};
+pub(crate) use {
+    worth_server::WorthServerCompatibilityFileEnvelope,
+    worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryHandoffDenialCode,
+};
 
 pub(crate) fn assert_same_canonical_file_identity(
     left: &WorthServerCompatibilityFileEnvelope,

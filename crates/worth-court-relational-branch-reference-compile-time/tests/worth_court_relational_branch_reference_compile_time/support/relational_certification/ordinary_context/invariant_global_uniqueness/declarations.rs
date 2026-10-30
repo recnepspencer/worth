@@ -97,7 +97,9 @@ pub(crate) fn insert_string(
             worth_foundational::facade::AspectKey::new(name).expect("aspect key"),
             worth_foundational::facade::FieldKey::new(name).expect("field key"),
         ),
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw(value.to_owned())),
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw(value.to_owned()),
+        ),
     );
 }
 
@@ -140,7 +142,9 @@ pub(crate) fn assert_unique_execution(
         if execution.results().iter().any(|result| {
             matches!(
                 &result.rule,
-                worth_relational::facade::runtime::InvariantReportedRule::Native(worth_relational::facade::runtime::InvariantRule::UniqueEntityAspectField { .. })
+                worth_relational::facade::runtime::InvariantReportedRule::Native(
+                    worth_relational::facade::runtime::InvariantRule::UniqueEntityAspectField { .. }
+                )
             )
         }) {
             let identity = execution
@@ -153,7 +157,6 @@ pub(crate) fn assert_unique_execution(
     }
     assert!(observed, "commit must record native uniqueness execution");
 }
-
 
 #[allow(unused_imports)]
 pub(crate) use {};

@@ -1,5 +1,8 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_signal::facade::SignalError, crate::request_differential::ordinary_context::checked_request, crate::request_differential::ordinary_context::serial};
+pub(crate) use {
+    crate::request_differential::ordinary_context::checked_request,
+    crate::request_differential::ordinary_context::serial, worth_signal::facade::SignalError,
+};
 
 // The ordinary entry publishes one task per epoch and the checked entry
 // publishes grouped epochs, so the two charge different work for one plan.
@@ -41,7 +44,9 @@ fn leased_three_hundred_tasks_still_refuse_a_callers_work_ceiling() {
 
     // One unit cannot cover the required per-item checkpoints of 300 tasks.
     // This caller allowance is independent of a measured successful report.
-    let worth_signal::facade::SignalError::ExecutionStopped(stop) = checked_request(300, 1, 1).unwrap_err() else {
+    let worth_signal::facade::SignalError::ExecutionStopped(stop) =
+        checked_request(300, 1, 1).unwrap_err()
+    else {
         panic!("the caller's finite work ceiling must refuse the evaluation");
     };
     assert!(matches!(

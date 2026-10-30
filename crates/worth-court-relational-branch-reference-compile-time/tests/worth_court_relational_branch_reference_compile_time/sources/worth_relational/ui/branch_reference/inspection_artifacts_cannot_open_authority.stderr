@@ -1,17 +1,17 @@
 error[E0308]: mismatched types
-  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:14:75
+  --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:14:75
    |
 14 |     let _ = runtime.fork_branch(execution, BranchId("forged".to_owned()), observation);
    |                     ----------- arguments to this method are incorrect    ^^^^^^^^^^^ expected `AdmittedRelationalForkSourceBasis`, found `RelationalBranchSharingObservation`
    |
 note: method defined here
-  --> src/branch/fork_runtime_adapters.rs
+  --> $WORKSPACE/crates/worth-relational/src/branch/fork_runtime_adapters.rs
    |
    |     pub fn fork_branch(
    |            ^^^^^^^^^^^
 
 error[E0308]: mismatched types
-  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:21:46
+  --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:21:46
    |
 21 |     let _ = runtime.begin_branch_transaction(&observation, RelationalTransactionIntent::ordinary());
    |                     ------------------------ ^^^^^^^^^^^^ expected `&AdmittedRelationalBranchBasis`, found `&...`
@@ -21,13 +21,13 @@ error[E0308]: mismatched types
    = note: expected reference `&AdmittedRelationalBranchBasis`
               found reference `&RelationalOwnerAllocationLedgerObservation`
 note: method defined here
-  --> src/mvcc/transaction/admission.rs
+  --> $WORKSPACE/crates/worth-relational/src/mvcc/transaction/admission.rs
    |
    |     pub fn begin_branch_transaction(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0308]: mismatched types
-  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:31:47
+  --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:31:47
    |
 31 |         .retain_version_for_replay(execution, observation);
    |          -------------------------            ^^^^^^^^^^^ expected `VersionId`, found `RelationalVisibilityCommitmentObservation`
@@ -35,7 +35,7 @@ error[E0308]: mismatched types
    |          arguments to this method are incorrect
    |
 note: method defined here
-  --> src/history/authority/replay_retention.rs
+  --> $WORKSPACE/crates/worth-relational/src/history/authority/replay_retention.rs
    |
    |     pub fn retain_version_for_replay(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,6 +1,10 @@
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::scenarios::BaselineName, crate::relational_certification::ordinary_context::world::supply_chain::scenarios::BranchCreationIntent, crate::relational_certification::ordinary_context::world::supply_chain::scenarios::SupplyChainBaseline};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale;
+pub use crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::scenarios::BaselineName,
+    crate::relational_certification::ordinary_context::world::supply_chain::scenarios::BranchCreationIntent,
+    crate::relational_certification::ordinary_context::world::supply_chain::scenarios::SupplyChainBaseline,
+};
 
 pub fn build(scale: SupplyChainScale) -> SupplyChainBaseline {
     let mut baseline = crate::relational_certification::ordinary_context::world::supply_chain::scenarios::operating::build(scale);

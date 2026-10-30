@@ -2,8 +2,6 @@
 pub(crate) mod branches;
 #[path = "bridge_delivery/mod.rs"]
 pub(crate) mod bridge_delivery;
-#[path = "cost/mod.rs"]
-pub(crate) mod cost;
 #[path = "model/mod.rs"]
 pub(crate) mod model;
 #[path = "operation_control/mod.rs"]

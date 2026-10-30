@@ -4,13 +4,6 @@ pub(crate) use {worth_testkit_relational::relational_certification::ordinary_con
 pub(crate) use {worth_relational::facade::history::BranchId};
 pub(crate) use {worth_relational::facade::snapshots::SnapshotHandle};
 
-
-
-
-
-
-
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum ScenarioLifecycle {
     CommitOnly,

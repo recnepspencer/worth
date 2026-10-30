@@ -1,6 +1,17 @@
+pub(crate) use worth_proof::TransitionOutcome;
 pub(crate) use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerBuildError, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityExecutionInput, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig, worth_server::WorthServerOperationDenial, worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationRegistration, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryWorkspaceBindingError, worth_server::WorthServerQueryWorkspaceBindingRequest, worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig};
+pub(crate) use {
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerBuildError,
+    worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityExecutionInput,
+    worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig,
+    worth_server::WorthServerOperationDenial, worth_server::WorthServerOperationFamily,
+    worth_server::WorthServerOperationRegistration, worth_server::WorthServerQueryHandoffConfig,
+    worth_server::WorthServerQueryWorkspaceBindingError,
+    worth_server::WorthServerQueryWorkspaceBindingRequest,
+    worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig,
+};
 
 pub(crate) fn build_server(
     workspace_provider: impl WorthServerQueryWorkspaceProvider,
@@ -78,7 +89,8 @@ impl WorthServerQueryWorkspaceProvider for CountingWorkspaceProvider {
         worth_query::facade::runtime::WorthQueryWorkspace,
         WorthServerQueryWorkspaceBindingError,
     > {
-        self.bind_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.bind_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         Err(worth_server::WorthServerQueryWorkspaceBindingError::new(
             "bind_workspace",
             "operation-family guard should deny before workspace binding",

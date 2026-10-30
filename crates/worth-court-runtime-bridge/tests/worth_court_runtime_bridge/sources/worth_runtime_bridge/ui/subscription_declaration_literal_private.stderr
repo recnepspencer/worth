@@ -1,10 +1,10 @@
 error[E0624]: associated function `new` is private
-  --> tests/ui/subscription_declaration_literal_private.rs:11:70
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_declaration_literal_private.rs:11:70
    |
 11 |           declaration_identity: BridgeSubscriptionDeclarationIdentity::new("subscription:literal"),
    |                                                                        ^^^ private associated function
    |
-  ::: src/identity.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    | /     pub(crate) fn new(
    | |         identity: BridgeTruthAuthorityIdentity<Arc<str>, BridgeEvidenceReferenceIdentityKind>,
@@ -12,7 +12,7 @@ error[E0624]: associated function `new` is private
    | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/subscription_declaration_literal_private.rs:11:74
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_declaration_literal_private.rs:11:74
    |
 11 |         declaration_identity: BridgeSubscriptionDeclarationIdentity::new("subscription:literal"),
    |                               ------------------------------------------ ^^^^^^^^^^^^^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
@@ -22,13 +22,13 @@ error[E0308]: mismatched types
    = note: expected struct `worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>`
            found reference `&'static str`
 note: associated function defined here
-  --> src/identity.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/identity.rs
    |
    |     pub(crate) fn new(
    |                   ^^^
 
 error: cannot construct `BridgeSubscriptionDeclaration` with struct literal syntax due to private fields
-  --> tests/ui/subscription_declaration_literal_private.rs:10:13
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_declaration_literal_private.rs:10:13
    |
 10 |     let _ = BridgeSubscriptionDeclaration {
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

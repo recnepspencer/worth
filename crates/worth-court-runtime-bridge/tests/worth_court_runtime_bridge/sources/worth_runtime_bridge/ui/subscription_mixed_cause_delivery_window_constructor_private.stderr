@@ -1,5 +1,5 @@
 error: cannot construct `BridgeMixedCauseDeliveryWindowPlan` with struct literal syntax due to private fields
-  --> tests/ui/subscription_mixed_cause_delivery_window_constructor_private.rs:8:13
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_mixed_cause_delivery_window_constructor_private.rs:8:13
    |
  8 |     let _ = BridgeMixedCauseDeliveryWindowPlan {
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

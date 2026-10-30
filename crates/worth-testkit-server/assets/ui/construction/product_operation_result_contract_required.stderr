@@ -1,14 +1,14 @@
 error[E0061]: this function takes 5 arguments but 4 arguments were supplied
-  --> tests/ui/construction/product_operation_result_contract_required.rs:7:36
+  --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/product_operation_result_contract_required.rs
    |
- 7 |     let _digest_only_declaration = WorthServerProductOperationDeclaration::product_read(
+   |     let _digest_only_declaration = WorthServerProductOperationDeclaration::product_read(
    |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-10 |         WorthServerProductOperationBasisKind::DurableProductDerived,
+   |         WorthServerProductOperationBasisKind::DurableProductDerived,
    |         ----------------------------------------------------------- argument #3 of type `WorthServerProductResultContract` is missing
    |
 note: associated function defined here
-  --> src/product_adapter/declaration.rs
+  --> $WORKSPACE/crates/worth-server/src/product_adapter/declaration.rs
    |
    |     pub fn product_read(
    |            ^^^^^^^^^^^^

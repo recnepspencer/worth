@@ -2,177 +2,177 @@
 fn resource_compile_fail_boundaries_hold() {
     let cases = trybuild::TestCases::new();
     cases
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/validated_async_node_capability_declaration_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/frozen_async_node_capability_descriptor_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/lowered_async_node_capability_bundle_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_capability_alias_lowering_proof_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_capable_node_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_keyed_node_capability_binding_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_gate_state_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_hierarchy_replay_summary_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_hierarchy_cancellation_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_historical_parity_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_node_historical_parity_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_capability_equivalence_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_node_capability_equivalence_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_keyed_node_historical_parity_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_keyed_node_historical_parity_fields_are_private.rs"));
+        .compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/validated_async_node_capability_declaration_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/frozen_async_node_capability_descriptor_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/lowered_async_node_capability_bundle_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_capability_alias_lowering_proof_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_capable_node_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_keyed_node_capability_binding_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_gate_state_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_hierarchy_replay_summary_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_hierarchy_cancellation_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_historical_parity_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_node_historical_parity_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_capability_equivalence_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_node_capability_equivalence_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_keyed_node_historical_parity_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_keyed_node_historical_parity_fields_are_private.rs");
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_keyed_node_capability_equivalence_report_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_keyed_node_capability_equivalence_report_fields_are_private.rs",
     );
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_keyed_node_capability_equivalence_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_keyed_node_capability_equivalence_fields_are_private.rs",
     );
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_hierarchy_historical_parity_report_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_hierarchy_historical_parity_report_fields_are_private.rs",
     );
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_node_hierarchy_historical_parity_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_async_node_hierarchy_historical_parity_fields_are_private.rs",
     );
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_admission_classification_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_request_admission_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_request_intent_constructor_is_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_revalidation_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_revalidation_intent_constructor_is_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_compile_time_boundary_proof_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_milestone_d_scenario_matrix_fields_are_private.rs"));
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_admission_classification_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_request_admission_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_request_intent_constructor_is_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_revalidation_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_revalidation_intent_constructor_is_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_compile_time_boundary_proof_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_milestone_d_scenario_matrix_fields_are_private.rs");
     cases
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_milestone_d_performance_closeout_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_milestone_d_certification_run_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/admitted_resource_request_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/admitted_resource_completion_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/cancelled_resource_request_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/rejected_resource_request_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_cancellation_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_rejection_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/timed_out_resource_request_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_timeout_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_completion_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/validated_completion_envelope_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_transition_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_supersession_record_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_intent_equivalence_coalescing_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_request_admission_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_cancellation_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_rejection_report_fields_are_private.rs"));
+        .compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_milestone_d_performance_closeout_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_milestone_d_certification_run_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/admitted_resource_request_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/admitted_resource_completion_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/cancelled_resource_request_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/rejected_resource_request_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_cancellation_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_rejection_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/timed_out_resource_request_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_timeout_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_completion_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/validated_completion_envelope_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_transition_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_supersession_record_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_intent_equivalence_coalescing_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_request_admission_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_cancellation_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_rejection_report_fields_are_private.rs");
     cases
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_dependent_cancellation_propagation_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_timeout_report_fields_are_private.rs"));
+        .compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_dependent_cancellation_propagation_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_timeout_report_fields_are_private.rs");
     cases
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_timeout_heartbeat_extension_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retry_schedule_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retry_admission_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_revalidation_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_revalidation_freshness_decision_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_revalidation_coalescing_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/active_resource_revalidation_proof_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/active_resource_revalidation_proof_cannot_be_deserialized.rs"));
+        .compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_timeout_heartbeat_extension_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retry_schedule_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retry_admission_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_revalidation_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_revalidation_freshness_decision_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_revalidation_coalescing_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/active_resource_revalidation_proof_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/active_resource_revalidation_proof_cannot_be_deserialized.rs");
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/dependency_change_resource_revalidation_proof_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/dependency_change_resource_revalidation_proof_fields_are_private.rs",
     );
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/dependency_change_resource_revalidation_proof_cannot_be_deserialized.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/dependency_change_resource_revalidation_proof_cannot_be_deserialized.rs",
     );
     cases
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/observer_demand_resource_revalidation_proof_fields_are_private.rs"));
+        .compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/observer_demand_resource_revalidation_proof_fields_are_private.rs");
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/observer_demand_resource_revalidation_proof_cannot_be_deserialized.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/observer_demand_resource_revalidation_proof_cannot_be_deserialized.rs",
     );
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/terminal_state_resource_revalidation_proof_fields_are_private.rs"));
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/terminal_state_resource_revalidation_proof_fields_are_private.rs");
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/terminal_state_resource_revalidation_proof_cannot_be_deserialized.rs"),
-    );
-    cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/fulfilled_lifecycle_resource_revalidation_proof_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/terminal_state_resource_revalidation_proof_cannot_be_deserialized.rs",
     );
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/fulfilled_lifecycle_resource_revalidation_proof_cannot_be_deserialized.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/fulfilled_lifecycle_resource_revalidation_proof_fields_are_private.rs",
     );
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_completion_admission_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_completion_batch_admission_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_completion_batch_admission_report_cannot_be_cloned.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_branch_restore_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_replay_reconstruction_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_replay_availability_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_record_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_record_passing_is_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs"));
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_hostile_scenario_evidence_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/fulfilled_lifecycle_resource_revalidation_proof_cannot_be_deserialized.rs",
     );
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_performance_closeout_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_scenario_row_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_scenario_matrix_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_certification_run_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_c_policy_scenario_row_fields_are_private.rs"));
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_completion_admission_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_completion_batch_admission_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_completion_batch_admission_report_cannot_be_cloned.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_branch_restore_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_replay_reconstruction_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_replay_availability_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_record_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_record_passing_is_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs");
+    cases.compile_fail(
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_hostile_scenario_evidence_fields_are_private.rs",
+    );
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_performance_closeout_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_scenario_row_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_scenario_matrix_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_certification_run_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_c_policy_scenario_row_fields_are_private.rs");
     cases
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_c_policy_scenario_matrix_fields_are_private.rs"));
+        .compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_c_policy_scenario_matrix_fields_are_private.rs");
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_c_policy_performance_closeout_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_c_policy_performance_closeout_fields_are_private.rs",
     );
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_c_certification_run_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_diagnostics_expansion_budget_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_diagnostics_expansion_denial_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_diagnostics_summary_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_runtime_summary_read_report_fields_are_private.rs"));
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_c_certification_run_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_diagnostics_expansion_budget_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_diagnostics_expansion_denial_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_diagnostics_summary_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_runtime_summary_read_report_fields_are_private.rs");
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_retention_compaction_report_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_retention_compaction_report_fields_are_private.rs",
     );
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_completion_cannot_be_staged.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_resource_completion_effect_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_denied_resource_completion_effect_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/committed_resource_completion_artifact_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_resource_completion_effect_cannot_be_cloned.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_denied_resource_completion_effect_cannot_be_cloned.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_denied_resource_completion_cannot_commit.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_denied_resource_completion_cannot_transaction_commit.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/committed_resource_completion_artifact_cannot_be_cloned.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_runtime_summary_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_descriptor_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_descriptor_constructor_is_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/frozen_resource_policy_descriptor_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_cancellation_decision_plan_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_overlapping_generation_admission_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retry_decision_plan_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_revalidation_decision_plan_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/observed_resource_node_state_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_observation_batch_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_observation_decision_plan_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_diagnostics_decision_plan_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_output_continuity_decision_plan_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_replay_decision_plan_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retention_decision_plan_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retained_history_availability_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retention_compaction_budget_fields_are_private.rs"));
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_completion_cannot_be_staged.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_resource_completion_effect_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_denied_resource_completion_effect_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/committed_resource_completion_artifact_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_resource_completion_effect_cannot_be_cloned.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_denied_resource_completion_effect_cannot_be_cloned.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_denied_resource_completion_cannot_commit.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_denied_resource_completion_cannot_transaction_commit.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/committed_resource_completion_artifact_cannot_be_cloned.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_runtime_summary_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_descriptor_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_descriptor_constructor_is_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/frozen_resource_policy_descriptor_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_cancellation_decision_plan_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_overlapping_generation_admission_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retry_decision_plan_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_revalidation_decision_plan_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/observed_resource_node_state_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_observation_batch_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_observation_decision_plan_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_diagnostics_decision_plan_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_output_continuity_decision_plan_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_replay_decision_plan_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retention_decision_plan_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retained_history_availability_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retention_compaction_budget_fields_are_private.rs");
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retained_denied_completion_availability_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retained_denied_completion_availability_fields_are_private.rs",
     );
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/retained_resource_retry_lineage_fields_are_private.rs"));
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/retained_resource_retry_lineage_fields_are_private.rs");
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retained_retry_lineage_availability_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_retained_retry_lineage_availability_fields_are_private.rs",
     );
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_stale_after_decision_plan_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_supersession_decision_plan_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_timeout_decision_plan_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_compatibility_report_fields_are_private.rs"));
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_stale_after_decision_plan_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_supersession_decision_plan_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_timeout_decision_plan_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_compatibility_report_fields_are_private.rs");
     cases
-        .compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_restore_compatibility_proof_fields_are_private.rs"));
+        .compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_restore_compatibility_proof_fields_are_private.rs");
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_policy_restore_compatibility_fields_are_private.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_policy_restore_compatibility_fields_are_private.rs",
     );
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_registry_freeze_report_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/validated_resource_policy_declaration_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/lowered_resource_policy_bundle_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_initial_lifecycle_class_fields_are_private.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_policy_rejects_pending_initial_class.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_policy_rejects_terminal_initial_class.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/raw_resource_completion_cannot_be_staged.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/raw_resource_completion_cannot_be_committed.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/admitted_resource_completion_cannot_commit_without_staging.rs"));
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_registry_freeze_report_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/validated_resource_policy_declaration_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/lowered_resource_policy_bundle_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_initial_lifecycle_class_fields_are_private.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_policy_rejects_pending_initial_class.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_policy_rejects_terminal_initial_class.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/raw_resource_completion_cannot_be_staged.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/raw_resource_completion_cannot_be_committed.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/admitted_resource_completion_cannot_commit_without_staging.rs");
     cases.compile_fail(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/admitted_resource_completion_cannot_transaction_commit_without_staging.rs"),
+        "tests/worth_court_signal_owner_services/sources/worth_signal/ui/admitted_resource_completion_cannot_transaction_commit_without_staging.rs",
     );
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/cancelled_resource_request_cannot_be_staged_as_completion.rs"));
-    cases.compile_fail(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_runtime_internals_are_not_public.rs"));
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/cancelled_resource_request_cannot_be_staged_as_completion.rs");
+    cases.compile_fail("tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_runtime_internals_are_not_public.rs");
 }

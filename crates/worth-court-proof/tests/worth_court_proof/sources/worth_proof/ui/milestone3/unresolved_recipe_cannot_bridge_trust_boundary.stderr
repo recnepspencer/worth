@@ -1,5 +1,5 @@
 error[E0599]: no method named `bridge_trust_boundary` found for struct `Recipe<worth_proof::Unresolved, &str>` in the current scope
- --> tests/ui/milestone3/unresolved_recipe_cannot_bridge_trust_boundary.rs:5:31
+ --> tests/worth_court_proof/sources/worth_proof/ui/milestone3/unresolved_recipe_cannot_bridge_trust_boundary.rs:5:31
   |
 5 |     let _bridged = unresolved.bridge_trust_boundary();
   |                               ^^^^^^^^^^^^^^^^^^^^^ method not found in `Recipe<worth_proof::Unresolved, &str>`

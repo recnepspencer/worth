@@ -1,5 +1,13 @@
 // Neutral recursive tagged, named, boxed and fixed-product grammar.
-pub(crate) use {worth_foundational::facade::decode_canonical_value, worth_foundational::facade::decode_canonical_value_with_admission, worth_foundational::facade::encode_canonical_value, worth_foundational::facade::CanonicalValue, worth_foundational::facade::ValueCodecDenial as D, worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::ValueShape, worth_foundational::facade::ValueShapeDefinition, worth_foundational::facade::ValueShapeDepth, worth_foundational::facade::WorthValue};
+pub(crate) use {
+    worth_foundational::facade::decode_canonical_value,
+    worth_foundational::facade::decode_canonical_value_with_admission,
+    worth_foundational::facade::encode_canonical_value, worth_foundational::facade::CanonicalValue,
+    worth_foundational::facade::ValueCodecDenial as D,
+    worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::ValueShape,
+    worth_foundational::facade::ValueShapeDefinition, worth_foundational::facade::ValueShapeDepth,
+    worth_foundational::facade::WorthValue,
+};
 
 #[derive(Debug, PartialEq, WorthValue)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
@@ -19,24 +27,30 @@ pub(crate) struct Element {
     pub(crate) value: Expression,
 }
 
-pub(crate) const BOUNDS: ValueDecodeBounds = worth_foundational::facade::ValueDecodeBounds::new(4096, 64, 8, 24);
+pub(crate) const BOUNDS: ValueDecodeBounds =
+    worth_foundational::facade::ValueDecodeBounds::new(4096, 64, 8, 24);
 pub(crate) const RAW: &str = r#"{"kind":"group","members":[{"label":"α","value":{"kind":"negate","operand":{"kind":"pairs","fields":[["left",{"kind":"text","value":"δ\n"}],["right",{"kind":"empty"}]]}}}]}"#;
 pub(crate) fn value() -> Expression {
     crate::value_shape::ordinary_context::recursive::Expression::Group {
         members: vec![Element {
             label: Label("α".into()),
             value: crate::value_shape::ordinary_context::recursive::Expression::Negate {
-                operand: Box::new(crate::value_shape::ordinary_context::recursive::Expression::Pairs {
-                    fields: vec![
-                        (
-                            Label("left".into()),
-                            crate::value_shape::ordinary_context::recursive::Expression::Text {
-                                value: "δ\n".into(),
-                            },
-                        ),
-                        (Label("right".into()), crate::value_shape::ordinary_context::recursive::Expression::Empty),
-                    ],
-                }),
+                operand: Box::new(
+                    crate::value_shape::ordinary_context::recursive::Expression::Pairs {
+                        fields: vec![
+                            (
+                                Label("left".into()),
+                                crate::value_shape::ordinary_context::recursive::Expression::Text {
+                                    value: "δ\n".into(),
+                                },
+                            ),
+                            (
+                                Label("right".into()),
+                                crate::value_shape::ordinary_context::recursive::Expression::Empty,
+                            ),
+                        ],
+                    },
+                ),
             },
         }],
     }

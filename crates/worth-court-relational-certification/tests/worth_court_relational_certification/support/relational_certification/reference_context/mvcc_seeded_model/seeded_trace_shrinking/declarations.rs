@@ -1,4 +1,9 @@
-pub(crate) use {crate::relational_certification::reference_context::mvcc_seeded_model::replay_trace, crate::relational_certification::reference_context::mvcc_seeded_model::ProductionModelTrace, crate::relational_certification::reference_context::mvcc_seeded_model::ScenarioLifecycle, crate::relational_certification::reference_context::mvcc_seeded_model::TraceFailure};
+pub(crate) use {
+    crate::relational_certification::reference_context::mvcc_seeded_model::replay_trace,
+    crate::relational_certification::reference_context::mvcc_seeded_model::ProductionModelTrace,
+    crate::relational_certification::reference_context::mvcc_seeded_model::ScenarioLifecycle,
+    crate::relational_certification::reference_context::mvcc_seeded_model::TraceFailure,
+};
 
 pub(crate) fn shrink_failing_trace(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

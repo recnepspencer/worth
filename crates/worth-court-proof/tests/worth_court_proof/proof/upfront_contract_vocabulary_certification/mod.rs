@@ -1,7 +1,5 @@
 #[allow(unused_imports)]
 use crate::upfront_contract_vocabulary_certification::ordinary_context::*;
-use std::cell::Cell;
-use std::convert::Infallible;
 
 use worth_proof::contracts::*;
 

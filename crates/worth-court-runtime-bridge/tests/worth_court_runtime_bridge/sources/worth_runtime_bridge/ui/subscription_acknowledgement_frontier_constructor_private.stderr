@@ -1,10 +1,10 @@
 error[E0624]: associated function `admit` is private
- --> tests/ui/subscription_acknowledgement_frontier_constructor_private.rs:4:67
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_acknowledgement_frontier_constructor_private.rs:4:67
   |
 4 |       let _constructor = BridgeSubscriptionAcknowledgementFrontier::admit;
   |                                                                     ^^^^^ private associated function
   |
- ::: src/subscription/checkpoint/ack_frontier.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/checkpoint/ack_frontier.rs
   |
   | /     pub(crate) fn admit(
   | |         sealed_window: &BridgeSubscriptionDeliveryWindowSealed,

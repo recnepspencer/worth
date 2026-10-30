@@ -1,12 +1,7 @@
 #[allow(unused_imports)] use crate::relational_certification::ordinary_context::owner_service_completion::owner_lifecycle_observation::*;
-pub(crate) use {std::sync::mpsc, std::sync::mpsc::sync_channel, std::sync::mpsc::TryRecvError};
-pub(crate) use {std::sync::Arc, std::sync::Barrier};
-pub(crate) use {std::time::Duration, std::time::Instant};
+pub(crate) use std::sync::mpsc::sync_channel;
 
-pub(crate) use {crate::relational_certification::ordinary_context::owner_service_completion::world::empty_runtime};
-pub(crate) use {worth_relational::facade::branch::RelationalOwnerLifecycleObservation};
-pub(crate) use {worth_relational::facade::mvcc::RelationalOperationControl, worth_relational::facade::mvcc::RelationalPublicationOutcome, worth_relational::facade::mvcc::RelationalTransactionIntent};
-pub(crate) use {worth_relational::facade::transactions::WorkerIntentBatch};
+pub(crate) use crate::relational_certification::ordinary_context::owner_service_completion::world::empty_runtime;
 
 #[test]
 fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authority() {
@@ -23,9 +18,15 @@ fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authorit
         worth_relational::facade::branch::RelationalOwnerLifecycleObservation::Open
     );
 
-    let (reached, release) = (std::sync::Arc::new(std::sync::Barrier::new(2)), std::sync::Arc::new(std::sync::Barrier::new(2)));
+    let (reached, release) = (
+        std::sync::Arc::new(std::sync::Barrier::new(2)),
+        std::sync::Arc::new(std::sync::Barrier::new(2)),
+    );
     let control = worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted()
-        .with_critical_section_pause_for_test(std::sync::Arc::clone(&reached), std::sync::Arc::clone(&release));
+        .with_critical_section_pause_for_test(
+            std::sync::Arc::clone(&reached),
+            std::sync::Arc::clone(&release),
+        );
     let basis = services
         .basis_port()
         .admit_branch_basis(&runtime.main_branch_identity())
@@ -66,17 +67,24 @@ fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authorit
         drop(runtime);
         let _ = owner_dropped_tx.send(());
     });
-    assert_pause_reached(std::sync::Arc::clone(&reached), std::sync::Arc::clone(&release));
+    assert_pause_reached(
+        std::sync::Arc::clone(&reached),
+        std::sync::Arc::clone(&release),
+    );
     let owner_close_started = owner_close_start_tx.send(()).is_ok();
     let closing_reached = wait_until(LIFECYCLE_BOUND, || {
-        lifecycle_port.owner_lifecycle_observation() == worth_relational::facade::branch::RelationalOwnerLifecycleObservation::Closing
+        lifecycle_port.owner_lifecycle_observation()
+            == worth_relational::facade::branch::RelationalOwnerLifecycleObservation::Closing
     });
-    let owner_waited_for_operation = owner_dropped_rx.try_recv() == Err(std::sync::mpsc::TryRecvError::Empty);
+    let owner_waited_for_operation =
+        owner_dropped_rx.try_recv() == Err(std::sync::mpsc::TryRecvError::Empty);
 
     let pause_released = release_controlled_pause(release);
     let publication = publication_rx.recv_timeout(LIFECYCLE_BOUND);
-    let publication_performed =
-        matches!(&publication, Ok(worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(_)));
+    let publication_performed = matches!(
+        &publication,
+        Ok(worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(_))
+    );
     drop(publication);
     let owner_dropped = owner_dropped_rx.recv_timeout(LIFECYCLE_BOUND);
 

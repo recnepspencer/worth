@@ -1,6 +1,12 @@
 // Actual array aliases, platform indices and named enum payloads share one wire grammar.
 pub(crate) use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
-pub(crate) use {worth_foundational::facade::decode_canonical_value, worth_foundational::facade::decode_canonical_value_with_admission, worth_foundational::facade::encode_canonical_value, worth_foundational::facade::CanonicalValue, worth_foundational::facade::ValueCodecDenial as D, worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::WorthValue};
+pub(crate) use {
+    worth_foundational::facade::decode_canonical_value,
+    worth_foundational::facade::decode_canonical_value_with_admission,
+    worth_foundational::facade::encode_canonical_value, worth_foundational::facade::CanonicalValue,
+    worth_foundational::facade::ValueCodecDenial as D,
+    worth_foundational::facade::ValueDecodeBounds, worth_foundational::facade::WorthValue,
+};
 
 pub(crate) type Entity = [u64; 3];
 pub(crate) type Nodes = [[usize; 3]; 2];
@@ -15,7 +21,8 @@ pub(crate) enum Meaning {
         contributors: Vec<(usize, [u64; 6])>,
     },
 }
-pub(crate) const BOUNDS: ValueDecodeBounds = worth_foundational::facade::ValueDecodeBounds::new(4096, 256, 64, 32);
+pub(crate) const BOUNDS: ValueDecodeBounds =
+    worth_foundational::facade::ValueDecodeBounds::new(4096, 256, 64, 32);
 pub(crate) const RAW: &str = r#"{"Face":{"source":[9,17,4],"nodes":[[1,2,3],[4,5,6]],"contributors":[[7,[11,12,13,14,15,16]]]}}"#;
 
 pub(crate) static DROPPED: AtomicUsize = std::sync::atomic::AtomicUsize::new(0);

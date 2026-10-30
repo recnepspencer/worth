@@ -1,8 +1,14 @@
-pub(crate) use {worth_foundational::facade::DiagnosticRichnessProfile, worth_foundational::facade::FoundationalBoundaryEvidenceSupportTruthKind};
-pub(crate) use {worth_server::WorthServerDenialBoundary, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperatorEvidenceConfig, worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerRequestContextDenialCode, worth_server::WorthServerResponseInput, worth_server::WorthServerResponseTransform};
-
-pub(crate) use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider};
-pub(crate) use {worth_testkit_server::shared_support_response_fixture::middleware_mutation_denial, worth_testkit_server::shared_support_response_fixture::operator_evidence_record, worth_testkit_server::shared_support_response_fixture::query_handoff_durable_denial, worth_testkit_server::shared_support_response_fixture::resolve_blank_principal_denial, worth_testkit_server::shared_support_response_fixture::resolve_blank_workspace_denial, worth_testkit_server::shared_support_response_fixture::resolve_preview_denial, worth_testkit_server::shared_support_response_fixture::test_server, worth_testkit_server::shared_support_response_fixture::test_server_with_request_context_and_operator_evidence_config};
+pub(crate) use worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider;
+pub(crate) use {
+    worth_testkit_server::shared_support_response_fixture::middleware_mutation_denial,
+    worth_testkit_server::shared_support_response_fixture::operator_evidence_record,
+    worth_testkit_server::shared_support_response_fixture::query_handoff_durable_denial,
+    worth_testkit_server::shared_support_response_fixture::resolve_blank_principal_denial,
+    worth_testkit_server::shared_support_response_fixture::resolve_blank_workspace_denial,
+    worth_testkit_server::shared_support_response_fixture::resolve_preview_denial,
+    worth_testkit_server::shared_support_response_fixture::test_server,
+    worth_testkit_server::shared_support_response_fixture::test_server_with_request_context_and_operator_evidence_config,
+};
 
 #[test]
 fn shape_keeps_request_context_middleware_and_query_handoff_denials_distinct() {
@@ -14,15 +20,21 @@ fn shape_keeps_request_context_middleware_and_query_handoff_denials_distinct() {
     );
 
     let request_context = server.responses().shape(
-        worth_server::WorthServerResponseInput::request_context_denied(resolve_preview_denial(&server)),
+        worth_server::WorthServerResponseInput::request_context_denied(resolve_preview_denial(
+            &server,
+        )),
         worth_server::WorthServerResponseTransform::compat_http(),
     );
     let middleware = server.responses().shape(
-        worth_server::WorthServerResponseInput::middleware_denied(middleware_mutation_denial(&server)),
+        worth_server::WorthServerResponseInput::middleware_denied(middleware_mutation_denial(
+            &server,
+        )),
         worth_server::WorthServerResponseTransform::compat_http(),
     );
     let query_handoff = server.responses().shape(
-        worth_server::WorthServerResponseInput::query_handoff_denied(query_handoff_durable_denial(&server)),
+        worth_server::WorthServerResponseInput::query_handoff_denied(query_handoff_durable_denial(
+            &server,
+        )),
         worth_server::WorthServerResponseTransform::compat_http(),
     );
 
@@ -94,15 +106,21 @@ fn shape_keeps_auth_workspace_and_branch_request_context_denials_distinct() {
     );
 
     let auth_denial = server.responses().shape(
-        worth_server::WorthServerResponseInput::request_context_denied(resolve_blank_principal_denial(&server)),
+        worth_server::WorthServerResponseInput::request_context_denied(
+            resolve_blank_principal_denial(&server),
+        ),
         worth_server::WorthServerResponseTransform::compat_http(),
     );
     let workspace_denial = server.responses().shape(
-        worth_server::WorthServerResponseInput::request_context_denied(resolve_blank_workspace_denial(&server)),
+        worth_server::WorthServerResponseInput::request_context_denied(
+            resolve_blank_workspace_denial(&server),
+        ),
         worth_server::WorthServerResponseTransform::compat_http(),
     );
     let branch_denial = server.responses().shape(
-        worth_server::WorthServerResponseInput::request_context_denied(resolve_preview_denial(&server)),
+        worth_server::WorthServerResponseInput::request_context_denied(resolve_preview_denial(
+            &server,
+        )),
         worth_server::WorthServerResponseTransform::compat_http(),
     );
 
@@ -153,23 +171,27 @@ fn operator_evidence_reconstructs_denial_classification_without_logs() {
     let request_context_evidence = operator_evidence_record(
         &server,
         server.responses().shape(
-            worth_server::WorthServerResponseInput::request_context_denied(resolve_blank_principal_denial(
-                &server,
-            )),
+            worth_server::WorthServerResponseInput::request_context_denied(
+                resolve_blank_principal_denial(&server),
+            ),
             worth_server::WorthServerResponseTransform::compat_http(),
         ),
     );
     let middleware_evidence = operator_evidence_record(
         &server,
         server.responses().shape(
-            worth_server::WorthServerResponseInput::middleware_denied(middleware_mutation_denial(&server)),
+            worth_server::WorthServerResponseInput::middleware_denied(middleware_mutation_denial(
+                &server,
+            )),
             worth_server::WorthServerResponseTransform::compat_http(),
         ),
     );
     let query_handoff_evidence = operator_evidence_record(
         &server,
         server.responses().shape(
-            worth_server::WorthServerResponseInput::query_handoff_denied(query_handoff_durable_denial(&server)),
+            worth_server::WorthServerResponseInput::query_handoff_denied(
+                query_handoff_durable_denial(&server),
+            ),
             worth_server::WorthServerResponseTransform::compat_http(),
         ),
     );
@@ -239,15 +261,21 @@ fn operator_evidence_preserves_denial_support_truth_when_operational_minimal_eli
             .build()
             .expect("middleware config should validate"),
         worth_server::WorthServerRequestContextConfig::builder()
-            .with_default_diagnostics_profile(worth_foundational::facade::DiagnosticRichnessProfile::OperationalMinimal)
+            .with_default_diagnostics_profile(
+                worth_foundational::facade::DiagnosticRichnessProfile::OperationalMinimal,
+            )
             .build()
             .expect("request context config should validate"),
         worth_server::WorthServerResponseConfig::builder()
-            .with_denial_minimum_diagnostics_profile(worth_foundational::facade::DiagnosticRichnessProfile::OperationalMinimal)
+            .with_denial_minimum_diagnostics_profile(
+                worth_foundational::facade::DiagnosticRichnessProfile::OperationalMinimal,
+            )
             .build()
             .expect("response config should validate"),
         worth_server::WorthServerOperatorEvidenceConfig::builder()
-            .with_minimum_diagnostics_profile(worth_foundational::facade::DiagnosticRichnessProfile::OperationalMinimal)
+            .with_minimum_diagnostics_profile(
+                worth_foundational::facade::DiagnosticRichnessProfile::OperationalMinimal,
+            )
             .build()
             .expect("operator evidence config should validate"),
     );
@@ -255,9 +283,9 @@ fn operator_evidence_preserves_denial_support_truth_when_operational_minimal_eli
     let evidence = operator_evidence_record(
         &server,
         server.responses().shape(
-            worth_server::WorthServerResponseInput::request_context_denied(resolve_blank_principal_denial(
-                &server,
-            )),
+            worth_server::WorthServerResponseInput::request_context_denied(
+                resolve_blank_principal_denial(&server),
+            ),
             worth_server::WorthServerResponseTransform::compat_http(),
         ),
     );

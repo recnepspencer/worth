@@ -1,48 +1,59 @@
 //! Fast integration courts.
 #[allow(unused_imports)]
-use {worth_runtime_world::facade::CompositeComponentIntent, worth_runtime_world::facade::CompositePublicationIntent, crate::runtime_world_context::root::FixedClock, worth_runtime_world::facade::ProductBranchCreationIntent, worth_runtime_world::facade::ProductBranchCreationPlans, worth_runtime_world::facade::ProductBranchName, worth_runtime_world::facade::RelationalBranchCreationPlan, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_runtime_world::facade::RuntimeWorldBranchBudgetInstallation, worth_runtime_world::facade::RuntimeWorldBudgetDenial, worth_runtime_world::facade::RuntimeWorldBudgetInstallation, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldCancellationSource, worth_runtime_world::facade::RuntimeWorldClock, worth_runtime_world::facade::RuntimeWorldCustodyBudgetInstallation, worth_runtime_world::facade::RuntimeWorldHistoryBudgetInstallation, worth_runtime_world::facade::RuntimeWorldObservationBudgetInstallation, worth_runtime_world::facade::RuntimeWorldPublicationBudgetInstallation, worth_runtime_world::facade::RuntimeWorldRecoveryBudgetInstallation, worth_runtime_world::facade::RuntimeWorldRetentionBudgetInstallation, worth_runtime_world::facade::SignalBranchCreationPlan};
-
-
-
-
-
-
-
-
-
-
-
-
+use {
+    crate::runtime_world_context::root::FixedClock,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+    worth_runtime_world::facade::CompositeComponentIntent,
+    worth_runtime_world::facade::CompositePublicationIntent,
+    worth_runtime_world::facade::ProductBranchCreationIntent,
+    worth_runtime_world::facade::ProductBranchCreationPlans,
+    worth_runtime_world::facade::ProductBranchName,
+    worth_runtime_world::facade::RelationalBranchCreationPlan,
+    worth_runtime_world::facade::RuntimeWorldBranchBudgetInstallation,
+    worth_runtime_world::facade::RuntimeWorldBudgetDenial,
+    worth_runtime_world::facade::RuntimeWorldBudgetInstallation,
+    worth_runtime_world::facade::RuntimeWorldBudgets,
+    worth_runtime_world::facade::RuntimeWorldCancellationSource,
+    worth_runtime_world::facade::RuntimeWorldClock,
+    worth_runtime_world::facade::RuntimeWorldCustodyBudgetInstallation,
+    worth_runtime_world::facade::RuntimeWorldHistoryBudgetInstallation,
+    worth_runtime_world::facade::RuntimeWorldObservationBudgetInstallation,
+    worth_runtime_world::facade::RuntimeWorldPublicationBudgetInstallation,
+    worth_runtime_world::facade::RuntimeWorldRecoveryBudgetInstallation,
+    worth_runtime_world::facade::RuntimeWorldRetentionBudgetInstallation,
+    worth_runtime_world::facade::SignalBranchCreationPlan,
+};
 
 #[test]
 fn installed_budgets_are_nonzero_and_cover_every_runtime_world_population() {
-    let budgets = worth_runtime_world::facade::RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
-        branches: RuntimeWorldBranchBudgetInstallation {
-            live_product_branches: 1,
-        },
-        history: RuntimeWorldHistoryBudgetInstallation {
-            retained_composite_commits: 2,
-            history_metadata_bytes: 3,
-        },
-        observations: RuntimeWorldObservationBudgetInstallation {
-            active_observations: 4,
-        },
-        publication: RuntimeWorldPublicationBudgetInstallation {
-            active_publication_attempts: 5,
-        },
-        recovery: RuntimeWorldRecoveryBudgetInstallation {
-            retained_product_unpublished_records: 6,
-            retained_partial_metadata_bytes: 7,
-        },
-        retention: RuntimeWorldRetentionBudgetInstallation {
-            unique_exact_component_pins: 8,
-            in_flight_pin_acquisition_reservations: 9,
-        },
-        custody: RuntimeWorldCustodyBudgetInstallation {
-            owner_created_component_custody_records: 10,
-        },
-    })
-    .expect("all installed limits are nonzero");
+    let budgets =
+        worth_runtime_world::facade::RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
+            branches: RuntimeWorldBranchBudgetInstallation {
+                live_product_branches: 1,
+            },
+            history: RuntimeWorldHistoryBudgetInstallation {
+                retained_composite_commits: 2,
+                history_metadata_bytes: 3,
+            },
+            observations: RuntimeWorldObservationBudgetInstallation {
+                active_observations: 4,
+            },
+            publication: RuntimeWorldPublicationBudgetInstallation {
+                active_publication_attempts: 5,
+            },
+            recovery: RuntimeWorldRecoveryBudgetInstallation {
+                retained_product_unpublished_records: 6,
+                retained_partial_metadata_bytes: 7,
+            },
+            retention: RuntimeWorldRetentionBudgetInstallation {
+                unique_exact_component_pins: 8,
+                in_flight_pin_acquisition_reservations: 9,
+            },
+            custody: RuntimeWorldCustodyBudgetInstallation {
+                owner_created_component_custody_records: 10,
+            },
+        })
+        .expect("all installed limits are nonzero");
 
     assert_eq!(budgets.live_product_branches().get(), Some(1));
     assert_eq!(budgets.retained_composite_commits().get(), Some(2));
@@ -64,34 +75,38 @@ fn installed_budgets_are_nonzero_and_cover_every_runtime_world_population() {
         Some(10)
     );
 
-    let denial = worth_runtime_world::facade::RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
-        branches: RuntimeWorldBranchBudgetInstallation {
-            live_product_branches: 0,
-        },
-        history: RuntimeWorldHistoryBudgetInstallation {
-            retained_composite_commits: 1,
-            history_metadata_bytes: 1,
-        },
-        observations: RuntimeWorldObservationBudgetInstallation {
-            active_observations: 1,
-        },
-        publication: RuntimeWorldPublicationBudgetInstallation {
-            active_publication_attempts: 1,
-        },
-        recovery: RuntimeWorldRecoveryBudgetInstallation {
-            retained_product_unpublished_records: 1,
-            retained_partial_metadata_bytes: 1,
-        },
-        retention: RuntimeWorldRetentionBudgetInstallation {
-            unique_exact_component_pins: 1,
-            in_flight_pin_acquisition_reservations: 1,
-        },
-        custody: RuntimeWorldCustodyBudgetInstallation {
-            owner_created_component_custody_records: 1,
-        },
-    })
-    .expect_err("zero capacity is not an installed bound");
-    assert!(matches!(denial, worth_runtime_world::facade::RuntimeWorldBudgetDenial::ZeroLimit { .. }));
+    let denial =
+        worth_runtime_world::facade::RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
+            branches: RuntimeWorldBranchBudgetInstallation {
+                live_product_branches: 0,
+            },
+            history: RuntimeWorldHistoryBudgetInstallation {
+                retained_composite_commits: 1,
+                history_metadata_bytes: 1,
+            },
+            observations: RuntimeWorldObservationBudgetInstallation {
+                active_observations: 1,
+            },
+            publication: RuntimeWorldPublicationBudgetInstallation {
+                active_publication_attempts: 1,
+            },
+            recovery: RuntimeWorldRecoveryBudgetInstallation {
+                retained_product_unpublished_records: 1,
+                retained_partial_metadata_bytes: 1,
+            },
+            retention: RuntimeWorldRetentionBudgetInstallation {
+                unique_exact_component_pins: 1,
+                in_flight_pin_acquisition_reservations: 1,
+            },
+            custody: RuntimeWorldCustodyBudgetInstallation {
+                owner_created_component_custody_records: 1,
+            },
+        })
+        .expect_err("zero capacity is not an installed bound");
+    assert!(matches!(
+        denial,
+        worth_runtime_world::facade::RuntimeWorldBudgetDenial::ZeroLimit { .. }
+    ));
 }
 
 /// Creation is a two-by-two matrix of independent per-owner plans, and every
@@ -114,25 +129,30 @@ fn branch_name_and_per_owner_creation_plans_are_explicit() {
     assert!(!plans.is_exact_reuse());
     assert!(plans.relational().fork_target().is_some());
     assert!(plans.signal().fork_target().is_none());
-    assert!(worth_runtime_world::facade::ProductBranchCreationPlans::new(
-        worth_runtime_world::facade::RelationalBranchCreationPlan::ReuseExact,
-        worth_runtime_world::facade::SignalBranchCreationPlan::ForkExact {
-            target: signal_target,
-        },
-    )
-    .requires_signal_owner_effect());
+    assert!(
+        worth_runtime_world::facade::ProductBranchCreationPlans::new(
+            worth_runtime_world::facade::RelationalBranchCreationPlan::ReuseExact,
+            worth_runtime_world::facade::SignalBranchCreationPlan::ForkExact {
+                target: signal_target,
+            },
+        )
+        .requires_signal_owner_effect()
+    );
 
-    let bootstrap = worth_runtime_world::facade::ProductBranchCreationIntent::named("root").expect("valid root name");
+    let bootstrap = worth_runtime_world::facade::ProductBranchCreationIntent::named("root")
+        .expect("valid root name");
     assert!(bootstrap.plans().is_none());
     let from_source =
-        worth_runtime_world::facade::ProductBranchCreationIntent::from_source("child", plans).expect("valid child branch name");
+        worth_runtime_world::facade::ProductBranchCreationIntent::from_source("child", plans)
+            .expect("valid child branch name");
     assert!(from_source.plans().is_some());
 }
 
 #[test]
 fn component_intent_carries_owner_meaning_without_ambient_currentness() {
-    let relational =
-        worth_runtime_world::facade::CompositeComponentIntent::relational_only(worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary());
+    let relational = worth_runtime_world::facade::CompositeComponentIntent::relational_only(
+        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+    );
     assert!(relational.changes_relational());
     assert!(!relational.changes_signal());
     assert!(relational.relational_change().is_some());
@@ -148,8 +168,9 @@ fn component_intent_carries_owner_meaning_without_ambient_currentness() {
 /// compiler rather than re-read from a runtime posture.
 #[test]
 fn publication_stage_is_declared_at_intent_construction() {
-    let without_signal =
-        worth_runtime_world::facade::CompositePublicationIntent::without_signal(worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary());
+    let without_signal = worth_runtime_world::facade::CompositePublicationIntent::without_signal(
+        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+    );
     assert!(without_signal.component_intent().changes_relational());
     assert!(!without_signal.component_intent().changes_signal());
 
@@ -157,8 +178,9 @@ fn publication_stage_is_declared_at_intent_construction() {
     assert!(!signal_only.component_intent().changes_relational());
     assert!(signal_only.component_intent().changes_signal());
 
-    let both =
-        worth_runtime_world::facade::CompositePublicationIntent::with_signal(Some(worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()));
+    let both = worth_runtime_world::facade::CompositePublicationIntent::with_signal(Some(
+        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+    ));
     assert!(both.component_intent().changes_relational());
     assert!(both.component_intent().changes_signal());
 }

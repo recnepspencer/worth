@@ -1,30 +1,30 @@
 error[E0277]: the trait bound `FoundationalMergeCandidate<&str>: FoundationalBoundaryCategorySurface` is not satisfied
-  --> tests/ui/transitions/merge_admission/merge_candidate_cannot_satisfy_authoritative_boundary_api.rs:63:9
-   |
-62 |     let _ = admit_authoritative_current_boundary_surface(
-   |             -------------------------------------------- required by a bound introduced by this call
-63 |         candidate,
-   |         ^^^^^^^^^ the trait `FoundationalBoundaryCategorySurface` is not implemented for `FoundationalMergeCandidate<&str>`
-   |
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/merge_admission/merge_candidate_cannot_satisfy_authoritative_boundary_api.rs
+  |
+  |     let _ = admit_authoritative_current_boundary_surface(
+  |             -------------------------------------------- required by a bound introduced by this call
+  |         candidate,
+  |         ^^^^^^^^^ the trait `FoundationalBoundaryCategorySurface` is not implemented for `FoundationalMergeCandidate<&str>`
+  |
 help: the following other types implement trait `FoundationalBoundaryCategorySurface`
-  --> src/boundary_artifacts/categories.rs
-   |
-   | impl FoundationalBoundaryCategorySurface for FoundationalBoundarySummarySurface {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundarySummarySurface`
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/categories.rs
+  |
+  | impl FoundationalBoundaryCategorySurface for FoundationalBoundarySummarySurface {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundarySummarySurface`
 ...
-   | impl<Row> FoundationalBoundaryCategorySurface for FoundationalBoundaryReportSurface<Row> {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundaryReportSurface<Row>`
+  | impl<Row> FoundationalBoundaryCategorySurface for FoundationalBoundaryReportSurface<Row> {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundaryReportSurface<Row>`
 ...
-   | impl<T> FoundationalBoundaryCategorySurface for FoundationalBoundaryArtifactSurface<T> {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundaryArtifactSurface<T>`
+  | impl<T> FoundationalBoundaryCategorySurface for FoundationalBoundaryArtifactSurface<T> {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundaryArtifactSurface<T>`
 ...
-   | impl FoundationalBoundaryCategorySurface for FoundationalBoundaryReceiptSurface {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundaryReceiptSurface`
+  | impl FoundationalBoundaryCategorySurface for FoundationalBoundaryReceiptSurface {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FoundationalBoundaryReceiptSurface`
 note: required by a bound in `admit_authoritative_current_boundary_surface`
-  --> src/boundary_artifacts/authority.rs
-   |
-   | pub fn admit_authoritative_current_boundary_surface<Surface>(
-   |        -------------------------------------------- required by a bound in this function
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/authority.rs
+  |
+  | pub fn admit_authoritative_current_boundary_surface<Surface>(
+  |        -------------------------------------------- required by a bound in this function
 ...
-   |     Surface: FoundationalBoundaryCategorySurface<Category = ArtifactCategory>,
-   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `admit_authoritative_current_boundary_surface`
+  |     Surface: FoundationalBoundaryCategorySurface<Category = ArtifactCategory>,
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `admit_authoritative_current_boundary_surface`

@@ -1,11 +1,19 @@
 // Scheduled resource-bound evidence.  The large cases stay ignored in the
 // ordinary court but are selected by the Scale roster with `--ignored`.
+pub(crate) use std::thread;
 pub(crate) use {std::sync::mpsc, std::sync::Arc, std::sync::Condvar, std::sync::Mutex};
-pub(crate) use {std::thread};
 
-pub(crate) use {worth_signal::facade::branch::SignalBranchAdvanceDenial, worth_signal::facade::branch::SignalBranchRetentionAcquisitionDenial, worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome, worth_signal::facade::branch::SignalOwnerCancellationSource};
+pub(crate) use {
+    worth_signal::facade::branch::SignalBranchAdvanceDenial,
+    worth_signal::facade::branch::SignalBranchRetentionAcquisitionDenial,
+    worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+};
 
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
+pub(crate) use {
+    crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld,
+    crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND,
+};
 
 #[derive(Default)]
 pub(crate) struct ReleaseGate {

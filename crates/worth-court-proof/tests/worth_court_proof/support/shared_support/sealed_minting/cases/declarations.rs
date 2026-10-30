@@ -2,8 +2,8 @@ pub(crate) use std::collections::BTreeSet;
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
 pub(crate) use {
-    crate::shared_support::compile_fail::bundle::CompileFailBundle,
-    crate::shared_support::compile_fail::bundle::CompileFailCase,
+    crate::compile_fail::harness::bundle::CompileFailBundle,
+    crate::compile_fail::harness::bundle::CompileFailCase,
 };
 
 pub(crate) const SUITE: &str = "sealed_minting_and_witness_authority";
@@ -79,57 +79,57 @@ pub(crate) const CASES: &[SealedMintingCase] = &[
     crate::shared_support::sealed_minting::cases::SealedMintingCase::new(
         crate::shared_support::sealed_minting::cases::SealedMintingFamily::ProofMinting,
         crate::shared_support::sealed_minting::cases::SealedMintingObligation::StrongerConstructorPrivate,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs"),
+        "tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs",
     ),
     crate::shared_support::sealed_minting::cases::SealedMintingCase::new(
         crate::shared_support::sealed_minting::cases::SealedMintingFamily::ProofMinting,
         crate::shared_support::sealed_minting::cases::SealedMintingObligation::ObservedProofMoveOnly,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/observed_proofs_cannot_be_duplicated.rs"),
+        "tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/observed_proofs_cannot_be_duplicated.rs",
     ),
     crate::shared_support::sealed_minting::cases::SealedMintingCase::new(
         crate::shared_support::sealed_minting::cases::SealedMintingFamily::ProofAuthority,
         crate::shared_support::sealed_minting::cases::SealedMintingObligation::ProofAuthorityScopeExact,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/proof_authority_scope_cannot_be_substituted.rs"),
+        "tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/proof_authority_scope_cannot_be_substituted.rs",
     ),
     crate::shared_support::sealed_minting::cases::SealedMintingCase::new(
         crate::shared_support::sealed_minting::cases::SealedMintingFamily::ProofAuthority,
         crate::shared_support::sealed_minting::cases::SealedMintingObligation::UnprovenProofKindDenied,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/authority_cannot_mint_unproven_proof_kind.rs"),
+        "tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/authority_cannot_mint_unproven_proof_kind.rs",
     ),
     crate::shared_support::sealed_minting::cases::SealedMintingCase::new(
         crate::shared_support::sealed_minting::cases::SealedMintingFamily::ProofAuthority,
         crate::shared_support::sealed_minting::cases::SealedMintingObligation::MixedAuthorityProofSetDenied,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/current_basis_rejects_mixed_authority_proof_set.rs"),
+        "tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/current_basis_rejects_mixed_authority_proof_set.rs",
     ),
     crate::shared_support::sealed_minting::cases::SealedMintingCase::new(
         crate::shared_support::sealed_minting::cases::SealedMintingFamily::WitnessMinting,
         crate::shared_support::sealed_minting::cases::SealedMintingObligation::WitnessMintPrivate,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/witnesses_are_not_publicly_mintable.rs"),
+        "tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/witnesses_are_not_publicly_mintable.rs",
     ),
     crate::shared_support::sealed_minting::cases::SealedMintingCase::new(
         crate::shared_support::sealed_minting::cases::SealedMintingFamily::WitnessMinting,
         crate::shared_support::sealed_minting::cases::SealedMintingObligation::MarkerMintPrivate,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs"),
+        "tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs",
     ),
     crate::shared_support::sealed_minting::cases::SealedMintingCase::new(
         crate::shared_support::sealed_minting::cases::SealedMintingFamily::WitnessBoundaries,
         crate::shared_support::sealed_minting::cases::SealedMintingObligation::WitnessRequired,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/witness_required_apis_reject_callers_without_witness.rs"),
+        "tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/witness_required_apis_reject_callers_without_witness.rs",
     ),
     crate::shared_support::sealed_minting::cases::SealedMintingCase::new(
         crate::shared_support::sealed_minting::cases::SealedMintingFamily::RecipeBoundaries,
         crate::shared_support::sealed_minting::cases::SealedMintingObligation::RecipeStagesOrdered,
-        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs"),
+        "tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs",
     ),
 ];
 
 pub(crate) fn compile_fail_bundle() -> CompileFailBundle {
-    crate::shared_support::compile_fail::bundle::CompileFailBundle::new(
+    crate::compile_fail::harness::bundle::CompileFailBundle::new(
         SUITE,
         CASES
             .iter()
             .map(|case| {
-                crate::shared_support::compile_fail::bundle::CompileFailCase::new(
+                crate::compile_fail::harness::bundle::CompileFailCase::new(
                     case.family(),
                     case.path(),
                 )

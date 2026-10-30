@@ -1,11 +1,7 @@
 #[allow(unused_imports)] use crate::relational_certification::reference_context::owner_service_completion::supply_chain_cutover::*;
-pub(crate) use {std::collections::BTreeSet};
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::invariant_oracle_expectations::expected_supply_chain_branch};
-pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison::compare, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::observation::observe_observation as observe_supply_chain_observation, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::production_world::ProductionSeededSupplyChainWorld, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
-pub(crate) use {worth_relational::facade::branch::AdmittedRelationalBranchBasis, worth_relational::facade::branch::RelationalBranchIdentity, worth_relational::facade::branch::RelationalOwnerServicePorts};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial, worth_relational::facade::mvcc::RelationalPublicationOutcome, worth_relational::facade::mvcc::RelationalTransactionIntent};
+pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison::compare, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta};
 
 #[test]
 fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
@@ -39,7 +35,10 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
     .expect("the real storm branch admits its semantic reroute delta");
     let mut transaction = world
         .runtime
-        .begin_branch_transaction(&predecessor, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &predecessor,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .expect("the exact port-issued predecessor opens a transaction");
     transaction
         .push_batch(
@@ -55,7 +54,9 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
         .publication_port()
         .compare_and_publish(execution, candidate)
     {
-        worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
+        worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {
+            performed
+        }
         outcome => panic!("the real reroute did not perform through the port: {outcome:?}"),
     };
     let committed = services
@@ -64,9 +65,10 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
         .expect("the settlement port completes the performed reroute");
 
     assert!(matches!(
-        world
-            .runtime
-            .begin_branch_transaction(&predecessor, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()),
+        world.runtime.begin_branch_transaction(
+            &predecessor,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()
+        ),
         Err(worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial::StaleBasis)
     ));
     let (_, direct_basis) = world
@@ -128,7 +130,10 @@ fn direct_commit_moves_supply_chain_truth_visible_through_the_basis_port() {
     .expect("the real maintenance branch admits its semantic berth delta");
     let mut transaction = world
         .runtime
-        .begin_branch_transaction(&predecessor, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &predecessor,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .expect("the exact port-issued predecessor opens the direct route");
     transaction
         .push_batch(
@@ -141,9 +146,10 @@ fn direct_commit_moves_supply_chain_truth_visible_through_the_basis_port() {
         .expect("the compatibility commit performs canonically");
 
     assert!(matches!(
-        world
-            .runtime
-            .begin_branch_transaction(&predecessor, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()),
+        world.runtime.begin_branch_transaction(
+            &predecessor,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()
+        ),
         Err(worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial::StaleBasis)
     ));
     let (_, port_basis) = services

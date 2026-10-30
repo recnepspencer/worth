@@ -1,4 +1,7 @@
-pub(crate) use {worth_server::WorthServerBinaryDownload, worth_server::WorthServerBinaryIntegrityDigest, worth_server::WorthServerQueryHandoffDenial};
+pub(crate) use {
+    worth_server::WorthServerBinaryDownload, worth_server::WorthServerBinaryIntegrityDigest,
+    worth_server::WorthServerQueryHandoffDenial,
+};
 
 pub(crate) fn assert_download_denial(
     denial: &WorthServerQueryHandoffDenial,

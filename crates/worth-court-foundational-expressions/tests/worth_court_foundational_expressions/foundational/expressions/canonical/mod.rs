@@ -1,9 +1,14 @@
 // Canonical identity and the draft codec: source, builder, and decoded
 // drafts agree; meaning changes identity and spelling does not.
-#[allow(unused_imports)] use crate::expressions::ordinary_context::canonical::*;
-pub(crate) use {worth_foundational::expression_api::expressions, worth_foundational::expression_api::ExpressionBuilder, worth_foundational::expression_api::ExpressionDenialDetail, worth_foundational::expression_api::ExpressionDenialFamily as Family, worth_foundational::expression_api::ExpressionFunctionCatalog, worth_foundational::expression_api::ExpressionProfile, worth_foundational::expression_api::ExpressionType};
+#[allow(unused_imports)]
+use crate::expressions::ordinary_context::canonical::*;
+pub(crate) use worth_foundational::expression_api::expressions;
 
-pub(crate) use {crate::expressions::ordinary_context::admit, crate::expressions::ordinary_context::draft, crate::expressions::ordinary_context::empty_catalog, crate::expressions::ordinary_context::function, crate::expressions::ordinary_context::schema};
+pub(crate) use {
+    crate::expressions::ordinary_context::draft,
+    crate::expressions::ordinary_context::empty_catalog,
+    crate::expressions::ordinary_context::function, crate::expressions::ordinary_context::schema,
+};
 
 #[test]
 fn source_builder_and_decoded_drafts_share_encoding_and_identity() {
@@ -37,7 +42,11 @@ fn source_builder_and_decoded_drafts_share_encoding_and_identity() {
         .iter()
         .map(|draft| {
             draft
-                .admit(&schema, &catalog, worth_foundational::expression_api::ExpressionProfile::interactive())
+                .admit(
+                    &schema,
+                    &catalog,
+                    worth_foundational::expression_api::ExpressionProfile::interactive(),
+                )
                 .expect("admits")
                 .identity()
                 .clone()
@@ -81,10 +90,18 @@ fn identity_is_independent_of_the_admitting_profile() {
     let catalog = empty_catalog(&schema);
     let draft = draft("members.map(m, m.thickness)");
     let interactive = draft
-        .admit(&schema, &catalog, worth_foundational::expression_api::ExpressionProfile::interactive())
+        .admit(
+            &schema,
+            &catalog,
+            worth_foundational::expression_api::ExpressionProfile::interactive(),
+        )
         .expect("admits");
     let engineering = draft
-        .admit(&schema, &catalog, worth_foundational::expression_api::ExpressionProfile::engineering())
+        .admit(
+            &schema,
+            &catalog,
+            worth_foundational::expression_api::ExpressionProfile::engineering(),
+        )
         .expect("admits");
     assert_eq!(interactive.identity(), engineering.identity());
 }
@@ -93,9 +110,14 @@ fn identity_is_independent_of_the_admitting_profile() {
 fn function_identity_excludes_parameter_names_and_includes_bodies() {
     let schema = schema();
     let catalog = |parameter: &str, body: &str| {
-        let mut builder =
-            worth_foundational::expression_api::ExpressionFunctionCatalog::builder(&schema, worth_foundational::expression_api::ExpressionProfile::interactive());
-        let parameters = [(parameter, worth_foundational::expression_api::ExpressionType::Float64)];
+        let mut builder = worth_foundational::expression_api::ExpressionFunctionCatalog::builder(
+            &schema,
+            worth_foundational::expression_api::ExpressionProfile::interactive(),
+        );
+        let parameters = [(
+            parameter,
+            worth_foundational::expression_api::ExpressionType::Float64,
+        )];
         builder
             .install(function(
                 "geometry::double",
@@ -123,7 +145,11 @@ fn function_identity_excludes_parameter_names_and_includes_bodies() {
     let call_identity = |body: &str| {
         let catalog = catalog("x", body);
         draft("geometry::double(width)")
-            .admit(&schema, &catalog, worth_foundational::expression_api::ExpressionProfile::interactive())
+            .admit(
+                &schema,
+                &catalog,
+                worth_foundational::expression_api::ExpressionProfile::interactive(),
+            )
             .expect("admits")
             .identity()
             .clone()
@@ -140,15 +166,27 @@ fn decoding_denies_unknown_versions_before_structure() {
     let wire = expressions().decode(&header(2, 1, u32::MAX)).unwrap_err();
     assert!(matches!(
         wire.detail(),
-        worth_foundational::expression_api::ExpressionDenialDetail::UnsupportedVersion { found: 2, .. }
+        worth_foundational::expression_api::ExpressionDenialDetail::UnsupportedVersion {
+            found: 2,
+            ..
+        }
     ));
     let language = expressions().decode(&header(1, 9, u32::MAX)).unwrap_err();
     assert!(matches!(
         language.detail(),
-        worth_foundational::expression_api::ExpressionDenialDetail::UnsupportedVersion { found: 9, .. }
+        worth_foundational::expression_api::ExpressionDenialDetail::UnsupportedVersion {
+            found: 9,
+            ..
+        }
     ));
-    assert_eq!(decode_family(b"NOPE"), worth_foundational::expression_api::ExpressionDenialFamily::InvalidValue);
-    assert_eq!(decode_family(&[]), worth_foundational::expression_api::ExpressionDenialFamily::InvalidValue);
+    assert_eq!(
+        decode_family(b"NOPE"),
+        worth_foundational::expression_api::ExpressionDenialFamily::InvalidValue
+    );
+    assert_eq!(
+        decode_family(&[]),
+        worth_foundational::expression_api::ExpressionDenialFamily::InvalidValue
+    );
 }
 
 #[test]
@@ -185,7 +223,11 @@ fn decoding_denies_malformed_trees() {
         unknown_tag,
         empty,
     ] {
-        assert_eq!(decode_family(&bytes), worth_foundational::expression_api::ExpressionDenialFamily::InvalidValue, "{bytes:?}");
+        assert_eq!(
+            decode_family(&bytes),
+            worth_foundational::expression_api::ExpressionDenialFamily::InvalidValue,
+            "{bytes:?}"
+        );
     }
 }
 
@@ -200,9 +242,18 @@ fn decoding_validates_names_and_decimal_text() {
         bytes
     };
     assert!(expressions().decode(&name_node(b"width")).is_ok());
-    assert_eq!(decode_family(&name_node(b"let")), worth_foundational::expression_api::ExpressionDenialFamily::Syntax);
-    assert_eq!(decode_family(&name_node(b"9lives")), worth_foundational::expression_api::ExpressionDenialFamily::Syntax);
-    assert_eq!(decode_family(&name_node(&[0xff])), worth_foundational::expression_api::ExpressionDenialFamily::InvalidValue);
+    assert_eq!(
+        decode_family(&name_node(b"let")),
+        worth_foundational::expression_api::ExpressionDenialFamily::Syntax
+    );
+    assert_eq!(
+        decode_family(&name_node(b"9lives")),
+        worth_foundational::expression_api::ExpressionDenialFamily::Syntax
+    );
+    assert_eq!(
+        decode_family(&name_node(&[0xff])),
+        worth_foundational::expression_api::ExpressionDenialFamily::InvalidValue
+    );
 
     let float_node = |digits: &[u8], exponent: i32| {
         let mut bytes = header(1, 1, 1);

@@ -1,5 +1,5 @@
 error: cannot construct `LoweredResourcePolicyBundle` with struct literal syntax due to private fields
-  --> tests/ui/lowered_resource_policy_bundle_fields_are_private.rs:23:19
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/lowered_resource_policy_bundle_fields_are_private.rs:23:19
    |
 23 |     let _forged = LoweredResourcePolicyBundle {
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^

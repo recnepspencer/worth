@@ -1,8 +1,21 @@
-pub(crate) use {worth_server::WorthServer, worth_server::WorthServerDirectDeclaration, worth_server::WorthServerDirectViewShape, worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerResponseInput, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+pub(crate) use {
+    worth_server::WorthServer, worth_server::WorthServerDirectDeclaration,
+    worth_server::WorthServerDirectViewShape, worth_server::WorthServerQueryHandoffInput,
+    worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerResponseInput,
+    worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass,
+};
 
-pub(crate) use {crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationOutputDigest as Output, worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture, worth_testkit_server::shared_support_query_handoff_fixture::request_input, worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context, worth_testkit_server::shared_support_query_handoff_fixture::success, worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read, worth_testkit_server::shared_support_worth_native_assertions::family_contract_digest};
+pub(crate) use {
+    crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationOutputDigest as Output,
+    worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture,
+    worth_testkit_server::shared_support_query_handoff_fixture::request_input,
+    worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context,
+    worth_testkit_server::shared_support_query_handoff_fixture::success,
+    worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read,
+    worth_testkit_server::shared_support_worth_native_assertions::family_contract_digest,
+};
 
-pub(crate) use {crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle};
+pub(crate) use crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle;
 
 pub(crate) use {crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::direct_bundle, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::direct_read_denied, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::direct_read_success, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::request_context_digest, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::support_posture_digest, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::worth_native_session_for_branch};
 
@@ -90,14 +103,12 @@ pub(crate) fn compatibility_overlap_bundle(
             worth_server::WorthServerTransportClass::CompatHttp,
         ),
     );
-    let handoff = success(
-        server
-            .query_handoff()
-            .prepare(worth_server::WorthServerQueryHandoffInput::new(
-                admit_read_posture(server, request_context),
-                worth_server::WorthServerQueryHandoffOperation::query_read(operation_name),
-            )),
-    );
+    let handoff = success(server.query_handoff().prepare(
+        worth_server::WorthServerQueryHandoffInput::new(
+            admit_read_posture(server, request_context),
+            worth_server::WorthServerQueryHandoffOperation::query_read(operation_name),
+        ),
+    ));
     let request_context_digest = request_context_digest(handoff.admission().request_context());
     let surface_contract_digest = family_contract_digest(handoff.support_posture()).to_string();
     let support_posture_digest = support_posture_digest(handoff.support_posture());
@@ -111,9 +122,9 @@ pub(crate) fn compatibility_overlap_bundle(
         .request_context()
         .workspace_target()
         .workspace_digest();
-    let response = server
-        .responses()
-        .shape_with_defaults(worth_server::WorthServerResponseInput::query_handoff_success(handoff));
+    let response = server.responses().shape_with_defaults(
+        worth_server::WorthServerResponseInput::query_handoff_success(handoff),
+    );
     crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle::from_response_and_evidence(
         request_context_digest,
         response.clone(),
@@ -173,7 +184,10 @@ pub(crate) fn product_read_bundle_with_branch_and_shape(
     let product = session
         .direct()
         .product()
-        .read(worth_server::WorthServerDirectDeclaration::named_read(operation_name).with_view_shape(view_shape))
+        .read(
+            worth_server::WorthServerDirectDeclaration::named_read(operation_name)
+                .with_view_shape(view_shape),
+        )
         .expect("product read should admit");
     let read = direct_read_success(product.read());
     let snapshot = product.declaration_snapshot();

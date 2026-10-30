@@ -1,4 +1,11 @@
-pub use {worth_foundational::facade::AbsenceLaw, worth_foundational::facade::AspectContract, worth_foundational::facade::AspectContractRevision, worth_foundational::facade::AspectEvolutionPolicy, worth_foundational::facade::AspectIdentity, worth_foundational::facade::AspectKey, worth_foundational::facade::FieldDeclaration, worth_foundational::facade::FieldKey, worth_foundational::facade::FieldRequirement, worth_foundational::facade::ScalarAspectType, worth_foundational::facade::StructAspectShape};
+pub use {
+    worth_foundational::facade::AbsenceLaw, worth_foundational::facade::AspectContract,
+    worth_foundational::facade::AspectContractRevision,
+    worth_foundational::facade::AspectEvolutionPolicy, worth_foundational::facade::AspectIdentity,
+    worth_foundational::facade::AspectKey, worth_foundational::facade::FieldDeclaration,
+    worth_foundational::facade::FieldKey, worth_foundational::facade::FieldRequirement,
+    worth_foundational::facade::ScalarAspectType, worth_foundational::facade::StructAspectShape,
+};
 
 pub fn query_handoff_aspect_contracts() -> Vec<AspectContract> {
     vec![
@@ -21,6 +28,7 @@ pub fn required_string_contract(aspect: &str, identity: u64, field: &str) -> Asp
         worth_foundational::facade::AspectKey::new(aspect).expect("aspect key should admit"),
         AspectIdentity(identity),
         AspectContractRevision(1),
-        worth_foundational::facade::StructAspectShape::new([field]).expect("struct aspect shape should admit"),
+        worth_foundational::facade::StructAspectShape::new([field])
+            .expect("struct aspect shape should admit"),
     )
 }

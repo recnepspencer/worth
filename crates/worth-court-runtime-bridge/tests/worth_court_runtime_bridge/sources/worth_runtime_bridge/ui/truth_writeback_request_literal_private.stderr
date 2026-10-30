@@ -1,5 +1,5 @@
 error: cannot construct `TruthWritebackRequest` with struct literal syntax due to private fields
- --> tests/ui/truth_writeback_request_literal_private.rs:4:20
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/truth_writeback_request_literal_private.rs:4:20
   |
 4 |     let _request = TruthWritebackRequest {
   |                    ^^^^^^^^^^^^^^^^^^^^^

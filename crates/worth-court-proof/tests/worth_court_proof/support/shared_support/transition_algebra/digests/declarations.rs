@@ -1,9 +1,24 @@
-pub(crate) use {std::any::type_name};
+pub(crate) use std::any::type_name;
 
-pub(crate) use {worth_proof::AdmitRecipeTransition, worth_proof::Admitted, worth_proof::AssumptionBasis, worth_proof::CheckedAdmitRecipeTransition, worth_proof::CheckedLowerRecipeTransition, worth_proof::CheckedResolveRecipeTransition, worth_proof::CurrentValidity, worth_proof::DeferredTransitionOutcome, worth_proof::DenialTransitionOutcome, worth_proof::FreshnessScopedBasis, worth_proof::FreshnessTransitionOutcome, worth_proof::LowerRecipeTransition, worth_proof::Lowered, worth_proof::PreConstructionGate, worth_proof::Recipe, worth_proof::RecipeAdmissionReadiness, worth_proof::RecipeLoweringReadiness, worth_proof::RecipeResolutionContext, worth_proof::RecipeResolutionGate, worth_proof::ResolveRecipeTransition, worth_proof::Resolved, worth_proof::SuccessfulTransitionOutcome, worth_proof::TransitionOutcome, worth_proof::TransitionReadiness, worth_proof::Unresolved};
+pub(crate) use {
+    worth_proof::AdmitRecipeTransition, worth_proof::Admitted, worth_proof::AssumptionBasis,
+    worth_proof::CheckedAdmitRecipeTransition, worth_proof::CheckedLowerRecipeTransition,
+    worth_proof::CheckedResolveRecipeTransition, worth_proof::CurrentValidity,
+    worth_proof::DeferredTransitionOutcome, worth_proof::DenialTransitionOutcome,
+    worth_proof::FreshnessScopedBasis, worth_proof::FreshnessTransitionOutcome,
+    worth_proof::LowerRecipeTransition, worth_proof::Lowered, worth_proof::PreConstructionGate,
+    worth_proof::Recipe, worth_proof::RecipeAdmissionReadiness,
+    worth_proof::RecipeLoweringReadiness, worth_proof::RecipeResolutionContext,
+    worth_proof::RecipeResolutionGate, worth_proof::ResolveRecipeTransition, worth_proof::Resolved,
+    worth_proof::SuccessfulTransitionOutcome, worth_proof::TransitionOutcome,
+    worth_proof::TransitionReadiness, worth_proof::Unresolved,
+};
 
-pub(crate) use {crate::shared_support::proof_shapes::digest::FailureDigest, crate::shared_support::proof_shapes::digest::TransitionDigest};
-pub(crate) use {crate::shared_support::transition_algebra::representatives::RepresentativeAuthority};
+pub(crate) use crate::shared_support::transition_algebra::representatives::RepresentativeAuthority;
+pub(crate) use {
+    crate::shared_support::proof_shapes::digest::FailureDigest,
+    crate::shared_support::proof_shapes::digest::TransitionDigest,
+};
 
 pub(crate) fn transition_digest() -> TransitionDigest {
     crate::shared_support::proof_shapes::digest::TransitionDigest::new(
@@ -18,7 +33,9 @@ pub(crate) fn transition_digest() -> TransitionDigest {
             >(),
             type_name::<CheckedAdmitRecipeTransition<RepresentativeAuthority>>(),
             type_name::<
-                LowerRecipeTransition<crate::shared_support::sealed_minting::RepresentativeCapability>,
+                LowerRecipeTransition<
+                    crate::shared_support::sealed_minting::RepresentativeCapability,
+                >,
             >(),
             type_name::<AdmitRecipeTransition<RepresentativeAuthority>>(),
             type_name::<RecipeResolutionContext<u8, RepresentativeAuthority>>(),
@@ -74,7 +91,9 @@ pub(crate) fn transition_digest() -> TransitionDigest {
                 fn(
                     Recipe<Unresolved, u64>,
                     RecipeResolutionGate<u8, RepresentativeAuthority, &'static str, &'static str>,
-                    &LowerRecipeTransition<crate::shared_support::sealed_minting::RepresentativeCapability>,
+                    &LowerRecipeTransition<
+                        crate::shared_support::sealed_minting::RepresentativeCapability,
+                    >,
                     &AdmitRecipeTransition<RepresentativeAuthority>,
                 ) -> DeferredTransitionOutcome<
                     Recipe<

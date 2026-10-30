@@ -1,20 +1,9 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::boundary_evidence::receipts::*;
 use {
-    worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path,
-    worth_foundational::boundary_evidence_api::lower_lane,
+    worth_foundational::boundary_evidence,
     worth_foundational::foundational_boundary_evidence_closeout_disposition_definitions,
     worth_foundational::foundational_boundary_evidence_receipt_kind_definitions,
-    worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId,
-    worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle,
-    worth_foundational::FoundationalBoundaryEvidenceCloseoutDisposition,
-    worth_foundational::FoundationalBoundaryEvidenceExecutionPosture,
-    worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary,
-    worth_foundational::FoundationalBoundaryEvidenceReceiptKind,
-    worth_foundational::FoundationalBoundaryEvidenceSourceBasis,
-    worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis,
-    worth_foundational::FoundationalCommitParentageLocator,
-    worth_foundational::FoundationalTransitionLocator,
 };
 
 use {

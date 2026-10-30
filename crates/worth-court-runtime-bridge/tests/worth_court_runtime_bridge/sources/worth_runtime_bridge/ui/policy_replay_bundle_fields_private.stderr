@@ -1,5 +1,5 @@
 error[E0451]: fields `contract_digest`, `lowered_policy_digest`, `provenance_digest`, `canonical_basis` and `digest` of struct `BridgePolicyReplayBundle` are private
- --> tests/ui/policy_replay_bundle_fields_private.rs:5:9
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/policy_replay_bundle_fields_private.rs:5:9
   |
 4 |     let _bundle = BridgePolicyReplayBundle {
   |                   ------------------------ in this type

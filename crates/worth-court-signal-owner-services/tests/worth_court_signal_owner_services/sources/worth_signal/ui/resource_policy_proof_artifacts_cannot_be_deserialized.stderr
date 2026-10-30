@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `ResourcePolicyDescriptor: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:18:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:18:34
    |
 18 |     requires_deserialize_owned::<ResourcePolicyDescriptor>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourcePolicyDescriptor`
@@ -16,13 +16,13 @@ error[E0277]: the trait bound `ResourcePolicyDescriptor: serde::de::DeserializeO
            and $N others
    = note: required for `ResourcePolicyDescriptor` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `FrozenResourcePolicyDescriptor: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:19:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:19:34
    |
 19 |     requires_deserialize_owned::<ResourceResolvedPolicy>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `FrozenResourcePolicyDescriptor`
@@ -39,13 +39,13 @@ error[E0277]: the trait bound `FrozenResourcePolicyDescriptor: serde::de::Deseri
            and $N others
    = note: required for `FrozenResourcePolicyDescriptor` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ValidatedResourcePolicyReference: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:20:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:20:34
    |
 20 |     requires_deserialize_owned::<ValidatedResourcePolicyReference>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ValidatedResourcePolicyReference`
@@ -62,13 +62,13 @@ error[E0277]: the trait bound `ValidatedResourcePolicyReference: serde::de::Dese
            and $N others
    = note: required for `ValidatedResourcePolicyReference` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ValidatedResourcePolicyDeclaration: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:21:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:21:34
    |
 21 |     requires_deserialize_owned::<ValidatedResourcePolicyDeclaration>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ValidatedResourcePolicyDeclaration`
@@ -85,13 +85,13 @@ error[E0277]: the trait bound `ValidatedResourcePolicyDeclaration: serde::de::De
            and $N others
    = note: required for `ValidatedResourcePolicyDeclaration` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `FrozenResourcePolicyDescriptor: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:22:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:22:34
    |
 22 |     requires_deserialize_owned::<FrozenResourcePolicyDescriptor>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `FrozenResourcePolicyDescriptor`
@@ -108,13 +108,13 @@ error[E0277]: the trait bound `FrozenResourcePolicyDescriptor: serde::de::Deseri
            and $N others
    = note: required for `FrozenResourcePolicyDescriptor` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `FrozenResourcePolicyDescriptorSet: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:23:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:23:34
    |
 23 |     requires_deserialize_owned::<FrozenResourcePolicyDescriptorSet>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `FrozenResourcePolicyDescriptorSet`
@@ -131,13 +131,13 @@ error[E0277]: the trait bound `FrozenResourcePolicyDescriptorSet: serde::de::Des
            and $N others
    = note: required for `FrozenResourcePolicyDescriptorSet` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourcePolicyCompatibilityFamilyReport: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:24:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:24:34
    |
 24 |     requires_deserialize_owned::<ResourcePolicyCompatibilityFamilyReport>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourcePolicyCompatibilityFamilyReport`
@@ -154,13 +154,13 @@ error[E0277]: the trait bound `ResourcePolicyCompatibilityFamilyReport: serde::d
            and $N others
    = note: required for `ResourcePolicyCompatibilityFamilyReport` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourcePolicyCompatibilityReport: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:25:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:25:34
    |
 25 |     requires_deserialize_owned::<ResourcePolicyCompatibilityReport>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourcePolicyCompatibilityReport`
@@ -177,13 +177,13 @@ error[E0277]: the trait bound `ResourcePolicyCompatibilityReport: serde::de::Des
            and $N others
    = note: required for `ResourcePolicyCompatibilityReport` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourcePolicyRestoreCompatibilityProof: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:26:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:26:34
    |
 26 |     requires_deserialize_owned::<ResourcePolicyRestoreCompatibilityProof>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourcePolicyRestoreCompatibilityProof`
@@ -200,13 +200,13 @@ error[E0277]: the trait bound `ResourcePolicyRestoreCompatibilityProof: serde::d
            and $N others
    = note: required for `ResourcePolicyRestoreCompatibilityProof` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `DeniedResourcePolicyRestoreCompatibility: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:27:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:27:34
    |
 27 |     requires_deserialize_owned::<DeniedResourcePolicyRestoreCompatibility>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `DeniedResourcePolicyRestoreCompatibility`
@@ -223,13 +223,13 @@ error[E0277]: the trait bound `DeniedResourcePolicyRestoreCompatibility: serde::
            and $N others
    = note: required for `DeniedResourcePolicyRestoreCompatibility` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `LoweredResourcePolicyBundle: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:28:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:28:34
    |
 28 |     requires_deserialize_owned::<LoweredResourcePolicyBundle>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `LoweredResourcePolicyBundle`
@@ -246,13 +246,13 @@ error[E0277]: the trait bound `LoweredResourcePolicyBundle: serde::de::Deseriali
            and $N others
    = note: required for `LoweredResourcePolicyBundle` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceRetryDecisionPlan: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:29:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:29:34
    |
 29 |     requires_deserialize_owned::<ResourceRetryDecisionPlan>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceRetryDecisionPlan`
@@ -269,13 +269,13 @@ error[E0277]: the trait bound `ResourceRetryDecisionPlan: serde::de::Deserialize
            and $N others
    = note: required for `ResourceRetryDecisionPlan` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceRevalidationDecisionPlan: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:30:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:30:34
    |
 30 |     requires_deserialize_owned::<ResourceRevalidationDecisionPlan>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceRevalidationDecisionPlan`
@@ -292,13 +292,13 @@ error[E0277]: the trait bound `ResourceRevalidationDecisionPlan: serde::de::Dese
            and $N others
    = note: required for `ResourceRevalidationDecisionPlan` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceStaleAfterDecisionPlan: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:31:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:31:34
    |
 31 |     requires_deserialize_owned::<ResourceStaleAfterDecisionPlan>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceStaleAfterDecisionPlan`
@@ -315,13 +315,13 @@ error[E0277]: the trait bound `ResourceStaleAfterDecisionPlan: serde::de::Deseri
            and $N others
    = note: required for `ResourceStaleAfterDecisionPlan` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceTimeoutDecisionPlan: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:32:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:32:34
    |
 32 |     requires_deserialize_owned::<ResourceTimeoutDecisionPlan>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceTimeoutDecisionPlan`
@@ -338,13 +338,13 @@ error[E0277]: the trait bound `ResourceTimeoutDecisionPlan: serde::de::Deseriali
            and $N others
    = note: required for `ResourceTimeoutDecisionPlan` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `DependencyChangeResourceRevalidationProof: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:33:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:33:34
    |
 33 |     requires_deserialize_owned::<DependencyChangeResourceRevalidationProof>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `DependencyChangeResourceRevalidationProof`
@@ -361,13 +361,13 @@ error[E0277]: the trait bound `DependencyChangeResourceRevalidationProof: serde:
            and $N others
    = note: required for `DependencyChangeResourceRevalidationProof` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ObserverDemandResourceRevalidationProof: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:34:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:34:34
    |
 34 |     requires_deserialize_owned::<ObserverDemandResourceRevalidationProof>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ObserverDemandResourceRevalidationProof`
@@ -384,13 +384,13 @@ error[E0277]: the trait bound `ObserverDemandResourceRevalidationProof: serde::d
            and $N others
    = note: required for `ObserverDemandResourceRevalidationProof` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `TerminalStateResourceRevalidationProof: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:35:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:35:34
    |
 35 |     requires_deserialize_owned::<TerminalStateResourceRevalidationProof>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `TerminalStateResourceRevalidationProof`
@@ -407,13 +407,13 @@ error[E0277]: the trait bound `TerminalStateResourceRevalidationProof: serde::de
            and $N others
    = note: required for `TerminalStateResourceRevalidationProof` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `FulfilledLifecycleResourceRevalidationProof: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:36:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:36:34
    |
 36 |     requires_deserialize_owned::<FulfilledLifecycleResourceRevalidationProof>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `FulfilledLifecycleResourceRevalidationProof`
@@ -430,13 +430,13 @@ error[E0277]: the trait bound `FulfilledLifecycleResourceRevalidationProof: serd
            and $N others
    = note: required for `FulfilledLifecycleResourceRevalidationProof` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceRevalidationFreshnessDecision: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:37:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:37:34
    |
 37 |     requires_deserialize_owned::<ResourceRevalidationFreshnessDecision>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceRevalidationFreshnessDecision`
@@ -453,13 +453,13 @@ error[E0277]: the trait bound `ResourceRevalidationFreshnessDecision: serde::de:
            and $N others
    = note: required for `ResourceRevalidationFreshnessDecision` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceRevalidationCoalescing: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:38:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:38:34
    |
 38 |     requires_deserialize_owned::<ResourceRevalidationCoalescing>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceRevalidationCoalescing`
@@ -476,7 +476,7 @@ error[E0277]: the trait bound `ResourceRevalidationCoalescing: serde::de::Deseri
            and $N others
    = note: required for `ResourceRevalidationCoalescing` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_proof_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`

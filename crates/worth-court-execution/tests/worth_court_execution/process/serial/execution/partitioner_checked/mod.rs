@@ -1,8 +1,9 @@
-#[allow(unused_imports)] use crate::partitioner_checked::isolated_context::*;
-use {std::num::NonZeroUsize, std::sync::Arc, std::sync::Mutex, std::sync::OnceLock};
+#[allow(unused_imports)]
+use crate::partitioner_checked::isolated_context::*;
 
-use {worth_execution::Bisection, worth_execution::CancellationSource, worth_execution::CancellationToken, worth_execution::ComponentPartitioner, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop, worth_execution::PartitionItemId, worth_execution::PartitionUpdateDenial, worth_execution::WeightedEdge, worth_execution::WeightedItem};
-use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+use {
+    worth_execution::MapKernelFailure, worth_execution::WeightedEdge, worth_execution::WeightedItem,
+};
 
 #[test]
 fn checked_split_and_recut_denials_preserve_retained_topology() {
@@ -15,7 +16,12 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
     let map = map();
 
     let components = std::sync::Arc::new(std::sync::Mutex::new(component_chain(4)));
-    let tight = lease(authority, 100_000, 2, worth_execution::CancellationToken::new());
+    let tight = lease(
+        authority,
+        100_000,
+        2,
+        worth_execution::CancellationToken::new(),
+    );
     let outcome = map.run(Some(&tight), |_, context| {
         let denial =
             components
@@ -30,14 +36,22 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
         );
         Ok::<_, MapKernelFailure<()>>(0_u64)
     });
-    assert!(matches!(outcome, worth_execution::MapOutcome::Stopped { .. }));
+    assert!(matches!(
+        outcome,
+        worth_execution::MapOutcome::Stopped { .. }
+    ));
     assert_eq!(
         components.lock().unwrap().route(item(4)).unwrap(),
         worth_foundational::PartitionIdentity::new(1)
     );
 
     let components = std::sync::Arc::new(std::sync::Mutex::new(component_chain(16)));
-    let memory_tight = lease(authority, 8_192, 10_000, worth_execution::CancellationToken::new());
+    let memory_tight = lease(
+        authority,
+        8_192,
+        10_000,
+        worth_execution::CancellationToken::new(),
+    );
     let outcome = map.run(Some(&memory_tight), |_, context| {
         let denial = components.lock().unwrap().remove_edge_checked(
             &memory_tight,
@@ -60,7 +74,9 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
         outcome,
         worth_execution::MapOutcome::Stopped {
             reason: worth_execution::MapStop::Failure {
-                cause: worth_execution::MapKernelFailure::Stop(worth_execution::MapKernelStop::NestedStopped),
+                cause: worth_execution::MapKernelFailure::Stop(
+                    worth_execution::MapKernelStop::NestedStopped
+                ),
                 ..
             },
             ..
@@ -87,14 +103,22 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
         );
         Ok::<_, MapKernelFailure<()>>(0_u64)
     });
-    assert!(matches!(outcome, worth_execution::MapOutcome::Stopped { .. }));
+    assert!(matches!(
+        outcome,
+        worth_execution::MapOutcome::Stopped { .. }
+    ));
     assert_eq!(
         components.lock().unwrap().route(item(1)).unwrap(),
         worth_foundational::PartitionIdentity::new(1)
     );
 
     let bisection = std::sync::Arc::new(std::sync::Mutex::new(weighted_root(4, 4)));
-    let tight = lease(authority, 100_000, 2, worth_execution::CancellationToken::new());
+    let tight = lease(
+        authority,
+        100_000,
+        2,
+        worth_execution::CancellationToken::new(),
+    );
     let outcome = map.run(Some(&tight), |_, context| {
         let denial = bisection.lock().unwrap().upsert_item_checked(
             &tight,
@@ -112,10 +136,18 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
         );
         Ok::<_, MapKernelFailure<()>>(0_u64)
     });
-    assert!(matches!(outcome, worth_execution::MapOutcome::Stopped { .. }));
+    assert!(matches!(
+        outcome,
+        worth_execution::MapOutcome::Stopped { .. }
+    ));
     assert!(bisection.lock().unwrap().route(item(5)).is_none());
 
-    let admitted = lease(authority, 100_000, 100_000, worth_execution::CancellationToken::new());
+    let admitted = lease(
+        authority,
+        100_000,
+        100_000,
+        worth_execution::CancellationToken::new(),
+    );
     let outcome = map.run(Some(&admitted), |_, context| {
         let work = components
             .lock()
@@ -130,7 +162,9 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
             assert!(report.charged_work() > 0);
             assert!(report.physical().peak_charged_memory_bytes() > 0);
         }
-        worth_execution::MapOutcome::Stopped { reason, .. } => panic!("checked split stopped: {reason:?}"),
+        worth_execution::MapOutcome::Stopped { reason, .. } => {
+            panic!("checked split stopped: {reason:?}")
+        }
     }
     assert_eq!(
         components.lock().unwrap().route(item(16)).unwrap(),
@@ -138,7 +172,12 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
     );
     assert_eq!(bisection.lock().unwrap().leaves().len(), 1);
 
-    let memory_tight = lease(authority, 4_096, 10_000, worth_execution::CancellationToken::new());
+    let memory_tight = lease(
+        authority,
+        4_096,
+        10_000,
+        worth_execution::CancellationToken::new(),
+    );
     let outcome = map.run(Some(&memory_tight), |_, context| {
         let denial = bisection.lock().unwrap().upsert_item_checked(
             &memory_tight,
@@ -163,7 +202,9 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
         outcome,
         worth_execution::MapOutcome::Stopped {
             reason: worth_execution::MapStop::Failure {
-                cause: worth_execution::MapKernelFailure::Stop(worth_execution::MapKernelStop::NestedStopped),
+                cause: worth_execution::MapKernelFailure::Stop(
+                    worth_execution::MapKernelStop::NestedStopped
+                ),
                 ..
             },
             ..
@@ -196,7 +237,12 @@ fn checked_local_recut_ignores_edges_inside_unrelated_sibling() {
             weight: 99,
         })
         .unwrap();
-    let lease = lease(authority, 200_000, 100_000, worth_execution::CancellationToken::new());
+    let lease = lease(
+        authority,
+        200_000,
+        100_000,
+        worth_execution::CancellationToken::new(),
+    );
     let outcome = map.run(Some(&lease), |_, context| {
         let next = WeightedItem {
             item: item(5),
@@ -221,7 +267,9 @@ fn checked_local_recut_ignores_edges_inside_unrelated_sibling() {
         worth_execution::MapOutcome::Complete { report, .. } => {
             assert!(report.physical().peak_charged_memory_bytes() > 0);
         }
-        worth_execution::MapOutcome::Stopped { reason, .. } => panic!("local recut stopped: {reason:?}"),
+        worth_execution::MapOutcome::Stopped { reason, .. } => {
+            panic!("local recut stopped: {reason:?}")
+        }
     }
     assert_eq!(
         plain.lock().unwrap().route(item(3)),

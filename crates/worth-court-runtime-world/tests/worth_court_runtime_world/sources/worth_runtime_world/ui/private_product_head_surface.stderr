@@ -1,5 +1,5 @@
 error[E0432]: unresolved imports `worth_runtime_world::facade::ProductBranchHeadProtection`, `worth_runtime_world::facade::ProductHeadRetentionObligation`, `worth_runtime_world::facade::RetentionTransferReceipt`
- --> tests/ui/private_product_head_surface.rs:2:5
+ --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/private_product_head_surface.rs:2:5
   |
 2 |     ProductBranchHeadProtection, ProductHeadRetentionObligation, RetentionTransferReceipt,
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^ no `RetentionTransferReceipt` in `facade`

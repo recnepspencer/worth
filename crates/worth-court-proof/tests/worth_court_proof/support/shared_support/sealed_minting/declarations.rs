@@ -1,16 +1,23 @@
-
-
 pub(crate) use {std::mem::align_of, std::mem::needs_drop};
 
-pub(crate) use {worth_proof::Admitted, worth_proof::AssumptionBasis, worth_proof::AuthorityMarker, worth_proof::AuthorityWitness, worth_proof::CanonicalOrder, worth_proof::CanonicalVec, worth_proof::CapabilityMarker, worth_proof::CapabilityWitness, worth_proof::DisjointPair, worth_proof::Lowered, worth_proof::Proof, worth_proof::Recipe, worth_proof::Resolved, worth_proof::StructuralProofAuthority, worth_proof::UniqueVec};
+pub(crate) use {
+    worth_proof::Admitted, worth_proof::AssumptionBasis, worth_proof::AuthorityMarker,
+    worth_proof::AuthorityWitness, worth_proof::CanonicalOrder, worth_proof::CanonicalVec,
+    worth_proof::CapabilityMarker, worth_proof::CapabilityWitness, worth_proof::DisjointPair,
+    worth_proof::Lowered, worth_proof::Proof, worth_proof::Recipe, worth_proof::Resolved,
+    worth_proof::StructuralProofAuthority, worth_proof::UniqueVec,
+};
 
-pub(crate) use {crate::shared_support::type_shapes::codegen::CodegenHonestyReport, crate::shared_support::type_shapes::codegen::CodegenShapeCheck};
+pub(crate) use {
+    crate::shared_support::type_shapes::codegen::CodegenHonestyReport,
+    crate::shared_support::type_shapes::codegen::CodegenShapeCheck,
+};
 
 pub(crate) fn assert_fixture_completeness() {
     crate::shared_support::sealed_minting::cases::assert_fixture_completeness();
 }
 
-pub(crate) fn compile_fail_bundle() -> crate::shared_support::compile_fail::bundle::CompileFailBundle {
+pub(crate) fn compile_fail_bundle() -> crate::compile_fail::harness::bundle::CompileFailBundle {
     crate::shared_support::sealed_minting::cases::compile_fail_bundle()
 }
 

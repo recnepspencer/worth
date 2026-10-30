@@ -1,10 +1,10 @@
 error[E0624]: associated function `new` is private
- --> tests/ui/construction/worth_native/private_session_constructor.rs:4:51
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/worth_native/private_session_constructor.rs
   |
-4 |       let _session = WorthServerWorthNativeSession::new(fake_admission());
+  |       let _session = WorthServerWorthNativeSession::new(fake_admission());
   |                                                     ^^^ private associated function
   |
- ::: src/worth_native/session.rs
+ ::: $WORKSPACE/crates/worth-server/src/worth_native/session.rs
   |
   | /     pub(crate) fn new(
   | |         admission: WorthServerAdmission,
@@ -13,13 +13,13 @@ error[E0624]: associated function `new` is private
   | |_____________- private associated function defined here
 
 error[E0061]: this function takes 2 arguments but 1 argument was supplied
- --> tests/ui/construction/worth_native/private_session_constructor.rs:4:20
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/worth_native/private_session_constructor.rs
   |
-4 |     let _session = WorthServerWorthNativeSession::new(fake_admission());
+  |     let _session = WorthServerWorthNativeSession::new(fake_admission());
   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^------------------ argument #2 of type `worth_server::worth_native::session::WorthServerWorthNativeSessionServices` is missing
   |
 note: associated function defined here
- --> src/worth_native/session.rs
+ --> $WORKSPACE/crates/worth-server/src/worth_native/session.rs
   |
   |     pub(crate) fn new(
   |                   ^^^

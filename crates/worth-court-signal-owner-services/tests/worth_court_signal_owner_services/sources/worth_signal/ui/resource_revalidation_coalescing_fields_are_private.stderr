@@ -1,5 +1,5 @@
 error[E0451]: fields `winner`, `coalesced_request`, `freshness_decision` and `lifecycle_transition` of struct `ResourceRevalidationCoalescing` are private
-  --> tests/ui/resource_revalidation_coalescing_fields_are_private.rs:9:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_revalidation_coalescing_fields_are_private.rs:9:9
    |
  8 |     let _coalescing = ResourceRevalidationCoalescing {
    |                       ------------------------------ in this type

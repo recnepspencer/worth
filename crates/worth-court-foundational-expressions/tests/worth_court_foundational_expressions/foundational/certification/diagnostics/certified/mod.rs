@@ -1,7 +1,23 @@
-use {worth_foundational::bridge_certified_diagnostic_bundle_trust_boundary, worth_foundational::certify_current_basis_diagnostic_bundle, worth_foundational::certify_diagnostic_bundle_with_source_basis, worth_foundational::foundational_diagnostic_certified_readmission_authority, worth_foundational::prepare_diagnostic_support_report_for_canonical_basis, worth_foundational::readmit_certified_diagnostic_bundle_after_boundary, worth_foundational::FoundationalDiagnosticCertifiedAttachmentDenial, worth_foundational::FoundationalDiagnosticCertifiedCoverageClass, worth_foundational::FoundationalDiagnosticCoverageFamilyStatus, worth_foundational::FoundationalDiagnosticCoverageMatrix, worth_foundational::FoundationalDiagnosticNamedGap};
-use {worth_proof::TransitionOutcome};
+use {
+    worth_foundational::bridge_certified_diagnostic_bundle_trust_boundary,
+    worth_foundational::certify_current_basis_diagnostic_bundle,
+    worth_foundational::certify_diagnostic_bundle_with_source_basis,
+    worth_foundational::foundational_diagnostic_certified_readmission_authority,
+    worth_foundational::prepare_diagnostic_support_report_for_canonical_basis,
+    worth_foundational::readmit_certified_diagnostic_bundle_after_boundary,
+};
 
-use {crate::certification::ordinary_context::diagnostics::certified_support::certification_authority, crate::certification::ordinary_context::diagnostics::certified_support::certified_support_report_complete, crate::certification::ordinary_context::diagnostics::certified_support::current_basis_boundary_artifact_source, crate::certification::ordinary_context::diagnostics::certified_support::current_basis_receipt_source, crate::certification::ordinary_context::diagnostics::certified_support::happy_path_denied_matrix, crate::certification::ordinary_context::diagnostics::certified_support::hostile_support_coverage_matrix, crate::certification::ordinary_context::diagnostics::certified_support::partial_explanation_bundle, crate::certification::ordinary_context::diagnostics::certified_support::partial_explanation_coverage_matrix, crate::certification::ordinary_context::diagnostics::certified_support::version};
+use {
+    crate::certification::ordinary_context::diagnostics::certified_support::certification_authority,
+    crate::certification::ordinary_context::diagnostics::certified_support::certified_support_report_complete,
+    crate::certification::ordinary_context::diagnostics::certified_support::current_basis_boundary_artifact_source,
+    crate::certification::ordinary_context::diagnostics::certified_support::current_basis_receipt_source,
+    crate::certification::ordinary_context::diagnostics::certified_support::happy_path_denied_matrix,
+    crate::certification::ordinary_context::diagnostics::certified_support::hostile_support_coverage_matrix,
+    crate::certification::ordinary_context::diagnostics::certified_support::partial_explanation_bundle,
+    crate::certification::ordinary_context::diagnostics::certified_support::partial_explanation_coverage_matrix,
+    crate::certification::ordinary_context::diagnostics::certified_support::version,
+};
 
 #[test]
 fn certified_diagnostic_bundle_reuses_proof_lane_for_current_basis_transition_sources() {
@@ -38,12 +54,18 @@ fn certified_diagnostic_bundle_reuses_proof_lane_for_current_basis_transition_so
         worth_proof::TransitionOutcome::Denied(denial) => {
             panic!("expected certified diagnostic bundle, denied: {denial:?}")
         }
-        worth_proof::TransitionOutcome::Deferred(_) => panic!("expected certified diagnostic bundle, deferred"),
-        worth_proof::TransitionOutcome::Stale(_) => panic!("expected certified diagnostic bundle, stale"),
+        worth_proof::TransitionOutcome::Deferred(_) => {
+            panic!("expected certified diagnostic bundle, deferred")
+        }
+        worth_proof::TransitionOutcome::Stale(_) => {
+            panic!("expected certified diagnostic bundle, stale")
+        }
         worth_proof::TransitionOutcome::RebindRequired(_) => {
             panic!("expected certified diagnostic bundle, rebind required")
         }
-        worth_proof::TransitionOutcome::Failed(_) => panic!("expected certified diagnostic bundle, failed"),
+        worth_proof::TransitionOutcome::Failed(_) => {
+            panic!("expected certified diagnostic bundle, failed")
+        }
     };
 
     assert_eq!(
@@ -96,11 +118,15 @@ fn certified_diagnostic_bundle_preserves_partial_named_gap_coverage_honestly() {
         worth_proof::TransitionOutcome::Deferred(_) => {
             panic!("expected partial certified bundle, deferred")
         }
-        worth_proof::TransitionOutcome::Stale(_) => panic!("expected partial certified bundle, stale"),
+        worth_proof::TransitionOutcome::Stale(_) => {
+            panic!("expected partial certified bundle, stale")
+        }
         worth_proof::TransitionOutcome::RebindRequired(_) => {
             panic!("expected partial certified bundle, rebind required")
         }
-        worth_proof::TransitionOutcome::Failed(_) => panic!("expected partial certified bundle, failed"),
+        worth_proof::TransitionOutcome::Failed(_) => {
+            panic!("expected partial certified bundle, failed")
+        }
     };
 
     assert_eq!(

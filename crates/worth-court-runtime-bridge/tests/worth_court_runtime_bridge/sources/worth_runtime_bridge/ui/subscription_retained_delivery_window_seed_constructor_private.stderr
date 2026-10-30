@@ -1,10 +1,10 @@
 error[E0624]: associated function `retain` is private
- --> tests/ui/subscription_retained_delivery_window_seed_constructor_private.rs:4:70
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_retained_delivery_window_seed_constructor_private.rs:4:70
   |
 4 |     let _constructor = BridgeSubscriptionRetainedDeliveryWindowSeed::retain;
   |                                                                      ^^^^^^ private associated function
   |
- ::: src/subscription/retained_delivery/window_seed.rs
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/retained_delivery/window_seed.rs
   |
   |     pub(crate) fn retain(sealed_window: &BridgeSubscriptionDeliveryWindowSealed) -> Self {
   |     ------------------------------------------------------------------------------------ private associated function defined here

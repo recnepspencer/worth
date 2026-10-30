@@ -1,8 +1,21 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::diagnostics::basis::*;
-use {worth_foundational::compare_canonical_basis, worth_foundational::compare_diagnostic_explanation_bundles, worth_foundational::compare_diagnostic_support_reports, worth_foundational::foundational_diagnostic_canonical_basis_entries, worth_foundational::prepare_canonical_comparison, worth_foundational::prepare_diagnostic_explanation_bundle_for_canonical_basis, worth_foundational::prepare_diagnostic_support_report_for_canonical_basis, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::FoundationalDiagnosticEvidencePosture};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::diagnostics::basis::*;
+use {
+    worth_foundational::compare_diagnostic_explanation_bundles,
+    worth_foundational::compare_diagnostic_support_reports,
+    worth_foundational::foundational_diagnostic_canonical_basis_entries,
+};
 
-use {crate::certification::ordinary_context::diagnostics::basis_support::diagnostic_bool_entry, crate::certification::ordinary_context::diagnostics::basis_support::diagnostic_integer_entry, crate::certification::ordinary_context::diagnostics::basis_support::diagnostic_text_entry, crate::certification::ordinary_context::diagnostics::basis_support::explanation_bundle_with_mixed_rows, crate::certification::ordinary_context::diagnostics::basis_support::explanation_bundle_with_tied_common_rows, crate::certification::ordinary_context::diagnostics::basis_support::support_report_equivalent_reordered, crate::certification::ordinary_context::diagnostics::basis_support::support_report_with_unsorted_inputs, crate::certification::ordinary_context::diagnostics::basis_support::version};
+use {
+    crate::certification::ordinary_context::diagnostics::basis_support::diagnostic_bool_entry,
+    crate::certification::ordinary_context::diagnostics::basis_support::diagnostic_integer_entry,
+    crate::certification::ordinary_context::diagnostics::basis_support::diagnostic_text_entry,
+    crate::certification::ordinary_context::diagnostics::basis_support::explanation_bundle_with_mixed_rows,
+    crate::certification::ordinary_context::diagnostics::basis_support::explanation_bundle_with_tied_common_rows,
+    crate::certification::ordinary_context::diagnostics::basis_support::support_report_equivalent_reordered,
+    crate::certification::ordinary_context::diagnostics::basis_support::support_report_with_unsorted_inputs,
+    crate::certification::ordinary_context::diagnostics::basis_support::version,
+};
 
 #[test]
 fn diagnostic_surfaces_canonicalize_the_same_across_independent_producers() {
@@ -32,8 +45,9 @@ fn diagnostic_row_canonicalization_does_not_depend_on_input_order_when_common_fi
 
 #[test]
 fn diagnostic_basis_preserves_bundle_row_gap_and_evidence_posture_meaning() {
-    let bundle =
-        explanation_bundle_with_mixed_rows(worth_foundational::FoundationalDiagnosticEvidencePosture::Summarized);
+    let bundle = explanation_bundle_with_mixed_rows(
+        worth_foundational::FoundationalDiagnosticEvidencePosture::Summarized,
+    );
     let ready = ready_explanation(&bundle);
     let entries = foundational_diagnostic_canonical_basis_entries(&ready);
 
@@ -96,10 +110,12 @@ fn diagnostic_basis_preserves_bundle_row_gap_and_evidence_posture_meaning() {
 
 #[test]
 fn diagnostic_comparison_bundle_preserves_mismatch_basis_explicitly() {
-    let left =
-        explanation_bundle_with_mixed_rows(worth_foundational::FoundationalDiagnosticEvidencePosture::Summarized);
-    let right =
-        explanation_bundle_with_mixed_rows(worth_foundational::FoundationalDiagnosticEvidencePosture::RetainedDirect);
+    let left = explanation_bundle_with_mixed_rows(
+        worth_foundational::FoundationalDiagnosticEvidencePosture::Summarized,
+    );
+    let right = explanation_bundle_with_mixed_rows(
+        worth_foundational::FoundationalDiagnosticEvidencePosture::RetainedDirect,
+    );
 
     let comparison = match compare_diagnostic_explanation_bundles(version(), &left, &right) {
         worth_proof::TransitionOutcome::Success(bundle) => bundle,
@@ -131,8 +147,9 @@ fn diagnostic_comparison_bundle_preserves_mismatch_basis_explicitly() {
 
 #[test]
 fn blind_consumers_can_read_family_distinct_rows_without_producer_state() {
-    let bundle =
-        explanation_bundle_with_mixed_rows(worth_foundational::FoundationalDiagnosticEvidencePosture::Summarized);
+    let bundle = explanation_bundle_with_mixed_rows(
+        worth_foundational::FoundationalDiagnosticEvidencePosture::Summarized,
+    );
 
     let decision_codes = bundle
         .decision_rows()

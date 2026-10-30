@@ -1,11 +1,26 @@
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::handles::HandleBindingError, crate::relational_certification::ordinary_context::world::supply_chain::handles::SupplyChainSemanticHandles};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::production_world::ProductionSeededSupplyChainWorld};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram};
-pub use {std::collections::BTreeMap};
-pub use {worth_relational::facade::config::PublicationConfig};
-pub use {worth_relational::facade::runtime::CustomInvariantRegistration};
-pub use {worth_relational::facade::runtime::InvariantCatalog, worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial, worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::runtime::RelationalRuntimeApi};
-pub use {worth_relational::facade::transactions::BulkEntityCreateIntent, worth_relational::facade::transactions::BulkRelationCreateIntent, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::transactions::TransactionCommitError, worth_relational::facade::transactions::WorkerIntentBatch};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::production_world::ProductionSeededSupplyChainWorld;
+pub use crate::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram;
+pub use std::collections::BTreeMap;
+pub use worth_relational::facade::config::PublicationConfig;
+pub use worth_relational::facade::runtime::CustomInvariantRegistration;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::handles::HandleBindingError,
+    crate::relational_certification::ordinary_context::world::supply_chain::handles::SupplyChainSemanticHandles,
+};
+pub use {
+    worth_relational::facade::runtime::InvariantCatalog,
+    worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,
+    worth_relational::facade::runtime::RelationalRuntime,
+    worth_relational::facade::runtime::RelationalRuntimeApi,
+};
+pub use {
+    worth_relational::facade::transactions::BulkEntityCreateIntent,
+    worth_relational::facade::transactions::BulkRelationCreateIntent,
+    worth_relational::facade::transactions::CreateIntent,
+    worth_relational::facade::transactions::MutationIntent,
+    worth_relational::facade::transactions::TransactionCommitError,
+    worth_relational::facade::transactions::WorkerIntentBatch,
+};
 
 pub fn main_basis(
     runtime: &RelationalRuntime,
@@ -141,15 +156,16 @@ pub fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invarian
     invariant_catalog: Option<InvariantCatalog>,
     custom_invariants: Vec<CustomInvariantRegistration>,
 ) -> Result<ProductionSeededSupplyChainWorld, SupplyChainCompilationError> {
-    let mut builder = worth_relational::facade::runtime::RelationalRuntimeApi::builder().publication(PublicationConfig {
-        coherent_publication_required: true,
-        max_patch_records_per_commit: Some(max_patch_records_per_commit),
-        max_published_snapshot_handles: Some(256),
-        max_active_snapshot_handles: Some(4_096),
-        max_transaction_savepoints: 4_096,
-        max_prepared_candidates: Some(1_024),
-        candidate_max_lifetime_millis: 30_000,
-    });
+    let mut builder = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+        .publication(PublicationConfig {
+            coherent_publication_required: true,
+            max_patch_records_per_commit: Some(max_patch_records_per_commit),
+            max_published_snapshot_handles: Some(256),
+            max_active_snapshot_handles: Some(4_096),
+            max_transaction_savepoints: 4_096,
+            max_prepared_candidates: Some(1_024),
+            candidate_max_lifetime_millis: 30_000,
+        });
     if let Some(invariant_catalog) = invariant_catalog {
         builder = builder.invariant_catalog(invariant_catalog);
     }
@@ -205,7 +221,9 @@ pub fn commit_definition(
         };
         transaction
             .push_batch(
-                worth_relational::facade::transactions::WorkerIntentBatch::new("supply-chain-empty-baseline"),
+                worth_relational::facade::transactions::WorkerIntentBatch::new(
+                    "supply-chain-empty-baseline",
+                ),
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("empty baseline staging fits the configured transaction budget");
@@ -214,7 +232,8 @@ pub fn commit_definition(
             .map_err(transaction_error);
     }
 
-    let mut batch = worth_relational::facade::transactions::WorkerIntentBatch::new("supply-chain-baseline");
+    let mut batch =
+        worth_relational::facade::transactions::WorkerIntentBatch::new("supply-chain-baseline");
     for intent in bulk_entity_intents(program) {
         batch = batch.push(intent);
     }
@@ -258,7 +277,11 @@ pub fn bulk_entity_intents(program: &CompiledSupplyChainProgram) -> Vec<Mutation
     }
     grouped
         .into_values()
-        .map(|intent| worth_relational::facade::transactions::MutationIntent::Create(worth_relational::facade::transactions::CreateIntent::BulkEntities(intent)))
+        .map(|intent| {
+            worth_relational::facade::transactions::MutationIntent::Create(
+                worth_relational::facade::transactions::CreateIntent::BulkEntities(intent),
+            )
+        })
         .collect()
 }
 
@@ -282,7 +305,11 @@ pub fn bulk_relation_intents(program: &CompiledSupplyChainProgram) -> Vec<Mutati
     }
     grouped
         .into_values()
-        .map(|intent| worth_relational::facade::transactions::MutationIntent::Create(worth_relational::facade::transactions::CreateIntent::BulkRelations(intent)))
+        .map(|intent| {
+            worth_relational::facade::transactions::MutationIntent::Create(
+                worth_relational::facade::transactions::CreateIntent::BulkRelations(intent),
+            )
+        })
         .collect()
 }
 

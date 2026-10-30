@@ -1,9 +1,12 @@
-#[allow(unused_imports)] use crate::worth_native_facade_entry::ordinary_context::direct_projection::*;
-use {worth_proof::TransitionOutcome};
-use {worth_query::facade::foundation::ProjectionAuthorityOutcome, worth_query::facade::foundation::ProjectionConsumptionBindingContext, worth_query::facade::foundation::ProjectionFactConsumptionPathError, worth_query::facade::foundation::WorthQueryConsumedProjectionAuthority};
-use {worth_server::WorthServerDirectProjectionOutcome, worth_server::WorthServerDirectProjectionRequest, worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerSuccessKind};
+#[allow(unused_imports)]
+use crate::worth_native_facade_entry::ordinary_context::direct_projection::*;
 
-use {worth_testkit_server::shared_support_direct_context_runtime::RemaskWorkspaceProvider, worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read, worth_testkit_server::shared_support_worth_native_assertions::worth_native_session, worth_testkit_server::shared_support_worth_native_runtime::build_server, worth_testkit_server::shared_support_worth_native_runtime::build_server_with_workspace_provider};
+use {
+    worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read,
+    worth_testkit_server::shared_support_worth_native_assertions::worth_native_session,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server_with_workspace_provider,
+};
 
 #[test]
 fn direct_projection_consumes_retained_live_read_facts_with_typed_receipt_boundary() {

@@ -1,13 +1,26 @@
-pub(crate) use {worth_foundational::FoundationalBranchTarget};
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::AdmittedSignalBranchSnapshot, worth_signal::facade::branch::SignalBranchAdvanceDenial, worth_signal::facade::branch::SignalBranchBasisObservationDenial, worth_signal::facade::branch::SignalBranchBasisReadmissionDenial, worth_signal::facade::branch::SignalBranchRetentionAcquisitionDenial, worth_signal::facade::branch::SignalBranchRetentionReleaseDenial};
+pub(crate) use worth_foundational::FoundationalBranchTarget;
+pub(crate) use {
+    worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    worth_signal::facade::branch::AdmittedSignalBranchSnapshot,
+    worth_signal::facade::branch::SignalBranchAdvanceDenial,
+    worth_signal::facade::branch::SignalBranchBasisObservationDenial,
+    worth_signal::facade::branch::SignalBranchBasisReadmissionDenial,
+    worth_signal::facade::branch::SignalBranchRetentionAcquisitionDenial,
+    worth_signal::facade::branch::SignalBranchRetentionReleaseDenial,
+};
 
-pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::state::ModelObservation, crate::signal_owner_services::reference_context::independent_oracle::state::ModelSnapshot};
-pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::transition::ModelDenial};
+pub(crate) use crate::signal_owner_services::reference_context::independent_oracle::transition::ModelDenial;
+pub(crate) use {
+    crate::signal_owner_services::reference_context::independent_oracle::state::ModelObservation,
+    crate::signal_owner_services::reference_context::independent_oracle::state::ModelSnapshot,
+};
 
 pub(crate) fn neutral_basis(basis: &AdmittedSignalBranchBasis) -> ModelObservation {
     let target = match basis.observation().target() {
         worth_foundational::FoundationalBranchTarget::Basis(target) => target,
-        worth_foundational::FoundationalBranchTarget::Empty => panic!("Signal basis observation cannot be empty"),
+        worth_foundational::FoundationalBranchTarget::Empty => {
+            panic!("Signal basis observation cannot be empty")
+        }
     };
     ModelObservation {
         branch: basis.branch_id().0,
@@ -98,7 +111,7 @@ pub(crate) fn advance_denial(denial: &SignalBranchAdvanceDenial) -> ModelDenial 
 pub(crate) fn fork_denial(
     denial: &worth_signal::facade::branch::SignalBranchForkOperationDenial,
 ) -> ModelDenial {
-    use {worth_signal::facade::branch::SignalBranchForkOperationDenial};
+    use worth_signal::facade::branch::SignalBranchForkOperationDenial;
 
     match denial {
         SignalBranchForkOperationDenial::OwnerUnavailable(_) => crate::signal_owner_services::reference_context::independent_oracle::transition::ModelDenial::OwnerUnavailable,
@@ -113,7 +126,7 @@ pub(crate) fn fork_denial(
 pub(crate) fn capture_denial(
     denial: &worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial,
 ) -> ModelDenial {
-    use {worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial};
+    use worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial;
 
     match denial {
         SignalBranchSnapshotCaptureDenial::OwnerUnavailable(_) => crate::signal_owner_services::reference_context::independent_oracle::transition::ModelDenial::OwnerUnavailable,
@@ -128,7 +141,7 @@ pub(crate) fn capture_denial(
 pub(crate) fn restore_denial(
     denial: &worth_signal::facade::branch::SignalBranchRestoreDenial,
 ) -> ModelDenial {
-    use {worth_signal::facade::branch::SignalBranchRestoreDenial};
+    use worth_signal::facade::branch::SignalBranchRestoreDenial;
 
     match denial {
         SignalBranchRestoreDenial::OwnerUnavailable(_) => crate::signal_owner_services::reference_context::independent_oracle::transition::ModelDenial::OwnerUnavailable,

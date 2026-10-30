@@ -1,4 +1,7 @@
-pub(crate) use {worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityRequestInput};
+pub(crate) use {
+    worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityRequestInput,
+};
 
 pub(crate) fn upload_input_with_content_type(
     operation_name: &str,

@@ -1,5 +1,5 @@
 error[E0423]: cannot initialize a tuple struct which contains private fields
- --> tests/ui/branch_reference/publication_authority_cannot_be_forged.rs:4:18
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/publication_authority_cannot_be_forged.rs:4:18
   |
 4 |     let marker = RelationalBranchPublicationAuthorityMarker(());
   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -10,7 +10,7 @@ note: constructor is not visible here due to private fields
   |         $vis struct $name(::core::marker::PhantomData<()>);
   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
   |
- ::: src/branch/authority.rs
+ ::: $WORKSPACE/crates/worth-relational/src/branch/authority.rs
   |
   | worth_proof::authority_marker!(pub RelationalBranchPublicationAuthorityMarker);
   | ------------------------------------------------------------------------------ in this macro invocation
@@ -22,7 +22,7 @@ help: you might have meant to use the `seal` associated function
   |
 
 error[E0624]: associated function `seal` is private
- --> tests/ui/branch_reference/publication_authority_cannot_be_forged.rs:6:63
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/publication_authority_cannot_be_forged.rs:6:63
   |
 6 |     let _sealed = RelationalBranchPublicationAuthorityMarker::seal();
   |                                                               ^^^^ private associated function
@@ -33,7 +33,7 @@ error[E0624]: associated function `seal` is private
   |             ----------------- private associated function defined here
 
 error[E0624]: associated function `witness` is private
- --> tests/ui/branch_reference/publication_authority_cannot_be_forged.rs:7:63
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/publication_authority_cannot_be_forged.rs:7:63
   |
 7 |     let _issued = RelationalBranchPublicationAuthorityMarker::witness();
   |                                                               ^^^^^^^ private associated function

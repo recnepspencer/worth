@@ -1,5 +1,5 @@
 error[E0061]: this method takes 5 arguments but 4 arguments were supplied
-  --> tests/ui/certification_reference_workload_sufficiency_requires_coverage_proof.rs:18:21
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/certification_reference_workload_sufficiency_requires_coverage_proof.rs:18:21
    |
 18 |       let _ = runtime.seal_subscription_reference_workload_sufficiency(
    |  _____________________^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-
@@ -14,7 +14,7 @@ error[E0061]: this method takes 5 arguments but 4 arguments were supplied
    = note: expected reference `&BridgeSubscriptionReferenceWorkloadCoverageProof`
               found reference `&BridgeSubscriptionReferenceWorkloadReport`
 note: method defined here
-  --> src/facade/runtime/subscription/certification/reference_workload.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription/certification/reference_workload.rs
    |
    |     pub fn seal_subscription_reference_workload_sufficiency(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

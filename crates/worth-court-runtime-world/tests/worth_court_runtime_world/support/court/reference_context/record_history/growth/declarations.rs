@@ -1,7 +1,15 @@
 // Literal retained-source growth under identical finite native page limits.
-pub(crate) use {worth_relational::facade::history::*, worth_relational::facade::transactions::*, crate::court::ordinary_context::record_history::fixture::NativeHistoryCourt, crate::court::ordinary_context::record_history::limits};
-pub(crate) use {worth_execution::CancellationSource, worth_execution::ExecutionRequest, worth_execution::ExecutionWorkCeiling, worth_execution::SerialMemoryBudget, worth_execution::SerialRequest};
-pub(crate) use {worth_relational::facade::publication::RecordStructuralChange};
+pub(crate) use worth_relational::facade::publication::RecordStructuralChange;
+pub(crate) use {
+    crate::court::ordinary_context::record_history::fixture::NativeHistoryCourt,
+    crate::court::ordinary_context::record_history::limits, worth_relational::facade::history::*,
+    worth_relational::facade::transactions::*,
+};
+pub(crate) use {
+    worth_execution::CancellationSource, worth_execution::ExecutionRequest,
+    worth_execution::ExecutionWorkCeiling, worth_execution::SerialMemoryBudget,
+    worth_execution::SerialRequest,
+};
 
 pub(crate) fn observe_growth(unrelated: usize) -> (u64, usize) {
     let setup = crate::test_execution_policy::serial_request();
@@ -71,7 +79,10 @@ pub(crate) fn observe_growth(unrelated: usize) -> (u64, usize) {
             assert_eq!(event.commit_id(), observation.commit_id().unwrap());
             assert_eq!(event.version_id(), observation.version_id());
             assert_eq!(event.branch_id(), observation.identity().branch_id());
-            assert_eq!(event.structural_change(), worth_relational::facade::publication::RecordStructuralChange::Updated);
+            assert_eq!(
+                event.structural_change(),
+                worth_relational::facade::publication::RecordStructuralChange::Updated
+            );
             let mut aspects = event.changed_aspects();
             assert_eq!(aspects.next(), Some(selected_aspect));
             assert_eq!(aspects.next(), None);

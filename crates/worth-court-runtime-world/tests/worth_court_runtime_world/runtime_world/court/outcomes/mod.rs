@@ -1,4 +1,6 @@
-pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::CompositeSupplyChainCourt};
+pub(crate) use {
+    crate::court::ordinary_context::CompositeSupplyChainCourt, worth_runtime_world::facade::*,
+};
 
 #[test]
 fn cancellation_prepared_drop_and_stale_head_do_not_move_components() {

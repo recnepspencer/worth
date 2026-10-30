@@ -1,4 +1,4 @@
-pub(crate) use {std::collections::BTreeSet};
+pub(crate) use std::collections::BTreeSet;
 
 pub(crate) use {crate::relational_certification::reference_context::mvcc_seeded_model::branch_id, crate::relational_certification::reference_context::mvcc_seeded_model::trace_panic, crate::relational_certification::reference_context::mvcc_seeded_model::BranchModelState, crate::relational_certification::reference_context::mvcc_seeded_model::BranchScenario, crate::relational_certification::reference_context::mvcc_seeded_model::OutcomeProbe, crate::relational_certification::reference_context::mvcc_seeded_model::ProbeOutcome, crate::relational_certification::reference_context::mvcc_seeded_model::ProductionModelTrace, crate::relational_certification::reference_context::mvcc_seeded_model::ScenarioLifecycle};
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch_with_result, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_supply_chain_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::oracle::ancestry::OracleBranch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::oracle::state::OracleState, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::production_world::ProductionSeededSupplyChainWorld, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::SupplyChainProductionDeltaLoweringError};
@@ -235,7 +235,9 @@ pub(crate) fn commit_evolve_and_probe(
         execution,
         &world.runtime,
         branch.clone(),
-        worth_relational::facade::transactions::WorkerIntentBatch::new(format!("seeded-successor-{scenario_index}")),
+        worth_relational::facade::transactions::WorkerIntentBatch::new(format!(
+            "seeded-successor-{scenario_index}"
+        )),
     );
     crate::relational_certification::reference_context::mvcc_seeded_model::seeded_trace_observation::observe_snapshot_against_oracle(
         execution,

@@ -1,6 +1,16 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::ManagedSignalBranchReference, worth_signal::facade::branch::SignalBranchBasisPort, worth_signal::facade::branch::SignalBranchLifecyclePort, worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome, worth_signal::facade::branch::SignalBranchRetirementDenial, worth_signal::facade::branch::SignalBranchRetirementReason, worth_signal::facade::branch::SignalOwnerCancellationSource, worth_signal::facade::branch::SignalOwnerLifecycleObservation};
-pub(crate) use {worth_signal::facade::SignalRuntime};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_signal::facade::SignalRuntime;
+pub(crate) use {
+    worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    worth_signal::facade::branch::ManagedSignalBranchReference,
+    worth_signal::facade::branch::SignalBranchBasisPort,
+    worth_signal::facade::branch::SignalBranchLifecyclePort,
+    worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome,
+    worth_signal::facade::branch::SignalBranchRetirementDenial,
+    worth_signal::facade::branch::SignalBranchRetirementReason,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+    worth_signal::facade::branch::SignalOwnerLifecycleObservation,
+};
 
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::comparison::basis_observation_denial, crate::signal_owner_services::reference_context::independent_oracle::comparison::neutral_basis, crate::signal_owner_services::reference_context::independent_oracle::comparison::release_denial};
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::state::ModelOwnerLifecycle, crate::signal_owner_services::reference_context::independent_oracle::state::ModelWorld};
@@ -69,7 +79,10 @@ pub(crate) fn finish_terminal_trace(
     ));
 
     let plan = lifecycle
-        .plan_retirement_exact(child_basis, worth_signal::facade::branch::SignalBranchRetirementReason::Superseded)
+        .plan_retirement_exact(
+            child_basis,
+            worth_signal::facade::branch::SignalBranchRetirementReason::Superseded,
+        )
         .into_result()
         .expect("released child is now exactly retireable");
     assert!(matches!(
@@ -81,7 +94,10 @@ pub(crate) fn finish_terminal_trace(
         crate::signal_owner_services::reference_context::independent_oracle::transition::ModelResult::Success(crate::signal_owner_services::reference_context::independent_oracle::transition::ModelSuccess::Retirement)
     ));
     assert!(matches!(
-        lifecycle.retire_exact(plan, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token()),
+        lifecycle.retire_exact(
+            plan,
+            &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token()
+        ),
         worth_proof::TransitionOutcome::Success(_)
     ));
     let child_denial = basis
@@ -130,7 +146,10 @@ pub(crate) fn finish_terminal_trace(
     ));
     let denied_release = basis.release_exact(close_lease);
     let returned_lease = match denied_release {
-        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Denied { lease, denial } => {
+        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Denied {
+            lease,
+            denial,
+        } => {
             assert_denial(
                 model_denial(
                     model.apply(crate::signal_owner_services::reference_context::independent_oracle::transition::ModelAction::Release {

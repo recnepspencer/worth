@@ -2,10 +2,8 @@
 use crate::relational_certification::reference_context::root_cost_scale_axes::*;
 pub(crate) use std::collections::BTreeSet;
 
-pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch_with_result, crate::relational_certification::ordinary_context::world::supply_chain::runtime_driver::footprint_batch::lower_cargo_footprint_batch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
+pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch_with_result, crate::relational_certification::ordinary_context::world::supply_chain::runtime_driver::footprint_batch::lower_cargo_footprint_batch};
 pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_relational::facade::inspection::RelationalMvccCostScope};
-pub(crate) use {worth_relational::facade::transactions::WorkerIntentBatch};
 
 #[test]
 fn production_write_footprints_report_exact_records_and_local_publication_cost() {

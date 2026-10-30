@@ -1,19 +1,19 @@
 warning: unreachable expression
- --> tests/ui/profiles/identity_boundaries/profile_identity_fields_are_private.rs:6:17
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/identity_boundaries/profile_identity_fields_are_private.rs
   |
-5 |         basis: panic!("type-check only"),
+  |         basis: panic!("type-check only"),
   |                ------------------------- any code following this expression is unreachable
-6 |         digest: panic!("type-check only"),
+  |         digest: panic!("type-check only"),
   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable expression
   |
   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
 
 error[E0451]: fields `basis` and `digest` of struct `FoundationalProfileIdentity` are private
- --> tests/ui/profiles/identity_boundaries/profile_identity_fields_are_private.rs:5:9
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/identity_boundaries/profile_identity_fields_are_private.rs
   |
-4 |     let _ = FoundationalProfileIdentity {
+  |     let _ = FoundationalProfileIdentity {
   |             --------------------------- in this type
-5 |         basis: panic!("type-check only"),
+  |         basis: panic!("type-check only"),
   |         ^^^^^ private field
-6 |         digest: panic!("type-check only"),
+  |         digest: panic!("type-check only"),
   |         ^^^^^^ private field

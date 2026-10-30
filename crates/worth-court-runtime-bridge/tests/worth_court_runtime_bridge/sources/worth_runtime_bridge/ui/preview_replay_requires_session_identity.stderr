@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/preview_replay_requires_session_identity.rs:6:43
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/preview_replay_requires_session_identity.rs:6:43
   |
 6 |     let _ = runtime.replay_preview_bundle(sealed_authority_placeholder::<&str>());
   |                     --------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&BridgeIdentity<...>`, found `&str`
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected reference `&worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::PreviewSessionIdentityTag>`
              found reference `&str`
 note: method defined here
- --> src/facade/runtime/speculation.rs
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/speculation.rs
   |
   |     pub fn replay_preview_bundle(
   |            ^^^^^^^^^^^^^^^^^^^^^

@@ -1,17 +1,17 @@
 error[E0308]: mismatched types
-   --> tests/ui/boundary_evidence/attachments/materialization/raw_materialized_attachment_bundle_cannot_satisfy_support_basis_api.rs:100:38
-    |
-100 |     accepts_support_basis_attachment(&materialized);
-    |     -------------------------------- ^^^^^^^^^^^^^ expected `SupportBasisBoundaryEvidenceAttachmentBundle`, found `FoundationalMaterializedBoundaryEvidenceAttachmentBundle`
-    |     |
-    |     arguments to this function are incorrect
-    |
-    = note: expected reference `&SupportBasisBoundaryEvidenceAttachmentBundle`
-               found reference `&FoundationalMaterializedBoundaryEvidenceAttachmentBundle`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/attachments/materialization/raw_materialized_attachment_bundle_cannot_satisfy_support_basis_api.rs
+  |
+  |     accepts_support_basis_attachment(&materialized);
+  |     -------------------------------- ^^^^^^^^^^^^^ expected `SupportBasisBoundaryEvidenceAttachmentBundle`, found `FoundationalMaterializedBoundaryEvidenceAttachmentBundle`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected reference `&SupportBasisBoundaryEvidenceAttachmentBundle`
+             found reference `&FoundationalMaterializedBoundaryEvidenceAttachmentBundle`
 note: function defined here
-   --> tests/ui/boundary_evidence/attachments/materialization/raw_materialized_attachment_bundle_cannot_satisfy_support_basis_api.rs:10:4
-    |
- 10 | fn accepts_support_basis_attachment(
-    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 11 |     _: &worth_foundational::SupportBasisBoundaryEvidenceAttachmentBundle,
-    |     --------------------------------------------------------------------
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/attachments/materialization/raw_materialized_attachment_bundle_cannot_satisfy_support_basis_api.rs
+  |
+  | fn accepts_support_basis_attachment(
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |     _: &worth_foundational::SupportBasisBoundaryEvidenceAttachmentBundle,
+  |     --------------------------------------------------------------------

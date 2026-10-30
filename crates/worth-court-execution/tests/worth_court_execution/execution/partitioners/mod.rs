@@ -1,8 +1,10 @@
-#[allow(unused_imports)] use crate::partitioners::ordinary_context::*;
-pub(crate) use {std::num::NonZeroUsize};
+#[allow(unused_imports)]
+use crate::partitioners::ordinary_context::*;
 
-pub(crate) use {worth_execution::Bisection, worth_execution::BisectionDenial, worth_execution::CancellationToken, worth_execution::ChargedBytes, worth_execution::ComponentPartitioner, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::KeyedDenial, worth_execution::KeyedEditDenial, worth_execution::KeyedItem, worth_execution::KeyedPartitioner, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop, worth_execution::PartitionItemId, worth_execution::WeightedEdge, worth_execution::WeightedItem};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    worth_execution::KeyedItem, worth_execution::KeyedPartitioner, worth_execution::WeightedEdge,
+    worth_execution::WeightedItem,
+};
 
 #[test]
 fn keyed_routes_items_and_denies_identity_aliases_without_mutation() {
@@ -20,9 +22,14 @@ fn keyed_routes_items_and_denies_identity_aliases_without_mutation() {
         keyed.upsert(first.clone(), admit).unwrap().members_visited,
         0
     );
-    assert_eq!(keyed.route(item(1)), Some(worth_foundational::PartitionIdentity::new(7)));
     assert_eq!(
-        keyed.members(worth_foundational::PartitionIdentity::new(7)).unwrap(),
+        keyed.route(item(1)),
+        Some(worth_foundational::PartitionIdentity::new(7))
+    );
+    assert_eq!(
+        keyed
+            .members(worth_foundational::PartitionIdentity::new(7))
+            .unwrap(),
         &std::collections::BTreeSet::from([item(1)])
     );
 
@@ -36,14 +43,24 @@ fn keyed_routes_items_and_denies_identity_aliases_without_mutation() {
     );
     assert_eq!(
         denied,
-        Err(worth_execution::KeyedEditDenial::Keyed(worth_execution::KeyedDenial::IdentityCollision {
-            partition: worth_foundational::PartitionIdentity::new(7)
-        }))
+        Err(worth_execution::KeyedEditDenial::Keyed(
+            worth_execution::KeyedDenial::IdentityCollision {
+                partition: worth_foundational::PartitionIdentity::new(7)
+            }
+        ))
     );
     assert!(keyed.route(item(2)).is_none());
-    assert_eq!(keyed.members(worth_foundational::PartitionIdentity::new(7)).unwrap().len(), 1);
+    assert_eq!(
+        keyed
+            .members(worth_foundational::PartitionIdentity::new(7))
+            .unwrap()
+            .len(),
+        1
+    );
     assert_eq!(keyed.remove(item(1)).items_rerouted, 1);
-    assert!(keyed.members(worth_foundational::PartitionIdentity::new(7)).is_none());
+    assert!(keyed
+        .members(worth_foundational::PartitionIdentity::new(7))
+        .is_none());
 }
 
 #[test]
@@ -79,7 +96,9 @@ fn keyed_offers_the_retained_bound_before_an_edit_and_a_refusal_changes_nothing(
         Err(worth_execution::KeyedEditDenial::Admission(two))
     );
     assert!(keyed.route(item(2)).is_none());
-    assert!(keyed.members(worth_foundational::PartitionIdentity::new(8)).is_none());
+    assert!(keyed
+        .members(worth_foundational::PartitionIdentity::new(8))
+        .is_none());
 }
 
 /// Each retained copy of a key is charged its heap: one on its item, two on
@@ -221,7 +240,10 @@ fn bisection_retains_cut_paths_and_reports_local_recuts_and_interface_quality() 
             .unwrap();
     }
     let unaffected_path = bisection.route(item(3)).unwrap();
-    assert_eq!(unaffected_path, worth_foundational::PartitionIdentity::new(3));
+    assert_eq!(
+        unaffected_path,
+        worth_foundational::PartitionIdentity::new(3)
+    );
     let unchanged = bisection
         .upsert_item(WeightedItem {
             item: item(3),
@@ -238,7 +260,10 @@ fn bisection_retains_cut_paths_and_reports_local_recuts_and_interface_quality() 
         .unwrap();
     assert_eq!(edge_work.subtrees_recut, 0);
     assert_eq!(bisection.quality().cut_weight, 7);
-    assert!(bisection.cut_interfaces()[&worth_foundational::PartitionIdentity::new(1)].contains(&(item(1), item(3))));
+    assert!(
+        bisection.cut_interfaces()[&worth_foundational::PartitionIdentity::new(1)]
+            .contains(&(item(1), item(3)))
+    );
 
     let recut = bisection
         .upsert_item(WeightedItem {

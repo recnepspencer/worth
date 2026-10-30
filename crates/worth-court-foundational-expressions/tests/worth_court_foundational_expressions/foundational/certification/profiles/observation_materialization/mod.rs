@@ -1,7 +1,17 @@
-use {worth_foundational::foundational_profile_progression_authority, worth_foundational::materialize_admitted_foundational_profile, worth_foundational::plan_foundational_profile_materialization, worth_foundational::plan_foundational_profile_materialization_with_elision, worth_foundational::plan_selected_foundational_profile_materialization, worth_foundational::plan_selected_foundational_profile_materialization_with_disposition, worth_foundational::profiles, worth_foundational::FoundationalDescriptiveElisionProfile, worth_foundational::FoundationalDescriptiveSurface, worth_foundational::FoundationalMaterializationPlanningDenial, worth_foundational::FoundationalObservationDisposition, worth_foundational::FoundationalSurfaceAbsenceCause, worth_foundational::ProofBearingArtifactTarget};
-use {worth_proof::TransitionOutcome};
+use {
+    worth_foundational::foundational_profile_progression_authority,
+    worth_foundational::materialize_admitted_foundational_profile,
+    worth_foundational::plan_foundational_profile_materialization,
+    worth_foundational::plan_foundational_profile_materialization_with_elision,
+    worth_foundational::plan_selected_foundational_profile_materialization,
+    worth_foundational::plan_selected_foundational_profile_materialization_with_disposition,
+    worth_foundational::profiles, worth_foundational::ProofBearingArtifactTarget,
+};
 
-use {crate::certification::ordinary_context::profiles::support::admit_same_profile, crate::certification::ordinary_context::profiles::support::profile};
+use {
+    crate::certification::ordinary_context::profiles::support::admit_same_profile,
+    crate::certification::ordinary_context::profiles::support::profile,
+};
 
 #[test]
 fn inactive_observation_is_an_explicit_materialization_absence() {
@@ -127,7 +137,10 @@ fn profile_materialization_front_door_preserves_disposition_boundary() {
     let inactive = profiles()
         .materialization()
         .for_boundary_artifact(&artifact)
-        .selected_with_disposition(&selected, worth_foundational::FoundationalObservationDisposition::Inactive)
+        .selected_with_disposition(
+            &selected,
+            worth_foundational::FoundationalObservationDisposition::Inactive,
+        )
         .expect("explicit inactive disposition should remain available");
     assert_eq!(
         inactive.observation_disposition(),

@@ -1,15 +1,15 @@
 error[E0277]: the trait bound `std::string::String: From<FoundationalAuthorityIdentity<std::string::String, QueryIdentityAuthority, QueryCommitIdentityKind>>` is not satisfied
-  --> tests/ui/identity_categories/authority_identity_cannot_convert_into_string.rs:26:40
-   |
-26 |     let _raw_string: String = identity.into();
-   |                                        ^^^^ unsatisfied trait bound
-   |
-   = help: the trait `From<FoundationalAuthorityIdentity<std::string::String, QueryIdentityAuthority, QueryCommitIdentityKind>>` is not implemented for `std::string::String`
-   = help: the following other types implement trait `From<T>`:
-             `std::string::String` implements `From<&mut str>`
-             `std::string::String` implements `From<&std::string::String>`
-             `std::string::String` implements `From<&str>`
-             `std::string::String` implements `From<Box<str>>`
-             `std::string::String` implements `From<Cow<'_, str>>`
-             `std::string::String` implements `From<char>`
-   = note: required for `FoundationalAuthorityIdentity<std::string::String, QueryIdentityAuthority, QueryCommitIdentityKind>` to implement `Into<std::string::String>`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/authority_identity_cannot_convert_into_string.rs
+  |
+  |     let _raw_string: String = identity.into();
+  |                                        ^^^^ unsatisfied trait bound
+  |
+  = help: the trait `From<FoundationalAuthorityIdentity<std::string::String, QueryIdentityAuthority, QueryCommitIdentityKind>>` is not implemented for `std::string::String`
+  = help: the following other types implement trait `From<T>`:
+            `std::string::String` implements `From<&mut str>`
+            `std::string::String` implements `From<&std::string::String>`
+            `std::string::String` implements `From<&str>`
+            `std::string::String` implements `From<Box<str>>`
+            `std::string::String` implements `From<Cow<'_, str>>`
+            `std::string::String` implements `From<char>`
+  = note: required for `FoundationalAuthorityIdentity<std::string::String, QueryIdentityAuthority, QueryCommitIdentityKind>` to implement `Into<std::string::String>`

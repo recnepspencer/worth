@@ -1,11 +1,11 @@
 error[E0451]: fields `target_kind`, `surfaces` and `marker` of struct `FoundationalTargetSurfaceInventory` are private
-  --> tests/ui/profiles/materialization_boundaries/target_surface_inventory_fields_are_private.rs:10:9
-   |
- 9 |     let _ = FoundationalTargetSurfaceInventory::<SupportArtifactTarget> {
-   |             ----------------------------------------------------------- in this type
-10 |         target_kind: FoundationalProfileAttachmentTargetKind::SupportArtifact,
-   |         ^^^^^^^^^^^ private field
-11 |         surfaces: &[FoundationalDescriptiveSurface::Lineage],
-   |         ^^^^^^^^ private field
-12 |         marker: PhantomData,
-   |         ^^^^^^ private field
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/materialization_boundaries/target_surface_inventory_fields_are_private.rs
+  |
+  |     let _ = FoundationalTargetSurfaceInventory::<SupportArtifactTarget> {
+  |             ----------------------------------------------------------- in this type
+  |         target_kind: FoundationalProfileAttachmentTargetKind::SupportArtifact,
+  |         ^^^^^^^^^^^ private field
+  |         surfaces: &[FoundationalDescriptiveSurface::Lineage],
+  |         ^^^^^^^^ private field
+  |         marker: PhantomData,
+  |         ^^^^^^ private field

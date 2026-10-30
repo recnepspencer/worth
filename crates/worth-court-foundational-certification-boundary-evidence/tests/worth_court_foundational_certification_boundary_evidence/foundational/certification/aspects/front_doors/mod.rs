@@ -1,5 +1,4 @@
-use {worth_foundational::aspects, worth_foundational::AbsenceLaw, worth_foundational::AspectEquivalenceBasis, worth_foundational::AspectEvolutionPolicy, worth_foundational::AspectLocator, worth_foundational::AspectValue, worth_foundational::LocatorAuthority, worth_foundational::OpaqueAspectType, worth_foundational::ScalarAspectType};
-use {worth_proof::TransitionOutcome};
+use worth_foundational::aspects;
 
 #[test]
 fn aspect_front_doors_cover_scalar_struct_mask_and_patch_progression() {
@@ -53,9 +52,18 @@ fn aspect_front_doors_cover_scalar_struct_mask_and_patch_progression() {
 
     let struct_value = vocabulary
         .struct_value()
-        .with_field("title", worth_foundational::AspectValue::String("Ship it".into()))
-        .with_field("label", worth_foundational::AspectValue::String("origin".into()))
-        .with_field("note", worth_foundational::AspectValue::String("keep me".into()))
+        .with_field(
+            "title",
+            worth_foundational::AspectValue::String("Ship it".into()),
+        )
+        .with_field(
+            "label",
+            worth_foundational::AspectValue::String("origin".into()),
+        )
+        .with_field(
+            "note",
+            worth_foundational::AspectValue::String("keep me".into()),
+        )
         .finish()
         .expect("struct value");
     let worth_proof::TransitionOutcome::Success(validated) =
@@ -63,7 +71,8 @@ fn aspect_front_doors_cover_scalar_struct_mask_and_patch_progression() {
     else {
         panic!("expected validated struct value");
     };
-    let worth_proof::TransitionOutcome::Success(state) = aspects().authoritative_state().admit([validated])
+    let worth_proof::TransitionOutcome::Success(state) =
+        aspects().authoritative_state().admit([validated])
     else {
         panic!("expected admitted state");
     };
@@ -73,7 +82,10 @@ fn aspect_front_doors_cover_scalar_struct_mask_and_patch_progression() {
     let worth_proof::TransitionOutcome::Success(field_patch) = aspects()
         .patch()
         .field_level(&contract, &mutation)
-        .set_field(label_key.clone(), worth_foundational::AspectValue::String("moved".into()))
+        .set_field(
+            label_key.clone(),
+            worth_foundational::AspectValue::String("moved".into()),
+        )
         .clear_field(vocabulary.field_key("note").expect("valid field"))
         .finish()
     else {
@@ -111,7 +123,10 @@ fn aspect_front_doors_cover_scalar_struct_mask_and_patch_progression() {
         .get(&vocabulary.field_key("note").expect("valid field"))
         .is_none());
 
-    let aspect_locator = worth_foundational::AspectLocator::new(worth_foundational::LocatorAuthority::SupportOnly, task_key.clone());
+    let aspect_locator = worth_foundational::AspectLocator::new(
+        worth_foundational::LocatorAuthority::SupportOnly,
+        task_key.clone(),
+    );
     assert_eq!(aspect_locator.aspect_key(), &task_key);
     assert_eq!(title_key.as_str(), "title");
 }

@@ -5,7 +5,7 @@ error[E0603]: module `runtime` is private
   |                            ^^^^^^^ private module                                 -------------------------- struct `WorkerBoundaryArtifactLock` is not publicly re-exported
   |
 note: the module `runtime` is defined here
- --> src/lib.rs
+ --> $WORKSPACE/crates/worth-signal-wasm/src/lib.rs
   |
   | mod runtime;
   | ^^^^^^^^^^^

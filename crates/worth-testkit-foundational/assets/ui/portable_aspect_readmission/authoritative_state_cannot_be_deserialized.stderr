@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `AuthoritativeRecordAspectState: serde::Deserialize<'de>` is not satisfied
- --> tests/ui/portable_aspect_readmission/authoritative_state_cannot_be_deserialized.rs:4:45
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/portable_aspect_readmission/authoritative_state_cannot_be_deserialized.rs
   |
-4 |     let _: AuthoritativeRecordAspectState = serde_json::from_str("{}").unwrap();
+  |     let _: AuthoritativeRecordAspectState = serde_json::from_str("{}").unwrap();
   |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `serde_core::de::Deserialize<'_>` is not implemented for `AuthoritativeRecordAspectState`
   |
   = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `AuthoritativeRecordAspectState` type

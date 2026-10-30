@@ -1,5 +1,5 @@
 error[E0451]: field `denied_completion` of struct `StagedDeniedResourceCompletionEffect` is private
- --> tests/ui/staged_denied_resource_completion_effect_fields_are_private.rs:9:9
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_denied_resource_completion_effect_fields_are_private.rs:9:9
   |
 8 |     let _forged = StagedDeniedResourceCompletionEffect {
   |                   ------------------------------------ in this type

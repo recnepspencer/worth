@@ -1,19 +1,19 @@
 error[E0308]: mismatched types
-  --> tests/ui/performance/certified/plain_counter_backed_receipt_cannot_satisfy_certified_bundle_api.rs:15:30
-   |
-15 |     require_certified_bundle(&receipt);
-   |     ------------------------ ^^^^^^^^ expected `FoundationalCertifiedPerformanceBundle<...>`, found `FoundationalCounterBackedPerformanceReceipt<...>`
-   |     |
-   |     arguments to this function are incorrect
-   |
-   = note: expected reference `&FoundationalCertifiedPerformanceBundle<FoundationalCounterBackedPerformanceReceipt<FoundationalAuthoritativePerformanceClaim>>`
-              found reference `&FoundationalCounterBackedPerformanceReceipt<FoundationalAuthoritativePerformanceClaim>`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/certified/plain_counter_backed_receipt_cannot_satisfy_certified_bundle_api.rs
+  |
+  |     require_certified_bundle(&receipt);
+  |     ------------------------ ^^^^^^^^ expected `FoundationalCertifiedPerformanceBundle<...>`, found `FoundationalCounterBackedPerformanceReceipt<...>`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected reference `&FoundationalCertifiedPerformanceBundle<FoundationalCounterBackedPerformanceReceipt<FoundationalAuthoritativePerformanceClaim>>`
+             found reference `&FoundationalCounterBackedPerformanceReceipt<FoundationalAuthoritativePerformanceClaim>`
 note: function defined here
-  --> tests/ui/performance/certified/plain_counter_backed_receipt_cannot_satisfy_certified_bundle_api.rs:6:4
-   |
- 6 |   fn require_certified_bundle(
-   |      ^^^^^^^^^^^^^^^^^^^^^^^^
- 7 | /     _bundle: &FoundationalCertifiedPerformanceBundle<
- 8 | |         FoundationalCounterBackedPerformanceReceipt<FoundationalAuthoritativePerformanceClaim>,
- 9 | |     >,
-   | |_____-
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/certified/plain_counter_backed_receipt_cannot_satisfy_certified_bundle_api.rs
+  |
+  |   fn require_certified_bundle(
+  |      ^^^^^^^^^^^^^^^^^^^^^^^^
+  | /     _bundle: &FoundationalCertifiedPerformanceBundle<
+  | |         FoundationalCounterBackedPerformanceReceipt<FoundationalAuthoritativePerformanceClaim>,
+  | |     >,
+  | |_____-

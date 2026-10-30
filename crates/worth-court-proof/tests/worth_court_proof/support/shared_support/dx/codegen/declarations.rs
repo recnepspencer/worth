@@ -1,15 +1,29 @@
 pub(crate) use {core::mem::align_of, core::mem::needs_drop};
 
-pub(crate) use {worth_proof::AuthorityWitness, worth_proof::CapabilityWitness, worth_proof::ExecutedRecipe, worth_proof::ExecutionReadyRecipe, worth_proof::Lowered, worth_proof::ProofFlow, worth_proof::ProofOutcome, worth_proof::Recipe, worth_proof::TransitionOutcome};
+pub(crate) use {
+    worth_proof::AuthorityWitness, worth_proof::CapabilityWitness, worth_proof::ExecutedRecipe,
+    worth_proof::ExecutionReadyRecipe, worth_proof::Lowered, worth_proof::ProofFlow,
+    worth_proof::ProofOutcome, worth_proof::Recipe, worth_proof::TransitionOutcome,
+};
 
-pub(crate) use {crate::shared_support::type_shapes::codegen::CodegenHonestyReport, crate::shared_support::type_shapes::codegen::CodegenShapeCheck};
+pub(crate) use {
+    crate::shared_support::type_shapes::codegen::CodegenHonestyReport,
+    crate::shared_support::type_shapes::codegen::CodegenShapeCheck,
+};
 
-pub(crate) use {crate::shared_support::dx::representatives::CurrentBasis, crate::shared_support::dx::representatives::LoweringCapability, crate::shared_support::dx::representatives::ReadinessAuthority, crate::shared_support::dx::representatives::ResolutionAuthority};
+pub(crate) use {
+    crate::shared_support::dx::representatives::CurrentBasis,
+    crate::shared_support::dx::representatives::LoweringCapability,
+    crate::shared_support::dx::representatives::ReadinessAuthority,
+    crate::shared_support::dx::representatives::ResolutionAuthority,
+};
 
 pub(crate) type PleasantExecuted = ExecutedRecipe<&'static str, CurrentBasis<u8>>;
 pub(crate) type RawExecuted = ExecutedRecipe<&'static str, CurrentBasis<u8>>;
-pub(crate) type PleasantChecked = ProofOutcome<ExecutionReadyRecipe<&'static str, CurrentBasis<u8>>>;
-pub(crate) type RawChecked = TransitionOutcome<ExecutionReadyRecipe<&'static str, CurrentBasis<u8>>>;
+pub(crate) type PleasantChecked =
+    ProofOutcome<ExecutionReadyRecipe<&'static str, CurrentBasis<u8>>>;
+pub(crate) type RawChecked =
+    TransitionOutcome<ExecutionReadyRecipe<&'static str, CurrentBasis<u8>>>;
 pub(crate) type PleasantFlow = ProofFlow<
     AuthorityWitness<ResolutionAuthority>,
     CapabilityWitness<LoweringCapability>,

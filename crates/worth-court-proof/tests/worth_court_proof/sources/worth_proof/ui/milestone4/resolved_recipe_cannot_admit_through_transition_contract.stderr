@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/milestone4/resolved_recipe_cannot_admit_through_transition_contract.rs:19:9
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone4/resolved_recipe_cannot_admit_through_transition_contract.rs:19:9
    |
 17 |     let _ = apply_transition(
    |             ---------------- arguments to this function are incorrect
@@ -10,7 +10,7 @@ error[E0308]: mismatched types
    = note: expected struct `Recipe<worth_proof::Lowered, _, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<_>>>`
               found struct `Recipe<worth_proof::Resolved, &'static str, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<u8>>>`
 help: the return type of this call is `Recipe<worth_proof::Resolved, &'static str, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<u8>>>` due to the type of the argument passed
-  --> tests/ui/milestone4/resolved_recipe_cannot_admit_through_transition_contract.rs:17:13
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone4/resolved_recipe_cannot_admit_through_transition_contract.rs:17:13
    |
 17 |       let _ = apply_transition(
    |  _____________^
@@ -20,7 +20,7 @@ help: the return type of this call is `Recipe<worth_proof::Resolved, &'static st
 20 | |     );
    | |_____^
 note: function defined here
-  --> src/transition/contract.rs
+  --> $WORKSPACE/crates/worth-proof/src/transition/contract.rs
    |
    | pub fn apply_transition<T, Input>(transition: &T, input: Input) -> T::Output
    |        ^^^^^^^^^^^^^^^^

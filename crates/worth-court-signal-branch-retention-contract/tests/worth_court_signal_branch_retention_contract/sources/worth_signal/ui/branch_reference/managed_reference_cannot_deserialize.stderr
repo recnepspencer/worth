@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `ManagedSignalBranchReference: serde::Deserialize<'de>` is not satisfied
- --> tests/ui/branch_reference/managed_reference_cannot_deserialize.rs:5:9
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/managed_reference_cannot_deserialize.rs:5:9
   |
 5 |         serde_json::from_str("{}").expect("transport data cannot mint owner authority");
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `serde_core::de::Deserialize<'_>` is not implemented for `ManagedSignalBranchReference`

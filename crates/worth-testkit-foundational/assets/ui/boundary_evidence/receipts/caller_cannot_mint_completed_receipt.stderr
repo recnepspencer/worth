@@ -1,9 +1,9 @@
 error: cannot construct `FoundationalBoundaryEvidenceCompletedReceiptArtifact` with struct literal syntax due to private fields
- --> tests/ui/boundary_evidence/receipts/caller_cannot_mint_completed_receipt.rs:6:13
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/receipts/caller_cannot_mint_completed_receipt.rs
   |
-6 |     let _ = FoundationalBoundaryEvidenceCompletedReceiptArtifact {
+  |     let _ = FoundationalBoundaryEvidenceCompletedReceiptArtifact {
   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-7 |         kind: FoundationalBoundaryEvidenceReceiptKind::Execution,
+  |         kind: FoundationalBoundaryEvidenceReceiptKind::Execution,
   |         -------------------------------------------------------- private field
   |
   = note: ...and other private fields `boundary`, `provenance` and `closeout_disposition` that were not provided

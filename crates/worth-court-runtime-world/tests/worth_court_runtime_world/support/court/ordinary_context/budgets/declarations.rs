@@ -1,4 +1,4 @@
-pub(crate) use {worth_runtime_world::facade::*};
+pub(crate) use worth_runtime_world::facade::*;
 pub(crate) fn court() -> RuntimeWorldBudgets {
     limited(512, 1024)
 }

@@ -1,12 +1,9 @@
 #[allow(unused_imports)] use crate::relational_certification::ordinary_context::invariant_global_uniqueness::*;
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::invariant_uniqueness_assertion::assert_unique_conflict};
-pub(crate) use {std::collections::BTreeMap};
 
-pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline_with_invariant_catalog, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::entity_kind_id, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::oracle::unique::insert_vessel, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::oracle::unique::next_vessel_key, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::snapshot_for_supply_chain_identity, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::oracle::unique::vessel_call_signs as oracle_vessel_call_signs, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::oracle::ancestry::OracleBranch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::oracle::state::OracleState, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::oracle::unique::UniqueEntityFieldOracleError};
-pub(crate) use {worth_foundational::facade::AspectKey, worth_foundational::facade::AspectValue, worth_foundational::facade::ContractValidatedAspectValueView, worth_foundational::facade::FieldKey, worth_foundational::facade::InternedString};
-pub(crate) use {worth_relational::facade::runtime::InvariantCatalog, worth_relational::facade::runtime::InvariantRegistration, worth_relational::facade::runtime::InvariantReportedRule, worth_relational::facade::runtime::InvariantRule, worth_relational::facade::runtime::RelationalRuntime};
-pub(crate) use {worth_relational::facade::transactions::planned_single_field_locator, worth_relational::facade::transactions::AspectFieldPatch, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::EntitySpec, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::transactions::TransactionCommitError, worth_relational::facade::transactions::WorkerIntentBatch};
-pub(crate) use {worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId, worth_relational::facade::symbols::ClientKey};
+pub(crate) use worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline_with_invariant_catalog;
+pub(crate) use worth_relational::facade::runtime::InvariantCatalog;
+pub(crate) use worth_relational::facade::history::BranchId;
 
 #[test]
 fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
@@ -20,12 +17,16 @@ fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
     )
     .expect("Supply Chain program compiles");
     let catalog = InvariantCatalog {
-        registrations: vec![worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
-            worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
-                worth_foundational::facade::AspectKey::new("call_sign").expect("call-sign aspect"),
-                worth_foundational::facade::FieldKey::new("call_sign").expect("call-sign field"),
+        registrations: vec![
+            worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
+                worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
+                    worth_foundational::facade::AspectKey::new("call_sign")
+                        .expect("call-sign aspect"),
+                    worth_foundational::facade::FieldKey::new("call_sign")
+                        .expect("call-sign field"),
+                ),
             ),
-        )],
+        ],
     };
     let world = compile_supply_chain_baseline_with_invariant_catalog(execution, program, catalog)
         .expect("Court world with native uniqueness compiles");
@@ -92,12 +93,16 @@ fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_resid
     )
     .expect("Supply Chain program compiles");
     let catalog = InvariantCatalog {
-        registrations: vec![worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
-            worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
-                worth_foundational::facade::AspectKey::new("call_sign").expect("call-sign aspect"),
-                worth_foundational::facade::FieldKey::new("call_sign").expect("call-sign field"),
+        registrations: vec![
+            worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
+                worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
+                    worth_foundational::facade::AspectKey::new("call_sign")
+                        .expect("call-sign aspect"),
+                    worth_foundational::facade::FieldKey::new("call_sign")
+                        .expect("call-sign field"),
+                ),
             ),
-        )],
+        ],
     };
     let world = compile_supply_chain_baseline_with_invariant_catalog(execution, program, catalog)
         .expect("Court world with native uniqueness compiles");
@@ -134,7 +139,6 @@ fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_resid
         before_snapshot
     );
 }
-
 
 #[allow(unused_imports)]
 pub(crate) use {};

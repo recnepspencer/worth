@@ -1,4 +1,10 @@
-pub(crate) use {worth_execution::BackInput, crate::decompose_pattern::ordinary_context::EDITIONS, worth_execution::ExecutionDecompose, worth_execution::ExecutionMap, worth_execution::InterfaceSolution, worth_execution::InteriorResult, worth_execution::MapKernelFailure, worth_execution::MapPartition, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    crate::decompose_pattern::ordinary_context::EDITIONS, worth_execution::BackInput,
+    worth_execution::ExecutionDecompose, worth_execution::ExecutionMap,
+    worth_execution::InterfaceSolution, worth_execution::InteriorResult,
+    worth_execution::MapKernelFailure, worth_execution::MapPartition,
+    worth_foundational::PartitionIdentity,
+};
 
 pub(crate) fn map(entries: &[(u64, u64)]) -> ExecutionMap<u64, u64> {
     let identities = entries
@@ -22,7 +28,9 @@ pub(crate) fn map(entries: &[(u64, u64)]) -> ExecutionMap<u64, u64> {
 pub(crate) fn decomposer(
 ) -> ExecutionDecompose<u64, u64, u64, u64, u64, impl Fn(&u64, &u64) -> u64 + Clone> {
     worth_execution::ExecutionDecompose::try_new(
-        (1..=64).map(worth_foundational::PartitionIdentity::new).collect(),
+        (1..=64)
+            .map(worth_foundational::PartitionIdentity::new)
+            .collect(),
         0,
         |left: &u64, right: &u64| left.wrapping_add(*right),
         1024,

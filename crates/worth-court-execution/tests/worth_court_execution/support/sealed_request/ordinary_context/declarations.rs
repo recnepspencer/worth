@@ -1,12 +1,28 @@
-pub(crate) use {std::num::NonZeroUsize, std::sync::atomic::AtomicBool, std::sync::atomic::Ordering};
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionRequest, worth_execution::ExecutionWorkCeiling, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MemoryLimitLevel, worth_execution::SerialMemoryBudget, worth_execution::SerialRequest, worth_execution::WorkCeilingDenial};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy};
+pub(crate) use {
+    std::num::NonZeroUsize, std::sync::atomic::AtomicBool, std::sync::atomic::Ordering,
+};
+pub(crate) use {
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionRequest,
+    worth_execution::ExecutionWorkCeiling, worth_execution::LeaseDenial,
+    worth_execution::LeaseRequest, worth_execution::MemoryLimitLevel,
+    worth_execution::SerialMemoryBudget, worth_execution::SerialRequest,
+    worth_execution::WorkCeilingDenial,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+};
 
 pub(crate) fn policy(memory: u64) -> ExecutionRequestPolicy {
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
         worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(memory), Some(1_000)),
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            Some(memory),
+            Some(1_000),
+        ),
     )
 }
 
@@ -14,7 +30,11 @@ pub(crate) fn one_unit_policy() -> ExecutionRequestPolicy {
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
         worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 20), Some(1)),
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            Some(1 << 20),
+            Some(1),
+        ),
     )
 }
 
@@ -29,8 +49,11 @@ pub(crate) fn unbounded_work_policy() -> ExecutionRequestPolicy {
 pub(crate) fn charged_scan(
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> (bool, u64) {
-    use {worth_execution::ExecutionScan, worth_execution::MapKernelFailure, worth_execution::MapKernelStop, worth_execution::MapStop, worth_execution::ScanOutcome};
-    use {worth_foundational::PartitionIdentity};
+    use worth_foundational::PartitionIdentity;
+    use {
+        worth_execution::ExecutionScan, worth_execution::MapKernelFailure,
+        worth_execution::MapKernelStop, worth_execution::MapStop, worth_execution::ScanOutcome,
+    };
     let ids: Vec<_> = (1..=32).map(PartitionIdentity::new).collect();
     let scan =
         ExecutionScan::try_from_ordered(ids.clone(), ids.into_iter().map(|id| (id, ())).collect())

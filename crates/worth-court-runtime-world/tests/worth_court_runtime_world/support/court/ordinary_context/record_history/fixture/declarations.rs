@@ -1,5 +1,18 @@
-pub(crate) use {worth_foundational::facade::*};
-pub(crate) use {worth_relational::facade::branch::AdmittedRelationalBranchBasis, worth_relational::facade::config::CascadeDeletePolicy, worth_relational::facade::config::CrossContextPolicy, worth_relational::facade::history::RelationalCanonicalRecordHistoryCursor, worth_relational::facade::history::RelationalRecordHistorySubject, worth_relational::facade::identity::EntityId, worth_relational::facade::identity::KindId, worth_relational::facade::identity::PartitionId, worth_relational::facade::identity::RelationId, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::schema::*, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::*};
+pub(crate) use worth_foundational::facade::*;
+pub(crate) use {
+    worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    worth_relational::facade::config::CascadeDeletePolicy,
+    worth_relational::facade::config::CrossContextPolicy,
+    worth_relational::facade::history::RelationalCanonicalRecordHistoryCursor,
+    worth_relational::facade::history::RelationalRecordHistorySubject,
+    worth_relational::facade::identity::EntityId, worth_relational::facade::identity::KindId,
+    worth_relational::facade::identity::PartitionId,
+    worth_relational::facade::identity::RelationId,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+    worth_relational::facade::runtime::RelationalRuntime,
+    worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::schema::*,
+    worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::*,
+};
 
 pub(crate) struct NativeHistoryCourt {
     pub(crate) runtime: RelationalRuntime,
@@ -47,8 +60,10 @@ impl NativeHistoryCourt {
                 kind_name: "audit-edge".into(),
                 schema_id: SchemaId("native-history".into()),
                 schema_version_id: SchemaVersionId(1),
-                cross_context_policy: worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
-                cascade_delete_policy: worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
+                cross_context_policy:
+                    worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
+                cascade_delete_policy:
+                    worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
                 aspect_contract_declarations: KindAspectContractDeclarations::new(vec![]),
                 relation_integrity: RelationIntegrityDeclarations::default(),
             })
@@ -62,7 +77,10 @@ impl NativeHistoryCourt {
             .unwrap()
             .1;
         let mut transaction = runtime
-            .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+            .begin_branch_transaction(
+                &basis,
+                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+            )
             .unwrap();
         let mut batch = WorkerIntentBatch::new("seed-history-records");
         for index in 0..records {
@@ -70,7 +88,9 @@ impl NativeHistoryCourt {
                 EntityAspectCreateIntent {
                     partition_id: worth_relational::facade::identity::PartitionId::main(),
                     kind_id: KindId(1),
-                    client_key: worth_relational::facade::symbols::ClientKey::raw(format!("row-{index}")),
+                    client_key: worth_relational::facade::symbols::ClientKey::raw(format!(
+                        "row-{index}"
+                    )),
                     aspect_patch: initial_patch(&contracts),
                 },
             )));
@@ -92,7 +112,10 @@ impl NativeHistoryCourt {
             .unwrap()
             .1;
         let mut transaction = runtime
-            .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+            .begin_branch_transaction(
+                &basis,
+                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+            )
             .unwrap();
         transaction
             .push_batch(
@@ -136,7 +159,10 @@ impl NativeHistoryCourt {
     pub(crate) fn update_all(&self, execution: worth_execution::ExecutionRequest<'_, '_>) {
         let mut transaction = self
             .runtime
-            .begin_branch_transaction(&self.basis(), worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+            .begin_branch_transaction(
+                &self.basis(),
+                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+            )
             .unwrap();
         let mut batch = WorkerIntentBatch::new("three-grammar-ranks");
         for entity_id in &self.entities {
@@ -175,7 +201,10 @@ impl NativeHistoryCourt {
     pub(crate) fn equal_scalar_edit(&self, execution: worth_execution::ExecutionRequest<'_, '_>) {
         let mut transaction = self
             .runtime
-            .begin_branch_transaction(&self.basis(), worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+            .begin_branch_transaction(
+                &self.basis(),
+                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+            )
             .unwrap();
         transaction
             .push_batch(

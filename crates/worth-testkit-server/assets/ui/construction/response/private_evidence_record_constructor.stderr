@@ -1,29 +1,29 @@
 warning: unreachable expression
-  --> tests/ui/construction/response/private_evidence_record_constructor.rs:13:28
-   |
-12 |         counter_receipt: loop {},
-   |                          ------- any code following this expression is unreachable
-13 |         attachment_bundle: loop {},
-   |                            ^^^^^^^ unreachable expression
-   |
-   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/response/private_evidence_record_constructor.rs
+  |
+  |         counter_receipt: loop {},
+  |                          ------- any code following this expression is unreachable
+  |         attachment_bundle: loop {},
+  |                            ^^^^^^^ unreachable expression
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
 
 error[E0451]: fields `transform`, `diagnostics_profile`, `response_digest`, `classification`, `counter_receipt`, `attachment_bundle` and `materialized_attachment_bundle` of struct `WorthServerOperatorEvidenceRecord` are private
-  --> tests/ui/construction/response/private_evidence_record_constructor.rs:8:9
-   |
- 7 |     let _ = WorthServerOperatorEvidenceRecord {
-   |             --------------------------------- in this type
- 8 |         transform: WorthServerEvidenceTransform::operator_default(),
-   |         ^^^^^^^^^ private field
- 9 |         diagnostics_profile: worth_server::request_context::DiagnosticRichnessProfile::Standard,
-   |         ^^^^^^^^^^^^^^^^^^^ private field
-10 |         response_digest: "Worthd".to_string(),
-   |         ^^^^^^^^^^^^^^^ private field
-11 |         classification: WorthServerOperatorEvidenceClass::QueryReadSucceeded,
-   |         ^^^^^^^^^^^^^^ private field
-12 |         counter_receipt: loop {},
-   |         ^^^^^^^^^^^^^^^ private field
-13 |         attachment_bundle: loop {},
-   |         ^^^^^^^^^^^^^^^^^ private field
-14 |         materialized_attachment_bundle: loop {},
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/response/private_evidence_record_constructor.rs
+  |
+  |     let _ = WorthServerOperatorEvidenceRecord {
+  |             --------------------------------- in this type
+  |         transform: WorthServerEvidenceTransform::operator_default(),
+  |         ^^^^^^^^^ private field
+  |         diagnostics_profile: worth_server::request_context::DiagnosticRichnessProfile::Standard,
+  |         ^^^^^^^^^^^^^^^^^^^ private field
+  |         response_digest: "Worthd".to_string(),
+  |         ^^^^^^^^^^^^^^^ private field
+  |         classification: WorthServerOperatorEvidenceClass::QueryReadSucceeded,
+  |         ^^^^^^^^^^^^^^ private field
+  |         counter_receipt: loop {},
+  |         ^^^^^^^^^^^^^^^ private field
+  |         attachment_bundle: loop {},
+  |         ^^^^^^^^^^^^^^^^^ private field
+  |         materialized_attachment_bundle: loop {},
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field

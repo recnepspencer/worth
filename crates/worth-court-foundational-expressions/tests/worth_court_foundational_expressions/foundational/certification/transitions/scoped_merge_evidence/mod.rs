@@ -1,10 +1,13 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::transitions::scoped_merge_evidence::*;
-use {worth_foundational::CanonicalDigestId, worth_foundational::FoundationalAdmittedMergeScopeEvidence, worth_foundational::FoundationalMergeScope, worth_foundational::FoundationalScopeAdmissionBasis, worth_foundational::FoundationalSelectedAspectRequestEntry, worth_foundational::FoundationalSelectedScopeLocus, worth_foundational::FoundationalSelectedScopeNoOpCause, worth_foundational::FoundationalSelectedScopeNoOpEvidence, worth_foundational::FoundationalSkippedOutOfScopeEvidence};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::transitions::scoped_merge_evidence::*;
 
-use {crate::certification::ordinary_context::transitions::fixtures::branch::branch_id};
-use {crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary};
-use {crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_aspect, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate, crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect};
+use crate::certification::ordinary_context::transitions::fixtures::branch::branch_id;
+use crate::certification::ordinary_context::transitions::fixtures::merge::merge_summary;
+use {
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::no_op_for_aspect,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::scoped_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::scoped_merge::selected_aspect,
+};
 
 #[test]
 fn custom_scope_evidence_can_carry_partial_admission_no_ops_and_skipped_candidates() {
@@ -20,11 +23,19 @@ fn custom_scope_evidence_can_carry_partial_admission_no_ops_and_skipped_candidat
         worth_foundational::FoundationalScopeAdmissionBasis::IdentityCorresponded,
         [],
         [selected_aspect("gear", "teeth")],
-        [worth_foundational::FoundationalSelectedScopeNoOpEvidence::new(
-            worth_foundational::FoundationalSelectedScopeLocus::Aspect(selected_aspect("gear", "thickness")),
-            worth_foundational::FoundationalSelectedScopeNoOpCause::UnchangedSourceTruth,
-        )],
-        worth_foundational::FoundationalSkippedOutOfScopeEvidence::new(3, Some(worth_foundational::CanonicalDigestId::new([8; 32]))),
+        [
+            worth_foundational::FoundationalSelectedScopeNoOpEvidence::new(
+                worth_foundational::FoundationalSelectedScopeLocus::Aspect(selected_aspect(
+                    "gear",
+                    "thickness",
+                )),
+                worth_foundational::FoundationalSelectedScopeNoOpCause::UnchangedSourceTruth,
+            ),
+        ],
+        worth_foundational::FoundationalSkippedOutOfScopeEvidence::new(
+            3,
+            Some(worth_foundational::CanonicalDigestId::new([8; 32])),
+        ),
         merge_summary().conflict_check_width(),
     )
     .expect("scope evidence");
@@ -112,11 +123,15 @@ fn scope_evidence_constructor_canonicalizes_admitted_and_no_op_loci() {
 #[test]
 fn selected_no_op_and_skipped_scope_evidence_are_distinct_compact_artifacts() {
     let no_op = worth_foundational::FoundationalSelectedScopeNoOpEvidence::new(
-        worth_foundational::FoundationalSelectedScopeLocus::Aspect(selected_aspect("gear", "teeth")),
+        worth_foundational::FoundationalSelectedScopeLocus::Aspect(selected_aspect(
+            "gear", "teeth",
+        )),
         worth_foundational::FoundationalSelectedScopeNoOpCause::EquivalentTargetTruth,
     );
-    let skipped =
-        worth_foundational::FoundationalSkippedOutOfScopeEvidence::new(7, Some(worth_foundational::CanonicalDigestId::new([9; 32])));
+    let skipped = worth_foundational::FoundationalSkippedOutOfScopeEvidence::new(
+        7,
+        Some(worth_foundational::CanonicalDigestId::new([9; 32])),
+    );
 
     assert!(matches!(
         no_op.locus(),

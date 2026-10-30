@@ -3,9 +3,12 @@
 // recursive reading of the language rules on every value and denial family.
 // Integer arithmetic here runs in `i128` and checks the Int64 range after
 // each operation, so it shares no code or overflow strategy with the crate.
-pub(crate) use {worth_foundational::expression_api::ExpressionDenialFamily as Family, worth_foundational::expression_api::ExpressionValue};
+pub(crate) use {
+    worth_foundational::expression_api::ExpressionDenialFamily as Family,
+    worth_foundational::expression_api::ExpressionValue,
+};
 
-pub(crate) use {crate::expressions::ordinary_context::evaluate};
+pub(crate) use crate::expressions::ordinary_context::evaluate;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum Arith {
@@ -61,16 +64,25 @@ pub(crate) fn int64(value: i128) -> Outcome<i128> {
 
 pub(crate) fn int(tree: &Int) -> Outcome<i128> {
     match tree {
-        crate::expressions::ordinary_context::reference::Int::Literal(value) => Ok(i128::from(*value)),
+        crate::expressions::ordinary_context::reference::Int::Literal(value) => {
+            Ok(i128::from(*value))
+        }
         crate::expressions::ordinary_context::reference::Int::Count => Ok(i128::from(COUNT)),
-        crate::expressions::ordinary_context::reference::Int::Negate(operand) => int64(-int(operand)?),
+        crate::expressions::ordinary_context::reference::Int::Negate(operand) => {
+            int64(-int(operand)?)
+        }
         crate::expressions::ordinary_context::reference::Int::Arith(op, left, right) => {
             let (a, b) = (int(left)?, int(right)?);
             match op {
                 crate::expressions::ordinary_context::reference::Arith::Add => int64(a + b),
                 crate::expressions::ordinary_context::reference::Arith::Sub => int64(a - b),
                 crate::expressions::ordinary_context::reference::Arith::Mul => int64(a * b),
-                crate::expressions::ordinary_context::reference::Arith::Div | crate::expressions::ordinary_context::reference::Arith::Rem if b == 0 => Err(worth_foundational::expression_api::ExpressionDenialFamily::DivisionByZero),
+                crate::expressions::ordinary_context::reference::Arith::Div
+                | crate::expressions::ordinary_context::reference::Arith::Rem
+                    if b == 0 =>
+                {
+                    Err(worth_foundational::expression_api::ExpressionDenialFamily::DivisionByZero)
+                }
                 // `i128` division truncates toward zero and its remainder
                 // takes the dividend's sign, as the language requires.
                 crate::expressions::ordinary_context::reference::Arith::Div => int64(a / b),
@@ -91,9 +103,15 @@ pub(crate) fn boolean(tree: &Bool) -> Outcome<bool> {
     match tree {
         crate::expressions::ordinary_context::reference::Bool::Literal(value) => Ok(*value),
         crate::expressions::ordinary_context::reference::Bool::Ready => Ok(READY),
-        crate::expressions::ordinary_context::reference::Bool::Not(operand) => Ok(!boolean(operand)?),
-        crate::expressions::ordinary_context::reference::Bool::And(left, right) => Ok(boolean(left)? && boolean(right)?),
-        crate::expressions::ordinary_context::reference::Bool::Or(left, right) => Ok(boolean(left)? || boolean(right)?),
+        crate::expressions::ordinary_context::reference::Bool::Not(operand) => {
+            Ok(!boolean(operand)?)
+        }
+        crate::expressions::ordinary_context::reference::Bool::And(left, right) => {
+            Ok(boolean(left)? && boolean(right)?)
+        }
+        crate::expressions::ordinary_context::reference::Bool::Or(left, right) => {
+            Ok(boolean(left)? || boolean(right)?)
+        }
         crate::expressions::ordinary_context::reference::Bool::Compare(order, left, right) => {
             let (a, b) = (int(left)?, int(right)?);
             Ok(match order {
@@ -105,16 +123,22 @@ pub(crate) fn boolean(tree: &Bool) -> Outcome<bool> {
                 crate::expressions::ordinary_context::reference::Order::NotEqual => a != b,
             })
         }
-        crate::expressions::ordinary_context::reference::Bool::Same(left, right) => Ok(boolean(left)? == boolean(right)?),
+        crate::expressions::ordinary_context::reference::Bool::Same(left, right) => {
+            Ok(boolean(left)? == boolean(right)?)
+        }
     }
 }
 
 pub(crate) fn render_int(tree: &Int) -> String {
     match tree {
-        crate::expressions::ordinary_context::reference::Int::Literal(value) if *value < 0 => format!("({value})"),
+        crate::expressions::ordinary_context::reference::Int::Literal(value) if *value < 0 => {
+            format!("({value})")
+        }
         crate::expressions::ordinary_context::reference::Int::Literal(value) => value.to_string(),
         crate::expressions::ordinary_context::reference::Int::Count => "count".to_string(),
-        crate::expressions::ordinary_context::reference::Int::Negate(operand) => format!("-({})", render_int(operand)),
+        crate::expressions::ordinary_context::reference::Int::Negate(operand) => {
+            format!("-({})", render_int(operand))
+        }
         crate::expressions::ordinary_context::reference::Int::Arith(op, left, right) => {
             let symbol = match op {
                 crate::expressions::ordinary_context::reference::Arith::Add => "+",
@@ -125,12 +149,14 @@ pub(crate) fn render_int(tree: &Int) -> String {
             };
             format!("({} {symbol} {})", render_int(left), render_int(right))
         }
-        crate::expressions::ordinary_context::reference::Int::Choose(condition, yes, no) => format!(
-            "({} ? {} : {})",
-            render_bool(condition),
-            render_int(yes),
-            render_int(no)
-        ),
+        crate::expressions::ordinary_context::reference::Int::Choose(condition, yes, no) => {
+            format!(
+                "({} ? {} : {})",
+                render_bool(condition),
+                render_int(yes),
+                render_int(no)
+            )
+        }
     }
 }
 
@@ -138,9 +164,15 @@ pub(crate) fn render_bool(tree: &Bool) -> String {
     match tree {
         crate::expressions::ordinary_context::reference::Bool::Literal(value) => value.to_string(),
         crate::expressions::ordinary_context::reference::Bool::Ready => "ready".to_string(),
-        crate::expressions::ordinary_context::reference::Bool::Not(operand) => format!("!({})", render_bool(operand)),
-        crate::expressions::ordinary_context::reference::Bool::And(left, right) => format!("({} && {})", render_bool(left), render_bool(right)),
-        crate::expressions::ordinary_context::reference::Bool::Or(left, right) => format!("({} || {})", render_bool(left), render_bool(right)),
+        crate::expressions::ordinary_context::reference::Bool::Not(operand) => {
+            format!("!({})", render_bool(operand))
+        }
+        crate::expressions::ordinary_context::reference::Bool::And(left, right) => {
+            format!("({} && {})", render_bool(left), render_bool(right))
+        }
+        crate::expressions::ordinary_context::reference::Bool::Or(left, right) => {
+            format!("({} || {})", render_bool(left), render_bool(right))
+        }
         crate::expressions::ordinary_context::reference::Bool::Compare(order, left, right) => {
             let symbol = match order {
                 crate::expressions::ordinary_context::reference::Order::Less => "<",
@@ -152,7 +184,9 @@ pub(crate) fn render_bool(tree: &Bool) -> String {
             };
             format!("({} {symbol} {})", render_int(left), render_int(right))
         }
-        crate::expressions::ordinary_context::reference::Bool::Same(left, right) => format!("({} == {})", render_bool(left), render_bool(right)),
+        crate::expressions::ordinary_context::reference::Bool::Same(left, right) => {
+            format!("({} == {})", render_bool(left), render_bool(right))
+        }
     }
 }
 
@@ -193,7 +227,11 @@ impl Seeded {
         match self.below(9) {
             0 => crate::expressions::ordinary_context::reference::Int::Literal(self.literal()),
             1 => crate::expressions::ordinary_context::reference::Int::Negate(child(self)),
-            2 => crate::expressions::ordinary_context::reference::Int::Choose(Box::new(self.boolean(depth - 1)), child(self), child(self)),
+            2 => crate::expressions::ordinary_context::reference::Int::Choose(
+                Box::new(self.boolean(depth - 1)),
+                child(self),
+                child(self),
+            ),
             n => {
                 let op = [
                     crate::expressions::ordinary_context::reference::Arith::Add,
@@ -203,7 +241,11 @@ impl Seeded {
                     crate::expressions::ordinary_context::reference::Arith::Rem,
                     crate::expressions::ordinary_context::reference::Arith::Add,
                 ];
-                crate::expressions::ordinary_context::reference::Int::Arith(op[n as usize - 3], child(self), child(self))
+                crate::expressions::ordinary_context::reference::Int::Arith(
+                    op[n as usize - 3],
+                    child(self),
+                    child(self),
+                )
             }
         }
     }
@@ -212,15 +254,24 @@ impl Seeded {
         if depth == 0 {
             return match self.below(3) {
                 0 => crate::expressions::ordinary_context::reference::Bool::Ready,
-                _ => crate::expressions::ordinary_context::reference::Bool::Literal(self.below(2) == 0),
+                _ => crate::expressions::ordinary_context::reference::Bool::Literal(
+                    self.below(2) == 0,
+                ),
             };
         }
         let child = |random: &mut Self| Box::new(random.boolean(depth - 1));
         match self.below(6) {
             0 => crate::expressions::ordinary_context::reference::Bool::Not(child(self)),
-            1 => crate::expressions::ordinary_context::reference::Bool::And(child(self), child(self)),
-            2 => crate::expressions::ordinary_context::reference::Bool::Or(child(self), child(self)),
-            3 => crate::expressions::ordinary_context::reference::Bool::Same(child(self), child(self)),
+            1 => {
+                crate::expressions::ordinary_context::reference::Bool::And(child(self), child(self))
+            }
+            2 => {
+                crate::expressions::ordinary_context::reference::Bool::Or(child(self), child(self))
+            }
+            3 => crate::expressions::ordinary_context::reference::Bool::Same(
+                child(self),
+                child(self),
+            ),
             _ => {
                 let orders = [
                     crate::expressions::ordinary_context::reference::Order::Less,

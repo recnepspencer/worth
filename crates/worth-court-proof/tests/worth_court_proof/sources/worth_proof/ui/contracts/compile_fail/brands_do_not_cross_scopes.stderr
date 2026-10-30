@@ -1,5 +1,5 @@
 error[E0521]: borrowed data escapes outside of closure
- --> tests/ui/contracts/compile_fail/brands_do_not_cross_scopes.rs:8:32
+ --> tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/brands_do_not_cross_scopes.rs:8:32
   |
 6 |     worth_proof::with_brand(|left| {
   |                              ---- `left` declared here, outside of the closure body
@@ -13,7 +13,7 @@ error[E0521]: borrowed data escapes outside of closure
   = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
 
 error[E0521]: borrowed data escapes outside of closure
- --> tests/ui/contracts/compile_fail/brands_do_not_cross_scopes.rs:8:46
+ --> tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/brands_do_not_cross_scopes.rs:8:46
   |
 6 |     worth_proof::with_brand(|left| {
   |                              ----

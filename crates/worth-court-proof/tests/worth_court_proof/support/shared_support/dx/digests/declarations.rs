@@ -1,4 +1,8 @@
-pub(crate) use {crate::shared_support::proof_shapes::digest::FailureDigest, crate::shared_support::proof_shapes::digest::ProofShapeDigest, crate::shared_support::proof_shapes::digest::TransitionDigest};
+pub(crate) use {
+    crate::shared_support::proof_shapes::digest::FailureDigest,
+    crate::shared_support::proof_shapes::digest::ProofShapeDigest,
+    crate::shared_support::proof_shapes::digest::TransitionDigest,
+};
 
 pub(crate) fn proof_shape_digest() -> ProofShapeDigest {
     crate::shared_support::proof_shapes::digest::ProofShapeDigest::new(

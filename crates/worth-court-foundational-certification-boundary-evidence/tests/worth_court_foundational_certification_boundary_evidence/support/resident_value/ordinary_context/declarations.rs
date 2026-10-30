@@ -1,7 +1,7 @@
 // Pure owners derive resident descriptions without an Execution dependency.
 
-pub(crate) use {std::mem::size_of};
-pub(crate) use {worth_foundational::facade::ChargedBytes};
+pub(crate) use std::mem::size_of;
+pub(crate) use worth_foundational::facade::ChargedBytes;
 
 #[derive(serde::Serialize, ChargedBytes)]
 #[charged_bytes(crate = "worth_foundational::facade")]

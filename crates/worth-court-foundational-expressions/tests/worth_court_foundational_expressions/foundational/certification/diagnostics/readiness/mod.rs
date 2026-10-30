@@ -1,12 +1,9 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::diagnostics::readiness::*;
-use std::path::Path;
 use {
     worth_foundational::certify_foundational_diagnostic_milestone6_production_test_readiness,
     worth_foundational::foundational_diagnostic_milestone6_readiness_report,
     worth_foundational::require_foundational_diagnostic_milestone6_production_test_readiness,
-    worth_foundational::FoundationalDiagnosticProductionReadinessCertified,
-    worth_foundational::FoundationalDiagnosticProductionTestReadyArtifact,
 };
 
 #[test]

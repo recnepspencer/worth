@@ -1,5 +1,5 @@
 error[E0451]: fields `declaration` and `validated` of struct `ValidatedAsyncNodeCapabilityDeclaration` are private
-  --> tests/ui/validated_async_node_capability_declaration_fields_are_private.rs:19:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/validated_async_node_capability_declaration_fields_are_private.rs:19:9
    |
 18 |     let _validated = ValidatedAsyncNodeCapabilityDeclaration {
    |                      --------------------------------------- in this type

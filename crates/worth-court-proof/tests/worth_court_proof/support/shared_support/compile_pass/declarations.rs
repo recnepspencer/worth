@@ -1,6 +1,7 @@
-
-
-pub(crate) use {crate::shared_support::compile_pass::bundle::CompilePassBundle, crate::shared_support::compile_pass::bundle::CompilePassCase};
+pub(crate) use {
+    crate::shared_support::compile_pass::bundle::CompilePassBundle,
+    crate::shared_support::compile_pass::bundle::CompilePassCase,
+};
 
 pub(crate) fn run_compile_pass_bundle(bundle: &CompilePassBundle) {
     assert!(

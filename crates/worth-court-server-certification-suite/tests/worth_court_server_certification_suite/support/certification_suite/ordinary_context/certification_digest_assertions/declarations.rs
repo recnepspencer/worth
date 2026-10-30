@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 
-pub(crate) use {crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle, crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationField};
+pub(crate) use {
+    crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle,
+    crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationField,
+};
 
 pub(crate) fn assert_equal_on(
     left: &WorthServerCertificationBundle,

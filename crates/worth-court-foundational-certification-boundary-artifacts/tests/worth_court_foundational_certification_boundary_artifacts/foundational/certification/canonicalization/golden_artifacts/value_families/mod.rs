@@ -1,11 +1,6 @@
 use {
-    worth_foundational::AspectValue, worth_foundational::CanonicalBigInt,
-    worth_foundational::CanonicalDate, worth_foundational::CanonicalDecimal,
-    worth_foundational::CanonicalF32, worth_foundational::CanonicalF64,
-    worth_foundational::CanonicalRational, worth_foundational::CanonicalTime,
-    worth_foundational::CanonicalTimestamp, worth_foundational::CanonicalTimestampTz,
-    worth_foundational::ContentRefId, worth_foundational::EntityId,
-    worth_foundational::PartitionId, worth_foundational::ScalarAspectType,
+    worth_foundational::CanonicalDate, worth_foundational::CanonicalTimestamp,
+    worth_foundational::CanonicalTimestampTz, worth_foundational::ContentRefId,
 };
 
 #[test]

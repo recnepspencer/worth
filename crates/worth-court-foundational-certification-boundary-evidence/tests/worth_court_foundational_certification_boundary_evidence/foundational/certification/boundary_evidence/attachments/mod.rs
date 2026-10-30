@@ -1,26 +1,10 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::boundary_evidence::attachments::*;
-use worth_proof::TransitionOutcome;
 use {
     worth_foundational::attachment, worth_foundational::boundary_evidence,
-    worth_foundational::boundary_evidence_api::common_path,
-    worth_foundational::boundary_evidence_api::lower_lane,
-    worth_foundational::boundary_evidence_api::stronger_lane,
     worth_foundational::foundational_boundary_evidence_attachment_target_kind_definitions,
     worth_foundational::foundational_boundary_evidence_continuity_attachment_scope_definitions,
     worth_foundational::foundational_boundary_evidence_materialization_profile_definitions,
-    worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId,
-    worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle,
-    worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalDigestAlgorithmId,
-    worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture,
-    worth_foundational::FoundationalBoundaryEvidenceLineageSubject,
-    worth_foundational::FoundationalBoundaryEvidenceMaterializationProfile,
-    worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary,
-    worth_foundational::FoundationalBoundaryEvidenceSourceBasis,
-    worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis,
-    worth_foundational::FoundationalCommitParentageLocator,
-    worth_foundational::FoundationalDiagnosticLocator,
-    worth_foundational::FoundationalTransitionLocator,
 };
 
 #[test]

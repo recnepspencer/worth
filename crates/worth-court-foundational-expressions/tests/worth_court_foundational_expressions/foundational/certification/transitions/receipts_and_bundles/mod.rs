@@ -1,6 +1,12 @@
-use {worth_foundational::FoundationalBoundaryArtifactCategory, worth_foundational::FoundationalTransitionIssuanceCause};
-
-use {crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id, crate::certification::ordinary_context::transitions::fixtures::receipt::committed_authority_artifact, crate::certification::ordinary_context::transitions::fixtures::receipt::discard_closeout_cause, crate::certification::ordinary_context::transitions::fixtures::receipt::discard_receipt, crate::certification::ordinary_context::transitions::fixtures::receipt::no_op_issuance_cause, crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_authority, crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_identity};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::committed_authority_artifact,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::discard_closeout_cause,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::discard_receipt,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::no_op_issuance_cause,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_authority,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_identity,
+};
 
 #[test]
 fn receipt_issuance_preserves_blind_consumer_authority_and_strategy_meaning() {

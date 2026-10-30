@@ -1,6 +1,22 @@
-pub use {worth_query::facade::foundation::WorthQueryCommitIdentity, worth_query::facade::foundation::WorthQueryEntityIdentity, worth_query::facade::foundation::WorthQueryMutationDelta, worth_query::facade::foundation::WorthQueryMutationKind, worth_query::facade::foundation::WorthQueryMutationReceipt, worth_query::facade::foundation::WorthQuerySnapshotIdentity, worth_query::facade::foundation::WorthQueryWorkspaceError};
-pub use {worth_query::facade::runtime::SubscriptionActivationInput, worth_query::facade::runtime::WorthQueryBackendAdmissibleMutation, worth_query::facade::runtime::WorthQueryEvidenceIdentity, worth_query::facade::runtime::WorthQueryRuntimeSubscriptionActivationAdapter};
-pub use {worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts, worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts};
+pub use {
+    worth_query::facade::foundation::WorthQueryCommitIdentity,
+    worth_query::facade::foundation::WorthQueryEntityIdentity,
+    worth_query::facade::foundation::WorthQueryMutationDelta,
+    worth_query::facade::foundation::WorthQueryMutationKind,
+    worth_query::facade::foundation::WorthQueryMutationReceipt,
+    worth_query::facade::foundation::WorthQuerySnapshotIdentity,
+    worth_query::facade::foundation::WorthQueryWorkspaceError,
+};
+pub use {
+    worth_query::facade::runtime::SubscriptionActivationInput,
+    worth_query::facade::runtime::WorthQueryBackendAdmissibleMutation,
+    worth_query::facade::runtime::WorthQueryEvidenceIdentity,
+    worth_query::facade::runtime::WorthQueryRuntimeSubscriptionActivationAdapter,
+};
+pub use {
+    worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
+    worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts,
+};
 
 pub fn test_mutation_receipt(
     command: &WorthQueryBackendAdmissibleMutation,
@@ -62,7 +78,11 @@ pub fn mutation_entity_identity(
 ) -> WorthQueryEntityIdentity {
     command.declared_entity_identity().unwrap_or_else(|| {
         worth_query::facade::foundation::WorthQueryEntityIdentity::from_bridge_record_projection(
-            worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(1, ordinal as u64, 0),
+            worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(
+                1,
+                ordinal as u64,
+                0,
+            ),
         )
     })
 }

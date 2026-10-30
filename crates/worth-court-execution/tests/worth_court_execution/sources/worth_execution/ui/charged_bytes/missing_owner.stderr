@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `Arc<Vec<String>>: ChargedBytes` is not satisfied
- --> tests/ui/charged_bytes/missing_owner.rs:6:5
+ --> tests/worth_court_execution/sources/worth_execution/ui/charged_bytes/missing_owner.rs:6:5
   |
 4 | #[derive(ChargedBytes)]
   |          ------------ required by a bound introduced by this call
@@ -19,7 +19,7 @@ error[E0277]: the trait bound `Arc<Vec<String>>: ChargedBytes` is not satisfied
           and $N others
 
 error[E0277]: the trait bound `HashMap<String, String>: ChargedBytes` is not satisfied
- --> tests/ui/charged_bytes/missing_owner.rs:7:5
+ --> tests/worth_court_execution/sources/worth_execution/ui/charged_bytes/missing_owner.rs:7:5
   |
 4 | #[derive(ChargedBytes)]
   |          ------------ required by a bound introduced by this call

@@ -7,7 +7,7 @@ error[E0603]: module `branch` is private
   |                   private module
   |
 note: the module `branch` is defined here
- --> src/lib.rs
+ --> $WORKSPACE/crates/worth-signal/src/lib.rs
   |
   | mod branch;
   | ^^^^^^^^^^

@@ -1,8 +1,18 @@
 pub use {std::collections::BTreeMap, std::collections::BTreeSet};
 
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::RelationEdge, crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaError, crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion, crate::relational_certification::ordinary_context::world::supply_chain::schema::SupplyChainSchema};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::AbsenceKind, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::RelationEdge,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaError,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::SupplyChainSchema,
+};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::AbsenceKind,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct OracleState {
@@ -44,10 +54,7 @@ impl OracleState {
             .then_some((crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::AbsenceKind::Entity, key))
     }
 
-    pub fn relation_absence_marker(
-        &self,
-        key: RelationKey,
-    ) -> Option<(AbsenceKind, RelationKey)> {
+    pub fn relation_absence_marker(&self, key: RelationKey) -> Option<(AbsenceKind, RelationKey)> {
         self.absent_relations
             .contains(&key)
             .then_some((crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::AbsenceKind::Relation, key))

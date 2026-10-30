@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/diagnostics_failure_matrix_requires_sealed_bundle.rs:11:71
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/diagnostics_failure_matrix_requires_sealed_bundle.rs:11:71
    |
 11 |     let _ = BridgeTemporalAsyncFailureLocalizationMatrix::from_bundle(&draft);
    |             --------------------------------------------------------- ^^^^^^ expected `BridgeTemporalAsyncOfflineDiagnosisBundleSealed`, found `BridgeTemporalAsyncOfflineDiagnosisBundleDraft`
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
    = note: expected reference `&BridgeTemporalAsyncOfflineDiagnosisBundleSealed`
               found reference `&BridgeTemporalAsyncOfflineDiagnosisBundleDraft`
 note: associated function defined here
-  --> src/diagnostics/failure_taxonomy/matrix.rs
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/diagnostics/failure_taxonomy/matrix.rs
    |
    |     pub fn from_bundle(bundle: &BridgeTemporalAsyncOfflineDiagnosisBundleSealed) -> Self {
    |            ^^^^^^^^^^^

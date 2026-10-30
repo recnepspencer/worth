@@ -2,11 +2,11 @@
 // from the same items and edges after every step, and a step leaves every
 // island it does not touch with its identity and its members.
 
-#[allow(unused_imports)] use crate::components_differential::reference_context::*;
-use {std::collections::BTreeMap, std::collections::BTreeSet};
+#[allow(unused_imports)]
+use crate::components_differential::reference_context::*;
+use std::collections::BTreeSet;
 
-use {worth_execution::ComponentPartitioner, worth_execution::PartitionItemId};
-use {worth_foundational::PartitionIdentity};
+use worth_execution::PartitionItemId;
 
 #[test]
 fn every_retained_partitioner_equals_a_fresh_one_and_untouched_islands_keep_identity() {
@@ -32,7 +32,10 @@ fn every_retained_partitioner_equals_a_fresh_one_and_untouched_islands_keep_iden
                     if a == b {
                         crate::components_differential::reference_context::Step::AddItem(next(24))
                     } else {
-                        crate::components_differential::reference_context::Step::AddEdge(a.min(b), a.max(b))
+                        crate::components_differential::reference_context::Step::AddEdge(
+                            a.min(b),
+                            a.max(b),
+                        )
                     }
                 }
                 2 if !edges.is_empty() => {
@@ -40,9 +43,15 @@ fn every_retained_partitioner_equals_a_fresh_one_and_untouched_islands_keep_iden
                         .iter()
                         .nth(usize::try_from(next(edges.len() as u64)).unwrap())
                         .unwrap();
-                    crate::components_differential::reference_context::Step::RemoveEdge(edge.0, edge.1)
+                    crate::components_differential::reference_context::Step::RemoveEdge(
+                        edge.0, edge.1,
+                    )
                 }
-                3 if count >= 1 => crate::components_differential::reference_context::Step::RemoveItem(pick(next(count))),
+                3 if count >= 1 => {
+                    crate::components_differential::reference_context::Step::RemoveItem(pick(next(
+                        count,
+                    )))
+                }
                 _ => crate::components_differential::reference_context::Step::AddItem(next(24)),
             };
             let before = islands(&retained, &items);

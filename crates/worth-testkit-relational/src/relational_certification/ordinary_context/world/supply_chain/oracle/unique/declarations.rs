@@ -1,6 +1,15 @@
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema::Capacity, crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::OperatingPosture, crate::relational_certification::ordinary_context::world::supply_chain::schema::VesselClass, crate::relational_certification::ordinary_context::world::supply_chain::schema::VesselRecord};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::oracle::ancestry::OracleBranch};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::oracle::ancestry::OracleBranch;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::Capacity,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::OperatingPosture,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::VesselClass,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::VesselRecord,
+};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum UniqueEntityFieldOracleError {

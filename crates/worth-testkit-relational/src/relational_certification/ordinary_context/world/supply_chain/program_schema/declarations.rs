@@ -1,7 +1,27 @@
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::endpoint_integrity, crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::entity_aspects, crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::entity_kind_id, crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::relation_aspects, crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::relation_kind_id};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind};
-pub use {worth_relational::facade::config::CascadeDeletePolicy, worth_relational::facade::config::CrossContextPolicy};
-pub use {worth_relational::facade::schema::EntityKindRegistration, worth_relational::facade::schema::KindAspectContractDeclarations, worth_relational::facade::schema::RelationKindRegistration, worth_relational::facade::schema::RelationalSchemaRegistry, worth_relational::facade::schema::SchemaId, worth_relational::facade::schema::SchemaRegistryError, worth_relational::facade::schema::SchemaVersionId};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::endpoint_integrity,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::entity_aspects,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::entity_kind_id,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::relation_aspects,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::relation_kind_id,
+};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind,
+};
+pub use {
+    worth_relational::facade::config::CascadeDeletePolicy,
+    worth_relational::facade::config::CrossContextPolicy,
+};
+pub use {
+    worth_relational::facade::schema::EntityKindRegistration,
+    worth_relational::facade::schema::KindAspectContractDeclarations,
+    worth_relational::facade::schema::RelationKindRegistration,
+    worth_relational::facade::schema::RelationalSchemaRegistry,
+    worth_relational::facade::schema::SchemaId,
+    worth_relational::facade::schema::SchemaRegistryError,
+    worth_relational::facade::schema::SchemaVersionId,
+};
 
 pub fn schema_registry(
     schema_version_id: SchemaVersionId,

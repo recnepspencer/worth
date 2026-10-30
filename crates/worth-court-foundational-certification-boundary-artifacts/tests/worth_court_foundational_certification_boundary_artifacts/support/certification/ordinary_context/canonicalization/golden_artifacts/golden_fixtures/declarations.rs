@@ -1,7 +1,24 @@
-pub(crate) use {worth_foundational::prepare_aspect_contract_for_digest, worth_foundational::prepare_aspect_mask_for_digest, worth_foundational::prepare_aspect_patch_for_digest, worth_foundational::prepare_aspect_state_for_digest, worth_foundational::AspectContract, worth_foundational::AspectMask, worth_foundational::AspectValue, worth_foundational::CanonicalDigestAspectShapeKind, worth_foundational::CanonicalDigestMaskMode, worth_foundational::CanonicalDigestPreparationEntry, worth_foundational::DigestPreparationMaskMode, worth_foundational::FieldDeclaration, worth_foundational::FieldRequirement, worth_foundational::ScalarAspectType, worth_foundational::StructAspectShape};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::prepare_aspect_contract_for_digest,
+    worth_foundational::prepare_aspect_mask_for_digest,
+    worth_foundational::prepare_aspect_patch_for_digest,
+    worth_foundational::prepare_aspect_state_for_digest, worth_foundational::AspectContract,
+    worth_foundational::AspectMask, worth_foundational::AspectValue,
+    worth_foundational::CanonicalDigestAspectShapeKind,
+    worth_foundational::CanonicalDigestMaskMode,
+    worth_foundational::CanonicalDigestPreparationEntry,
+    worth_foundational::DigestPreparationMaskMode, worth_foundational::FieldDeclaration,
+    worth_foundational::FieldRequirement, worth_foundational::ScalarAspectType,
+    worth_foundational::StructAspectShape,
+};
 
-pub(crate) use {worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision};
+pub(crate) use {
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision,
+};
 
 pub(crate) fn admitted_state<const N: usize>(
     entries: [worth_foundational::ContractValidatedAspectArtifact; N],
@@ -75,7 +92,12 @@ pub(crate) fn golden_contract() -> AspectContract {
     ])
     .expect("unique fields");
 
-    worth_foundational::AspectContract::struct_aspect(key("task.summary"), identity(20), revision(1), shape)
+    worth_foundational::AspectContract::struct_aspect(
+        key("task.summary"),
+        identity(20),
+        revision(1),
+        shape,
+    )
 }
 
 pub(crate) fn golden_contract_basis() -> Vec<CanonicalDigestPreparationEntry> {

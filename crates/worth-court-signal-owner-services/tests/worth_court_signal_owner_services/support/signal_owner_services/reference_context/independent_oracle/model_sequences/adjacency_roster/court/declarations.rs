@@ -1,5 +1,14 @@
-pub(crate) use {worth_signal::facade::branch::validate_signal_branch_name, worth_signal::facade::branch::AdmittedSignalBranchBasis, worth_signal::facade::branch::AdmittedSignalBranchSnapshot, worth_signal::facade::branch::SignalBranchBasisPort, worth_signal::facade::branch::SignalBranchLifecyclePort, worth_signal::facade::branch::SignalBranchMutationPort, worth_signal::facade::branch::SignalBranchRetentionLease, worth_signal::facade::branch::SignalOwnerCancellationSource};
-pub(crate) use {worth_signal::facade::SignalRuntime};
+pub(crate) use worth_signal::facade::SignalRuntime;
+pub(crate) use {
+    worth_signal::facade::branch::validate_signal_branch_name,
+    worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    worth_signal::facade::branch::AdmittedSignalBranchSnapshot,
+    worth_signal::facade::branch::SignalBranchBasisPort,
+    worth_signal::facade::branch::SignalBranchLifecyclePort,
+    worth_signal::facade::branch::SignalBranchMutationPort,
+    worth_signal::facade::branch::SignalBranchRetentionLease,
+    worth_signal::facade::branch::SignalOwnerCancellationSource,
+};
 
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::comparison::neutral_basis, crate::signal_owner_services::reference_context::independent_oracle::comparison::neutral_snapshot};
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::state::ModelObservation, crate::signal_owner_services::reference_context::independent_oracle::state::ModelSnapshot, crate::signal_owner_services::reference_context::independent_oracle::state::ModelWorld};
@@ -104,7 +113,10 @@ impl PairCourt {
         assert_equivalent(&expected, &setup_fork, "adjacency setup secondary fork");
         drop(setup_fork);
         let capture = mutation
-            .capture_exact(&root_basis, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token())
+            .capture_exact(
+                &root_basis,
+                &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+            )
             .expect("adjacency setup: real owner captures the root");
         let (admitted_snapshot, captured_basis) = capture.into_parts();
         let snapshot = neutral_snapshot(&admitted_snapshot);

@@ -1,6 +1,9 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::canonicalization::basis::basis_grammar::*;
-use {worth_foundational::prepare_canonical_basis_bundle, worth_foundational::prepare_canonical_basis_sequence, worth_foundational::CanonicalBasisConstructionDenial, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadinessProofs, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalBundleReadinessProofs, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalizationRuleVersion};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::canonicalization::basis::basis_grammar::*;
+use {
+    worth_foundational::prepare_canonical_basis_bundle,
+    worth_foundational::prepare_canonical_basis_sequence,
+};
 
 #[test]
 fn basis_sequence_canonicalizes_entry_order_and_exposes_cost() {
@@ -43,11 +46,13 @@ fn basis_sequence_rejects_duplicate_entries() {
     );
 
     match outcome {
-        worth_proof::TransitionOutcome::Denied(worth_foundational::CanonicalBasisConstructionDenial::DuplicateEntry {
-            domain,
-            locus,
-            kind,
-        }) => {
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::CanonicalBasisConstructionDenial::DuplicateEntry {
+                domain,
+                locus,
+                kind,
+            },
+        ) => {
             assert_eq!(domain, entry.domain());
             assert_eq!(locus, entry.locus().clone());
             assert_eq!(kind, entry.kind());
@@ -65,13 +70,18 @@ fn basis_sequence_rejects_conflicting_values_for_one_semantic_key() {
     );
 
     match outcome {
-        worth_proof::TransitionOutcome::Denied(worth_foundational::CanonicalBasisConstructionDenial::DuplicateEntry {
-            domain,
-            locus,
-            kind,
-        }) => {
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::CanonicalBasisConstructionDenial::DuplicateEntry {
+                domain,
+                locus,
+                kind,
+            },
+        ) => {
             assert_eq!(domain, worth_foundational::CanonicalBasisDomain::Value);
-            assert_eq!(locus, worth_foundational::CanonicalBasisLocus::Named("same-key".into()));
+            assert_eq!(
+                locus,
+                worth_foundational::CanonicalBasisLocus::Named("same-key".into())
+            );
             assert_eq!(kind, worth_foundational::CanonicalBasisEntryKind::Value);
         }
         _ => panic!("conflicting semantic key should be denied"),
@@ -95,10 +105,12 @@ fn basis_sequence_rejects_domain_incoherence() {
     );
 
     match outcome {
-        worth_proof::TransitionOutcome::Denied(worth_foundational::CanonicalBasisConstructionDenial::DomainMismatch {
-            expected: worth_foundational::CanonicalBasisDomain::Identity,
-            actual: worth_foundational::CanonicalBasisDomain::Value,
-        }) => {}
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::CanonicalBasisConstructionDenial::DomainMismatch {
+                expected: worth_foundational::CanonicalBasisDomain::Identity,
+                actual: worth_foundational::CanonicalBasisDomain::Value,
+            },
+        ) => {}
         _ => panic!("domain mismatch should be denied"),
     }
 }
@@ -164,9 +176,9 @@ fn basis_bundle_requires_one_rule_version_and_unique_domains() {
         _ => panic!("right duplicate basis should be ready"),
     };
     match prepare_canonical_basis_bundle(version("m2.phase1"), [duplicate_left, duplicate_right]) {
-        worth_proof::TransitionOutcome::Denied(worth_foundational::CanonicalBasisConstructionDenial::DuplicateBundleDomain {
-            domain,
-        }) => assert_eq!(domain, worth_foundational::CanonicalBasisDomain::Value),
+        worth_proof::TransitionOutcome::Denied(
+            worth_foundational::CanonicalBasisConstructionDenial::DuplicateBundleDomain { domain },
+        ) => assert_eq!(domain, worth_foundational::CanonicalBasisDomain::Value),
         _ => panic!("duplicate domains should be denied"),
     }
 }

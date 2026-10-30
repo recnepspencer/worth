@@ -1,9 +1,16 @@
 // A retained subset pays before cloning and uses a stable two-pass predicate.
+pub(crate) use worth_foundational::PartitionIdentity;
 pub(crate) use {std::cell::Cell, std::cmp::Ordering, std::rc::Rc};
-pub(crate) use {worth_execution::ChargedBytes, worth_execution::KeyedEditDenial, worth_execution::KeyedItem, worth_execution::KeyedPartitioner, worth_execution::PartitionItemId};
-pub(crate) use {worth_foundational::PartitionIdentity};
+pub(crate) use {
+    worth_execution::ChargedBytes, worth_execution::KeyedEditDenial, worth_execution::KeyedItem,
+    worth_execution::KeyedPartitioner, worth_execution::PartitionItemId,
+};
 
-pub(crate) struct Key(pub(crate) u8, pub(crate) Rc<Cell<usize>>, pub(crate) Vec<u8>);
+pub(crate) struct Key(
+    pub(crate) u8,
+    pub(crate) Rc<Cell<usize>>,
+    pub(crate) Vec<u8>,
+);
 impl Clone for Key {
     fn clone(&self) -> Self {
         self.1.set(self.1.get() + 1);

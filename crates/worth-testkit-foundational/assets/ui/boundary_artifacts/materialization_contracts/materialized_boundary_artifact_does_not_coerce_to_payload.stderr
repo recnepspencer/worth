@@ -1,15 +1,15 @@
 error[E0308]: mismatched types
-  --> tests/ui/boundary_artifacts/materialization_contracts/materialized_boundary_artifact_does_not_coerce_to_payload.rs:14:22
-   |
-14 |     requires_payload(&materialized);
-   |     ---------------- ^^^^^^^^^^^^^ expected `&[u8]`, found `&...`
-   |     |
-   |     arguments to this function are incorrect
-   |
-   = note: expected reference `&[u8]`
-              found reference `&FoundationalMaterializedBoundaryArtifact<FoundationalBoundaryArtifactSurface<Vec<u8>>>`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/materialization_contracts/materialized_boundary_artifact_does_not_coerce_to_payload.rs
+  |
+  |     requires_payload(&materialized);
+  |     ---------------- ^^^^^^^^^^^^^ expected `&[u8]`, found `&...`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected reference `&[u8]`
+             found reference `&FoundationalMaterializedBoundaryArtifact<FoundationalBoundaryArtifactSurface<Vec<u8>>>`
 note: function defined here
-  --> tests/ui/boundary_artifacts/materialization_contracts/materialized_boundary_artifact_does_not_coerce_to_payload.rs:5:4
-   |
- 5 | fn requires_payload(_: &[u8]) {}
-   |    ^^^^^^^^^^^^^^^^ --------
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/materialization_contracts/materialized_boundary_artifact_does_not_coerce_to_payload.rs
+  |
+  | fn requires_payload(_: &[u8]) {}
+  |    ^^^^^^^^^^^^^^^^ --------

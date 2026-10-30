@@ -1,6 +1,12 @@
-
-
-pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::state::BranchKey, crate::signal_owner_services::reference_context::independent_oracle::state::ModelBranch, crate::signal_owner_services::reference_context::independent_oracle::state::ModelBranchLifecycle, crate::signal_owner_services::reference_context::independent_oracle::state::ModelObservation, crate::signal_owner_services::reference_context::independent_oracle::state::ModelOwnerLifecycle, crate::signal_owner_services::reference_context::independent_oracle::state::ModelSnapshot, crate::signal_owner_services::reference_context::independent_oracle::state::ModelWorld};
+pub(crate) use {
+    crate::signal_owner_services::reference_context::independent_oracle::state::BranchKey,
+    crate::signal_owner_services::reference_context::independent_oracle::state::ModelBranch,
+    crate::signal_owner_services::reference_context::independent_oracle::state::ModelBranchLifecycle,
+    crate::signal_owner_services::reference_context::independent_oracle::state::ModelObservation,
+    crate::signal_owner_services::reference_context::independent_oracle::state::ModelOwnerLifecycle,
+    crate::signal_owner_services::reference_context::independent_oracle::state::ModelSnapshot,
+    crate::signal_owner_services::reference_context::independent_oracle::state::ModelWorld,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum OperationKind {

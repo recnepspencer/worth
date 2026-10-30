@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
- --> tests/ui/digest_preparation/non_ready_mask_cannot_satisfy_digest_basis_api.rs:8:62
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/digest_preparation/non_ready_mask_cannot_satisfy_digest_basis_api.rs
   |
-8 |     worth_foundational::aspect_mask_digest_preparation_basis(&mask);
+  |     worth_foundational::aspect_mask_digest_preparation_basis(&mask);
   |     -------------------------------------------------------- ^^^^^ expected `&Artifact<DigestPreparationReady, ...>`, found `&AspectMask<MutationMask>`
   |     |
   |     arguments to this function are incorrect
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected reference `&worth_proof::artifact::carrier::Artifact<DigestPreparationReady, DigestPreparationReadyAspectMask<_>>`
              found reference `&worth_foundational::AspectMask<MutationMask>`
 note: function defined here
- --> src/canonicalization/mask_preparation.rs
+ --> $WORKSPACE/crates/worth-foundational/src/canonicalization/mask_preparation.rs
   |
   | pub fn aspect_mask_digest_preparation_basis<Mode>(
   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

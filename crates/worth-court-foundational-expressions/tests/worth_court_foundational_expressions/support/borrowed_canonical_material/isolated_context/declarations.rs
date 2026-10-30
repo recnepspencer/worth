@@ -4,7 +4,16 @@
 #![forbid(unsafe_code)]
 
 pub(crate) use {stats_alloc::Region, stats_alloc::StatsAlloc, stats_alloc::INSTRUMENTED_SYSTEM};
-pub(crate) use {worth_foundational::facade::write_aspect_value_identity_material, worth_foundational::facade::write_struct_aspect_value_identity_material, worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalBigInt, worth_foundational::facade::CanonicalDecimal, worth_foundational::facade::CanonicalMaterialByteCount, worth_foundational::facade::CanonicalMaterialSink, worth_foundational::facade::CanonicalRational, worth_foundational::facade::FieldKey, worth_foundational::facade::StructAspectValue};
+pub(crate) use {
+    worth_foundational::facade::write_aspect_value_identity_material,
+    worth_foundational::facade::write_struct_aspect_value_identity_material,
+    worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalBigInt,
+    worth_foundational::facade::CanonicalDecimal,
+    worth_foundational::facade::CanonicalMaterialByteCount,
+    worth_foundational::facade::CanonicalMaterialSink,
+    worth_foundational::facade::CanonicalRational, worth_foundational::facade::FieldKey,
+    worth_foundational::facade::StructAspectValue,
+};
 
 #[global_allocator]
 pub(crate) static TEST_ALLOCATOR: &StatsAlloc<std::alloc::System> = &INSTRUMENTED_SYSTEM;

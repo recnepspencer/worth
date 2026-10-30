@@ -1,10 +1,10 @@
 error[E0624]: method `is_empty` is private
-  --> tests/ui/bridge_truth_identity/evidence_identity_empty_predicate_private.rs:10:27
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/evidence_identity_empty_predicate_private.rs:10:27
    |
 10 |     let _empty = evidence.is_empty();
    |                           ^^^^^^^^ private method
    |
-  ::: src/identity/evidence.rs
+  ::: $WORKSPACE/crates/worth-runtime-bridge/src/identity/evidence.rs
    |
    |     pub(crate) fn is_empty(&self) -> bool {
    |     ------------------------------------- private method defined here

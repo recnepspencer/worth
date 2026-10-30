@@ -1,9 +1,21 @@
 pub(crate) use {std::mem::align_of, std::mem::needs_drop};
 
-pub(crate) use {worth_proof::FamilyResolvedReference, worth_proof::ForkOutputs2, worth_proof::JoinInputs2, worth_proof::Pair};
+pub(crate) use {
+    worth_proof::FamilyResolvedReference, worth_proof::ForkOutputs2, worth_proof::JoinInputs2,
+    worth_proof::Pair,
+};
 
-pub(crate) use {crate::shared_support::type_shapes::codegen::CodegenHonestyReport, crate::shared_support::type_shapes::codegen::CodegenShapeCheck};
-pub(crate) use {crate::shared_support::composition_family::representatives::JoinedReadyRecipe, crate::shared_support::composition_family::representatives::RepresentativeFamilyAction, crate::shared_support::composition_family::representatives::RepresentativeLoweredFamilyProgram, crate::shared_support::composition_family::representatives::RepresentativeMember, crate::shared_support::composition_family::representatives::RepresentativeSymbol};
+pub(crate) use {
+    crate::shared_support::composition_family::representatives::JoinedReadyRecipe,
+    crate::shared_support::composition_family::representatives::RepresentativeFamilyAction,
+    crate::shared_support::composition_family::representatives::RepresentativeLoweredFamilyProgram,
+    crate::shared_support::composition_family::representatives::RepresentativeMember,
+    crate::shared_support::composition_family::representatives::RepresentativeSymbol,
+};
+pub(crate) use {
+    crate::shared_support::type_shapes::codegen::CodegenHonestyReport,
+    crate::shared_support::type_shapes::codegen::CodegenShapeCheck,
+};
 
 pub(crate) fn codegen_honesty_report() -> CodegenHonestyReport {
     crate::shared_support::type_shapes::codegen::CodegenHonestyReport::size_layout_and_drop_certified(

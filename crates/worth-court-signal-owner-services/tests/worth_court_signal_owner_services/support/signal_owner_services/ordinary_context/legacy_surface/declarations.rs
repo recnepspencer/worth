@@ -1,7 +1,10 @@
 pub(crate) use {std::panic::catch_unwind, std::panic::AssertUnwindSafe};
 
-pub(crate) use {worth_signal::facade::branch::SignalBranchSnapshotReconstructionDenial};
-pub(crate) use {worth_signal::facade::SignalError, worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
+pub(crate) use worth_signal::facade::branch::SignalBranchSnapshotReconstructionDenial;
+pub(crate) use {
+    worth_signal::facade::SignalError, worth_signal::facade::SignalGraph,
+    worth_signal::facade::SignalRuntime,
+};
 
 pub(crate) type Runtime = SignalRuntime<(), (), (), (), ()>;
 

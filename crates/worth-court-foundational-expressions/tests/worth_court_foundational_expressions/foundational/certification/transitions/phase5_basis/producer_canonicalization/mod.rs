@@ -1,10 +1,28 @@
-use {worth_proof::TransitionOutcome};
-
-use {crate::certification::ordinary_context::transitions::fixtures::branch::authority_first_candidate, crate::certification::ordinary_context::transitions::fixtures::branch::projection_shaped_candidate};
-use {crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict, crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority, crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input};
-use {crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate, crate::certification::ordinary_context::transitions::fixtures::merge::projection_shaped_merge_candidate};
-use {crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id, crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_authority, crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_identity};
-use {crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::assert_equivalent, crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_candidate, crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_committed, crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_receipt, crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_verdict};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::branch::authority_first_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::branch::projection_shaped_candidate,
+};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict,
+    crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority,
+    crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input,
+};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::merge::authority_first_merge_candidate,
+    crate::certification::ordinary_context::transitions::fixtures::merge::projection_shaped_merge_candidate,
+};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_authority,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_identity,
+};
+use {
+    crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::assert_equivalent,
+    crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_candidate,
+    crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_committed,
+    crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_receipt,
+    crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_verdict,
+};
 
 #[test]
 fn transition_surfaces_canonicalize_the_same_across_independent_producers() {

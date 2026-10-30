@@ -1,11 +1,34 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_execution::ExecutionAllocationPolicy as AllocationPolicy, worth_relational::facade::transactions::AspectFieldPatch, worth_relational::facade::history::BranchId, worth_execution::CancellationToken, worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::CommitExecutionDenialKind, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::indexes::DerivedIndexBuildRequest, worth_relational::facade::indexes::DerivedIndexDefinition, worth_relational::facade::indexes::DerivedIndexExecutionDenialKind, worth_relational::facade::indexes::DerivedIndexId, worth_relational::facade::indexes::DerivedIndexKind, worth_foundational::DeterminismContract, worth_relational::facade::transactions::EntitySpec, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_relational::facade::identity::KindId, worth_relational::facade::transactions::MutationIntent, std::num::NonZeroUsize, worth_relational::facade::identity::PartitionId, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::transactions::TransactionCommitError, worth_relational::facade::transactions::WorkerIntentBatch, crate::leased_preparation::ordinary_context::authority, crate::leased_preparation::ordinary_context::lease_request, crate::leased_preparation::ordinary_context::lease_request_with_work, crate::leased_preparation::ordinary_context::leased_preparation_index_budget, crate::leased_preparation::ordinary_context::serial, crate::leased_preparation::ordinary_context::support};
-
-
-
-
-
-
+pub(crate) use {
+    crate::leased_preparation::ordinary_context::authority,
+    crate::leased_preparation::ordinary_context::lease_request,
+    crate::leased_preparation::ordinary_context::lease_request_with_work,
+    crate::leased_preparation::ordinary_context::leased_preparation_index_budget,
+    crate::leased_preparation::ordinary_context::serial,
+    crate::leased_preparation::ordinary_context::support, std::num::NonZeroUsize,
+    worth_execution::CancellationToken,
+    worth_execution::ExecutionAllocationPolicy as AllocationPolicy,
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_relational::facade::history::BranchId, worth_relational::facade::identity::KindId,
+    worth_relational::facade::identity::PartitionId,
+    worth_relational::facade::indexes::DerivedIndexBuildRequest,
+    worth_relational::facade::indexes::DerivedIndexDefinition,
+    worth_relational::facade::indexes::DerivedIndexExecutionDenialKind,
+    worth_relational::facade::indexes::DerivedIndexId,
+    worth_relational::facade::indexes::DerivedIndexKind,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+    worth_relational::facade::runtime::RelationalRuntimeApi,
+    worth_relational::facade::symbols::ClientKey,
+    worth_relational::facade::transactions::AspectFieldPatch,
+    worth_relational::facade::transactions::CommitExecutionDenialKind,
+    worth_relational::facade::transactions::CreateIntent,
+    worth_relational::facade::transactions::EntitySpec,
+    worth_relational::facade::transactions::MutationIntent,
+    worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause,
+    worth_relational::facade::transactions::TransactionCommitError,
+    worth_relational::facade::transactions::WorkerIntentBatch,
+};
 
 #[test]
 fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
@@ -15,7 +38,9 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
 
     let _serial = serial();
     let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .schema_registry(crate::leased_preparation::ordinary_context::support::demo_schema_registry())
+        .schema_registry(
+            crate::leased_preparation::ordinary_context::support::demo_schema_registry(),
+        )
         .build()
         .expect("valid native runtime configuration");
 
@@ -31,18 +56,27 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
             .observe_branch(&runtime.main_branch_identity())
             .expect("main basis remains unchanged");
         let mut transaction = runtime
-            .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+            .begin_branch_transaction(
+                &basis,
+                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+            )
             .expect("basis admits transaction");
         transaction
             .push_batch(
-                worth_relational::facade::transactions::WorkerIntentBatch::new("cumulative-work").push(worth_relational::facade::transactions::MutationIntent::Create(
-                    worth_relational::facade::transactions::CreateIntent::Entity(EntitySpec {
-                        partition_id: worth_relational::facade::identity::PartitionId::main(),
-                        kind_id: KindId(1),
-                        client_key: worth_relational::facade::symbols::ClientKey::raw("cumulative-work"),
-                        fields: worth_relational::facade::transactions::AspectFieldPatch::default(),
-                    }),
-                )),
+                worth_relational::facade::transactions::WorkerIntentBatch::new("cumulative-work")
+                    .push(
+                    worth_relational::facade::transactions::MutationIntent::Create(
+                        worth_relational::facade::transactions::CreateIntent::Entity(EntitySpec {
+                            partition_id: worth_relational::facade::identity::PartitionId::main(),
+                            kind_id: KindId(1),
+                            client_key: worth_relational::facade::symbols::ClientKey::raw(
+                                "cumulative-work",
+                            ),
+                            fields:
+                                worth_relational::facade::transactions::AspectFieldPatch::default(),
+                        }),
+                    ),
+                ),
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("entity intent stages");
@@ -149,17 +183,26 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     let _serial = serial();
     let authority = authority();
     let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .schema_registry(crate::leased_preparation::ordinary_context::support::demo_schema_registry())
+        .schema_registry(
+            crate::leased_preparation::ordinary_context::support::demo_schema_registry(),
+        )
         .build()
         .expect("valid native runtime configuration");
-    let (created, _) = crate::leased_preparation::ordinary_context::support::create_entity(execution, &runtime, "leased-seed");
+    let (created, _) = crate::leased_preparation::ordinary_context::support::create_entity(
+        execution,
+        &runtime,
+        "leased-seed",
+    );
     let index = runtime
         .index_authority()
         .register(DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
             name: "leased.entity.name".to_owned(),
             kind: worth_relational::facade::indexes::DerivedIndexKind::EntityField {
-                field_locator: crate::leased_preparation::ordinary_context::support::aspect_field_locator("name"),
+                field_locator:
+                    crate::leased_preparation::ordinary_context::support::aspect_field_locator(
+                        "name",
+                    ),
             },
             branch_scoped: true,
         })
@@ -174,7 +217,10 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
         .build_for_commit(execution, request.clone());
     assert!(serial.execution_denial.is_none());
     let lease = authority
-        .request_lease(lease_request(32 * 1024 * 1024, worth_execution::CancellationToken::new()))
+        .request_lease(lease_request(
+            32 * 1024 * 1024,
+            worth_execution::CancellationToken::new(),
+        ))
         .expect("generous lease is admitted");
     let parallel = runtime.index_authority().build_for_commit(
         &worth_execution::ExecutionRequest::leased(&lease),
@@ -201,7 +247,11 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     );
     assert_eq!(
         stopped_index.execution_denial.map(|denial| denial.kind),
-        Some(worth_relational::facade::indexes::DerivedIndexExecutionDenialKind::Cause(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled))
+        Some(
+            worth_relational::facade::indexes::DerivedIndexExecutionDenialKind::Cause(
+                worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled
+            )
+        )
     );
     assert!(stopped_index.generations.is_empty());
     assert_eq!(
@@ -220,7 +270,11 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     small_request.policy = worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Automatic,
         worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(0), Some(1_000_000)),
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            Some(0),
+            Some(1_000_000),
+        ),
     );
     let small_lease = authority
         .request_lease(small_request)
@@ -245,18 +299,27 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
         .observe_branch(&identity)
         .expect("main branch is current");
     let mut transaction = runtime
-        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .expect("current basis admits a transaction");
     transaction
         .push_batch(
-            worth_relational::facade::transactions::WorkerIntentBatch::new("cancelled-prepare").push(worth_relational::facade::transactions::MutationIntent::Create(
-                worth_relational::facade::transactions::CreateIntent::Entity(EntitySpec {
-                    partition_id: worth_relational::facade::identity::PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: worth_relational::facade::symbols::ClientKey::raw("cancelled-prepare"),
-                    fields: worth_relational::facade::transactions::AspectFieldPatch::default(),
-                }),
-            )),
+            worth_relational::facade::transactions::WorkerIntentBatch::new("cancelled-prepare")
+                .push(
+                    worth_relational::facade::transactions::MutationIntent::Create(
+                        worth_relational::facade::transactions::CreateIntent::Entity(EntitySpec {
+                            partition_id: worth_relational::facade::identity::PartitionId::main(),
+                            kind_id: KindId(1),
+                            client_key: worth_relational::facade::symbols::ClientKey::raw(
+                                "cancelled-prepare",
+                            ),
+                            fields:
+                                worth_relational::facade::transactions::AspectFieldPatch::default(),
+                        }),
+                    ),
+                ),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("entity intent stages");

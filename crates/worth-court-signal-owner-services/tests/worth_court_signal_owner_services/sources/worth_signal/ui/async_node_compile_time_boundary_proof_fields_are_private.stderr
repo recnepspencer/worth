@@ -1,5 +1,5 @@
 error[E0616]: field `fixture_labels` of struct `AsyncNodeCompileTimeBoundaryProof` is private
- --> tests/ui/async_node_compile_time_boundary_proof_fields_are_private.rs:9:19
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_compile_time_boundary_proof_fields_are_private.rs:9:19
   |
 9 |     let _ = proof.fixture_labels;
   |                   ^^^^^^^^^^^^^^ private field

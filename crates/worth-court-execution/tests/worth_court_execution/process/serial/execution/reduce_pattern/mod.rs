@@ -1,5 +1,21 @@
 #[allow(unused_imports)]
-pub(crate) use {std::sync::atomic::AtomicUsize, worth_execution::CancellationToken, worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome, std::num::NonZeroUsize, std::sync::atomic::Ordering, worth_foundational::PartitionIdentity, worth_execution::ReduceInputDenial, worth_execution::ReductionMetrics, worth_execution::ReductionRunFailure, worth_execution::ReductionRunStop, crate::reduce_pattern::ordinary_context::TEST_LOCK, crate::reduce_pattern::ordinary_context::authority, crate::reduce_pattern::ordinary_context::lease, crate::reduce_pattern::ordinary_context::lease_with_workers, crate::reduce_pattern::ordinary_context::map, crate::reduce_pattern::ordinary_context::map_with_count, crate::reduce_pattern::ordinary_context::mapped, crate::reducer_overlap, crate::reduce_pattern::ordinary_context::sum, crate::test_serialization};
+pub(crate) use {
+    crate::reduce_pattern::ordinary_context::authority,
+    crate::reduce_pattern::ordinary_context::lease,
+    crate::reduce_pattern::ordinary_context::lease_with_workers,
+    crate::reduce_pattern::ordinary_context::map,
+    crate::reduce_pattern::ordinary_context::map_with_count,
+    crate::reduce_pattern::ordinary_context::mapped, crate::reduce_pattern::ordinary_context::sum,
+    crate::reduce_pattern::ordinary_context::TEST_LOCK, crate::reducer_overlap,
+    crate::test_serialization, std::num::NonZeroUsize, std::sync::atomic::AtomicUsize,
+    std::sync::atomic::Ordering, worth_execution::CancellationToken, worth_execution::LeaseRequest,
+    worth_execution::MapKernelFailure, worth_execution::MapOutcome,
+    worth_execution::ReduceInputDenial, worth_execution::ReductionMetrics,
+    worth_execution::ReductionRunFailure, worth_execution::ReductionRunStop,
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn native_reducer_uses_two_workers_and_matches_one_worker_oracle() {
@@ -84,7 +100,9 @@ fn work_ceiling_stops_inside_reduction_after_checked_map() {
         Err(worth_execution::ReduceInputDenial::ReductionStopped { failure, report }) => {
             assert_eq!(
                 failure.reason,
-                worth_execution::ReductionRunStop::Hook(worth_execution::MapKernelStop::WorkCeiling)
+                worth_execution::ReductionRunStop::Hook(
+                    worth_execution::MapKernelStop::WorkCeiling
+                )
             );
             let accounting = failure
                 .metrics
@@ -163,7 +181,10 @@ fn map_failure_keeps_its_canonical_boundary_through_parent_scope() {
             reason,
             report,
         }) => {
-            assert_eq!(boundary, Some(worth_foundational::PartitionIdentity::new(2)));
+            assert_eq!(
+                boundary,
+                Some(worth_foundational::PartitionIdentity::new(2))
+            );
             assert!(matches!(
                 reason,
                 worth_execution::MapStop::Failure {
@@ -189,17 +210,23 @@ fn reduction_hook_error_bytes_obey_map_result_capacity() {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Automatic,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), Some(4096), Some(10)),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::new(1).unwrap(),
+                    Some(4096),
+                    Some(10),
+                ),
             ),
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),
         })
         .unwrap();
     let outcome = map_with_count(1).run(Some(&small), |_, _| {
-        Err::<u64, _>(worth_execution::MapKernelFailure::Domain(ReductionRunFailure {
-            reason: worth_execution::ReductionRunStop::Hook("x".repeat(1 << 20)),
-            metrics: worth_execution::ReductionMetrics::default(),
-        }))
+        Err::<u64, _>(worth_execution::MapKernelFailure::Domain(
+            ReductionRunFailure {
+                reason: worth_execution::ReductionRunStop::Hook("x".repeat(1 << 20)),
+                metrics: worth_execution::ReductionMetrics::default(),
+            },
+        ))
     });
     assert!(matches!(
         outcome,

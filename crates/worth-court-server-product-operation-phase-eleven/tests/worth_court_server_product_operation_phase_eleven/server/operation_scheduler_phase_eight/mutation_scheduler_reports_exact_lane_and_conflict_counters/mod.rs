@@ -1,5 +1,8 @@
 // mutation scheduler reports exact lane and conflict counters.
-use {worth_server::WorthServerSchedulerFailurePosture, crate::operation_scheduler_phase_eight::ordinary_context::lower_product_mutation_plan, crate::operation_scheduler_phase_eight::ordinary_context::scheduler_server};
+use {
+    crate::operation_scheduler_phase_eight::ordinary_context::lower_product_mutation_plan,
+    crate::operation_scheduler_phase_eight::ordinary_context::scheduler_server,
+};
 
 #[test]
 fn mutation_scheduler_reports_exact_lane_and_conflict_counters() {
