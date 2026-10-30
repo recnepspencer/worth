@@ -217,14 +217,14 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
             .filter(|name| test_name(name) || FACTORIES.contains(name))
             .collect();
         for name in &names {
-            if let Some(owners) = doors.get(*name) {
-                if !permitted(path, owners, &controls) {
-                    out.push(diagnostic(
-                        Code::Control,
-                        path,
-                        format!("control `{name}` requires its owner or an exact caller"),
-                    ));
-                }
+            if let Some(owners) = doors.get(*name)
+                && !permitted(path, owners, &controls)
+            {
+                out.push(diagnostic(
+                    Code::Control,
+                    path,
+                    format!("control `{name}` requires its owner or an exact caller"),
+                ));
             }
             if FACTORIES.contains(name) {
                 let (class, owner) = if *name == "certification_query" {

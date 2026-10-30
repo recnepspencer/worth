@@ -25,20 +25,18 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                         || under(path, p.trim_end_matches("/Cargo.toml")))
             })
             .max_by_key(|(p, _)| p.len())
-        {
-            if let Some(aliases) = workspace["workspace"]
+            && let Some(aliases) = workspace["workspace"]
                 .get("dependencies")
                 .and_then(toml::Value::as_table)
-            {
-                for (alias, dependency) in aliases {
-                    if owned.contains(
-                        dependency
-                            .get("package")
-                            .and_then(toml::Value::as_str)
-                            .unwrap_or(alias),
-                    ) {
-                        names.insert(alias.clone());
-                    }
+        {
+            for (alias, dependency) in aliases {
+                if owned.contains(
+                    dependency
+                        .get("package")
+                        .and_then(toml::Value::as_str)
+                        .unwrap_or(alias),
+                ) {
+                    names.insert(alias.clone());
                 }
             }
         }

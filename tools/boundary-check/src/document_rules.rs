@@ -171,7 +171,6 @@ fn destinations(line: &str, definitions: &BTreeMap<String, &str>) -> Vec<(usize,
                 result.push((
                     offset,
                     tail[..end]
-                        .trim()
                         .split_whitespace()
                         .next()
                         .unwrap_or("")
