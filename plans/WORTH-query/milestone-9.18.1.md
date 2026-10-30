@@ -5,7 +5,7 @@
 > Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
-> Phases 13–14, 17 and 19 are complete. Phases 16 and 18 remain unfinished.
+> Phases 13–14, 16–17 and 19 are complete. Phase 18 remains unfinished.
 > Addendum 1 defines correction-aware consecutive source undo.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
@@ -1805,7 +1805,7 @@ graph phases' existing tests. It is not a 9.18.1 closure dependency.
 
 ## Phase 16: Cell-Version Storage And Live-At-k Qualification
 
-**Status: unfinished; required. Priority: P3.**
+**Status: complete at the public application boundary; accepted 2026-10-30. Priority: P3.**
 **Owner:** Relational + Query + Runtime World publication-history maintenance,
 certified through public application courts.
 **Depends on:** real cell-bearing publication and genuine retained history custody.
@@ -2019,16 +2019,21 @@ workspaces/worth-query/crates/worth-query-certification/tests/
     lifecycle_cases.rs                         # complete old/current lifecycle answers
     checkpoint.rs                              # opaque capture and complete readmission
     checkpoint_cases.rs                        # source disposal and durable retry behavior
+    committed_patch.rs                         # sealed patch counts and exact Cell occurrence
     query.rs                                   # selected-basis live-cell projection
     host.rs                                    # real installation and seed truth
     live_at.rs                                 # fresh requests and original custody
+    storage.rs                                 # explicit retained-owner census
     cost.rs                                    # independent scale-axis courts
     cost/measurement.rs                        # actual owner/query observations
     cost/workload.rs                           # real retained publications
-    reconstruction/                            # successor: genuine checkpoint recovery
+    cost/peak.rs                               # requested-object group observer
+    cost/reconstruction.rs                     # independent readmission and first answer
 crates/worth-relational/src/
   history/retention/                            # existing historical root authority
   inspection/mvcc/                             # existing read-only allocation observations
+  runtime/state/subsystems/canonical_publication_routes/
+    pending_settlement.rs                     # active candidates; route state remains authority
 crates/worth-runtime-world/src/history/catalog/
   reachability/record.rs                       # authority and reserved navigation
   reachability/frontier.rs                     # changed-slot lifecycle
@@ -2036,9 +2041,8 @@ crates/worth-runtime-world/src/history/catalog/
   history_retirement/interior.rs              # shared eligibility and splice
 ```
 
-Populate successor children only with their implementation. The application
-model imports Decl/Host only; certification observations stay in the grouped
-court audience. A Native observation extension remains behind the Relational
+The application model imports Decl/Host only; certification observations stay in
+the grouped court audience. A Native observation extension remains behind the Relational
 inspection facade. Do not move cell truth into Replay, expose root authority in
 diagnostics, flatten future cost/reconstruction work into the functional court,
 or create a separate build target, implementation journal or evidence ledger.

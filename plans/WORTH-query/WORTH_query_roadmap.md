@@ -5801,13 +5801,19 @@ mandatory current Rust qualification. Index implementation and its dependent CAD
 locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
 Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
 19 for consecutive source undo after verified correction/restoration.
-The retained scope has seventeen implementation phases; 9, 16 and 18
-remain unfinished.
+The retained scope has seventeen implementation phases; 9 and 18 remain unfinished.
 Phase 17 is complete at the public application boundary: versioned domain intent
 enters fresh governed READ and mutation admission, exact selected-source creation
 and actual-head adoption. Native attempt resolution preserves frozen input and
 effect-free cached retries; publication, delivery and cleanup retain their real
 owners through typed refusals and fresh-request continuation.
+Phase 16 is complete at the public application boundary: genuine Native cell
+versions preserve complete retained-step and current answers through field edits,
+replacement, retirement, retry and opaque checkpoint readmission. Independent
+1/100/10,000-step and live-cell axes qualify local publication including receiving
+World, Native index and canonical settlement maintenance. Current, held, queued
+and catalog owner footprints, instrumented requested-object peaks, historical
+answers and cold readmission retain their separate measured scopes.
 
 ### Goal
 
@@ -5822,8 +5828,8 @@ domain-neutral and reached through Query declarations and ordinary governed
 requests, never through raw runtime handles or receipt-reconstructed authority.
 The retained follow-through adds honest failure causes, measured
 cell-version/history cost, public proposal acceptance and current stable Rust
-qualification. Phase 17 is certified at the public application boundary; Phase 16
-requires that same public-only certification boundary. Neither requires private
+qualification. Phases 16–17 are certified at the public application boundary.
+Neither requires private
 adoption. Cell-history qualification selects genuine
 retained feature-step custody, varies history and live body size independently,
 and distinguishes head-only bytes from held-history allocations. The general
@@ -5863,7 +5869,8 @@ The governing milestone spec is
   identity authority and standalone Bridge APIs remain supported
 - typed compiler-qualification and unobserved-field-write causes preserved to
   ordinary callers instead of accounting overflow or cause-erased rejection
-- cell-version/storage/live-at-k evidence at 1, 100 and 10,000 features, without
+- cell-version/storage/live-at-k evidence at 1, 100 and 10,000 retained feature
+  steps and independently varied live cell counts, without
   private platform workarounds; spatial-dependent locality is required in 9.19
 - proposal acceptance reissuing fresh ordinary requests from versioned domain
   intents, with exact Native/World expected-source fork/adoption and genuine

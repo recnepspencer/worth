@@ -2215,6 +2215,12 @@ permission and may already be stale for `select_expected` if the head moved.
 Drop the observation when its reads are finished. Managed-index open and rebuild
 require a current request and refuse retained mode with `RequestMode`.
 
+For storage certification, use the [retained-owner census](../crates/worth-relational/API_OVERVIEW.md#retained-owner-footprints)
+outside publication timing. It unions shared allocations across current, held
+and queued roots and reports catalog footprints separately. Keep requested-object
+allocation peaks, checkpoint readmission and complete first-answer costs as
+separate measurements.
+
 The entity a mutation acts on is its intent's *scope binding*, shown next.
 
 ### 5.2 Mutations: intent, binding, handler
