@@ -1,7 +1,7 @@
 // Separate process because the physical authority is constructed once per process.
 use std::num::NonZeroUsize;
 use worth_execution::{
-    CancellationToken, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
+    CancellationToken, ExecutionAllocationDenialClass, ExecutionAllocationPolicy,
     ExecutionAuthority, ExecutionAuthorityConfig, ExecutionByteBuffer, LeaseDenial, LeaseRequest,
     MemoryLimitDenial, MemoryLimitLevel,
 };
@@ -44,13 +44,13 @@ fn explicit_zero_process_memory_preserves_zero_and_refuses_positive_payloads() {
     let denied =
         ExecutionByteBuffer::allocate(1, ExecutionAllocationPolicy::Execution(&lease)).unwrap_err();
     assert_eq!(
-        denied.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            MemoryLimitDenial::Capacity {
+        denied.classify(),
+        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                 requested: 1,
                 admitted: 0,
                 level: MemoryLimitLevel::Policy { ancestor: 0 }
-            }
+            })
         ))
     );
     assert_eq!(denied.requested_payload_bytes(), Some(1));

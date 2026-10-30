@@ -8,7 +8,7 @@ pub(crate) use std::{
     time::{Duration, Instant},
 };
 pub(crate) use worth_execution::{
-    CancellationSource, CancellationToken, ExecutionAllocationDenialKind as Kind,
+    CancellationSource, CancellationToken, ExecutionAllocationDenialClass as Kind,
     ExecutionAllocationPolicy as Policy, ExecutionAuthority, ExecutionAuthorityConfig,
     ExecutionByteBuffer, ExecutionImmutableBytes, LeaseRequest, MemoryLimitDenial,
     MemoryLimitLevel,
@@ -65,12 +65,18 @@ fn external_and_system_backings_are_uncharged_and_equal_by_bytes() {
 #[test]
 fn invalid_layout_and_incomplete_emission_never_seal_a_partial_payload() {
     let denied = ExecutionByteBuffer::allocate(usize::MAX, Policy::SystemAllocation).unwrap_err();
-    assert_eq!(denied.kind(), Kind::Layout);
+    assert_eq!(
+        denied.classify(),
+        Kind::Physical(worth_execution::ExecutionPhysicalAllocationDenialKind::Layout)
+    );
     assert_eq!(denied.requested_payload_bytes(), None);
     let mut buffer = ExecutionByteBuffer::allocate(3, Policy::SystemAllocation).unwrap();
     buffer.extend_from_slice(b"a").unwrap();
     let denied = buffer.seal().unwrap_err();
-    assert_eq!(denied.kind(), Kind::IncompleteSeal);
+    assert_eq!(
+        denied.classify(),
+        Kind::Physical(worth_execution::ExecutionPhysicalAllocationDenialKind::IncompleteSeal)
+    );
     assert_eq!(denied.requested_payload_bytes(), Some(3));
 }
 

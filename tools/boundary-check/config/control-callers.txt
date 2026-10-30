@@ -360,3 +360,40 @@ crates/worth-execution/ crates/worth-relational/src/tests/transactions/core/snap
 # Exact consumers preserve their former in-owner access across the court move.
 workspaces/worth-query/crates/worth-query-testkit-document-retention/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/authentication/mod.rs
 workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/process/server_owned_effects/server/approved_payment_workflow/postures/mod.rs
+
+# Name-only seal cutover: existing composed controls and certification callers.
+# These exact references existed before visibility/cfg exemptions were retired.
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/read_observation.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/runtime/operation_control.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/operation_control.rs
+crates/worth-signal/ crates/worth-runtime-bridge/src/conditional_execution/sealed_runtime_assembly/wake_observation_for_test.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/operation_cost/measurement.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/advancement_lifetime.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/advancement/observation.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-execution/src/facade/primary_graph.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/advancement_custody/width_differential.rs
+workspaces/worth-query-bank-world/crates/bank-http-adapter/ workspaces/worth-query-bank-world/crates/bank-user-node/src/cold_certification.rs
+workspaces/worth-store/crates/worth-store-physical-backend/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/discovery/observation/wal_observation/allocation.rs
+workspaces/worth-store/crates/worth-store-physical-backend/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/reader_limit.rs
+workspaces/worth-store/crates/worth-store-physical-backend/ workspaces/worth-store/crates/worth-store/src/physical_runtime/mod.rs
+workspaces/worth-store/crates/worth-store-physical-integrity/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/head_v2_tests.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/entry/outcome/block_cause.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/released/historical_redo_tests.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/head_v2_tests.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/pending_wal/head_replay.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/pending_wal/ordered/denial.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/page_observation/ordered_history/head_replay.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/page_observation/ordered_history/walk_failure_tests.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/progression/planned/basis/publication_candidate/historical_result/tests.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store/src/physical_runtime/recovery_construction/selected_rejoin/pending_wal_release/delta.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-certification/src/courtroom/protocol_models/replication_admission/scenarios/ordinary_owner_execution.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-certification/src/courtroom/protocol_models/replication_admission/scenarios/ordinary_owner_execution/publication_denials.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-certification/tests/scenarios/scheduling/reclaim_policy/reclaim_policy.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-io-scheduler/src/backend_capability/tests/secure_frame_security_binding.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-io-scheduler/src/background_pacing/tests/secure_io_preservation.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-io-scheduler/src/queue_execution/grouping_basis_tests.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-offline-verifier/src/truth_composition/tests.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-reclaim-policy/src/reclaim_policy/tests.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-replication/src/tests.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-tiering/src/cold_tier_posture/certification_test_support.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store/tests/physical_record_journeys/physical_work/scheduler.rs

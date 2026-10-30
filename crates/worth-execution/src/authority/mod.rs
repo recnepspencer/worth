@@ -27,4 +27,5 @@ pub use serial::SerialRequest;
 
 pub(crate) use request::consult_observation;
 
+#[cfg(test)]
 pub(crate) use lease::ExecutionAllocationDenialKind;

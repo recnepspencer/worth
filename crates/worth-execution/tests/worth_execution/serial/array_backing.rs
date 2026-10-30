@@ -13,7 +13,7 @@ use std::{
     time::{Duration, Instant},
 };
 use worth_execution::{
-    CancellationSource, CancellationToken, ExecutionAllocationDenialKind as Kind,
+    CancellationSource, CancellationToken, ExecutionAllocationDenialClass as Kind,
     ExecutionAllocationPolicy as Policy, ExecutionArrayBuilder, ExecutionAuthority,
     ExecutionAuthorityConfig, ExecutionResourceLease, LeaseDenial, LeaseRequest, MemoryLimitDenial,
     MemoryLimitLevel,
@@ -81,7 +81,12 @@ fn typed_layout_moves_and_iterator_retain_one_charge_beyond_child_lease() {
                 nested: vec![9].into_boxed_slice(),
             })
             .unwrap_err();
-        assert_eq!(denied.kind(), Kind::WriteBeyondReserved);
+        assert_eq!(
+            denied.classify(),
+            Kind::Physical(
+                worth_execution::ExecutionPhysicalAllocationDenialKind::WriteBeyondReserved
+            )
+        );
         assert_eq!(denied.requested_payload_bytes(), Some(quote));
         assert_eq!(builder.len(), 3);
         let array = builder.seal().unwrap();
@@ -188,7 +193,10 @@ fn element_destruction_keeps_charge_until_partial_and_consuming_backings_drop() 
         })
         .unwrap();
     let denied = partial.seal().unwrap_err();
-    assert_eq!(denied.kind(), Kind::IncompleteSeal);
+    assert_eq!(
+        denied.classify(),
+        Kind::Physical(worth_execution::ExecutionPhysicalAllocationDenialKind::IncompleteSeal)
+    );
     assert_eq!(denied.requested_payload_bytes(), Some(quote));
     assert_eq!(drops.get(), 4); // Uninitialized tail is not dropped.
     assert_eq!(charged_drops.get(), 4);
@@ -218,7 +226,10 @@ fn zst_logical_fill_and_zero_charge_do_not_use_allocator_capacity_as_count() {
         builder.push(Zero).unwrap();
     }
     let denied = builder.push(Zero).unwrap_err();
-    assert_eq!(denied.kind(), Kind::WriteBeyondReserved);
+    assert_eq!(
+        denied.classify(),
+        Kind::Physical(worth_execution::ExecutionPhysicalAllocationDenialKind::WriteBeyondReserved)
+    );
     assert_eq!(denied.requested_payload_bytes(), Some(0));
     assert_eq!(builder.len(), 3);
     assert_eq!(builder.element_count(), 3);
@@ -259,17 +270,22 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
     let _serial = test_serialization::guard(&SERIAL);
     let denied =
         ExecutionArrayBuilder::<u64>::allocate(usize::MAX, Policy::SystemAllocation).unwrap_err();
-    assert_eq!(denied.kind(), Kind::Layout);
+    assert_eq!(
+        denied.classify(),
+        Kind::Physical(worth_execution::ExecutionPhysicalAllocationDenialKind::Layout)
+    );
     assert_eq!(denied.requested_payload_bytes(), None);
     let small = authority().request_lease(request(7)).unwrap();
     let denied = ExecutionArrayBuilder::<u32>::allocate(2, Policy::Execution(&small)).unwrap_err();
     assert_eq!(
-        denied.kind(),
-        Kind::Lease(LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
-            requested: 8,
-            admitted: 7,
-            level: MemoryLimitLevel::Policy { ancestor: 0 }
-        }))
+        denied.classify(),
+        Kind::Request(worth_execution::WorkCeilingDenial::Admission(
+            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
+                requested: 8,
+                admitted: 7,
+                level: MemoryLimitLevel::Policy { ancestor: 0 }
+            })
+        ))
     );
     assert_eq!(denied.requested_payload_bytes(), Some(8));
     assert_eq!(small.reserve_memory(7).unwrap().bytes(), 7);
@@ -287,7 +303,12 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
         None
     );
     let denied = builder.push(2).unwrap_err();
-    assert_eq!(denied.kind(), Kind::Cancelled);
+    assert_eq!(
+        denied.classify(),
+        Kind::Request(worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::Cancelled
+        ))
+    );
     assert_eq!(denied.requested_payload_bytes(), Some(16));
     assert_eq!(builder.elements(), [1]);
     assert_eq!(builder.seal().unwrap_err(), denied);
@@ -297,7 +318,12 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
     let expired = parent.child(stopped_request).unwrap();
     let denied =
         ExecutionArrayBuilder::<u32>::allocate(4, Policy::Execution(&expired)).unwrap_err();
-    assert_eq!(denied.kind(), Kind::DeadlineElapsed);
+    assert_eq!(
+        denied.classify(),
+        Kind::Request(worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::DeadlineElapsed
+        ))
+    );
     assert_eq!(denied.requested_payload_bytes(), Some(16));
     assert_eq!(parent.reserve_memory(16).unwrap().bytes(), 16);
 }
