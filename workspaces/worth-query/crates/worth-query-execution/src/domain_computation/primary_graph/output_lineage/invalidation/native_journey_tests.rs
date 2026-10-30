@@ -20,6 +20,8 @@ mod full_verification;
 mod local_requirement;
 #[path = "native_journey_tests/logical_work_scale.rs"]
 mod logical_work_scale;
+#[path = "native_journey_tests/population_world.rs"]
+mod population_world;
 #[path = "native_journey_tests/posting_continuation.rs"]
 mod posting_continuation;
 #[path = "native_journey_tests/scope_hierarchy.rs"]
