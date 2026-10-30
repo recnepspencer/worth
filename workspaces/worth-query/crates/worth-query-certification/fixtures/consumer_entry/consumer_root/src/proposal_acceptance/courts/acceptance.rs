@@ -18,6 +18,7 @@ mod arbitration;
 mod disclosure;
 mod disposal;
 mod previous;
+mod revisions;
 mod versions;
 
 fn progress(event: Result<Event, Failure>) {

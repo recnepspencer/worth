@@ -10,6 +10,7 @@ mod mutation_access;
 mod recording;
 mod resources;
 mod retention;
+mod revision;
 mod schema;
 mod storage_query;
 

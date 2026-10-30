@@ -11,7 +11,7 @@ worth_query_application! { pub Schema {
 worth_query_application_contribution! { pub contribution Contribution in Schema {
     identity: "proposal-application.contribution.v1",
     members: |schema| {
-        super::attempts::declare(super::mutation_access::declare(super::retention::declare(super::access::declare(super::storage_query::declare(super::model_query::declare(super::recording::declare(
+        super::revision::declare(super::attempts::declare(super::mutation_access::declare(super::retention::declare(super::access::declare(super::storage_query::declare(super::model_query::declare(super::recording::declare(
             super::creation::declare(schema
                 .entity(ExternalMapping::reference()).entity(Principal::reference())
                 .entity(Registry::reference()).entity(Model::reference())
@@ -36,7 +36,7 @@ worth_query_application_contribution! { pub contribution Contribution in Schema 
                 .relation(ModelProposal::reference(), Model::reference(), Proposal::reference())
                 .principal_binding(PrincipalBinding::reference())
             )
-        )))))))
+        ))))))))
     }
 }}
 
@@ -60,7 +60,7 @@ worth_query_field!(pub ModelName for Schema, Model, ModelFacts: String => String
 worth_query_field!(pub TargetName for Schema, Target, TargetFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub Retention for Schema, Target, TargetFacts: u64 => U64ApplicationValueBinding, read_write, equality);
 worth_query_field!(pub ProposalName for Schema, Proposal, ProposalFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub ProposalData for Schema, Proposal, ProposalFacts: StoredProposal => StoredProposalBinding, read_only, equality);
+worth_query_field!(pub ProposalData for Schema, Proposal, ProposalFacts: StoredProposal => StoredProposalBinding, read_write, equality);
 worth_query_relation!(pub MappingTarget in Schema, ExternalMapping => Principal; integrity=same_context_unbounded_retain_dangling);
 worth_query_relation!(pub ModelTarget in Schema, Model => Target; integrity=same_context_unbounded_retain_dangling);
 worth_query_relation!(pub ModelProposal in Schema, Model => Proposal; integrity=same_context_unbounded_retain_dangling);

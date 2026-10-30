@@ -44,7 +44,7 @@ fn data() -> ApplicationQueryResultFieldRef<
     ProposalFacts,
     ProposalData,
     StoredProposal,
-    ReadOnly,
+    ReadWrite,
     EqualityPredicate,
     NoApplicationUnit,
 > {

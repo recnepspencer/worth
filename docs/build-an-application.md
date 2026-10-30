@@ -2585,6 +2585,17 @@ and no live continuation refuses; missing delivery is not permission to fork.
 An occupied slot retains its original input until registration has established
 a native intent binding. A different incoming input cannot replace it.
 
+Revise stored proposal intent through an ordinary observed field write. The
+[compiled revision operation](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/revision.rs)
+checks the actual proposal occurrence, membership and expected domain revision,
+then increments that revision while preserving format, model and recorded basis.
+Read the proposals collection for its current revision reference; loading the
+old reference refuses.
+An already registered attempt keeps its original frozen intent. Revised intent
+under that same attempt key receives native drift. An unregistered stale load
+cannot register against the revised record. Renew the recorded basis explicitly
+when starting from a moved model.
+
 If native resolution returns `ProviderUnavailable` after that same fresh
 admission, the compiled ingress can advance only the matching retained Claim
 recovery owner. Changed meaning under the same key still receives native intent
