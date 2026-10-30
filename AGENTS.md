@@ -52,7 +52,8 @@ No Cargo features are declared beyond Signal's retained product profiles/default
 (including WASM forwarding) and Signal-only `test-peak-allocation`. Empty feature
 tables and feature arrays on governed dependencies are refused. Unit-test-only
 hooks use `cfg(test)`; other controls and observers compile and use owned handles.
-The rule is enforced by `tools/boundary-check/src/one_build.rs`.
+The rule is enforced by `tools/boundary-check/src/graph_rules.rs` and
+`tools/boundary-check/src/text_rules.rs`.
 
 Law 1, reach: exported and crate-visible test doors are discovered throughout
 their owners by the `*_for_test` and `*ForTest` conventions and sealed to their
