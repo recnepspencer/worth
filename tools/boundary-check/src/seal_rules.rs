@@ -255,4 +255,46 @@ mod tests {
         );
         assert!(check(&input).is_empty());
     }
+    #[test]
+    fn crate_visibility_spellings_keep_the_same_closed_callers() {
+        for visibility in ["pub(crate)", "pub(in crate)"] {
+            let mut input = Inputs::fixture(
+                &[
+                    (
+                        "crates/worth-signal/src/control.rs",
+                        &format!("{visibility} fn arm_for_test() {{}}"),
+                    ),
+                    ("app/src/lib.rs", "arm_for_test();"),
+                ],
+                "",
+            );
+            assert_eq!(check(&input).len(), 1);
+            input.files.insert(
+                format!("{CONFIG}control-callers.txt"),
+                "crates/worth-signal/ app/src/lib.rs".into(),
+            );
+            assert!(check(&input).is_empty());
+        }
+    }
+    #[test]
+    fn exported_macros_keep_closed_callers_even_inside_private_functions() {
+        for declaration in [
+            "#[macro_export] macro_rules! arm_for_test { () => {} }",
+            "fn hidden() { #[macro_export] macro_rules! arm_for_test { () => {} } }",
+        ] {
+            let mut input = Inputs::fixture(
+                &[
+                    ("crates/worth-signal/src/control.rs", declaration),
+                    ("app/src/lib.rs", "arm_for_test!();"),
+                ],
+                "",
+            );
+            assert_eq!(check(&input).len(), 1);
+            input.files.insert(
+                format!("{CONFIG}control-callers.txt"),
+                "crates/worth-signal/ app/src/lib.rs".into(),
+            );
+            assert!(check(&input).is_empty());
+        }
+    }
 }

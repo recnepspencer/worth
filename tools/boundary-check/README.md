@@ -32,7 +32,7 @@ and construct no disk repositories.
 | BC2001 graph policy | `dependency_denials_and_allowlists_reject_only_disallowed_edges`, `dependency_contracts_preserve_exact_versions_defaults_and_features` |
 | BC2001 identifier denials | `identifier_denials_respect_exclusions_and_token_boundaries` |
 | BC7009 root Clippy superset | `local_clippy_configuration_carries_every_root_entry` |
-| BC7012 closed control callers | `exported_control_references_require_an_exact_caller`, `raw_identifiers_do_not_bypass_the_closed_control_caller_set`, `composed_controls_and_reexporting_owners_keep_their_existing_reach`, `test_only_methods_do_not_seal_unrelated_namesakes`, `macro_controls_require_literal_exported_declarations` |
+| BC7012 closed control callers | `exported_control_references_require_an_exact_caller`, `raw_identifiers_do_not_bypass_the_closed_control_caller_set`, `crate_visibility_spellings_keep_the_same_closed_callers`, `exported_macros_keep_closed_callers_even_inside_private_functions`, `composed_controls_and_reexporting_owners_keep_their_existing_reach`, `test_only_methods_do_not_seal_unrelated_namesakes`, `macro_controls_require_literal_exported_declarations` |
 | BC7013 construction callers | `certification_factory_callers_are_class_and_file_exact` |
 | BC8008 compiled regions and source facts | `compiled_regions_compare_exact_code_and_require_unique_delimiters`, `a_compiled_marker_requires_a_following_code_region`, `documented_enum_rows_detect_payload_changes_as_well_as_variants` |
 | BC8009 relative links | `relative_links_require_targets_and_unique_heading_anchors`, `shortcut_reference_links_check_defined_targets_without_treating_definitions_as_links` |

@@ -14,9 +14,14 @@ fn exported(t: &[Token<'_>]) -> bool {
     let Some(i) = t.iter().rposition(|t| t.text == "pub") else {
         return false;
     };
-    t.get(i + 1).is_none_or(|t| t.text != "(")
-        || t.get(i + 2).is_some_and(|t| t.text == "crate")
-            && t.get(i + 3).is_some_and(|t| t.text == ")")
+    let rest = &t[i + 1..];
+    rest.first().is_none_or(|t| t.text != "(")
+        || rest.iter().take(3).map(|t| t.text).eq(["(", "crate", ")"])
+        || rest
+            .iter()
+            .take(4)
+            .map(|t| t.text)
+            .eq(["(", "in", "crate", ")"])
 }
 fn test_only(t: &[Token<'_>]) -> bool {
     t.windows(7).any(|w| {
@@ -65,10 +70,35 @@ pub fn declared(t: &[Token<'_>], test_ranges: &[(String, usize, usize)]) -> BTre
     let bodies = function_bodies(t);
     for i in 0..t.len().saturating_sub(1) {
         if ![
-            "pub", "fn", "struct", "enum", "trait", "type", "mod", "const", "static", "use",
+            "pub",
+            "fn",
+            "struct",
+            "enum",
+            "trait",
+            "type",
+            "mod",
+            "const",
+            "static",
+            "use",
+            "macro_rules",
         ]
         .contains(&t[i].text)
         {
+            continue;
+        }
+        if t[i].text == "macro_rules" {
+            let prefix = &t[boundary(t, i)..i];
+            if t.get(i + 2).is_some_and(|t| test_name(t.text))
+                && prefix
+                    .windows(3)
+                    .any(|w| w.iter().map(|t| t.text).eq(["#", "[", "macro_export"]))
+                && !test_only(prefix)
+                && !test_ranges
+                    .iter()
+                    .any(|(_, a, b)| t[i].start >= *a && t[i].start < *b)
+            {
+                names.insert(t[i + 2].text.into());
+            }
             continue;
         }
         if bodies.iter().any(|(a, b)| i > *a && i < *b) {
