@@ -1,8 +1,0 @@
-{
-  "binary": "bank-external-rail",
-  "tests": {
-    "server::completion_delivery::ack::tests::fixed_bank_ack_verifies_exact_completion": 1,
-    "server::completion_delivery::encoding::tests::deterministic_v1_fixture": 1,
-    "server::completion_delivery::encoding::tests::payment_v1_fixture_bytes": 1
-  }
-}

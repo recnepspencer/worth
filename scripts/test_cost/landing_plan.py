@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
 
 STORE = 'workspaces/worth-store/Cargo.toml'
 QUERY = 'workspaces/worth-query/Cargo.toml'
@@ -12,6 +13,7 @@ ROOT = 'Cargo.toml'
 BANK = 'workspaces/worth-query-bank-world/Cargo.toml'
 STORE_LANDING = 'store: python scripts/test_cost/run_lane.py --workspace store --cargo-profile ci-test'
 QUERY_LANDING = 'query: python scripts/ci/query_gate.py query-landing'
+BANK_LANDING = 'bank: python scripts/ci/query_gate.py bank-landing'
 DOC_WORKSPACES = ((ROOT, 'root'), (QUERY, 'query'), (BANK, 'bank'))
 
 
@@ -64,7 +66,31 @@ def consumer_document_lanes(tree, reached):
     return namespace['consumer_document_lanes'](reached)
 
 
-def violations(workspaces, before=None, source=None):
+def gate_contract(repository):
+    """Read the gate's actual alias and category declarations without running it."""
+    sys.path.insert(0, str(Path(repository).resolve() / 'scripts/ci'))
+    from query_gate_cost import LANDING_ALIASES, landing_suites, workspace_of
+    from workspace import WORKSPACES
+    contracts = {}
+    for alias, expansion in LANDING_ALIASES.items():
+        owners = {workspace_of(suite) for suite in expansion}
+        if len(owners) != 1:
+            raise ValueError('landing alias crosses workspaces: ' + alias)
+        owner = owners.pop()
+        expected = (*landing_suites(owner), owner + '-doc')
+        if tuple(expansion) != expected or len(set(expansion)) != len(expansion) or any(
+                suite.endswith('-scale') for suite in expansion):
+            raise ValueError('landing alias omits, repeats or schedules a normal category: ' + alias)
+        if owner in contracts:
+            raise ValueError('workspace has multiple landing aliases: ' + owner)
+        contracts[owner] = {'manifest': WORKSPACES[owner], 'alias': alias, 'expanded': list(expansion),
+                            'descriptor': f'{owner}: python scripts/ci/query_gate.py {alias}'}
+    if not {'query', 'bank'} <= contracts.keys():
+        raise ValueError('Query and Bank require complete landing aliases')
+    return contracts
+
+
+def violations(workspaces, before=None, source=None, contracts=None, root_pending=False):
     result = []
     store, query = workspaces.get(STORE, []), workspaces.get(QUERY, [])
     if store.count(STORE_LANDING) != 1:
@@ -77,23 +103,87 @@ def violations(workspaces, before=None, source=None):
         result.append('C9 ignored-phase script must not be a normal landing descriptor')
     if source is not None and not re.search(r'C9[^\n]*scheduled-only[^\n]*excluded', source):
         result.append('C9 scheduled-only exclusion must be explicit in the landing plan')
-    if query.count(QUERY_LANDING) != 1:
+    contracts = contracts or {'query': {'descriptor': QUERY_LANDING}, 'bank': {'descriptor': BANK_LANDING}}
+    if query.count(contracts['query']['descriptor']) != 1:
         result.append('Query must select query-landing exactly once')
     if any(value in lane for lane in query for value in ('query-execution,', 'query-process,', 'query_gate.py doc', 'observable-workflow', 'query-scale', 'cargo test')):
         result.append('Query retains overlapping native, aggregate-doc, example or scheduled selections')
     if not any('lint-query' in lane for lane in query):
         result.append('Query clippy descriptor disappeared')
+    bank = workspaces.get(BANK, [])
+    if bank.count(contracts['bank']['descriptor']) != 1:
+        result.append('Bank must select its complete landing alias exactly once')
+    if any(re.search(r'cargo test|query_gate.py (?:doc|bank(?:-|,|$))', lane)
+           and lane != contracts['bank']['descriptor'] for lane in bank):
+        result.append('Bank retains serial, overlapping or scheduled selections')
+    if not any('clippy-bank' in lane or 'lint-bank' in lane for lane in bank):
+        result.append('Bank clippy descriptor disappeared')
+    if root_pending and workspaces.get(ROOT, []).count('root: cargo test --workspace') != 1:
+        result.append('Root cutover is pending complete execution proof; retain its current serial entry')
     if before is not None:
         if set(workspaces) != set(before):
             result.append('workspace ownership keys changed outside the authorized cutover')
         for manifest in before:
-            if manifest not in (STORE, QUERY) and workspaces.get(manifest) != before[manifest]:
+            if manifest not in (STORE, QUERY, BANK) and workspaces.get(manifest) != before[manifest]:
                 result.append('unapproved workspace descriptors changed: ' + manifest)
-        for manifest in (STORE, QUERY):
-            previous = [lane for lane in before[manifest] if 'clippy' in lane or 'lint-query' in lane]
+        for manifest in (STORE, QUERY, BANK):
+            previous = [lane for lane in before[manifest] if 'clippy' in lane or 'lint-' in lane]
             if any(lane not in workspaces[manifest] for lane in previous):
                 result.append('existing warning/clippy descriptor changed: ' + manifest)
     return result
+
+
+def document_routes(tree):
+    routes, errors = [], []
+    for mask in range(8):
+        reached = [manifest for bit, (manifest, _) in enumerate(DOC_WORKSPACES) if mask & (1 << bit)]
+        actual = consumer_document_lanes(tree, reached)
+        expected = [f'docs: python scripts/ci/query_gate.py {name}-doc'
+                    for manifest, name in DOC_WORKSPACES if manifest not in reached]
+        if actual != expected:
+            errors.append('consumer-document selection overlaps or omits a workspace: ' + repr(reached))
+        routes.append({'reached': reached, 'documentation_lanes': actual})
+    return routes, errors
+
+
+def planner_hook_violations(tree):
+    """Require the planner's actual early, fail-closed validation handoff."""
+    functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
+    main, hook = functions.get('main'), functions.get('validate_landing_plan')
+    if main is None or hook is None:
+        return ['planner must define main and its landing validation handoff']
+    guards = [index for index, node in enumerate(main.body) if isinstance(node, ast.Expr)
+              and ast.dump(node.value, include_attributes=False) == ast.dump(
+                  ast.parse('validate_landing_plan(repo)', mode='eval').body, include_attributes=False)]
+    if len(guards) != 1:
+        return ['planner must invoke its validation handoff exactly once']
+    if any(not isinstance(node, ast.Assign) or any(
+            isinstance(call, ast.Call) and not (isinstance(call.func, ast.Name) and call.func.id == 'len')
+            for call in ast.walk(node)) for node in main.body[:guards[0]]):
+        return ['planner validation must precede git, Cargo metadata and plan emission']
+    calls = [node for node in ast.walk(hook) if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name)
+             and node.func.value.id == 'subprocess']
+    expected = ast.parse('''[sys.executable, "-I", str(checker),
+                            "--repository", str(Path(repo).resolve()),
+                            "--external", str(Path(__file__).resolve()),
+                            "--check-only", "--root-pending"]''', mode='eval').body
+    if len(calls) != 1 or calls[0].func.attr != 'run' or not calls[0].args or ast.dump(
+            calls[0].args[0], include_attributes=False) != ast.dump(expected, include_attributes=False):
+        return ['planner handoff must run its repository checker silently with Root pending, without metadata']
+    assignments = [node for node in hook.body if isinstance(node, ast.Assign)
+                   and any(isinstance(target, ast.Name) and target.id == 'checker' for target in node.targets)]
+    expected_checker = ast.parse('Path(repo).resolve() / "scripts/test_cost/landing_plan.py"', mode='eval').body
+    if len(assignments) != 1 or ast.dump(assignments[0].value, include_attributes=False) != ast.dump(
+            expected_checker, include_attributes=False):
+        return ['planner checker must come from the selected repository root']
+    failures = [node for node in hook.body if isinstance(node, ast.If)
+                and ast.unparse(node.test) == 'observed.returncode']
+    if len(failures) != 1 or not any(isinstance(node, ast.Raise) and isinstance(node.exc, ast.Call)
+            and isinstance(node.exc.func, ast.Name) and node.exc.func.id == 'SystemExit'
+            for node in ast.walk(failures[0])):
+        return ['planner must refuse a failed landing validation before emitting a plan']
+    return []
 
 
 def phase34_violations(source):
@@ -128,28 +218,28 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--external', type=Path, required=True)
     parser.add_argument('--before', type=Path)
-    parser.add_argument('--phase34', type=Path, required=True)
-    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--phase34', type=Path)
+    parser.add_argument('--repository', type=Path, default=Path(__file__).resolve().parents[2])
+    parser.add_argument('--output', type=Path)
+    parser.add_argument('--check-only', action='store_true', help='silent successful validation for the external planner')
+    parser.add_argument('--root-pending', action='store_true', help='refuse Root cutover before its complete proof')
     parser.add_argument('--gate-selection', action='append', default=[], metavar='WORKSPACE=PATH')
     parser.add_argument('--gate-command', action='append', default=[], metavar='WORKSPACE=LOG')
     args = parser.parse_args()
     values, source, tree = configuration(args.external)
     before = configuration(args.before)[0] if args.before else None
-    errors = violations(values['WORKSPACES'], before['WORKSPACES'] if before else None, source)
-    errors += phase34_violations(args.phase34.read_text(encoding='utf-8'))
+    contracts = gate_contract(args.repository)
+    errors = violations(values['WORKSPACES'], before['WORKSPACES'] if before else None, source,
+                        contracts, args.root_pending)
+    errors += planner_hook_violations(tree)
+    phase34 = args.phase34 or args.repository / 'scripts/ci/verify_worth_store_phase34.ps1'
+    errors += phase34_violations(phase34.read_text(encoding='utf-8'))
     if before and values.get('ALWAYS') != before.get('ALWAYS'):
         errors.append('global structural descriptors changed')
-    routes = []
-    for mask in range(8):
-        reached = [manifest for bit, (manifest, _) in enumerate(DOC_WORKSPACES) if mask & (1 << bit)]
-        actual = consumer_document_lanes(tree, reached)
-        expected = [f'docs: python scripts/ci/query_gate.py {name}-doc' for manifest, name in DOC_WORKSPACES if manifest not in reached]
-        if actual != expected:
-            errors.append('consumer-document selection overlaps or omits a workspace: ' + repr(reached))
-        routes.append({'reached': reached, 'documentation_lanes': actual})
+    routes, route_errors = document_routes(tree)
+    errors += route_errors
     gate_sets = []
     if args.gate_selection or args.gate_command:
-        import sys
         sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ci'))
         from query_gate_cost import expand_suites
         for value in args.gate_selection:
@@ -171,11 +261,14 @@ def main():
     result = {'status': 'pass' if not errors else 'fail', 'violations': errors,
               'scope': 'Read-only literal external WORKSPACES and pure document routing; no Cargo metadata execution.',
               'external': str(args.external.resolve()), 'sha256': hashlib.sha256(args.external.read_bytes()).hexdigest(),
-              'workspaces': values['WORKSPACES'], 'consumer_document_routes': routes, 'actual_gate_aliases': gate_sets}
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, indent=2)+'\n', encoding='utf-8')
-    print(json.dumps({'status': result['status'], 'violations': errors, 'metadata_invocations': 0,
-                      'document_route_cases': len(routes), 'actual_gate_aliases': len(gate_sets)}))
+              'workspaces': values['WORKSPACES'], 'consumer_document_routes': routes,
+              'source_gate_contracts': contracts, 'actual_gate_aliases': gate_sets, 'root_pending': args.root_pending}
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(result, indent=2)+'\n', encoding='utf-8')
+    if not args.check_only or errors:
+        print(json.dumps({'status': result['status'], 'violations': errors, 'metadata_invocations': 0,
+                          'document_route_cases': len(routes), 'actual_gate_aliases': len(gate_sets)}))
     return bool(errors)
 
 

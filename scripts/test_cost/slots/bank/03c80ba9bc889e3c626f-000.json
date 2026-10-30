@@ -1,6 +1,0 @@
-{
-  "binary": "worth-query-bank-court-external-rail-server::worth_query_bank_court_external_rail_server",
-  "tests": {
-    "process::server_owned_effects::server::ordinary_mutations::estate_operations::phase8_safe_retry::unresolved_redispatch_retains_the_handle_for_a_later_completed_attempt": 2
-  }
-}

@@ -5,12 +5,13 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from landing_plan import (BANK, QUERY, QUERY_LANDING, ROOT, STORE, STORE_LANDING,
-                          captured_gate_command, configuration, consumer_document_lanes, phase34_violations, violations)
+from landing_plan import (BANK, BANK_LANDING, QUERY, QUERY_LANDING, ROOT, STORE, STORE_LANDING,
+                          captured_gate_command, configuration, consumer_document_lanes, gate_contract,
+                          phase34_violations, violations)
 
 
 def workspaces():
-    return {ROOT: ['root: cargo test --workspace'], BANK: ['bank: cargo test --workspace'],
+    return {ROOT: ['root: cargo test --workspace'], BANK: [BANK_LANDING, 'bank: clippy-bank'],
             STORE: [STORE_LANDING, 'store: cargo clippy --workspace',
                     'store: scripts (phase34 dependency-direction, formal-toolchain, integrity)'],
             QUERY: [QUERY_LANDING, 'query: python scripts/ci/query_gate.py lint-query']}
@@ -26,21 +27,39 @@ class LandingPlanTests(unittest.TestCase):
                                    (QUERY, 'query: python scripts/ci/query_gate.py query-execution,query-rest'),
                                    (QUERY, 'query: python scripts/ci/query_gate.py doc'),
                                    (QUERY, 'query: observable-workflow example'),
-                                   (QUERY, QUERY_LANDING)]:
+                                   (QUERY, QUERY_LANDING), (BANK, BANK_LANDING),
+                                   (BANK, 'bank: cargo test --workspace'),
+                                   (BANK, 'bank: python scripts/ci/query_gate.py bank-process'),
+                                   (BANK, 'bank: python scripts/ci/query_gate.py doc')]:
             altered = copy.deepcopy(expected)
             altered[manifest].append(addition)
             with self.subTest(addition=addition):
                 self.assertTrue(violations(altered))
 
-    def test_root_bank_and_warning_descriptors_stay_outside_this_cutover(self):
+    def test_root_and_warning_descriptors_stay_outside_this_cutover(self):
         before = workspaces()
-        for manifest in (ROOT, BANK):
+        for manifest in (ROOT,):
             changed = copy.deepcopy(before)
             changed[manifest] = ['new plan']
             self.assertTrue(any('unapproved workspace' in row for row in violations(changed, before)))
         changed = copy.deepcopy(before)
         changed[QUERY].remove('query: python scripts/ci/query_gate.py lint-query')
         self.assertTrue(violations(changed, before))
+        changed = copy.deepcopy(before)
+        changed[BANK].remove('bank: clippy-bank')
+        self.assertTrue(violations(changed, before))
+
+    def test_root_pending_refuses_unproved_cutover_and_gate_aliases_come_from_source(self):
+        contracts = gate_contract(Path(__file__).resolve().parents[2])
+        self.assertEqual(violations(workspaces(), contracts=contracts, root_pending=True), [])
+        for workspace in ('bank', 'query'):
+            self.assertEqual(contracts[workspace]['expanded'][-1], workspace+'-doc')
+            self.assertFalse(any(name.endswith('-scale') for name in contracts[workspace]['expanded']))
+        changed = workspaces()
+        changed[ROOT] = ['root: python scripts/ci/root_gate.py']
+        self.assertTrue(any('Root cutover is pending' in row for row in violations(changed, root_pending=True)))
+        contracts['bank']['descriptor'] = 'bank: python scripts/ci/query_gate.py renamed-by-source'
+        self.assertTrue(violations(workspaces(), contracts=contracts))
 
     def test_literal_inspection_does_not_execute_external_imports_main_or_metadata(self):
         with tempfile.TemporaryDirectory() as temporary:
