@@ -32,9 +32,40 @@ def bin_name(source):
     return 'fixture_' + hashlib.sha256(source_identity(source).replace('\\', '/').encode()).hexdigest()[:24]
 
 
+def declared_targets(sources):
+    names, seen = {}, set()
+    for source in sources:
+        key = source_identity(source)
+        if key in seen:
+            raise BatchCompilationFailure(f'duplicate fixture source: {source}')
+        seen.add(key)
+        name = bin_name(source)
+        if name in names:
+            raise BatchCompilationFailure(f'generated fixture target name collision: {names[name]} and {source}')
+        names[name] = str(Path(source).resolve())
+    return names
+
+
+def cargo_target(event):
+    target = event.get('target')
+    kinds = {'bin', 'lib', 'rlib', 'dylib', 'cdylib', 'staticlib', 'proc-macro',
+             'custom-build', 'example', 'test', 'bench'}
+    if (not isinstance(target, dict) or not isinstance(target.get('name'), str) or
+            not target['name'] or target['name'].strip() != target['name'] or
+            not isinstance(target.get('kind'), list) or not target['kind'] or
+            any(not isinstance(kind, str) or kind not in kinds for kind in target['kind']) or
+            not isinstance(target.get('src_path'), str) or not target['src_path'] or
+            '\x00' in target['src_path'] or not Path(target['src_path']).is_absolute()):
+        raise BatchCompilationFailure(f'compiler observation has malformed target metadata: {target}')
+    try:
+        return target['name'], target['kind'], source_identity(target['src_path'])
+    except (OSError, ValueError) as error:
+        raise BatchCompilationFailure(f'compiler target source cannot be resolved: {target}') from error
+
+
 def render_manifests(environment, workspace_manifest):
     try:
-        fixture_sources(environment)
+        declared_targets(fixture_sources(environment))
     except ValueError as error:
         raise BatchCompilationFailure(str(error)) from error
     profile = tomllib.loads(Path(workspace_manifest).read_text(encoding='utf-8')).get('profile', {})
@@ -62,16 +93,18 @@ def render_manifests(environment, workspace_manifest):
 
 
 def attribute(events, sources):
-    names = {bin_name(str(Path(source).resolve()).replace('\\', '/')): str(Path(source).resolve())
-             for source in sources}
+    names = declared_targets(sources)
     result = {source: {'fate': FixtureFate.UNOBSERVED.value, 'messages': [], 'artifacts': []}
               for source in names.values()}
     dependency_errors = []
     for event in events:
         if event.get('reason') not in ('compiler-message', 'compiler-artifact'):
             continue
-        target = event['target']['name']
-        if target not in names:
+        target, kinds, source = cargo_target(event)
+        if event['reason'] == 'compiler-message' and (
+                not isinstance(event.get('message'), dict) or not isinstance(event['message'].get('level'), str)):
+            raise BatchCompilationFailure('compiler observation has malformed diagnostic metadata')
+        if target not in names or kinds != ['bin'] or source != source_identity(names[target]):
             if event.get('message', {}).get('level') == 'error':
                 dependency_errors.append(event)
             continue

@@ -20,7 +20,12 @@ def surface_identity(dependencies, target_dependencies=None):
 
 
 def source_identity(source):
-    return os.path.normcase(str(Path(source).resolve()))
+    value = str(Path(source).resolve())
+    if value.startswith('\\\\?\\UNC\\'):
+        value = '\\\\' + value.removeprefix('\\\\?\\UNC\\')
+    else:
+        value = value.removeprefix('\\\\?\\')
+    return os.path.normcase(value)
 
 
 def group(records):

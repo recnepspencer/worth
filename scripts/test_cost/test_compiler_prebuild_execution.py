@@ -48,7 +48,8 @@ class CompilerPrebuildExecutionTests(unittest.TestCase):
                     for member in document['workspace']['members']:
                         package = tomllib.loads((manifest.parent / member / 'Cargo.toml').read_text())
                         for binary in package['bin']:
-                            events.append({'reason': 'compiler-message', 'target': {'name': binary['name']},
+                            events.append({'reason': 'compiler-message', 'target': {
+                                'name': binary['name'], 'kind': ['bin'], 'src_path': binary['path']},
                                            'message': {'level': 'error', 'message': 'private fixture denial'}})
                     return subprocess.CompletedProcess(command, 101, '\n'.join(map(json.dumps, events)), '')
 

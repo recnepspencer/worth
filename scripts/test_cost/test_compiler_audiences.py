@@ -1,10 +1,18 @@
 from pathlib import Path
+import os
 import unittest
 
-from compiler_audiences import group, sources, surface_identity
+from compiler_audiences import group, source_identity, sources, surface_identity
 
 
 class CompilerAudienceTests(unittest.TestCase):
+    def test_canonical_source_identity_preserves_complete_paths_and_accepts_real_path_aliases(self):
+        source = Path('one.rs').resolve()
+        self.assertEqual(source_identity(source.parent / 'unused/../one.rs'), source_identity(source))
+        self.assertNotEqual(source_identity(source.parent / 'another/one.rs'), source_identity(source))
+        if os.name == 'nt':
+            self.assertEqual(source_identity('\\\\?\\' + str(source)), source_identity(source))
+
     def test_identical_declared_surfaces_share_a_package_but_keep_every_fixture(self):
         first = {'dependencies': {'owner': {'version': '1', 'features': ['b', 'a']}},
                  'sources': ['one.rs'], 'audience': 'first'}

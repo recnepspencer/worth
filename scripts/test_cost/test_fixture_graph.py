@@ -20,7 +20,9 @@ class FixtureGraphTests(unittest.TestCase):
                                               'ambient-backend="3"\n')
             source = court / 'tests/owner_court/sources/worth_owner/ui/denied.rs'
             source.parent.mkdir(parents=True)
-            source.write_text('fn denied(value: serde_json::Value) { owner::accept(value); } fn main() {}')
+            # Relocation preserves the producer's name; the court's alias does
+            # not rename imports inside that original producer-owned source.
+            source.write_text('fn denied(value: serde_json::Value) { worth_owner::accept(value); } fn main() {}')
             source.with_suffix('.stderr').write_text('error[E0308]: mismatched types')
             row = snapshot_inputs(root / 'Cargo.toml')[0]
             self.assertEqual(set(row['dependencies']), {'serde_json', 'unused-testkit', 'worth-owner'})

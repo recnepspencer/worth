@@ -2,9 +2,14 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from compile_batch import BatchCompilationFailure, attribute, bin_name, render_manifests, verify_locked_dependencies, target_directory, prepare_environment
 from compiler_audiences import group, sources
+
+
+def target(source, kind='bin', name=None):
+    return {'name': name or bin_name(source), 'kind': [kind], 'src_path': str(Path(source).resolve())}
 
 
 class BatchedCompilerTests(unittest.TestCase):
@@ -26,9 +31,9 @@ class BatchedCompilerTests(unittest.TestCase):
 
     def test_each_diagnostic_is_attributed_to_its_fixture_not_the_aggregate_exit(self):
         sources = [str(Path('one.rs').resolve()), str(Path('two.rs').resolve())]
-        events = [dict(reason='compiler-message', target={'name': bin_name(sources[0])},
+        events = [dict(reason='compiler-message', target=target(sources[0]),
                        message={'level': 'error', 'message': 'private field'}),
-                  dict(reason='compiler-artifact', target={'name': bin_name(sources[1])})]
+                  dict(reason='compiler-artifact', target=target(sources[1]))]
         result = attribute(events, sources)
         self.assertEqual([result[s]['fate'] for s in sources], ['denied', 'compiled'])
         self.assertEqual(result[sources[1]]['messages'], [])
@@ -37,7 +42,7 @@ class BatchedCompilerTests(unittest.TestCase):
         with self.assertRaises(BatchCompilationFailure):
             attribute([], ['not_attempted.rs'])
         with self.assertRaises(BatchCompilationFailure):
-            attribute([dict(reason='compiler-message', target={'name': 'dependency'},
+            attribute([dict(reason='compiler-message', target=target('dependency.rs', 'lib', 'dependency'),
                             message={'level': 'error'})], [])
 
     def test_workspace_preserves_profiles_and_separates_direct_dependency_audiences(self):
@@ -88,10 +93,10 @@ class BatchedCompilerTests(unittest.TestCase):
                     if command[1] == 'metadata':
                         return subprocess.CompletedProcess(command, 0, json.dumps({
                             'packages': [], 'resolve': {'nodes': []}}), '')
-                    events = [dict(reason='compiler-message', target={'name': bin_name(root / 'forbidden.rs')},
+                    events = [dict(reason='compiler-message', target=target(root / 'forbidden.rs'),
                                    message={'level': 'error', 'message': 'unlinked backend',
                                             'code': {'code': 'E0432'}}),
-                              dict(reason='compiler-artifact', target={'name': bin_name(root / 'allowed.rs')})]
+                              dict(reason='compiler-artifact', target=target(root / 'allowed.rs'))]
                     return subprocess.CompletedProcess(command, 101, '\n'.join(map(json.dumps, events)), '')
 
             runner = Runner()
@@ -138,6 +143,66 @@ class BatchedCompilerTests(unittest.TestCase):
                     with self.assertRaisesRegex(BatchCompilationFailure, 'production compiler graph enables'):
                         prepare_environment(manifest, environment, root / 'batch', runner)
                     self.assertFalse(any(command[1] == 'check' for command in commands))
+
+    def test_same_target_name_from_another_source_is_still_a_dependency_error(self):
+        source = Path('fixture.rs').resolve()
+        forged = dict(reason='compiler-message',
+                      target=target(source.parent / 'dependency/fixture.rs', name=bin_name(source)),
+                      message={'level': 'error', 'message': 'dependency error'})
+        genuine = dict(reason='compiler-message', target=target(source),
+                       message={'level': 'error', 'message': 'fixture denial'})
+        for events in ([forged], [forged, genuine]):
+            with self.assertRaisesRegex(BatchCompilationFailure, 'fixture dependency failed'):
+                attribute(events, [source])
+
+    def test_matching_source_with_a_library_target_is_a_dependency_error(self):
+        source = Path('fixture.rs').resolve()
+        event = dict(reason='compiler-message', target=target(source, 'lib'),
+                     message={'level': 'error', 'message': 'wrong target kind'})
+        with self.assertRaisesRegex(BatchCompilationFailure, 'fixture dependency failed'):
+            attribute([event], [source])
+
+    def test_dependency_artifacts_cannot_prove_fixture_compilation_or_enter_its_evidence(self):
+        source = Path('fixture.rs').resolve()
+        denied = dict(reason='compiler-message', target=target(source),
+                      message={'level': 'error', 'message': 'fixture denial'})
+        for metadata in [target(source.parent / 'dependency/fixture.rs', name=bin_name(source)),
+                         target(source, 'lib')]:
+            artifact = dict(reason='compiler-artifact', target=metadata)
+            with self.assertRaisesRegex(BatchCompilationFailure, 'did not compile every'):
+                attribute([artifact], [source])
+            outcome = attribute([artifact, denied], [source])[str(source)]
+            self.assertEqual(outcome['fate'], 'denied')
+            self.assertEqual(outcome['artifacts'], [])
+
+    def test_missing_or_malformed_target_metadata_is_refused(self):
+        source = Path('fixture.rs').resolve()
+        valid = target(source)
+        invalid = [None, {}, {'name': valid['name']}, dict(valid, kind='bin'), dict(valid, kind=[]),
+                   dict(valid, kind=['unknown-kind']), dict(valid, src_path=None),
+                   dict(valid, src_path='relative.rs'), dict(valid, name=7)]
+        for reason in ('compiler-message', 'compiler-artifact'):
+            for metadata in invalid:
+                with self.subTest(reason=reason, target=metadata):
+                    with self.assertRaisesRegex(BatchCompilationFailure, 'malformed target metadata'):
+                        attribute([dict(reason=reason, target=metadata, message={'level': 'error'})], [source])
+
+    def test_different_declared_sources_cannot_share_a_generated_target_name(self):
+        with patch('compile_batch.bin_name', return_value='fixture_collision'):
+            with self.assertRaisesRegex(BatchCompilationFailure, 'target name collision'):
+                attribute([], ['one.rs', 'two.rs'])
+            environment = {'identity': 'production', 'packages': group([
+                {'dependencies': {}, 'sources': ['one.rs', 'two.rs']}])}
+            with self.assertRaisesRegex(BatchCompilationFailure, 'target name collision'):
+                render_manifests(environment, Path('unused.toml'))
+
+    def test_fixture_target_keeps_diagnostics_whose_spans_point_into_a_support_module(self):
+        source = Path('fixture.rs').resolve()
+        message = {'level': 'error', 'message': 'private support item',
+                   'spans': [{'file_name': str(source.parent / 'support/module.rs'), 'is_primary': True}]}
+        result = attribute([dict(reason='compiler-message', target=target(source), message=message)], [source])
+        self.assertEqual(result[str(source)]['fate'], 'denied')
+        self.assertEqual(result[str(source)]['messages'], [message])
 
 
 if __name__ == '__main__':
