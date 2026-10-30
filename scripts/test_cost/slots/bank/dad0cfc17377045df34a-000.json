@@ -1,0 +1,7 @@
+{
+  "binary": "bank-http-adapter",
+  "tests": {
+    "http::server::tests::mutation_transport::closed_money_worker_is_unavailable_with_exact_runtime_cleanup_access": 2,
+    "http::server::tests::mutation_transport::owning_shutdown_failure_drop_preserves_independent_resumption": 2
+  }
+}

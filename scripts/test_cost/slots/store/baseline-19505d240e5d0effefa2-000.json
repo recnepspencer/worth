@@ -1,7 +1,0 @@
-{
-  "binary": "worth-store-maintenance",
-  "tests": {
-    "layout_projection::tests::compaction_layout_retains_and_releases_canonical_maintenance_allocation": 1,
-    "layout_projection::tests::import_export_layout_retains_and_releases_canonical_maintenance_allocation": 1
-  }
-}

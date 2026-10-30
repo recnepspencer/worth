@@ -1,0 +1,6 @@
+{
+  "binary": "bank-domain",
+  "tests": {
+    "schema::values::tests::estate_disbursement_is_a_distinct_round_tripping_posting_purpose": 2
+  }
+}

@@ -1,6 +1,19 @@
 """Non-gating CPU, setup frequency and lane timing observations."""
 from collections import Counter, defaultdict
+from enum import Enum
 import math
+
+
+class SchedulerKind(Enum):
+    NEXTEST = 'nextest'
+    STANDALONE = 'standalone-process'
+
+
+def scheduler(event):
+    # This sentinel is assigned only to harness-free processes by standalone.py.
+    if event.get('test') == '<main>':
+        return SchedulerKind.STANDALONE
+    return SchedulerKind(event.get('scheduler', SchedulerKind.NEXTEST.value))
 
 
 def setup_counts(events):
@@ -17,20 +30,34 @@ def setup_counts(events):
 
 
 def slot_use(events):
-    rows, unknown = [], []
+    rows, unknown, standalone = [], [], []
     for event in events:
-        wall, cpu, reserved = event['wall_seconds'], event['cpu_seconds'], event['reserved_slots']
-        if cpu is None or reserved is None or event.get('accounting', 'complete') != 'complete':
+        wall, cpu = event.get('wall_seconds'), event.get('cpu_seconds')
+        try:
+            kind = scheduler(event)
+        except ValueError:
+            unknown.append(dict(event, reason='unrecognized process scheduler'))
+            continue
+        if cpu is None or event.get('accounting', 'complete') != 'complete':
             unknown.append(event)
             continue
-        if not all(math.isfinite(n) and n >= 0 for n in (wall, cpu)) or reserved < 1 or wall == 0:
+        if not all(type(n) in (int, float) and math.isfinite(n) and n >= 0 for n in (wall, cpu)) or wall == 0:
             unknown.append(dict(event, reason='invalid CPU accounting observation'))
             continue
         parallelism = cpu / wall
+        if kind is SchedulerKind.STANDALONE:
+            standalone.append(dict(event, scheduler=kind.value, disposition='standalone-measured',
+                                   reservation_scope='not-nextest-managed', measured_parallelism=parallelism))
+            continue
+        reserved = event.get('reserved_slots')
+        if type(reserved) is not int or reserved < 1:
+            unknown.append(dict(event, reason='actual scheduler reservation unavailable'))
+            continue
         rows.append(dict(event, measured_parallelism=parallelism,
                          recommended_slots=max(1, math.ceil(parallelism)),
                          over_reserved=reserved > max(1, parallelism) * 2))
-    return {'status': 'telemetry' if rows else 'unmeasured', 'tests': rows, 'unmeasured': unknown}
+    return {'status': 'telemetry' if rows else 'standalone-only' if standalone else 'unmeasured',
+            'tests': rows, 'standalone': standalone, 'unmeasured': unknown}
 
 
 def timing_summary(lane):

@@ -8,13 +8,17 @@ import subprocess
 import sys
 import time
 
+from telemetry import SchedulerKind
+
 
 class ObservationFailureKind(Enum):
     RESERVATION = 'reservation-unavailable'
+    POOL = 'scheduler-pool-unavailable'
     RETENTION = 'accounting-output-unavailable'
 
 
 class ObservationPosture(Enum):
+    COMPLETE = 'complete'
     UNAVAILABLE = 'observation-unavailable'
 
 
@@ -36,15 +40,13 @@ def reservation(environment, binary, test):
     if not isinstance(reservations, dict):
         raise ValueError('reservation file must contain a map')
     slots = reservations[binary + '\n' + test]
-    if slots == 'num-test-threads':
-        slots = int(environment['NEXTEST_TEST_THREADS'])
-    if type(slots) is not int or slots < 1:
+    if slots != 'num-test-threads' and (type(slots) is not int or slots < 1):
         raise ValueError('reservation must be a positive integer or num-test-threads')
     return slots
 
 
 def unavailable(event, kind, error):
-    event['accounting'] = ObservationPosture.UNAVAILABLE.value
+    event['observation_posture'] = ObservationPosture.UNAVAILABLE.value
     event['observation_errors'].append({'kind': kind.value, 'error': type(error).__name__,
                                        'detail': str(error)})
 
@@ -58,14 +60,28 @@ def execute(command, environment=None):
     wall = time.perf_counter() - start
     binary = environment.get('NEXTEST_BINARY_ID', command[0])
     test = environment.get('NEXTEST_TEST_NAME', '')
+    standalone = test == '<main>' or environment.get('WORTH_TEST_COST_SCHEDULER') == SchedulerKind.STANDALONE.value
+    kind = SchedulerKind.STANDALONE if standalone else SchedulerKind.NEXTEST
     event = {'type': 'test-cost-cpu', 'binary': binary, 'test': test,
              'cpu_seconds': cpu, 'wall_seconds': wall, 'reserved_slots': None,
+             'declared_slots': None, 'scheduler_pool_size': None, 'scheduler': kind.value,
              'accounting': posture, 'process_accounting': posture, 'exit': code,
-             'observation_errors': []}
-    try:
-        event['reserved_slots'] = reservation(environment, binary, test)
-    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
-        unavailable(event, ObservationFailureKind.RESERVATION, error)
+             'observation_posture': ObservationPosture.COMPLETE.value, 'observation_errors': []}
+    if kind is SchedulerKind.NEXTEST:
+        try:
+            event['declared_slots'] = reservation(environment, binary, test)
+        except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
+            unavailable(event, ObservationFailureKind.RESERVATION, error)
+        if event['declared_slots'] is not None:
+            try:
+                pool = int(environment['NEXTEST_TEST_THREADS'])
+                if pool < 1:
+                    raise ValueError('nextest pool must be a positive integer')
+                event['scheduler_pool_size'] = pool
+                requested = pool if event['declared_slots'] == 'num-test-threads' else event['declared_slots']
+                event['reserved_slots'] = min(requested, pool)
+            except (ValueError, TypeError, KeyError) as error:
+                unavailable(event, ObservationFailureKind.POOL, error)
     if directory := environment.get('WORTH_TEST_COST_ACCOUNTING_DIRECTORY'):
         try:
             directory = Path(directory)

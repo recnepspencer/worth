@@ -1,8 +1,0 @@
-{
-  "binary": "worth-store-court-recovery-runtime::worth_store_court_recovery_runtime",
-  "tests": {
-    "process::recovery_runtime::phase_eight_process::child_lifecycle::tests::both_full_pipes_drain_before_child_exit_without_losing_bytes": 1,
-    "process::recovery_runtime::phase_eight_process::child_lifecycle::tests::output_child": 1,
-    "process::recovery_runtime::phase_eight_process::child_lifecycle::tests::pipe_capture_has_an_enforced_byte_bound": 1
-  }
-}

@@ -1,0 +1,8 @@
+{
+  "binary": "worth-query-bank-court-user-node::worth_query_bank_court_user_node",
+  "tests": {
+    "workflow_archive::courtroom::payment_workflow_archive::approved_payment_wait_round_trips_through_v7_and_binds_to_live_bank_vocabulary": 1,
+    "workflow_archive::courtroom::payment_workflow_archive::changed_or_missing_payment_wait_members_cannot_reauthor": 1,
+    "workflow_archive::courtroom::payment_workflow_archive::same_name_foreign_effect_marker_cannot_bind_even_with_identical_archive_bytes": 1
+  }
+}

@@ -25,6 +25,17 @@ class TelemetryTests(unittest.TestCase):
         self.assertEqual(slot_use([event])['status'], 'unmeasured')
         self.assertEqual(len(slot_use([event])['unmeasured']), 1)
 
+    def test_standalone_cpu_is_measured_but_never_a_nextest_reservation_recommendation(self):
+        event = dict(binary='example', test='<main>', wall_seconds=1, cpu_seconds=2, reserved_slots=1)
+        result = slot_use([event])
+        self.assertEqual(result['status'], 'standalone-only')
+        self.assertEqual(result['tests'], [])
+        self.assertEqual(result['unmeasured'], [])
+        self.assertEqual(result['standalone'][0]['measured_parallelism'], 2)
+        self.assertEqual(result['standalone'][0]['reservation_scope'], 'not-nextest-managed')
+        ordinary = slot_use([dict(event, test='main')])
+        self.assertEqual(ordinary['tests'][0]['recommended_slots'], 2)
+
 
 if __name__ == '__main__':
     unittest.main()

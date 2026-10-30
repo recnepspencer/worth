@@ -1,0 +1,6 @@
+{
+  "binary": "worth-query-bank-court-source::worth_query_bank_court_source",
+  "tests": {
+    "user_node::protocol_boundary::user_node_wire_protocol_carries_no_runtime_or_lifecycle_authority": 1
+  }
+}

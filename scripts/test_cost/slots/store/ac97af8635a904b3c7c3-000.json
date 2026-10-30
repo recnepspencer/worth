@@ -1,6 +1,0 @@
-{
-  "binary": "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views::worth_store_court_recovery_runtime_replication_store_physical_record_journeys_record_chunk_views",
-  "tests": {
-    "process::store::physical_record_journeys::maintenance_interference::canonical::canonical_world_reopens_into_the_cold_extent_interleave": 1
-  }
-}

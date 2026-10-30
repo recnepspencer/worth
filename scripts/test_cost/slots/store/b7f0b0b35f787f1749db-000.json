@@ -1,6 +1,0 @@
-{
-  "binary": "worth-store-court-maintenance-recovery-runtime-replication::worth_store_court_maintenance_recovery_runtime_replication",
-  "tests": {
-    "certification::scheduler_queue_execution::backend_secure_io::backend_secure_io_preservation_rejects_wrong_read_ahead_scope": 2
-  }
-}

@@ -1,9 +1,0 @@
-{
-  "binary": "worth-store-offline-verifier::bin/physical_store_offline_observer",
-  "tests": {
-    "bounded_residency_verification::configuration::tests::current_hostile_profile_is_accepted_independently": 1,
-    "bounded_residency_verification::configuration::tests::foreign_successor_scope_limits_are_rejected_independently": 1,
-    "bounded_residency_verification::configuration::tests::stale_and_impossible_profiles_are_rejected": 1,
-    "hostile_physical_truth::tests::empty_prefix_uses_explicit_protocol_token": 1
-  }
-}

@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "purpose": "telemetry-only scheduling; never a correctness or timing gate",
+  "aggregation": "maximum recommendation from every successful complete sample per exact identity",
+  "status": "partial",
+  "complete_samples": 528,
+  "unmeasured_samples": 1,
+  "failed_child_samples": 0,
+  "sample_count": 529,
+  "measured_identities": 528,
+  "policy_identities": 4,
+  "retired_identities": 0,
+  "inventory_basis": {
+    "scope": "explicit complete current inventory",
+    "identities": 539,
+    "sha256": "7a1497af81e9b30a6afdfadad655217ecd5813b5d6a7077ebba7921d8d02c87c"
+  },
+  "observations": [
+    {
+      "head": "93892985a2737f1dcf9b8a9253311795bed099fb",
+      "head_scope": "telemetry capture, not child execution revision",
+      "telemetry_log": "target/lane-evidence/test-cost-bank-gate-test-cost-bank-telemetry.log-93892985a273-202610300633168419260000-5a2a5ec35a75.log",
+      "original_telemetry_log": "C:\\programming\\worth worktees\\worktrees\\m3-test-cost\\target\\lane-evidence\\test-cost-bank-gate-test-cost-bank-telemetry.log-93892985a273-202610300633168419260000-5a2a5ec35a75.log",
+      "sha256": "080d3bc14c7c65eade084ff737c118223e1f91682a44c772b5aa85ec7f936e24",
+      "command": [
+        "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+        "C:\\programming\\worth worktees\\worktrees\\m3-test-cost\\scripts\\test_cost\\phase_telemetry.py",
+        "--cpu",
+        "C:\\programming\\worth worktees\\worktrees\\m3-test-cost\\target\\test-cost\\bank\\gate\\test-cost\\bank\\cpu\\1793341761637627700",
+        "--setup",
+        "C:\\programming\\worth worktees\\worktrees\\m3-test-cost\\target\\test-cost\\bank\\gate\\test-cost\\bank\\setup\\1793341761637632400",
+        "--build-seconds",
+        "1810.1557879000902",
+        "--wall-seconds",
+        "2045.0772443001624"
+      ],
+      "git_status_short_empty": false,
+      "start": "2026-10-30T06:33:16.841926+00:00",
+      "end": "2026-10-30T06:33:17.070618+00:00",
+      "execution_start_head": "93892985a2737f1dcf9b8a9253311795bed099fb"
+    }
+  ],
+  "pending_claims": [],
+  "files": [
+    "49f6d6725ad44967b6e1-000.json",
+    "dad0cfc17377045df34a-000.json",
+    "03c80ba9bc889e3c626f-000.json"
+  ],
+  "baseline_files": [
+    "baseline-49f6d6725ad44967b6e1-000.json",
+    "baseline-c578f4afbe421e3a75cd-000.json",
+    "baseline-dad0cfc17377045df34a-000.json",
+    "baseline-43dba2e4c18363a8b80c-000.json",
+    "baseline-43dba2e4c18363a8b80c-001.json",
+    "baseline-2618a8fd22936e4ff2ee-000.json",
+    "baseline-41ce3b1ceee8ce4b9fbe-000.json",
+    "baseline-b28a7b16471479650033-000.json",
+    "baseline-03c80ba9bc889e3c626f-000.json",
+    "baseline-03c80ba9bc889e3c626f-001.json",
+    "baseline-e39fbdb717fc9f4f2bfa-000.json",
+    "baseline-e77ce53175fc2bf1413a-000.json",
+    "baseline-cbc16bc76ec1c8fba246-000.json",
+    "baseline-3f34849d6a024692cb28-000.json"
+  ],
+  "retired_files": [],
+  "observation_files": [
+    "observations-000.jsonl",
+    "observations-001.jsonl",
+    "observations-002.jsonl",
+    "observations-003.jsonl",
+    "observations-004.jsonl",
+    "observations-005.jsonl"
+  ],
+  "observation_sha256": {
+    "observations-000.jsonl": "38a6daccc597e670656c19ec7889eef4b079a07fff78cd575f785d106629f06f",
+    "observations-001.jsonl": "98b2e579b8a1d3ce8537233ac812165f30f240cb91095fe7491239b31cc650c2",
+    "observations-002.jsonl": "394e3fe2443c627510163904ae9d3aef7c072316669fd3dab427878a672a13a8",
+    "observations-003.jsonl": "08d62e3c809e2db85c3613af357e196ccf472676754be20aa72b3b3c7a8454bf",
+    "observations-004.jsonl": "e13a9922695adea647fa178ad968c4bc60b4894aa5fbd66e7517ad8258758fae",
+    "observations-005.jsonl": "85352a02a6ae2d76d4182edab6d167a80dd2116d2ceecde227b7cc48416a2e6a"
+  }
+}

@@ -1,7 +1,0 @@
-{
-  "binary": "worth-store-recovery-runtime::bin/physical_store_recover",
-  "tests": {
-    "admission::tests::multilevel_world_has_an_admissible_finite_recovery_envelope": 1,
-    "arguments::tests::named_multilevel_profile_is_explicitly_admitted": 1
-  }
-}

@@ -1,0 +1,11 @@
+{
+  "binary": "worth-query-bank-court-http-adapter::worth_query_bank_court_http_adapter",
+  "tests": {
+    "http_adapter::protocol_boundary::callback_debug_output_discloses_neither_code_nor_state": 1,
+    "http_adapter::protocol_boundary::configuration_debug_redacts_the_client_secret": 1,
+    "http_adapter::protocol_boundary::csrf_comparison_uses_the_timing_resistant_secret_type_contract": 1,
+    "http_adapter::protocol_boundary::malformed_authorization_callbacks_fail_at_the_transport_boundary": 1,
+    "http_adapter::protocol_boundary::named_configuration_builder_rejects_missing_or_invalid_security_fields": 1,
+    "http_adapter::protocol_boundary::wire_protocol_carries_no_runtime_or_aftermath_authority": 1
+  }
+}

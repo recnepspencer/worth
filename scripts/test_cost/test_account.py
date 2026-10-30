@@ -23,7 +23,8 @@ class ExactChildAccountingTests(unittest.TestCase):
                     self.assertEqual(code, 17)
                     self.assertEqual(child.call_count, 1)
                     self.assertEqual(event['cpu_seconds'], 2)
-                    self.assertEqual(event['accounting'], 'observation-unavailable')
+                    self.assertEqual(event['accounting'], 'complete')
+                    self.assertEqual(event['observation_posture'], 'observation-unavailable')
                     self.assertEqual(event['observation_errors'][0]['kind'], 'reservation-unavailable')
                     self.assertIn('test-cost-observation-error', diagnostic.getvalue())
 
@@ -42,6 +43,50 @@ class ExactChildAccountingTests(unittest.TestCase):
         with patch('account.process', side_effect=FileNotFoundError('child is absent')):
             with self.assertRaises(FileNotFoundError):
                 execute(['absent-child'], {})
+
+    def test_actual_nextest_reservation_is_clamped_to_the_observed_pool(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary)/'slots.json'
+            for declared, expected in ((10, 8), (2, 2), ('num-test-threads', 8)):
+                with self.subTest(declared=declared), patch('account.process', return_value=(0, 1, 'complete')) as child:
+                    path.write_text(json.dumps({'court\nmain': declared}), encoding='utf-8')
+                    code, event = execute(['child'], {'WORTH_TEST_COST_RESERVATIONS': str(path),
+                        'NEXTEST_BINARY_ID': 'court', 'NEXTEST_TEST_NAME': 'main', 'NEXTEST_TEST_THREADS': '8'})
+                    child.assert_called_once()
+                    self.assertEqual(code, 0)
+                    self.assertEqual(event['scheduler'], 'nextest')
+                    self.assertEqual(event['declared_slots'], declared)
+                    self.assertEqual(event['scheduler_pool_size'], 8)
+                    self.assertEqual(event['reserved_slots'], expected)
+
+    def test_missing_pool_keeps_raw_cpu_posture_exit_and_single_execution(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary)/'slots.json'
+            path.write_text(json.dumps({'court\nclaim': 10}), encoding='utf-8')
+            with patch('account.process', return_value=(17, 2, 'complete')) as child, redirect_stderr(io.StringIO()):
+                code, event = execute(['child'], {'WORTH_TEST_COST_RESERVATIONS': str(path),
+                    'NEXTEST_BINARY_ID': 'court', 'NEXTEST_TEST_NAME': 'claim'})
+            child.assert_called_once()
+            self.assertEqual(code, 17)
+            self.assertEqual(event['cpu_seconds'], 2)
+            self.assertEqual(event['accounting'], 'complete')
+            self.assertEqual(event['declared_slots'], 10)
+            self.assertIsNone(event['reserved_slots'])
+            self.assertIsNone(event['scheduler_pool_size'])
+            self.assertEqual(event['observation_errors'][0]['kind'], 'scheduler-pool-unavailable')
+
+    def test_standalone_process_has_no_nextest_slot_reservation(self):
+        with patch('account.process', return_value=(0, 2, 'complete')) as child:
+            code, event = execute(['child'], {'NEXTEST_BINARY_ID': 'example', 'NEXTEST_TEST_NAME': '<main>',
+                'NEXTEST_TEST_THREADS': '8', 'WORTH_TEST_COST_RESERVATIONS': 'not-consulted.json'})
+        child.assert_called_once()
+        self.assertEqual(code, 0)
+        self.assertEqual(event['cpu_seconds'], 2)
+        self.assertEqual(event['scheduler'], 'standalone-process')
+        self.assertIsNone(event['reserved_slots'])
+        self.assertIsNone(event['declared_slots'])
+        self.assertIsNone(event['scheduler_pool_size'])
+        self.assertEqual(event['observation_errors'], [])
 
     def test_wrapper_runs_child_once_and_retains_cpu_as_telemetry(self):
         with tempfile.TemporaryDirectory() as temporary:

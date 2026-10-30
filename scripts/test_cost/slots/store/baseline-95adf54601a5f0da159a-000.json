@@ -1,9 +1,0 @@
-{
-  "binary": "worth-store-court-source::worth_store_court_source",
-  "tests": {
-    "process::store_test_runner::cli::global_help_succeeds_on_stdout": 1,
-    "process::store_test_runner::cli::list_displays_the_direct_plan_without_running_tests": 1,
-    "process::store_test_runner::cli::process_scenario_rejects_sharding_before_execution": 1,
-    "process::store_test_runner::cli::unknown_command_fails_on_stderr": 1
-  }
-}

@@ -1,30 +1,22 @@
-"""Retain measured scheduling policy in small, generated per-binary shards."""
-import json
+"""Load and retain measured scheduling policy through bounded catalogs."""
 from pathlib import Path
 
 from logs import read_lane
+from policy_catalog import index as read_index, read as read_catalog
 from slot_policy import generate
 
 
 def load(directory):
     directory = Path(directory).resolve()
-    manifest = directory / 'index.json'
-    if not manifest.exists():
+    value = read_index(directory)
+    if not value:
         return {}
-    value = json.loads(manifest.read_text(encoding='utf-8'))
-    if value['schema'] != 1:
-        raise ValueError('unsupported measured-reservation schema')
     result = {}
-    for name in value['files']:
-        path = (directory / name).resolve()
-        if path.parent != directory:
-            raise ValueError('reservation shard escapes its owner')
-        shard = json.loads(path.read_text(encoding='utf-8'))
-        for test, slots in shard['tests'].items():
-            identity = shard['binary'] + '\n' + test
-            if identity in result:
-                raise ValueError('reservation identity repeats across generated shards')
-            result[identity] = slots
+    for row in read_catalog(directory, value['catalogs']['rules']):
+        identity = row['binary'] + '\n' + row['test']
+        if identity in result or type(row['slots']) is not int or row['slots'] < 1:
+            raise ValueError('invalid or repeated reservation identity in its catalog')
+        result[identity] = row['slots']
     return result
 
 

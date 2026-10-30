@@ -1,9 +1,0 @@
-{
-  "binary": "worth-store-lsm-authority",
-  "tests": {
-    "membership::activation_artifact::tests::every_incomplete_activation_prefix_is_rejected": 1,
-    "membership::activation_artifact::tests::header_length_magic_and_version_corruption_are_rejected": 1,
-    "membership::activation_artifact::tests::native_activation_round_trips_exactly": 1,
-    "membership::activation_artifact::tests::payload_corruption_is_rejected": 1
-  }
-}

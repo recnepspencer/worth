@@ -1,9 +1,0 @@
-{
-  "binary": "worth-store-blob-chunks",
-  "tests": {
-    "capsule_readiness::tests::subset_without_basis_cross_scope_and_reachability_drift_produce_distinct_outcomes": 2,
-    "layout_projection::tests::layout_rejects_proxy_authority_inputs": 2,
-    "layout_projection::tests::streaming_layout_denies_whole_blob_residency": 2,
-    "publication::tests::copied_publication_declaration_cannot_bind_unrelated_replay_identity": 2
-  }
-}

@@ -1,0 +1,13 @@
+{
+  "binary": "bank-user-node",
+  "tests": {
+    "server::routes::live::exact_basis_shape_tests::typed_update_uses_the_current_exact_basis_shape": 1,
+    "server::routes::live::sse_framing::tests::one_transport_chunk_can_carry_multiple_complete_events": 1,
+    "server::routes::live::sse_framing::tests::split_transport_chunks_emit_only_complete_sse_events": 1,
+    "server::routes::live::tests::full_node_proxy_queue_preserves_an_explicit_overflow_terminal": 1,
+    "server::routes::live::tests::split_keepalive_does_not_close_the_following_domain_event": 1,
+    "server::routes::live::tests::terminal_side_channel_is_fused_after_one_explicit_event": 1,
+    "session::upstream_response::tests::invalid_deadline_fails_before_network_contact": 1,
+    "session::upstream_response::tests::upstream_deadline_covers_the_network_response": 1
+  }
+}

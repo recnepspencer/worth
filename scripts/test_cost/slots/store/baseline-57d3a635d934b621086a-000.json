@@ -1,8 +1,0 @@
-{
-  "binary": "worth-store-extensions",
-  "tests": {
-    "customization::tests::extensions_rebuild_and_rejected_targets_do_not_mint_store_authority": 1,
-    "customization::tests::extensions_registered_targets_preserve_store_customization_admission": 1,
-    "customization::tests::extensions_targets_own_capability_and_workload_semantics": 1
-  }
-}

@@ -1,9 +1,0 @@
-{
-  "binary": "worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving::worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving",
-  "tests": {
-    "process::recovery_runtime::phase_three_root_anchor::damaged_current_survives_a_later_previous_slot_media_failure": 2,
-    "process::recovery_runtime::production_entry::pending_successor_above_history::pending_successors_of_a_generation_with_a_resume_frontier_recover_to_a_terminal_head": 1,
-    "process::recovery_runtime::production_entry::physical_checkpoint_oracle::every_media_operation_of_a_checkpoint_replacement_recovers": 3,
-    "process::recovery_runtime::production_entry::physical_checkpoint_oracle::every_media_operation_of_a_first_checkpoint_recovers": 4
-  }
-}

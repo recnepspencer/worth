@@ -3,14 +3,15 @@ import tempfile
 import unittest
 
 from measured_slots import load, retain
-from slot_policy import generate
+from slot_policy import generate, pending_claims
+from policy_catalog import files as catalog_files, read as read_catalog
 
 
 class MeasuredSchedulingPolicyTests(unittest.TestCase):
     def capture(self, directory, name, events):
         events = [dict(type='test-cost-cpu', exit=0, accounting='complete', **event) for event in events]
         path = Path(directory) / name
-        path.write_text('Command: ["python", "phase_telemetry.py"]\nHEAD: capture-head\nGit status --short empty: True\n'
+        path.write_text(f'Command: ["python", "phase_telemetry.py"]\nWorking directory: {directory}\nHEAD: capture-head\nGit status --short empty: True\n'
                         'Start: 2026-01-01T00:00:00+00:00\nEnd: 2026-01-01T00:00:01+00:00\nExit code: 0\n' +
                         '\n'.join(json.dumps(event) for event in events), encoding='utf-8')
         return path, events
@@ -31,8 +32,9 @@ class MeasuredSchedulingPolicyTests(unittest.TestCase):
                       for i in range(201)]
             log, events = self.capture(directory, 'real.log', events)
             result = retain(directory, events, 'head', log)
-            self.assertEqual(len(result['files']), 3)
-            self.assertTrue(all(len(path.read_text().splitlines()) <= 400 for path in directory.glob('*.json')))
+            self.assertEqual(result['catalogs']['rules']['records'], 201)
+            self.assertEqual(len(catalog_files(directory, result['catalogs']['rules'])), 4)
+            self.assertTrue(all(len(path.read_text().splitlines()) <= 400 for path in directory.iterdir()))
             empty, _ = self.capture(directory, 'empty.log', [])
             self.assertEqual(retain(directory, [], 'new', empty)['latest_observation']['status'], 'unmeasured')
             self.assertEqual(len(load(directory)), 201)
@@ -57,9 +59,10 @@ class MeasuredSchedulingPolicyTests(unittest.TestCase):
             result = retain(temporary, events, 'later-execution-head', after)
             self.assertEqual(load(temporary), {'court\nparallel': 3, 'court\nother': 1})
             self.assertEqual(result['sample_count'], 3)
-            self.assertEqual(result['pending_claims'], ['court$authority'])
-            self.assertEqual(sum(len((Path(temporary)/name).read_text().splitlines()) for name in result['observation_files']), 3)
-            self.assertTrue(any(row.get('execution_start_head') == 'execution-head' for row in result['observations']))
+            self.assertEqual(pending_claims(temporary), ['court$authority'])
+            self.assertEqual(len(read_catalog(temporary, result['catalogs']['samples'])), 3)
+            self.assertTrue(any(row.get('execution_start_head') == 'execution-head'
+                                for row in read_catalog(temporary, result['catalogs']['sources'])))
 
     def test_retirement_requires_current_inventory_and_never_discards_pending_evidence(self):
         with tempfile.TemporaryDirectory() as temporary:

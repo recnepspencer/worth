@@ -1,6 +1,0 @@
-{
-  "binary": "worth-store-operations",
-  "tests": {
-    "phase_1_6_tests::control_media_boundaries::control_recovery_objects_cannot_overlap_protected_media": 2
-  }
-}

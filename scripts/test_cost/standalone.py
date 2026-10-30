@@ -9,6 +9,7 @@ import time
 import tomllib
 
 from logs import json_objects
+from telemetry import SchedulerKind
 
 
 class StandaloneFailureKind(Enum):
@@ -130,22 +131,16 @@ def execute(program, runner, log_path, environment):
     """Run the independently built executable with zero libtest arguments.
 
     The runner owns full command evidence. CPU accounting uses the same wrapper
-    as nextest. Standalone programs run sequentially outside the nextest pool;
-    their default reservation is one process slot, explicitly recorded here.
+    as nextest. Standalone programs run sequentially outside the nextest pool
+    and therefore have no nextest slot reservation.
     """
     if not filesystem_path(program['exe']).is_file():
         raise StandaloneFailure(StandaloneFailureKind.MISSING_EXECUTABLE, program['exe'])
     log_path = Path(log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     child = dict(environment, CARGO_MANIFEST_DIR=program['cwd'],
-                 NEXTEST_BINARY_ID=program['binary'], NEXTEST_TEST_NAME='<main>')
-    reservations = {}
-    if path := child.get('WORTH_TEST_COST_RESERVATIONS'):
-        reservations = json.loads(Path(path).read_text(encoding='utf-8'))
-    reservations.setdefault(program['binary'] + '\n<main>', 1)
-    reservation_path = log_path.with_suffix('.reservations.json')
-    reservation_path.write_text(json.dumps(reservations, indent=2) + '\n', encoding='utf-8')
-    child['WORTH_TEST_COST_RESERVATIONS'] = str(reservation_path.resolve())
+                 NEXTEST_BINARY_ID=program['binary'], NEXTEST_TEST_NAME='<main>',
+                 WORTH_TEST_COST_SCHEDULER=SchedulerKind.STANDALONE.value)
     previous = runner.environment
     started = time.perf_counter()
     try:

@@ -1,6 +1,0 @@
-{
-  "binary": "worth-store-formal-models",
-  "tests": {
-    "protocols::operational_recovery::action::tests::bootstrap_completion_without_transfer_is_rejected": 2
-  }
-}

@@ -2,13 +2,12 @@
 import hashlib
 import json
 from pathlib import Path
+import re
 
 from logs import read_lane
+from policy_catalog import read
 
-
-def archive_digest(raw):
-    """Git may translate text line endings; all other archive bytes are exact."""
-    return hashlib.sha256(raw.replace(b'\r\n', b'\n')).hexdigest()
+SOURCE_HEADERS = ('Command', 'Working directory', 'HEAD', 'Git status --short empty', 'Start', 'End', 'Exit code')
 
 
 def repository(directory):
@@ -27,44 +26,43 @@ def read_source(path, directory):
         raise ValueError('telemetry source lacks complete retained command evidence: ' + str(path))
     if lane['headers']['Git status --short empty'] not in ('True', 'False'):
         raise ValueError('telemetry source has an invalid Git status observation')
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    raw = path.read_bytes()
+    working = re.findall(r'^Working directory: (.+)$', raw.decode('utf-8-sig'), re.M)
+    if len(working) != 1:
+        raise ValueError('telemetry source lacks a unique working directory')
+    headers = dict(lane['headers'], **{'Working directory': working[0].strip()})
+    digest = hashlib.sha256(raw).hexdigest()
     root = repository(directory)
     name = str(path.relative_to(root)).replace('\\', '/') if root is not None and path.is_relative_to(root) else str(path)
     source = {'head': lane['headers']['HEAD'], 'head_scope': 'telemetry capture, not child execution revision',
               'telemetry_log': name, 'original_telemetry_log': str(path), 'sha256': digest,
               'command': json.loads(lane['headers']['Command']),
               'git_status_short_empty': lane['headers']['Git status --short empty'] == 'True',
+              'headers': headers,
               'start': lane['headers']['Start'], 'end': lane['headers']['End']}
     return source, lane['cpu']
 
 
 def read_history(directory, manifest, explicit, execution_heads=None):
+    if manifest and manifest.get('schema') != 2:
+        raise ValueError('unsupported measured scheduling policy history schema')
     sources = {}
-    for source in manifest.get('observations', []):
+    for source in read(directory, manifest['catalogs']['sources']) if manifest else []:
+        if any(not isinstance(source.get('headers', {}).get(field), str) for field in SOURCE_HEADERS):
+            raise ValueError('committed telemetry provenance lacks its complete original headers')
         if type(source.get('git_status_short_empty')) is not bool:
             raise ValueError('committed telemetry provenance lacks its Git status observation')
         if source['sha256'] in sources:
             raise ValueError('sample source identity repeats in the committed index')
         sources[source['sha256']] = (dict(source), {})
-    files, hashes = manifest.get('observation_files', []), manifest.get('observation_sha256', {})
-    if set(files) != set(hashes):
-        raise ValueError('sample archive digest inventory does not match its files')
-    for name in files:
-        path = (directory / name).resolve()
-        if path.parent != directory:
-            raise ValueError('sample archive escapes its owner')
-        raw = path.read_bytes()
-        if archive_digest(raw) != hashes[name]:
-            raise ValueError('sample archive hash mismatch: ' + name)
-        for line in raw.decode('utf-8').splitlines():
-            sample = json.loads(line)
-            identity, index = sample['capture_sha256'], sample['sample_index']
-            if identity not in sources or type(index) is not int or index < 0:
-                raise ValueError('invalid immutable CPU sample identity')
-            events = sources[identity][1]
-            if index in events:
-                raise ValueError('immutable CPU sample identity repeats')
-            events[index] = sample['observation']
+    for sample in read(directory, manifest['catalogs']['samples']) if manifest else []:
+        identity, index = sample['capture_sha256'], sample['sample_index']
+        if identity not in sources or type(index) is not int or index < 0:
+            raise ValueError('invalid immutable CPU sample identity')
+        events = sources[identity][1]
+        if index in events:
+            raise ValueError('immutable CPU sample identity repeats')
+        events[index] = sample['observation']
     history = {}
     for identity, (source, indexed) in sources.items():
         if sorted(indexed) != list(range(len(indexed))):

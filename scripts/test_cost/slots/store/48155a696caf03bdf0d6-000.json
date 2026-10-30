@@ -1,8 +1,0 @@
-{
-  "binary": "worth-store-recovery-runtime",
-  "tests": {
-    "entry::admission::tests::a_second_process_cannot_enter_the_owned_recovery_root": 2,
-    "orchestration::planning::page_observation::ordered_history::charge::tests::the_segment_tree_is_charged_whole_only_where_the_roots_capacity_changed": 2,
-    "orchestration::planning::successor_candidate_observation::artifact_read::tests::cumulative_discovery_limit_remains_a_discovery_denial": 2
-  }
-}

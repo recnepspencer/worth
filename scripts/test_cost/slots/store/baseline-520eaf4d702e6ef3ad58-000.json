@@ -1,8 +1,0 @@
-{
-  "binary": "worth-store-court-buffer-pool::worth_store_court_buffer_pool",
-  "tests": {
-    "buffer_pool::clean_authority::foreign_candidate_authority_cannot_clean_an_identical_store_incarnation": 1,
-    "buffer_pool::clean_authority::foreign_writeback_authority_releases_the_claim_without_cleaning": 1,
-    "buffer_pool::clean_authority::owner_capabilities_clean_candidate_and_writeback_transitions": 1
-  }
-}

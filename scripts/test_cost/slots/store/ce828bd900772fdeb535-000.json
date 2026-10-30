@@ -1,6 +1,0 @@
-{
-  "binary": "worth-store-io-scheduler",
-  "tests": {
-    "queue_execution::policy::grouping::locality_tests::malformed_or_overlapping_structural_ranges_are_rejected": 2
-  }
-}

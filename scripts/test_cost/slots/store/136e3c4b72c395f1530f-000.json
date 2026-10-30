@@ -1,7 +1,0 @@
-{
-  "binary": "worth-store-recovery-physics",
-  "tests": {
-    "redo_replay::plan::tests::supersession::exact_wal_image_chain_supersedes_only_its_historical_claims": 2,
-    "source_precedence::pending_wal_release_custody::effective_heads::checkpoint_head_tree::tests::pending_source_without_ordered_replays_must_carry_the_checkpoint_head_tree": 2
-  }
-}
