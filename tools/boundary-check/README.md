@@ -36,9 +36,9 @@ and construct no disk repositories.
 | BC2001 graph policy | `dependency_denials_and_allowlists_reject_only_disallowed_edges`, `dependency_contracts_preserve_exact_versions_defaults_and_features` |
 | BC2001 identifier denials | `identifier_denials_respect_exclusions_and_token_boundaries` |
 | BC7009 root Clippy superset | `local_clippy_configuration_carries_every_root_entry` |
-| BC7012 closed control callers | `exported_control_references_require_an_exact_caller`, `raw_identifiers_do_not_bypass_the_closed_control_caller_set`, `crate_visibility_spellings_keep_the_same_closed_callers`, `exported_macros_keep_closed_callers_even_inside_private_functions`, `composed_controls_and_reexporting_owners_keep_their_existing_reach`, `test_only_methods_do_not_seal_unrelated_namesakes`, `macro_controls_require_literal_exported_declarations` |
+| BC7012 closed control callers | `every_control_reference_requires_its_owner_or_an_exact_caller`, `comments_and_literals_do_not_create_control_references`, `cross_owner_composition_does_not_grant_ownership` |
 | BC7013 construction callers | `certification_factory_callers_are_class_and_file_exact` |
-| BC8008 compiled regions and source facts | `compiled_regions_compare_exact_code_and_require_unique_delimiters`, `a_compiled_marker_requires_a_following_code_region`, `documented_enum_rows_detect_payload_changes_as_well_as_variants` |
+| BC8008 source bytes and source facts | `compiled_regions_compare_exact_code_and_require_unique_delimiters`, `a_compiled_marker_requires_a_following_code_region`, `documented_enum_rows_detect_payload_changes_as_well_as_variants` |
 | BC8009 relative links | `relative_links_require_targets_and_unique_heading_anchors`, `shortcut_reference_links_check_defined_targets_without_treating_definitions_as_links` |
 | BC9001 one build | `features_are_refused_except_for_declared_signal_profiles`, `feature_predicates_are_detected_without_matching_quoted_examples` |
 | BC9002 court topology | `courts_have_one_canonical_target_and_remain_dependency_leaves`, `products_cannot_hide_integration_tests_in_the_file_list`, `product_dependencies_on_testkits_are_dev_only`, `categories_follow_top_level_directory_segments`, `frontier_uses_reachable_product_roots_and_excludes_dependency_dev_edges`, `area_splits_require_explicit_delegation_of_nested_owners` |
@@ -58,3 +58,5 @@ by the in-memory cases above. The facade/debt snapshots and their ratchet tests
 were likewise retired by that approved scope. Agent-context now lists declarations
 from facade source instead of reading the deleted snapshot; glob routes remain
 explicit, and the compiler owns their resolution.
+
+Coordinator rulings: BC7012 ignores visibility and cfg, searching every token reference to a named control. BC8008 checks source bytes without compilation reachability or active-cfg analysis. BC2001 workflow isolation is retired: excluding a sibling descendant requires a module reparenting beyond a three-file visibility change.

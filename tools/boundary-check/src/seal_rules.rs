@@ -1,18 +1,6 @@
 //! Closed caller sets for exported test controls and certification factories.
-use crate::{config::*, inputs::Inputs, lexical::tokens, runtime_courts::scopes};
+use crate::{config::*, inputs::Inputs, lexical::tokens};
 use std::collections::{BTreeMap, BTreeSet};
-mod regions;
-const OWNERS: &[&str] = &[
-    "crates/worth-relational",
-    "crates/worth-execution",
-    "crates/worth-signal",
-    "crates/worth-signal-wasm",
-    "crates/worth-runtime-bridge",
-    "crates/worth-runtime-world",
-    "workspaces/worth-query",
-    "workspaces/worth-query-bank-world",
-    "crates/worth-cad-entry",
-];
 const FACTORIES: &[&str] = &[
     "registered_authoritative_source",
     "with_authoritative_source",
@@ -20,21 +8,19 @@ const FACTORIES: &[&str] = &[
     "from_owner_partition_publication",
     "certification_query",
 ];
-fn owner(path: &str) -> Option<String> {
-    if under(path, "crates/worth-cad-entry") {
-        return Some(
-            "crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs".into(),
-        );
-    }
-    OWNERS.iter().find(|o| under(path, o)).and_then(|o| {
-        if o.starts_with("workspaces/") {
-            path.strip_prefix(&format!("{o}/crates/"))
-                .and_then(|s| s.split('/').next())
-                .map(|n| format!("{o}/crates/{n}/"))
-        } else {
-            Some(format!("{o}/"))
-        }
-    })
+fn owner(input: &Inputs, path: &str) -> Option<String> {
+    input
+        .manifests
+        .iter()
+        .filter(|(_, value)| value.get("package").is_some())
+        .filter_map(|(p, _)| p.strip_suffix("Cargo.toml"))
+        .filter(|p| path.starts_with(p))
+        .max_by_key(|p| p.len())
+        .map(str::to_owned)
+        .or_else(|| path.split_once("/src/").map(|(p, _)| format!("{p}/")))
+}
+fn test_name(name: &str) -> bool {
+    name.ends_with("_for_test") || name.ends_with("ForTest")
 }
 fn permitted(path: &str, owners: &BTreeSet<String>, callers: &BTreeSet<(&str, &str)>) -> bool {
     owners.iter().any(|o| {
@@ -46,7 +32,6 @@ fn permitted(path: &str, owners: &BTreeSet<String>, callers: &BTreeSet<(&str, &s
     }) || owners.iter().any(|o| callers.contains(&(o.as_str(), path)))
 }
 pub fn check(input: &Inputs) -> Vec<Diagnostic> {
-    let tests = scopes(input);
     let mut out = Vec::new();
     let mut doors: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for (path, text) in input.files.iter().filter(|(p, _)| {
@@ -58,22 +43,31 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         if !text.contains("_for_test") && !text.contains("ForTest") {
             continue;
         }
-        let Some(owner) = owner(path) else {
+        let Some(owner) = owner(input, path) else {
             continue;
         };
         let t = tokens(text);
-        let mut ranges = tests.get(path).cloned().unwrap_or_default();
-        ranges.extend(regions::test_items(&t));
-        let declared = regions::declared(&t, &ranges);
-        if regions::ambiguous_macro(&t, &declared, &ranges) {
-            out.push(diagnostic(
-                Code::Control,
-                path,
-                "macro control names require a literal exported declaration",
-            ));
-        }
+        // Only literal declaration names establish an owner. Visibility and cfg
+        // have no bearing on the name contract; bodies are searched in full.
+        let declared = t
+            .windows(2)
+            .filter_map(|w| {
+                ([
+                    "fn", "struct", "enum", "trait", "type", "const", "static", "mod", "union",
+                ]
+                .contains(&w[0].text)
+                    && test_name(w[1].text))
+                .then_some(w[1].text)
+            })
+            .chain(t.windows(3).filter_map(|w| {
+                (w[0].text == "macro_rules" && w[1].text == "!" && test_name(w[2].text))
+                    .then_some(w[2].text)
+            }));
         for name in declared {
-            doors.entry(name).or_default().insert(owner.clone());
+            doors
+                .entry(name.to_owned())
+                .or_default()
+                .insert(owner.clone());
         }
     }
     let controls: BTreeSet<_> = pairs(input.text(&format!("{CONFIG}control-callers.txt")))
@@ -91,27 +85,10 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
             continue;
         }
         let t = tokens(text);
-        let mut ranges = tests.get(path).cloned().unwrap_or_default();
-        ranges.extend(regions::test_items(&t));
-        let control_source = owner(path).is_some_and(|owner| {
-            regions::declared(&t, &ranges)
-                .iter()
-                .any(|name| doors.get(name).is_some_and(|o| o.contains(&owner)))
-        });
-        let excluded = if control_source {
-            regions::ordinary_ranges(&t)
-        } else {
-            Vec::new()
-        };
-        let control_names: BTreeSet<_> = t
-            .iter()
-            .filter(|t| !excluded.iter().any(|(a, b)| t.start >= *a && t.start < *b))
-            .map(|t| t.text)
-            .collect();
         let names: BTreeSet<_> = t.iter().map(|t| t.text).collect();
         for name in &names {
             if let Some(owners) = doors.get(*name) {
-                if control_names.contains(name) && !permitted(path, owners, &controls) {
+                if !permitted(path, owners, &controls) {
                     out.push(diagnostic(
                         Code::Control,
                         path,
@@ -148,83 +125,57 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
 mod tests {
     use super::*;
     #[test]
-    fn composed_controls_and_reexporting_owners_keep_their_existing_reach() {
-        let mut input = Inputs::fixture(
-            &[
-                ("crates/worth-signal/src/a.rs", "pub fn arm_for_test() {}"),
-                (
-                    "crates/worth-runtime-bridge/src/a.rs",
-                    "pub fn bridge_for_test() { arm_for_test(); }",
-                ),
-            ],
-            "",
-        );
-        assert!(check(&input).is_empty());
-        input.files.insert(
-            "crates/worth-runtime-bridge/src/a.rs".into(),
-            "pub use signal::arm_for_test;".into(),
-        );
-        assert!(check(&input).is_empty());
-        input.files.insert(
-            "crates/worth-runtime-bridge/src/a.rs".into(),
-            "pub fn bridge_for_test() {} fn ordinary() { arm_for_test(); }".into(),
-        );
-        assert!(!check(&input).is_empty());
+    fn every_control_reference_requires_its_owner_or_an_exact_caller() {
+        for declaration in [
+            "fn arm_for_test() {}",
+            "#[cfg(test)] impl Private { fn arm_for_test() {} }",
+            "pub(in crate) fn r#arm_for_test() {}",
+            "pub struct Other { #[cfg(test)] pub x: (), } pub fn arm_for_test() {}",
+            "declare! { pub fn arm_for_test() {} }",
+            "fn hidden() { #[macro_export] macro_rules! arm_for_test { () => {} } }",
+        ] {
+            let mut input = Inputs::fixture(
+                &[
+                    ("crates/worth-signal/src/control.rs", declaration),
+                    ("app/src/lib.rs", "r#arm_for_test();"),
+                ],
+                "",
+            );
+            assert_eq!(check(&input).len(), 1, "{declaration}");
+            input.files.insert(
+                format!("{CONFIG}control-callers.txt"),
+                "crates/worth-signal/ app/src/lib.rs".into(),
+            );
+            assert!(check(&input).is_empty(), "{declaration}");
+        }
     }
     #[test]
-    fn test_only_methods_do_not_seal_unrelated_namesakes() {
+    fn comments_and_literals_do_not_create_control_references() {
         let input = Inputs::fixture(
             &[
+                ("crates/worth-signal/src/control.rs", "struct DoorForTest;"),
                 (
-                    "crates/worth-signal/src/a.rs",
-                    "#[cfg(test)] impl Private { pub fn arm_for_test() {} }",
+                    "app/src/lib.rs",
+                    "// DoorForTest\nlet text = r#\"DoorForTest\"#; /* DoorForTest */",
                 ),
-                ("other/src/a.rs", "arm_for_test();"),
             ],
             "",
         );
         assert!(check(&input).is_empty());
     }
     #[test]
-    fn macro_controls_require_literal_exported_declarations() {
-        let good = Inputs::fixture(
-            &[(
-                "crates/worth-signal/src/a.rs",
-                "declare! { pub struct DoorForTest; }",
-            )],
-            "",
-        );
-        assert!(check(&good).is_empty());
-        let bad = Inputs::fixture(
-            &[("crates/worth-signal/src/a.rs", "declare!(DoorForTest);")],
-            "",
-        );
-        assert_eq!(check(&bad).len(), 1);
-    }
-    #[test]
-    fn exported_control_references_require_an_exact_caller() {
-        let mut input = Inputs::fixture(
+    fn cross_owner_composition_does_not_grant_ownership() {
+        let input = Inputs::fixture(
             &[
+                ("crates/worth-signal/src/control.rs", "fn arm_for_test() {}"),
                 (
-                    "crates/worth-signal/src/control.rs",
-                    "pub fn arm_for_test() {}",
+                    "crates/worth-runtime-bridge/src/lib.rs",
+                    "fn bridge_for_test() { arm_for_test(); }",
                 ),
-                ("app/src/lib.rs", "arm_for_test();"),
             ],
             "",
         );
-        assert_eq!(
-            check(&input)
-                .iter()
-                .filter(|d| d.code == Code::Control)
-                .count(),
-            1
-        );
-        input.files.insert(
-            format!("{CONFIG}control-callers.txt"),
-            "crates/worth-signal/ app/src/lib.rs".into(),
-        );
-        assert!(check(&input).is_empty());
+        assert_eq!(check(&input).len(), 1);
     }
     #[test]
     fn certification_factory_callers_are_class_and_file_exact() {
@@ -235,72 +186,5 @@ mod tests {
             "installation app/src/lib.rs".into(),
         );
         assert!(check(&input).is_empty());
-    }
-    #[test]
-    fn raw_identifiers_do_not_bypass_the_closed_control_caller_set() {
-        let mut input = Inputs::fixture(
-            &[
-                (
-                    "crates/worth-signal/src/control.rs",
-                    "pub fn r#arm_for_test() {}",
-                ),
-                ("app/src/lib.rs", "arm_for_test();"),
-            ],
-            "",
-        );
-        assert_eq!(
-            check(&input)
-                .iter()
-                .filter(|d| d.code == Code::Control)
-                .count(),
-            1
-        );
-        input.files.insert(
-            format!("{CONFIG}control-callers.txt"),
-            "crates/worth-signal/ app/src/lib.rs".into(),
-        );
-        assert!(check(&input).is_empty());
-    }
-    #[test]
-    fn crate_visibility_spellings_keep_the_same_closed_callers() {
-        for visibility in ["pub(crate)", "pub(in crate)"] {
-            let mut input = Inputs::fixture(
-                &[
-                    (
-                        "crates/worth-signal/src/control.rs",
-                        &format!("{visibility} fn arm_for_test() {{}}"),
-                    ),
-                    ("app/src/lib.rs", "arm_for_test();"),
-                ],
-                "",
-            );
-            assert_eq!(check(&input).len(), 1);
-            input.files.insert(
-                format!("{CONFIG}control-callers.txt"),
-                "crates/worth-signal/ app/src/lib.rs".into(),
-            );
-            assert!(check(&input).is_empty());
-        }
-    }
-    #[test]
-    fn exported_macros_keep_closed_callers_even_inside_private_functions() {
-        for declaration in [
-            "#[macro_export] macro_rules! arm_for_test { () => {} }",
-            "fn hidden() { #[macro_export] macro_rules! arm_for_test { () => {} } }",
-        ] {
-            let mut input = Inputs::fixture(
-                &[
-                    ("crates/worth-signal/src/control.rs", declaration),
-                    ("app/src/lib.rs", "arm_for_test!();"),
-                ],
-                "",
-            );
-            assert_eq!(check(&input).len(), 1);
-            input.files.insert(
-                format!("{CONFIG}control-callers.txt"),
-                "crates/worth-signal/ app/src/lib.rs".into(),
-            );
-            assert!(check(&input).is_empty());
-        }
     }
 }

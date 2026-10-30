@@ -38,7 +38,7 @@ impl Code {
             Self::Clippy => "tools/boundary-check/src/text_rules.rs; local Clippy configuration must include every root setting",
             Self::Control => "tools/boundary-check/src/seal_rules.rs; Law 1, reach: control references belong only to owners and closed test/certification callers",
             Self::Construction => "tools/boundary-check/config/certification-construction-callers.txt; sealed construction references belong only to owners and the closed caller paths",
-            Self::DocumentRegion => "tools/boundary-check/config/consumer-docs.toml; restore exact marker grammar and genuine compilation ownership",
+            Self::DocumentRegion => "tools/boundary-check/config/consumer-docs.toml; restore exact marker grammar and byte agreement with the named source",
             Self::DocumentLink => "tools/boundary-check/config/consumer-docs.toml; repair the relative destination or GitHub heading fragment in the named document",
             Self::OneBuild => "tools/boundary-check/src/graph_rules.rs; remove the build predicate or feature declaration and use an owned inert control",
             Self::Topology => "docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts",
