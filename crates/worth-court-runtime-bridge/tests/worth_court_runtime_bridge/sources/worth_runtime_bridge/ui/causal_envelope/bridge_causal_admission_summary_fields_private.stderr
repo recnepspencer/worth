@@ -1,5 +1,5 @@
 error[E0560]: struct `BridgeCausalInspectionAdmissionSummary` has no field named `query_admission_digest`
- --> tests/ui/causal_envelope/bridge_causal_admission_summary_fields_private.rs:8:9
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_admission_summary_fields_private.rs:8:9
   |
 8 |         query_admission_digest: sealed_authority_placeholder(),
   |         ^^^^^^^^^^^^^^^^^^^^^^ `BridgeCausalInspectionAdmissionSummary` does not have this field
@@ -7,7 +7,7 @@ error[E0560]: struct `BridgeCausalInspectionAdmissionSummary` has no field named
   = note: all struct fields are already assigned
 
 error[E0560]: struct `BridgeCausalInspectionAdmissionSummary` has no field named `causal_observation_anchor_digest`
- --> tests/ui/causal_envelope/bridge_causal_admission_summary_fields_private.rs:9:9
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_admission_summary_fields_private.rs:9:9
   |
 9 |         causal_observation_anchor_digest: sealed_authority_placeholder(),
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `BridgeCausalInspectionAdmissionSummary` does not have this field
@@ -15,7 +15,7 @@ error[E0560]: struct `BridgeCausalInspectionAdmissionSummary` has no field named
   = note: all struct fields are already assigned
 
 error[E0560]: struct `BridgeCausalInspectionAdmissionSummary` has no field named `summary_digest`
-  --> tests/ui/causal_envelope/bridge_causal_admission_summary_fields_private.rs:10:9
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_admission_summary_fields_private.rs:10:9
    |
 10 |         summary_digest: sealed_authority_placeholder(),
    |         ^^^^^^^^^^^^^^ `BridgeCausalInspectionAdmissionSummary` does not have this field

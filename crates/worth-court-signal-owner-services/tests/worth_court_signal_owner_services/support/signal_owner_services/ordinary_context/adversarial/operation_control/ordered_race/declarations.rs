@@ -1,9 +1,12 @@
-pub(crate) use {std::sync::mpsc};
-pub(crate) use {std::thread};
+pub(crate) use std::sync::mpsc;
+pub(crate) use std::thread;
 
-pub(crate) use {worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest, worth_signal::facade::branch::SignalOwnerOperationControlForTest};
+pub(crate) use {
+    worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest,
+    worth_signal::facade::branch::SignalOwnerOperationControlForTest,
+};
 
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
+pub(crate) use crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND;
 
 pub(crate) fn run<L, R>(
     runtime: &Option<crate::signal_owner_services::ordinary_context::adversarial::world::Runtime>,
@@ -19,8 +22,9 @@ where
     let owner_root = runtime
         .as_ref()
         .expect("the ordered contenders share a live owner root");
-    let pause =
-        control.arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BranchRegistryLookup,
+    );
     let (left_tx, left_rx) = std::sync::mpsc::sync_channel(1);
     let (right_tx, right_rx) = std::sync::mpsc::sync_channel(1);
     let result = std::thread::scope(|scope| {

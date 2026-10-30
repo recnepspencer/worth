@@ -1,12 +1,47 @@
 pub use {std::collections::BTreeMap, std::collections::BTreeSet};
 pub use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
 
-pub use {worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalFieldPath, worth_foundational::facade::FieldKey};
-pub use {worth_query::facade::foundation::DeclarativeLiveQueryRequest, worth_query::facade::foundation::QueryExternalIdentityToken, worth_query::facade::foundation::WorthQueryEntity, worth_query::facade::foundation::WorthQueryEntityIdentity, worth_query::facade::foundation::WorthQueryLivePatch, worth_query::facade::foundation::WorthQueryLiveViewHandle, worth_query::facade::foundation::WorthQueryMutationReceipt, worth_query::facade::foundation::WorthQuerySnapshotIdentity, worth_query::facade::foundation::WorthQueryWorkspaceError};
-pub use {worth_query::facade::runtime::LiveViewDeclarationAdmissionBoundaryReceipt, worth_query::facade::runtime::QuerySchemaView, worth_query::facade::runtime::SubscriptionActivationInput, worth_query::facade::runtime::SubscriptionActivationReceipt, worth_query::facade::runtime::WorthQueryBackendAdmissibleMutation, worth_query::facade::runtime::WorthQueryIntentDeclaration, worth_query::facade::runtime::WorthQueryIntentExecution, worth_query::facade::runtime::WorthQueryLiveArtifactTarget, worth_query::facade::runtime::WorthQueryPreviewBasisAdmission, worth_query::facade::runtime::WorthQueryRuntimeBackend, worth_query::facade::runtime::WorthQueryRuntimeError, worth_query::facade::runtime::WorthQueryRuntimeEvidenceAuthority, worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence, worth_query::facade::runtime::WorthQueryRuntimeSchemaAdapter, worth_query::facade::runtime::WorthQueryRuntimeSubscriptionActivationAdapter, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile, worth_query::facade::runtime::WorthQuerySessionLabel, worth_query::facade::runtime::WorthQueryWriteReceipt};
-pub use {worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts};
+pub use worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts;
+pub use {
+    worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalFieldPath,
+    worth_foundational::facade::FieldKey,
+};
+pub use {
+    worth_query::facade::foundation::DeclarativeLiveQueryRequest,
+    worth_query::facade::foundation::QueryExternalIdentityToken,
+    worth_query::facade::foundation::WorthQueryEntity,
+    worth_query::facade::foundation::WorthQueryEntityIdentity,
+    worth_query::facade::foundation::WorthQueryLivePatch,
+    worth_query::facade::foundation::WorthQueryLiveViewHandle,
+    worth_query::facade::foundation::WorthQueryMutationReceipt,
+    worth_query::facade::foundation::WorthQuerySnapshotIdentity,
+    worth_query::facade::foundation::WorthQueryWorkspaceError,
+};
+pub use {
+    worth_query::facade::runtime::LiveViewDeclarationAdmissionBoundaryReceipt,
+    worth_query::facade::runtime::QuerySchemaView,
+    worth_query::facade::runtime::SubscriptionActivationInput,
+    worth_query::facade::runtime::SubscriptionActivationReceipt,
+    worth_query::facade::runtime::WorthQueryBackendAdmissibleMutation,
+    worth_query::facade::runtime::WorthQueryIntentDeclaration,
+    worth_query::facade::runtime::WorthQueryIntentExecution,
+    worth_query::facade::runtime::WorthQueryLiveArtifactTarget,
+    worth_query::facade::runtime::WorthQueryPreviewBasisAdmission,
+    worth_query::facade::runtime::WorthQueryRuntimeBackend,
+    worth_query::facade::runtime::WorthQueryRuntimeError,
+    worth_query::facade::runtime::WorthQueryRuntimeEvidenceAuthority,
+    worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence,
+    worth_query::facade::runtime::WorthQueryRuntimeSchemaAdapter,
+    worth_query::facade::runtime::WorthQueryRuntimeSubscriptionActivationAdapter,
+    worth_query::facade::runtime::WorthQueryRuntimeSupportProfile,
+    worth_query::facade::runtime::WorthQuerySessionLabel,
+    worth_query::facade::runtime::WorthQueryWriteReceipt,
+};
 
-pub use {crate::shared_support_query_handoff_runtime::runtime_mutation_support::test_mutation_receipt, crate::shared_support_query_handoff_runtime::runtime_mutation_support::TestSubscriptionActivation};
+pub use {
+    crate::shared_support_query_handoff_runtime::runtime_mutation_support::test_mutation_receipt,
+    crate::shared_support_query_handoff_runtime::runtime_mutation_support::TestSubscriptionActivation,
+};
 
 #[derive(Clone)]
 pub struct TestQueryRuntimeBackend {
@@ -19,7 +54,10 @@ pub struct TestQueryRuntimeBackend {
 
 impl Default for TestQueryRuntimeBackend {
     fn default() -> Self {
-        Self::new(worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile())
+        Self::new(
+            worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile(
+            ),
+        )
     }
 }
 
@@ -236,12 +274,14 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
         receipt: &WorthQueryWriteReceipt,
         authority: &WorthQueryRuntimeEvidenceAuthority,
     ) -> Result<WorthQueryRuntimeInspectionEvidence, WorthQueryWorkspaceError> {
-        Ok(worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence::new(
-            authority,
-            "query-handoff-phase-test-write-receipt",
-            receipt.authority_lane(),
-            ["query-handoff-phase-test-inspector"],
-        ))
+        Ok(
+            worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence::new(
+                authority,
+                "query-handoff-phase-test-write-receipt",
+                receipt.authority_lane(),
+                ["query-handoff-phase-test-inspector"],
+            ),
+        )
     }
 }
 
@@ -263,8 +303,10 @@ pub fn field_path(path: &str) -> CanonicalFieldPath {
     let fields = path
         .split('.')
         .map(|field| {
-            worth_foundational::facade::FieldKey::new(field).expect("synthetic runtime field segments should be foundational")
+            worth_foundational::facade::FieldKey::new(field)
+                .expect("synthetic runtime field segments should be foundational")
         })
         .collect::<Vec<_>>();
-    worth_foundational::facade::CanonicalFieldPath::new(fields).expect("synthetic runtime field path should be non-empty")
+    worth_foundational::facade::CanonicalFieldPath::new(fields)
+        .expect("synthetic runtime field path should be non-empty")
 }

@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
- --> tests/ui/diagnostics/readiness_boundaries/plain_report_cannot_satisfy_diagnostic_production_readiness.rs:9:23
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/readiness_boundaries/plain_report_cannot_satisfy_diagnostic_production_readiness.rs
   |
-9 |     require_readiness(report);
+  |     require_readiness(report);
   |     ----------------- ^^^^^^ expected `Artifact<..., ..., ..., ...>`, found `FoundationalDiagnosticProductionReadinessReport`
   |     |
   |     arguments to this function are incorrect
@@ -9,9 +9,9 @@ error[E0308]: mismatched types
   = note: expected struct `worth_proof::artifact::carrier::Artifact<FoundationalDiagnosticProductionTestReady, FoundationalDiagnosticProductionReadinessReport, worth_proof::proof::sets::Proof<FoundationalDiagnosticProductionReadinessCertified, FoundationalDiagnosticProductionReadinessAuthority>, worth_proof::assumption::freshness::FreshnessScopedBasis<worth_proof::assumption::freshness::CurrentValidity, worth_proof::assumption::basis::AssumptionBasis<FoundationalDiagnosticProductionReadinessScope>>>`
              found struct `FoundationalDiagnosticProductionReadinessReport`
 note: function defined here
- --> tests/ui/diagnostics/readiness_boundaries/plain_report_cannot_satisfy_diagnostic_production_readiness.rs:1:4
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/readiness_boundaries/plain_report_cannot_satisfy_diagnostic_production_readiness.rs
   |
-1 | fn require_readiness(
+  | fn require_readiness(
   |    ^^^^^^^^^^^^^^^^^
-2 |     _value: worth_foundational::FoundationalDiagnosticProductionTestReadyArtifact,
+  |     _value: worth_foundational::FoundationalDiagnosticProductionTestReadyArtifact,
   |     -----------------------------------------------------------------------------

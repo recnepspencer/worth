@@ -2,12 +2,17 @@
 // checked against an independent per-symbol oracle written from the
 // language rules: bus literals are most significant bit first, Z is
 // unknown in bitwise operations, and a mux keeps the symbols its arms share.
-#[allow(unused_imports)] use crate::expressions::reference_context::digital::*;
-pub(crate) use {worth_foundational::expression_api::ExpressionDenialFamily as Family, worth_foundational::expression_api::ExpressionValue};
+#[allow(unused_imports)]
+use crate::expressions::reference_context::digital::*;
 
-pub(crate) use {crate::expressions::ordinary_context::evaluate};
+pub(crate) use crate::expressions::ordinary_context::evaluate;
 
-pub(crate) use {crate::expressions::reference_context::digital::Symbol::One, crate::expressions::reference_context::digital::Symbol::Zero, crate::expressions::reference_context::digital::Symbol::X, crate::expressions::reference_context::digital::Symbol::Z};
+pub(crate) use {
+    crate::expressions::reference_context::digital::Symbol::One,
+    crate::expressions::reference_context::digital::Symbol::Zero,
+    crate::expressions::reference_context::digital::Symbol::X,
+    crate::expressions::reference_context::digital::Symbol::Z,
+};
 
 #[test]
 fn logic4_bitwise_tables_are_exhaustive_to_width_two() {
@@ -18,9 +23,18 @@ fn logic4_bitwise_tables_are_exhaustive_to_width_two() {
             for b in buses(width) {
                 let (x, y) = (literal(&a), literal(&b));
                 let cases: [(&str, fn(Symbol, Symbol) -> Symbol); 3] = [
-                    ("bit_and", crate::expressions::reference_context::digital::Symbol::and),
-                    ("bit_or", crate::expressions::reference_context::digital::Symbol::or),
-                    ("bit_xor", crate::expressions::reference_context::digital::Symbol::xor),
+                    (
+                        "bit_and",
+                        crate::expressions::reference_context::digital::Symbol::and,
+                    ),
+                    (
+                        "bit_or",
+                        crate::expressions::reference_context::digital::Symbol::or,
+                    ),
+                    (
+                        "bit_xor",
+                        crate::expressions::reference_context::digital::Symbol::xor,
+                    ),
                 ];
                 for (name, op) in cases {
                     let source = format!("{name}({x}, {y})");
@@ -136,5 +150,8 @@ fn bits_tables_are_exhaustive_to_width_three() {
     let denial = evaluate("to_bits<3>(8)")
         .into_result()
         .expect_err("needs four bits");
-    assert_eq!(denial.family(), worth_foundational::expression_api::ExpressionDenialFamily::ArithmeticOverflow);
+    assert_eq!(
+        denial.family(),
+        worth_foundational::expression_api::ExpressionDenialFamily::ArithmeticOverflow
+    );
 }

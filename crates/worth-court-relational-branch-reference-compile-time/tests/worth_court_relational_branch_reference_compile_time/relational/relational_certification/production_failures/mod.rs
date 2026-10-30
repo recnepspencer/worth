@@ -1,11 +1,5 @@
 #[allow(unused_imports)] use crate::relational_certification::ordinary_context::production_failures::*;
-pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::baseline_audit::audit as audit_supply_chain_baseline, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline_with_budget, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::entity_kind_id, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::relation_kind_id, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::baseline_audit::BaselineAuditError, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison_state::ComparisonMismatch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::handles::HandleBindingError, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::SupplyChainCompilationError, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::program::SupplyChainProgramError, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::handles::SupplyChainSemanticHandles, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition};
-pub(crate) use {worth_execution::ExecutionAllocationPolicy as Allocation};
-pub(crate) use {worth_relational::facade::identity::EntityId, worth_relational::facade::identity::PartitionId};
-pub(crate) use {worth_relational::facade::runtime::RelationalRuntimeApi};
-pub(crate) use {worth_relational::facade::schema::RelationalSchemaRegistry, worth_relational::facade::schema::SchemaRegistryErrorClass};
-pub(crate) use {worth_relational::facade::symbols::ClientKey};
-pub(crate) use {worth_relational::facade::transactions::EntityReference, worth_relational::facade::transactions::TransactionCommitError, worth_relational::facade::transactions::WorkerIntentBatch};
+pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline_with_budget, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::entity_kind_id, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::relation_kind_id};
 
 #[test]
 fn production_schema_installation_failure_is_typed_before_mutation() {
@@ -43,7 +37,13 @@ fn production_transaction_failure_is_typed_before_handle_binding() {
 
     let mut program = court_program();
     program.relation_specs_mut_for_test()[0].source =
-        worth_relational::facade::transactions::EntityReference::Existing(worth_relational::facade::identity::EntityId::new(worth_relational::facade::identity::PartitionId::main(), u64::MAX, 0));
+        worth_relational::facade::transactions::EntityReference::Existing(
+            worth_relational::facade::identity::EntityId::new(
+                worth_relational::facade::identity::PartitionId::main(),
+                u64::MAX,
+                0,
+            ),
+        );
 
     let error = match compile_supply_chain_baseline(execution, program) {
         Ok(_) => panic!("a relation with an unknown endpoint must fail the commit"),
@@ -254,8 +254,6 @@ fn semantic_relation_binding_rejects_wrong_kind_and_endpoint_intent() {
         worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::handles::HandleBindingError::WrongRelationEndpoints { .. }
     ));
 }
-
-
 
 #[path = "correspondence/mod.rs"]
 pub(crate) mod correspondence;

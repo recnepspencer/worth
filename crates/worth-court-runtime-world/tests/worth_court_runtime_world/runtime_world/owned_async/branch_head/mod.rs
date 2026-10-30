@@ -1,7 +1,3 @@
-use {crate::owned_async::ordinary_context::fixture::AsyncSourceCourt};
-use {worth_runtime_bridge::facade::BridgeAsyncRequestTruthViewBasisKind};
-use {worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial as Denial};
-
 #[test]
 fn observed_empty_head_preserves_snapshot_without_claiming_a_commit() {
     let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::new();
@@ -34,7 +30,9 @@ fn observed_empty_head_preserves_snapshot_without_claiming_a_commit() {
                 &foreign.empty,
                 &foreign_source,
             ),
-        Err(worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial::ForeignOwner)
+        Err(
+            worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial::ForeignOwner
+        )
     ));
     assert!(matches!(
         court

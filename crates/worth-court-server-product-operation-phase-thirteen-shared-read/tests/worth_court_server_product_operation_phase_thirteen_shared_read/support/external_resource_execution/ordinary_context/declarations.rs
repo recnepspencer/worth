@@ -1,6 +1,22 @@
-pub(crate) use {serde::Serialize};
-pub(crate) use {worth_query::facade::foundation::WorthQueryAsyncFailurePosture, worth_query::facade::foundation::WorthQueryAsyncLoadingPosture, worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart, worth_query::facade::foundation::WorthQueryAsyncResourceRequestIdentity, worth_query::facade::foundation::WorthQueryAsyncSourceFamily};
-pub(crate) use {worth_server::WorthServerExternalResourceBudget, worth_server::WorthServerExternalResourceExecutionBoundary, worth_server::WorthServerExternalResourceExecutionDenialCode, worth_server::WorthServerExternalResourceExecutionOutcome, worth_server::WorthServerExternalResourceIntent, worth_server::WorthServerExternalResourceTransport, worth_server::WorthServerExternalResourceTransportOutcome, worth_server::WorthServerExternalResourceTransportResponse, worth_server::WorthServerLoweredExternalResourcePlan};
+pub(crate) use serde::Serialize;
+pub(crate) use {
+    worth_query::facade::foundation::WorthQueryAsyncFailurePosture,
+    worth_query::facade::foundation::WorthQueryAsyncLoadingPosture,
+    worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart,
+    worth_query::facade::foundation::WorthQueryAsyncResourceRequestIdentity,
+    worth_query::facade::foundation::WorthQueryAsyncSourceFamily,
+};
+pub(crate) use {
+    worth_server::WorthServerExternalResourceBudget,
+    worth_server::WorthServerExternalResourceExecutionBoundary,
+    worth_server::WorthServerExternalResourceExecutionDenialCode,
+    worth_server::WorthServerExternalResourceExecutionOutcome,
+    worth_server::WorthServerExternalResourceIntent,
+    worth_server::WorthServerExternalResourceTransport,
+    worth_server::WorthServerExternalResourceTransportOutcome,
+    worth_server::WorthServerExternalResourceTransportResponse,
+    worth_server::WorthServerLoweredExternalResourcePlan,
+};
 
 pub(crate) fn admitted_result(
     evidence: &'static str,
@@ -12,7 +28,8 @@ pub(crate) fn admitted_result(
     };
     let boundary = worth_server::WorthServerExternalResourceExecutionBoundary::using(&transport);
     let plan = boundary.plan(intent(1024)).unwrap();
-    let worth_server::WorthServerExternalResourceExecutionOutcome::Completed(completed) = boundary.execute(plan)
+    let worth_server::WorthServerExternalResourceExecutionOutcome::Completed(completed) =
+        boundary.execute(plan)
     else {
         panic!("transport should complete");
     };
@@ -35,16 +52,21 @@ pub(crate) fn intent_with_body(
     max_response_bytes: usize,
     request_body: Vec<u8>,
 ) -> WorthServerExternalResourceIntent {
-    let request_identity = worth_query::facade::foundation::WorthQueryAsyncResourceRequestIdentity::declare(
-        worth_query::facade::foundation::WorthQueryAsyncSourceFamily::HostResource,
-        worth_query::facade::foundation::WorthQueryAsyncLoadingPosture::Blocking,
-        worth_query::facade::foundation::WorthQueryAsyncFailurePosture::FailClosed,
-        vec![
-            worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart::text("source", "users"),
-            worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart::text("selector", "owner"),
-        ],
-    )
-    .unwrap();
+    let request_identity =
+        worth_query::facade::foundation::WorthQueryAsyncResourceRequestIdentity::declare(
+            worth_query::facade::foundation::WorthQueryAsyncSourceFamily::HostResource,
+            worth_query::facade::foundation::WorthQueryAsyncLoadingPosture::Blocking,
+            worth_query::facade::foundation::WorthQueryAsyncFailurePosture::FailClosed,
+            vec![
+                worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart::text(
+                    "source", "users",
+                ),
+                worth_query::facade::foundation::WorthQueryAsyncRequestIdentityPart::text(
+                    "selector", "owner",
+                ),
+            ],
+        )
+        .unwrap();
     worth_server::WorthServerExternalResourceIntent::builder()
         .with_request_identity(request_identity)
         .with_provider_identity("test-host-provider")
@@ -52,7 +74,12 @@ pub(crate) fn intent_with_body(
         .with_basis_identity("basis:test")
         .with_request_body(request_body)
         .with_budget(
-            worth_server::WorthServerExternalResourceBudget::bounded(1024, max_response_bytes, 5_000).unwrap(),
+            worth_server::WorthServerExternalResourceBudget::bounded(
+                1024,
+                max_response_bytes,
+                5_000,
+            )
+            .unwrap(),
         )
         .build()
         .unwrap()
@@ -70,8 +97,11 @@ impl WorthServerExternalResourceTransport for RespondingTransport {
         _plan: &WorthServerLoweredExternalResourcePlan,
     ) -> WorthServerExternalResourceTransportOutcome {
         worth_server::WorthServerExternalResourceTransportOutcome::Responded(
-            worth_server::WorthServerExternalResourceTransportResponse::new(self.body.clone(), self.evidence)
-                .unwrap(),
+            worth_server::WorthServerExternalResourceTransportResponse::new(
+                self.body.clone(),
+                self.evidence,
+            )
+            .unwrap(),
         )
     }
 }

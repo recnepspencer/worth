@@ -5,8 +5,7 @@ use worth_foundational::{
     FoundationalDiagnosticSupportClaimStrength, SupportPostureProfile,
 };
 
-#[path = "../../../worth_foundational/fixtures/certification/diagnostics/materialization_support.rs"]
-mod materialization_support;
+use worth_testkit_foundational::certification::ordinary_context::diagnostics::materialization_support;
 
 fn require_comparison_bundle(_bundle: &FoundationalDiagnosticComparisonBundle) {}
 

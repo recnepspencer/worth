@@ -1,8 +1,12 @@
-pub(crate) use {worth_foundational::facade::FoundationalBoundaryEvidenceSupportTruthKind};
-pub(crate) use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperatorEvidenceConfig, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerResponseConfig, worth_server::WorthServerResponseTransform, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
-
-pub(crate) use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider};
-pub(crate) use {worth_testkit_server::shared_support_response_fixture::operator_evidence_record, worth_testkit_server::shared_support_response_fixture::query_handoff_success, worth_testkit_server::shared_support_response_fixture::shape_success, worth_testkit_server::shared_support_response_fixture::test_server, worth_testkit_server::shared_support_response_fixture::test_server_with_request_context_and_operator_evidence_config, worth_testkit_server::shared_support_response_fixture::test_server_with_response_config};
+pub(crate) use worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider;
+pub(crate) use {
+    worth_testkit_server::shared_support_response_fixture::operator_evidence_record,
+    worth_testkit_server::shared_support_response_fixture::query_handoff_success,
+    worth_testkit_server::shared_support_response_fixture::shape_success,
+    worth_testkit_server::shared_support_response_fixture::test_server,
+    worth_testkit_server::shared_support_response_fixture::test_server_with_request_context_and_operator_evidence_config,
+    worth_testkit_server::shared_support_response_fixture::test_server_with_response_config,
+};
 
 #[test]
 fn shape_preserves_canonical_success_envelope_truth_across_surface_families() {
@@ -117,7 +121,9 @@ fn shape_changes_success_diagnostics_richness_without_changing_semantic_truth() 
             .build()
             .expect("middleware config should validate"),
         worth_server::WorthServerResponseConfig::builder()
-            .with_success_minimum_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+            .with_success_minimum_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+            )
             .build()
             .expect("response config should validate"),
     );
@@ -182,7 +188,9 @@ fn operator_evidence_keeps_exact_success_counters_and_richness_policy_distinct()
             .build()
             .expect("middleware config should validate"),
         worth_server::WorthServerResponseConfig::builder()
-            .with_success_minimum_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+            .with_success_minimum_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+            )
             .build()
             .expect("response config should validate"),
     );
@@ -270,15 +278,21 @@ fn operator_evidence_preserves_support_truth_when_operational_minimal_elides_sup
             .build()
             .expect("middleware config should validate"),
         worth_server::WorthServerRequestContextConfig::builder()
-            .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal)
+            .with_default_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal,
+            )
             .build()
             .expect("request context config should validate"),
         worth_server::WorthServerResponseConfig::builder()
-            .with_success_minimum_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal)
+            .with_success_minimum_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal,
+            )
             .build()
             .expect("response config should validate"),
         worth_server::WorthServerOperatorEvidenceConfig::builder()
-            .with_minimum_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal)
+            .with_minimum_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::OperationalMinimal,
+            )
             .build()
             .expect("operator evidence config should validate"),
     );

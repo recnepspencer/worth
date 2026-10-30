@@ -1,5 +1,5 @@
 error: cannot construct `BridgeSubscriptionTemporalAsyncCertificationCloseoutArtifact` with struct literal syntax due to private fields
- --> tests/ui/subscription_certification_closeout_artifact_constructor_private.rs:4:13
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_closeout_artifact_constructor_private.rs:4:13
   |
 4 |     let _ = BridgeSubscriptionTemporalAsyncCertificationCloseoutArtifact {};
   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

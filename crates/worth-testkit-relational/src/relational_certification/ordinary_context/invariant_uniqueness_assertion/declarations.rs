@@ -1,8 +1,19 @@
-pub use {worth_foundational::facade::AspectKey, worth_foundational::facade::AspectValue, worth_foundational::facade::FieldKey, worth_foundational::facade::InternedString};
-pub use {worth_relational::facade::transactions::planned_single_field_locator, worth_relational::facade::transactions::CommitConflict, worth_relational::facade::transactions::ConflictClass, worth_relational::facade::transactions::InvariantViolationFields, worth_relational::facade::transactions::TransactionCommitError};
+pub use {
+    worth_foundational::facade::AspectKey, worth_foundational::facade::AspectValue,
+    worth_foundational::facade::FieldKey, worth_foundational::facade::InternedString,
+};
+pub use {
+    worth_relational::facade::transactions::planned_single_field_locator,
+    worth_relational::facade::transactions::CommitConflict,
+    worth_relational::facade::transactions::ConflictClass,
+    worth_relational::facade::transactions::InvariantViolationFields,
+    worth_relational::facade::transactions::TransactionCommitError,
+};
 
 pub fn assert_unique_conflict(error: TransactionCommitError, value: &str) {
-    let worth_relational::facade::transactions::TransactionCommitError::Conflict { error, .. } = error else {
+    let worth_relational::facade::transactions::TransactionCommitError::Conflict { error, .. } =
+        error
+    else {
         panic!("expected invariant conflict, got {error:?}");
     };
     let CommitConflict { class, .. } = error;
@@ -24,6 +35,8 @@ pub fn assert_unique_conflict(error: TransactionCommitError, value: &str) {
     assert_eq!(field_locator, expected);
     assert_eq!(
         observed,
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw(value.into()))
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw(value.into())
+        )
     );
 }

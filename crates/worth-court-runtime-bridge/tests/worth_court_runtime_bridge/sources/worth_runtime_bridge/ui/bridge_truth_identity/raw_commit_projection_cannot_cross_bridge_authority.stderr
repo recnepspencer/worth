@@ -1,5 +1,5 @@
 error[E0599]: the method `bridge_trust_boundary` exists for struct `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthCommitTag>`, but its trait bounds were not satisfied
- --> tests/ui/bridge_truth_identity/raw_commit_projection_cannot_cross_bridge_authority.rs:5:24
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/raw_commit_projection_cannot_cross_bridge_authority.rs:5:24
   |
 5 |     let _ = projection.bridge_trust_boundary();
   |                        ^^^^^^^^^^^^^^^^^^^^^ method cannot be called due to unsatisfied trait bounds

@@ -30,8 +30,10 @@ fn populated_derived_index_cache_stays_outside_owner_authority_accounting() {
             name: "supply-chain.status.optional-cache".to_owned(),
             kind: worth_relational::facade::indexes::DerivedIndexKind::EntityField {
                 field_locator: planned_single_field_locator(
-                    worth_foundational::facade::AspectKey::new("status").expect("Supply Chain status aspect"),
-                    worth_foundational::facade::FieldKey::new("status").expect("Supply Chain status field"),
+                    worth_foundational::facade::AspectKey::new("status")
+                        .expect("Supply Chain status aspect"),
+                    worth_foundational::facade::FieldKey::new("status")
+                        .expect("Supply Chain status field"),
                 ),
             },
             branch_scoped: true,

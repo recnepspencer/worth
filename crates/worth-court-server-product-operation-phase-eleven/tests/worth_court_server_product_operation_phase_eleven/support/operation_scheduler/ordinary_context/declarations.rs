@@ -1,13 +1,30 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
-pub(crate) use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServer, worth_server::WorthServerLoweredOperationPlan, worth_server::WorthServerOperationPlannerInput, worth_server::WorthServerOperationRequestInput, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerRequestContextInput, worth_server::WorthServerSchedulerCancellationDirective, worth_server::WorthServerSchedulerCancellationPosture, worth_server::WorthServerSchedulerCertificationSabotage, worth_server::WorthServerSchedulerConflictDenialCode, worth_server::WorthServerSchedulerFailurePosture, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
-
+pub(crate) use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
+pub(crate) use {
+    worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServer,
+    worth_server::WorthServerLoweredOperationPlan, worth_server::WorthServerOperationPlannerInput,
+    worth_server::WorthServerOperationRequestInput, worth_server::WorthServerQueryHandoffOperation,
+    worth_server::WorthServerRequestContextInput,
+    worth_server::WorthServerSchedulerCancellationDirective,
+    worth_server::WorthServerSchedulerCancellationPosture,
+    worth_server::WorthServerSchedulerCertificationSabotage,
+    worth_server::WorthServerSchedulerConflictDenialCode,
+    worth_server::WorthServerSchedulerFailurePosture, worth_server::WorthServerSurfaceFamily,
+    worth_server::WorthServerTransportClass,
+};
 
 #[allow(unused_imports)]
-pub(crate) use {worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture};
+pub(crate) use worth_testkit_server::shared_support_query_handoff_fixture as query_handoff_fixture;
 
-pub(crate) use {crate::operation_scheduler::ordinary_context::operation_scheduler_runtime::SchedulerWorkspaceProvider, crate::operation_scheduler::ordinary_context::operation_scheduler_runtime::SelectiveSharedReadWorkspaceProvider};
-pub(crate) use {worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture, worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context, worth_testkit_server::shared_support_query_handoff_fixture::test_server};
+pub(crate) use {
+    crate::operation_scheduler::ordinary_context::operation_scheduler_runtime::SchedulerWorkspaceProvider,
+    crate::operation_scheduler::ordinary_context::operation_scheduler_runtime::SelectiveSharedReadWorkspaceProvider,
+};
+pub(crate) use {
+    worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture,
+    worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context,
+    worth_testkit_server::shared_support_query_handoff_fixture::test_server,
+};
 
 pub(crate) fn assert_scheduler_equivalence(
     left: &worth_server::WorthServerExecutedOperationBatch,
@@ -40,7 +57,9 @@ pub(crate) fn assert_scheduler_equivalence(
     }
 }
 
-pub(crate) fn build_shared_read_plans(server: &WorthServer) -> Vec<WorthServerLoweredOperationPlan> {
+pub(crate) fn build_shared_read_plans(
+    server: &WorthServer,
+) -> Vec<WorthServerLoweredOperationPlan> {
     vec![
         lower_shared_read_plan(
             server,

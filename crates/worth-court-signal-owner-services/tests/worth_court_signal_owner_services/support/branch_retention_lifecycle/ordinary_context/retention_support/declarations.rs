@@ -1,7 +1,7 @@
 // Shared fixtures for the Signal exact-retention courts.
 
-pub(crate) use {worth_signal::facade::branch::AdmittedSignalBranchBasis};
-pub(crate) use {worth_signal::facade::history::RuntimeBranch as SignalBranchHandle};
+pub(crate) use worth_signal::facade::branch::AdmittedSignalBranchBasis;
+pub(crate) use worth_signal::facade::history::RuntimeBranch as SignalBranchHandle;
 pub(crate) use {worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
 
 pub(crate) type Runtime = SignalRuntime<(), (), (), (), ()>;

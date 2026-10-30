@@ -1,20 +1,22 @@
 #[allow(unused_imports)]
-use {crate::shared_support_compat_http_phase_eight_assertions as compat_http_phase_eight_assertions};
-
+use crate::shared_support_compat_http_phase_eight_assertions as compat_http_phase_eight_assertions;
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_compat_http_phase_eight_runtime as compat_http_phase_eight_runtime};
+use worth_testkit_server::shared_support_compat_http_phase_eight_runtime as compat_http_phase_eight_runtime;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime};
+use worth_testkit_server::shared_support_query_handoff_runtime as query_handoff_runtime;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {worth_query::facade::runtime::WorthQueryRuntimeSupportProfile};
-use {worth_server::WorthServerBinaryDownloadRequest, worth_server::WorthServerBinaryResumeRequest, worth_server::WorthServerQueryHandoffDenialCode};
-
-use {crate::shared_support_compat_http_phase_eight_assertions::assert_download_denial};
-use {worth_testkit_server::shared_support_compat_http_phase_eight_runtime::build_phase_eight_server_with_workspace_provider, worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_download_denied, worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_download_success, worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_resume_success, worth_testkit_server::shared_support_compat_http_phase_eight_runtime::download_input, worth_testkit_server::shared_support_compat_http_phase_eight_runtime::prepared_request};
-use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledTestWorkspaceProvider};
+use crate::shared_support_compat_http_phase_eight_assertions::assert_download_denial;
+use {
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::build_phase_eight_server_with_workspace_provider,
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_download_denied,
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_download_success,
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::compat_resume_success,
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::download_input,
+    worth_testkit_server::shared_support_compat_http_phase_eight_runtime::prepared_request,
+};
 
 #[test]
 fn compat_http_restart_stable_resume_claims_fail_typed_without_a_real_contract() {
@@ -62,7 +64,8 @@ fn compat_http_restart_stable_resume_claims_fail_typed_without_a_real_contract()
                 ),
                 "files.asset.download",
                 worth_server::WorthServerBinaryDownloadRequest::new(body).with_resume_request(
-                    worth_server::WorthServerBinaryResumeRequest::resume_from(resume).require_restart_stable(),
+                    worth_server::WorthServerBinaryResumeRequest::resume_from(resume)
+                        .require_restart_stable(),
                 ),
             )),
     );
@@ -119,10 +122,12 @@ fn compat_http_resume_denies_byte_drift_and_validator_drift() {
                     .expect("digest drift request should validate"),
                 ),
                 "files.asset.download",
-                worth_server::WorthServerBinaryDownloadRequest::new(b"phase-eight-download-bodz".to_vec())
-                    .with_resume_request(worth_server::WorthServerBinaryResumeRequest::resume_from(
-                        resume.clone(),
-                    )),
+                worth_server::WorthServerBinaryDownloadRequest::new(
+                    b"phase-eight-download-bodz".to_vec(),
+                )
+                .with_resume_request(
+                    worth_server::WorthServerBinaryResumeRequest::resume_from(resume.clone()),
+                ),
             )),
     );
     let validator_drift = compat_download_denied(
@@ -143,7 +148,9 @@ fn compat_http_resume_denies_byte_drift_and_validator_drift() {
                 ),
                 "files.asset.download",
                 worth_server::WorthServerBinaryDownloadRequest::new(baseline_body)
-                    .with_resume_request(worth_server::WorthServerBinaryResumeRequest::resume_from(resume)),
+                    .with_resume_request(
+                        worth_server::WorthServerBinaryResumeRequest::resume_from(resume),
+                    ),
             )),
     );
 
@@ -202,7 +209,9 @@ fn compat_http_resume_denies_explicit_integrity_expectation_mismatch() {
                     .expect("mismatched download should validate"),
                 ),
                 "files.asset.download",
-                worth_server::WorthServerBinaryDownloadRequest::new(b"other-download-body".to_vec()),
+                worth_server::WorthServerBinaryDownloadRequest::new(
+                    b"other-download-body".to_vec(),
+                ),
             )),
     );
     let resume = compat_resume_success(server.compat_http().plan_binary_resume(first.session()));
@@ -223,10 +232,11 @@ fn compat_http_resume_denies_explicit_integrity_expectation_mismatch() {
                     .expect("resumed range request should validate"),
                 ),
                 "files.asset.download",
-                worth_server::WorthServerBinaryDownloadRequest::new(baseline_body).with_resume_request(
-                    worth_server::WorthServerBinaryResumeRequest::resume_from(resume)
-                        .with_expected_integrity(mismatched.integrity_digest().clone()),
-                ),
+                worth_server::WorthServerBinaryDownloadRequest::new(baseline_body)
+                    .with_resume_request(
+                        worth_server::WorthServerBinaryResumeRequest::resume_from(resume)
+                            .with_expected_integrity(mismatched.integrity_digest().clone()),
+                    ),
             )),
     );
 
@@ -283,7 +293,9 @@ fn compat_http_resume_denies_byte_position_drift() {
                 ),
                 "files.asset.download",
                 worth_server::WorthServerBinaryDownloadRequest::new(baseline_body)
-                    .with_resume_request(worth_server::WorthServerBinaryResumeRequest::resume_from(resume)),
+                    .with_resume_request(
+                        worth_server::WorthServerBinaryResumeRequest::resume_from(resume),
+                    ),
             )),
     );
 

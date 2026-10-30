@@ -1,5 +1,5 @@
 error[E0382]: use of moved value: `server`
-  --> tests/ui/lifecycle/server_cannot_serve_twice.rs:16:25
+  --> tests/worth_court_server_product_operation_phase_thirteen_shared_read/sources/worth_server/ui/lifecycle/server_cannot_serve_twice.rs:16:25
    |
  4 |     let server = WorthServer::builder()
    |         ------ move occurs because `server` has type `WorthServer`, which does not implement the `Copy` trait

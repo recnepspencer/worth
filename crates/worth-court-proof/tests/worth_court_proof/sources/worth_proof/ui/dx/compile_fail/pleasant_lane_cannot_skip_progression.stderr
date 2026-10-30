@@ -1,17 +1,17 @@
 error[E0599]: no method named `lower_with` found for struct `Recipe<S, T, A>` in the current scope
-  --> tests/ui/dx/compile_fail/pleasant_lane_cannot_skip_progression.rs:15:31
+  --> tests/worth_court_proof/sources/worth_proof/ui/dx/compile_fail/pleasant_lane_cannot_skip_progression.rs:15:31
    |
 15 |     let _ = recipe("payload").lower_with(lowering_capability);
    |                               ^^^^^^^^^^ method not found in `Recipe<worth_proof::Unresolved, &str>`
 
 error[E0599]: no method named `ready_with` found for struct `Recipe<S, T, A>` in the current scope
-  --> tests/ui/dx/compile_fail/pleasant_lane_cannot_skip_progression.rs:21:31
+  --> tests/worth_court_proof/sources/worth_proof/ui/dx/compile_fail/pleasant_lane_cannot_skip_progression.rs:21:31
    |
 21 |     let _ = recipe("payload").ready_with(readiness_authority, "runtime admission");
    |                               ^^^^^^^^^^ method not found in `Recipe<worth_proof::Unresolved, &str>`
 
 error[E0599]: no method named `execute` found for struct `Recipe<S, T, A>` in the current scope
-  --> tests/ui/dx/compile_fail/pleasant_lane_cannot_skip_progression.rs:31:10
+  --> tests/worth_court_proof/sources/worth_proof/ui/dx/compile_fail/pleasant_lane_cannot_skip_progression.rs:31:10
    |
 28 |       let _ = recipe("payload")
    |  _____________-

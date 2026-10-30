@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/resource_lifecycle_policy_rejects_terminal_initial_class.rs:4:53
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_lifecycle_policy_rejects_terminal_initial_class.rs:4:53
   |
 4 |     let _ = ResourceLifecyclePolicyDeclaration::new(ResourceLifecycleClass::Fulfilled);
   |             --------------------------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `ResourceInitialLifecycleClass`, found `ResourceLifecycleClass`

@@ -1,9 +1,41 @@
 #![allow(dead_code)]
 
-pub(crate) use {std::collections::BTreeMap};
+pub(crate) use std::collections::BTreeMap;
 
-pub(crate) use {worth_foundational::facade::aspects, worth_foundational::facade::AspectFieldLocator, worth_foundational::facade::AspectIdentity, worth_foundational::facade::AspectKey, worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalFieldPath, worth_foundational::facade::FieldKey, worth_foundational::facade::LocatorAuthority, worth_foundational::facade::ScalarAspectType};
-pub(crate) use {worth_relational::facade::branch::AdmittedRelationalBranchBasis, worth_relational::facade::config::CascadeDeletePolicy, worth_relational::facade::config::CrossContextPolicy, worth_relational::facade::history::BranchId, worth_relational::facade::identity::EntityId, worth_relational::facade::identity::KindId, worth_relational::facade::identity::PartitionId, worth_relational::facade::identity::RelationId, worth_relational::facade::schema::AspectBinding, worth_relational::facade::schema::DeclaredAspectContractBinding, worth_relational::facade::schema::EntityKindRegistration, worth_relational::facade::schema::KindAspectContractDeclarations, worth_relational::facade::schema::RelationIntegrityDeclarations, worth_relational::facade::schema::RelationKindRegistration, worth_relational::facade::schema::RelationalSchemaRegistry, worth_relational::facade::schema::SchemaId, worth_relational::facade::schema::SchemaVersionId, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::AspectFieldPatch, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::DeleteEntityIntent, worth_relational::facade::transactions::EntityMutationIntent, worth_relational::facade::transactions::EntityReference, worth_relational::facade::transactions::EntitySpec, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::transactions::RelationSpec, worth_relational::facade::transactions::UpdateEntityFieldsIntent, worth_relational::facade::transactions::WorkerIntentBatch};
+pub(crate) use {
+    worth_foundational::facade::aspects, worth_foundational::facade::AspectFieldLocator,
+    worth_foundational::facade::AspectIdentity, worth_foundational::facade::AspectKey,
+    worth_foundational::facade::AspectValue, worth_foundational::facade::CanonicalFieldPath,
+    worth_foundational::facade::FieldKey, worth_foundational::facade::LocatorAuthority,
+    worth_foundational::facade::ScalarAspectType,
+};
+pub(crate) use {
+    worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    worth_relational::facade::config::CascadeDeletePolicy,
+    worth_relational::facade::config::CrossContextPolicy,
+    worth_relational::facade::history::BranchId, worth_relational::facade::identity::EntityId,
+    worth_relational::facade::identity::KindId, worth_relational::facade::identity::PartitionId,
+    worth_relational::facade::identity::RelationId,
+    worth_relational::facade::schema::AspectBinding,
+    worth_relational::facade::schema::DeclaredAspectContractBinding,
+    worth_relational::facade::schema::EntityKindRegistration,
+    worth_relational::facade::schema::KindAspectContractDeclarations,
+    worth_relational::facade::schema::RelationIntegrityDeclarations,
+    worth_relational::facade::schema::RelationKindRegistration,
+    worth_relational::facade::schema::RelationalSchemaRegistry,
+    worth_relational::facade::schema::SchemaId, worth_relational::facade::schema::SchemaVersionId,
+    worth_relational::facade::symbols::ClientKey,
+    worth_relational::facade::transactions::AspectFieldPatch,
+    worth_relational::facade::transactions::CreateIntent,
+    worth_relational::facade::transactions::DeleteEntityIntent,
+    worth_relational::facade::transactions::EntityMutationIntent,
+    worth_relational::facade::transactions::EntityReference,
+    worth_relational::facade::transactions::EntitySpec,
+    worth_relational::facade::transactions::MutationIntent,
+    worth_relational::facade::transactions::RelationSpec,
+    worth_relational::facade::transactions::UpdateEntityFieldsIntent,
+    worth_relational::facade::transactions::WorkerIntentBatch,
+};
 
 pub(crate) fn main_basis(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -22,9 +54,10 @@ pub(crate) fn demo_schema_registry() -> RelationalSchemaRegistry {
             kind_name: "demo.entity".to_string(),
             schema_id: SchemaId("demo".to_string()),
             schema_version_id: SchemaVersionId(1),
-            aspect_contract_declarations: worth_relational::facade::schema::KindAspectContractDeclarations::new(vec![
-                entity_string_field_aspect(aspect_key("name"), field_key("name")),
-            ]),
+            aspect_contract_declarations:
+                worth_relational::facade::schema::KindAspectContractDeclarations::new(vec![
+                    entity_string_field_aspect(aspect_key("name"), field_key("name")),
+                ]),
         })
         .and_then(|registry| {
             registry.register_relation_kind(RelationKindRegistration {
@@ -32,12 +65,16 @@ pub(crate) fn demo_schema_registry() -> RelationalSchemaRegistry {
                 kind_name: "demo.relation".to_string(),
                 schema_id: SchemaId("demo".to_string()),
                 schema_version_id: SchemaVersionId(1),
-                cross_context_policy: worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
-                cascade_delete_policy: worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
-                aspect_contract_declarations: worth_relational::facade::schema::KindAspectContractDeclarations::new(vec![
-                    relation_string_field_aspect(aspect_key("label"), field_key("label")),
-                ]),
-                relation_integrity: worth_relational::facade::schema::RelationIntegrityDeclarations::default(),
+                cross_context_policy:
+                    worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
+                cascade_delete_policy:
+                    worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
+                aspect_contract_declarations:
+                    worth_relational::facade::schema::KindAspectContractDeclarations::new(vec![
+                        relation_string_field_aspect(aspect_key("label"), field_key("label")),
+                    ]),
+                relation_integrity:
+                    worth_relational::facade::schema::RelationIntegrityDeclarations::default(),
             })
         })
         .expect("demo schema registry")
@@ -65,14 +102,17 @@ pub(crate) fn create_entity(
             .expect("owner-admitted transaction context")
     };
     tx.push_batch(
-        worth_relational::facade::transactions::WorkerIntentBatch::new(format!("create-{name}")).push(worth_relational::facade::transactions::MutationIntent::Create(
-            worth_relational::facade::transactions::CreateIntent::Entity(EntitySpec {
-                partition_id: worth_relational::facade::identity::PartitionId::main(),
-                kind_id: KindId(1),
-                client_key: worth_relational::facade::symbols::ClientKey::raw(name),
-                fields: string_field_patch(aspect_key("name"), field_key("name"), name),
-            }),
-        )),
+        worth_relational::facade::transactions::WorkerIntentBatch::new(format!("create-{name}"))
+            .push(
+                worth_relational::facade::transactions::MutationIntent::Create(
+                    worth_relational::facade::transactions::CreateIntent::Entity(EntitySpec {
+                        partition_id: worth_relational::facade::identity::PartitionId::main(),
+                        kind_id: KindId(1),
+                        client_key: worth_relational::facade::symbols::ClientKey::raw(name),
+                        fields: string_field_patch(aspect_key("name"), field_key("name"), name),
+                    }),
+                ),
+            ),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example entity batch must stage");
@@ -117,12 +157,17 @@ pub(crate) fn update_entity_on_branch(
             .expect("owner-admitted transaction context")
     };
     tx.push_batch(
-        worth_relational::facade::transactions::WorkerIntentBatch::new(format!("update-{name}")).push(worth_relational::facade::transactions::MutationIntent::Entity(
-            worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                entity_id,
-                fields: string_field_patch(aspect_key("name"), field_key("name"), name),
-            }),
-        )),
+        worth_relational::facade::transactions::WorkerIntentBatch::new(format!("update-{name}"))
+            .push(
+                worth_relational::facade::transactions::MutationIntent::Entity(
+                    worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(
+                        UpdateEntityFieldsIntent {
+                            entity_id,
+                            fields: string_field_patch(aspect_key("name"), field_key("name"), name),
+                        },
+                    ),
+                ),
+            ),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example update batch must stage");
@@ -144,9 +189,13 @@ pub(crate) fn delete_entity(
             .expect("owner-admitted transaction context")
     };
     tx.push_batch(
-        worth_relational::facade::transactions::WorkerIntentBatch::new("delete-entity").push(worth_relational::facade::transactions::MutationIntent::Entity(
-            worth_relational::facade::transactions::EntityMutationIntent::Delete(DeleteEntityIntent { entity_id }),
-        )),
+        worth_relational::facade::transactions::WorkerIntentBatch::new("delete-entity").push(
+            worth_relational::facade::transactions::MutationIntent::Entity(
+                worth_relational::facade::transactions::EntityMutationIntent::Delete(
+                    DeleteEntityIntent { entity_id },
+                ),
+            ),
+        ),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example delete batch must stage");
@@ -173,16 +222,23 @@ pub(crate) fn create_relation(
             .expect("owner-admitted transaction context")
     };
     tx.push_batch(
-        worth_relational::facade::transactions::WorkerIntentBatch::new(format!("rel-{label}")).push(worth_relational::facade::transactions::MutationIntent::Create(
-            worth_relational::facade::transactions::CreateIntent::Relation(RelationSpec {
-                partition_id: worth_relational::facade::identity::PartitionId::main(),
-                kind_id: KindId(2),
-                client_key: worth_relational::facade::symbols::ClientKey::raw(label),
-                source: worth_relational::facade::transactions::EntityReference::Existing(source),
-                target: worth_relational::facade::transactions::EntityReference::Existing(target),
-                fields: string_field_patch(aspect_key("label"), field_key("label"), label),
-            }),
-        )),
+        worth_relational::facade::transactions::WorkerIntentBatch::new(format!("rel-{label}"))
+            .push(
+                worth_relational::facade::transactions::MutationIntent::Create(
+                    worth_relational::facade::transactions::CreateIntent::Relation(RelationSpec {
+                        partition_id: worth_relational::facade::identity::PartitionId::main(),
+                        kind_id: KindId(2),
+                        client_key: worth_relational::facade::symbols::ClientKey::raw(label),
+                        source: worth_relational::facade::transactions::EntityReference::Existing(
+                            source,
+                        ),
+                        target: worth_relational::facade::transactions::EntityReference::Existing(
+                            target,
+                        ),
+                        fields: string_field_patch(aspect_key("label"), field_key("label"), label),
+                    }),
+                ),
+            ),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example relation batch must stage");
@@ -220,7 +276,8 @@ pub(crate) fn changed_relation(
 }
 
 pub(crate) fn field_key(label: &str) -> FieldKey {
-    worth_foundational::facade::FieldKey::new(label).expect("example field key must be foundational")
+    worth_foundational::facade::FieldKey::new(label)
+        .expect("example field key must be foundational")
 }
 
 pub(crate) fn aspect_field_locator(label: &str) -> AspectFieldLocator {
@@ -231,7 +288,11 @@ pub(crate) fn aspect_field_locator(label: &str) -> AspectFieldLocator {
     )
 }
 
-pub(crate) fn string_field_patch(aspect_key: AspectKey, field_key: FieldKey, value: &str) -> AspectFieldPatch {
+pub(crate) fn string_field_patch(
+    aspect_key: AspectKey,
+    field_key: FieldKey,
+    value: &str,
+) -> AspectFieldPatch {
     let mut fields = std::collections::BTreeMap::new();
     fields.insert(
         worth_foundational::facade::AspectFieldLocator::new(
@@ -245,7 +306,8 @@ pub(crate) fn string_field_patch(aspect_key: AspectKey, field_key: FieldKey, val
 }
 
 pub(crate) fn aspect_key(label: &str) -> AspectKey {
-    worth_foundational::facade::AspectKey::new(label).expect("example aspect key must be foundational")
+    worth_foundational::facade::AspectKey::new(label)
+        .expect("example aspect key must be foundational")
 }
 
 pub(crate) fn entity_string_field_aspect(
@@ -263,7 +325,9 @@ pub(crate) fn relation_string_field_aspect(
     field_key: FieldKey,
 ) -> DeclaredAspectContractBinding {
     DeclaredAspectContractBinding {
-        binding: worth_relational::facade::schema::AspectBinding::RelationField { field: field_key },
+        binding: worth_relational::facade::schema::AspectBinding::RelationField {
+            field: field_key,
+        },
         contract: scalar_string_contract(aspect_key),
     }
 }

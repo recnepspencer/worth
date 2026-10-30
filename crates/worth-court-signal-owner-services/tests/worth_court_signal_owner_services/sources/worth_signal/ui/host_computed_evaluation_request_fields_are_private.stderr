@@ -1,5 +1,5 @@
 error[E0624]: associated function `new` is private
- --> tests/ui/host_computed_evaluation_request_fields_are_private.rs:9:54
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/host_computed_evaluation_request_fields_are_private.rs:9:54
   |
 9 |             descriptor_id: HostComputedDescriptorId::new(1),
   |                                                      ^^^ private associated function

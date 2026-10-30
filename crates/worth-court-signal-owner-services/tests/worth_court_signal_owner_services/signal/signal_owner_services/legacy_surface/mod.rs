@@ -1,8 +1,5 @@
-#[allow(unused_imports)] use crate::signal_owner_services::ordinary_context::legacy_surface::*;
-pub(crate) use {std::panic::catch_unwind, std::panic::AssertUnwindSafe};
-
-pub(crate) use {worth_signal::facade::branch::SignalBranchSnapshotReconstructionDenial};
-pub(crate) use {worth_signal::facade::SignalError, worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
+#[allow(unused_imports)]
+use crate::signal_owner_services::ordinary_context::legacy_surface::*;
 
 #[test]
 fn sealed_non_main_selection_and_catalog_are_canonical_through_root_and_observer() {
@@ -63,7 +60,10 @@ fn sealed_non_main_selection_and_catalog_are_canonical_through_root_and_observer
     let error = runtime
         .switch_branch(main)
         .expect_err("post-seal branch selection is explicitly unavailable");
-    assert!(matches!(error, worth_signal::facade::SignalError::InvalidInput { .. }));
+    assert!(matches!(
+        error,
+        worth_signal::facade::SignalError::InvalidInput { .. }
+    ));
     assert_eq!(runtime.current_branch(), expected_selected);
     assert_eq!(runtime.known_branches(), expected_known);
     let selected_after_denial = services

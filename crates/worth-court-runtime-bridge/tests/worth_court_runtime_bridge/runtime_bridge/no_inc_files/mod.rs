@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use crate::no_inc_files::ordinary_context::*;
-use {std::path::Path, std::path::PathBuf};
+use std::path::PathBuf;
 
 #[test]
 fn worth_runtime_bridge_disallows_inc_rs_files() {

@@ -1,6 +1,22 @@
 pub use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
 
-pub use {worth_relational::facade::runtime::CustomInvariantDescriptor, worth_relational::facade::runtime::CustomInvariantExecutionContext, worth_relational::facade::runtime::CustomInvariantExecutionError, worth_relational::facade::runtime::CustomInvariantOperationalMetadata, worth_relational::facade::runtime::CustomInvariantPreparationError, worth_relational::facade::runtime::CustomInvariantRegistration, worth_relational::facade::runtime::CustomInvariantRule, worth_relational::facade::runtime::CustomInvariantScopePlanner, worth_relational::facade::runtime::CustomInvariantSemanticIdentity, worth_relational::facade::runtime::CustomInvariantSemanticVersion, worth_relational::facade::runtime::CustomInvariantVerdict, worth_relational::facade::runtime::InvariantCostClass, worth_relational::facade::runtime::InvariantExecutionPoint, worth_relational::facade::runtime::InvariantFailureEffect, worth_relational::facade::runtime::InvariantGroupSet};
+pub use {
+    worth_relational::facade::runtime::CustomInvariantDescriptor,
+    worth_relational::facade::runtime::CustomInvariantExecutionContext,
+    worth_relational::facade::runtime::CustomInvariantExecutionError,
+    worth_relational::facade::runtime::CustomInvariantOperationalMetadata,
+    worth_relational::facade::runtime::CustomInvariantPreparationError,
+    worth_relational::facade::runtime::CustomInvariantRegistration,
+    worth_relational::facade::runtime::CustomInvariantRule,
+    worth_relational::facade::runtime::CustomInvariantScopePlanner,
+    worth_relational::facade::runtime::CustomInvariantSemanticIdentity,
+    worth_relational::facade::runtime::CustomInvariantSemanticVersion,
+    worth_relational::facade::runtime::CustomInvariantVerdict,
+    worth_relational::facade::runtime::InvariantCostClass,
+    worth_relational::facade::runtime::InvariantExecutionPoint,
+    worth_relational::facade::runtime::InvariantFailureEffect,
+    worth_relational::facade::runtime::InvariantGroupSet,
+};
 
 pub struct LargeAdmissionProbeRegistration {
     pub registration: CustomInvariantRegistration,
@@ -15,14 +31,15 @@ pub fn registration(
 ) -> LargeAdmissionProbeRegistration {
     let preparation_calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let evaluation_calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    let registration = worth_relational::facade::runtime::CustomInvariantRegistration::new(LargeAdmissionProbe {
-        id,
-        point,
-        cost_class,
-        preparation_calls: std::sync::Arc::clone(&preparation_calls),
-        evaluation_calls: std::sync::Arc::clone(&evaluation_calls),
-    })
-    .expect("Large admission probe registers");
+    let registration =
+        worth_relational::facade::runtime::CustomInvariantRegistration::new(LargeAdmissionProbe {
+            id,
+            point,
+            cost_class,
+            preparation_calls: std::sync::Arc::clone(&preparation_calls),
+            evaluation_calls: std::sync::Arc::clone(&evaluation_calls),
+        })
+        .expect("Large admission probe registers");
     LargeAdmissionProbeRegistration {
         registration,
         preparation_calls,
@@ -83,7 +100,8 @@ impl CustomInvariantRule for LargeAdmissionProbe {
         &self,
         _planner: &mut CustomInvariantScopePlanner<'_>,
     ) -> Result<Self::Scope, CustomInvariantPreparationError> {
-        self.preparation_calls.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.preparation_calls
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         Ok(())
     }
 
@@ -92,7 +110,8 @@ impl CustomInvariantRule for LargeAdmissionProbe {
         _context: &CustomInvariantExecutionContext<'_>,
         _scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
-        self.evaluation_calls.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.evaluation_calls
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         Ok(worth_relational::facade::runtime::CustomInvariantVerdict::Pass)
     }
 }

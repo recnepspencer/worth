@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/subscription_fanout_projection_requires_sealed_window.rs:10:69
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_fanout_projection_requires_sealed_window.rs:10:69
    |
 10 |     let _ = runtime.project_subscription_delivery_to_fanout(layout, open);
    |                     ---------------------------------------         ^^^^ expected `&BridgeSubscriptionDeliveryWindowSealed`, found `&BridgeSubscriptionDeliveryWindowOpen`

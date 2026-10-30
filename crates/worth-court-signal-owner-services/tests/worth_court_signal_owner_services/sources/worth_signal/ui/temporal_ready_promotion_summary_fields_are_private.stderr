@@ -1,5 +1,5 @@
 error[E0451]: fields `frontier_before`, `frontier_after`, `ready_wakes`, `promoted_wake_count` and `broad_scan_denial_count_delta` of struct `TemporalReadyPromotionSummary` are private
-  --> tests/ui/temporal_ready_promotion_summary_fields_are_private.rs:24:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/temporal_ready_promotion_summary_fields_are_private.rs:24:9
    |
 23 |     let _forged = TemporalReadyPromotionSummary {
    |                   ----------------------------- in this type

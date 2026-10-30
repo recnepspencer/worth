@@ -7,6 +7,8 @@ pub(crate) mod byte_backing;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_execution/support/charged_bytes_derive/mod.rs"]
 pub(crate) mod charged_bytes_derive;
+#[path = "worth_court_execution/compile_fail/mod.rs"]
+pub(crate) mod compile_fail;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_execution/support/components_differential/mod.rs"]
 pub(crate) mod components_differential;
@@ -19,6 +21,8 @@ pub(crate) mod decompose_pattern;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_execution/support/equivalence_contracts/mod.rs"]
 pub(crate) mod equivalence_contracts;
+#[path = "worth_court_execution/execution/mod.rs"]
+pub(crate) mod execution;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_execution/support/fork_join_rounds/mod.rs"]
 pub(crate) mod fork_join_rounds;
@@ -34,6 +38,8 @@ pub(crate) mod memory_reservation;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_execution/support/nested_reduction/mod.rs"]
 pub(crate) mod nested_reduction;
+#[path = "worth_court_execution/oracle/mod.rs"]
+pub(crate) mod oracle;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_execution/support/oracle_bits/mod.rs"]
 pub(crate) mod oracle_bits;
@@ -49,6 +55,8 @@ pub(crate) mod phase_two_certification_repair;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_execution/support/phase_two_neutral_certification/mod.rs"]
 pub(crate) mod phase_two_neutral_certification;
+#[path = "worth_court_execution/process/mod.rs"]
+pub(crate) mod process;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_execution/support/process_zero_memory/mod.rs"]
 pub(crate) mod process_zero_memory;
@@ -82,11 +90,3 @@ pub(crate) mod test_serialization;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_execution/support/work_ceiling/mod.rs"]
 pub(crate) mod work_ceiling;
-#[path = "worth_court_execution/compile_fail/mod.rs"]
-pub(crate) mod compile_fail;
-#[path = "worth_court_execution/execution/mod.rs"]
-pub(crate) mod execution;
-#[path = "worth_court_execution/oracle/mod.rs"]
-pub(crate) mod oracle;
-#[path = "worth_court_execution/process/mod.rs"]
-pub(crate) mod process;

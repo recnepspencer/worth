@@ -1,5 +1,5 @@
 error[E0624]: associated function `plan` is private
-  --> tests/ui/subscription_temporal_activation_ready_cannot_plan_temporal_delivery.rs:12:47
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_temporal_activation_ready_cannot_plan_temporal_delivery.rs:12:47
    |
 12 |       let _ = BridgeTemporalDeliveryWindowPlan::plan(
    |                                                 ^^^^ private associated function
@@ -13,7 +13,7 @@ error[E0624]: associated function `plan` is private
    | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/subscription_temporal_activation_ready_cannot_plan_temporal_delivery.rs:13:9
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_temporal_activation_ready_cannot_plan_temporal_delivery.rs:13:9
    |
 12 |     let _ = BridgeTemporalDeliveryWindowPlan::plan(
    |             -------------------------------------- arguments to this function are incorrect

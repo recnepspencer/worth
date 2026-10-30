@@ -1,5 +1,5 @@
 error[E0624]: associated function `new_subscription_slice` is private
- --> tests/ui/snapshot_read_coordinate_constructor_private.rs:7:53
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/snapshot_read_coordinate_constructor_private.rs:7:53
   |
 7 |       let _coordinate = BridgeSnapshotReadCoordinate::new_subscription_slice(
   |                                                       ^^^^^^^^^^^^^^^^^^^^^^ private associated function
@@ -16,7 +16,7 @@ error[E0624]: associated function `new_subscription_slice` is private
   | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/snapshot_read_coordinate_constructor_private.rs:11:9
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/snapshot_read_coordinate_constructor_private.rs:11:9
    |
  7 |     let _coordinate = BridgeSnapshotReadCoordinate::new_subscription_slice(
    |                       ---------------------------------------------------- arguments to this function are incorrect

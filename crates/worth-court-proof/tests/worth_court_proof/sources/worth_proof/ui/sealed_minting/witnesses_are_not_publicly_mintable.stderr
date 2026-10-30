@@ -1,5 +1,5 @@
 error[E0599]: no function or associated item named `mint` found for struct `AuthorityWitness<A>` in the current scope
-  --> tests/ui/sealed_minting/witnesses_are_not_publicly_mintable.rs:10:63
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/witnesses_are_not_publicly_mintable.rs:10:63
    |
 10 |     let _authority = AuthorityWitness::<DeploymentAuthority>::mint();
    |                                                               ^^^^ function or associated item not found in `AuthorityWitness<DeploymentAuthority>`
@@ -11,7 +11,7 @@ note: if you're trying to build a new `AuthorityWitness<DeploymentAuthority>`, c
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0599]: no function or associated item named `mint` found for struct `CapabilityWitness<C>` in the current scope
-  --> tests/ui/sealed_minting/witnesses_are_not_publicly_mintable.rs:11:72
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/witnesses_are_not_publicly_mintable.rs:11:72
    |
 11 |     let _capability = CapabilityWitness::<CanonicalizationCapability>::mint();
    |                                                                        ^^^^ function or associated item not found in `CapabilityWitness<CanonicalizationCapability>`

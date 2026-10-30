@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:15:23
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:15:23
    |
 15 |     takes_exactly_one(scalar);
    |     ----------------- ^^^^^^ expected `ExactlyOne<u8>`, found `u8`
@@ -9,13 +9,13 @@ error[E0308]: mismatched types
    = note: expected struct `ExactlyOne<u8>`
                 found type `u8`
 note: function defined here
-  --> tests/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:3:4
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:3:4
    |
  3 | fn takes_exactly_one(_: ExactlyOne<u8>) {}
    |    ^^^^^^^^^^^^^^^^^ -----------------
 
 error[E0308]: mismatched types
-  --> tests/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:16:16
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:16:16
    |
 16 |     takes_pair(vec);
    |     ---------- ^^^ expected `Pair<u8>`, found `Vec<u8>`
@@ -25,13 +25,13 @@ error[E0308]: mismatched types
    = note: expected struct `Pair<u8>`
               found struct `Vec<u8>`
 note: function defined here
-  --> tests/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:5:4
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:5:4
    |
  5 | fn takes_pair(_: Pair<u8>) {}
    |    ^^^^^^^^^^ -----------
 
 error[E0308]: mismatched types
-  --> tests/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:17:25
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:17:25
    |
 17 |     takes_disjoint_pair(array);
    |     ------------------- ^^^^^ expected `DisjointPair<u8>`, found `[u8; 2]`
@@ -41,13 +41,13 @@ error[E0308]: mismatched types
    = note: expected struct `DisjointPair<u8>`
                found array `[u8; 2]`
 note: function defined here
-  --> tests/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:7:4
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:7:4
    |
  7 | fn takes_disjoint_pair(_: DisjointPair<u8>) {}
    |    ^^^^^^^^^^^^^^^^^^^ -------------------
 
 error[E0308]: mismatched types
-  --> tests/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:18:25
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:18:25
    |
 18 |     takes_disjoint_pair(pair);
    |     ------------------- ^^^^ expected `DisjointPair<u8>`, found `Pair<u8>`
@@ -57,7 +57,7 @@ error[E0308]: mismatched types
    = note: expected struct `DisjointPair<u8>`
               found struct `Pair<u8>`
 note: function defined here
-  --> tests/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:7:4
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_fixed_shapes_cannot_satisfy_fixed_shape_apis.rs:7:4
    |
  7 | fn takes_disjoint_pair(_: DisjointPair<u8>) {}
    |    ^^^^^^^^^^^^^^^^^^^ -------------------

@@ -1,5 +1,5 @@
 error: cannot construct `ResourceRuntimeSummary` with struct literal syntax due to private fields
-  --> tests/ui/resource_runtime_summary_fields_are_private.rs:4:13
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_runtime_summary_fields_are_private.rs:4:13
    |
  4 |     let _ = ResourceRuntimeSummary {
    |             ^^^^^^^^^^^^^^^^^^^^^^

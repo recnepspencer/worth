@@ -1,8 +1,9 @@
 // Pure owners derive resident descriptions without an Execution dependency.
 
-#[allow(unused_imports)] use crate::resident_value::ordinary_context::*;
-use {std::mem::size_of};
-use {worth_foundational::facade::ChargedBytes};
+#[allow(unused_imports)]
+use crate::resident_value::ordinary_context::*;
+use std::mem::size_of;
+use worth_foundational::facade::ChargedBytes;
 
 #[test]
 fn pure_record_description_counts_skipped_nested_capacity() {

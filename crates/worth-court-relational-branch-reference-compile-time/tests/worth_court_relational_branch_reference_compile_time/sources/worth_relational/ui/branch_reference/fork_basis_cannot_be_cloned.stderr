@@ -1,5 +1,5 @@
 warning: unreachable statement
- --> tests/ui/branch_reference/fork_basis_cannot_be_cloned.rs:5:5
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/fork_basis_cannot_be_cloned.rs:5:5
   |
 4 |     let basis: AdmittedRelationalForkSourceBasis = todo!();
   |                                                    ------- any code following this expression is unreachable
@@ -9,7 +9,7 @@ warning: unreachable statement
   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
 
 error[E0599]: no method named `clone` found for struct `AdmittedRelationalForkSourceBasis` in the current scope
- --> tests/ui/branch_reference/fork_basis_cannot_be_cloned.rs:5:19
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/fork_basis_cannot_be_cloned.rs:5:19
   |
 5 |     let _ = basis.clone();
   |                   ^^^^^ method not found in `AdmittedRelationalForkSourceBasis`

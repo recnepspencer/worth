@@ -1,5 +1,5 @@
 error[E0624]: associated function `issued` is private
- --> tests/ui/private_identity_issue.rs:8:24
+ --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/private_identity_issue.rs:8:24
   |
 8 |       CompositeBasisKey::issued(
   |                          ^^^^^^ private associated function

@@ -37,7 +37,9 @@ pub(crate) fn archive_and_observe(
         .runtime
         .branch_reference_state(&state.branch)
         .unwrap_or_else(|| trace_panic(trace, scenario_index, "archive reference", &state.branch));
-    if reference.lifecycle_posture() != worth_relational::facade::branch::RelationalBranchLifecyclePosture::Archived {
+    if reference.lifecycle_posture()
+        != worth_relational::facade::branch::RelationalBranchLifecyclePosture::Archived
+    {
         trace_panic(trace, scenario_index, "archive posture", reference);
     }
     crate::relational_certification::reference_context::mvcc_seeded_model::seeded_trace_observation::observe_snapshot_against_oracle(
@@ -107,7 +109,10 @@ pub(crate) fn delete_and_prove_absence(
     let stream = world
         .runtime
         .publication()
-        .read_patch_stream(execution, worth_relational::facade::publication::PatchStreamRequest::default())
+        .read_patch_stream(
+            execution,
+            worth_relational::facade::publication::PatchStreamRequest::default(),
+        )
         .unwrap_or_else(|error| trace_panic(trace, scenario_index, "delete patch stream", error));
     let survivors = survivor_references(world, branches, &state.branch);
     let deleted = world
@@ -120,7 +125,10 @@ pub(crate) fn delete_and_prove_absence(
     let stream_after = world
         .runtime
         .publication()
-        .read_patch_stream(execution, worth_relational::facade::publication::PatchStreamRequest::default())
+        .read_patch_stream(
+            execution,
+            worth_relational::facade::publication::PatchStreamRequest::default(),
+        )
         .unwrap_or_else(|error| {
             trace_panic(trace, scenario_index, "delete patch stream after", error)
         });

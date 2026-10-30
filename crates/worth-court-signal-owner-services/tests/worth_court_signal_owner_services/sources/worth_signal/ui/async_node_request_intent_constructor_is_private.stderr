@@ -1,5 +1,5 @@
 error[E0624]: associated function `new` is private
- --> tests/ui/async_node_request_intent_constructor_is_private.rs:4:37
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_request_intent_constructor_is_private.rs:4:37
   |
 4 |     let _ = AsyncNodeRequestIntent::new(NodeId::new(1, 0));
   |                                     ^^^ private associated function

@@ -1,5 +1,5 @@
 error[E0599]: no method named `begin_transaction` found for struct `RelationalRuntime` in the current scope
-  --> tests/ui/branch_reference/ambient_main_transaction_is_not_public.rs:12:21
+  --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/ambient_main_transaction_is_not_public.rs:12:21
    |
 12 |     let _ = runtime.begin_transaction(RelationalTransactionIntent::ordinary());
    |                     ^^^^^^^^^^^^^^^^^

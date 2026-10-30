@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
- --> tests/ui/digest_preparation/non_ready_contract_cannot_satisfy_digest_basis_api.rs:9:66
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/digest_preparation/non_ready_contract_cannot_satisfy_digest_basis_api.rs
   |
-9 |     worth_foundational::aspect_contract_digest_preparation_basis(&contract);
+  |     worth_foundational::aspect_contract_digest_preparation_basis(&contract);
   |     ------------------------------------------------------------ ^^^^^^^^^ expected `&Artifact<DigestPreparationReady, ...>`, found `&AspectContract`
   |     |
   |     arguments to this function are incorrect
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected reference `&worth_proof::artifact::carrier::Artifact<DigestPreparationReady, DigestPreparationReadyAspectContract>`
              found reference `&worth_foundational::AspectContract`
 note: function defined here
- --> src/canonicalization/contract_preparation/digest_entries.rs
+ --> $WORKSPACE/crates/worth-foundational/src/canonicalization/contract_preparation/digest_entries.rs
   |
   | pub fn aspect_contract_digest_preparation_basis(
   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-pub(crate) use {crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle};
+pub(crate) use crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle;
 
 pub(crate) fn assert_counter_exact(
     bundle: &WorthServerCertificationBundle,

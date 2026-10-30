@@ -1,5 +1,5 @@
 error[E0624]: associated function `new` is private
- --> tests/ui/subscription_basis_binding_literal_private.rs:7:84
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_basis_binding_literal_private.rs:7:84
   |
 7 |       let _request = BridgeSubscriptionBasisRequest::snapshot(TruthSnapshotIdentity::new(
   |                                                                                      ^^^ private associated function
@@ -12,7 +12,7 @@ error[E0624]: associated function `new` is private
   | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
- --> tests/ui/subscription_basis_binding_literal_private.rs:8:9
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_basis_binding_literal_private.rs:8:9
   |
 7 |     let _request = BridgeSubscriptionBasisRequest::snapshot(TruthSnapshotIdentity::new(
   |                                                             -------------------------- arguments to this function are incorrect
@@ -28,7 +28,7 @@ note: associated function defined here
   |                   ^^^
 
 error: cannot construct `ValidatedSubscriptionBasisBinding` with struct literal syntax due to private fields
-  --> tests/ui/subscription_basis_binding_literal_private.rs:11:13
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_basis_binding_literal_private.rs:11:13
    |
 11 |     let _ = ValidatedSubscriptionBasisBinding {
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

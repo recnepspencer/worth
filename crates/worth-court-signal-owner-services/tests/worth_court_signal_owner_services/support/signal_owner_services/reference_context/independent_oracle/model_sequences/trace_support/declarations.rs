@@ -1,7 +1,15 @@
 pub(crate) use {worth_signal::facade::SignalGraph, worth_signal::facade::SignalRuntime};
 
-pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::state::BranchKey, crate::signal_owner_services::reference_context::independent_oracle::state::ModelObservation, crate::signal_owner_services::reference_context::independent_oracle::state::ModelWorld};
-pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::transition::ModelDenial, crate::signal_owner_services::reference_context::independent_oracle::transition::ModelResult, crate::signal_owner_services::reference_context::independent_oracle::transition::ModelSuccess};
+pub(crate) use {
+    crate::signal_owner_services::reference_context::independent_oracle::state::BranchKey,
+    crate::signal_owner_services::reference_context::independent_oracle::state::ModelObservation,
+    crate::signal_owner_services::reference_context::independent_oracle::state::ModelWorld,
+};
+pub(crate) use {
+    crate::signal_owner_services::reference_context::independent_oracle::transition::ModelDenial,
+    crate::signal_owner_services::reference_context::independent_oracle::transition::ModelResult,
+    crate::signal_owner_services::reference_context::independent_oracle::transition::ModelSuccess,
+};
 
 pub(crate) const ORACLE_SEED: u64 = 0x9e17_0112;
 

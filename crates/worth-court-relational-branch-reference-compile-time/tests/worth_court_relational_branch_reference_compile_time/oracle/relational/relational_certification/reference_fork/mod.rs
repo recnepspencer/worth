@@ -161,9 +161,11 @@ fn source_observation_is_foreign_after_runtime_clone() {
 
     assert!(matches!(
         clone.fork_branch(execution, BranchId("clone-storm".to_owned()), source_basis),
-        Err(worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
-            worth_relational::facade::branch::RelationalForkDenial::ForeignRuntime
-        ))
+        Err(
+            worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
+                worth_relational::facade::branch::RelationalForkDenial::ForeignRuntime
+            )
+        )
     ));
     let clone_after = capture_reference_evidence(
         &clone,
@@ -285,9 +287,11 @@ fn empty_and_duplicate_fork_denials_preserve_catalog_and_existing_reference() {
         world
             .runtime
             .fork_branch(execution, BranchId("storm".to_owned()), duplicate_basis),
-        Err(worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
-            worth_relational::facade::branch::RelationalForkDenial::DuplicateTarget
-        ))
+        Err(
+            worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
+                worth_relational::facade::branch::RelationalForkDenial::DuplicateTarget
+            )
+        )
     ));
     assert_eq!(
         world.runtime.history().immutable_commit_count(),
@@ -342,7 +346,9 @@ fn stale_fork_source_denial_does_not_install_a_target_reference() {
         .expect("owner-admitted transaction context");
     transaction
         .push_batch(
-            worth_relational::facade::transactions::WorkerIntentBatch::new("advance-main-before-fork"),
+            worth_relational::facade::transactions::WorkerIntentBatch::new(
+                "advance-main-before-fork",
+            ),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
@@ -361,9 +367,11 @@ fn stale_fork_source_denial_does_not_install_a_target_reference() {
         world
             .runtime
             .fork_branch(execution, BranchId("stale".to_owned()), stale_basis),
-        Err(worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
-            worth_relational::facade::branch::RelationalForkDenial::StaleSource
-        ))
+        Err(
+            worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
+                worth_relational::facade::branch::RelationalForkDenial::StaleSource
+            )
+        )
     ));
     assert_eq!(
         world.runtime.history().immutable_commit_count(),

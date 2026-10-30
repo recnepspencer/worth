@@ -1,5 +1,5 @@
 error[E0624]: associated function `open` is private
- --> tests/ui/subscription_delivery_window_open_constructor_private.rs:4:62
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_delivery_window_open_constructor_private.rs:4:62
   |
 4 |       let _constructor = BridgeSubscriptionDeliveryWindowOpen::open;
   |                                                                ^^^^ private associated function

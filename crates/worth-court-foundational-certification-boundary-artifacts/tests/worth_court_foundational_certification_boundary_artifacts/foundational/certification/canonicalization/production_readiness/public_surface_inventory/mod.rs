@@ -1,6 +1,5 @@
 #[allow(unused_imports)] use crate::certification::ordinary_context::canonicalization::production_readiness::public_surface_inventory::*;
-use {std::path::Path};
-use {worth_foundational::canonical_milestone2_production_readiness_report, worth_foundational::canonicalization_api::canonical_public_surface_inventory, worth_foundational::CanonicalHarnessExpansionPoint};
+use {worth_foundational::canonical_milestone2_production_readiness_report, worth_foundational::canonicalization_api::canonical_public_surface_inventory};
 
 #[test]
 fn readiness_artifact_freezes_public_surface_inventory_and_grouped_lane_evidence() {

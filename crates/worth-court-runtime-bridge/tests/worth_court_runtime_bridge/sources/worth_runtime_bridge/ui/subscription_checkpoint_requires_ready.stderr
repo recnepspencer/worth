@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/subscription_checkpoint_requires_ready.rs:12:9
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_checkpoint_requires_ready.rs:12:9
    |
 11 |     let _ = runtime.publish_subscription_checkpoint(
    |                     ------------------------------- arguments to this method are incorrect

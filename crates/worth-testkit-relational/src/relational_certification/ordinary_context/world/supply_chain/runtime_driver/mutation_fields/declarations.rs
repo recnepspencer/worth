@@ -1,8 +1,24 @@
-pub use {std::collections::BTreeMap};
+pub use std::collections::BTreeMap;
 
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey, crate::relational_certification::ordinary_context::world::supply_chain::handles::SupplyChainSemanticHandles};
-pub use {worth_foundational::facade::AspectKey, worth_foundational::facade::AspectValue, worth_foundational::facade::FieldKey, worth_foundational::facade::InternedString};
-pub use {worth_relational::facade::transactions::planned_single_field_locator, worth_relational::facade::transactions::AspectFieldPatch, worth_relational::facade::transactions::EntityMutationIntent, worth_relational::facade::transactions::EntityReference, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::transactions::RelationMutationIntent, worth_relational::facade::transactions::UpdateEntityFieldsIntent, worth_relational::facade::transactions::UpdateRelationEndpointsIntent};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::handles::SupplyChainSemanticHandles,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey,
+};
+pub use {
+    worth_foundational::facade::AspectKey, worth_foundational::facade::AspectValue,
+    worth_foundational::facade::FieldKey, worth_foundational::facade::InternedString,
+};
+pub use {
+    worth_relational::facade::transactions::planned_single_field_locator,
+    worth_relational::facade::transactions::AspectFieldPatch,
+    worth_relational::facade::transactions::EntityMutationIntent,
+    worth_relational::facade::transactions::EntityReference,
+    worth_relational::facade::transactions::MutationIntent,
+    worth_relational::facade::transactions::RelationMutationIntent,
+    worth_relational::facade::transactions::UpdateEntityFieldsIntent,
+    worth_relational::facade::transactions::UpdateRelationEndpointsIntent,
+};
 
 pub fn update_fields<const N: usize>(
     handles: &SupplyChainSemanticHandles,
@@ -15,19 +31,23 @@ pub fn update_fields<const N: usize>(
             let name = field.canonical_name();
             (
                 planned_single_field_locator(
-                    worth_foundational::facade::AspectKey::new(name).expect("canonical Supply Chain aspect"),
-                    worth_foundational::facade::FieldKey::new(name).expect("canonical Supply Chain field"),
+                    worth_foundational::facade::AspectKey::new(name)
+                        .expect("canonical Supply Chain aspect"),
+                    worth_foundational::facade::FieldKey::new(name)
+                        .expect("canonical Supply Chain field"),
                 ),
                 value,
             )
         })
         .collect::<BTreeMap<_, _>>();
-    worth_relational::facade::transactions::MutationIntent::Entity(worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(
-        UpdateEntityFieldsIntent {
-            entity_id: handles.entities[&entity].id,
-            fields: worth_relational::facade::transactions::AspectFieldPatch::new(fields),
-        },
-    ))
+    worth_relational::facade::transactions::MutationIntent::Entity(
+        worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(
+            UpdateEntityFieldsIntent {
+                entity_id: handles.entities[&entity].id,
+                fields: worth_relational::facade::transactions::AspectFieldPatch::new(fields),
+            },
+        ),
+    )
 }
 
 pub fn update_relation(
@@ -49,7 +69,9 @@ pub fn update_relation(
 }
 
 pub fn text(value: &str) -> AspectValue {
-    worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw(value.to_owned()))
+    worth_foundational::facade::AspectValue::String(
+        worth_foundational::facade::InternedString::Raw(value.to_owned()),
+    )
 }
 
 pub fn number(value: impl Into<u64>) -> AspectValue {

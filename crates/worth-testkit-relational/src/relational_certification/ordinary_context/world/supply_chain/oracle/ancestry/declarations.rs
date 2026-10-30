@@ -1,4 +1,4 @@
-pub use {std::collections::BTreeSet};
+pub use std::collections::BTreeSet;
 
 pub use {crate::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId};
 pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel};
@@ -82,11 +82,7 @@ impl OracleBranch {
         }
     }
 
-    pub fn fork(
-        &self,
-        branch: BranchLabel,
-        parent: BranchLabel,
-    ) -> Result<Self, AncestryError> {
+    pub fn fork(&self, branch: BranchLabel, parent: BranchLabel) -> Result<Self, AncestryError> {
         if self.ancestry.lineage.contains(&branch) {
             return Err(crate::relational_certification::ordinary_context::world::supply_chain::oracle::ancestry::AncestryError::BranchAlreadyExists(branch));
         }
@@ -135,10 +131,7 @@ impl OracleBranch {
         }
     }
 
-    pub fn expects_parent_ancestry(
-        &self,
-        parent: &OracleAncestry,
-    ) -> Result<(), AncestryError> {
+    pub fn expects_parent_ancestry(&self, parent: &OracleAncestry) -> Result<(), AncestryError> {
         self.expects_parent(parent.branch)?;
         let expected = parent
             .lineage

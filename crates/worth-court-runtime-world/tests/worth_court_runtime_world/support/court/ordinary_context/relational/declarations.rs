@@ -1,6 +1,17 @@
+pub(crate) use worth_foundational::facade::*;
 pub(crate) use {std::collections::BTreeMap, std::sync::Arc};
-pub(crate) use {worth_foundational::facade::*};
-pub(crate) use {worth_relational::facade::branch::AdmittedRelationalBranchBasis, worth_relational::facade::config::CascadeDeletePolicy, worth_relational::facade::config::CrossContextPolicy, worth_relational::facade::identity::EntityId, worth_relational::facade::identity::KindId, worth_relational::facade::identity::PartitionId, worth_relational::facade::mvcc::PreparedRelationalCommitCandidate, worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::schema::*, worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::*};
+pub(crate) use {
+    worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    worth_relational::facade::config::CascadeDeletePolicy,
+    worth_relational::facade::config::CrossContextPolicy,
+    worth_relational::facade::identity::EntityId, worth_relational::facade::identity::KindId,
+    worth_relational::facade::identity::PartitionId,
+    worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+    worth_relational::facade::runtime::RelationalRuntime,
+    worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::schema::*,
+    worth_relational::facade::symbols::ClientKey, worth_relational::facade::transactions::*,
+};
 
 pub(crate) struct CargoRecords {
     pub(crate) runtime: Arc<RelationalRuntime>,
@@ -58,8 +69,10 @@ impl CargoRecords {
                 kind_name: "carries".into(),
                 schema_id: SchemaId("supply-chain".into()),
                 schema_version_id: SchemaVersionId(1),
-                cross_context_policy: worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
-                cascade_delete_policy: worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
+                cross_context_policy:
+                    worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
+                cascade_delete_policy:
+                    worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
                 aspect_contract_declarations: KindAspectContractDeclarations::new(vec![]),
                 relation_integrity: RelationIntegrityDeclarations::default(),
             })
@@ -83,7 +96,10 @@ impl CargoRecords {
                 .unwrap()
                 .1;
             let mut tx = runtime
-                .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+                .begin_branch_transaction(
+                    &basis,
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                )
                 .unwrap();
             tx.push_batch(
                 WorkerIntentBatch::new(name).push(MutationIntent::Create(CreateIntent::Entity(
@@ -124,14 +140,19 @@ impl CargoRecords {
                 .unwrap()
                 .1;
             let mut tx = runtime
-                .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+                .begin_branch_transaction(
+                    &basis,
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                )
                 .unwrap();
             tx.push_batch(
                 WorkerIntentBatch::new("link").push(MutationIntent::Create(
                     CreateIntent::Relation(RelationSpec {
                         partition_id: worth_relational::facade::identity::PartitionId::main(),
                         kind_id: KindId(5),
-                        client_key: worth_relational::facade::symbols::ClientKey::raw(format!("{source}-{target}")),
+                        client_key: worth_relational::facade::symbols::ClientKey::raw(format!(
+                            "{source}-{target}"
+                        )),
                         source: EntityReference::Existing(ids[source]),
                         target: EntityReference::Existing(ids[target]),
                         fields: AspectFieldPatch::default(),

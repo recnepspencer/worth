@@ -1,17 +1,12 @@
-#[allow(unused_imports)] use crate::relational_certification::growth_context::scale_invariant_admission::*;
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::sync::atomic::Ordering};
-
+#[allow(unused_imports)]
+use crate::relational_certification::growth_context::scale_invariant_admission::*;
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::graph_composition_probe::registration};
-pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::baseline_audit::audit as audit_supply_chain_baseline, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline_with_budget_and_invariant_catalog_and_custom_invariants, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::entity_kind_id, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::head_for_supply_chain_branch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition};
+pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::baseline_audit::audit as audit_supply_chain_baseline, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline_with_budget_and_invariant_catalog_and_custom_invariants, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::head_for_supply_chain_branch};
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::invariant_uniqueness_assertion::assert_unique_conflict};
 pub(crate) use {crate::relational_certification::growth_context::scale_invariant_admission::scale_snapshot_observation::current_snapshot_version, crate::relational_certification::growth_context::scale_invariant_admission::scale_snapshot_observation::live_record_count, crate::relational_certification::growth_context::scale_invariant_admission::scale_snapshot_observation::vessel_call_signs};
-pub(crate) use {worth_foundational::facade::AspectKey, worth_foundational::facade::AspectValue, worth_foundational::facade::FieldKey, worth_foundational::facade::InternedString};
 pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_relational::facade::identity::PartitionId};
-pub(crate) use {worth_relational::facade::runtime::InvariantCatalog, worth_relational::facade::runtime::InvariantCostClass, worth_relational::facade::runtime::InvariantExecutionPoint, worth_relational::facade::runtime::InvariantExecutionResult, worth_relational::facade::runtime::InvariantRegistration, worth_relational::facade::runtime::InvariantReportedRule, worth_relational::facade::runtime::InvariantRule, worth_relational::facade::runtime::RelationalRuntime};
-pub(crate) use {worth_relational::facade::transactions::planned_single_field_locator, worth_relational::facade::transactions::AspectFieldPatch, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::EntitySpec, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::transactions::TransactionCommitError, worth_relational::facade::transactions::WorkerIntentBatch};
+pub(crate) use worth_relational::facade::runtime::InvariantCatalog;
 
 #[test]
 #[ignore = "mandatory scheduled Scale certification; too expensive for the ordinary lane"]
@@ -30,12 +25,16 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
     let program = worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::program::CompiledSupplyChainProgram::compile(definition)
         .expect("Scale Supply Chain program compiles");
     let catalog = InvariantCatalog {
-        registrations: vec![worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
-            worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
-                worth_foundational::facade::AspectKey::new("call_sign").expect("call-sign aspect"),
-                worth_foundational::facade::FieldKey::new("call_sign").expect("call-sign field"),
+        registrations: vec![
+            worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
+                worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
+                    worth_foundational::facade::AspectKey::new("call_sign")
+                        .expect("call-sign aspect"),
+                    worth_foundational::facade::FieldKey::new("call_sign")
+                        .expect("call-sign field"),
+                ),
             ),
-        )],
+        ],
     };
     let commit_probe = registration(
         COMMIT_PROBE_ID,
@@ -83,8 +82,14 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
     );
     assert!(!contains_custom_rule(&world.commit_result, GRAPH_PROBE_ID));
     assert!(contains_native_uniqueness(&world.commit_result));
-    assert_eq!(graph_preparation_calls.load(std::sync::atomic::Ordering::Relaxed), 0);
-    assert_eq!(graph_evaluation_calls.load(std::sync::atomic::Ordering::Relaxed), 0);
+    assert_eq!(
+        graph_preparation_calls.load(std::sync::atomic::Ordering::Relaxed),
+        0
+    );
+    assert_eq!(
+        graph_evaluation_calls.load(std::sync::atomic::Ordering::Relaxed),
+        0
+    );
 
     assert_scale_fork_shares_complete_authority(execution, &world.runtime);
 
@@ -104,8 +109,14 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
         &graph_execution,
         GRAPH_PROBE_ID
     ));
-    assert_eq!(graph_preparation_calls.load(std::sync::atomic::Ordering::Relaxed), 1);
-    assert_eq!(graph_evaluation_calls.load(std::sync::atomic::Ordering::Relaxed), 1);
+    assert_eq!(
+        graph_preparation_calls.load(std::sync::atomic::Ordering::Relaxed),
+        1
+    );
+    assert_eq!(
+        graph_evaluation_calls.load(std::sync::atomic::Ordering::Relaxed),
+        1
+    );
     let graph_calls_before_follow_up = (
         graph_preparation_calls.load(std::sync::atomic::Ordering::Relaxed),
         graph_evaluation_calls.load(std::sync::atomic::Ordering::Relaxed),

@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/relational_identity/raw_record_text_cannot_enter_bridge_record_authority.rs:4:84
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/relational_identity/raw_record_text_cannot_enter_bridge_record_authority.rs:4:84
   |
 4 |     let _identity = BridgeHistoricalResolvedRecordIdentity::from_relational_record("entity:0:4:2");
   |                     -------------------------------------------------------------- ^^^^^^^^^^^^^^ expected `RelationalBridgeRecordIdentityParts`, found `&str`

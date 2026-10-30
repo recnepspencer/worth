@@ -1,12 +1,19 @@
-use {worth_foundational::admit_canonical_sequence_digest_derivation, worth_foundational::derive_canonical_digest, worth_foundational::prepare_canonical_basis_sequence, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalDigestAlgorithmId, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalSingleSequenceDigestAlgorithmSlot, worth_foundational::CanonicalizationRuleVersion};
-use {worth_proof::TransitionOutcome};
+use {
+    worth_foundational::admit_canonical_sequence_digest_derivation,
+    worth_foundational::derive_canonical_digest,
+    worth_foundational::prepare_canonical_basis_sequence,
+};
 
 #[test]
 fn admitted_sequence_preserves_golden_bytes_and_original_resource_refusal() {
-    use {worth_foundational::canonicalization, worth_foundational::CanonicalDigestAdmissionStop, worth_foundational::CanonicalDigestWorkBudget};
+    use {
+        worth_foundational::canonicalization, worth_foundational::CanonicalDigestAdmissionStop,
+        worth_foundational::CanonicalDigestWorkBudget,
+    };
     let make_basis = || {
         prepare_canonical_basis_sequence(
-            worth_foundational::CanonicalizationRuleVersion::new("m2.golden.digest-slot").expect("valid version"),
+            worth_foundational::CanonicalizationRuleVersion::new("m2.golden.digest-slot")
+                .expect("valid version"),
             worth_foundational::CanonicalBasisDomain::Value,
             [worth_foundational::CanonicalBasisEntry::new(
                 worth_foundational::CanonicalBasisDomain::Value,
@@ -79,7 +86,8 @@ fn admitted_sequence_preserves_golden_bytes_and_original_resource_refusal() {
 
 #[test]
 fn sha256_digest_slot_has_stable_derived_value() {
-    let version = worth_foundational::CanonicalizationRuleVersion::new("m2.golden.digest-slot").expect("valid version");
+    let version = worth_foundational::CanonicalizationRuleVersion::new("m2.golden.digest-slot")
+        .expect("valid version");
     let sequence = match prepare_canonical_basis_sequence(
         version.clone(),
         worth_foundational::CanonicalBasisDomain::Value,

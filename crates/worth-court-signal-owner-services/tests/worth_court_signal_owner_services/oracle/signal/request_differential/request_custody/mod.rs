@@ -1,6 +1,11 @@
 // The checked door refuses before any callback or graph publication.
 #[allow(unused_imports)]
-pub(crate) use {worth_signal::facade::AspectVersion, std::sync::atomic::AtomicUsize, worth_execution::CancellationToken, worth_execution::ExecutionRequest, std::sync::atomic::Ordering, worth_signal::facade::RunMode, crate::request_differential::ordinary_context::graph};
+pub(crate) use {
+    crate::request_differential::ordinary_context::graph, std::sync::atomic::AtomicUsize,
+    std::sync::atomic::Ordering, worth_execution::CancellationToken,
+    worth_execution::ExecutionRequest, worth_signal::facade::AspectVersion,
+    worth_signal::facade::RunMode,
+};
 
 #[test]
 fn singleton_memory_refusal_never_runs_the_callback() {
@@ -25,7 +30,8 @@ fn singleton_memory_refusal_never_runs_the_callback() {
             &(),
             &|_| {
                 calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                Ok(worth_signal::facade::AspectVersion::zero().with(worth_signal::facade::Aspect::new(0), 7))
+                Ok(worth_signal::facade::AspectVersion::zero()
+                    .with(worth_signal::facade::Aspect::new(0), 7))
             },
             worth_execution::ExecutionRequest::serial(&serial),
         );

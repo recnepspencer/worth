@@ -1,8 +1,6 @@
-pub(crate) use {worth_signal::facade::branch::validate_signal_branch_name, worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome, worth_signal::facade::branch::SignalOwnerCancellationSource};
+pub(crate) use worth_signal::facade::branch::validate_signal_branch_name;
 
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::comparison::advance_denial, crate::signal_owner_services::reference_context::independent_oracle::comparison::neutral_basis, crate::signal_owner_services::reference_context::independent_oracle::comparison::neutral_snapshot, crate::signal_owner_services::reference_context::independent_oracle::comparison::readmission_denial};
-pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::state::ModelWorld};
-pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::transition::ModelAction, crate::signal_owner_services::reference_context::independent_oracle::transition::ModelResult, crate::signal_owner_services::reference_context::independent_oracle::transition::ModelSuccess};
 pub(crate) use {crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::assert_denial, crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::current_model, crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::model_denial, crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::model_fork, crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::model_lease, crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::model_movement, crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::model_observation, crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::runtime, crate::signal_owner_services::reference_context::independent_oracle::model_sequences::trace_support::ORACLE_SEED};
 
 #[test]
@@ -70,7 +68,9 @@ fn seeded_public_trace_matches_an_independent_oracle_and_covers_terminal_outcome
     let lease_key = model_lease(&model, "before initial retain model application");
     let release = basis.release_exact(lease);
     let released = match release {
-        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => receipt,
+        worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome::Released(receipt) => {
+            receipt
+        }
         other => panic!("seed {ORACLE_SEED:#x}: initial release unexpectedly denied: {other:?}"),
     };
     assert_eq!(released.branch_id().0, root);
@@ -171,7 +171,10 @@ fn seeded_public_trace_matches_an_independent_oracle_and_covers_terminal_outcome
     );
 
     let capture = mutation
-        .capture_exact(&current, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token())
+        .capture_exact(
+            &current,
+            &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+        )
         .expect("public capture advances the exact basis and stores a snapshot");
     let (snapshot, captured_basis) = capture.into_parts();
     let snapshot_model = neutral_snapshot(&snapshot);

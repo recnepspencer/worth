@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/relational_identity/raw_commit_text_cannot_enter_bridge_truth.rs:4:68
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/relational_identity/raw_commit_text_cannot_enter_bridge_truth.rs:4:68
   |
 4 |     let _identity = TruthCommitIdentity::from_relational_commit_id("commit-7");
   |                     ---------------------------------------------- ^^^^^^^^^^ expected `u64`, found `&str`

@@ -1,6 +1,4 @@
-use {worth_foundational::performance_api, worth_foundational::FoundationalPerformanceAttachmentConstructionDenial, worth_foundational::FoundationalPerformanceBundleConstructionDenial, worth_foundational::FoundationalPerformanceCounterRow, worth_foundational::FoundationalPerformanceMismatch, worth_foundational::FoundationalPerformanceWorkClass};
-
-use {crate::certification::ordinary_context::performance::basis_support::authoritative_claim};
+use crate::certification::ordinary_context::performance::basis_support::authoritative_claim;
 
 #[test]
 fn lower_lane_builds_canonical_bundle_and_explains_mismatch_precisely() {
@@ -19,39 +17,46 @@ fn lower_lane_builds_canonical_bundle_and_explains_mismatch_precisely() {
         )
         .expect("valid support code");
 
-    let left = worth_foundational::performance_api::lower_lane::basis::performance_bundle(authoritative_claim())
-        .attach_contract_name(contract_name.clone())
-        .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
-            counter_name.clone(),
-            worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
-            3,
-        ))
-        .attach_supporting_evidence_row(
-            worth_foundational::FoundationalPerformanceSupportingEvidenceRow::new(
-                support_code.clone(),
-                worth_foundational::FoundationalPerformanceWorkClass::SupportReportAssembly,
-            ),
-        )
-        .finish()
-        .expect("left bundle should build");
+    let left = worth_foundational::performance_api::lower_lane::basis::performance_bundle(
+        authoritative_claim(),
+    )
+    .attach_contract_name(contract_name.clone())
+    .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
+        counter_name.clone(),
+        worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
+        3,
+    ))
+    .attach_supporting_evidence_row(
+        worth_foundational::FoundationalPerformanceSupportingEvidenceRow::new(
+            support_code.clone(),
+            worth_foundational::FoundationalPerformanceWorkClass::SupportReportAssembly,
+        ),
+    )
+    .finish()
+    .expect("left bundle should build");
 
-    let right = worth_foundational::performance_api::lower_lane::basis::performance_bundle(authoritative_claim())
-        .attach_contract_name(contract_name)
-        .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
-            counter_name,
-            worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
-            5,
-        ))
-        .attach_supporting_evidence_row(
-            worth_foundational::FoundationalPerformanceSupportingEvidenceRow::new(
-                support_code,
-                worth_foundational::FoundationalPerformanceWorkClass::SupportReportAssembly,
-            ),
-        )
-        .finish()
-        .expect("right bundle should build");
+    let right = worth_foundational::performance_api::lower_lane::basis::performance_bundle(
+        authoritative_claim(),
+    )
+    .attach_contract_name(contract_name)
+    .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
+        counter_name,
+        worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
+        5,
+    ))
+    .attach_supporting_evidence_row(
+        worth_foundational::FoundationalPerformanceSupportingEvidenceRow::new(
+            support_code,
+            worth_foundational::FoundationalPerformanceWorkClass::SupportReportAssembly,
+        ),
+    )
+    .finish()
+    .expect("right bundle should build");
 
-    let comparison = worth_foundational::performance_api::lower_lane::basis::compare_performance_bundles(&left, &right);
+    let comparison =
+        worth_foundational::performance_api::lower_lane::basis::compare_performance_bundles(
+            &left, &right,
+        );
     assert!(!comparison.is_equivalent());
     assert_eq!(comparison.mismatches().len(), 1);
     assert!(matches!(
@@ -106,14 +111,19 @@ fn bundle_comparison_covers_full_claim_surface_not_just_boundary_and_freshness()
         .finish()
         .expect("right claim should build");
 
-    let left = worth_foundational::performance_api::lower_lane::basis::performance_bundle(left_claim)
-        .finish()
-        .expect("left bundle should build");
-    let right = worth_foundational::performance_api::lower_lane::basis::performance_bundle(right_claim)
-        .finish()
-        .expect("right bundle should build");
+    let left =
+        worth_foundational::performance_api::lower_lane::basis::performance_bundle(left_claim)
+            .finish()
+            .expect("left bundle should build");
+    let right =
+        worth_foundational::performance_api::lower_lane::basis::performance_bundle(right_claim)
+            .finish()
+            .expect("right bundle should build");
 
-    let comparison = worth_foundational::performance_api::lower_lane::basis::compare_performance_bundles(&left, &right);
+    let comparison =
+        worth_foundational::performance_api::lower_lane::basis::compare_performance_bundles(
+            &left, &right,
+        );
     assert!(comparison.mismatches().iter().any(|mismatch| {
         matches!(
             mismatch,
@@ -159,20 +169,22 @@ fn attachment_names_and_bundle_members_fail_closed() {
         )
         .expect("valid contract name");
 
-    let denial = worth_foundational::performance_api::lower_lane::basis::performance_bundle(authoritative_claim())
-        .attach_contract_name(contract_name.clone())
-        .attach_contract_name(contract_name)
-        .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
-            counter_name.clone(),
-            worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
-            3,
-        ))
-        .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
-            counter_name,
-            worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
-            3,
-        ))
-        .finish();
+    let denial = worth_foundational::performance_api::lower_lane::basis::performance_bundle(
+        authoritative_claim(),
+    )
+    .attach_contract_name(contract_name.clone())
+    .attach_contract_name(contract_name)
+    .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
+        counter_name.clone(),
+        worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
+        3,
+    ))
+    .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
+        counter_name,
+        worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
+        3,
+    ))
+    .finish();
     assert_eq!(
         denial,
         Err(worth_foundational::FoundationalPerformanceBundleConstructionDenial::DuplicateContractName)
@@ -185,14 +197,16 @@ fn counter_backed_receipts_require_exact_rows_and_counter_backed_claims() {
         "authoritative_mutation.rows",
     )
     .expect("valid counter name");
-    let bundle = worth_foundational::performance_api::lower_lane::basis::performance_bundle(authoritative_claim())
-        .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
-            counter_name.clone(),
-            worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
-            3,
-        ))
-        .finish()
-        .expect("bundle should build");
+    let bundle = worth_foundational::performance_api::lower_lane::basis::performance_bundle(
+        authoritative_claim(),
+    )
+    .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
+        counter_name.clone(),
+        worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
+        3,
+    ))
+    .finish()
+    .expect("bundle should build");
 
     let receipt = worth_foundational::performance_api::lower_lane::receipts::counter_backed_performance_receipt(bundle)
         .attach_counter_row(worth_foundational::FoundationalPerformanceCounterRow::new(
@@ -204,14 +218,16 @@ fn counter_backed_receipts_require_exact_rows_and_counter_backed_claims() {
     assert_eq!(receipt.counter_rows()[0].observed_count(), 3);
 
     let mismatch_bundle =
-        worth_foundational::performance_api::lower_lane::basis::performance_bundle(authoritative_claim())
-            .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
-                counter_name.clone(),
-                worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
-                3,
-            ))
-            .finish()
-            .expect("bundle should build");
+        worth_foundational::performance_api::lower_lane::basis::performance_bundle(
+            authoritative_claim(),
+        )
+        .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
+            counter_name.clone(),
+            worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
+            3,
+        ))
+        .finish()
+        .expect("bundle should build");
     let mismatch =
         worth_foundational::performance_api::lower_lane::receipts::counter_backed_performance_receipt(mismatch_bundle)
             .attach_counter_row(worth_foundational::FoundationalPerformanceCounterRow::new(counter_name, 2))

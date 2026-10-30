@@ -1,5 +1,11 @@
-pub use {worth_foundational::validate_aspect_value, worth_foundational::AspectContract, worth_foundational::AspectContractRevision, worth_foundational::AspectIdentity, worth_foundational::AspectKey, worth_foundational::AspectValue, worth_foundational::ContractValidatedAspectArtifact, worth_foundational::FieldKey, worth_foundational::ScalarAspectType};
-pub use {worth_proof::TransitionOutcome};
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_foundational::validate_aspect_value, worth_foundational::AspectContract,
+    worth_foundational::AspectContractRevision, worth_foundational::AspectIdentity,
+    worth_foundational::AspectKey, worth_foundational::AspectValue,
+    worth_foundational::ContractValidatedAspectArtifact, worth_foundational::FieldKey,
+    worth_foundational::ScalarAspectType,
+};
 
 pub fn key(name: &str) -> AspectKey {
     worth_foundational::AspectKey::new(name).expect("valid aspect key")
@@ -22,7 +28,12 @@ pub fn scalar_contract(
     aspect_identity: u64,
     scalar: ScalarAspectType,
 ) -> AspectContract {
-    worth_foundational::AspectContract::scalar(key(name), identity(aspect_identity), revision(1), scalar)
+    worth_foundational::AspectContract::scalar(
+        key(name),
+        identity(aspect_identity),
+        revision(1),
+        scalar,
+    )
 }
 
 pub fn validated_scalar(
@@ -32,7 +43,8 @@ pub fn validated_scalar(
     value: AspectValue,
 ) -> ContractValidatedAspectArtifact {
     let contract = scalar_contract(name, aspect_identity, scalar);
-    let worth_proof::TransitionOutcome::Success(artifact) = validate_aspect_value(&contract, value.into())
+    let worth_proof::TransitionOutcome::Success(artifact) =
+        validate_aspect_value(&contract, value.into())
     else {
         panic!("expected validated scalar artifact");
     };

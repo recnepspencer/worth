@@ -1,5 +1,5 @@
 error[E0603]: module `data` is private
- --> tests/ui/milestone_13/invalidation_progression_is_private.rs:1:19
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/invalidation_progression_is_private.rs:1:19
   |
 1 | use worth_signal::data::proof::invalidation::progression::ReadyInvalidationBatch;
   |                   ^^^^ private module        ----------- module `progression` is not publicly re-exported

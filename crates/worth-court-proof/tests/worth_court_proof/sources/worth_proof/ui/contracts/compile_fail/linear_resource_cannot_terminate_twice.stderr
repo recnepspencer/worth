@@ -1,5 +1,5 @@
 error[E0382]: use of moved value: `resource`
-  --> tests/ui/contracts/compile_fail/linear_resource_cannot_terminate_twice.rs:21:19
+  --> tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/linear_resource_cannot_terminate_twice.rs:21:19
    |
 16 |     let resource = LinearResource::<_, End, RuntimeAuthority>::mint(
    |         -------- move occurs because `resource` has type `LinearResource<u64, End, RuntimeAuthority>`, which does not implement the `Copy` trait

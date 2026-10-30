@@ -1,5 +1,5 @@
 error[E0624]: associated function `select` is private
- --> tests/ui/subscription_duplicate_replay_policy_constructor_private.rs:4:65
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_duplicate_replay_policy_constructor_private.rs:4:65
   |
 4 |     let _constructor = BridgeSubscriptionDuplicateReplayPolicy::select;
   |                                                                 ^^^^^^ private associated function

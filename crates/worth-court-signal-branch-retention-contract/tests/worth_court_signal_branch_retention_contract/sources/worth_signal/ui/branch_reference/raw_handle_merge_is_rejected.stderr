@@ -1,5 +1,5 @@
 error[E0308]: arguments to this method are incorrect
- --> tests/ui/branch_reference/raw_handle_merge_is_rejected.rs:8:21
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/raw_handle_merge_is_rejected.rs:8:21
   |
 8 |     let _ = runtime.merge_branch(&branch, &branch);
   |                     ^^^^^^^^^^^^ -------  ------- expected `&AdmittedSignalBranchBasis`, found `&RuntimeBranch`

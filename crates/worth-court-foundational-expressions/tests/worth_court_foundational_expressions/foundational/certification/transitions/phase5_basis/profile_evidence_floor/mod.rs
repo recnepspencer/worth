@@ -1,10 +1,27 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::transitions::phase5_basis::profile_evidence_floor::*;
-use {worth_foundational::attach_proof_bearing_profiled_commit_receipt, worth_foundational::plan_foundational_profile_materialization_with_elision, worth_foundational::request_foundational_profile_set, worth_foundational::AdmissionReadinessProfile, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalProfileSet, worth_foundational::FoundationalProfileSetInput, worth_foundational::ProofBearingArtifactTarget, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::transitions::phase5_basis::profile_evidence_floor::*;
+use {
+    worth_foundational::attach_proof_bearing_profiled_commit_receipt,
+    worth_foundational::plan_foundational_profile_materialization_with_elision,
+    worth_foundational::request_foundational_profile_set,
+    worth_foundational::ProofBearingArtifactTarget,
+};
 
-use {crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict, crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority, crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input};
-use {crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id, crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_authority, crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_identity};
-use {crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::assert_equivalent, crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_receipt, crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_receipt_ref};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict,
+    crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority,
+    crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input,
+};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_authority,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_identity,
+};
+use {
+    crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::assert_equivalent,
+    crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_receipt,
+    crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_receipt_ref,
+};
 
 #[test]
 fn profile_attachment_and_reduced_richness_do_not_weaken_receipt_evidence_floor() {

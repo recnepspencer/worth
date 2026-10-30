@@ -1,5 +1,15 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_execution::CancellationToken, worth_foundational::DeterminismContract, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_foundational::ExecutionBudget, worth_execution::ExecutionMap, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_execution::KeyedItem, worth_execution::KeyedPartitioner, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop, std::num::NonZeroUsize, worth_foundational::PartitionIdentity, crate::partitioners::ordinary_context::admit, crate::partitioners::ordinary_context::item};
+pub(crate) use {
+    crate::partitioners::ordinary_context::admit, crate::partitioners::ordinary_context::item,
+    std::num::NonZeroUsize, worth_execution::CancellationToken,
+    worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig,
+    worth_execution::ExecutionMap, worth_execution::KeyedItem, worth_execution::KeyedPartitioner,
+    worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome,
+    worth_execution::MapPartition, worth_execution::MapStop,
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 #[test]
 fn candidate_partition_work_is_charged_by_enclosing_map_lease() {
@@ -30,7 +40,11 @@ fn candidate_partition_work_is_charged_by_enclosing_map_lease() {
                 policy: worth_foundational::ExecutionRequestPolicy::new(
                     worth_foundational::ExecutionPosture::Serial,
                     worth_foundational::DeterminismContract::CanonicalBitwise,
-                    worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), Some(8_192), Some(ceiling)),
+                    worth_foundational::ExecutionBudget::new(
+                        std::num::NonZeroUsize::new(1).unwrap(),
+                        Some(8_192),
+                        Some(ceiling),
+                    ),
                 ),
                 deadline: None,
                 cancellation: worth_execution::CancellationToken::new(),

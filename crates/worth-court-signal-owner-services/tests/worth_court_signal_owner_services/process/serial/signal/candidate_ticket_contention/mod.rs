@@ -8,36 +8,10 @@
 
 #[allow(unused_imports)]
 use crate::candidate_ticket_contention::isolated_context::*;
-use std::num::NonZeroUsize;
+use std::sync::Mutex;
 use std::thread::JoinHandle;
-use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
-use {std::sync::mpsc, std::sync::Mutex, std::sync::OnceLock};
 
-use {
-    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
-    worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap,
-    worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapPartition,
-    worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel,
-    worth_execution::PreparedExecutionMap,
-};
-use {
-    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
-    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
-    worth_foundational::PartitionIdentity,
-};
-
-use worth_signal::facade::adapters::NodeContract;
-use {
-    worth_signal::facade::Aspect, worth_signal::facade::AspectVersion,
-    worth_signal::facade::BoundedSignalInputs, worth_signal::facade::ChangedRegion,
-    worth_signal::facade::DeclaredSignalInput, worth_signal::facade::DependencyEdge,
-    worth_signal::facade::NodeEvaluationResult, worth_signal::facade::NodeId,
-    worth_signal::facade::PartitionSubscription, worth_signal::facade::RunMode,
-    worth_signal::facade::ScopePath, worth_signal::facade::SignalError,
-    worth_signal::facade::SignalExecutionFailure, worth_signal::facade::SignalExecutionStopReason,
-    worth_signal::facade::SignalGraph, worth_signal::facade::SignalLeaseDenial,
-    worth_signal::facade::SignalPublicationDisposition,
-};
+use worth_signal::facade::SignalGraph;
 
 #[test]
 fn checked_epoch_contention_obeys_admission_and_result_contract() {

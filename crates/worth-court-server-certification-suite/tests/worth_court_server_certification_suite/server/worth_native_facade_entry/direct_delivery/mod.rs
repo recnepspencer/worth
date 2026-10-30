@@ -1,9 +1,17 @@
-#[allow(unused_imports)] use crate::worth_native_facade_entry::ordinary_context::direct_delivery::*;
-use {worth_proof::TransitionOutcome};
-use {worth_server::WorthServerDirectDeliveryClass, worth_server::WorthServerDirectDeliveryOutcome, worth_server::WorthServerDirectDeliveryRequest, worth_server::WorthServerDirectFreshnessMode, worth_server::WorthServerDirectLeaseDeclarationOutcome, worth_server::WorthServerQueryHandoffDenialCode, worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerQueryRequestedResume, worth_server::WorthServerSuccessKind, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+#[allow(unused_imports)]
+use crate::worth_native_facade_entry::ordinary_context::direct_delivery::*;
 
-use {worth_testkit_server::shared_support_query_handoff_fixture::admit_delivery_posture, worth_testkit_server::shared_support_query_handoff_fixture::request_input, worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context, worth_testkit_server::shared_support_query_handoff_fixture::success, worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read, worth_testkit_server::shared_support_worth_native_assertions::family_contract_digest, worth_testkit_server::shared_support_worth_native_assertions::operator_evidence_record, worth_testkit_server::shared_support_worth_native_assertions::worth_native_session, worth_testkit_server::shared_support_worth_native_runtime::build_server};
-
+use {
+    worth_testkit_server::shared_support_query_handoff_fixture::admit_delivery_posture,
+    worth_testkit_server::shared_support_query_handoff_fixture::request_input,
+    worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context,
+    worth_testkit_server::shared_support_query_handoff_fixture::success,
+    worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read,
+    worth_testkit_server::shared_support_worth_native_assertions::family_contract_digest,
+    worth_testkit_server::shared_support_worth_native_assertions::operator_evidence_record,
+    worth_testkit_server::shared_support_worth_native_assertions::worth_native_session,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server,
+};
 
 #[test]
 fn direct_lease_declaration_preserves_admitted_declaration_identity() {
@@ -77,29 +85,27 @@ fn direct_delivery_contract_preserves_query_handoff_posture_parity() {
     let request = direct_request(worth_server::WorthServerQueryRequestedResume::none());
 
     let direct = direct_delivery_success(session.direct().negotiate_delivery(&lease, &request));
-    let compat = success(
-        server
-            .query_handoff()
-            .prepare(worth_server::WorthServerQueryHandoffInput::new(
-                admit_delivery_posture(
+    let compat = success(server.query_handoff().prepare(
+        worth_server::WorthServerQueryHandoffInput::new(
+            admit_delivery_posture(
+                &server,
+                resolve_request_context(
                     &server,
-                    resolve_request_context(
-                        &server,
-                        request_input(
-                            worth_server::WorthServerSurfaceFamily::CompatHttp,
-                            worth_server::WorthServerTransportClass::CompatHttp,
-                        ),
+                    request_input(
+                        worth_server::WorthServerSurfaceFamily::CompatHttp,
+                        worth_server::WorthServerTransportClass::CompatHttp,
                     ),
-                    lease.resume_basis_digest(),
                 ),
-                worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
-                    "users.profile",
-                    worth_server::WorthServerDirectFreshnessMode::LiveStrict,
-                    worth_server::WorthServerDirectDeliveryClass::AuthoritativeOrdered,
-                    worth_server::WorthServerQueryRequestedResume::none(),
-                ),
-            )),
-    );
+                lease.resume_basis_digest(),
+            ),
+            worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
+                "users.profile",
+                worth_server::WorthServerDirectFreshnessMode::LiveStrict,
+                worth_server::WorthServerDirectDeliveryClass::AuthoritativeOrdered,
+                worth_server::WorthServerQueryRequestedResume::none(),
+            ),
+        ),
+    ));
 
     assert_eq!(
         family_contract_digest(direct.support_posture()),
@@ -150,7 +156,9 @@ fn direct_delivery_runtime_backed_resume_stays_explicit_and_stable() {
     let request = worth_server::WorthServerDirectDeliveryRequest::new(
         worth_server::WorthServerDirectFreshnessMode::LiveStrict,
         worth_server::WorthServerDirectDeliveryClass::AuthoritativeOrdered,
-        worth_server::WorthServerQueryRequestedResume::runtime_backed(Some(lease_a.resume_basis_digest())),
+        worth_server::WorthServerQueryRequestedResume::runtime_backed(Some(
+            lease_a.resume_basis_digest(),
+        )),
     );
 
     let direct_a =

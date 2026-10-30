@@ -1,8 +1,20 @@
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind};
-pub use {worth_foundational::facade::aspects, worth_foundational::facade::AspectIdentity, worth_foundational::facade::AspectKey, worth_foundational::facade::FieldKey, worth_foundational::facade::ScalarAspectType};
-pub use {worth_relational::facade::config::CrossContextPolicy};
-pub use {worth_relational::facade::identity::KindId};
-pub use {worth_relational::facade::schema::AspectBinding, worth_relational::facade::schema::ContractId, worth_relational::facade::schema::DeclaredAspectContractBinding, worth_relational::facade::schema::EndpointKindContractDeclaration, worth_relational::facade::schema::RelationIntegrityDeclarations};
+pub use worth_relational::facade::config::CrossContextPolicy;
+pub use worth_relational::facade::identity::KindId;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind,
+};
+pub use {
+    worth_foundational::facade::aspects, worth_foundational::facade::AspectIdentity,
+    worth_foundational::facade::AspectKey, worth_foundational::facade::FieldKey,
+    worth_foundational::facade::ScalarAspectType,
+};
+pub use {
+    worth_relational::facade::schema::AspectBinding, worth_relational::facade::schema::ContractId,
+    worth_relational::facade::schema::DeclaredAspectContractBinding,
+    worth_relational::facade::schema::EndpointKindContractDeclaration,
+    worth_relational::facade::schema::RelationIntegrityDeclarations,
+};
 
 pub const ENTITY_KIND_BASE: u32 = 1_000;
 pub const RELATION_KIND_BASE: u32 = 2_000;
@@ -95,14 +107,16 @@ pub fn aspect_binding(
     name: &str,
     scalar: ScalarAspectType,
 ) -> DeclaredAspectContractBinding {
-    let key = worth_foundational::facade::AspectKey::new(name).expect("canonical Supply Chain aspect key");
+    let key = worth_foundational::facade::AspectKey::new(name)
+        .expect("canonical Supply Chain aspect key");
     let contract = aspects()
         .contract()
         .for_key(key.clone())
         .identified_by(AspectIdentity(fnv(name)))
         .at_revision(aspects().vocabulary().revision(1));
     let contract = match binding {
-        worth_relational::facade::schema::AspectBinding::RelationSourceEndpoint | worth_relational::facade::schema::AspectBinding::RelationTargetEndpoint => {
+        worth_relational::facade::schema::AspectBinding::RelationSourceEndpoint
+        | worth_relational::facade::schema::AspectBinding::RelationTargetEndpoint => {
             contract.reference_entity()
         }
         _ => contract.scalar(scalar),
@@ -114,11 +128,14 @@ pub fn endpoint_integrity(kind: RelationKind) -> RelationIntegrityDeclarations {
     let (source, target) = relation_endpoints(kind);
     worth_relational::facade::schema::RelationIntegrityDeclarations::new(
         vec![EndpointKindContractDeclaration {
-            contract_id: worth_relational::facade::schema::ContractId::new(format!("supply_chain.endpoint.{kind:?}")),
+            contract_id: worth_relational::facade::schema::ContractId::new(format!(
+                "supply_chain.endpoint.{kind:?}"
+            )),
             allowed_source_kinds: vec![entity_kind_id(source)],
             allowed_target_kinds: vec![entity_kind_id(target)],
             self_edges_allowed: source == target,
-            cross_context_policy: worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
+            cross_context_policy:
+                worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
         }],
         Vec::new(),
         Vec::new(),

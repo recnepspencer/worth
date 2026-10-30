@@ -1,13 +1,13 @@
 error[E0308]: mismatched types
-  --> tests/ui/boundary_evidence/provenance/raw_source_basis_cannot_satisfy_provenance_api.rs:13:22
-   |
-13 |     needs_provenance(source_basis);
-   |     ---------------- ^^^^^^^^^^^^ expected `FoundationalBoundaryEvidenceProvenanceArtifact`, found `FoundationalBoundaryEvidenceSourceBasis`
-   |     |
-   |     arguments to this function are incorrect
-   |
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/provenance/raw_source_basis_cannot_satisfy_provenance_api.rs
+  |
+  |     needs_provenance(source_basis);
+  |     ---------------- ^^^^^^^^^^^^ expected `FoundationalBoundaryEvidenceProvenanceArtifact`, found `FoundationalBoundaryEvidenceSourceBasis`
+  |     |
+  |     arguments to this function are incorrect
+  |
 note: function defined here
-  --> tests/ui/boundary_evidence/provenance/raw_source_basis_cannot_satisfy_provenance_api.rs:6:4
-   |
- 6 | fn needs_provenance(_provenance: FoundationalBoundaryEvidenceProvenanceArtifact) {}
-   |    ^^^^^^^^^^^^^^^^ -----------------------------------------------------------
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/provenance/raw_source_basis_cannot_satisfy_provenance_api.rs
+  |
+  | fn needs_provenance(_provenance: FoundationalBoundaryEvidenceProvenanceArtifact) {}
+  |    ^^^^^^^^^^^^^^^^ -----------------------------------------------------------

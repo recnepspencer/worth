@@ -1,5 +1,5 @@
 error: cannot construct `ValidatedResourcePolicyDeclaration` with struct literal syntax due to private fields
-  --> tests/ui/validated_resource_policy_declaration_fields_are_private.rs:18:22
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/validated_resource_policy_declaration_fields_are_private.rs:18:22
    |
 18 |     let _validated = ValidatedResourcePolicyDeclaration {
    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

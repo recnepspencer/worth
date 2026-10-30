@@ -1,5 +1,5 @@
 error[E0624]: associated function `plan` is private
-  --> tests/ui/subscription_mixed_cause_requires_ordering.rs:11:49
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_mixed_cause_requires_ordering.rs:11:49
    |
 11 |       let _ = BridgeMixedCauseDeliveryWindowPlan::plan(
    |                                                   ^^^^ private associated function
@@ -13,7 +13,7 @@ error[E0624]: associated function `plan` is private
    | |______________________________________________________________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/subscription_mixed_cause_requires_ordering.rs:12:9
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_mixed_cause_requires_ordering.rs:12:9
    |
 11 |     let _ = BridgeMixedCauseDeliveryWindowPlan::plan(
    |             ---------------------------------------- arguments to this function are incorrect

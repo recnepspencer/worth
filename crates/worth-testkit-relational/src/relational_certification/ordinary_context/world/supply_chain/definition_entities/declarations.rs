@@ -1,8 +1,33 @@
-pub use {std::collections::BTreeMap};
+pub use std::collections::BTreeMap;
 
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema::BerthRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::BookingStatus, crate::relational_certification::ordinary_context::world::supply_chain::schema::Capacity, crate::relational_certification::ordinary_context::world::supply_chain::schema::CargoCode, crate::relational_certification::ordinary_context::world::supply_chain::schema::CargoLotRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::DepthMeters, crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::HazardClass, crate::relational_certification::ordinary_context::world::supply_chain::schema::InspectionRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::InspectionResult, crate::relational_certification::ordinary_context::world::supply_chain::schema::MassTons, crate::relational_certification::ordinary_context::world::supply_chain::schema::Minute, crate::relational_certification::ordinary_context::world::supply_chain::schema::OperatingPosture, crate::relational_certification::ordinary_context::world::supply_chain::schema::PortCallRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::PortRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::Region, crate::relational_certification::ordinary_context::world::supply_chain::schema::TerminalRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::VesselClass, crate::relational_certification::ordinary_context::world::supply_chain::schema::VesselRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::VoyageRecord, crate::relational_certification::ordinary_context::world::supply_chain::schema::VoyageStatus};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::BerthRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::BookingStatus,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::Capacity,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::CargoCode,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::CargoLotRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::DepthMeters,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::HazardClass,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::InspectionRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::InspectionResult,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::MassTons,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::Minute,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::OperatingPosture,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::PortCallRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::PortRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::Region,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::TerminalRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::VesselClass,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::VesselRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::VoyageRecord,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema::VoyageStatus,
+};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind,
+};
 
 pub fn build(scale: SupplyChainScale) -> BTreeMap<EntityKey, EntityRecord> {
     let mut entities = std::collections::BTreeMap::new();
@@ -47,10 +72,7 @@ pub fn add_ports(scale: SupplyChainScale, entities: &mut BTreeMap<EntityKey, Ent
     }
 }
 
-pub fn add_terminals(
-    scale: SupplyChainScale,
-    entities: &mut BTreeMap<EntityKey, EntityRecord>,
-) {
+pub fn add_terminals(scale: SupplyChainScale, entities: &mut BTreeMap<EntityKey, EntityRecord>) {
     for ordinal in 0..scale.terminals {
         let name = if ordinal == 0 {
             "Meridian Container".to_owned()
@@ -78,10 +100,7 @@ pub fn add_terminals(
     }
 }
 
-pub fn add_berths(
-    scale: SupplyChainScale,
-    entities: &mut BTreeMap<EntityKey, EntityRecord>,
-) {
+pub fn add_berths(scale: SupplyChainScale, entities: &mut BTreeMap<EntityKey, EntityRecord>) {
     for ordinal in 0..scale.berths {
         let name = match ordinal {
             0 => "Atlas".to_owned(),
@@ -109,10 +128,7 @@ pub fn add_berths(
     }
 }
 
-pub fn add_vessels(
-    scale: SupplyChainScale,
-    entities: &mut BTreeMap<EntityKey, EntityRecord>,
-) {
+pub fn add_vessels(scale: SupplyChainScale, entities: &mut BTreeMap<EntityKey, EntityRecord>) {
     for ordinal in 0..scale.vessels {
         let call_sign = if ordinal == 0 {
             "AURORA".to_owned()
@@ -145,10 +161,7 @@ pub fn add_vessels(
     }
 }
 
-pub fn add_voyages(
-    scale: SupplyChainScale,
-    entities: &mut BTreeMap<EntityKey, EntityRecord>,
-) {
+pub fn add_voyages(scale: SupplyChainScale, entities: &mut BTreeMap<EntityKey, EntityRecord>) {
     for ordinal in 0..scale.voyages {
         entities.insert(
             crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey::new(crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind::Voyage, ordinal as u32),
@@ -180,10 +193,7 @@ pub fn add_voyages(
     }
 }
 
-pub fn add_port_calls(
-    scale: SupplyChainScale,
-    entities: &mut BTreeMap<EntityKey, EntityRecord>,
-) {
+pub fn add_port_calls(scale: SupplyChainScale, entities: &mut BTreeMap<EntityKey, EntityRecord>) {
     for ordinal in 0..scale.port_calls {
         entities.insert(
             crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey::new(crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind::PortCall, ordinal as u32),
@@ -225,10 +235,7 @@ pub fn add_cargo(scale: SupplyChainScale, entities: &mut BTreeMap<EntityKey, Ent
     }
 }
 
-pub fn add_inspections(
-    scale: SupplyChainScale,
-    entities: &mut BTreeMap<EntityKey, EntityRecord>,
-) {
+pub fn add_inspections(scale: SupplyChainScale, entities: &mut BTreeMap<EntityKey, EntityRecord>) {
     for ordinal in 0..scale.vessels {
         entities.insert(
             crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey::new(crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind::Inspection, ordinal as u32),

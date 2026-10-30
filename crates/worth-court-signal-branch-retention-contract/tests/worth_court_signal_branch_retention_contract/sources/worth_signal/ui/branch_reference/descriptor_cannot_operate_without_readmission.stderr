@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/branch_reference/descriptor_cannot_operate_without_readmission.rs:7:50
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/descriptor_cannot_operate_without_readmission.rs:7:50
   |
 7 |     let _ = runtime.fork_signal_branch("forged", descriptor);
   |                     ------------------           ^^^^^^^^^^ expected `&AdmittedSignalBranchBasis`, found `&SignalBranchBasisDescriptor`

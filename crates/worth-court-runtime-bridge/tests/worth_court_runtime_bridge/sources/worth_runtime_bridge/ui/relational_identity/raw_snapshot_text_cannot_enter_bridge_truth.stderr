@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/relational_identity/raw_snapshot_text_cannot_enter_bridge_truth.rs:5:57
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/relational_identity/raw_snapshot_text_cannot_enter_bridge_truth.rs:5:57
   |
 5 |         TruthSnapshotIdentity::from_relational_snapshot("relational-snapshot:7:version:7");
   |         ----------------------------------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `RelationalBridgeSnapshotIdentityParts`, found `&str`

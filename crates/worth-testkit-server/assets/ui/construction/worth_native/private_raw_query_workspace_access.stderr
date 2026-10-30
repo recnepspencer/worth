@@ -1,5 +1,5 @@
 error[E0599]: no function or associated item named `workspace` found for struct `WorthServerWorthNativeDirectFacade` in the current scope
- --> tests/ui/construction/worth_native/private_raw_query_workspace_access.rs:2:69
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/worth_native/private_raw_query_workspace_access.rs
   |
-2 |     let _method = worth_server::WorthServerWorthNativeDirectFacade::workspace;
+  |     let _method = worth_server::WorthServerWorthNativeDirectFacade::workspace;
   |                                                                     ^^^^^^^^^ function or associated item not found in `WorthServerWorthNativeDirectFacade`

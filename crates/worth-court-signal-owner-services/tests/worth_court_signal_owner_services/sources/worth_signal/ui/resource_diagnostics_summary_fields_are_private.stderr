@@ -1,5 +1,5 @@
 error: cannot construct `ResourceDiagnosticsSummary` with struct literal syntax due to private fields
-  --> tests/ui/resource_diagnostics_summary_fields_are_private.rs:15:19
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_diagnostics_summary_fields_are_private.rs:15:19
    |
 15 |     let _forged = ResourceDiagnosticsSummary {
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^

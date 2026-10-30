@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
- --> tests/ui/canonicalization/production_readiness/plain_report_cannot_satisfy_production_readiness.rs:9:57
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/production_readiness/plain_report_cannot_satisfy_production_readiness.rs
   |
-9 |     let _ = require_canonical_production_test_readiness(&report);
+  |     let _ = require_canonical_production_test_readiness(&report);
   |             ------------------------------------------- ^^^^^^^ expected `&Artifact<..., ..., ..., ...>`, found `&CanonicalProductionReadinessReport`
   |             |
   |             arguments to this function are incorrect
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected reference `&worth_proof::artifact::carrier::Artifact<CanonicalProductionTestReady, CanonicalProductionReadinessReport, worth_proof::proof::sets::Proof<CanonicalProductionReadinessCertified, CanonicalProductionReadinessAuthority>, worth_proof::assumption::freshness::FreshnessScopedBasis<worth_proof::assumption::freshness::CurrentValidity, worth_proof::assumption::basis::AssumptionBasis<CanonicalProductionReadinessScope>>>`
              found reference `&CanonicalProductionReadinessReport`
 note: function defined here
- --> src/canonicalization/production_readiness/certification.rs
+ --> $WORKSPACE/crates/worth-foundational/src/canonicalization/production_readiness/certification.rs
   |
   | pub fn require_canonical_production_test_readiness(
   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

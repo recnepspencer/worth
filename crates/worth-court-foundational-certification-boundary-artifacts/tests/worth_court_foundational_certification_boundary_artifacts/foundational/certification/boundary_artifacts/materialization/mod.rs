@@ -1,5 +1,16 @@
-use {crate::certification::ordinary_context::boundary_artifacts::support::materialized_profile};
-use {worth_foundational::admit_authoritative_current_boundary_surface, worth_foundational::claim_derived_projection_boundary_surface, worth_foundational::claim_receipt_evidence_boundary_surface, worth_foundational::claim_support_only_boundary_surface, worth_foundational::foundational_boundary_authority_admission, worth_foundational::materialize_authoritative_boundary_surface, worth_foundational::materialize_descriptive_boundary_surface, worth_foundational::plan_artifact_boundary_bundle, worth_foundational::plan_authoritative_boundary_materialization, worth_foundational::plan_descriptive_boundary_materialization, worth_foundational::AdmissionReadinessProfile, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalBoundaryArtifactRole, worth_foundational::FoundationalBoundaryArtifactSurface, worth_foundational::FoundationalBoundaryAttachmentPoint, worth_foundational::FoundationalBoundaryAvailability, worth_foundational::FoundationalBoundaryBundlePlanningDenial, worth_foundational::FoundationalBoundaryDecisionCause, worth_foundational::FoundationalBoundaryDecisionSubject, worth_foundational::FoundationalBoundaryDeliveryClass, worth_foundational::FoundationalBoundaryMaterializationDenial, worth_foundational::FoundationalBoundaryMaterializationSeam, worth_foundational::FoundationalBoundaryMaterializationSource, worth_foundational::FoundationalBoundaryPlanningDenial, worth_foundational::FoundationalBoundaryReceiptSurface, worth_foundational::FoundationalBoundaryReportSurface, worth_foundational::FoundationalBoundarySummarySurface, worth_foundational::FoundationalBoundarySurfaceDispositionDenial, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
+use crate::certification::ordinary_context::boundary_artifacts::support::materialized_profile;
+use {
+    worth_foundational::admit_authoritative_current_boundary_surface,
+    worth_foundational::claim_derived_projection_boundary_surface,
+    worth_foundational::claim_receipt_evidence_boundary_surface,
+    worth_foundational::claim_support_only_boundary_surface,
+    worth_foundational::foundational_boundary_authority_admission,
+    worth_foundational::materialize_authoritative_boundary_surface,
+    worth_foundational::materialize_descriptive_boundary_surface,
+    worth_foundational::plan_artifact_boundary_bundle,
+    worth_foundational::plan_authoritative_boundary_materialization,
+    worth_foundational::plan_descriptive_boundary_materialization,
+};
 
 #[test]
 fn descriptive_materialization_keeps_seam_cost_and_attachment_decisions_visible() {
@@ -48,7 +59,8 @@ fn descriptive_materialization_keeps_seam_cost_and_attachment_decisions_visible(
             && !attachment.is_included()));
     assert!(plan.decision_rows().iter().any(|row| row.subject()
         == worth_foundational::FoundationalBoundaryDecisionSubject::AttachmentElision
-        && row.cause() == worth_foundational::FoundationalBoundaryDecisionCause::DeniedByMilestoneBoundary));
+        && row.cause()
+            == worth_foundational::FoundationalBoundaryDecisionCause::DeniedByMilestoneBoundary));
     assert!(plan
         .decision_rows()
         .iter()
@@ -98,7 +110,8 @@ fn support_materialization_stays_plannable_before_becoming_deferred_runtime_work
     assert_eq!(
         materialize_descriptive_boundary_surface(
             claim_support_only_boundary_surface(
-                worth_foundational::FoundationalBoundaryReportSurface::new(vec!["row"], 1).expect("report"),
+                worth_foundational::FoundationalBoundaryReportSurface::new(vec!["row"], 1)
+                    .expect("report"),
             ),
             worth_foundational::FoundationalBoundaryMaterializationSource::DerivedSupport,
             worth_foundational::FoundationalBoundaryMaterializationSeam::SupportMaterialization,
@@ -137,7 +150,8 @@ fn authoritative_materialization_lane_stays_distinct_from_descriptive_paths() {
     );
     assert!(plan.decision_rows().iter().any(|row| row.subject()
         == worth_foundational::FoundationalBoundaryDecisionSubject::CategoryRoleAdmission
-        && row.cause() == worth_foundational::FoundationalBoundaryDecisionCause::NarrowedByAuthority));
+        && row.cause()
+            == worth_foundational::FoundationalBoundaryDecisionCause::NarrowedByAuthority));
 
     let materialized = materialize_authoritative_boundary_surface(
         admit_authoritative_current_boundary_surface(
@@ -183,10 +197,9 @@ fn delivery_and_source_seam_legality_remain_explicit_and_fail_closed() {
         worth_foundational::CertificationPostureProfile::EvidenceBacked,
     );
     let illegal = plan_descriptive_boundary_materialization(
-        claim_derived_projection_boundary_surface(worth_foundational::FoundationalBoundaryArtifactSurface::new(
-            vec![1_u8],
-            0,
-        )),
+        claim_derived_projection_boundary_surface(
+            worth_foundational::FoundationalBoundaryArtifactSurface::new(vec![1_u8], 0),
+        ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::SupportMaterialization,
         profile,
@@ -210,10 +223,9 @@ fn coordinated_bundle_materialization_preserves_member_categories_and_membership
         worth_foundational::CertificationPostureProfile::EvidenceBacked,
     );
     let primary = plan_descriptive_boundary_materialization(
-        claim_derived_projection_boundary_surface(worth_foundational::FoundationalBoundaryArtifactSurface::new(
-            vec![7_u8, 8, 9],
-            2,
-        )),
+        claim_derived_projection_boundary_surface(
+            worth_foundational::FoundationalBoundaryArtifactSurface::new(vec![7_u8, 8, 9], 2),
+        ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
         profile,
@@ -221,7 +233,8 @@ fn coordinated_bundle_materialization_preserves_member_categories_and_membership
     .expect("primary plan");
     let summary = plan_descriptive_boundary_materialization(
         claim_derived_projection_boundary_surface(
-            worth_foundational::FoundationalBoundarySummarySurface::new("summary", 2).expect("summary"),
+            worth_foundational::FoundationalBoundarySummarySurface::new("summary", 2)
+                .expect("summary"),
         ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
@@ -230,7 +243,8 @@ fn coordinated_bundle_materialization_preserves_member_categories_and_membership
     .expect("summary plan");
     let report = plan_descriptive_boundary_materialization(
         claim_support_only_boundary_surface(
-            worth_foundational::FoundationalBoundaryReportSurface::new(vec!["row-a", "row-b"], 2).expect("report"),
+            worth_foundational::FoundationalBoundaryReportSurface::new(vec!["row-a", "row-b"], 2)
+                .expect("report"),
         ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
@@ -239,7 +253,8 @@ fn coordinated_bundle_materialization_preserves_member_categories_and_membership
     .expect("report plan");
     let receipt = plan_descriptive_boundary_materialization(
         claim_receipt_evidence_boundary_surface(
-            worth_foundational::FoundationalBoundaryReceiptSurface::new("exchange complete", 1).expect("receipt"),
+            worth_foundational::FoundationalBoundaryReceiptSurface::new("exchange complete", 1)
+                .expect("receipt"),
         ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
@@ -281,7 +296,8 @@ fn coordinated_bundle_materialization_preserves_member_categories_and_membership
         bundle_plan
             .membership_decision_rows()
             .iter()
-            .filter(|row| row.subject() == worth_foundational::FoundationalBoundaryDecisionSubject::BundleMembership)
+            .filter(|row| row.subject()
+                == worth_foundational::FoundationalBoundaryDecisionSubject::BundleMembership)
             .count(),
         3
     );
@@ -339,10 +355,9 @@ fn bundle_members_must_match_primary_profile_source_and_seam() {
         worth_foundational::CertificationPostureProfile::Uncertified,
     );
     let primary = plan_descriptive_boundary_materialization(
-        claim_derived_projection_boundary_surface(worth_foundational::FoundationalBoundaryArtifactSurface::new(
-            vec![1_u8],
-            1,
-        )),
+        claim_derived_projection_boundary_surface(
+            worth_foundational::FoundationalBoundaryArtifactSurface::new(vec![1_u8], 1),
+        ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
         primary_profile,
@@ -350,7 +365,8 @@ fn bundle_members_must_match_primary_profile_source_and_seam() {
     .expect("primary plan");
     let wrong_summary = plan_descriptive_boundary_materialization(
         claim_derived_projection_boundary_surface(
-            worth_foundational::FoundationalBoundarySummarySurface::new("summary", 1).expect("summary"),
+            worth_foundational::FoundationalBoundarySummarySurface::new("summary", 1)
+                .expect("summary"),
         ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,

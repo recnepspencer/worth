@@ -1,9 +1,27 @@
 #![allow(dead_code)]
 
-pub(crate) use {worth_server::WorthServerEditorLikeOperationFixture, worth_server::WorthServerProductIdempotentRetryCertificationProof, worth_server::WorthServerProductMutationCertificationProof, worth_server::WorthServerProductPressureShapeCertificationProof, worth_server::WorthServerProductSharedReadCertificationProof, worth_server::WorthServerProductStaleApplyDenialCertificationProof};
+pub(crate) use {
+    worth_server::WorthServerEditorLikeOperationFixture,
+    worth_server::WorthServerProductIdempotentRetryCertificationProof,
+    worth_server::WorthServerProductMutationCertificationProof,
+    worth_server::WorthServerProductPressureShapeCertificationProof,
+    worth_server::WorthServerProductSharedReadCertificationProof,
+    worth_server::WorthServerProductStaleApplyDenialCertificationProof,
+};
 
-pub(crate) use {worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::actions_payload, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::apply_payload, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::build_server, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::direct_mutation, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::direct_read, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::direct_session, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::finalize_payload, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::open_mutation_session, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::render_payload, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::select_payload, worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::StatefulEditorLikeBackend};
-
+pub(crate) use {
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::actions_payload,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::apply_payload,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::build_server,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::direct_mutation,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::direct_read,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::direct_session,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::finalize_payload,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::open_mutation_session,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::render_payload,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::select_payload,
+    worth_testkit_server::shared_support_product_operation_phase_thirteen_fixture::StatefulEditorLikeBackend,
+};
 
 pub(crate) use {crate::product_operation_phase_thirteen_certification::ordinary_context::proof_builders::route_parity::observed_route_parity};
 
@@ -32,9 +50,10 @@ pub(crate) async fn complete_editor_like_fixture() -> WorthServerEditorLikeOpera
             .with_basis_digest(&initial_basis),
         ])
         .expect("shared read batch should complete");
-    let shared_read =
-        worth_server::WorthServerProductSharedReadCertificationProof::from_batch(&shared_read_batch)
-            .expect("shared read proof");
+    let shared_read = worth_server::WorthServerProductSharedReadCertificationProof::from_batch(
+        &shared_read_batch,
+    )
+    .expect("shared read proof");
     let render = direct_read(
         &session,
         "product_editor.render",
@@ -126,8 +145,9 @@ pub(crate) async fn complete_editor_like_fixture() -> WorthServerEditorLikeOpera
         &finalize_success_session,
     )
     .expect("finalize success");
-    let mutation = worth_server::WorthServerProductMutationCertificationProof::new(&applied, &finalized)
-        .expect("mutation proof");
+    let mutation =
+        worth_server::WorthServerProductMutationCertificationProof::new(&applied, &finalized)
+            .expect("mutation proof");
     let finalize_denial_reason = match finalize_denied.outcome() {
         worth_server::WorthServerProductOperationOutcome::Denied(denial) => denial.reason_key(),
         other => panic!("expected finalize denial, got {other:?}"),
@@ -140,11 +160,14 @@ pub(crate) async fn complete_editor_like_fixture() -> WorthServerEditorLikeOpera
         &applied,
         finalize_denial_reason,
     );
-    let stale = worth_server::WorthServerProductStaleApplyDenialCertificationProof::from_denial(&stale)
-        .expect("stale denial proof");
-    let replay =
-        worth_server::WorthServerProductIdempotentRetryCertificationProof::new(&authoritative, &replayed)
-            .expect("replay proof");
+    let stale =
+        worth_server::WorthServerProductStaleApplyDenialCertificationProof::from_denial(&stale)
+            .expect("stale denial proof");
+    let replay = worth_server::WorthServerProductIdempotentRetryCertificationProof::new(
+        &authoritative,
+        &replayed,
+    )
+    .expect("replay proof");
     let route_parity =
         observed_route_parity(&server, &session, &initial_basis, &after_apply_basis).await;
 
@@ -170,9 +193,10 @@ pub(crate) async fn blocked_editor_like_fixture() -> WorthServerEditorLikeOperat
         )
         .with_basis_digest(&initial_basis)])
         .expect("shared read batch should complete");
-    let shared_read =
-        worth_server::WorthServerProductSharedReadCertificationProof::from_batch(&shared_read_batch)
-            .expect("shared read proof");
+    let shared_read = worth_server::WorthServerProductSharedReadCertificationProof::from_batch(
+        &shared_read_batch,
+    )
+    .expect("shared read proof");
     let apply_session = open_mutation_session(&session, &initial_basis, "product_editor.apply");
     let apply = direct_mutation(
         &session,
@@ -217,12 +241,14 @@ pub(crate) async fn blocked_editor_like_fixture() -> WorthServerEditorLikeOperat
             worth_server::WorthServerProductMutationCertificationProof::new(&apply, &finalize)
                 .expect("mutation proof"),
         )
-        .with_pressure_shape(worth_server::WorthServerProductPressureShapeCertificationProof::new(
-            &render,
-            &select,
-            &actions,
-            &actions,
-            &apply,
-            "product.finalize.confirm_required",
-        ))
+        .with_pressure_shape(
+            worth_server::WorthServerProductPressureShapeCertificationProof::new(
+                &render,
+                &select,
+                &actions,
+                &actions,
+                &apply,
+                "product.finalize.confirm_required",
+            ),
+        )
 }

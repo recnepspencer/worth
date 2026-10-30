@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/branch_reference/branch_basis_descriptor_cannot_open_snapshot.rs:5:58
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/branch_basis_descriptor_cannot_open_snapshot.rs:5:58
   |
 5 |     let _ = runtime.snapshots().snapshot_for_observation(descriptor);
   |                                 ------------------------ ^^^^^^^^^^ expected `&RelationalBranchObservation`, found `&RelationalBranchBasisDescriptor`

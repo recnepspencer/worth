@@ -1,12 +1,26 @@
-use {worth_foundational::classify_aspect_contract_evolution, worth_foundational::AbsenceLaw, worth_foundational::AspectContract, worth_foundational::AspectEquivalenceBasis, worth_foundational::AspectEvolutionKind, worth_foundational::AspectValue, worth_foundational::FieldDeclaration, worth_foundational::FieldRequirement, worth_foundational::ScalarAspectType, worth_foundational::StructAspectShape};
+use worth_foundational::classify_aspect_contract_evolution;
 
-use {worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision};
+use {
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::identity,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key,
+    worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::revision,
+};
 
 #[test]
 fn absence_null_default_and_clear_are_distinct_surface_states() {
-    assert_ne!(worth_foundational::AbsenceLaw::Required, worth_foundational::AbsenceLaw::Optional);
-    assert_ne!(worth_foundational::AbsenceLaw::Optional, worth_foundational::AbsenceLaw::Defaulted);
-    assert_ne!(worth_foundational::AspectValue::Null.value_family(), worth_foundational::ScalarAspectType::String);
+    assert_ne!(
+        worth_foundational::AbsenceLaw::Required,
+        worth_foundational::AbsenceLaw::Optional
+    );
+    assert_ne!(
+        worth_foundational::AbsenceLaw::Optional,
+        worth_foundational::AbsenceLaw::Defaulted
+    );
+    assert_ne!(
+        worth_foundational::AspectValue::Null.value_family(),
+        worth_foundational::ScalarAspectType::String
+    );
 }
 
 #[test]
@@ -70,7 +84,10 @@ fn evolution_classification_can_be_carried_as_a_proof_artifact() {
 
     assert_eq!(payload.previous().key(), &key("count"));
     assert_eq!(payload.next().revision(), revision(2));
-    assert_eq!(payload.verdict().kind(), worth_foundational::AspectEvolutionKind::Widening);
+    assert_eq!(
+        payload.verdict().kind(),
+        worth_foundational::AspectEvolutionKind::Widening
+    );
 }
 
 #[test]
@@ -90,7 +107,12 @@ fn equivalence_basis_is_declared_before_comparison_claims() {
     )
     .expect("coherent field law");
     let shape = worth_foundational::StructAspectShape::new([title_field]).expect("unique fields");
-    let structured = worth_foundational::AspectContract::struct_aspect(key("task"), identity(2), revision(1), shape);
+    let structured = worth_foundational::AspectContract::struct_aspect(
+        key("task"),
+        identity(2),
+        revision(1),
+        shape,
+    );
 
     assert_eq!(
         scalar.equivalence(),
@@ -104,15 +126,16 @@ fn equivalence_basis_is_declared_before_comparison_claims() {
 
 #[test]
 fn required_struct_field_addition_is_not_additive() {
-    let base_shape = worth_foundational::StructAspectShape::new([worth_foundational::FieldDeclaration::new(
-        field("title"),
-        worth_foundational::ScalarAspectType::String,
-        worth_foundational::FieldRequirement::Required,
-        worth_foundational::AbsenceLaw::Required,
-        worth_foundational::AspectEvolutionPolicy::ExplicitBreakRequired,
-    )
-    .expect("coherent field law")])
-    .expect("unique fields");
+    let base_shape =
+        worth_foundational::StructAspectShape::new([worth_foundational::FieldDeclaration::new(
+            field("title"),
+            worth_foundational::ScalarAspectType::String,
+            worth_foundational::FieldRequirement::Required,
+            worth_foundational::AbsenceLaw::Required,
+            worth_foundational::AspectEvolutionPolicy::ExplicitBreakRequired,
+        )
+        .expect("coherent field law")])
+        .expect("unique fields");
     let expanded_shape = worth_foundational::StructAspectShape::new([
         worth_foundational::FieldDeclaration::new(
             field("title"),
@@ -132,9 +155,18 @@ fn required_struct_field_addition_is_not_additive() {
         .expect("coherent field law"),
     ])
     .expect("unique fields");
-    let base = worth_foundational::AspectContract::struct_aspect(key("task"), identity(8), revision(1), base_shape);
-    let expanded =
-        worth_foundational::AspectContract::struct_aspect(key("task"), identity(8), revision(2), expanded_shape);
+    let base = worth_foundational::AspectContract::struct_aspect(
+        key("task"),
+        identity(8),
+        revision(1),
+        base_shape,
+    );
+    let expanded = worth_foundational::AspectContract::struct_aspect(
+        key("task"),
+        identity(8),
+        revision(2),
+        expanded_shape,
+    );
 
     assert_eq!(
         base.classify_evolution_to(&expanded).kind(),

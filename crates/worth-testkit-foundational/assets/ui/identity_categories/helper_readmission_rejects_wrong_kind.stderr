@@ -1,20 +1,20 @@
 error[E0308]: mismatched types
-  --> tests/ui/identity_categories/helper_readmission_rejects_wrong_kind.rs:32:7
-   |
-28 |       let _commit = readmit_foundational_authority_identity::<
-   |  ___________________-
-29 | |         u64,
-30 | |         QueryIdentityAuthority,
-31 | |         QueryCommitIdentityKind,
-32 | |     >(bridged, authority());
-   | |     - ^^^^^^^ expected `QueryCommitIdentityKind`, found `QuerySnapshotIdentityKind`
-   | |_____|
-   |       arguments to this function are incorrect
-   |
-   = note: expected struct `FoundationalBoundaryBridgedIdentity<u64, QueryIdentityAuthority, QueryCommitIdentityKind>`
-              found struct `FoundationalBoundaryBridgedIdentity<u64, QueryIdentityAuthority, QuerySnapshotIdentityKind>`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/helper_readmission_rejects_wrong_kind.rs
+  |
+  |       let _commit = readmit_foundational_authority_identity::<
+  |  ___________________-
+  | |         u64,
+  | |         QueryIdentityAuthority,
+  | |         QueryCommitIdentityKind,
+  | |     >(bridged, authority());
+  | |     - ^^^^^^^ expected `QueryCommitIdentityKind`, found `QuerySnapshotIdentityKind`
+  | |_____|
+  |       arguments to this function are incorrect
+  |
+  = note: expected struct `FoundationalBoundaryBridgedIdentity<u64, QueryIdentityAuthority, QueryCommitIdentityKind>`
+             found struct `FoundationalBoundaryBridgedIdentity<u64, QueryIdentityAuthority, QuerySnapshotIdentityKind>`
 note: function defined here
-  --> src/identities/authority_identity/lifecycle.rs
-   |
-   | pub fn readmit_foundational_authority_identity<Value, Authority, Kind>(
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ --> $WORKSPACE/crates/worth-foundational/src/identities/authority_identity/lifecycle.rs
+  |
+  | pub fn readmit_foundational_authority_identity<Value, Authority, Kind>(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

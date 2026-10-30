@@ -1,5 +1,5 @@
 error[E0451]: fields `node`, `capability_registry_digest`, `legacy_registry_digest`, `capability_bundle_digest`, `legacy_bundle_digest`, `capability_payload_contract_digest`, `legacy_payload_contract_digest` and `compared_width` of struct `AsyncNodeCapabilityAliasLoweringProof` are private
-  --> tests/ui/async_node_capability_alias_lowering_proof_fields_are_private.rs:12:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_node_capability_alias_lowering_proof_fields_are_private.rs:12:9
    |
 11 |     let _proof = AsyncNodeCapabilityAliasLoweringProof {
    |                  ------------------------------------- in this type

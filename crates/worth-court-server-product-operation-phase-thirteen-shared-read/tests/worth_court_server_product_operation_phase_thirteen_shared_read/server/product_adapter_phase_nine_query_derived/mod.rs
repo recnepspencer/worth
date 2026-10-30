@@ -1,14 +1,18 @@
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
-use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {serde_json::json};
-use {worth_server::WorthServerOperationReadinessDenialCode, worth_server::WorthServerProductOperationInput, worth_server::WorthServerProductOperationPayload, worth_server::WorthServerProductOperationSurfaceDenialCode};
+use serde_json::json;
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_product_adapter_phase_nine_fixture as fixture};
+use worth_testkit_server::shared_support_product_adapter_phase_nine_fixture as fixture;
 
-use {worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::build_server, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::completed, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::direct_session, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::open_mutation_product_session, worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::query_derived_editor_registration};
+use {
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::build_server,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::completed,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::direct_session,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::open_mutation_product_session,
+    worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::query_derived_editor_registration,
+};
 
 #[test]
 fn query_derived_product_read_exposes_real_query_support_and_basis_proof() {
@@ -21,8 +25,11 @@ fn query_derived_product_read_exposes_real_query_support_and_basis_proof() {
     let denial = direct_session(&server)
         .product_operations()
         .execute(
-            worth_server::WorthServerProductOperationInput::new("product_editor.render", payload.clone())
-                .with_basis_digest("basis:stale"),
+            worth_server::WorthServerProductOperationInput::new(
+                "product_editor.render",
+                payload.clone(),
+            )
+            .with_basis_digest("basis:stale"),
         )
         .expect_err("stale caller basis should be denied before query-derived planning");
 

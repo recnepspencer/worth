@@ -1,6 +1,8 @@
 // Retained ancestry is explicit; exact ancestry and pages keep refusing gaps.
-pub(crate) use {worth_runtime_world::facade::*, crate::court::ordinary_context::CompositeSupplyChainCourt, crate::court::ordinary_context::exact_history::signal_fork_child};
-pub(crate) use {std::num::NonZeroUsize};
+pub(crate) use {
+    crate::court::ordinary_context::exact_history::signal_fork_child,
+    worth_runtime_world::facade::*,
+};
 
 #[test]
 fn retained_selection_proves_only_endpoint_ancestry_after_real_retirement() {

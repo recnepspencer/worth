@@ -1,9 +1,19 @@
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityExecutionInput, worth_server::WorthServerCompatibilityPreparedRequest, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig, worth_server::WorthServerStreamSelection, worth_server::WorthServerStreamingResponse};
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityExecutionInput,
+    worth_server::WorthServerCompatibilityPreparedRequest,
+    worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig,
+    worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryWorkspaceProvider,
+    worth_server::WorthServerRequestContextConfig, worth_server::WorthServerStreamSelection,
+    worth_server::WorthServerStreamingResponse,
+};
 
-pub use {crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider};
+pub use crate::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider;
 
-pub use {crate::shared_support_compat_http_phase_four_runtime::StreamingDatasetWorkspaceProvider};
+pub use crate::shared_support_compat_http_phase_four_runtime::StreamingDatasetWorkspaceProvider;
 
 pub fn build_phase_four_server() -> WorthServer {
     build_phase_four_server_with_workspace_provider(TestWorkspaceProvider)
@@ -19,7 +29,9 @@ pub fn build_phase_four_server_with_workspace_provider(
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
                         .with_preview_targeting_enabled(true)
-                        .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("request context config should validate"),
                 )
@@ -135,7 +147,10 @@ pub fn oversized_streaming_provider(
     row_count: usize,
     payload_width: usize,
 ) -> StreamingDatasetWorkspaceProvider {
-    crate::shared_support_compat_http_phase_four_runtime::StreamingDatasetWorkspaceProvider::new(row_count, payload_width)
+    crate::shared_support_compat_http_phase_four_runtime::StreamingDatasetWorkspaceProvider::new(
+        row_count,
+        payload_width,
+    )
 }
 
 pub fn default_stream_selection() -> WorthServerStreamSelection {

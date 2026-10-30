@@ -1,5 +1,12 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionRequest, worth_execution::ExecutionWorkCeiling, worth_execution::LeaseRequest, crate::sealed_request::ordinary_context::authority, crate::sealed_request::ordinary_context::charged_scan, crate::sealed_request::ordinary_context::one_unit_policy, crate::sealed_request::ordinary_context::policy};
+pub(crate) use {
+    crate::sealed_request::ordinary_context::authority,
+    crate::sealed_request::ordinary_context::charged_scan,
+    crate::sealed_request::ordinary_context::one_unit_policy,
+    crate::sealed_request::ordinary_context::policy, worth_execution::CancellationToken,
+    worth_execution::ExecutionRequest, worth_execution::ExecutionWorkCeiling,
+    worth_execution::LeaseRequest,
+};
 
 #[test]
 fn sealed_leased_request_projects_the_exact_callers_lease() {
@@ -16,12 +23,15 @@ fn sealed_leased_request_projects_the_exact_callers_lease() {
         })
         .unwrap();
     let (same, _) = worth_execution::ExecutionRequest::leased(&lease)
-        .run(worth_execution::ExecutionWorkCeiling::new(Some(1_000)), |carried| {
-            std::ptr::eq(
-                carried.expect("leased carriage cannot erase its proof"),
-                &lease,
-            )
-        })
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(Some(1_000)),
+            |carried| {
+                std::ptr::eq(
+                    carried.expect("leased carriage cannot erase its proof"),
+                    &lease,
+                )
+            },
+        )
         .unwrap();
     assert!(same);
 }

@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/contracts/compile_fail/freshness_source_and_policy_cannot_be_substituted.rs:44:16
+  --> tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/freshness_source_and_policy_cannot_be_substituted.rs:44:16
    |
 44 |     owner_only(forged);
    |     ---------- ^^^^^^ expected `OwnerSource`, found `CallerSource`
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
    = note: expected struct `FreshnessScopedBasis<worth_proof::CurrentValidity, FreshnessEvaluation<OwnerSource, OwnerPolicy, ()>>`
               found struct `FreshnessScopedBasis<worth_proof::CurrentValidity, FreshnessEvaluation<CallerSource, CallerPolicy, ()>>`
 note: function defined here
-  --> tests/ui/contracts/compile_fail/freshness_source_and_policy_cannot_be_substituted.rs:38:4
+  --> tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/freshness_source_and_policy_cannot_be_substituted.rs:38:4
    |
 38 | fn owner_only(_: OwnerCurrent) {}
    |    ^^^^^^^^^^ ---------------

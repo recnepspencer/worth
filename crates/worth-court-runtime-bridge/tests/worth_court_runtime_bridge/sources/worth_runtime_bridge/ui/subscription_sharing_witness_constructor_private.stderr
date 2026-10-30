@@ -1,5 +1,5 @@
 error[E0624]: associated function `new` is private
- --> tests/ui/subscription_sharing_witness_constructor_private.rs:4:69
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_sharing_witness_constructor_private.rs:4:69
   |
 4 |     let _constructor = BridgeSubscriptionSharingEligibilityWitness::new;
   |                                                                     ^^^ private associated function

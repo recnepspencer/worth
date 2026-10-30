@@ -1,5 +1,5 @@
 error[E0624]: associated function `publish` is private
- --> tests/ui/subscription_checkpoint_constructor_private.rs:4:54
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_checkpoint_constructor_private.rs:4:54
   |
 4 |       let _constructor = BridgeSubscriptionCheckpoint::publish;
   |                                                        ^^^^^^^ private associated function

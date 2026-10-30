@@ -1,9 +1,11 @@
 #![allow(dead_code)]
 
-pub(crate) use {std::collections::BTreeMap};
+pub(crate) use std::collections::BTreeMap;
 
-pub(crate) use {worth_foundational::facade::FoundationalBoundaryEvidenceSupportTruthKind};
-pub(crate) use {worth_server::WorthServerDenialBoundary, worth_server::WorthServerOperatorEvidenceRecord};
+pub(crate) use worth_foundational::facade::FoundationalBoundaryEvidenceSupportTruthKind;
+pub(crate) use {
+    worth_server::WorthServerDenialBoundary, worth_server::WorthServerOperatorEvidenceRecord,
+};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) enum WorthServerCertificationOutputDigest {

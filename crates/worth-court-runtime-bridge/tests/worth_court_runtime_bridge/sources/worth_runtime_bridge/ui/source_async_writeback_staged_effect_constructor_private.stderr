@@ -1,5 +1,5 @@
 error: cannot construct `StagedBridgeAsyncWritebackEffect` with struct literal syntax due to private fields
- --> tests/ui/source_async_writeback_staged_effect_constructor_private.rs:4:13
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_writeback_staged_effect_constructor_private.rs:4:13
   |
 4 |     let _ = StagedBridgeAsyncWritebackEffect {};
   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

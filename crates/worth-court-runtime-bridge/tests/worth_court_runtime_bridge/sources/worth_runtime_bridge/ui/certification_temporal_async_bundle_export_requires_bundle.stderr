@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/certification_temporal_async_bundle_export_requires_bundle.rs:12:64
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/certification_temporal_async_bundle_export_requires_bundle.rs:12:64
    |
 12 |     let _ = runtime.export_temporal_async_certification_bundle(&draft);
    |                     ------------------------------------------ ^^^^^^ expected `BridgeTemporalAsyncCertificationBundleSealed`, found `BridgeTemporalAsyncCertificationBundleDraft`

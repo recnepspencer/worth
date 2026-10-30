@@ -1,6 +1,3 @@
-use {worth_foundational::profiles_api::common_path, worth_foundational::profiles_api::lower_lane::attachment, worth_foundational::profiles_api::lower_lane::certification, worth_foundational::profiles_api::lower_lane::composition, worth_foundational::profiles_api::lower_lane::materialization, worth_foundational::profiles_api::lower_lane::progression, worth_foundational::profiles_api::stronger_lane::readiness as stronger_readiness, worth_foundational::FoundationalDescriptiveSurface};
-use {worth_proof::TransitionOutcome};
-
 #[test]
 fn grouped_profile_surface_exposes_common_lower_and_stronger_lanes() {
     let requested = worth_foundational::profiles_api::common_path::profiles()
@@ -16,7 +13,10 @@ fn grouped_profile_surface_exposes_common_lower_and_stronger_lanes() {
         .request()
         .expect("requested profile");
 
-    let admitted = match worth_foundational::profiles_api::common_path::profiles().progression().admit_same(requested) {
+    let admitted = match worth_foundational::profiles_api::common_path::profiles()
+        .progression()
+        .admit_same(requested)
+    {
         worth_proof::TransitionOutcome::Success(admitted) => admitted,
         other => panic!("expected admitted profile, got {other:?}"),
     };

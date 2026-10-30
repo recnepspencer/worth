@@ -1,6 +1,8 @@
-pub(crate) use {crate::relational_certification::ordinary_context::owner_service_completion::world::commit_through_services, crate::relational_certification::ordinary_context::owner_service_completion::world::empty_runtime, crate::relational_certification::ordinary_context::owner_service_completion::world::fork_through_services};
-pub(crate) use {worth_relational::facade::branch::RelationalBranchArchiveDenial, worth_relational::facade::branch::RelationalBranchBasisDenial, worth_relational::facade::branch::RelationalBranchDeleteDenial, worth_relational::facade::branch::RelationalBranchTransitionStop, worth_relational::facade::branch::RelationalOwnerLifecycleObservation};
-pub(crate) use {worth_relational::facade::mvcc::RelationalOperationControl};
+pub(crate) use {
+    crate::relational_certification::ordinary_context::owner_service_completion::world::commit_through_services,
+    crate::relational_certification::ordinary_context::owner_service_completion::world::empty_runtime,
+    crate::relational_certification::ordinary_context::owner_service_completion::world::fork_through_services,
+};
 
 #[test]
 fn surviving_bundle_is_weak_and_reports_exact_owner_unavailable_postures() {
@@ -30,9 +32,10 @@ fn surviving_bundle_is_weak_and_reports_exact_owner_unavailable_postures() {
         Err(worth_relational::facade::branch::RelationalBranchBasisDenial::OwnerUnavailable)
     ));
     assert!(matches!(
-        services
-            .basis_port()
-            .observe_branch_with_control(&identity, &worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted(),),
+        services.basis_port().observe_branch_with_control(
+            &identity,
+            &worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted(),
+        ),
         Err(worth_relational::facade::branch::RelationalBranchBasisDenial::OwnerUnavailable)
     ));
     assert!(matches!(
@@ -57,17 +60,21 @@ fn surviving_bundle_is_weak_and_reports_exact_owner_unavailable_postures() {
         services
             .lifecycle_port()
             .archive_branch(execution, &identity),
-        Err(worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
-            worth_relational::facade::branch::RelationalBranchArchiveDenial::OwnerUnavailable
-        ))
+        Err(
+            worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
+                worth_relational::facade::branch::RelationalBranchArchiveDenial::OwnerUnavailable
+            )
+        )
     ));
     assert!(matches!(
         services
             .lifecycle_port()
             .delete_branch(execution, &identity),
-        Err(worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
-            worth_relational::facade::branch::RelationalBranchDeleteDenial::OwnerUnavailable
-        ))
+        Err(
+            worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(
+                worth_relational::facade::branch::RelationalBranchDeleteDenial::OwnerUnavailable
+            )
+        )
     ));
     let release = services
         .basis_port()

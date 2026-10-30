@@ -1,8 +1,14 @@
-pub use {std::collections::BTreeMap};
+pub use std::collections::BTreeMap;
 
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema::RelationEdge};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::Anchor, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale;
+pub use crate::relational_certification::ordinary_context::world::supply_chain::schema::RelationEdge;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::Anchor,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind,
+};
 
 pub fn build(scale: SupplyChainScale) -> BTreeMap<RelationKey, RelationEdge> {
     let mut relations = std::collections::BTreeMap::new();

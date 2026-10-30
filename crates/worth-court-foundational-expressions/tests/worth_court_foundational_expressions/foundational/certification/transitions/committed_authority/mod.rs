@@ -1,6 +1,18 @@
-use {worth_foundational::FoundationalAuthorityTransitionClass, worth_foundational::FoundationalAuthorityTransitionDenial, worth_foundational::FoundationalAuthorityTransitionOutcomeKind, worth_foundational::FoundationalCommittedAuthorityConstructionDenial, worth_foundational::FoundationalNoOpCause};
-
-use {crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict, crate::certification::ordinary_context::transitions::fixtures::committed::advisory_verdict, crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority, crate::certification::ordinary_context::transitions::fixtures::committed::conflict_verdict, crate::certification::ordinary_context::transitions::fixtures::committed::metadata_only_commit_input, crate::certification::ordinary_context::transitions::fixtures::committed::no_op_input, crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input, crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_delta_summary, crate::certification::ordinary_context::transitions::fixtures::committed::parent_basis, crate::certification::ordinary_context::transitions::fixtures::committed::promotion_commit_input, crate::certification::ordinary_context::transitions::fixtures::committed::replay_revalidated_commit_input, crate::certification::ordinary_context::transitions::fixtures::committed::superseded_verdict, crate::certification::ordinary_context::transitions::fixtures::committed::unary_parentage};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict,
+    crate::certification::ordinary_context::transitions::fixtures::committed::advisory_verdict,
+    crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority,
+    crate::certification::ordinary_context::transitions::fixtures::committed::conflict_verdict,
+    crate::certification::ordinary_context::transitions::fixtures::committed::metadata_only_commit_input,
+    crate::certification::ordinary_context::transitions::fixtures::committed::no_op_input,
+    crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input,
+    crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_delta_summary,
+    crate::certification::ordinary_context::transitions::fixtures::committed::parent_basis,
+    crate::certification::ordinary_context::transitions::fixtures::committed::promotion_commit_input,
+    crate::certification::ordinary_context::transitions::fixtures::committed::replay_revalidated_commit_input,
+    crate::certification::ordinary_context::transitions::fixtures::committed::superseded_verdict,
+    crate::certification::ordinary_context::transitions::fixtures::committed::unary_parentage,
+};
 
 #[test]
 fn proof_bearing_committed_authority_preserves_merge_strategy_and_basis_meaning() {

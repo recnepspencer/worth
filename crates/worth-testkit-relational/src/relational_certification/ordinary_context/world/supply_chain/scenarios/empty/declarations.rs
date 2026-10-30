@@ -1,7 +1,13 @@
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::scenarios::BaselineName, crate::relational_certification::ordinary_context::world::supply_chain::scenarios::SupplyChainBaseline};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::oracle::ancestry::OracleBranch, crate::relational_certification::ordinary_context::world::supply_chain::oracle::state::OracleState};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition;
+pub use crate::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::oracle::ancestry::OracleBranch,
+    crate::relational_certification::ordinary_context::world::supply_chain::oracle::state::OracleState,
+};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::scenarios::BaselineName,
+    crate::relational_certification::ordinary_context::world::supply_chain::scenarios::SupplyChainBaseline,
+};
 
 pub fn build(scale: SupplyChainScale) -> SupplyChainBaseline {
     let definition = crate::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition::empty(scale);

@@ -1,4 +1,4 @@
-pub(crate) use {worth_proof::AuthorityMarker};
+pub(crate) use worth_proof::AuthorityMarker;
 
 pub(crate) struct RepresentativeAuthority;
 

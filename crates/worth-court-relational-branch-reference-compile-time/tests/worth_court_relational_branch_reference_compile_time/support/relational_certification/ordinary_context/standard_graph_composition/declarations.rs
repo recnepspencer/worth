@@ -1,5 +1,5 @@
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::sync::atomic::Ordering};
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use std::sync::atomic::Ordering;
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::graph_composition_probe::registration};
 pub(crate) use {crate::relational_certification::ordinary_context::graph_selected_state_probe::registration as selected_state_registration, crate::relational_certification::ordinary_context::graph_selected_state_probe::RULE_ID};
@@ -174,14 +174,18 @@ pub(crate) fn vessel_fields(call_sign: &str) -> AspectFieldPatch {
             worth_foundational::facade::AspectKey::new("call_sign").expect("call-sign aspect"),
             worth_foundational::facade::FieldKey::new("call_sign").expect("call-sign field"),
         ),
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw(call_sign.to_owned())),
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw(call_sign.to_owned()),
+        ),
     );
     fields.insert(
         planned_single_field_locator(
             worth_foundational::facade::AspectKey::new("class").expect("class aspect"),
             worth_foundational::facade::FieldKey::new("class").expect("class field"),
         ),
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw("Feeder".to_owned())),
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw("Feeder".to_owned()),
+        ),
     );
     fields.insert(
         planned_single_field_locator(
@@ -195,7 +199,9 @@ pub(crate) fn vessel_fields(call_sign: &str) -> AspectFieldPatch {
             worth_foundational::facade::AspectKey::new("posture").expect("posture aspect"),
             worth_foundational::facade::FieldKey::new("posture").expect("posture field"),
         ),
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw("Open".to_owned())),
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw("Open".to_owned()),
+        ),
     );
     worth_relational::facade::transactions::AspectFieldPatch::new(fields)
 }

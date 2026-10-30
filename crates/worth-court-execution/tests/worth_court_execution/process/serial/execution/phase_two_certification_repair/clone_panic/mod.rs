@@ -1,5 +1,14 @@
-#[allow(unused_imports)] use crate::phase_two_certification_repair::isolated_context::clone_panic::*;
-use {std::sync::atomic::AtomicUsize, worth_execution::CancellationSource, worth_execution::CanonicalBits, worth_execution::ChargedBytes, worth_execution::DecomposeCertificationFailure, worth_execution::DecomposeKernelEditions, worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_execution::ExecutionDecompose, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_execution::InterfaceSolution, worth_execution::InteriorResult, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, std::num::NonZeroUsize, worth_execution::OracleMismatch, std::sync::atomic::Ordering, worth_foundational::PartitionIdentity, worth_execution::ReduceCertificationFailure, crate::phase_two_certification_repair::isolated_context::TEST_LOCK, crate::phase_two_certification_repair::isolated_context::authority, crate::phase_two_certification_repair::isolated_context::lease, crate::phase_two_certification_repair::isolated_context::map};
+#[allow(unused_imports)]
+use crate::phase_two_certification_repair::isolated_context::clone_panic::*;
+use {
+    crate::phase_two_certification_repair::isolated_context::authority,
+    crate::phase_two_certification_repair::isolated_context::lease,
+    crate::phase_two_certification_repair::isolated_context::map,
+    crate::phase_two_certification_repair::isolated_context::TEST_LOCK,
+    worth_execution::DecomposeKernelEditions, worth_execution::InterfaceSolution,
+    worth_execution::InteriorResult, worth_execution::LeaseRequest,
+    worth_execution::MapKernelFailure,
+};
 
 #[test]
 fn certification_clone_panics_are_typed_failures() {
@@ -8,7 +17,11 @@ fn certification_clone_panics_are_typed_failures() {
     }
 
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
-    let lease = lease(100, 1 << 20, worth_foundational::DeterminismContract::CanonicalBitwise);
+    let lease = lease(
+        100,
+        1 << 20,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+    );
     let reduced = map(1).certify_reduce(
         &lease,
         1,
@@ -20,7 +33,9 @@ fn certification_clone_panics_are_typed_failures() {
     );
     assert!(matches!(
         reduced,
-        Err(worth_execution::ReduceCertificationFailure::Mismatch(worth_execution::OracleMismatch::Stop))
+        Err(worth_execution::ReduceCertificationFailure::Mismatch(
+            worth_execution::OracleMismatch::Stop
+        ))
     ));
 
     let mut decompose = worth_execution::ExecutionDecompose::try_new(
@@ -80,7 +95,11 @@ fn cancelled_certification_does_not_clone_before_admission() {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Serial,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), None, Some(100)),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::new(1).unwrap(),
+                    None,
+                    Some(100),
+                ),
             ),
             deadline: None,
             cancellation: cancellation.token(),
@@ -97,7 +116,9 @@ fn cancelled_certification_does_not_clone_before_admission() {
     );
     assert!(matches!(
         reduced,
-        Err(worth_execution::ReduceCertificationFailure::Mismatch(worth_execution::OracleMismatch::Stop))
+        Err(worth_execution::ReduceCertificationFailure::Mismatch(
+            worth_execution::OracleMismatch::Stop
+        ))
     ));
     assert_eq!(CLONES.load(std::sync::atomic::Ordering::SeqCst), 0);
 

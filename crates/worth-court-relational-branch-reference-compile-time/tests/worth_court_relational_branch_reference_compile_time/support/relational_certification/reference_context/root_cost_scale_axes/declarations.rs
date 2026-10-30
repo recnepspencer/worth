@@ -1,4 +1,4 @@
-pub(crate) use {std::collections::BTreeSet};
+pub(crate) use std::collections::BTreeSet;
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch_with_result, crate::relational_certification::ordinary_context::world::supply_chain::runtime_driver::footprint_batch::lower_cargo_footprint_batch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale};
 pub(crate) use {worth_relational::facade::history::BranchId};
@@ -21,7 +21,10 @@ pub(crate) fn single_record_copy_cost(
         .fork_branch(execution, branch.clone(), source)
         .unwrap();
     let identity = world.runtime.branch_identity(&branch).unwrap();
-    let scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
+    let scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+        &world.runtime,
+        vec![identity],
+    );
     let batch = lower_cargo_footprint_batch(&world.handles, scale, 1);
     let committed = commit_branch_batch_with_result(execution, &world.runtime, branch, batch);
     assert_eq!(
@@ -76,7 +79,9 @@ pub(crate) fn assert_flat_history_samples(
                 execution,
                 &world.runtime,
                 branch.clone(),
-                worth_relational::facade::transactions::WorkerIntentBatch::new(format!("retained-history-{sequence}")),
+                worth_relational::facade::transactions::WorkerIntentBatch::new(format!(
+                    "retained-history-{sequence}"
+                )),
             );
             world
                 .runtime
@@ -87,7 +92,10 @@ pub(crate) fn assert_flat_history_samples(
             retained_bases.push(world.runtime.retain_component_basis(&basis).unwrap());
         }
         assert_eq!(retained_bases.len(), history_len);
-        let scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
+        let scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+            &world.runtime,
+            vec![identity],
+        );
         let final_batch = lower_cargo_footprint_batch(&world.handles, scale, 64);
         let final_commit =
             commit_branch_batch_with_result(execution, &world.runtime, branch, final_batch);

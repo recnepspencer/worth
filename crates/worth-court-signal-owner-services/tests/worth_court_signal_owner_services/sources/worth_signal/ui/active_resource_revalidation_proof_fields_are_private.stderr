@@ -1,5 +1,5 @@
 error[E0451]: fields `node`, `handle` and `decision_digest` of struct `ActiveResourceRevalidationProof` are private
-  --> tests/ui/active_resource_revalidation_proof_fields_are_private.rs:9:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/active_resource_revalidation_proof_fields_are_private.rs:9:9
    |
  8 |     let _proof = ActiveResourceRevalidationProof {
    |                  ------------------------------- in this type

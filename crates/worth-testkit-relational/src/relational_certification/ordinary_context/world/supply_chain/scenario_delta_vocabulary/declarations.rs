@@ -1,5 +1,9 @@
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::schema::SchemaVersion;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey,
+};
 
 /// The closed semantic delta vocabulary shared by contracts, reads, and the
 /// pure oracle.  Its meaning does not depend on how a delta is interpreted.

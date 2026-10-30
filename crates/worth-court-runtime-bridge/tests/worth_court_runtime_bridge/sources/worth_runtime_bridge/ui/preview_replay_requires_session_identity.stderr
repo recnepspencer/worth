@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/preview_replay_requires_session_identity.rs:6:43
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/preview_replay_requires_session_identity.rs:6:43
   |
 6 |     let _ = runtime.replay_preview_bundle(sealed_authority_placeholder::<&str>());
   |                     --------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&BridgeIdentity<...>`, found `&str`

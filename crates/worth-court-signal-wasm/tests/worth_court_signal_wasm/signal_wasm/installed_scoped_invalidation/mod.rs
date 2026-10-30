@@ -1,12 +1,12 @@
-use {worth_proof::TransitionOutcome};
-use {worth_signal::facade::apply_installed_scoped_changes, worth_signal::facade::Aspect, worth_signal::facade::ChangedRegion, worth_signal::facade::InstalledSignalScopedChange, worth_signal::facade::ScopeCoverage, worth_signal::facade::ScopePath, worth_signal::facade::SignalGraph};
+use worth_signal::facade::apply_installed_scoped_changes;
 
 #[test]
 fn wasm_supported_facade_retains_full_depth_opaque_locality() {
     let mut graph = worth_signal::facade::SignalGraph::new();
     let source = graph.node().build();
     let aspect = worth_signal::facade::Aspect::new(0);
-    let worth_proof::TransitionOutcome::Success(capability) = graph.admit_installed_aspect(source, aspect)
+    let worth_proof::TransitionOutcome::Success(capability) =
+        graph.admit_installed_aspect(source, aspect)
     else {
         panic!("the WASM-supported Signal facade must admit its own installed aspect")
     };
@@ -28,5 +28,8 @@ fn wasm_supported_facade_retains_full_depth_opaque_locality() {
     let change = admitted.changes().next().unwrap();
     assert_eq!(change.aspect(), aspect);
     assert_eq!(change.changed_regions()[0].path().segments(), segments);
-    assert_eq!(change.changed_regions()[0].coverage(), worth_signal::facade::ScopeCoverage::Exact);
+    assert_eq!(
+        change.changed_regions()[0].coverage(),
+        worth_signal::facade::ScopeCoverage::Exact
+    );
 }

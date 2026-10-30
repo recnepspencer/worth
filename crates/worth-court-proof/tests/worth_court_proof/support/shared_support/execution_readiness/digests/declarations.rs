@@ -1,9 +1,24 @@
-pub(crate) use {std::any::type_name};
+pub(crate) use std::any::type_name;
 
-pub(crate) use {worth_proof::AdmitExecutionReadyRecipeTransition, worth_proof::AssumptionBasis, worth_proof::BoundaryBridgedStaleReadableBasis, worth_proof::CheckedAdmitExecutionReadyRecipeTransition, worth_proof::CheckedReadmitLoweredForExecutionReadyTransition, worth_proof::CurrentValidity, worth_proof::ExecutedRecipe, worth_proof::ExecutionReadinessContext, worth_proof::ExecutionReadyAdmissionReadiness, worth_proof::ExecutionReadyRecipe, worth_proof::FreshnessScopedBasis, worth_proof::Lowered, worth_proof::LoweredReadmissionContext, worth_proof::LoweredReadmissionReadiness, worth_proof::ReadmitLoweredForExecutionReadyTransition, worth_proof::RebindRequiredBasis, worth_proof::Recipe, worth_proof::Resolved, worth_proof::StaleReadableBasis};
+pub(crate) use {
+    worth_proof::AdmitExecutionReadyRecipeTransition, worth_proof::AssumptionBasis,
+    worth_proof::BoundaryBridgedStaleReadableBasis,
+    worth_proof::CheckedAdmitExecutionReadyRecipeTransition,
+    worth_proof::CheckedReadmitLoweredForExecutionReadyTransition, worth_proof::CurrentValidity,
+    worth_proof::ExecutedRecipe, worth_proof::ExecutionReadinessContext,
+    worth_proof::ExecutionReadyAdmissionReadiness, worth_proof::ExecutionReadyRecipe,
+    worth_proof::FreshnessScopedBasis, worth_proof::Lowered,
+    worth_proof::LoweredReadmissionContext, worth_proof::LoweredReadmissionReadiness,
+    worth_proof::ReadmitLoweredForExecutionReadyTransition, worth_proof::RebindRequiredBasis,
+    worth_proof::Recipe, worth_proof::Resolved, worth_proof::StaleReadableBasis,
+};
 
-pub(crate) use {crate::shared_support::proof_shapes::digest::BasisDigest, crate::shared_support::proof_shapes::digest::FailureDigest, crate::shared_support::proof_shapes::digest::TransitionDigest};
-pub(crate) use {crate::shared_support::execution_readiness::representatives::RepresentativeReadinessAuthority};
+pub(crate) use crate::shared_support::execution_readiness::representatives::RepresentativeReadinessAuthority;
+pub(crate) use {
+    crate::shared_support::proof_shapes::digest::BasisDigest,
+    crate::shared_support::proof_shapes::digest::FailureDigest,
+    crate::shared_support::proof_shapes::digest::TransitionDigest,
+};
 
 pub(crate) fn basis_digest() -> BasisDigest {
     crate::shared_support::proof_shapes::digest::BasisDigest::new(

@@ -1,17 +1,34 @@
-pub(crate) use {std::num::NonZeroUsize, std::sync::Condvar, std::sync::Mutex, std::sync::OnceLock, std::time::Duration};
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionRequest, worth_execution::LeaseRequest, worth_execution::SerialMemoryBudget, worth_execution::SerialRequest};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy};
-pub(crate) use {worth_signal::facade::adapters::NodeContract};
-pub(crate) use {worth_signal::facade::specialist::ExecutionReport};
-pub(crate) use {worth_signal::facade::Aspect, worth_signal::facade::AspectVersion, worth_signal::facade::BoundedSignalInputs, worth_signal::facade::RunMode as EvaluationRequestMode, worth_signal::facade::SignalError, worth_signal::facade::SignalGraph};
+pub(crate) use worth_signal::facade::adapters::NodeContract;
+pub(crate) use worth_signal::facade::specialist::ExecutionReport;
+pub(crate) use {
+    std::num::NonZeroUsize, std::sync::Condvar, std::sync::Mutex, std::sync::OnceLock,
+    std::time::Duration,
+};
+pub(crate) use {
+    worth_execution::CancellationToken, worth_execution::ExecutionAuthority,
+    worth_execution::ExecutionRequest, worth_execution::LeaseRequest,
+    worth_execution::SerialMemoryBudget, worth_execution::SerialRequest,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+};
+pub(crate) use {
+    worth_signal::facade::Aspect, worth_signal::facade::AspectVersion,
+    worth_signal::facade::BoundedSignalInputs,
+    worth_signal::facade::RunMode as EvaluationRequestMode, worth_signal::facade::SignalError,
+    worth_signal::facade::SignalGraph,
+};
 
 pub(crate) fn authority() -> &'static ExecutionAuthority {
     static OWNER: OnceLock<ExecutionAuthority> = std::sync::OnceLock::new();
     OWNER.get_or_init(|| {
-        worth_execution::ExecutionAuthority::try_construct(worth_execution::ExecutionAuthorityConfig {
-            max_workers: std::num::NonZeroUsize::new(4).unwrap(),
-            charged_memory_bytes: Some(128 << 20),
-        })
+        worth_execution::ExecutionAuthority::try_construct(
+            worth_execution::ExecutionAuthorityConfig {
+                max_workers: std::num::NonZeroUsize::new(4).unwrap(),
+                charged_memory_bytes: Some(128 << 20),
+            },
+        )
         .unwrap()
     })
 }
@@ -23,7 +40,8 @@ pub(crate) fn graph(count: usize) -> (SignalGraph, Vec<worth_signal::facade::Nod
             graph
                 .node()
                 .with_contract(
-                    worth_signal::facade::adapters::NodeContract::wildcard().with_bounded_inputs(worth_signal::facade::BoundedSignalInputs::default()),
+                    worth_signal::facade::adapters::NodeContract::wildcard()
+                        .with_bounded_inputs(worth_signal::facade::BoundedSignalInputs::default()),
                 )
                 .build()
         })
@@ -39,7 +57,8 @@ pub(crate) fn serial(count: usize) -> Result<(Vec<AspectVersion>, ExecutionRepor
             .iter()
             .position(|node| *node == context.node())
             .unwrap();
-        Ok(worth_signal::facade::AspectVersion::zero().with(worth_signal::facade::Aspect::new(0), index as u64 + 1))
+        Ok(worth_signal::facade::AspectVersion::zero()
+            .with(worth_signal::facade::Aspect::new(0), index as u64 + 1))
     })?;
     assert_eq!(report.tasks_executed, count as u32);
     assert_eq!(
@@ -70,7 +89,11 @@ pub(crate) fn checked_request(
                         worth_foundational::ExecutionPosture::Automatic
                     },
                     worth_foundational::DeterminismContract::CanonicalBitwise,
-                    worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(workers).unwrap(), None, Some(work)),
+                    worth_foundational::ExecutionBudget::new(
+                        std::num::NonZeroUsize::new(workers).unwrap(),
+                        None,
+                        Some(work),
+                    ),
                 ),
                 cancellation: worth_execution::CancellationToken::new(),
                 deadline: None,
@@ -110,7 +133,9 @@ pub(crate) fn checked_request(
                         *ready += 1;
                         wake.notify_all();
                         let (ready, _) = wake
-                            .wait_timeout_while(ready, std::time::Duration::from_secs(5), |n| *n < 2)
+                            .wait_timeout_while(ready, std::time::Duration::from_secs(5), |n| {
+                                *n < 2
+                            })
                             .unwrap();
                         assert_eq!(
                             *ready, 2,
@@ -122,7 +147,8 @@ pub(crate) fn checked_request(
                     .iter()
                     .position(|node| *node == context.node())
                     .unwrap();
-                Ok(worth_signal::facade::AspectVersion::zero().with(worth_signal::facade::Aspect::new(0), index as u64 + 1))
+                Ok(worth_signal::facade::AspectVersion::zero()
+                    .with(worth_signal::facade::Aspect::new(0), index as u64 + 1))
             },
             request,
         )

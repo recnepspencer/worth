@@ -170,30 +170,35 @@ impl DocumentationDefaultPathAudit {
 }
 
 pub(crate) const README: &str = include_str!("../../../../../../../worth-proof/README.md");
-pub(crate) const HAPPY_PATH_WORKFLOW: &str =
-    include_str!("../../../../../../../worth-proof/docs/workflows/happy-path-recipe-progression.md");
+pub(crate) const HAPPY_PATH_WORKFLOW: &str = include_str!(
+    "../../../../../../../worth-proof/docs/workflows/happy-path-recipe-progression.md"
+);
 pub(crate) const CHECKED_WORKFLOW: &str =
     include_str!("../../../../../../../worth-proof/docs/workflows/checked-recipe-progression.md");
 pub(crate) const RUNTIME_READMISSION_WORKFLOW: &str =
     include_str!("../../../../../../../worth-proof/docs/workflows/runtime-readmission.md");
-pub(crate) const FIXED_JOIN_WORKFLOW: &str = include_str!("../../../../../../../worth-proof/docs/workflows/fixed-arity-join.md");
+pub(crate) const FIXED_JOIN_WORKFLOW: &str =
+    include_str!("../../../../../../../worth-proof/docs/workflows/fixed-arity-join.md");
 pub(crate) const FAMILY_LOWERING_WORKFLOW: &str =
     include_str!("../../../../../../../worth-proof/docs/workflows/composition-family-lowering.md");
 pub(crate) const AUTHORING_WORKFLOW: &str =
     include_str!("../../../../../../../worth-proof/docs/workflows/authoring-a-new-proof-flow.md");
 pub(crate) const LOW_LEVEL_WORKFLOW: &str =
     include_str!("../../../../../../../worth-proof/docs/workflows/when-to-stay-low-level.md");
-pub(crate) const RECIPES_FEATURE: &str = include_str!("../../../../../../../worth-proof/docs/features/recipes-and-stages.md");
+pub(crate) const RECIPES_FEATURE: &str =
+    include_str!("../../../../../../../worth-proof/docs/features/recipes-and-stages.md");
 pub(crate) const CHECKED_TRANSITIONS_FEATURE: &str =
     include_str!("../../../../../../../worth-proof/docs/features/checked-transitions.md");
 pub(crate) const RUNTIME_READMISSION_FEATURE: &str =
     include_str!("../../../../../../../worth-proof/docs/features/runtime-readmission.md");
-pub(crate) const READY_JOIN_FEATURE: &str = include_str!("../../../../../../../worth-proof/docs/features/ready-recipe-join.md");
+pub(crate) const READY_JOIN_FEATURE: &str =
+    include_str!("../../../../../../../worth-proof/docs/features/ready-recipe-join.md");
 pub(crate) const FAMILY_LOWERING_FEATURE: &str =
     include_str!("../../../../../../../worth-proof/docs/features/deterministic-family-lowering.md");
 pub(crate) const BOUNDARY_READMISSION_FEATURE: &str =
     include_str!("../../../../../../../worth-proof/docs/features/boundary-readmission.md");
-pub(crate) const ARTIFACT_FEATURE: &str = include_str!("../../../../../../../worth-proof/docs/features/artifact.md");
+pub(crate) const ARTIFACT_FEATURE: &str =
+    include_str!("../../../../../../../worth-proof/docs/features/artifact.md");
 pub(crate) const ASSUMPTION_BASIS_FEATURE: &str =
     include_str!("../../../../../../../worth-proof/docs/features/assumption-basis.md");
 pub(crate) const FRESHNESS_FEATURE: &str =
@@ -204,19 +209,24 @@ pub(crate) const FAMILY_LIFECYCLE_ACTIONS_FEATURE: &str =
     include_str!("../../../../../../../worth-proof/docs/features/family-lifecycle-actions.md");
 pub(crate) const FIXED_SHAPE_COLLECTIONS_FEATURE: &str =
     include_str!("../../../../../../../worth-proof/docs/features/fixed-shape-collections.md");
-pub(crate) const FORK_AND_JOIN_FEATURE: &str = include_str!("../../../../../../../worth-proof/docs/features/fork-and-join.md");
-pub(crate) const READINESS_GATES_FEATURE: &str =
-    include_str!("../../../../../../../worth-proof/docs/features/preconstruction-and-readiness-gates.md");
+pub(crate) const FORK_AND_JOIN_FEATURE: &str =
+    include_str!("../../../../../../../worth-proof/docs/features/fork-and-join.md");
+pub(crate) const READINESS_GATES_FEATURE: &str = include_str!(
+    "../../../../../../../worth-proof/docs/features/preconstruction-and-readiness-gates.md"
+);
 pub(crate) const PROOF_MARKERS_FEATURE: &str =
     include_str!("../../../../../../../worth-proof/docs/features/proof-markers-and-sets.md");
-pub(crate) const PROVEN_VECTORS_FEATURE: &str = include_str!("../../../../../../../worth-proof/docs/features/proven-vectors.md");
+pub(crate) const PROVEN_VECTORS_FEATURE: &str =
+    include_str!("../../../../../../../worth-proof/docs/features/proven-vectors.md");
 pub(crate) const STRUCTURAL_FACTS_FEATURE: &str =
     include_str!("../../../../../../../worth-proof/docs/features/structural-facts.md");
 pub(crate) const TRANSITION_OUTCOMES_FEATURE: &str =
     include_str!("../../../../../../../worth-proof/docs/features/transition-outcomes.md");
-pub(crate) const WITNESSES_FEATURE: &str = include_str!("../../../../../../../worth-proof/docs/features/witnesses.md");
-pub(crate) const AUTHORITY_AND_WORKFLOW_CONTRACTS: &str =
-    include_str!("../../../../../../../worth-proof/docs/features/authority-and-workflow-contracts.md");
+pub(crate) const WITNESSES_FEATURE: &str =
+    include_str!("../../../../../../../worth-proof/docs/features/witnesses.md");
+pub(crate) const AUTHORITY_AND_WORKFLOW_CONTRACTS: &str = include_str!(
+    "../../../../../../../worth-proof/docs/features/authority-and-workflow-contracts.md"
+);
 
 pub(crate) fn documentation_default_path_audit() -> DocumentationDefaultPathAudit {
     DocumentationDefaultPathAudit {

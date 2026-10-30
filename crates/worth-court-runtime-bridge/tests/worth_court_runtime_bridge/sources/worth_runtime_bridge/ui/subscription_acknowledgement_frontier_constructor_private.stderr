@@ -1,5 +1,5 @@
 error[E0624]: associated function `admit` is private
- --> tests/ui/subscription_acknowledgement_frontier_constructor_private.rs:4:67
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_acknowledgement_frontier_constructor_private.rs:4:67
   |
 4 |       let _constructor = BridgeSubscriptionAcknowledgementFrontier::admit;
   |                                                                     ^^^^^ private associated function

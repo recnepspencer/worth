@@ -1,5 +1,5 @@
 error[E0308]: arguments to this method are incorrect
-  --> tests/ui/subscription_certification_compare_requires_sealed_bundle.rs:11:27
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_compare_requires_sealed_bundle.rs:11:27
    |
 11 |     let _report = runtime.compare_subscription_certification_bundles(plan, &draft, &draft);
    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^       ------  ------ expected `&...`, found `&&...`

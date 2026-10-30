@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
- --> tests/ui/boundary_evidence/provenance/replay_slice_record_cannot_satisfy_provenance_api.rs:9:24
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/provenance/replay_slice_record_cannot_satisfy_provenance_api.rs
   |
-9 |     accepts_provenance(&replay_slice);
+  |     accepts_provenance(&replay_slice);
   |     ------------------ ^^^^^^^^^^^^^ expected `&...`, found `&SyntheticReplaySlice`
   |     |
   |     arguments to this function are incorrect
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected reference `&FoundationalBoundaryEvidenceProvenanceArtifact`
              found reference `&SyntheticReplaySlice`
 note: function defined here
- --> tests/ui/boundary_evidence/provenance/replay_slice_record_cannot_satisfy_provenance_api.rs:5:4
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/provenance/replay_slice_record_cannot_satisfy_provenance_api.rs
   |
-5 | fn accepts_provenance(_: &worth_foundational::FoundationalBoundaryEvidenceProvenanceArtifact) {}
+  | fn accepts_provenance(_: &worth_foundational::FoundationalBoundaryEvidenceProvenanceArtifact) {}
   |    ^^^^^^^^^^^^^^^^^^ ----------------------------------------------------------------------

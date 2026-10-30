@@ -1,5 +1,5 @@
 error[E0382]: use of moved value: `flow`
-  --> tests/ui/dx/compile_fail/scoped_defaults_cannot_be_reused_after_consumption.rs:29:19
+  --> tests/worth_court_proof/sources/worth_proof/ui/dx/compile_fail/scoped_defaults_cannot_be_reused_after_consumption.rs:29:19
    |
 17 |     let flow = proof_flow()
    |         ---- move occurs because `flow` has type `ProofFlow<worth_proof::AuthorityWitness<ResolutionAuthority>, worth_proof::CapabilityWitness<LoweringCapability>, worth_proof::AuthorityWitness<ReadinessAuthority>>`, which does not implement the `Copy` trait

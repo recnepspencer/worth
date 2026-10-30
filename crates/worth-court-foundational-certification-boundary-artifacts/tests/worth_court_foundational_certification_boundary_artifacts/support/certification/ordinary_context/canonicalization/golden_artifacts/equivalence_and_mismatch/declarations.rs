@@ -1,8 +1,18 @@
-pub(crate) use {worth_foundational::compare_canonical_basis, worth_foundational::prepare_canonical_basis_sequence, worth_foundational::prepare_canonical_comparison, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalMismatchKind, worth_foundational::CanonicalizationRuleVersion};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::compare_canonical_basis,
+    worth_foundational::prepare_canonical_basis_sequence,
+    worth_foundational::prepare_canonical_comparison, worth_foundational::CanonicalBasisDomain,
+    worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind,
+    worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadyArtifact,
+    worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome,
+    worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalIntegerWidth,
+    worth_foundational::CanonicalMismatchKind, worth_foundational::CanonicalizationRuleVersion,
+};
 
 pub(crate) fn version(name: &str) -> CanonicalizationRuleVersion {
-    worth_foundational::CanonicalizationRuleVersion::new(name).expect("valid canonicalization version")
+    worth_foundational::CanonicalizationRuleVersion::new(name)
+        .expect("valid canonicalization version")
 }
 
 pub(crate) fn value_entry(name: &str, value: i64) -> CanonicalBasisEntry {
@@ -17,7 +27,9 @@ pub(crate) fn value_entry(name: &str, value: i64) -> CanonicalBasisEntry {
     )
 }
 
-pub(crate) fn ready(entries: impl IntoIterator<Item = CanonicalBasisEntry>) -> CanonicalBasisReadyArtifact {
+pub(crate) fn ready(
+    entries: impl IntoIterator<Item = CanonicalBasisEntry>,
+) -> CanonicalBasisReadyArtifact {
     match prepare_canonical_basis_sequence(
         version("m2.golden.comparison"),
         worth_foundational::CanonicalBasisDomain::Value,

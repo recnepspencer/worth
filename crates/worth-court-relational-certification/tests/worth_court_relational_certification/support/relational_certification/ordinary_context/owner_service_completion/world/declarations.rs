@@ -1,9 +1,22 @@
-pub(crate) use {worth_relational::facade::branch::RelationalBranchIdentity, worth_relational::facade::branch::RelationalForkOutcome, worth_relational::facade::branch::RelationalOwnerServicePorts};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_relational::facade::mvcc::RelationalPublicationOutcome, worth_relational::facade::mvcc::RelationalTransactionIntent};
-pub(crate) use {worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::runtime::RelationalRuntimeApi};
-pub(crate) use {worth_relational::facade::schema::RelationalSchemaRegistry};
-pub(crate) use {worth_relational::facade::transactions::CommitResult, worth_relational::facade::transactions::WorkerIntentBatch};
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use worth_relational::facade::schema::RelationalSchemaRegistry;
+pub(crate) use {
+    worth_relational::facade::branch::RelationalBranchIdentity,
+    worth_relational::facade::branch::RelationalForkOutcome,
+    worth_relational::facade::branch::RelationalOwnerServicePorts,
+};
+pub(crate) use {
+    worth_relational::facade::mvcc::RelationalPublicationOutcome,
+    worth_relational::facade::mvcc::RelationalTransactionIntent,
+};
+pub(crate) use {
+    worth_relational::facade::runtime::RelationalRuntime,
+    worth_relational::facade::runtime::RelationalRuntimeApi,
+};
+pub(crate) use {
+    worth_relational::facade::transactions::CommitResult,
+    worth_relational::facade::transactions::WorkerIntentBatch,
+};
 
 pub(crate) fn empty_runtime() -> RelationalRuntime {
     worth_relational::facade::runtime::RelationalRuntimeApi::builder()
@@ -24,7 +37,10 @@ pub(crate) fn commit_through_services(
         .admit_branch_basis(&identity)
         .expect("owner service admits the exact owner-issued basis");
     let mut transaction = runtime
-        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .expect("the admitted basis opens the canonical transaction path");
     transaction
         .push_batch(
@@ -40,7 +56,9 @@ pub(crate) fn commit_through_services(
         .publication_port()
         .compare_and_publish(execution, candidate)
     {
-        worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
+        worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {
+            performed
+        }
         outcome => panic!("publication service did not perform: {outcome:?}"),
     };
     services
@@ -59,7 +77,10 @@ pub(crate) fn commit_direct(
         .admit_branch_basis(&identity)
         .expect("direct owner path admits its exact basis");
     let mut transaction = runtime
-        .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
         .expect("direct admitted basis opens a transaction");
     transaction
         .push_batch(

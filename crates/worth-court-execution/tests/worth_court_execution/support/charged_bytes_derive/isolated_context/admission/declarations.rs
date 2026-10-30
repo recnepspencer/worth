@@ -1,7 +1,24 @@
-pub(crate) use {crate::charged_bytes_derive::ordinary_context::model::combine, crate::charged_bytes_derive::ordinary_context::model::ResidentValue};
-pub(crate) use {std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::OnceLock};
-pub(crate) use {worth_execution::CancellationToken, worth_execution::ChargedBytes, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionMap, worth_execution::ExecutionResourceLease, worth_execution::ExecutionWorkCeiling, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition, worth_execution::MapStop};
-pub(crate) use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy, worth_foundational::PartitionIdentity};
+pub(crate) use {
+    crate::charged_bytes_derive::ordinary_context::model::combine,
+    crate::charged_bytes_derive::ordinary_context::model::ResidentValue,
+};
+pub(crate) use {
+    std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
+    std::sync::OnceLock,
+};
+pub(crate) use {
+    worth_execution::CancellationToken, worth_execution::ChargedBytes,
+    worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig,
+    worth_execution::ExecutionMap, worth_execution::ExecutionResourceLease,
+    worth_execution::ExecutionWorkCeiling, worth_execution::LeaseDenial,
+    worth_execution::LeaseRequest, worth_execution::MapKernelFailure, worth_execution::MapOutcome,
+    worth_execution::MapPartition, worth_execution::MapStop,
+};
+pub(crate) use {
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_foundational::PartitionIdentity,
+};
 
 pub(crate) const BUDGET: u64 = 1 << 20;
 
@@ -19,7 +36,11 @@ pub(crate) fn lease() -> ExecutionResourceLease<'static> {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Automatic,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::new(2).unwrap(), Some(BUDGET), Some(u64::MAX)),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::new(2).unwrap(),
+                    Some(BUDGET),
+                    Some(u64::MAX),
+                ),
             ),
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),

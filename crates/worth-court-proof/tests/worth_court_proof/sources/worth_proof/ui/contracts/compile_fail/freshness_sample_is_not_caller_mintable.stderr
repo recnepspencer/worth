@@ -1,5 +1,5 @@
 error[E0451]: fields `value` and `source` of struct `FreshnessSample` are private
-  --> tests/ui/contracts/compile_fail/freshness_sample_is_not_caller_mintable.rs:14:9
+  --> tests/worth_court_proof/sources/worth_proof/ui/contracts/compile_fail/freshness_sample_is_not_caller_mintable.rs:14:9
    |
 13 |     let _forged = FreshnessSample::<Clock> {
    |                   ------------------------ in this type

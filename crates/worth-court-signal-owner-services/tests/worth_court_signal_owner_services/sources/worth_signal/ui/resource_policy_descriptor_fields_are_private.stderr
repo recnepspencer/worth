@@ -1,5 +1,5 @@
 error[E0624]: associated function `new` is private
-  --> tests/ui/resource_policy_descriptor_fields_are_private.rs:13:50
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_descriptor_fields_are_private.rs:13:50
    |
 13 |         descriptor_digest: ResourcePolicyDigest::new("forged"),
    |                                                  ^^^ private associated function

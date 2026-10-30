@@ -1,5 +1,5 @@
 error[E0624]: associated function `plan` is private
- --> tests/ui/subscription_delivery_replay_plan_constructor_private.rs:4:62
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_delivery_replay_plan_constructor_private.rs:4:62
   |
 4 |       let _constructor = BridgeSubscriptionDeliveryReplayPlan::plan;
   |                                                                ^^^^ private associated function

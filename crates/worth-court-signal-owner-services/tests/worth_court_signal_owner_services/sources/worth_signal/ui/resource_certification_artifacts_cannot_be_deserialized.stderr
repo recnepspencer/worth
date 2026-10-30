@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `ResourceCertificationRecord: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:15:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:15:34
    |
 15 |     requires_deserialize_owned::<ResourceCertificationRecord>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceCertificationRecord`
@@ -16,13 +16,13 @@ error[E0277]: the trait bound `ResourceCertificationRecord: serde::de::Deseriali
            and $N others
    = note: required for `ResourceCertificationRecord` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceCertificationSummary: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:16:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:16:34
    |
 16 |     requires_deserialize_owned::<ResourceCertificationSummary>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceCertificationSummary`
@@ -39,13 +39,13 @@ error[E0277]: the trait bound `ResourceCertificationSummary: serde::de::Deserial
            and $N others
    = note: required for `ResourceCertificationSummary` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceCertificationBundle: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:17:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:17:34
    |
 17 |     requires_deserialize_owned::<ResourceCertificationBundle>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceCertificationBundle`
@@ -62,13 +62,13 @@ error[E0277]: the trait bound `ResourceCertificationBundle: serde::de::Deseriali
            and $N others
    = note: required for `ResourceCertificationBundle` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneBHostileScenarioEvidenceRow: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:18:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:18:34
    |
 18 |     requires_deserialize_owned::<ResourceMilestoneBHostileScenarioEvidenceRow>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneBHostileScenarioEvidenceRow`
@@ -85,13 +85,13 @@ error[E0277]: the trait bound `ResourceMilestoneBHostileScenarioEvidenceRow: ser
            and $N others
    = note: required for `ResourceMilestoneBHostileScenarioEvidenceRow` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneBHostileScenarioEvidence: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:19:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:19:34
    |
 19 |     requires_deserialize_owned::<ResourceMilestoneBHostileScenarioEvidence>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneBHostileScenarioEvidence`
@@ -108,13 +108,13 @@ error[E0277]: the trait bound `ResourceMilestoneBHostileScenarioEvidence: serde:
            and $N others
    = note: required for `ResourceMilestoneBHostileScenarioEvidence` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneBPerformanceCloseoutRow: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:20:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:20:34
    |
 20 |     requires_deserialize_owned::<ResourceMilestoneBPerformanceCloseoutRow>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneBPerformanceCloseoutRow`
@@ -131,13 +131,13 @@ error[E0277]: the trait bound `ResourceMilestoneBPerformanceCloseoutRow: serde::
            and $N others
    = note: required for `ResourceMilestoneBPerformanceCloseoutRow` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneBPerformanceCloseoutSummary: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:21:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:21:34
    |
 21 |     requires_deserialize_owned::<ResourceMilestoneBPerformanceCloseoutSummary>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneBPerformanceCloseoutSummary`
@@ -154,13 +154,13 @@ error[E0277]: the trait bound `ResourceMilestoneBPerformanceCloseoutSummary: ser
            and $N others
    = note: required for `ResourceMilestoneBPerformanceCloseoutSummary` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneBPerformanceCloseout: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:22:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:22:34
    |
 22 |     requires_deserialize_owned::<ResourceMilestoneBPerformanceCloseout>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneBPerformanceCloseout`
@@ -177,13 +177,13 @@ error[E0277]: the trait bound `ResourceMilestoneBPerformanceCloseout: serde::de:
            and $N others
    = note: required for `ResourceMilestoneBPerformanceCloseout` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneBScenarioRow: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:23:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:23:34
    |
 23 |     requires_deserialize_owned::<ResourceMilestoneBScenarioRow>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneBScenarioRow`
@@ -200,13 +200,13 @@ error[E0277]: the trait bound `ResourceMilestoneBScenarioRow: serde::de::Deseria
            and $N others
    = note: required for `ResourceMilestoneBScenarioRow` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneBScenarioMatrix: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:24:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:24:34
    |
 24 |     requires_deserialize_owned::<ResourceMilestoneBScenarioMatrix>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneBScenarioMatrix`
@@ -223,13 +223,13 @@ error[E0277]: the trait bound `ResourceMilestoneBScenarioMatrix: serde::de::Dese
            and $N others
    = note: required for `ResourceMilestoneBScenarioMatrix` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneBCertificationRun: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:25:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:25:34
    |
 25 |     requires_deserialize_owned::<ResourceMilestoneBCertificationRun>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneBCertificationRun`
@@ -246,13 +246,13 @@ error[E0277]: the trait bound `ResourceMilestoneBCertificationRun: serde::de::De
            and $N others
    = note: required for `ResourceMilestoneBCertificationRun` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneCPolicyScenarioRow: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:26:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:26:34
    |
 26 |     requires_deserialize_owned::<ResourceMilestoneCPolicyScenarioRow>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneCPolicyScenarioRow`
@@ -269,13 +269,13 @@ error[E0277]: the trait bound `ResourceMilestoneCPolicyScenarioRow: serde::de::D
            and $N others
    = note: required for `ResourceMilestoneCPolicyScenarioRow` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneCPolicyScenarioMatrix: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:27:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:27:34
    |
 27 |     requires_deserialize_owned::<ResourceMilestoneCPolicyScenarioMatrix>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneCPolicyScenarioMatrix`
@@ -292,13 +292,13 @@ error[E0277]: the trait bound `ResourceMilestoneCPolicyScenarioMatrix: serde::de
            and $N others
    = note: required for `ResourceMilestoneCPolicyScenarioMatrix` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneCPolicyPerformanceCloseoutRow: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:28:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:28:34
    |
 28 |     requires_deserialize_owned::<ResourceMilestoneCPolicyPerformanceCloseoutRow>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneCPolicyPerformanceCloseoutRow`
@@ -315,13 +315,13 @@ error[E0277]: the trait bound `ResourceMilestoneCPolicyPerformanceCloseoutRow: s
            and $N others
    = note: required for `ResourceMilestoneCPolicyPerformanceCloseoutRow` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneCPolicyPerformanceCloseout: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:29:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:29:34
    |
 29 |     requires_deserialize_owned::<ResourceMilestoneCPolicyPerformanceCloseout>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneCPolicyPerformanceCloseout`
@@ -338,13 +338,13 @@ error[E0277]: the trait bound `ResourceMilestoneCPolicyPerformanceCloseout: serd
            and $N others
    = note: required for `ResourceMilestoneCPolicyPerformanceCloseout` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`
 
 error[E0277]: the trait bound `ResourceMilestoneCCertificationRun: serde::de::DeserializeOwned` is not satisfied
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:30:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:30:34
    |
 30 |     requires_deserialize_owned::<ResourceMilestoneCCertificationRun>();
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ResourceMilestoneCCertificationRun`
@@ -361,7 +361,7 @@ error[E0277]: the trait bound `ResourceMilestoneCCertificationRun: serde::de::De
            and $N others
    = note: required for `ResourceMilestoneCCertificationRun` to implement `DeserializeOwned`
 note: required by a bound in `requires_deserialize_owned`
-  --> tests/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_artifacts_cannot_be_deserialized.rs:12:34
    |
 12 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`

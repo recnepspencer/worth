@@ -1,5 +1,5 @@
 error[E0451]: fields `store`, `object`, `generation`, `publication_allocation_epoch`, `publication_record_ordinal`, `publication_frame_sha256` and `issuer_evidence_sha256` of struct `AdmittedBlobReleaseProof` are private
-  --> tests/ui/blob_release_proof/private_fields.rs:5:9
+  --> tests/worth_court_proof/sources/worth_proof/ui/blob_release_proof/private_fields.rs:5:9
    |
  4 |     let _forged = AdmittedBlobReleaseProof {
    |                   ------------------------ in this type

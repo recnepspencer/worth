@@ -1,5 +1,5 @@
 error[E0624]: associated function `issue` is private
- --> tests/ui/writeback_mapper_witness_issue_private.rs:4:47
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_mapper_witness_issue_private.rs:4:47
   |
 4 |     let _ctor = BridgeWritebackMapperWitness::issue;
   |                                               ^^^^^ private associated function

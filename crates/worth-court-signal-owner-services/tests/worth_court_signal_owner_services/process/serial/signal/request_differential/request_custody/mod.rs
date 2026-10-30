@@ -1,6 +1,17 @@
 // The checked door refuses before any callback or graph publication.
 #[allow(unused_imports)]
-pub(crate) use {worth_signal::facade::AspectVersion, std::sync::atomic::AtomicUsize, worth_execution::CancellationToken, worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_execution::ExecutionRequest, worth_foundational::ExecutionRequestPolicy, worth_execution::LeaseRequest, worth_execution::MemoryLimitLevel, std::num::NonZeroUsize, std::sync::atomic::Ordering, worth_signal::facade::RunMode, worth_signal::facade::SignalError, worth_signal::facade::SignalExecutionStopReason, worth_signal::facade::SignalLeaseDenial, crate::request_differential::ordinary_context::authority, crate::request_differential::ordinary_context::graph};
+pub(crate) use {
+    crate::request_differential::ordinary_context::authority,
+    crate::request_differential::ordinary_context::graph, std::num::NonZeroUsize,
+    std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering,
+    worth_execution::CancellationToken, worth_execution::ExecutionRequest,
+    worth_execution::LeaseRequest, worth_execution::MemoryLimitLevel,
+    worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget,
+    worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy,
+    worth_signal::facade::AspectVersion, worth_signal::facade::RunMode,
+    worth_signal::facade::SignalError, worth_signal::facade::SignalExecutionStopReason,
+    worth_signal::facade::SignalLeaseDenial,
+};
 
 #[test]
 fn zero_budgets_refuse_signal_evaluation_before_callback() {
@@ -20,7 +31,11 @@ fn zero_budgets_refuse_signal_evaluation_before_callback() {
                 policy: worth_foundational::ExecutionRequestPolicy::new(
                     worth_foundational::ExecutionPosture::Serial,
                     worth_foundational::DeterminismContract::CanonicalBitwise,
-                    worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(memory), Some(work)),
+                    worth_foundational::ExecutionBudget::new(
+                        std::num::NonZeroUsize::MIN,
+                        Some(memory),
+                        Some(work),
+                    ),
                 ),
                 cancellation: worth_execution::CancellationToken::new(),
                 deadline: None,
@@ -50,8 +65,9 @@ fn zero_budgets_refuse_signal_evaluation_before_callback() {
                 stop.reason()
             );
         } else {
-            let worth_signal::facade::SignalExecutionStopReason::Admission(worth_signal::facade::SignalLeaseDenial::MemoryExhausted(memory)) =
-                stop.reason()
+            let worth_signal::facade::SignalExecutionStopReason::Admission(
+                worth_signal::facade::SignalLeaseDenial::MemoryExhausted(memory),
+            ) = stop.reason()
             else {
                 panic!("native memory admission: {:?}", stop.reason());
             };

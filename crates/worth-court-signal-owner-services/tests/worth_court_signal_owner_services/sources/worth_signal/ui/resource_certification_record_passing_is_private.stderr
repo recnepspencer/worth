@@ -1,5 +1,5 @@
 error[E0624]: associated function `passing` is private
-  --> tests/ui/resource_certification_record_passing_is_private.rs:10:48
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_certification_record_passing_is_private.rs:10:48
    |
 10 |       let _forged = ResourceCertificationRecord::passing(
    |                                                  ^^^^^^^ private associated function

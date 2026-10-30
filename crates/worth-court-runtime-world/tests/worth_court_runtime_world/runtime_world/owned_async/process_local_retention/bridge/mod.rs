@@ -1,10 +1,14 @@
-use {crate::owned_async::ordinary_context::fixture::admit_managed, crate::owned_async::ordinary_context::fixture::completion, crate::owned_async::ordinary_context::fixture::selected_fork, crate::owned_async::ordinary_context::fixture::AsyncSourceCourt};
-use {worth_signal::facade::branch::SignalOwnedAsyncManagedReport as Report, worth_signal::facade::branch::SignalOwnedAsyncQueueDenial as Denial};
-use {worth_signal::facade::ResourceLifecycleClass};
+use {
+    crate::owned_async::ordinary_context::fixture::admit_managed,
+    crate::owned_async::ordinary_context::fixture::completion,
+    crate::owned_async::ordinary_context::fixture::selected_fork,
+};
 
 #[test]
 fn installed_process_local_retry_coalescence_and_commit_preserve_exact_release_custody() {
-    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::process_local(std::num::NonZeroU64::MIN);
+    let court = crate::owned_async::ordinary_context::fixture::AsyncSourceCourt::process_local(
+        std::num::NonZeroU64::MIN,
+    );
     let selected = selected_fork(&court);
     let mut owner = admit_managed(&court, &selected);
     let original = owner.retained_request().unwrap();
@@ -46,7 +50,9 @@ fn installed_process_local_retry_coalescence_and_commit_preserve_exact_release_c
         )
         .unwrap();
     assert_eq!(owner.request_handle(), winner);
-    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Revalidation(report) = owner.native_report() else {
+    let worth_signal::facade::branch::SignalOwnedAsyncManagedReport::Revalidation(report) =
+        owner.native_report()
+    else {
         panic!("genuine revalidation")
     };
     assert!(report

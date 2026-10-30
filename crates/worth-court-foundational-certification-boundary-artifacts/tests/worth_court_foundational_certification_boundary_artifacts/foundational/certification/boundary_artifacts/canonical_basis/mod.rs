@@ -1,8 +1,22 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::boundary_artifacts::canonical_basis::*;
-use {worth_foundational::claim_derived_projection_boundary_surface, worth_foundational::claim_receipt_evidence_boundary_surface, worth_foundational::claim_support_only_boundary_surface, worth_foundational::foundational_boundary_canonical_basis_entries, worth_foundational::plan_artifact_boundary_bundle, worth_foundational::plan_descriptive_boundary_materialization, worth_foundational::prepare_materialized_boundary_artifact_for_canonical_basis, worth_foundational::prepare_materialized_boundary_bundle_for_canonical_basis, worth_foundational::AdmissionReadinessProfile, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalComparisonOutcome, worth_foundational::CertificationPostureProfile, worth_foundational::CompatibilityPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalBoundaryArtifactSurface, worth_foundational::FoundationalBoundaryMaterializationSeam, worth_foundational::FoundationalBoundaryMaterializationSource, worth_foundational::FoundationalBoundaryReceiptSurface, worth_foundational::FoundationalBoundaryReportSurface, worth_foundational::FoundationalBoundarySummarySurface, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-use {worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::boundary_artifacts::canonical_basis::*;
+use {
+    worth_foundational::claim_derived_projection_boundary_surface,
+    worth_foundational::claim_receipt_evidence_boundary_surface,
+    worth_foundational::claim_support_only_boundary_surface,
+    worth_foundational::foundational_boundary_canonical_basis_entries,
+    worth_foundational::plan_artifact_boundary_bundle,
+    worth_foundational::plan_descriptive_boundary_materialization,
+    worth_foundational::prepare_materialized_boundary_artifact_for_canonical_basis,
+    worth_foundational::prepare_materialized_boundary_bundle_for_canonical_basis,
+};
 
-use {crate::certification::ordinary_context::boundary_artifacts::support::exact_compare, crate::certification::ordinary_context::boundary_artifacts::support::materialize_projection_artifact, crate::certification::ordinary_context::boundary_artifacts::support::materialized_profile, crate::certification::ordinary_context::boundary_artifacts::support::version};
+use {
+    crate::certification::ordinary_context::boundary_artifacts::support::exact_compare,
+    crate::certification::ordinary_context::boundary_artifacts::support::materialize_projection_artifact,
+    crate::certification::ordinary_context::boundary_artifacts::support::materialized_profile,
+    crate::certification::ordinary_context::boundary_artifacts::support::version,
+};
 
 #[test]
 fn materialized_boundary_artifacts_lower_shared_semantics_not_payload_layout() {
@@ -47,7 +61,10 @@ fn materialized_boundary_artifacts_lower_shared_semantics_not_payload_layout() {
         right_ready,
     ) {
         worth_foundational::CanonicalComparisonOutcome::Equivalent(equivalent) => {
-            assert_eq!(equivalent.domain(), worth_foundational::CanonicalBasisDomain::BoundaryArtifact);
+            assert_eq!(
+                equivalent.domain(),
+                worth_foundational::CanonicalBasisDomain::BoundaryArtifact
+            );
         }
         outcome => panic!("same boundary semantics should compare equivalent, got {outcome:?}"),
     }
@@ -93,10 +110,9 @@ fn coordinated_boundary_bundles_reuse_one_boundary_artifact_basis_domain() {
         worth_foundational::CertificationPostureProfile::EvidenceBacked,
     );
     let primary = plan_descriptive_boundary_materialization(
-        claim_derived_projection_boundary_surface(worth_foundational::FoundationalBoundaryArtifactSurface::new(
-            vec![7_u8, 8, 9],
-            2,
-        )),
+        claim_derived_projection_boundary_surface(
+            worth_foundational::FoundationalBoundaryArtifactSurface::new(vec![7_u8, 8, 9], 2),
+        ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
         profile,
@@ -104,7 +120,8 @@ fn coordinated_boundary_bundles_reuse_one_boundary_artifact_basis_domain() {
     .expect("primary plan");
     let summary = plan_descriptive_boundary_materialization(
         claim_derived_projection_boundary_surface(
-            worth_foundational::FoundationalBoundarySummarySurface::new("summary alpha", 2).expect("summary"),
+            worth_foundational::FoundationalBoundarySummarySurface::new("summary alpha", 2)
+                .expect("summary"),
         ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
@@ -113,7 +130,8 @@ fn coordinated_boundary_bundles_reuse_one_boundary_artifact_basis_domain() {
     .expect("summary plan");
     let report = plan_descriptive_boundary_materialization(
         claim_support_only_boundary_surface(
-            worth_foundational::FoundationalBoundaryReportSurface::new(vec!["row-a", "row-b"], 2).expect("report"),
+            worth_foundational::FoundationalBoundaryReportSurface::new(vec!["row-a", "row-b"], 2)
+                .expect("report"),
         ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
@@ -122,7 +140,8 @@ fn coordinated_boundary_bundles_reuse_one_boundary_artifact_basis_domain() {
     .expect("report plan");
     let receipt = plan_descriptive_boundary_materialization(
         claim_receipt_evidence_boundary_surface(
-            worth_foundational::FoundationalBoundaryReceiptSurface::new("exchange complete", 1).expect("receipt"),
+            worth_foundational::FoundationalBoundaryReceiptSurface::new("exchange complete", 1)
+                .expect("receipt"),
         ),
         worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
         worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
@@ -141,10 +160,9 @@ fn coordinated_boundary_bundles_reuse_one_boundary_artifact_basis_domain() {
 
     let second_bundle = plan_artifact_boundary_bundle(
         plan_descriptive_boundary_materialization(
-            claim_derived_projection_boundary_surface(worth_foundational::FoundationalBoundaryArtifactSurface::new(
-                vec![0_u8, 1, 2],
-                2,
-            )),
+            claim_derived_projection_boundary_surface(
+                worth_foundational::FoundationalBoundaryArtifactSurface::new(vec![0_u8, 1, 2], 2),
+            ),
             worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
             worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
             profile,
@@ -154,7 +172,8 @@ fn coordinated_boundary_bundles_reuse_one_boundary_artifact_basis_domain() {
     .with_summary(
         plan_descriptive_boundary_materialization(
             claim_derived_projection_boundary_surface(
-                worth_foundational::FoundationalBoundarySummarySurface::new("summary beta", 2).expect("summary"),
+                worth_foundational::FoundationalBoundarySummarySurface::new("summary beta", 2)
+                    .expect("summary"),
             ),
             worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
             worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
@@ -166,7 +185,11 @@ fn coordinated_boundary_bundles_reuse_one_boundary_artifact_basis_domain() {
     .with_report(
         plan_descriptive_boundary_materialization(
             claim_support_only_boundary_surface(
-                worth_foundational::FoundationalBoundaryReportSurface::new(vec!["row-x", "row-y"], 2).expect("report"),
+                worth_foundational::FoundationalBoundaryReportSurface::new(
+                    vec!["row-x", "row-y"],
+                    2,
+                )
+                .expect("report"),
             ),
             worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
             worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
@@ -178,7 +201,8 @@ fn coordinated_boundary_bundles_reuse_one_boundary_artifact_basis_domain() {
     .with_receipt(
         plan_descriptive_boundary_materialization(
             claim_receipt_evidence_boundary_surface(
-                worth_foundational::FoundationalBoundaryReceiptSurface::new("exchange stored", 1).expect("receipt"),
+                worth_foundational::FoundationalBoundaryReceiptSurface::new("exchange stored", 1)
+                    .expect("receipt"),
             ),
             worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
             worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
@@ -220,7 +244,10 @@ fn coordinated_boundary_bundles_reuse_one_boundary_artifact_basis_domain() {
         right_ready,
     ) {
         worth_foundational::CanonicalComparisonOutcome::Equivalent(equivalent) => {
-            assert_eq!(equivalent.domain(), worth_foundational::CanonicalBasisDomain::BoundaryArtifact);
+            assert_eq!(
+                equivalent.domain(),
+                worth_foundational::CanonicalBasisDomain::BoundaryArtifact
+            );
         }
         outcome => panic!("same bundle semantics should compare equivalent, got {outcome:?}"),
     }
@@ -260,10 +287,9 @@ fn bundle_basis_keeps_optional_member_absence_and_attachment_visibility_explicit
     );
     let bundle = plan_artifact_boundary_bundle(
         plan_descriptive_boundary_materialization(
-            claim_derived_projection_boundary_surface(worth_foundational::FoundationalBoundaryArtifactSurface::new(
-                vec![1_u8, 2, 3],
-                2,
-            )),
+            claim_derived_projection_boundary_surface(
+                worth_foundational::FoundationalBoundaryArtifactSurface::new(vec![1_u8, 2, 3], 2),
+            ),
             worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
             worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,
             profile,
@@ -273,7 +299,8 @@ fn bundle_basis_keeps_optional_member_absence_and_attachment_visibility_explicit
     .with_summary(
         plan_descriptive_boundary_materialization(
             claim_derived_projection_boundary_surface(
-                worth_foundational::FoundationalBoundarySummarySurface::new("summary only", 1).expect("summary"),
+                worth_foundational::FoundationalBoundarySummarySurface::new("summary only", 1)
+                    .expect("summary"),
             ),
             worth_foundational::FoundationalBoundaryMaterializationSource::CompatibilityLowered,
             worth_foundational::FoundationalBoundaryMaterializationSeam::BoundaryExchange,

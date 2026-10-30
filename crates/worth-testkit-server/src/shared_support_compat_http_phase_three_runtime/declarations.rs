@@ -1,15 +1,56 @@
-
-
+pub use worth_proof::TransitionOutcome;
 pub use {serde_json::json, serde_json::Value};
 pub use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_query::facade::foundation::WorthQueryCommitIdentity, worth_query::facade::foundation::WorthQueryEntityIdentity, worth_query::facade::foundation::WorthQueryMutationDelta, worth_query::facade::foundation::WorthQueryMutationKind};
-pub use {worth_query::facade::foundation::WorthQueryEntity, worth_query::facade::foundation::WorthQueryLivePatch, worth_query::facade::foundation::WorthQueryMutationReceipt, worth_query::facade::foundation::WorthQuerySnapshotIdentity, worth_query::facade::foundation::WorthQueryWorkspaceError};
-pub use {worth_query::facade::runtime::SubscriptionActivationInput, worth_query::facade::runtime::SubscriptionActivationReceipt, worth_query::facade::runtime::WorthQueryBackendAdmissibleMutation, worth_query::facade::runtime::WorthQueryIntentDeclaration, worth_query::facade::runtime::WorthQueryIntentExecution, worth_query::facade::runtime::WorthQueryLiveArtifactTarget, worth_query::facade::runtime::WorthQueryPreviewBasisAdmission, worth_query::facade::runtime::WorthQueryRuntime, worth_query::facade::runtime::WorthQueryRuntimeBackend, worth_query::facade::runtime::WorthQueryRuntimeError, worth_query::facade::runtime::WorthQueryRuntimeEvidenceAuthority, worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence, worth_query::facade::runtime::WorthQueryRuntimeSupportProfile, worth_query::facade::runtime::WorthQuerySessionLabel, worth_query::facade::runtime::WorthQueryWorkspace, worth_query::facade::runtime::WorthQueryWriteCommand, worth_query::facade::runtime::WorthQueryWriteReceipt};
-pub use {worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts, worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts};
-pub use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily, worth_server::WorthServerCompatibilityMutationExecutionInput, worth_server::WorthServerCompatibilityPreparedRequest, worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerQueryHandoffConfig, worth_server::WorthServerQueryWorkspaceBindingError, worth_server::WorthServerQueryWorkspaceBindingRequest, worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig};
+pub use {
+    worth_query::facade::foundation::WorthQueryCommitIdentity,
+    worth_query::facade::foundation::WorthQueryEntityIdentity,
+    worth_query::facade::foundation::WorthQueryMutationDelta,
+    worth_query::facade::foundation::WorthQueryMutationKind,
+};
+pub use {
+    worth_query::facade::foundation::WorthQueryEntity,
+    worth_query::facade::foundation::WorthQueryLivePatch,
+    worth_query::facade::foundation::WorthQueryMutationReceipt,
+    worth_query::facade::foundation::WorthQuerySnapshotIdentity,
+    worth_query::facade::foundation::WorthQueryWorkspaceError,
+};
+pub use {
+    worth_query::facade::runtime::SubscriptionActivationInput,
+    worth_query::facade::runtime::SubscriptionActivationReceipt,
+    worth_query::facade::runtime::WorthQueryBackendAdmissibleMutation,
+    worth_query::facade::runtime::WorthQueryIntentDeclaration,
+    worth_query::facade::runtime::WorthQueryIntentExecution,
+    worth_query::facade::runtime::WorthQueryLiveArtifactTarget,
+    worth_query::facade::runtime::WorthQueryPreviewBasisAdmission,
+    worth_query::facade::runtime::WorthQueryRuntime,
+    worth_query::facade::runtime::WorthQueryRuntimeBackend,
+    worth_query::facade::runtime::WorthQueryRuntimeError,
+    worth_query::facade::runtime::WorthQueryRuntimeEvidenceAuthority,
+    worth_query::facade::runtime::WorthQueryRuntimeInspectionEvidence,
+    worth_query::facade::runtime::WorthQueryRuntimeSupportProfile,
+    worth_query::facade::runtime::WorthQuerySessionLabel,
+    worth_query::facade::runtime::WorthQueryWorkspace,
+    worth_query::facade::runtime::WorthQueryWriteCommand,
+    worth_query::facade::runtime::WorthQueryWriteReceipt,
+};
+pub use {
+    worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
+    worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts,
+};
+pub use {
+    worth_server::request_context::DiagnosticRichnessProfile,
+    worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface,
+    worth_server::WorthServer, worth_server::WorthServerCompatHttpRouteFamily,
+    worth_server::WorthServerCompatibilityMutationExecutionInput,
+    worth_server::WorthServerCompatibilityPreparedRequest,
+    worth_server::WorthServerCompatibilityRequestInput, worth_server::WorthServerConfig,
+    worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerQueryHandoffConfig,
+    worth_server::WorthServerQueryWorkspaceBindingError,
+    worth_server::WorthServerQueryWorkspaceBindingRequest,
+    worth_server::WorthServerQueryWorkspaceProvider, worth_server::WorthServerRequestContextConfig,
+};
 
-pub use {crate::shared_support_query_handoff_runtime::runtime_aspect_contracts::query_handoff_aspect_contracts};
+pub use crate::shared_support_query_handoff_runtime::runtime_aspect_contracts::query_handoff_aspect_contracts;
 
 pub fn build_phase_three_server() -> WorthServer {
     build_phase_three_server_with_workspace_provider(
@@ -27,7 +68,9 @@ pub fn build_phase_three_server_with_workspace_provider(
                 .with_request_context_config(
                     worth_server::WorthServerRequestContextConfig::builder()
                         .with_preview_targeting_enabled(true)
-                        .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+                        .with_default_diagnostics_profile(
+                            worth_server::request_context::DiagnosticRichnessProfile::Standard,
+                        )
                         .build()
                         .expect("request context config should validate"),
                 )
@@ -207,7 +250,10 @@ impl WorthServerQueryWorkspaceProvider for StatefulCountingMutationWorkspaceProv
                     &resources,
                 )
                 .map_err(|error| {
-                    worth_server::WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
+                    worth_server::WorthServerQueryWorkspaceBindingError::new(
+                        "product_world",
+                        error.to_string(),
+                    )
                 })?;
             worth_query::facade::runtime::WorthQueryRuntime::builder(resources)
             .aspect_contracts(query_handoff_aspect_contracts())
@@ -264,7 +310,9 @@ impl StatefulCountingMutationRuntimeBackend {
     }
 
     pub fn next_snapshot_ordinal(&self) -> usize {
-        self.snapshot_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1
+        self.snapshot_version
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            + 1
     }
 
     pub fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {

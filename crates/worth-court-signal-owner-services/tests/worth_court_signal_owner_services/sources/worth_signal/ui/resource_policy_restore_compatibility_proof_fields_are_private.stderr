@@ -1,5 +1,5 @@
 error: cannot construct `ResourcePolicyRestoreCompatibilityProof` with struct literal syntax due to private fields
-  --> tests/ui/resource_policy_restore_compatibility_proof_fields_are_private.rs:10:18
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_policy_restore_compatibility_proof_fields_are_private.rs:10:18
    |
 10 |     let _proof = ResourcePolicyRestoreCompatibilityProof {
    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

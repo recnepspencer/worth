@@ -1,6 +1,12 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::canonicalization::proof_carriage::readiness_artifacts::*;
-use {worth_foundational::admit_canonical_sequence_digest_derivation, worth_foundational::certify_canonical_milestone2_production_readiness, worth_foundational::prepare_canonical_basis_bundle, worth_foundational::prepare_canonical_basis_sequence, worth_foundational::prepare_canonical_comparison, worth_foundational::prepare_canonical_export_bundle, worth_foundational::CanonicalBasisDomain, worth_foundational::CanonicalBasisEntry, worth_foundational::CanonicalBasisEntryKind, worth_foundational::CanonicalBasisLocus, worth_foundational::CanonicalBasisReadinessProofs, worth_foundational::CanonicalBasisReadyArtifact, worth_foundational::CanonicalBasisValue, worth_foundational::CanonicalBundleReadinessProofs, worth_foundational::CanonicalBundleReadyArtifact, worth_foundational::CanonicalComparisonReadinessProofs, worth_foundational::CanonicalDigestAlgorithmId, worth_foundational::CanonicalDigestDerivationReadinessProofs, worth_foundational::CanonicalEquivalenceBasis, worth_foundational::CanonicalExportReadinessProofs, worth_foundational::CanonicalIntegerWidth, worth_foundational::CanonicalProducerShape, worth_foundational::CanonicalProductionReadinessCertified, worth_foundational::CanonicalProductionTestReadyArtifact, worth_foundational::CanonicalSingleSequenceDigestAlgorithmSlot, worth_foundational::CanonicalizationRuleVersion};
-use {worth_proof::Proof, worth_proof::TransitionOutcome};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::canonicalization::proof_carriage::readiness_artifacts::*;
+use {
+    worth_foundational::admit_canonical_sequence_digest_derivation,
+    worth_foundational::certify_canonical_milestone2_production_readiness,
+    worth_foundational::prepare_canonical_comparison,
+    worth_foundational::prepare_canonical_export_bundle,
+    worth_foundational::CanonicalProductionTestReadyArtifact,
+};
 
 #[test]
 fn canonical_basis_and_bundle_artifacts_carry_named_readiness_proof_sets() {

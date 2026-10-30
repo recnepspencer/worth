@@ -1,4 +1,4 @@
-pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::handles::HandleBindingError, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKind, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::handles::SupplyChainSemanticHandles, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline, crate::relational_certification::ordinary_context::production_failures::court_program};
+pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::compiler::compile_supply_chain_baseline, crate::relational_certification::ordinary_context::production_failures::court_program};
 
 #[test]
 fn semantic_relation_binding_rejects_incomplete_correspondence() {

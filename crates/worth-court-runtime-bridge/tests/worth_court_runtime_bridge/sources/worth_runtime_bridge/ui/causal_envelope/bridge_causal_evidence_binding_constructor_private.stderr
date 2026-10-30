@@ -1,5 +1,5 @@
 error[E0560]: struct `BridgeCausalEvidenceBinding` has no field named `retained_record_digest`
-  --> tests/ui/causal_envelope/bridge_causal_evidence_binding_constructor_private.rs:12:9
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_evidence_binding_constructor_private.rs:12:9
    |
 12 |         retained_record_digest: sealed_authority_placeholder(),
    |         ^^^^^^^^^^^^^^^^^^^^^^ `BridgeCausalEvidenceBinding` does not have this field
@@ -7,7 +7,7 @@ error[E0560]: struct `BridgeCausalEvidenceBinding` has no field named `retained_
    = note: all struct fields are already assigned
 
 error[E0277]: the trait bound `BridgeIdentityEvidence: From<&str>` is not satisfied
-  --> tests/ui/causal_envelope/bridge_causal_evidence_binding_constructor_private.rs:11:37
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_evidence_binding_constructor_private.rs:11:37
    |
 11 |         reference_identity: "route".into(),
    |                                     ^^^^ the trait `From<&str>` is not implemented for `BridgeIdentityEvidence`
@@ -15,7 +15,7 @@ error[E0277]: the trait bound `BridgeIdentityEvidence: From<&str>` is not satisf
    = note: required for `&str` to implement `Into<BridgeIdentityEvidence>`
 
 error[E0560]: struct `BridgeCausalEvidenceBinding` has no field named `binding_digest`
-  --> tests/ui/causal_envelope/bridge_causal_evidence_binding_constructor_private.rs:13:9
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/causal_envelope/bridge_causal_evidence_binding_constructor_private.rs:13:9
    |
 13 |         binding_digest: sealed_authority_placeholder(),
    |         ^^^^^^^^^^^^^^ `BridgeCausalEvidenceBinding` does not have this field

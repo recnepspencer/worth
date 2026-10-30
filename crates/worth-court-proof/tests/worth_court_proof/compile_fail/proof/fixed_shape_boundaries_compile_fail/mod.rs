@@ -1,8 +1,7 @@
 #[allow(unused_imports)]
-use {crate::shared_support as support};
+use crate::shared_support as support;
 
-use {crate::shared_support::compile_fail::run_compile_fail_families};
-use {crate::shared_support::core_artifact};
+use crate::compile_fail::harness::run_compile_fail_families;
 
 #[test]
 fn fixed_shape_and_proven_collection_boundaries_hold() {

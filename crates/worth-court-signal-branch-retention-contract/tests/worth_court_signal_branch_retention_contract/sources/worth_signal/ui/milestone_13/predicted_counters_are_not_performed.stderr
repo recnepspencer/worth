@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/milestone_13/predicted_counters_are_not_performed.rs:9:66
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/milestone_13/predicted_counters_are_not_performed.rs:9:66
   |
 9 |     let _ = attach_foundational_invalidation_performance_receipt(predicted, expected);
   |             ---------------------------------------------------- ^^^^^^^^^ expected `SignalInvalidationExecutionReceipt`, found `InvalidationPlanningEstimate`

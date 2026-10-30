@@ -1,16 +1,39 @@
-pub use {std::collections::BTreeMap};
+pub use std::collections::BTreeMap;
 
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::definition::DefinitionError, crate::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::program_schema::schema_registry};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::entity_kind_id, crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::relation_kind_id};
-pub use {crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind, crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey};
-pub use {worth_foundational::facade::AspectFieldLocator, worth_foundational::facade::AspectKey, worth_foundational::facade::AspectValue, worth_foundational::facade::FieldKey, worth_foundational::facade::InternedString};
-pub use {worth_relational::facade::identity::PartitionId};
-pub use {worth_relational::facade::schema::RelationalSchemaRegistry, worth_relational::facade::schema::SchemaVersionId};
-pub use {worth_relational::facade::symbols::ClientKey};
-pub use {worth_relational::facade::transactions::AspectFieldPatch};
-pub use {worth_relational::facade::transactions::planned_single_field_locator, worth_relational::facade::transactions::CreatedEntityRef, worth_relational::facade::transactions::EntityReference, worth_relational::facade::transactions::EntitySpec, worth_relational::facade::transactions::RelationSpec};
+pub use crate::relational_certification::ordinary_context::world::supply_chain::program_schema::schema_registry;
+pub use crate::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord;
+pub use worth_relational::facade::identity::PartitionId;
+pub use worth_relational::facade::symbols::ClientKey;
+pub use worth_relational::facade::transactions::AspectFieldPatch;
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::definition::DefinitionError,
+    crate::relational_certification::ordinary_context::world::supply_chain::definition::SupplyChainWorldDefinition,
+};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::entity_kind_id,
+    crate::relational_certification::ordinary_context::world::supply_chain::schema_vocabulary::relation_kind_id,
+};
+pub use {
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKey,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::EntityKind,
+    crate::relational_certification::ordinary_context::world::supply_chain::semantic_key::RelationKey,
+};
+pub use {
+    worth_foundational::facade::AspectFieldLocator, worth_foundational::facade::AspectKey,
+    worth_foundational::facade::AspectValue, worth_foundational::facade::FieldKey,
+    worth_foundational::facade::InternedString,
+};
+pub use {
+    worth_relational::facade::schema::RelationalSchemaRegistry,
+    worth_relational::facade::schema::SchemaVersionId,
+};
+pub use {
+    worth_relational::facade::transactions::planned_single_field_locator,
+    worth_relational::facade::transactions::CreatedEntityRef,
+    worth_relational::facade::transactions::EntityReference,
+    worth_relational::facade::transactions::EntitySpec,
+    worth_relational::facade::transactions::RelationSpec,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SupplyChainProgramError {
@@ -110,11 +133,17 @@ impl CompiledSupplyChainProgram {
 }
 
 pub fn entity_client_key(key: EntityKey) -> ClientKey {
-    worth_relational::facade::symbols::ClientKey::raw(format!("entity::{:?}::{}", key.kind, key.ordinal))
+    worth_relational::facade::symbols::ClientKey::raw(format!(
+        "entity::{:?}::{}",
+        key.kind, key.ordinal
+    ))
 }
 
 pub fn relation_client_key(key: RelationKey) -> ClientKey {
-    worth_relational::facade::symbols::ClientKey::raw(format!("relation::{:?}::{}", key.kind, key.ordinal))
+    worth_relational::facade::symbols::ClientKey::raw(format!(
+        "relation::{:?}::{}",
+        key.kind, key.ordinal
+    ))
 }
 
 pub fn entity_spec(key: EntityKey, record: &EntityRecord) -> EntitySpec {
@@ -126,26 +155,28 @@ pub fn entity_spec(key: EntityKey, record: &EntityRecord) -> EntitySpec {
     }
 }
 
-pub fn relation_spec(
-    key: RelationKey,
-    source: EntityKey,
-    target: EntityKey,
-) -> RelationSpec {
+pub fn relation_spec(key: RelationKey, source: EntityKey, target: EntityKey) -> RelationSpec {
     RelationSpec {
         partition_id: partition_for_entity_kind(source.kind),
         kind_id: relation_kind_id(key.kind),
         client_key: relation_client_key(key),
-        source: worth_relational::facade::transactions::EntityReference::Created(CreatedEntityRef {
-            partition_id: partition_for_entity_kind(source.kind),
-            kind_id: entity_kind_id(source.kind),
-            client_key: entity_client_key(source),
-        }),
-        target: worth_relational::facade::transactions::EntityReference::Created(CreatedEntityRef {
-            partition_id: partition_for_entity_kind(target.kind),
-            kind_id: entity_kind_id(target.kind),
-            client_key: entity_client_key(target),
-        }),
-        fields: worth_relational::facade::transactions::AspectFieldPatch::new(std::collections::BTreeMap::new()),
+        source: worth_relational::facade::transactions::EntityReference::Created(
+            CreatedEntityRef {
+                partition_id: partition_for_entity_kind(source.kind),
+                kind_id: entity_kind_id(source.kind),
+                client_key: entity_client_key(source),
+            },
+        ),
+        target: worth_relational::facade::transactions::EntityReference::Created(
+            CreatedEntityRef {
+                partition_id: partition_for_entity_kind(target.kind),
+                kind_id: entity_kind_id(target.kind),
+                client_key: entity_client_key(target),
+            },
+        ),
+        fields: worth_relational::facade::transactions::AspectFieldPatch::new(
+            std::collections::BTreeMap::new(),
+        ),
     }
 }
 
@@ -206,11 +237,17 @@ pub fn entity_fields(record: &EntityRecord) -> AspectFieldPatch {
     worth_relational::facade::transactions::AspectFieldPatch::new(fields)
 }
 
-pub fn insert_string(fields: &mut BTreeMap<AspectFieldLocator, AspectValue>, name: &str, value: &str) {
+pub fn insert_string(
+    fields: &mut BTreeMap<AspectFieldLocator, AspectValue>,
+    name: &str,
+    value: &str,
+) {
     insert_value(
         fields,
         name,
-        worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Raw(value.to_owned())),
+        worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Raw(value.to_owned()),
+        ),
     );
 }
 
@@ -223,7 +260,11 @@ pub fn insert_debug<T: std::fmt::Debug>(
 }
 
 pub fn insert_u64(fields: &mut BTreeMap<AspectFieldLocator, AspectValue>, name: &str, value: u64) {
-    insert_value(fields, name, worth_foundational::facade::AspectValue::UInt64(value));
+    insert_value(
+        fields,
+        name,
+        worth_foundational::facade::AspectValue::UInt64(value),
+    );
 }
 
 pub fn insert_value(
@@ -231,7 +272,9 @@ pub fn insert_value(
     name: &str,
     value: AspectValue,
 ) {
-    let aspect = worth_foundational::facade::AspectKey::new(name).expect("canonical Supply Chain aspect key");
-    let field = worth_foundational::facade::FieldKey::new(name).expect("canonical Supply Chain field key");
+    let aspect = worth_foundational::facade::AspectKey::new(name)
+        .expect("canonical Supply Chain aspect key");
+    let field =
+        worth_foundational::facade::FieldKey::new(name).expect("canonical Supply Chain field key");
     fields.insert(planned_single_field_locator(aspect, field), value);
 }

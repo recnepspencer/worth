@@ -1,9 +1,27 @@
-use {worth_foundational::admit_current_basis_commit_receipt, worth_foundational::admit_current_basis_committed_authority, worth_foundational::foundational_transition_current_basis_authority, worth_foundational::foundational_transition_current_basis_readmission_authority, worth_foundational::readmit_current_basis_commit_receipt_after_boundary, worth_foundational::readmit_current_basis_committed_authority_after_boundary};
-use {worth_proof::TransitionOutcome};
+use {
+    worth_foundational::admit_current_basis_commit_receipt,
+    worth_foundational::admit_current_basis_committed_authority,
+    worth_foundational::foundational_transition_current_basis_authority,
+    worth_foundational::foundational_transition_current_basis_readmission_authority,
+    worth_foundational::readmit_current_basis_commit_receipt_after_boundary,
+    worth_foundational::readmit_current_basis_committed_authority_after_boundary,
+};
 
-use {crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict, crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority, crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input};
-use {crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id, crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_authority, crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_identity};
-use {crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_committed, crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_receipt, crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::version};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::committed::accepted_verdict,
+    crate::certification::ordinary_context::transitions::fixtures::committed::committed_authority,
+    crate::certification::ordinary_context::transitions::fixtures::committed::ordinary_commit_input,
+};
+use {
+    crate::certification::ordinary_context::transitions::fixtures::receipt::commit_id,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_authority,
+    crate::certification::ordinary_context::transitions::fixtures::receipt::receipt_identity,
+};
+use {
+    crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_committed,
+    crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::ready_receipt,
+    crate::certification::ordinary_context::transitions::phase5_basis::canonical_basis::version,
+};
 
 #[test]
 fn current_basis_transition_lane_reuses_real_basis_preparation_and_explicit_readmission() {

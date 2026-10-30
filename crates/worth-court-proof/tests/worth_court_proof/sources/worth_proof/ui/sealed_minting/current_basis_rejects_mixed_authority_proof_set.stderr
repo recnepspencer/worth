@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `Proof<Disjointness, SecondAuthority>: ProofSetAuthorizedBy<FirstAuthority>` is not satisfied
-  --> tests/ui/sealed_minting/current_basis_rejects_mixed_authority_proof_set.rs:26:20
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/current_basis_rejects_mixed_authority_proof_set.rs:26:20
    |
 25 |     let _artifact = Artifact::<RawPhase, _, _, _>::with_proofs_and_current_basis(
    |                     ------------------------------------------------------------ required by a bound introduced by this call

@@ -1,26 +1,5 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::performance::reports::*;
-use {
-    worth_foundational::performance, worth_foundational::performance_api,
-    worth_foundational::profiles, worth_foundational::CertificationPostureProfile,
-    worth_foundational::DiagnosticRichnessProfile,
-    worth_foundational::FoundationalPerformanceAccessPatternPosture,
-    worth_foundational::FoundationalPerformanceAttachmentDenial,
-    worth_foundational::FoundationalPerformanceAttachmentTargetKind,
-    worth_foundational::FoundationalPerformanceBoundary,
-    worth_foundational::FoundationalPerformanceBreadthLocalityPosture,
-    worth_foundational::FoundationalPerformanceCounterRow,
-    worth_foundational::FoundationalPerformanceEvidenceStrength,
-    worth_foundational::FoundationalPerformanceExecutionTemperature,
-    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
-    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
-    worth_foundational::FoundationalPerformanceLayoutIntent,
-    worth_foundational::FoundationalPerformanceReportMaterializationBoundary,
-    worth_foundational::FoundationalPerformanceReportSection,
-    worth_foundational::FoundationalPerformanceReportSectionDecisionCause,
-    worth_foundational::FoundationalPerformanceWorkClass,
-    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
-};
 
 #[test]
 fn attachment_targets_fail_closed_by_source_strength() {

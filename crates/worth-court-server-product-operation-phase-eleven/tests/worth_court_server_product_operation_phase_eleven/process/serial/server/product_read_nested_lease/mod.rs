@@ -1,20 +1,13 @@
-#[allow(unused_imports)] use crate::product_read_nested_lease::isolated_context::*;
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_product_adapter_phase_nine_fixture as fixture};
-
-
-
+use crate::product_read_nested_lease::isolated_context::*;
+#[allow(unused_imports)]
+use worth_testkit_server::shared_support_product_adapter_phase_nine_fixture as fixture;
 
 #[allow(unused_imports)]
-use {worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy};
+use worth_testkit_server::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-use {std::num::NonZeroUsize, std::sync::atomic::AtomicU8, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc};
-
-use {serde_json::json};
-use {worth_execution::CancellationSource, worth_execution::CancellationToken, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionResourceLease, worth_execution::LeaseRequest, worth_execution::MapKernelContext, worth_execution::MapKernelStop, worth_execution::MapStop};
-use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy};
-use {worth_relational::facade::query::PlannedQueryPacket, worth_relational::facade::query::SnapshotPinnedQueryPlan, worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::runtime::RelationalRuntimeApi, worth_relational::facade::transactions::RecordRef};
-use {worth_server::surfaces::CompatHttpSurface, worth_server::surfaces::WorthNativeSurface, worth_server::WorthServer, worth_server::WorthServerOperationRegistration, worth_server::WorthServerProductAdapterExecutionError, worth_server::WorthServerProductApplicationAdapter, worth_server::WorthServerProductApplicationAdapterRegistration, worth_server::WorthServerProductOperationBasisKind, worth_server::WorthServerProductOperationDeclaration, worth_server::WorthServerProductOperationErrorMaps, worth_server::WorthServerProductOperationInput, worth_server::WorthServerProductOperationPayload, worth_server::WorthServerProductOperationSuccess, worth_server::WorthServerProductOperationSupportSnapshot, worth_server::WorthServerProductReadBatchStop, worth_server::WorthServerScheduledProductOperation};
+use serde_json::json;
+use worth_execution::ExecutionAuthorityConfig;
 
 #[test]
 fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
@@ -35,10 +28,15 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
             .build()
             .expect("valid native runtime configuration"),
     );
-    let fixture_host_request = crate::product_read_nested_lease::isolated_context::relational_support::serial_request();
+    let fixture_host_request =
+        crate::product_read_nested_lease::isolated_context::relational_support::serial_request();
     let fixture_execution = &worth_execution::ExecutionRequest::serial(&fixture_host_request);
     let (created, entity_id) =
-        crate::product_read_nested_lease::isolated_context::relational_support::create_entity(fixture_execution, &runtime, &"x".repeat(32_000));
+        crate::product_read_nested_lease::isolated_context::relational_support::create_entity(
+            fixture_execution,
+            &runtime,
+            &"x".repeat(32_000),
+        );
     let context = runtime
         .read_truth()
         .query_plan_context(&created.snapshot)
@@ -50,7 +48,9 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
             worth_relational::facade::query::PlannedQueryPacket::explicit_targets(
                 "nested-server-read",
                 context,
-                vec![worth_relational::facade::transactions::RecordRef::Entity(entity_id)],
+                vec![worth_relational::facade::transactions::RecordRef::Entity(
+                    entity_id,
+                )],
             ),
         )
         .unwrap();
@@ -66,9 +66,13 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
     let declaration = worth_server::WorthServerProductOperationDeclaration::product_read(
         "nested.relational",
         "nested.relational.payload.v1",
-        worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::result_contract("nested.relational.result.v1"),
+        worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::result_contract(
+            "nested.relational.result.v1",
+        ),
         worth_server::WorthServerProductOperationBasisKind::DurableProductDerived,
-        worth_server::WorthServerProductOperationSupportSnapshot::production_admitted("nested-ready"),
+        worth_server::WorthServerProductOperationSupportSnapshot::production_admitted(
+            "nested-ready",
+        ),
     )
     .with_error_map(worth_server::WorthServerProductOperationErrorMaps::passthrough());
     let registration =
@@ -87,20 +91,31 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
                 .with_error_map(worth_server::WorthServerProductOperationErrorMaps::passthrough()),
             );
     let server = worth_server::WorthServer::builder()
-        .with_config(worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::base_config())
+        .with_config(
+            worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::base_config(),
+        )
         .register_operations(worth_server::WorthServerOperationRegistration::phase_two_defaults())
         .register_surface(worth_server::surfaces::WorthNativeSurface::enabled())
         .register_surface(worth_server::surfaces::CompatHttpSurface::phase_one_enabled())
         .register_product_adapters(vec![registration])
-        .register_product_adapter(crate::product_read_nested_lease::isolated_context::default_checked_lane::registration())
+        .register_product_adapter(
+            crate::product_read_nested_lease::isolated_context::default_checked_lane::registration(
+            ),
+        )
         .with_execution_authority(std::sync::Arc::clone(&authority))
         .build()
         .unwrap();
-    let session = worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::direct_session(&server);
+    let session =
+        worth_testkit_server::shared_support_product_adapter_phase_nine_fixture::direct_session(
+            &server,
+        );
     let input = || {
         worth_server::WorthServerProductOperationInput::new(
             "nested.relational",
-            worth_server::WorthServerProductOperationPayload::json("nested.relational.payload.v1", json!({})),
+            worth_server::WorthServerProductOperationPayload::json(
+                "nested.relational.payload.v1",
+                json!({}),
+            ),
         )
         .with_basis_digest("basis:r0")
     };
@@ -110,12 +125,19 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
         .execute_shared_read_batch(vec![input()])
         .expect("serial adapter entry remains usable");
     assert!(unleased.execution_report().is_none());
-    assert_eq!(adapter.seen_lease_address.load(std::sync::atomic::Ordering::SeqCst), 0);
+    assert_eq!(
+        adapter
+            .seen_lease_address
+            .load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
 
     let wide = authority
         .request_lease(lease_request(8 * 1024 * 1024, cancellation.token()))
         .unwrap();
-    crate::product_read_nested_lease::isolated_context::default_checked_lane::assert_refused(&session, &wide);
+    crate::product_read_nested_lease::isolated_context::default_checked_lane::assert_refused(
+        &session, &wide,
+    );
     let completed = session
         .product_operations()
         .execute_shared_read_batch_with_lease(vec![input()], &wide)
@@ -123,7 +145,9 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
     assert_eq!(completed.operations().len(), 1);
     assert!(completed.execution_report().unwrap().charged_work() > 1);
     assert_eq!(
-        adapter.seen_lease_address.load(std::sync::atomic::Ordering::SeqCst),
+        adapter
+            .seen_lease_address
+            .load(std::sync::atomic::Ordering::SeqCst),
         &wide as *const _ as usize
     );
 
@@ -132,7 +156,10 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
         .unwrap();
     let large_registration = worth_server::WorthServerProductOperationInput::new(
         "nested.large-registration",
-        worth_server::WorthServerProductOperationPayload::json("nested.relational.payload.v1", json!({})),
+        worth_server::WorthServerProductOperationPayload::json(
+            "nested.relational.payload.v1",
+            json!({}),
+        ),
     )
     .with_basis_digest("basis:r0");
     // The declaration's retained support snapshot is charged to the caller's
@@ -145,14 +172,18 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
         matches!(
             refused,
             worth_server::WorthServerProductReadBatchStop::PacketStopped {
-                reason: worth_execution::MapStop::Admission(worth_execution::LeaseDenial::MemoryExhausted(_)),
+                reason: worth_execution::MapStop::Admission(
+                    worth_execution::LeaseDenial::MemoryExhausted(_)
+                ),
                 ..
             }
         ),
         "{refused:?}"
     );
     assert_eq!(
-        adapter.seen_lease_address.load(std::sync::atomic::Ordering::SeqCst),
+        adapter
+            .seen_lease_address
+            .load(std::sync::atomic::Ordering::SeqCst),
         &wide as *const _ as usize
     );
 
@@ -168,7 +199,9 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
             stopped,
             worth_server::WorthServerProductReadBatchStop::PacketStopped {
                 reason: worth_execution::MapStop::Failure {
-                    cause: worth_execution::MapKernelFailure::Stop(worth_execution::MapKernelStop::NestedStopped),
+                    cause: worth_execution::MapKernelFailure::Stop(
+                        worth_execution::MapKernelStop::NestedStopped
+                    ),
                     ..
                 },
                 ..
@@ -176,14 +209,25 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
         ),
         "{stopped:?}"
     );
-    assert_eq!(adapter.nested_stop.load(std::sync::atomic::Ordering::SeqCst), NESTED_RESOURCE);
     assert_eq!(
-        adapter.seen_lease_address.load(std::sync::atomic::Ordering::SeqCst),
+        adapter
+            .nested_stop
+            .load(std::sync::atomic::Ordering::SeqCst),
+        NESTED_RESOURCE
+    );
+    assert_eq!(
+        adapter
+            .seen_lease_address
+            .load(std::sync::atomic::Ordering::SeqCst),
         &tight as *const _ as usize
     );
 
-    adapter.nested_stop.store(0, std::sync::atomic::Ordering::SeqCst);
-    adapter.cancel_inside_adapter.store(1, std::sync::atomic::Ordering::SeqCst);
+    adapter
+        .nested_stop
+        .store(0, std::sync::atomic::Ordering::SeqCst);
+    adapter
+        .cancel_inside_adapter
+        .store(1, std::sync::atomic::Ordering::SeqCst);
     let cancelling = authority
         .request_lease(lease_request(8 * 1024 * 1024, cancellation.token()))
         .unwrap();
@@ -195,15 +239,24 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
         stopped,
         worth_server::WorthServerProductReadBatchStop::PacketStopped {
             reason: worth_execution::MapStop::Failure {
-                cause: worth_execution::MapKernelFailure::Stop(worth_execution::MapKernelStop::NestedStopped),
+                cause: worth_execution::MapKernelFailure::Stop(
+                    worth_execution::MapKernelStop::NestedStopped
+                ),
                 ..
             },
             ..
         }
     ));
-    assert_eq!(adapter.nested_stop.load(std::sync::atomic::Ordering::SeqCst), NESTED_CANCELLED);
     assert_eq!(
-        adapter.seen_lease_address.load(std::sync::atomic::Ordering::SeqCst),
+        adapter
+            .nested_stop
+            .load(std::sync::atomic::Ordering::SeqCst),
+        NESTED_CANCELLED
+    );
+    assert_eq!(
+        adapter
+            .seen_lease_address
+            .load(std::sync::atomic::Ordering::SeqCst),
         &cancelling as *const _ as usize
     );
 }

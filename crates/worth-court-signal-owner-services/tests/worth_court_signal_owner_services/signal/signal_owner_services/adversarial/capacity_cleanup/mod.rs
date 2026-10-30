@@ -1,12 +1,9 @@
 // Scheduled resource-bound evidence.  The large cases stay ignored in the
 // ordinary court but are selected by the Scale roster with `--ignored`.
-#[allow(unused_imports)] use crate::signal_owner_services::ordinary_context::adversarial::capacity_cleanup::*;
-pub(crate) use {std::sync::mpsc, std::sync::Arc, std::sync::Condvar, std::sync::Mutex};
-pub(crate) use {std::thread};
+#[allow(unused_imports)]
+use crate::signal_owner_services::ordinary_context::adversarial::capacity_cleanup::*;
 
-pub(crate) use {worth_signal::facade::branch::SignalBranchAdvanceDenial, worth_signal::facade::branch::SignalBranchRetentionAcquisitionDenial, worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome, worth_signal::facade::branch::SignalOwnerCancellationSource};
-
-pub(crate) use {crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld, crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND};
+pub(crate) use crate::signal_owner_services::ordinary_context::adversarial::world::PROGRESS_BOUND;
 
 #[test]
 fn operation_capacity_denies_the_65th_and_restores_after_release() {
@@ -20,7 +17,8 @@ fn operation_capacity_denies_the_65th_and_restores_after_release() {
     );
     let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     let mut bases = vec![world.child_basis.clone()];
     for ordinal in 0..63 {
         let name = format!("operation-capacity-{ordinal}");
@@ -91,9 +89,11 @@ fn operation_capacity_denies_the_65th_and_restores_after_release() {
     );
     assert!(matches!(
         denied,
-        Err(worth_signal::facade::branch::SignalBranchAdvanceDenial::OperationCapacityExhausted {
-            maximum_in_flight_operations: 64
-        })
+        Err(
+            worth_signal::facade::branch::SignalBranchAdvanceDenial::OperationCapacityExhausted {
+                maximum_in_flight_operations: 64
+            }
+        )
     ));
     release.release();
     for worker in workers {
@@ -114,7 +114,8 @@ fn operation_capacity_denies_the_65th_and_restores_after_release() {
 
 #[test]
 fn retention_capacity_denies_then_all_releases_restore_one_lease() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     // The two exact bases held by this world already occupy two admitted
     // retention slots.  The external ledger therefore has 4,094 available
     // slots before it must report the configured 4,096-owner bound.
@@ -152,7 +153,8 @@ fn retention_capacity_denies_then_all_releases_restore_one_lease() {
 
 #[test]
 fn live_branch_capacity_denies_then_retirement_restores_one_slot() {
-    let world = crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
+    let world =
+        crate::signal_owner_services::ordinary_context::adversarial::world::AdversarialWorld::new();
     // A returned basis owns one bounded admitted lease. Keep only the basis
     // needed for retirement; the registry itself owns every live branch cell.
     let mut released = world.child_basis.clone();
@@ -191,9 +193,10 @@ fn live_branch_capacity_denies_then_retirement_restores_one_slot() {
         other => panic!("the cleanup branch remains retireable: {other:?}"),
     };
     assert!(matches!(
-        world
-            .lifecycle
-            .retire_exact(plan, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),),
+        world.lifecycle.retire_exact(
+            plan,
+            &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+        ),
         worth_proof::TransitionOutcome::Success(_)
     ));
 

@@ -1,4 +1,7 @@
-pub(crate) use {crate::shared_support::type_shapes::debt::DebtItem, crate::shared_support::type_shapes::debt::ResidualDebtReport};
+pub(crate) use {
+    crate::shared_support::type_shapes::debt::DebtItem,
+    crate::shared_support::type_shapes::debt::ResidualDebtReport,
+};
 
 pub(crate) fn residual_debt_report() -> ResidualDebtReport {
     crate::shared_support::type_shapes::debt::ResidualDebtReport::new(

@@ -1,5 +1,11 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_foundational::facade::CanonicalBasisDomain, crate::certification::ordinary_context::canonicalization::basis::admitted_preparation::entry, worth_foundational::facade::prepare_canonical_basis_sequence, worth_foundational::facade::prepare_owned_canonical_basis_sequence_admitted, crate::certification::ordinary_context::canonicalization::basis::admitted_preparation::version};
+pub(crate) use {
+    crate::certification::ordinary_context::canonicalization::basis::admitted_preparation::entry,
+    crate::certification::ordinary_context::canonicalization::basis::admitted_preparation::version,
+    worth_foundational::facade::prepare_canonical_basis_sequence,
+    worth_foundational::facade::prepare_owned_canonical_basis_sequence_admitted,
+    worth_foundational::facade::CanonicalBasisDomain,
+};
 
 #[test]
 fn admitted_preparation_preserves_entry_order_and_actual_comparison_evidence() {

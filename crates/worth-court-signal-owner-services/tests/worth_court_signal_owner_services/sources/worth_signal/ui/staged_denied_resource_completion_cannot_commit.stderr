@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/staged_denied_resource_completion_cannot_commit.rs:7:55
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_denied_resource_completion_cannot_commit.rs:7:55
   |
 7 |     let _ = runtime.commit_staged_resource_completion(staged);
   |                     --------------------------------- ^^^^^^ expected `StagedResourceCompletionEffect`, found `StagedDeniedResourceCompletionEffect`

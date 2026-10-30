@@ -1,9 +1,17 @@
 pub(crate) use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
 
-pub(crate) use {worth_execution::ExecutionMap, worth_execution::MapDenial, worth_execution::MapKernelFailure, worth_execution::MapOutcome, worth_execution::MapPartition};
-pub(crate) use {worth_foundational::PartitionIdentity};
+pub(crate) use worth_foundational::PartitionIdentity;
+pub(crate) use {
+    worth_execution::ExecutionMap, worth_execution::MapDenial, worth_execution::MapKernelFailure,
+    worth_execution::MapOutcome, worth_execution::MapPartition,
+};
 
-pub(crate) fn partition(identity: u64, value: u64, reads: &[u64], writes: &[u64]) -> MapPartition<u64, u64> {
+pub(crate) fn partition(
+    identity: u64,
+    value: u64,
+    reads: &[u64],
+    writes: &[u64],
+) -> MapPartition<u64, u64> {
     MapPartition {
         identity: worth_foundational::PartitionIdentity::new(identity),
         value,

@@ -1,5 +1,5 @@
 error[E0624]: associated function `new` is private
-  --> tests/ui/temporal_basis_literal_private.rs:10:48
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/temporal_basis_literal_private.rs:10:48
    |
 10 |           identity: BridgeTemporalBasisIdentity::new("temporal"),
    |                                                  ^^^ private associated function
@@ -12,7 +12,7 @@ error[E0624]: associated function `new` is private
    | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/temporal_basis_literal_private.rs:10:52
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/temporal_basis_literal_private.rs:10:52
    |
 10 |         identity: BridgeTemporalBasisIdentity::new("temporal"),
    |                   -------------------------------- ^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`

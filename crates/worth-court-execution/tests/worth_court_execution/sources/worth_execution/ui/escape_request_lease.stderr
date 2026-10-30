@@ -1,5 +1,5 @@
 error: lifetime may not live long enough
- --> tests/ui/escape_request_lease.rs:3:38
+ --> tests/worth_court_execution/sources/worth_execution/ui/escape_request_lease.rs:3:38
   |
 3 |     let _ = request.in_scope(|lease| lease).unwrap();
   |                               ------ ^^^^^ returning this value requires that `'1` must outlive `'2`

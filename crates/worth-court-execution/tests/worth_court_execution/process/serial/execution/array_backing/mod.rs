@@ -1,11 +1,11 @@
 // Physical typed payload custody; nested payload heaps remain uncharged here.
-#[allow(unused_imports)] use crate::array_backing::isolated_context::*;
 #[allow(unused_imports)]
-pub(crate) use {crate::test_serialization};
+use crate::array_backing::isolated_context::*;
+#[allow(unused_imports)]
+pub(crate) use crate::test_serialization;
 
-use {std::alloc::Layout, std::cell::Cell, std::num::NonZeroUsize, std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering, std::sync::Arc, std::sync::Mutex, std::sync::OnceLock, std::time::Duration, std::time::Instant};
-use {worth_execution::CancellationSource, worth_execution::CancellationToken, worth_execution::ExecutionAllocationDenialKind as Kind, worth_execution::ExecutionAllocationPolicy as Policy, worth_execution::ExecutionArrayBuilder, worth_execution::ExecutionAuthority, worth_execution::ExecutionAuthorityConfig, worth_execution::ExecutionResourceLease, worth_execution::LeaseDenial, worth_execution::LeaseRequest, worth_execution::MemoryLimitDenial, worth_execution::MemoryLimitLevel};
-use {worth_foundational::DeterminismContract, worth_foundational::ExecutionBudget, worth_foundational::ExecutionPosture, worth_foundational::ExecutionRequestPolicy};
+use {std::cell::Cell, std::sync::atomic::AtomicUsize};
+use {worth_execution::ExecutionArrayBuilder, worth_execution::ExecutionResourceLease};
 
 #[test]
 fn typed_layout_moves_and_iterator_retain_one_charge_beyond_child_lease() {
@@ -23,8 +23,11 @@ fn typed_layout_moves_and_iterator_retain_one_charge_beyond_child_lease() {
     let parent = authority().request_lease(request(quote)).unwrap();
     let (retained, pointer, nested_pointer) = {
         let child = parent.child(request(quote)).unwrap();
-        let mut builder =
-            ExecutionArrayBuilder::<Item>::allocate(3, worth_execution::ExecutionAllocationPolicy::Execution(&child)).unwrap();
+        let mut builder = ExecutionArrayBuilder::<Item>::allocate(
+            3,
+            worth_execution::ExecutionAllocationPolicy::Execution(&child),
+        )
+        .unwrap();
         assert_eq!(builder.element_count(), 3);
         for id in 1..=3 {
             builder
@@ -43,7 +46,10 @@ fn typed_layout_moves_and_iterator_retain_one_charge_beyond_child_lease() {
                 nested: vec![9].into_boxed_slice(),
             })
             .unwrap_err();
-        assert_eq!(denied.kind(), worth_execution::ExecutionAllocationDenialKind::WriteBeyondReserved);
+        assert_eq!(
+            denied.kind(),
+            worth_execution::ExecutionAllocationDenialKind::WriteBeyondReserved
+        );
         assert_eq!(denied.requested_payload_bytes(), Some(quote));
         assert_eq!(builder.len(), 3);
         let array = builder.seal().unwrap();
@@ -120,11 +126,20 @@ fn element_destruction_keeps_charge_until_partial_and_consuming_backings_drop() 
             }
         }
     }
-    let quote = u64::try_from(std::alloc::Layout::array::<Tracked<'_, '_>>(3).unwrap().size()).unwrap();
+    let quote = u64::try_from(
+        std::alloc::Layout::array::<Tracked<'_, '_>>(3)
+            .unwrap()
+            .size(),
+    )
+    .unwrap();
     let parent = authority().request_lease(request(quote)).unwrap();
     let drops = std::cell::Cell::new(0);
     let charged_drops = std::cell::Cell::new(0);
-    let mut builder = worth_execution::ExecutionArrayBuilder::allocate(3, worth_execution::ExecutionAllocationPolicy::Execution(&parent)).unwrap();
+    let mut builder = worth_execution::ExecutionArrayBuilder::allocate(
+        3,
+        worth_execution::ExecutionAllocationPolicy::Execution(&parent),
+    )
+    .unwrap();
     for _ in 0..3 {
         builder
             .push(Tracked {
@@ -141,7 +156,11 @@ fn element_destruction_keeps_charge_until_partial_and_consuming_backings_drop() 
     assert_eq!(drops.get(), 3);
     assert_eq!(charged_drops.get(), 3);
     assert_eq!(parent.reserve_memory(quote).unwrap().bytes(), quote);
-    let mut partial = worth_execution::ExecutionArrayBuilder::allocate(3, worth_execution::ExecutionAllocationPolicy::Execution(&parent)).unwrap();
+    let mut partial = worth_execution::ExecutionArrayBuilder::allocate(
+        3,
+        worth_execution::ExecutionAllocationPolicy::Execution(&parent),
+    )
+    .unwrap();
     partial
         .push(Tracked {
             parent: &parent,
@@ -150,7 +169,10 @@ fn element_destruction_keeps_charge_until_partial_and_consuming_backings_drop() 
         })
         .unwrap();
     let denied = partial.seal().unwrap_err();
-    assert_eq!(denied.kind(), worth_execution::ExecutionAllocationDenialKind::IncompleteSeal);
+    assert_eq!(
+        denied.kind(),
+        worth_execution::ExecutionAllocationDenialKind::IncompleteSeal
+    );
     assert_eq!(denied.requested_payload_bytes(), Some(quote));
     assert_eq!(drops.get(), 4); // Uninitialized tail is not dropped.
     assert_eq!(charged_drops.get(), 4);
@@ -174,13 +196,19 @@ fn zst_logical_fill_and_zero_charge_do_not_use_allocator_capacity_as_count() {
     }
     let parent = authority().request_lease(request(0)).unwrap();
     let before = DROPS.load(std::sync::atomic::Ordering::SeqCst);
-    let mut builder =
-        ExecutionArrayBuilder::<Zero>::allocate(3, worth_execution::ExecutionAllocationPolicy::Execution(&parent)).unwrap();
+    let mut builder = ExecutionArrayBuilder::<Zero>::allocate(
+        3,
+        worth_execution::ExecutionAllocationPolicy::Execution(&parent),
+    )
+    .unwrap();
     for _ in 0..3 {
         builder.push(Zero).unwrap();
     }
     let denied = builder.push(Zero).unwrap_err();
-    assert_eq!(denied.kind(), worth_execution::ExecutionAllocationDenialKind::WriteBeyondReserved);
+    assert_eq!(
+        denied.kind(),
+        worth_execution::ExecutionAllocationDenialKind::WriteBeyondReserved
+    );
     assert_eq!(denied.requested_payload_bytes(), Some(0));
     assert_eq!(builder.len(), 3);
     assert_eq!(builder.element_count(), 3);
@@ -198,14 +226,20 @@ fn zst_logical_fill_and_zero_charge_do_not_use_allocator_capacity_as_count() {
     assert_eq!(consuming.charged_payload_bytes(), Some(0));
     drop(consuming);
     assert_eq!(DROPS.load(std::sync::atomic::Ordering::SeqCst), before + 4);
-    let leased_empty = ExecutionArrayBuilder::<u64>::allocate(0, worth_execution::ExecutionAllocationPolicy::Execution(&parent))
-        .unwrap()
-        .seal()
-        .unwrap();
-    let system_empty = ExecutionArrayBuilder::<u64>::allocate(0, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap()
-        .seal()
-        .unwrap();
+    let leased_empty = ExecutionArrayBuilder::<u64>::allocate(
+        0,
+        worth_execution::ExecutionAllocationPolicy::Execution(&parent),
+    )
+    .unwrap()
+    .seal()
+    .unwrap();
+    let system_empty = ExecutionArrayBuilder::<u64>::allocate(
+        0,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
+    .seal()
+    .unwrap();
     assert!(leased_empty.is_empty());
     assert_eq!(leased_empty.charged_payload_bytes(), Some(0));
     assert_eq!(system_empty.charged_payload_bytes(), None);
@@ -219,19 +253,33 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
     }
 
     let _serial = crate::test_serialization::guard(&SERIAL);
-    let denied =
-        ExecutionArrayBuilder::<u64>::allocate(usize::MAX, worth_execution::ExecutionAllocationPolicy::SystemAllocation).unwrap_err();
-    assert_eq!(denied.kind(), worth_execution::ExecutionAllocationDenialKind::Layout);
-    assert_eq!(denied.requested_payload_bytes(), None);
-    let small = authority().request_lease(request(7)).unwrap();
-    let denied = ExecutionArrayBuilder::<u32>::allocate(2, worth_execution::ExecutionAllocationPolicy::Execution(&small)).unwrap_err();
+    let denied = ExecutionArrayBuilder::<u64>::allocate(
+        usize::MAX,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap_err();
     assert_eq!(
         denied.kind(),
-        worth_execution::ExecutionAllocationDenialKind::Lease(worth_execution::LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
-            requested: 8,
-            admitted: 7,
-            level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-        }))
+        worth_execution::ExecutionAllocationDenialKind::Layout
+    );
+    assert_eq!(denied.requested_payload_bytes(), None);
+    let small = authority().request_lease(request(7)).unwrap();
+    let denied = ExecutionArrayBuilder::<u32>::allocate(
+        2,
+        worth_execution::ExecutionAllocationPolicy::Execution(&small),
+    )
+    .unwrap_err();
+    assert_eq!(
+        denied.kind(),
+        worth_execution::ExecutionAllocationDenialKind::Lease(
+            worth_execution::LeaseDenial::MemoryExhausted(
+                worth_execution::MemoryLimitDenial::Capacity {
+                    requested: 8,
+                    admitted: 7,
+                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
+                }
+            )
+        )
     );
     assert_eq!(denied.requested_payload_bytes(), Some(8));
     assert_eq!(small.reserve_memory(7).unwrap().bytes(), 7);
@@ -249,17 +297,30 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
         None
     );
     let denied = builder.push(2).unwrap_err();
-    assert_eq!(denied.kind(), worth_execution::ExecutionAllocationDenialKind::Cancelled);
+    assert_eq!(
+        denied.kind(),
+        worth_execution::ExecutionAllocationDenialKind::Cancelled
+    );
     assert_eq!(denied.requested_payload_bytes(), Some(16));
     assert_eq!(builder.elements(), [1]);
     assert_eq!(builder.seal().unwrap_err(), denied);
     assert_eq!(parent.reserve_memory(16).unwrap().bytes(), 16);
     stopped_request.cancellation = worth_execution::CancellationToken::new();
-    stopped_request.deadline = Some(std::time::Instant::now().checked_sub(std::time::Duration::from_secs(1)).unwrap());
+    stopped_request.deadline = Some(
+        std::time::Instant::now()
+            .checked_sub(std::time::Duration::from_secs(1))
+            .unwrap(),
+    );
     let expired = parent.child(stopped_request).unwrap();
-    let denied =
-        ExecutionArrayBuilder::<u32>::allocate(4, worth_execution::ExecutionAllocationPolicy::Execution(&expired)).unwrap_err();
-    assert_eq!(denied.kind(), worth_execution::ExecutionAllocationDenialKind::DeadlineElapsed);
+    let denied = ExecutionArrayBuilder::<u32>::allocate(
+        4,
+        worth_execution::ExecutionAllocationPolicy::Execution(&expired),
+    )
+    .unwrap_err();
+    assert_eq!(
+        denied.kind(),
+        worth_execution::ExecutionAllocationDenialKind::DeadlineElapsed
+    );
     assert_eq!(denied.requested_payload_bytes(), Some(16));
     assert_eq!(parent.reserve_memory(16).unwrap().bytes(), 16);
 }

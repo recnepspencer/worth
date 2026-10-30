@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/branch_reference/raw_branch_id_cannot_admit_current_basis.rs:5:40
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/raw_branch_id_cannot_admit_current_basis.rs:5:40
   |
 5 |     let _ = runtime.admit_branch_basis(branch);
   |                     ------------------ ^^^^^^ expected `&RelationalBranchIdentity`, found `&BranchId`

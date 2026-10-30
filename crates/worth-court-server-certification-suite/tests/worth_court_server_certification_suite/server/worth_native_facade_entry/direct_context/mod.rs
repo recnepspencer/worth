@@ -1,10 +1,14 @@
-#[allow(unused_imports)] use crate::worth_native_facade_entry::ordinary_context::direct_context::*;
-use {worth_foundational::facade::DiagnosticRichnessProfile};
-use {worth_proof::TransitionOutcome};
-use {worth_query::facade::runtime::WorthQueryInspection, worth_query::facade::runtime::WorthQueryRuntimeRemaskProjection, worth_query::facade::runtime::WorthQueryRuntimeRemaskReasonKind, worth_query::facade::runtime::WorthQueryRuntimeStateKind};
-use {worth_server::WorthServerDirectInspectionOutcome, worth_server::WorthServerDirectReadOutcome, worth_server::WorthServerDirectRemaskDisposition, worth_server::WorthServerDirectStateOutcome, worth_server::WorthServerResponseInput, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+#[allow(unused_imports)]
+use crate::worth_native_facade_entry::ordinary_context::direct_context::*;
 
-use {worth_testkit_server::shared_support_direct_context_runtime::RemaskWorkspaceProvider, worth_testkit_server::shared_support_query_handoff_fixture::admit_read_posture, worth_testkit_server::shared_support_query_handoff_fixture::request_input, worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context, worth_testkit_server::shared_support_query_handoff_fixture::success, worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read, worth_testkit_server::shared_support_worth_native_assertions::direct_provenance_digest, worth_testkit_server::shared_support_worth_native_assertions::response_provenance_digest, worth_testkit_server::shared_support_worth_native_assertions::worth_native_session, worth_testkit_server::shared_support_worth_native_runtime::build_server, worth_testkit_server::shared_support_worth_native_runtime::build_server_with_workspace_provider, worth_testkit_server::shared_support_worth_native_runtime::worth_native_session_input_builder};
+use {
+    worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read,
+    worth_testkit_server::shared_support_worth_native_assertions::direct_provenance_digest,
+    worth_testkit_server::shared_support_worth_native_assertions::response_provenance_digest,
+    worth_testkit_server::shared_support_worth_native_assertions::worth_native_session,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server,
+    worth_testkit_server::shared_support_worth_native_runtime::build_server_with_workspace_provider,
+};
 
 #[test]
 fn direct_context_preserves_branch_basis_and_provenance_across_equivalent_and_distinct_sessions() {
@@ -72,12 +76,9 @@ fn direct_context_parity_preserves_branch_and_provenance_against_compatibility_f
 
     let direct = direct_read_success(session.direct().read(&declaration));
     let compat_handoff = compat_read_handoff(&server);
-    let compat_response =
-        server
-            .responses()
-            .shape_with_defaults(worth_server::WorthServerResponseInput::query_handoff_success(
-                compat_read_handoff(&server),
-            ));
+    let compat_response = server.responses().shape_with_defaults(
+        worth_server::WorthServerResponseInput::query_handoff_success(compat_read_handoff(&server)),
+    );
 
     assert_eq!(
         direct.direct_context().workspace_target().tenant_id(),
@@ -118,14 +119,16 @@ fn direct_context_parity_preserves_branch_and_provenance_against_compatibility_f
 #[test]
 fn direct_context_preserves_typed_remask_parity_across_state_and_inspection() {
     let server = build_server_with_workspace_provider(
-        worth_testkit_server::shared_support_direct_context_runtime::RemaskWorkspaceProvider::new(worth_query::facade::runtime::WorthQueryRuntimeRemaskProjection::remasked(
-            worth_query::facade::runtime::WorthQueryRuntimeRemaskReasonKind::PolicyDrift,
-            "policy:test",
-            "tenant-truth:test",
-            "tenant-schema:test",
-            "relationship-proof:test",
-            "schema-context:test",
-        )),
+        worth_testkit_server::shared_support_direct_context_runtime::RemaskWorkspaceProvider::new(
+            worth_query::facade::runtime::WorthQueryRuntimeRemaskProjection::remasked(
+                worth_query::facade::runtime::WorthQueryRuntimeRemaskReasonKind::PolicyDrift,
+                "policy:test",
+                "tenant-truth:test",
+                "tenant-schema:test",
+                "relationship-proof:test",
+                "schema-context:test",
+            ),
+        ),
         true,
     );
     let session = worth_native_session(&server);
@@ -182,8 +185,10 @@ fn direct_context_richness_changes_provenance_detail_without_changing_branch_or_
     let standard_server = build_server(true);
     let forensic_server = build_server(true);
     let standard_session = worth_native_session(&standard_server);
-    let forensic_session =
-        session_with_diagnostics(&forensic_server, worth_foundational::facade::DiagnosticRichnessProfile::Forensic);
+    let forensic_session = session_with_diagnostics(
+        &forensic_server,
+        worth_foundational::facade::DiagnosticRichnessProfile::Forensic,
+    );
     let standard_declaration = admitted_named_read(&standard_session, "users.profile");
     let forensic_declaration = admitted_named_read(&forensic_session, "users.profile");
 

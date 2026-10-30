@@ -15,7 +15,7 @@ pub(super) fn compute(metadata: &CargoMetadata) -> Result<BTreeMap<String, Front
         .iter()
         .map(String::as_str)
         .collect();
-    let products: BTreeMap<_, _> = metadata
+    let candidate_products: BTreeMap<_, _> = metadata
         .packages
         .iter()
         .filter(|p| {
@@ -29,6 +29,81 @@ pub(super) fn compute(metadata: &CargoMetadata) -> Result<BTreeMap<String, Front
                     .any(|s| s == "fixtures")
         })
         .map(|p| (p.id.as_str(), p.name.as_str()))
+        .collect();
+    // Convention v3 traverses test infrastructure to its production roots.
+    // Canonical courts preserve established leaf APIs while incidental clients
+    // are removed from the product candidates, matching the codemod's rule.
+    let established: BTreeSet<_> = frontiers(metadata, &nodes, &candidate_products)?
+        .into_iter()
+        .filter(|(id, frontier)| {
+            let name = &metadata.packages.iter().find(|p| &p.id == id).unwrap().name;
+            let (stem, label) = name.split_once("-court-").unwrap();
+            let surface = surface(stem, frontier);
+            label == surface || label.starts_with(&format!("{surface}-"))
+        })
+        .flat_map(|(_, frontier)| frontier)
+        .collect();
+    let mut products = candidate_products;
+    products.retain(|id, _| {
+        let package = metadata.packages.iter().find(|p| p.id == *id).unwrap();
+        let path = package.manifest_path.replace('\\', "/");
+        !path.split('/').any(|s| s == "tools")
+            && !(package.name.ends_with("-runner")
+                && !package
+                    .targets
+                    .iter()
+                    .any(|t| t.kind.iter().any(|k| k == "lib" || k == "rlib")))
+            && !["-test-support", "-certification", "-formal-models"]
+                .iter()
+                .any(|part| package.name.contains(part))
+            && !package.name.ends_with("-harness")
+    });
+    loop {
+        let incidental: Vec<_> = products
+            .iter()
+            .filter(|(_, name)| !established.contains(**name))
+            .filter(|(id, _)| {
+                let incoming: Vec<_> = resolve
+                    .nodes
+                    .iter()
+                    .flat_map(|node| {
+                        node.deps
+                            .iter()
+                            .filter(move |edge| edge.pkg == **id)
+                            .map(move |edge| (node, edge))
+                    })
+                    .collect();
+                !incoming.is_empty()
+                    && incoming.iter().all(|(caller, edge)| {
+                        (members.contains(caller.id.as_str())
+                            && !products.contains_key(caller.id.as_str()))
+                            || edge
+                                .dep_kinds
+                                .iter()
+                                .all(|k| k.kind.as_deref() == Some("dev"))
+                    })
+            })
+            .map(|(id, _)| *id)
+            .collect();
+        if incidental.is_empty() {
+            break;
+        }
+        for id in incidental {
+            products.remove(id);
+        }
+    }
+    frontiers(metadata, &nodes, &products)
+}
+
+fn frontiers(
+    metadata: &CargoMetadata,
+    nodes: &BTreeMap<&str, &CargoMetadataNode>,
+    products: &BTreeMap<&str, &str>,
+) -> Result<BTreeMap<String, Frontier>, String> {
+    let members: BTreeSet<_> = metadata
+        .workspace_members
+        .iter()
+        .map(String::as_str)
         .collect();
     let dependencies: BTreeMap<_, _> = products
         .keys()

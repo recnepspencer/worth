@@ -1,11 +1,11 @@
 error[E0599]: no function or associated item named `default` found for struct `FoundationalProfileSet` in the current scope
- --> tests/ui/profiles/set_construction/default_profile_set_is_not_available.rs:4:37
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/set_construction/default_profile_set_is_not_available.rs
   |
-4 |     let _ = FoundationalProfileSet::default();
+  |     let _ = FoundationalProfileSet::default();
   |                                     ^^^^^^^ function or associated item not found in `FoundationalProfileSet`
   |
 note: if you're trying to build a new `FoundationalProfileSet`, consider using `FoundationalProfileSet::new` which returns `Result<FoundationalProfileSet, FoundationalProfileCompositionDenial>`
- --> src/profiles/composition.rs
+ --> $WORKSPACE/crates/worth-foundational/src/profiles/composition.rs
   |
   | /     pub fn new(
   | |         input: FoundationalProfileSetInput,

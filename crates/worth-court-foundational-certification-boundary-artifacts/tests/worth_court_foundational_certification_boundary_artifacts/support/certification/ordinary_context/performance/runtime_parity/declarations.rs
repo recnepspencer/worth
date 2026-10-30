@@ -1,7 +1,33 @@
-pub(crate) use {worth_foundational::performance_api::common_path, worth_foundational::performance_api::lower_lane::basis, worth_foundational::performance_api::lower_lane::receipts, worth_foundational::performance_api::lower_lane::reports, worth_foundational::performance_api::stronger_lane::certified, worth_foundational::profiles, worth_foundational::CertificationPostureProfile, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalCertifiedPerformanceClass, worth_foundational::FoundationalCertifiedPerformanceSourceKind, worth_foundational::FoundationalPerformanceAccessPatternPosture, worth_foundational::FoundationalPerformanceAttachmentTargetKind, worth_foundational::FoundationalPerformanceBoundary, worth_foundational::FoundationalPerformanceBreadthLocalityPosture, worth_foundational::FoundationalPerformanceCounterName, worth_foundational::FoundationalPerformanceCounterRow, worth_foundational::FoundationalPerformanceCounterSpec, worth_foundational::FoundationalPerformanceEvidenceStrength, worth_foundational::FoundationalPerformanceExecutionTemperature, worth_foundational::FoundationalPerformanceFallbackDebtPosture, worth_foundational::FoundationalPerformanceFreshnessRetentionPosture, worth_foundational::FoundationalPerformanceLayoutIntent, worth_foundational::FoundationalPerformanceWorkClass, worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile};
-pub(crate) use {worth_proof::TransitionOutcome};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::performance_api::common_path,
+    worth_foundational::performance_api::lower_lane::basis,
+    worth_foundational::performance_api::lower_lane::receipts,
+    worth_foundational::performance_api::lower_lane::reports,
+    worth_foundational::performance_api::stronger_lane::certified, worth_foundational::profiles,
+    worth_foundational::CertificationPostureProfile, worth_foundational::DiagnosticRichnessProfile,
+    worth_foundational::FoundationalCertifiedPerformanceClass,
+    worth_foundational::FoundationalCertifiedPerformanceSourceKind,
+    worth_foundational::FoundationalPerformanceAccessPatternPosture,
+    worth_foundational::FoundationalPerformanceAttachmentTargetKind,
+    worth_foundational::FoundationalPerformanceBoundary,
+    worth_foundational::FoundationalPerformanceBreadthLocalityPosture,
+    worth_foundational::FoundationalPerformanceCounterName,
+    worth_foundational::FoundationalPerformanceCounterRow,
+    worth_foundational::FoundationalPerformanceCounterSpec,
+    worth_foundational::FoundationalPerformanceEvidenceStrength,
+    worth_foundational::FoundationalPerformanceExecutionTemperature,
+    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
+    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
+    worth_foundational::FoundationalPerformanceLayoutIntent,
+    worth_foundational::FoundationalPerformanceWorkClass,
+    worth_foundational::RetentionDeliveryProfile, worth_foundational::SupportPostureProfile,
+};
 
-pub(crate) use {crate::certification::ordinary_context::performance::basis_support::derive_digest, crate::certification::ordinary_context::performance::basis_support::exact_compare};
+pub(crate) use {
+    crate::certification::ordinary_context::performance::basis_support::derive_digest,
+    crate::certification::ordinary_context::performance::basis_support::exact_compare,
+};
 
 #[derive(Clone, Copy)]
 pub(crate) enum SyntheticRuntimeFamily {
@@ -65,18 +91,20 @@ pub(crate) fn canonical_hot_receipt(
         worth_foundational::FoundationalPerformanceAllocationPosture::ActionLocal,
     );
     let counter_name =
-        worth_foundational::FoundationalPerformanceCounterName::new("authoritative.rows").expect("counter name");
+        worth_foundational::FoundationalPerformanceCounterName::new("authoritative.rows")
+            .expect("counter name");
     let support_code =
         worth_foundational::FoundationalPerformanceSupportingEvidenceCode::new("support.trace")
             .expect("support code");
 
-    let bundle_builder = worth_foundational::performance_api::lower_lane::basis::performance_bundle(claim.clone())
-        .attach_layout_intent_claim(layout.clone())
-        .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
-            counter_name.clone(),
-            worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
-            3,
-        ));
+    let bundle_builder =
+        worth_foundational::performance_api::lower_lane::basis::performance_bundle(claim.clone())
+            .attach_layout_intent_claim(layout.clone())
+            .attach_counter_spec(worth_foundational::FoundationalPerformanceCounterSpec::new(
+                counter_name.clone(),
+                worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeMutation,
+                3,
+            ));
     let bundle = match family {
         crate::certification::ordinary_context::performance::runtime_parity::SyntheticRuntimeFamily::QueryLike => bundle_builder
             .attach_contract_name(
@@ -125,10 +153,15 @@ pub(crate) fn canonical_hot_receipt(
             .expect("relational-like bundle should build"),
     };
 
-    worth_foundational::performance_api::lower_lane::receipts::counter_backed_performance_receipt(bundle)
-        .attach_counter_row(worth_foundational::FoundationalPerformanceCounterRow::new(counter_name, 3))
-        .finish()
-        .expect("receipt should build")
+    worth_foundational::performance_api::lower_lane::receipts::counter_backed_performance_receipt(
+        bundle,
+    )
+    .attach_counter_row(worth_foundational::FoundationalPerformanceCounterRow::new(
+        counter_name,
+        3,
+    ))
+    .finish()
+    .expect("receipt should build")
 }
 
 pub(crate) fn support_expansion_report_from(
@@ -145,17 +178,19 @@ pub(crate) fn support_expansion_report_from(
         receipt,
     )
     .expect("receipt attachment should build");
-    worth_foundational::performance_api::lower_lane::reports::plan_performance_report(worth_foundational::FoundationalPerformanceReportRequest {
-        source: attached,
-        profile: support_ready_profile(),
-        include_layout_intent: true,
-        include_contract_names: true,
-        include_counter_specs: true,
-        include_counter_rows: true,
-        include_supporting_evidence_rows: true,
-        include_budget_decisions: false,
-        include_denied_work: false,
-        include_widened_work: false,
-    })
+    worth_foundational::performance_api::lower_lane::reports::plan_performance_report(
+        worth_foundational::FoundationalPerformanceReportRequest {
+            source: attached,
+            profile: support_ready_profile(),
+            include_layout_intent: true,
+            include_contract_names: true,
+            include_counter_specs: true,
+            include_counter_rows: true,
+            include_supporting_evidence_rows: true,
+            include_budget_decisions: false,
+            include_denied_work: false,
+            include_widened_work: false,
+        },
+    )
     .materialize()
 }

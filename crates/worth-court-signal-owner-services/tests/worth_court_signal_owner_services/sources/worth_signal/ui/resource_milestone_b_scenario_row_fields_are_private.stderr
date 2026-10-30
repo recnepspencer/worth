@@ -1,5 +1,5 @@
 error[E0451]: fields `id`, `evidence_kind`, `certification_family`, `completion_denial_class`, `evidence_digest`, `performance` and `passed` of struct `ResourceMilestoneBScenarioRow` are private
-  --> tests/ui/resource_milestone_b_scenario_row_fields_are_private.rs:13:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_scenario_row_fields_are_private.rs:13:9
    |
 12 |     let _forged = ResourceMilestoneBScenarioRow {
    |                   ----------------------------- in this type

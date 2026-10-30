@@ -1,6 +1,21 @@
-use {worth_foundational::materialize_diagnostic_explanation_bundle, worth_foundational::materialize_diagnostic_support_report, worth_foundational::plan_diagnostic_explanation_bundle, worth_foundational::plan_diagnostic_support_report, worth_foundational::DiagnosticRichnessProfile, worth_foundational::FoundationalDiagnosticAssemblyDebt, worth_foundational::FoundationalDiagnosticAssemblyDebtClass, worth_foundational::FoundationalDiagnosticDeliveryClass, worth_foundational::FoundationalDiagnosticExplanationInput, worth_foundational::FoundationalDiagnosticGapClass, worth_foundational::FoundationalDiagnosticGapClosurePosture, worth_foundational::FoundationalDiagnosticGapTarget, worth_foundational::FoundationalDiagnosticMaterializationDenial, worth_foundational::FoundationalDiagnosticNamedGap, worth_foundational::FoundationalDiagnosticOutcomeKind, worth_foundational::FoundationalDiagnosticPartiality, worth_foundational::FoundationalDiagnosticSupportClaimStrength, worth_foundational::FoundationalDiagnosticSupportInput, worth_foundational::FoundationalDiagnosticSurfaceAvailability, worth_foundational::SupportPostureProfile};
+use {
+    worth_foundational::materialize_diagnostic_explanation_bundle,
+    worth_foundational::materialize_diagnostic_support_report,
+    worth_foundational::plan_diagnostic_explanation_bundle,
+    worth_foundational::plan_diagnostic_support_report,
+};
 
-use {crate::certification::ordinary_context::diagnostics::materialization_support::counters, crate::certification::ordinary_context::diagnostics::materialization_support::explanation_input, crate::certification::ordinary_context::diagnostics::materialization_support::locator, crate::certification::ordinary_context::diagnostics::materialization_support::profile, crate::certification::ordinary_context::diagnostics::materialization_support::required_row, crate::certification::ordinary_context::diagnostics::materialization_support::row_codes, crate::certification::ordinary_context::diagnostics::materialization_support::standard_row, crate::certification::ordinary_context::diagnostics::materialization_support::subject, crate::certification::ordinary_context::diagnostics::materialization_support::support_input};
+use {
+    crate::certification::ordinary_context::diagnostics::materialization_support::counters,
+    crate::certification::ordinary_context::diagnostics::materialization_support::explanation_input,
+    crate::certification::ordinary_context::diagnostics::materialization_support::locator,
+    crate::certification::ordinary_context::diagnostics::materialization_support::profile,
+    crate::certification::ordinary_context::diagnostics::materialization_support::required_row,
+    crate::certification::ordinary_context::diagnostics::materialization_support::row_codes,
+    crate::certification::ordinary_context::diagnostics::materialization_support::standard_row,
+    crate::certification::ordinary_context::diagnostics::materialization_support::subject,
+    crate::certification::ordinary_context::diagnostics::materialization_support::support_input,
+};
 
 #[test]
 fn reduced_richness_changes_breadth_without_changing_outcome_truth() {
@@ -181,7 +196,9 @@ fn partial_support_uses_typed_named_gaps() {
     let report = materialize_diagnostic_support_report(
         support_input(
             worth_foundational::FoundationalDiagnosticSupportClaimStrength::DescriptiveOnly,
-            worth_foundational::FoundationalDiagnosticPartiality::PartialWithNamedGaps(vec![gap.clone()]),
+            worth_foundational::FoundationalDiagnosticPartiality::PartialWithNamedGaps(vec![
+                gap.clone()
+            ]),
             vec![],
         ),
         profile(

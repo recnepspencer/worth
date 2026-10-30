@@ -1,14 +1,8 @@
-#[allow(unused_imports)] use crate::signal_owner_services::ordinary_context::legacy_surface::sealed_inspection::*;
-use {crate::signal_owner_services::ordinary_context::execution_custody};
+#[allow(unused_imports)]
+use crate::signal_owner_services::ordinary_context::legacy_surface::sealed_inspection::*;
 pub(crate) use {std::panic::catch_unwind, std::panic::AssertUnwindSafe};
-pub(crate) use {std::sync::mpsc};
-pub(crate) use {std::thread};
-pub(crate) use {std::time::Duration};
 
-pub(crate) use {worth_signal::facade::branch::SignalOwnerCancellationSource};
-pub(crate) use {worth_signal::facade::branch::SignalBranchRetirementReason, worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest};
-
-pub(crate) use {crate::signal_owner_services::ordinary_context::legacy_surface::runtime};
+pub(crate) use crate::signal_owner_services::ordinary_context::legacy_surface::runtime;
 
 #[test]
 fn selected_branch_resolves_live_head_after_post_seal_capture_and_restore() {
@@ -95,20 +89,27 @@ fn catalog_omits_retiring_cell_and_preserves_healthy_siblings() {
         .expect("the owner seals with both siblings");
     let plan = services
         .lifecycle_port()
-        .plan_retirement_exact(retiring_basis, worth_signal::facade::branch::SignalBranchRetirementReason::Superseded)
+        .plan_retirement_exact(
+            retiring_basis,
+            worth_signal::facade::branch::SignalBranchRetirementReason::Superseded,
+        )
         .into_result()
         .expect("the nonselected branch has an exact retirement plan");
     let control = runtime
         .owner_operation_control_for_test()
         .expect("test operation control is issued by the sealed owner");
-    let pause = control
-        .arm_pause_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
+    let pause = control.arm_pause_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+    );
     let (done_tx, done_rx) = std::sync::mpsc::sync_channel(1);
     let lifecycle = services.lifecycle_port();
     std::thread::scope(|scope| {
         scope.spawn(move || {
             let result = lifecycle
-                .retire_exact(plan, &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token())
+                .retire_exact(
+                    plan,
+                    &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+                )
                 .into_result();
             done_tx
                 .send(result)
@@ -179,8 +180,9 @@ fn catalog_filters_quarantined_sibling_and_ancestry_keeps_observable_suffix() {
     let control = runtime
         .owner_operation_control_for_test()
         .expect("test operation control is issued by the sealed owner");
-    control
-        .inject_panic_once_for_test(worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
+    control.inject_panic_once_for_test(
+        worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+    );
     let mutation = services.mutation_port();
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = mutation.advance_exact(

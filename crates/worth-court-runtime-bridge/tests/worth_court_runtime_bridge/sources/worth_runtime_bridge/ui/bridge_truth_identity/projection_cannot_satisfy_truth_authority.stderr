@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/bridge_truth_identity/projection_cannot_satisfy_truth_authority.rs:10:69
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/bridge_truth_identity/projection_cannot_satisfy_truth_authority.rs:10:69
    |
 10 |     let _evidence = BridgeIdentityEvidence::from_external_authority(projection);
    |                     ----------------------------------------------- ^^^^^^^^^^ expected `FoundationalExternalIdentityToken<..., ...>`, found `FoundationalProjectionIdentity<..., ...>`

@@ -1,5 +1,5 @@
 error[E0603]: module `builder` is private
- --> tests/ui/private_builder_module.rs:1:27
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/private_builder_module.rs:1:27
   |
 1 | use worth_runtime_bridge::builder::RuntimeBridgeBuilder;
   |                           ^^^^^^^ private module

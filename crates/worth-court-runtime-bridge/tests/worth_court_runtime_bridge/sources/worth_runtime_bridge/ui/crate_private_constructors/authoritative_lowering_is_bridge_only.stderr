@@ -1,5 +1,5 @@
 error[E0624]: associated function `new_with_authoritative_lowering` is private
- --> tests/ui/crate_private_constructors/authoritative_lowering_is_bridge_only.rs:7:51
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/crate_private_constructors/authoritative_lowering_is_bridge_only.rs:7:51
   |
 7 |       let _envelope = BridgeCommittedPatchEnvelope::new_with_authoritative_lowering(
   |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
@@ -15,7 +15,7 @@ error[E0624]: associated function `new_with_authoritative_lowering` is private
   | |_______________________________________- private associated function defined here
 
 error[E0624]: associated function `with_relational_semantic_change` is private
-  --> tests/ui/crate_private_constructors/authoritative_lowering_is_bridge_only.rs:13:43
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/crate_private_constructors/authoritative_lowering_is_bridge_only.rs:13:43
    |
 13 |       let _item = BridgeCommittedPatchItem::with_relational_semantic_change(
    |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
@@ -30,7 +30,7 @@ error[E0624]: associated function `with_relational_semantic_change` is private
    | |_____________- private associated function defined here
 
 error[E0624]: associated function `new` is private
-  --> tests/ui/crate_private_constructors/authoritative_lowering_is_bridge_only.rs:18:44
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/crate_private_constructors/authoritative_lowering_is_bridge_only.rs:18:44
    |
 18 |       let _claimed = BridgeProducerMetadata::new(
    |                                              ^^^ private associated function

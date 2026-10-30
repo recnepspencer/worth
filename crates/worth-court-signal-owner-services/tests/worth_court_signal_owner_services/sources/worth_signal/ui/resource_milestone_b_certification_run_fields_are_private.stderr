@@ -1,5 +1,5 @@
 error[E0451]: fields `schema_version`, `bundle`, `scenario_matrix`, `performance_closeout`, `summary`, `run_digest` and `passed` of struct `ResourceMilestoneBCertificationRun` are private
-  --> tests/ui/resource_milestone_b_certification_run_fields_are_private.rs:25:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_milestone_b_certification_run_fields_are_private.rs:25:9
    |
 24 |     let _forged = ResourceMilestoneBCertificationRun {
    |                   ---------------------------------- in this type

@@ -1,8 +1,16 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::diagnostics::rows::*;
-use {worth_foundational::EquivalenceBasisId};
-use {worth_foundational::FoundationalMergeConflictLocator};
-use {worth_foundational::foundational_diagnostic_boundary_artifact_subject, worth_foundational::foundational_diagnostic_branch_candidate_subject, worth_foundational::foundational_diagnostic_branch_discard_subject, worth_foundational::foundational_diagnostic_code, worth_foundational::foundational_diagnostic_commit_receipt_subject, worth_foundational::foundational_diagnostic_committed_authority_subject, worth_foundational::foundational_diagnostic_locator_boundary_artifact, worth_foundational::foundational_diagnostic_locator_transition, worth_foundational::foundational_diagnostic_merge_verdict_subject, worth_foundational::foundational_diagnostic_scope, worth_foundational::sort_foundational_diagnostic_rows, worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId, worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle, worth_foundational::FoundationalBranchCandidateId, worth_foundational::FoundationalBranchId, worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis, worth_foundational::FoundationalCommitReceiptIdentity, worth_foundational::FoundationalDiagnosticAbsenceCause, worth_foundational::FoundationalDiagnosticBreachClass, worth_foundational::FoundationalDiagnosticComparisonRow, worth_foundational::FoundationalDiagnosticDecisionRow, worth_foundational::FoundationalDiagnosticDenialClass, worth_foundational::FoundationalDiagnosticEvidencePosture, worth_foundational::FoundationalDiagnosticFailureRow, worth_foundational::FoundationalDiagnosticLocalityClaim, worth_foundational::FoundationalDiagnosticOutcomeKind, worth_foundational::FoundationalDiagnosticProvenanceReadyRow, worth_foundational::FoundationalDiagnosticRow, worth_foundational::FoundationalDiagnosticRowFamily, worth_foundational::FoundationalDiagnosticSemanticLabelSet, worth_foundational::FoundationalDiagnosticSeverity, worth_foundational::FoundationalDiagnosticSupportEvidencePosture, worth_foundational::FoundationalDiagnosticSupportRow, worth_foundational::FoundationalDiagnosticWidenedFalloutPosture, worth_foundational::FoundationalMergeConflictLocus, worth_foundational::FoundationalTransitionLocator};
-use {worth_foundational::FoundationalCommittedDeltaLocator, worth_foundational::FoundationalCommittedDeltaLocus};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::diagnostics::rows::*;
+use {
+    worth_foundational::foundational_diagnostic_boundary_artifact_subject,
+    worth_foundational::foundational_diagnostic_branch_candidate_subject,
+    worth_foundational::foundational_diagnostic_branch_discard_subject,
+    worth_foundational::foundational_diagnostic_commit_receipt_subject,
+    worth_foundational::foundational_diagnostic_committed_authority_subject,
+    worth_foundational::foundational_diagnostic_locator_boundary_artifact,
+    worth_foundational::foundational_diagnostic_locator_transition,
+    worth_foundational::foundational_diagnostic_merge_verdict_subject,
+    worth_foundational::sort_foundational_diagnostic_rows,
+};
 
 #[test]
 fn outcome_and_absence_families_remain_mechanically_distinct() {
@@ -48,16 +56,20 @@ fn subjects_and_locators_preserve_parity_for_independent_producers() {
     assert_eq!(subject_a, subject_b);
 
     let locator_a = foundational_diagnostic_locator_transition(
-        worth_foundational::FoundationalTransitionLocator::CommittedDelta(worth_foundational::FoundationalCommittedDeltaLocator::new(
-            commit(81),
-            delta_locus("geometry-face", "face-7 updated"),
-        )),
+        worth_foundational::FoundationalTransitionLocator::CommittedDelta(
+            worth_foundational::FoundationalCommittedDeltaLocator::new(
+                commit(81),
+                delta_locus("geometry-face", "face-7 updated"),
+            ),
+        ),
     );
     let locator_b = foundational_diagnostic_locator_transition(
-        worth_foundational::FoundationalTransitionLocator::CommittedDelta(worth_foundational::FoundationalCommittedDeltaLocator::new(
-            commit(81),
-            delta_locus("geometry-face", "face-7 updated"),
-        )),
+        worth_foundational::FoundationalTransitionLocator::CommittedDelta(
+            worth_foundational::FoundationalCommittedDeltaLocator::new(
+                commit(81),
+                delta_locus("geometry-face", "face-7 updated"),
+            ),
+        ),
     );
     assert_eq!(locator_a, locator_b);
 }
@@ -69,17 +81,19 @@ fn family_distinct_rows_stay_blind_consumer_interpretable() {
         scope("transition.merge"),
         worth_foundational::FoundationalDiagnosticSeverity::Info,
         foundational_diagnostic_merge_verdict_subject(branch("feature"), branch("main")),
-        foundational_diagnostic_locator_transition(worth_foundational::FoundationalTransitionLocator::MergeConflict(
-            worth_foundational::FoundationalMergeConflictLocator::new(
-                branch("feature"),
-                branch("main"),
-                worth_foundational::FoundationalMergeConflictLocus::new(
-                    "geometry-face",
-                    "face-7/source",
-                    "face-7/target",
+        foundational_diagnostic_locator_transition(
+            worth_foundational::FoundationalTransitionLocator::MergeConflict(
+                worth_foundational::FoundationalMergeConflictLocator::new(
+                    branch("feature"),
+                    branch("main"),
+                    worth_foundational::FoundationalMergeConflictLocus::new(
+                        "geometry-face",
+                        "face-7/source",
+                        "face-7/target",
+                    ),
                 ),
             ),
-        )),
+        ),
         worth_foundational::FoundationalDiagnosticOutcomeKind::Accepted,
         labels(["decision", "merge"]),
         None,
@@ -94,10 +108,12 @@ fn family_distinct_rows_stay_blind_consumer_interpretable() {
             worth_foundational::BoundaryArtifactId::new(41),
             worth_foundational::BoundaryArtifactField::Payload,
         ),
-        foundational_diagnostic_locator_boundary_artifact(worth_foundational::BoundaryArtifactLocator::new(
-            worth_foundational::BoundaryArtifactId::new(41),
-            worth_foundational::BoundaryArtifactField::Payload,
-        )),
+        foundational_diagnostic_locator_boundary_artifact(
+            worth_foundational::BoundaryArtifactLocator::new(
+                worth_foundational::BoundaryArtifactId::new(41),
+                worth_foundational::BoundaryArtifactField::Payload,
+            ),
+        ),
         worth_foundational::FoundationalDiagnosticOutcomeKind::Violation,
         labels(["coverage", "failure"]),
         worth_foundational::FoundationalDiagnosticBreachClass::CoverageOmission,
@@ -109,12 +125,16 @@ fn family_distinct_rows_stay_blind_consumer_interpretable() {
         scope("diagnostics.comparison"),
         worth_foundational::FoundationalDiagnosticSeverity::Advisory,
         foundational_diagnostic_committed_authority_subject(commit(81)),
-        foundational_diagnostic_locator_transition(worth_foundational::FoundationalTransitionLocator::CommitParentage(
-            worth_foundational::FoundationalCommitParentageLocator::new(
-                commit(81),
-                worth_foundational::FoundationalCommitParentBasis::new(worth_foundational::EquivalenceBasisId::new(401)),
+        foundational_diagnostic_locator_transition(
+            worth_foundational::FoundationalTransitionLocator::CommitParentage(
+                worth_foundational::FoundationalCommitParentageLocator::new(
+                    commit(81),
+                    worth_foundational::FoundationalCommitParentBasis::new(
+                        worth_foundational::EquivalenceBasisId::new(401),
+                    ),
+                ),
             ),
-        )),
+        ),
         worth_foundational::FoundationalDiagnosticOutcomeKind::Mismatch,
         labels(["comparison"]),
         None,
@@ -125,12 +145,16 @@ fn family_distinct_rows_stay_blind_consumer_interpretable() {
         scope("diagnostics.support"),
         worth_foundational::FoundationalDiagnosticSeverity::Advisory,
         foundational_diagnostic_commit_receipt_subject(commit(81), receipt(33)),
-        foundational_diagnostic_locator_transition(worth_foundational::FoundationalTransitionLocator::CommitParentage(
-            worth_foundational::FoundationalCommitParentageLocator::new(
-                commit(81),
-                worth_foundational::FoundationalCommitParentBasis::new(worth_foundational::EquivalenceBasisId::new(401)),
+        foundational_diagnostic_locator_transition(
+            worth_foundational::FoundationalTransitionLocator::CommitParentage(
+                worth_foundational::FoundationalCommitParentageLocator::new(
+                    commit(81),
+                    worth_foundational::FoundationalCommitParentBasis::new(
+                        worth_foundational::EquivalenceBasisId::new(401),
+                    ),
+                ),
             ),
-        )),
+        ),
         worth_foundational::FoundationalDiagnosticOutcomeKind::Partial,
         labels(["support"]),
         worth_foundational::FoundationalDiagnosticSupportEvidencePosture::Present(
@@ -144,16 +168,20 @@ fn family_distinct_rows_stay_blind_consumer_interpretable() {
         scope("diagnostics.provenance"),
         worth_foundational::FoundationalDiagnosticSeverity::Info,
         foundational_diagnostic_branch_discard_subject(branch("feature")),
-        foundational_diagnostic_locator_boundary_artifact(worth_foundational::BoundaryArtifactLocator::new(
-            worth_foundational::BoundaryArtifactId::new(77),
-            worth_foundational::BoundaryArtifactField::Basis,
-        )),
+        foundational_diagnostic_locator_boundary_artifact(
+            worth_foundational::BoundaryArtifactLocator::new(
+                worth_foundational::BoundaryArtifactId::new(77),
+                worth_foundational::BoundaryArtifactField::Basis,
+            ),
+        ),
         worth_foundational::FoundationalDiagnosticOutcomeKind::Deferred,
         labels(["provenance"]),
-        foundational_diagnostic_locator_boundary_artifact(worth_foundational::BoundaryArtifactLocator::new(
-            worth_foundational::BoundaryArtifactId::new(77),
-            worth_foundational::BoundaryArtifactField::Proofs,
-        )),
+        foundational_diagnostic_locator_boundary_artifact(
+            worth_foundational::BoundaryArtifactLocator::new(
+                worth_foundational::BoundaryArtifactId::new(77),
+                worth_foundational::BoundaryArtifactField::Proofs,
+            ),
+        ),
         worth_foundational::FoundationalDiagnosticEvidencePosture::Reconstructed,
     );
 
@@ -165,13 +193,22 @@ fn family_distinct_rows_stay_blind_consumer_interpretable() {
         worth_foundational::FoundationalDiagnosticRow::ProvenanceReady(provenance.clone()),
     ];
 
-    assert_eq!(rows[0].family(), worth_foundational::FoundationalDiagnosticRowFamily::Decision);
-    assert_eq!(rows[1].family(), worth_foundational::FoundationalDiagnosticRowFamily::Failure);
+    assert_eq!(
+        rows[0].family(),
+        worth_foundational::FoundationalDiagnosticRowFamily::Decision
+    );
+    assert_eq!(
+        rows[1].family(),
+        worth_foundational::FoundationalDiagnosticRowFamily::Failure
+    );
     assert_eq!(
         rows[2].family(),
         worth_foundational::FoundationalDiagnosticRowFamily::Comparison
     );
-    assert_eq!(rows[3].family(), worth_foundational::FoundationalDiagnosticRowFamily::Support);
+    assert_eq!(
+        rows[3].family(),
+        worth_foundational::FoundationalDiagnosticRowFamily::Support
+    );
     assert_eq!(
         rows[4].family(),
         worth_foundational::FoundationalDiagnosticRowFamily::ProvenanceReady
@@ -207,10 +244,12 @@ fn omitted_support_rows_are_construction_bugs_not_implied_denials() {
         scope("diagnostics.support"),
         worth_foundational::FoundationalDiagnosticSeverity::Failure,
         foundational_diagnostic_committed_authority_subject(commit(91)),
-        foundational_diagnostic_locator_boundary_artifact(worth_foundational::BoundaryArtifactLocator::new(
-            worth_foundational::BoundaryArtifactId::new(91),
-            worth_foundational::BoundaryArtifactField::Payload,
-        )),
+        foundational_diagnostic_locator_boundary_artifact(
+            worth_foundational::BoundaryArtifactLocator::new(
+                worth_foundational::BoundaryArtifactId::new(91),
+                worth_foundational::BoundaryArtifactField::Payload,
+            ),
+        ),
         worth_foundational::FoundationalDiagnosticOutcomeKind::Violation,
         labels(["support", "omission"]),
         worth_foundational::FoundationalDiagnosticSupportEvidencePosture::OmittedConstructionBug(
@@ -225,10 +264,12 @@ fn omitted_support_rows_are_construction_bugs_not_implied_denials() {
         scope("diagnostics.support"),
         worth_foundational::FoundationalDiagnosticSeverity::Advisory,
         foundational_diagnostic_committed_authority_subject(commit(91)),
-        foundational_diagnostic_locator_boundary_artifact(worth_foundational::BoundaryArtifactLocator::new(
-            worth_foundational::BoundaryArtifactId::new(91),
-            worth_foundational::BoundaryArtifactField::Payload,
-        )),
+        foundational_diagnostic_locator_boundary_artifact(
+            worth_foundational::BoundaryArtifactLocator::new(
+                worth_foundational::BoundaryArtifactId::new(91),
+                worth_foundational::BoundaryArtifactField::Payload,
+            ),
+        ),
         worth_foundational::FoundationalDiagnosticOutcomeKind::Unsupported,
         labels(["support", "absence"]),
         worth_foundational::FoundationalDiagnosticSupportEvidencePosture::Absent(
@@ -244,46 +285,58 @@ fn omitted_support_rows_are_construction_bugs_not_implied_denials() {
 #[test]
 fn canonical_row_order_is_stable_across_input_order() {
     let mut rows = vec![
-        worth_foundational::FoundationalDiagnosticRow::Support(worth_foundational::FoundationalDiagnosticSupportRow::new(
-            code("zeta"),
-            scope("diagnostics.support"),
-            worth_foundational::FoundationalDiagnosticSeverity::Advisory,
-            foundational_diagnostic_committed_authority_subject(commit(5)),
-            foundational_diagnostic_locator_boundary_artifact(worth_foundational::BoundaryArtifactLocator::new(
-                worth_foundational::BoundaryArtifactId::new(5),
-                worth_foundational::BoundaryArtifactField::Payload,
-            )),
-            worth_foundational::FoundationalDiagnosticOutcomeKind::Partial,
-            labels(["zeta"]),
-            worth_foundational::FoundationalDiagnosticSupportEvidencePosture::Absent(
-                worth_foundational::FoundationalDiagnosticAbsenceCause::Redacted,
-            ),
-            worth_foundational::FoundationalDiagnosticLocalityClaim::ExactSubject,
-            worth_foundational::FoundationalDiagnosticWidenedFalloutPosture::NotWidened,
-        )),
-        worth_foundational::FoundationalDiagnosticRow::Decision(worth_foundational::FoundationalDiagnosticDecisionRow::new(
-            code("alpha"),
-            scope("diagnostics.decision"),
-            worth_foundational::FoundationalDiagnosticSeverity::Info,
-            foundational_diagnostic_branch_candidate_subject(branch("feature"), candidate(1)),
-            foundational_diagnostic_locator_transition(
-                worth_foundational::FoundationalTransitionLocator::BranchCandidate(
-                    worth_foundational::FoundationalBranchCandidateLocator::new(
-                        branch("feature"),
-                        candidate(1),
+        worth_foundational::FoundationalDiagnosticRow::Support(
+            worth_foundational::FoundationalDiagnosticSupportRow::new(
+                code("zeta"),
+                scope("diagnostics.support"),
+                worth_foundational::FoundationalDiagnosticSeverity::Advisory,
+                foundational_diagnostic_committed_authority_subject(commit(5)),
+                foundational_diagnostic_locator_boundary_artifact(
+                    worth_foundational::BoundaryArtifactLocator::new(
+                        worth_foundational::BoundaryArtifactId::new(5),
+                        worth_foundational::BoundaryArtifactField::Payload,
                     ),
                 ),
+                worth_foundational::FoundationalDiagnosticOutcomeKind::Partial,
+                labels(["zeta"]),
+                worth_foundational::FoundationalDiagnosticSupportEvidencePosture::Absent(
+                    worth_foundational::FoundationalDiagnosticAbsenceCause::Redacted,
+                ),
+                worth_foundational::FoundationalDiagnosticLocalityClaim::ExactSubject,
+                worth_foundational::FoundationalDiagnosticWidenedFalloutPosture::NotWidened,
             ),
-            worth_foundational::FoundationalDiagnosticOutcomeKind::Accepted,
-            labels(["alpha"]),
-            Some(worth_foundational::FoundationalDiagnosticDenialClass::DomainDenied),
-            worth_foundational::FoundationalDiagnosticLocalityClaim::ExactSubject,
-            worth_foundational::FoundationalDiagnosticWidenedFalloutPosture::NotWidened,
-        )),
+        ),
+        worth_foundational::FoundationalDiagnosticRow::Decision(
+            worth_foundational::FoundationalDiagnosticDecisionRow::new(
+                code("alpha"),
+                scope("diagnostics.decision"),
+                worth_foundational::FoundationalDiagnosticSeverity::Info,
+                foundational_diagnostic_branch_candidate_subject(branch("feature"), candidate(1)),
+                foundational_diagnostic_locator_transition(
+                    worth_foundational::FoundationalTransitionLocator::BranchCandidate(
+                        worth_foundational::FoundationalBranchCandidateLocator::new(
+                            branch("feature"),
+                            candidate(1),
+                        ),
+                    ),
+                ),
+                worth_foundational::FoundationalDiagnosticOutcomeKind::Accepted,
+                labels(["alpha"]),
+                Some(worth_foundational::FoundationalDiagnosticDenialClass::DomainDenied),
+                worth_foundational::FoundationalDiagnosticLocalityClaim::ExactSubject,
+                worth_foundational::FoundationalDiagnosticWidenedFalloutPosture::NotWidened,
+            ),
+        ),
     ];
 
     sort_foundational_diagnostic_rows(&mut rows);
 
-    assert_eq!(rows[0].family(), worth_foundational::FoundationalDiagnosticRowFamily::Decision);
-    assert_eq!(rows[1].family(), worth_foundational::FoundationalDiagnosticRowFamily::Support);
+    assert_eq!(
+        rows[0].family(),
+        worth_foundational::FoundationalDiagnosticRowFamily::Decision
+    );
+    assert_eq!(
+        rows[1].family(),
+        worth_foundational::FoundationalDiagnosticRowFamily::Support
+    );
 }

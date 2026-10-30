@@ -1,5 +1,5 @@
 error[E0624]: associated function `admit` is private
- --> tests/ui/subscription_consumer_contract_constructor_private.rs:4:60
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_consumer_contract_constructor_private.rs:4:60
   |
 4 |       let _constructor = BridgeSubscriptionConsumerContract::admit;
   |                                                              ^^^^^ private associated function

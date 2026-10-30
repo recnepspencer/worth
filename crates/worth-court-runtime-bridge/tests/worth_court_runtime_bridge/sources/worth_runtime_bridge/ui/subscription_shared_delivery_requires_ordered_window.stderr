@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/subscription_shared_delivery_requires_ordered_window.rs:14:64
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_shared_delivery_requires_ordered_window.rs:14:64
    |
 14 |     let _ = runtime.plan_shared_subscription_delivery(&active, &ordering, &fanout_layout);
    |                     ---------------------------------          ^^^^^^^^^ expected `&BridgeMixedCauseDeliveryWindowPlan`, found `&BridgeMixedCauseOrdering`

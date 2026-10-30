@@ -1,11 +1,18 @@
-#[allow(unused_imports)] use crate::certification::ordinary_context::transitions::branch_reference::*;
-use {serde::Deserialize, serde::Serialize};
-use {worth_foundational::FoundationalBranchComparisonBasis, worth_foundational::FoundationalBranchForkBasis, worth_foundational::FoundationalBranchId, worth_foundational::FoundationalBranchReferenceGeneration, worth_foundational::FoundationalBranchReferenceGenerationAdvanceDenial, worth_foundational::FoundationalBranchReferenceMismatchAxis, worth_foundational::FoundationalBranchReferenceMovement, worth_foundational::FoundationalBranchReferenceMovementKind, worth_foundational::FoundationalBranchReferenceObservation, worth_foundational::FoundationalBranchTarget, worth_foundational::FoundationalBranchTargetBasis, worth_foundational::FoundationalBranchTargetEncoding, worth_foundational::FoundationalBranchTargetEncodingConstructionDenial};
+#[allow(unused_imports)]
+use crate::certification::ordinary_context::transitions::branch_reference::*;
+use {
+    worth_foundational::FoundationalBranchId,
+    worth_foundational::FoundationalBranchReferenceObservation,
+    worth_foundational::FoundationalBranchTarget,
+    worth_foundational::FoundationalBranchTargetEncoding,
+};
 
 #[test]
 fn target_keeps_empty_and_basis_as_explicit_distinct_variants() {
-    let empty: FoundationalBranchTarget<RelationalTarget> = worth_foundational::FoundationalBranchTarget::empty();
-    let basis = worth_foundational::FoundationalBranchTarget::basis(relational_target("runtime-a", 4, 9));
+    let empty: FoundationalBranchTarget<RelationalTarget> =
+        worth_foundational::FoundationalBranchTarget::empty();
+    let basis =
+        worth_foundational::FoundationalBranchTarget::basis(relational_target("runtime-a", 4, 9));
 
     assert!(empty.is_empty());
     assert!(empty.as_basis().is_none());
@@ -99,7 +106,11 @@ fn mismatch_reports_all_structural_axes_in_deterministic_order() {
         worth_foundational::FoundationalBranchTarget::basis(relational_target("runtime-a", 4, 9)),
         2,
     );
-    let observed = relational_observation("maintenance", worth_foundational::FoundationalBranchTarget::Empty, 3);
+    let observed = relational_observation(
+        "maintenance",
+        worth_foundational::FoundationalBranchTarget::Empty,
+        3,
+    );
 
     let mismatch = expected.compare(&observed).expect_err("three axes differ");
     assert_eq!(
@@ -132,7 +143,11 @@ fn generation_advancement_is_checked_and_never_wraps() {
 
 #[test]
 fn canonical_encoding_is_versioned_variant_tagged_and_round_trips() {
-    let empty = relational_observation("storm", worth_foundational::FoundationalBranchTarget::empty(), 3);
+    let empty = relational_observation(
+        "storm",
+        worth_foundational::FoundationalBranchTarget::empty(),
+        3,
+    );
     assert_eq!(
         empty.canonical_encoding(),
         hex_bytes("574f5254482d4252414e43482d5245464552454e43450001000000000000000573746f726d000000000000000003")

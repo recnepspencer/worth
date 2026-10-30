@@ -1,5 +1,5 @@
 error[E0603]: module `merge` is private
- --> tests/ui/merge/identity_scoped_merge_plan_private.rs:1:23
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/merge/identity_scoped_merge_plan_private.rs:1:23
   |
 1 | use worth_relational::merge::data::IdentityScopedMergePlan;
   |                       ^^^^^  ---- module `data` is not publicly re-exported

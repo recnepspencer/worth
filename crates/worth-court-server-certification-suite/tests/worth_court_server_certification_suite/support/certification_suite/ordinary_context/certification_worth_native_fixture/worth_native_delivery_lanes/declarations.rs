@@ -1,7 +1,23 @@
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_server::WorthServer, worth_server::WorthServerDirectDeliveryClass, worth_server::WorthServerDirectDeliveryRequest, worth_server::WorthServerDirectFreshnessMode, worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerQueryRequestedResume, worth_server::WorthServerResponseInput, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_server::WorthServer, worth_server::WorthServerDirectDeliveryClass,
+    worth_server::WorthServerDirectDeliveryRequest, worth_server::WorthServerDirectFreshnessMode,
+    worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryHandoffInput,
+    worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerQueryRequestedResume,
+    worth_server::WorthServerResponseInput, worth_server::WorthServerSurfaceFamily,
+    worth_server::WorthServerTransportClass,
+};
 
-pub(crate) use {crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle, crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationOutputDigest as Output, worth_testkit_server::shared_support_query_handoff_fixture::admit_delivery_posture, worth_testkit_server::shared_support_query_handoff_fixture::request_input, worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context, worth_testkit_server::shared_support_query_handoff_fixture::success, worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read, worth_testkit_server::shared_support_worth_native_assertions::operator_evidence_record};
+pub(crate) use {
+    crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle,
+    crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationOutputDigest as Output,
+    worth_testkit_server::shared_support_query_handoff_fixture::admit_delivery_posture,
+    worth_testkit_server::shared_support_query_handoff_fixture::request_input,
+    worth_testkit_server::shared_support_query_handoff_fixture::resolve_request_context,
+    worth_testkit_server::shared_support_query_handoff_fixture::success,
+    worth_testkit_server::shared_support_worth_native_assertions::admitted_named_read,
+    worth_testkit_server::shared_support_worth_native_assertions::operator_evidence_record,
+};
 
 pub(crate) use {crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::direct_bundle, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::direct_delivery_denied, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::direct_delivery_success, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::direct_lease_success, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::request_context_digest, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::support_posture_digest, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::worth_native_session_for_branch, crate::certification_suite::ordinary_context::certification_worth_native_fixture::worth_native_common::worth_native_session_for_target};
 
@@ -56,8 +72,9 @@ pub(crate) fn compatibility_runtime_backed_delivery_bundle(
     let session = worth_native_session_for_branch(server, None);
     let declaration = admitted_named_read(&session, operation_name);
     let lease = direct_lease_success(session.direct().declare_lease(&declaration));
-    let requested_resume =
-        worth_server::WorthServerQueryRequestedResume::runtime_backed(Some(lease.resume_basis_digest()));
+    let requested_resume = worth_server::WorthServerQueryRequestedResume::runtime_backed(Some(
+        lease.resume_basis_digest(),
+    ));
     let request = delivery_request(requested_resume.clone());
     let request_context = resolve_request_context(
         server,
@@ -67,19 +84,17 @@ pub(crate) fn compatibility_runtime_backed_delivery_bundle(
         ),
     );
     let request_context_digest_value = request_context_digest(request_context.request_context());
-    let handoff = success(
-        server
-            .query_handoff()
-            .prepare(worth_server::WorthServerQueryHandoffInput::new(
-                admit_delivery_posture(server, request_context, lease.resume_basis_digest()),
-                worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
-                    operation_name,
-                    request.freshness_mode(),
-                    request.delivery_class(),
-                    requested_resume,
-                ),
-            )),
-    );
+    let handoff = success(server.query_handoff().prepare(
+        worth_server::WorthServerQueryHandoffInput::new(
+            admit_delivery_posture(server, request_context, lease.resume_basis_digest()),
+            worth_server::WorthServerQueryHandoffOperation::downstream_delivery(
+                operation_name,
+                request.freshness_mode(),
+                request.delivery_class(),
+                requested_resume,
+            ),
+        ),
+    ));
     let branch_digest = handoff
         .admission()
         .request_context()
@@ -96,9 +111,9 @@ pub(crate) fn compatibility_runtime_backed_delivery_bundle(
         .downstream_delivery_contract()
         .contract_for_reporting()
         .to_string();
-    let response = server
-        .responses()
-        .shape_with_defaults(worth_server::WorthServerResponseInput::query_handoff_success(handoff));
+    let response = server.responses().shape_with_defaults(
+        worth_server::WorthServerResponseInput::query_handoff_success(handoff),
+    );
     crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle::from_response_and_evidence(
         request_context_digest_value,
         response.clone(),
@@ -173,9 +188,9 @@ pub(crate) fn runtime_backed_missing_basis_denial_bundle(
     let session = worth_native_session_for_branch(server, None);
     let declaration = admitted_named_read(&session, operation_name);
     let lease = direct_lease_success(session.direct().declare_lease(&declaration));
-    let request = delivery_request(worth_server::WorthServerQueryRequestedResume::runtime_backed(
-        None::<String>,
-    ));
+    let request = delivery_request(
+        worth_server::WorthServerQueryRequestedResume::runtime_backed(None::<String>),
+    );
     let denial = direct_delivery_denied(session.direct().negotiate_delivery(&lease, &request));
     denial_bundle(
         server,
@@ -193,9 +208,9 @@ pub(crate) fn runtime_backed_stale_basis_denial_bundle(
     let session = worth_native_session_for_branch(server, None);
     let declaration = admitted_named_read(&session, operation_name);
     let lease = direct_lease_success(session.direct().declare_lease(&declaration));
-    let request = delivery_request(worth_server::WorthServerQueryRequestedResume::runtime_backed(Some(
-        "basis:drifted",
-    )));
+    let request = delivery_request(
+        worth_server::WorthServerQueryRequestedResume::runtime_backed(Some("basis:drifted")),
+    );
     let denial = direct_delivery_denied(session.direct().negotiate_delivery(&lease, &request));
     denial_bundle(
         server,
@@ -298,9 +313,11 @@ pub(crate) fn delivery_request(
 }
 
 pub(crate) fn runtime_backed_request(basis_digest: &str) -> WorthServerDirectDeliveryRequest {
-    delivery_request(worth_server::WorthServerQueryRequestedResume::runtime_backed(Some(
-        basis_digest.to_string(),
-    )))
+    delivery_request(
+        worth_server::WorthServerQueryRequestedResume::runtime_backed(Some(
+            basis_digest.to_string(),
+        )),
+    )
 }
 
 pub(crate) fn resume_mode_label(request: &WorthServerDirectDeliveryRequest) -> &'static str {

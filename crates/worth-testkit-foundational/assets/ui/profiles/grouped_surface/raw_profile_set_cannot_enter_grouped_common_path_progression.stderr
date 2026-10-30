@@ -1,15 +1,15 @@
 error[E0308]: mismatched types
-  --> tests/ui/profiles/grouped_surface/raw_profile_set_cannot_enter_grouped_common_path_progression.rs:24:62
-   |
-24 |     let _ = common_path::profiles().progression().admit_same(profile);
-   |                                                   ---------- ^^^^^^^ expected `Artifact<..., ...>`, found `FoundationalProfileSet`
-   |                                                   |
-   |                                                   arguments to this method are incorrect
-   |
-   = note: expected struct `worth_proof::artifact::carrier::Artifact<RequestedFoundationalProfilePhase, RequestedFoundationalProfileSet>`
-              found struct `FoundationalProfileSet`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/profiles/grouped_surface/raw_profile_set_cannot_enter_grouped_common_path_progression.rs
+  |
+  |     let _ = common_path::profiles().progression().admit_same(profile);
+  |                                                   ---------- ^^^^^^^ expected `Artifact<..., ...>`, found `FoundationalProfileSet`
+  |                                                   |
+  |                                                   arguments to this method are incorrect
+  |
+  = note: expected struct `worth_proof::artifact::carrier::Artifact<RequestedFoundationalProfilePhase, RequestedFoundationalProfileSet>`
+             found struct `FoundationalProfileSet`
 note: method defined here
-  --> src/profiles/front_doors/progression.rs
-   |
-   |     pub fn admit_same(
-   |            ^^^^^^^^^^
+ --> $WORKSPACE/crates/worth-foundational/src/profiles/front_doors/progression.rs
+  |
+  |     pub fn admit_same(
+  |            ^^^^^^^^^^

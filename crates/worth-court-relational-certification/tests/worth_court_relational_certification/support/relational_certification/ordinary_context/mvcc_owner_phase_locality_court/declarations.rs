@@ -1,9 +1,9 @@
-pub(crate) use {std::collections::BTreeSet};
+pub(crate) use std::collections::BTreeSet;
+pub(crate) use std::time::Duration;
+pub(crate) use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 pub(crate) use {std::sync::atomic::AtomicBool, std::sync::atomic::Ordering};
 pub(crate) use {std::sync::mpsc::sync_channel, std::sync::mpsc::RecvTimeoutError};
 pub(crate) use {std::sync::Arc, std::sync::Barrier};
-pub(crate) use {std::time::Duration};
-pub(crate) use {worth_execution::ExecutionAllocationPolicy as AllocationPolicy};
 
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::invariant_oracle_expectations::expected_supply_chain_branch};
 pub(crate) use {worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch_with_result, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::comparison::compare, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::fork_supply_chain_branch_from_main, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::head_for_supply_chain_branch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::observation::observe_snapshot as observe_supply_chain_snapshot, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::semantic_key::BranchLabel, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::production_world::ProductionSeededSupplyChainWorld};
@@ -137,11 +137,12 @@ impl OwnerPhasePause {
         &self,
         boundary: RelationalInterruptionBoundary,
     ) -> RelationalOperationControl {
-        worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted().with_boundary_pause_for_test(
-            boundary,
-            std::sync::Arc::clone(&self.reached),
-            std::sync::Arc::clone(&self.release),
-        )
+        worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted()
+            .with_boundary_pause_for_test(
+                boundary,
+                std::sync::Arc::clone(&self.reached),
+                std::sync::Arc::clone(&self.release),
+            )
     }
 
     pub(crate) fn await_arrival(&self, phase: &str) {
@@ -222,9 +223,6 @@ pub(crate) fn join_paused_worker<T: Send + 'static>(
     }
 }
 
-
-pub(crate) use {};
-
 /// Compare one court commit against the independent Supply Chain oracle and
 /// then close the exact snapshot it named, so a finished court leaves no open
 /// published-snapshot handle behind.
@@ -291,7 +289,10 @@ pub(crate) fn begin_court_transaction(
         )
         .expect("the controlled court transaction binds to its exact admitted basis");
     transaction
-        .push_batch(batch, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the lowered Supply Chain delta fits the configured transaction budget");
     transaction
 }

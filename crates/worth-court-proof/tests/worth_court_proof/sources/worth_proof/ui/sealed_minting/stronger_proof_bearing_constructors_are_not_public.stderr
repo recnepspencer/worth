@@ -1,5 +1,5 @@
 error[E0624]: associated function `mint` is private
-  --> tests/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:10:68
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:10:68
    |
 10 |     let proof = Proof::<CanonicalOrder, StructuralProofAuthority>::mint();
    |                                                                    ^^^^ private associated function
@@ -10,7 +10,7 @@ error[E0624]: associated function `mint` is private
    |     ---------------------------- private associated function defined here
 
 error[E0624]: associated function `with_state` is private
-  --> tests/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:12:52
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:12:52
    |
 12 |     let _artifact = Artifact::<RawPhase, _, _, _>::with_state(
    |                                                    ^^^^^^^^^^ private associated function
@@ -21,7 +21,7 @@ error[E0624]: associated function `with_state` is private
    |     ----------------------------------------------------------------- private associated function defined here
 
 error[E0624]: associated function `new` is private
-  --> tests/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:18:36
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:18:36
    |
 18 |     let _canonical = CanonicalVec::new(
    |                                    ^^^ private associated function
@@ -32,7 +32,7 @@ error[E0624]: associated function `new` is private
    |     -------------------------------------------------------------------- private associated function defined here
 
 error[E0624]: associated function `mint` is private
-  --> tests/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:20:60
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:20:60
    |
 20 |         Proof::<CanonicalOrder, StructuralProofAuthority>::mint(),
    |                                                            ^^^^ private associated function
@@ -43,7 +43,7 @@ error[E0624]: associated function `mint` is private
    |     ---------------------------- private associated function defined here
 
 error[E0624]: associated function `new` is private
-  --> tests/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:22:30
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:22:30
    |
 22 |     let _unique = UniqueVec::new(
    |                              ^^^ private associated function
@@ -54,7 +54,7 @@ error[E0624]: associated function `new` is private
    |     ---------------------------------------------------------------- private associated function defined here
 
 error[E0624]: associated function `mint` is private
-  --> tests/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:24:56
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:24:56
    |
 24 |         Proof::<Uniqueness, StructuralProofAuthority>::mint(),
    |                                                        ^^^^ private associated function
@@ -65,7 +65,7 @@ error[E0624]: associated function `mint` is private
    |     ---------------------------- private associated function defined here
 
 error[E0624]: associated function `new` is private
-  --> tests/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:26:35
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:26:35
    |
 26 |       let _disjoint = DisjointPair::new(
    |                                     ^^^ private associated function
@@ -80,7 +80,7 @@ error[E0624]: associated function `new` is private
    | |_____________- private associated function defined here
 
 error[E0624]: associated function `mint` is private
-  --> tests/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:29:58
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/stronger_proof_bearing_constructors_are_not_public.rs:29:58
    |
 29 |         Proof::<Disjointness, StructuralProofAuthority>::mint(),
    |                                                          ^^^^ private associated function

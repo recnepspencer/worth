@@ -1,5 +1,5 @@
 error: cannot construct `DeniedResourcePolicyRestoreCompatibility` with struct literal syntax due to private fields
-  --> tests/ui/denied_resource_policy_restore_compatibility_fields_are_private.rs:11:19
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/denied_resource_policy_restore_compatibility_fields_are_private.rs:11:19
    |
 11 |     let _denial = DeniedResourcePolicyRestoreCompatibility {
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

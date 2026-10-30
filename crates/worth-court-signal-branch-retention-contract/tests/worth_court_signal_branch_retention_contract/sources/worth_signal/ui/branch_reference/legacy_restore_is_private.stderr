@@ -1,11 +1,11 @@
 error[E0599]: no method named `restore_snapshot` found for mutable reference `&mut SignalRuntime<(), (), (), ()>` in the current scope
- --> tests/ui/branch_reference/legacy_restore_is_private.rs:7:21
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/legacy_restore_is_private.rs:7:21
   |
 7 |     let _ = runtime.restore_snapshot(snapshot);
   |                     ^^^^^^^^^^^^^^^^ method not found in `&mut SignalRuntime<(), (), (), ()>`
 
 error[E0624]: method `restore_branch_snapshot` is private
- --> tests/ui/branch_reference/legacy_restore_is_private.rs:8:21
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/legacy_restore_is_private.rs:8:21
   |
 8 |       let _ = runtime.restore_branch_snapshot(runtime.current_branch(), snapshot);
   |                       ^^^^^^^^^^^^^^^^^^^^^^^ private method

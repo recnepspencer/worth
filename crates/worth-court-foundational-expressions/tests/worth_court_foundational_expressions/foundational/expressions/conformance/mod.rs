@@ -1,13 +1,25 @@
 // V1 grammar conformance: every production parses to the documented shape,
 // and syntax outside the grammar is denied rather than implementation-defined.
-#[allow(unused_imports)] use crate::expressions::ordinary_context::conformance::*;
-pub(crate) use {worth_foundational::expression_api::expressions, worth_foundational::expression_api::ExpressionDenialDetail, worth_foundational::expression_api::ExpressionDenialFamily as Family, worth_foundational::expression_api::ExpressionOccurrence, worth_foundational::expression_api::ExpressionType, worth_foundational::expression_api::IntegerType, worth_foundational::expression_api::SourceOrigin, worth_foundational::expression_api::SyntaxDenial};
+#[allow(unused_imports)]
+use crate::expressions::ordinary_context::conformance::*;
+pub(crate) use {
+    worth_foundational::expression_api::expressions,
+    worth_foundational::expression_api::SourceOrigin,
+};
 
-pub(crate) use {crate::expressions::ordinary_context::admit, crate::expressions::ordinary_context::admitted_type, crate::expressions::ordinary_context::denied_family, crate::expressions::ordinary_context::length, crate::expressions::ordinary_context::nominal};
+pub(crate) use {
+    crate::expressions::ordinary_context::admit,
+    crate::expressions::ordinary_context::admitted_type,
+    crate::expressions::ordinary_context::denied_family,
+    crate::expressions::ordinary_context::length, crate::expressions::ordinary_context::nominal,
+};
 
 #[test]
 fn embedded_ui_slices_admit() {
-    assert_eq!(admitted_type("ready && !ready"), worth_foundational::expression_api::ExpressionType::Bool);
+    assert_eq!(
+        admitted_type("ready && !ready"),
+        worth_foundational::expression_api::ExpressionType::Bool
+    );
     assert_eq!(
         admitted_type(r#"label ?? "Nothing selected""#),
         worth_foundational::expression_api::ExpressionType::String
@@ -51,11 +63,19 @@ fn precedence_follows_the_grammar() {
 
 #[test]
 fn literals_cover_the_documented_forms() {
-    assert_eq!(admitted_type("0x7f + count"), worth_foundational::expression_api::ExpressionType::INT64);
-    assert_eq!(admitted_type("1.5e3 + width"), worth_foundational::expression_api::ExpressionType::Float64);
+    assert_eq!(
+        admitted_type("0x7f + count"),
+        worth_foundational::expression_api::ExpressionType::INT64
+    );
+    assert_eq!(
+        admitted_type("1.5e3 + width"),
+        worth_foundational::expression_api::ExpressionType::Float64
+    );
     assert_eq!(
         admitted_type("int64(-9223372036854775808)"),
-        worth_foundational::expression_api::ExpressionType::Integer(worth_foundational::expression_api::IntegerType::Int64)
+        worth_foundational::expression_api::ExpressionType::Integer(
+            worth_foundational::expression_api::IntegerType::Int64
+        )
     );
     assert_eq!(
         admitted_type(r#""tab\t\u{1F600}\"" == "x""#),
@@ -65,18 +85,30 @@ fn literals_cover_the_documented_forms() {
         admitted_type(r#"decimal("12.50")"#),
         worth_foundational::expression_api::ExpressionType::Decimal
     );
-    assert_eq!(admitted_type(r#"bytes("00ff")"#), worth_foundational::expression_api::ExpressionType::Bytes);
+    assert_eq!(
+        admitted_type(r#"bytes("00ff")"#),
+        worth_foundational::expression_api::ExpressionType::Bytes
+    );
     assert_eq!(
         admitted_type(r#"logic4("01XZ")"#),
         worth_foundational::expression_api::ExpressionType::Logic4(4)
     );
-    assert_eq!(admitted_type("float32(1.5)"), worth_foundational::expression_api::ExpressionType::Float32);
+    assert_eq!(
+        admitted_type("float32(1.5)"),
+        worth_foundational::expression_api::ExpressionType::Float32
+    );
     assert_eq!(
         admitted_type("width // a comment\n + 1.0"),
         worth_foundational::expression_api::ExpressionType::Float64
     );
-    assert_eq!(syntax_denial(r#""\q""#), worth_foundational::expression_api::SyntaxDenial::InvalidEscape);
-    assert_eq!(syntax_denial(r#""open"#), worth_foundational::expression_api::SyntaxDenial::UnterminatedString);
+    assert_eq!(
+        syntax_denial(r#""\q""#),
+        worth_foundational::expression_api::SyntaxDenial::InvalidEscape
+    );
+    assert_eq!(
+        syntax_denial(r#""open"#),
+        worth_foundational::expression_api::SyntaxDenial::UnterminatedString
+    );
     assert_eq!(
         syntax_denial("width $ depth"),
         worth_foundational::expression_api::SyntaxDenial::UnexpectedCharacter('$')
@@ -87,11 +119,16 @@ fn literals_cover_the_documented_forms() {
 fn collections_records_and_options_have_literal_forms() {
     assert_eq!(
         admitted_type("[1.0, 2.0, 3.0,]"),
-        worth_foundational::expression_api::ExpressionType::list(worth_foundational::expression_api::ExpressionType::Float64)
+        worth_foundational::expression_api::ExpressionType::list(
+            worth_foundational::expression_api::ExpressionType::Float64
+        )
     );
     assert_eq!(
         admitted_type(r#"{"a": 1.0, "b": 2.0}"#),
-        worth_foundational::expression_api::ExpressionType::map(worth_foundational::expression_api::ExpressionType::String, worth_foundational::expression_api::ExpressionType::Float64)
+        worth_foundational::expression_api::ExpressionType::map(
+            worth_foundational::expression_api::ExpressionType::String,
+            worth_foundational::expression_api::ExpressionType::Float64
+        )
     );
     assert_eq!(
         admitted_type("none<Float64> ?? width"),
@@ -107,7 +144,10 @@ fn collections_records_and_options_have_literal_forms() {
         denied_family("Frame { thickness: quantity(1.0, mm) }"),
         worth_foundational::expression_api::ExpressionDenialFamily::MissingOperand
     );
-    assert_eq!(denied_family("[1.0, \"two\"]"), worth_foundational::expression_api::ExpressionDenialFamily::TypeMismatch);
+    assert_eq!(
+        denied_family("[1.0, \"two\"]"),
+        worth_foundational::expression_api::ExpressionDenialFamily::TypeMismatch
+    );
 }
 
 #[test]
@@ -123,7 +163,9 @@ fn record_field_order_is_schema_order() {
 fn diagnostics_carry_source_spans_not_meaning() {
     let denial = admit("width + ready").expect_err("Float64 + Bool is denied");
     match denial.occurrence() {
-        Some(worth_foundational::expression_api::ExpressionOccurrence::Source(span)) => assert!(span.start() < span.end()),
+        Some(worth_foundational::expression_api::ExpressionOccurrence::Source(span)) => {
+            assert!(span.start() < span.end())
+        }
         other => panic!("expected a source span, found {other:?}"),
     }
     let admitted = admit("width * 2.0").expect("admits");

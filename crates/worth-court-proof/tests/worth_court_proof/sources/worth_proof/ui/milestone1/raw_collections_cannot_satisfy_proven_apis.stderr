@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs:10:21
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs:10:21
    |
 10 |     takes_non_empty(raw.clone());
    |     --------------- ^^^^^^^^^^^ expected `NonEmpty<u8>`, found `Vec<u8>`
@@ -9,13 +9,13 @@ error[E0308]: mismatched types
    = note: expected struct `NonEmpty<u8>`
               found struct `Vec<u8>`
 note: function defined here
-  --> tests/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs:3:4
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs:3:4
    |
  3 | fn takes_non_empty(_: NonEmpty<u8>) {}
    |    ^^^^^^^^^^^^^^^ ---------------
 
 error[E0308]: mismatched types
-  --> tests/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs:11:21
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs:11:21
    |
 11 |     takes_canonical(raw);
    |     --------------- ^^^ expected `CanonicalVec<u8>`, found `Vec<u8>`
@@ -25,7 +25,7 @@ error[E0308]: mismatched types
    = note: expected struct `CanonicalVec<u8>`
               found struct `Vec<u8>`
 note: function defined here
-  --> tests/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs:5:4
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone1/raw_collections_cannot_satisfy_proven_apis.rs:5:4
    |
  5 | fn takes_canonical(_: CanonicalVec<u8>) {}
    |    ^^^^^^^^^^^^^^^ -------------------

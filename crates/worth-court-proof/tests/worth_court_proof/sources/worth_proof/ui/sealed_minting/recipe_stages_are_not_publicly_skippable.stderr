@@ -1,5 +1,5 @@
 error[E0599]: no method named `admit_with_authority` found for struct `Recipe<worth_proof::Unresolved, &str>` in the current scope
-  --> tests/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs:24:31
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs:24:31
    |
 24 |     let _skipped = unresolved.admit_with_authority(admission_authority);
    |                               ^^^^^^^^^^^^^^^^^^^^
@@ -17,7 +17,7 @@ help: there is a method `resolve_with_authority` with a similar name, but with d
    | |______________________________^
 
 error[E0599]: no method named `admit_with_authority` found for struct `Recipe<worth_proof::Resolved, &str, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<u8>>>` in the current scope
-  --> tests/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs:25:34
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs:25:34
    |
 25 |     let _also_skipped = resolved.admit_with_authority(second_admission_authority);
    |                                  ^^^^^^^^^^^^^^^^^^^^ method not found in `Recipe<worth_proof::Resolved, &str, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<u8>>>`
@@ -26,7 +26,7 @@ error[E0599]: no method named `admit_with_authority` found for struct `Recipe<wo
            - `Recipe<worth_proof::Lowered, T, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<B>>>`
 
 error[E0624]: associated function `with_stage` is private
-  --> tests/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs:28:35
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs:28:35
    |
 28 |         Recipe::<Resolved, _, _>::with_stage("payload", AssumptionBasis::new(1_u8));
    |                                   ^^^^^^^^^^ private associated function
@@ -37,7 +37,7 @@ error[E0624]: associated function `with_stage` is private
    |     ------------------------------------------------------ private associated function defined here
 
 error[E0624]: associated function `with_stage` is private
-  --> tests/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs:30:34
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs:30:34
    |
 30 |         Recipe::<Lowered, _, _>::with_stage("payload", AssumptionBasis::new(1_u8));
    |                                  ^^^^^^^^^^ private associated function
@@ -48,7 +48,7 @@ error[E0624]: associated function `with_stage` is private
    |     ------------------------------------------------------ private associated function defined here
 
 error[E0624]: associated function `with_stage` is private
-  --> tests/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs:32:35
+  --> tests/worth_court_proof/sources/worth_proof/ui/sealed_minting/recipe_stages_are_not_publicly_skippable.rs:32:35
    |
 32 |         Recipe::<Admitted, _, _>::with_stage("payload", AssumptionBasis::new(1_u8));
    |                                   ^^^^^^^^^^ private associated function

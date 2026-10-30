@@ -1,5 +1,3 @@
-use std::sync::atomic::Ordering;
-
 use {
     crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains,
     crate::shared_support_compat_http_phase_thirteen_runtime::canonical_download_success,

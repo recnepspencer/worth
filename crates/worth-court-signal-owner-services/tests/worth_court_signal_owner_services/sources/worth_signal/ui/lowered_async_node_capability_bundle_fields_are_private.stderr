@@ -1,5 +1,5 @@
 error[E0451]: fields `node`, `payload_contract_digest` and `lowered` of struct `LoweredAsyncNodeCapabilityBundle` are private
-  --> tests/ui/lowered_async_node_capability_bundle_fields_are_private.rs:12:9
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/lowered_async_node_capability_bundle_fields_are_private.rs:12:9
    |
 11 |     let _bundle = LoweredAsyncNodeCapabilityBundle {
    |                   -------------------------------- in this type

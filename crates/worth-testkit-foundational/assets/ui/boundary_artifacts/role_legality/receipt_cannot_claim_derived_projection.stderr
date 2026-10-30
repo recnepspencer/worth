@@ -1,13 +1,13 @@
 error[E0277]: the trait bound `ReceiptCategory: worth_foundational::boundary_artifacts::roles::FoundationalDerivedProjectionCategory` is not satisfied
- --> tests/ui/boundary_artifacts/role_legality/receipt_cannot_claim_derived_projection.rs:7:55
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/role_legality/receipt_cannot_claim_derived_projection.rs
   |
-7 |     let _ = claim_derived_projection_boundary_surface(receipt);
+  |     let _ = claim_derived_projection_boundary_surface(receipt);
   |             ----------------------------------------- ^^^^^^^ the trait `worth_foundational::boundary_artifacts::roles::FoundationalDerivedProjectionCategory` is not implemented for `ReceiptCategory`
   |             |
   |             required by a bound introduced by this call
   |
 help: the following other types implement trait `worth_foundational::boundary_artifacts::roles::FoundationalDerivedProjectionCategory`
- --> src/boundary_artifacts/roles.rs
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/roles.rs
   |
   | impl FoundationalDerivedProjectionCategory for SummaryCategory {}
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `SummaryCategory`
@@ -16,7 +16,7 @@ help: the following other types implement trait `worth_foundational::boundary_ar
   | impl FoundationalDerivedProjectionCategory for ArtifactCategory {}
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `ArtifactCategory`
 note: required by a bound in `claim_derived_projection_boundary_surface`
- --> src/boundary_artifacts/roles.rs
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/roles.rs
   |
   | pub fn claim_derived_projection_boundary_surface<Surface>(
   |        ----------------------------------------- required by a bound in this function

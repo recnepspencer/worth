@@ -1,5 +1,5 @@
 error: cannot construct `BridgeSubscriptionOfflineAuditPlan` with struct literal syntax due to private fields
- --> tests/ui/subscription_offline_audit_plan_constructor_private.rs:4:17
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_offline_audit_plan_constructor_private.rs:4:17
   |
 4 |     let _plan = BridgeSubscriptionOfflineAuditPlan {
   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

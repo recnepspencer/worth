@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> tests/ui/writeback_diagnostics_lookup_requires_record_identity.rs:6:62
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_diagnostics_lookup_requires_record_identity.rs:6:62
   |
 6 |     let _ = diagnostics.writeback_replay_record_for_identity(sealed_authority_placeholder::<&str>());
   |                         ------------------------------------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&BridgeIdentity<...>`, found `&str`

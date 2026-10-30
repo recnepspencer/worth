@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/conditional_signal_basis_required.rs:14:9
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/conditional_signal_basis_required.rs:14:9
    |
 13 |     let _ = BridgeConditionalEvaluationAdmissionRequest::source_present_at_signal_basis(
    |             --------------------------------------------------------------------------- arguments to this function are incorrect
@@ -15,7 +15,7 @@ note: associated function defined here
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0308]: mismatched types
-  --> tests/ui/conditional_signal_basis_required.rs:16:60
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/conditional_signal_basis_required.rs:16:60
    |
 16 |     let _ = bridge.deliver_authoritative_change(execution, lowering, 0, patch);
    |                    ----------------------------            ^^^^^^^^ expected `&BridgeConditionalSignalBasisBinding`, found `&BridgeInstalledConditionalLowering`

@@ -1,28 +1,11 @@
 #[allow(unused_imports)]
 use crate::certification::ordinary_context::boundary_evidence::support::*;
-use worth_proof::TransitionOutcome;
 use {
-    worth_foundational::boundary_evidence, worth_foundational::boundary_evidence_api::common_path,
-    worth_foundational::boundary_evidence_api::lower_lane,
+    worth_foundational::boundary_evidence,
     worth_foundational::foundational_boundary_evidence_support_basis_disclosure_definitions,
     worth_foundational::foundational_boundary_evidence_support_recovery_posture_definitions,
     worth_foundational::foundational_boundary_evidence_support_residual_debt_kind_definitions,
     worth_foundational::foundational_boundary_evidence_support_truth_kind_definitions,
-    worth_foundational::BoundaryArtifactField, worth_foundational::BoundaryArtifactId,
-    worth_foundational::BoundaryArtifactLocator, worth_foundational::BoundaryHandle,
-    worth_foundational::FoundationalBoundaryEvidenceFreshnessPosture,
-    worth_foundational::FoundationalBoundaryEvidenceLineageSubject,
-    worth_foundational::FoundationalBoundaryEvidenceReceiptBoundary,
-    worth_foundational::FoundationalBoundaryEvidenceSourceBasis,
-    worth_foundational::FoundationalBoundaryEvidenceSupportBasisDisclosure,
-    worth_foundational::FoundationalBoundaryEvidenceSupportConstructionDenial,
-    worth_foundational::FoundationalBoundaryEvidenceSupportRecoveryPosture,
-    worth_foundational::FoundationalBoundaryEvidenceSupportResidualDebtKind,
-    worth_foundational::FoundationalBoundaryEvidenceSupportResidualDebtSet,
-    worth_foundational::FoundationalBoundaryEvidenceSupportTruthKind,
-    worth_foundational::FoundationalCommitId, worth_foundational::FoundationalCommitParentBasis,
-    worth_foundational::FoundationalCommitParentageLocator,
-    worth_foundational::FoundationalTransitionLocator,
 };
 
 #[test]

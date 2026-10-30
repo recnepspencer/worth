@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/subscription_temporal_activation_cannot_activate_ordinary_delivery.rs:12:52
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_temporal_activation_cannot_activate_ordinary_delivery.rs:12:52
    |
 12 |     let _ = runtime.activate_subscription_delivery(ready, cost_profile, consumer_contract);
    |                     ------------------------------ ^^^^^ expected `BridgeSubscriptionActivationReady`, found `BridgeTemporalSubscriptionActivationReady`

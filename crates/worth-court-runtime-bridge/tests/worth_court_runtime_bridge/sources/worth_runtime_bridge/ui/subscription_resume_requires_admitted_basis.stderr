@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/subscription_resume_requires_admitted_basis.rs:12:59
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_resume_requires_admitted_basis.rs:12:59
    |
 12 |     let _ = runtime.prepare_subscription_replay_readiness(&retained);
    |                     ------------------------------------- ^^^^^^^^^ expected `&AdmittedBridgeSubscriptionResumeBasis`, found `&BridgeRetainedSubscriptionResumeBasis`

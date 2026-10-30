@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `SnapshotHandle: serde::Deserialize<'de>` is not satisfied
- --> tests/ui/branch_reference/snapshot_handle_cannot_be_deserialized.rs:4:29
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/snapshot_handle_cannot_be_deserialized.rs:4:29
   |
 4 |     let _: SnapshotHandle = rmp_serde::from_slice(&[]).unwrap();
   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `serde_core::de::Deserialize<'_>` is not implemented for `SnapshotHandle`

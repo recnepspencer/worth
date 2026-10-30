@@ -1,17 +1,17 @@
 warning: unreachable statement
- --> tests/ui/transitions/readiness_boundaries/plain_transition_bundle_cannot_satisfy_transition_production_readiness.rs:8:5
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/readiness_boundaries/plain_transition_bundle_cannot_satisfy_transition_production_readiness.rs
   |
-7 |     let raw: worth_foundational::FoundationalTransitionBundle<&'static str> = panic!();
+  |     let raw: worth_foundational::FoundationalTransitionBundle<&'static str> = panic!();
   |                                                                               -------- any code following this expression is unreachable
-8 |     wants_transition_readiness(raw);
+  |     wants_transition_readiness(raw);
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable statement
   |
   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
 
 error[E0308]: mismatched types
- --> tests/ui/transitions/readiness_boundaries/plain_transition_bundle_cannot_satisfy_transition_production_readiness.rs:8:32
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/readiness_boundaries/plain_transition_bundle_cannot_satisfy_transition_production_readiness.rs
   |
-8 |     wants_transition_readiness(raw);
+  |     wants_transition_readiness(raw);
   |     -------------------------- ^^^ expected `Artifact<..., ..., ..., ...>`, found `FoundationalTransitionBundle<&str>`
   |     |
   |     arguments to this function are incorrect
@@ -19,9 +19,9 @@ error[E0308]: mismatched types
   = note: expected struct `worth_proof::artifact::carrier::Artifact<FoundationalTransitionProductionTestReady, FoundationalTransitionProductionReadinessReport, worth_proof::proof::sets::Proof<FoundationalTransitionProductionReadinessCertified, FoundationalTransitionProductionReadinessAuthority>, worth_proof::assumption::freshness::FreshnessScopedBasis<worth_proof::assumption::freshness::CurrentValidity, worth_proof::assumption::basis::AssumptionBasis<FoundationalTransitionProductionReadinessScope>>>`
              found struct `FoundationalTransitionBundle<&'static str>`
 note: function defined here
- --> tests/ui/transitions/readiness_boundaries/plain_transition_bundle_cannot_satisfy_transition_production_readiness.rs:1:4
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/readiness_boundaries/plain_transition_bundle_cannot_satisfy_transition_production_readiness.rs
   |
-1 | fn wants_transition_readiness(
+  | fn wants_transition_readiness(
   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^
-2 |     _value: worth_foundational::FoundationalTransitionProductionTestReadyArtifact,
+  |     _value: worth_foundational::FoundationalTransitionProductionTestReadyArtifact,
   |     -----------------------------------------------------------------------------

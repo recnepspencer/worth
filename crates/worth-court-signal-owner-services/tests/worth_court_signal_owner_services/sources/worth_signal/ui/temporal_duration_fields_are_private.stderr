@@ -1,5 +1,5 @@
 error[E0451]: fields `milliseconds` and `_tag` of struct `worth_signal::data::temporal::units::PositiveMilliseconds` are private
- --> tests/ui/temporal_duration_fields_are_private.rs:5:9
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/temporal_duration_fields_are_private.rs:5:9
   |
 4 |     let _duration = TemporalDuration {
   |                     ---------------- in this type

@@ -1,5 +1,5 @@
 error[E0624]: associated function `new` is private
- --> tests/ui/patch_target_coordinate_constructor_private.rs:6:52
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/patch_target_coordinate_constructor_private.rs:6:52
   |
 6 |       let _coordinate = BridgePatchTargetCoordinate::new(
   |                                                      ^^^ private associated function

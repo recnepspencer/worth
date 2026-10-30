@@ -1,4 +1,7 @@
-use {worth_foundational::aspect_mask_digest_preparation_basis, worth_foundational::AspectMask, worth_foundational::CanonicalDigestMaskMode, worth_foundational::CanonicalDigestPreparationEntry, worth_foundational::CanonicalFieldPath, worth_foundational::MutationMask, worth_foundational::ProjectionMask};
+use {
+    worth_foundational::aspect_mask_digest_preparation_basis, worth_foundational::AspectMask,
+    worth_foundational::MutationMask, worth_foundational::ProjectionMask,
+};
 
 use {crate::certification::ordinary_context::canonicalization::digest_preparation::readiness_fixtures::ready_mask};
 use {worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::field, worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::key};
@@ -54,9 +57,11 @@ fn whole_aspect_mask_digest_preparation_basis_is_not_confused_with_empty_field_p
 
     assert_eq!(
         aspect_mask_digest_preparation_basis(&ready),
-        &[worth_foundational::CanonicalDigestPreparationEntry::MaskWholeAspect {
-            key: key("task.summary"),
-            mode: worth_foundational::CanonicalDigestMaskMode::Projection,
-        }]
+        &[
+            worth_foundational::CanonicalDigestPreparationEntry::MaskWholeAspect {
+                key: key("task.summary"),
+                mode: worth_foundational::CanonicalDigestMaskMode::Projection,
+            }
+        ]
     );
 }

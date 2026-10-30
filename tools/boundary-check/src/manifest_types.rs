@@ -70,6 +70,13 @@ pub(crate) struct CargoMetadataPackage {
     pub(crate) name: String,
     pub(crate) manifest_path: String,
     pub(crate) dependencies: Vec<CargoMetadataDependency>,
+    #[serde(default)]
+    pub(crate) targets: Vec<CargoMetadataTarget>,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct CargoMetadataTarget {
+    pub(crate) kind: Vec<String>,
 }
 
 #[derive(Deserialize)]

@@ -1,5 +1,5 @@
 error[E0624]: associated function `new` is private
-  --> tests/ui/builder_requires_signal_sink_before_build.rs:11:26
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_signal_sink_before_build.rs:11:26
    |
 11 |           BridgeMappingId::new("profile-name"),
    |                            ^^^ private associated function
@@ -12,7 +12,7 @@ error[E0624]: associated function `new` is private
    | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/builder_requires_signal_sink_before_build.rs:11:30
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_signal_sink_before_build.rs:11:30
    |
 11 |         BridgeMappingId::new("profile-name"),
    |         -------------------- ^^^^^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
@@ -28,7 +28,7 @@ note: associated function defined here
    |                   ^^^
 
 error[E0624]: associated function `new` is private
-  --> tests/ui/builder_requires_signal_sink_before_build.rs:22:34
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_signal_sink_before_build.rs:22:34
    |
 22 |           SignalInvalidationScope::new("signal.profile"),
    |                                    ^^^ private associated function
@@ -41,7 +41,7 @@ error[E0624]: associated function `new` is private
    | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/builder_requires_signal_sink_before_build.rs:22:38
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_signal_sink_before_build.rs:22:38
    |
 22 |         SignalInvalidationScope::new("signal.profile"),
    |         ---------------------------- ^^^^^^^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
@@ -57,7 +57,7 @@ note: associated function defined here
    |                   ^^^
 
 error[E0599]: no method named `build` found for struct `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::PresentCommittedPatchSource, worth_runtime_bridge::builder::states::PresentSnapshotReadSource, worth_runtime_bridge::builder::states::MissingSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>` in the current scope
-  --> tests/ui/builder_requires_signal_sink_before_build.rs:53:21
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_signal_sink_before_build.rs:53:21
    |
 53 |     let _ = builder.build();
    |                     ^^^^^ method not found in `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::PresentCommittedPatchSource, worth_runtime_bridge::builder::states::PresentSnapshotReadSource, worth_runtime_bridge::builder::states::MissingSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>`

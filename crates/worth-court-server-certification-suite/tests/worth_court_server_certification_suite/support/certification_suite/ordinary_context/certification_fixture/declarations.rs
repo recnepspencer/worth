@@ -1,10 +1,26 @@
 pub(crate) use {worth_proof::TransitionOutcome, worth_proof::TransitionReadiness};
-pub(crate) use {worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServer, worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationAdmissionPosture, worth_server::WorthServerOperationAuthorityMetadata, worth_server::WorthServerOperationFamily, worth_server::WorthServerOperationRequestInput, worth_server::WorthServerOperatorEvidenceConfig, worth_server::WorthServerPipelineInput, worth_server::WorthServerPipelineIntent, worth_server::WorthServerQueryHandoffInput, worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerResponseConfig, worth_server::WorthServerResponseInput, worth_server::WorthServerResponseTransform, worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass};
+pub(crate) use {
+    worth_server::request_context::DiagnosticRichnessProfile, worth_server::WorthServer,
+    worth_server::WorthServerMiddlewareConfig, worth_server::WorthServerOperationAdmissionPosture,
+    worth_server::WorthServerOperationAuthorityMetadata, worth_server::WorthServerOperationFamily,
+    worth_server::WorthServerOperationRequestInput,
+    worth_server::WorthServerOperatorEvidenceConfig, worth_server::WorthServerPipelineInput,
+    worth_server::WorthServerPipelineIntent, worth_server::WorthServerQueryHandoffInput,
+    worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerResponseConfig,
+    worth_server::WorthServerResponseInput, worth_server::WorthServerResponseTransform,
+    worth_server::WorthServerSurfaceFamily, worth_server::WorthServerTransportClass,
+};
 
-pub(crate) use {worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider};
-pub(crate) use {worth_testkit_server::shared_support_response_fixture::operator_evidence_record, worth_testkit_server::shared_support_response_fixture::query_handoff_durable_denial, worth_testkit_server::shared_support_response_fixture::resolve_blank_principal_denial, worth_testkit_server::shared_support_response_fixture::resolve_preview_denial, worth_testkit_server::shared_support_response_fixture::test_server_with_request_context_and_operator_evidence_config};
+pub(crate) use worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::TestWorkspaceProvider;
+pub(crate) use {
+    worth_testkit_server::shared_support_response_fixture::operator_evidence_record,
+    worth_testkit_server::shared_support_response_fixture::query_handoff_durable_denial,
+    worth_testkit_server::shared_support_response_fixture::resolve_blank_principal_denial,
+    worth_testkit_server::shared_support_response_fixture::resolve_preview_denial,
+    worth_testkit_server::shared_support_response_fixture::test_server_with_request_context_and_operator_evidence_config,
+};
 
-pub(crate) use {crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle};
+pub(crate) use crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle;
 
 pub(crate) fn certification_server(
     request_context_profile: DiagnosticRichnessProfile,
@@ -19,7 +35,9 @@ pub(crate) fn certification_server(
             .expect("middleware config should validate"),
         worth_server::WorthServerRequestContextConfig::builder()
             .with_default_diagnostics_profile(request_context_profile)
-            .with_maximum_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Forensic)
+            .with_maximum_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Forensic,
+            )
             .with_preview_targeting_enabled(false)
             .build()
             .expect("request context config should validate"),
@@ -90,7 +108,9 @@ pub(crate) fn read_success_bundle_for_workspace(
 
 pub(crate) fn malformed_identity_bundle(server: &WorthServer) -> WorthServerCertificationBundle {
     let response = server.responses().shape(
-        worth_server::WorthServerResponseInput::request_context_denied(resolve_blank_principal_denial(server)),
+        worth_server::WorthServerResponseInput::request_context_denied(
+            resolve_blank_principal_denial(server),
+        ),
         worth_server::WorthServerResponseTransform::compat_http(),
     );
     crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle::from_response_and_evidence(
@@ -102,7 +122,9 @@ pub(crate) fn malformed_identity_bundle(server: &WorthServer) -> WorthServerCert
 
 pub(crate) fn preview_branch_denial_bundle(server: &WorthServer) -> WorthServerCertificationBundle {
     let response = server.responses().shape(
-        worth_server::WorthServerResponseInput::request_context_denied(resolve_preview_denial(server)),
+        worth_server::WorthServerResponseInput::request_context_denied(resolve_preview_denial(
+            server,
+        )),
         worth_server::WorthServerResponseTransform::compat_http(),
     );
     crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle::from_response_and_evidence(
@@ -114,7 +136,9 @@ pub(crate) fn preview_branch_denial_bundle(server: &WorthServer) -> WorthServerC
 
 pub(crate) fn durable_resume_denial_bundle(server: &WorthServer) -> WorthServerCertificationBundle {
     let response = server.responses().shape(
-        worth_server::WorthServerResponseInput::query_handoff_denied(query_handoff_durable_denial(server)),
+        worth_server::WorthServerResponseInput::query_handoff_denied(query_handoff_durable_denial(
+            server,
+        )),
         worth_server::WorthServerResponseTransform::compat_http(),
     );
     crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle::from_response_and_evidence(
@@ -139,7 +163,9 @@ pub(crate) fn middleware_preview_authorization_denial_bundle() -> WorthServerCer
             .build()
             .expect("middleware config should validate"),
         worth_server::WorthServerRequestContextConfig::builder()
-            .with_default_diagnostics_profile(worth_server::request_context::DiagnosticRichnessProfile::Standard)
+            .with_default_diagnostics_profile(
+                worth_server::request_context::DiagnosticRichnessProfile::Standard,
+            )
             .with_preview_targeting_enabled(true)
             .build()
             .expect("request context config should validate"),
@@ -152,7 +178,9 @@ pub(crate) fn middleware_preview_authorization_denial_bundle() -> WorthServerCer
     );
 
     let response = server.responses().shape(
-        worth_server::WorthServerResponseInput::middleware_denied(preview_authorization_denial(&server)),
+        worth_server::WorthServerResponseInput::middleware_denied(preview_authorization_denial(
+            &server,
+        )),
         worth_server::WorthServerResponseTransform::compat_http(),
     );
     crate::certification_suite::ordinary_context::certification_bundle::WorthServerCertificationBundle::from_response_and_evidence(
@@ -206,10 +234,12 @@ pub(crate) fn admit_query_read(
     server: &WorthServer,
     request_context: worth_server::WorthServerResolvedRequestContext,
 ) -> worth_server::WorthServerAdmission {
-    match server.middleware().admit(worth_server::WorthServerPipelineInput::new(
-        request_context,
-        worth_server::WorthServerPipelineIntent::query_read("users.profile"),
-    )) {
+    match server
+        .middleware()
+        .admit(worth_server::WorthServerPipelineInput::new(
+            request_context,
+            worth_server::WorthServerPipelineIntent::query_read("users.profile"),
+        )) {
         worth_proof::TransitionOutcome::Success(admission) => admission,
         other => panic!("expected admitted read pipeline, got {other:?}"),
     }
@@ -252,8 +282,9 @@ pub(crate) fn prepare_query_handoff(
 ) -> worth_server::WorthServerQueryHandoff {
     match server
         .query_handoff()
-        .prepare(worth_server::WorthServerQueryHandoffInput::new(admission, operation))
-    {
+        .prepare(worth_server::WorthServerQueryHandoffInput::new(
+            admission, operation,
+        )) {
         worth_proof::TransitionOutcome::Success(handoff) => handoff,
         other => panic!("expected query handoff success, got {other:?}"),
     }
@@ -276,10 +307,12 @@ pub(crate) fn preview_authorization_denial(
         worth_proof::TransitionReadiness::Ready(resolved) => resolved,
         other => panic!("expected preview request context, got {other:?}"),
     };
-    match server.middleware().admit(worth_server::WorthServerPipelineInput::new(
-        request_context,
-        worth_server::WorthServerPipelineIntent::query_read("users.profile"),
-    )) {
+    match server
+        .middleware()
+        .admit(worth_server::WorthServerPipelineInput::new(
+            request_context,
+            worth_server::WorthServerPipelineIntent::query_read("users.profile"),
+        )) {
         worth_proof::TransitionOutcome::Denied(denial) => denial,
         other => panic!("expected preview authorization denial, got {other:?}"),
     }

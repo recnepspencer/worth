@@ -1,5 +1,9 @@
-pub use {worth_foundational::facade::DiagnosticRichnessProfile};
-pub use {worth_server::WorthServerCompatibilityFileEnvelope, worth_server::WorthServerFileTransferDisposition, worth_server::WorthServerQueryHandoffDenial, worth_server::WorthServerQueryHandoffDenialCode};
+pub use worth_foundational::facade::DiagnosticRichnessProfile;
+pub use {
+    worth_server::WorthServerCompatibilityFileEnvelope,
+    worth_server::WorthServerFileTransferDisposition, worth_server::WorthServerQueryHandoffDenial,
+    worth_server::WorthServerQueryHandoffDenialCode,
+};
 
 pub fn assert_same_metadata_identity(
     left: &WorthServerCompatibilityFileEnvelope,

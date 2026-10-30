@@ -1,5 +1,5 @@
 error[E0624]: associated function `new` is private
- --> tests/ui/writeback_candidate_constructor_private.rs:4:52
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_candidate_constructor_private.rs:4:52
   |
 4 |       let _ctor = BridgeValidatedWritebackCandidate::new;
   |                                                      ^^^ private associated function

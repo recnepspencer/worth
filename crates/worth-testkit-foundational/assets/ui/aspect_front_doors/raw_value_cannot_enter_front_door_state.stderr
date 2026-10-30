@@ -1,7 +1,7 @@
 error[E0271]: type mismatch resolving `<[AspectValue; 1] as IntoIterator>::Item == Artifact<ContractValidated, ContractValidatedAspectValue>`
- --> tests/ui/aspect_front_doors/raw_value_cannot_enter_front_door_state.rs:4:51
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/aspect_front_doors/raw_value_cannot_enter_front_door_state.rs
   |
-4 |     let _ = aspects().authoritative_state().admit([AspectValue::Int64(1)]);
+  |     let _ = aspects().authoritative_state().admit([AspectValue::Int64(1)]);
   |                                             ----- ^^^^^^^^^^^^^^^^^^^^^^^ expected `Artifact<ContractValidated, ...>`, found `AspectValue`
   |                                             |
   |                                             required by a bound introduced by this call
@@ -9,7 +9,7 @@ error[E0271]: type mismatch resolving `<[AspectValue; 1] as IntoIterator>::Item 
   = note: expected struct `worth_proof::artifact::carrier::Artifact<worth_foundational::aspects::validation::validated_value::ContractValidated, ContractValidatedAspectValue>`
                found enum `AspectValue`
 note: required by a bound in `AuthoritativeStateFrontDoor::admit`
- --> src/aspects/front_doors/state/admission.rs
+ --> $WORKSPACE/crates/worth-foundational/src/aspects/front_doors/state/admission.rs
   |
   |     pub fn admit(
   |            ----- required by a bound in this associated function

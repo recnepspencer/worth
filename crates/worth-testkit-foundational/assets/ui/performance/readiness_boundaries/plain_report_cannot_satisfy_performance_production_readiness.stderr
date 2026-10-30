@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
- --> tests/ui/performance/readiness_boundaries/plain_report_cannot_satisfy_performance_production_readiness.rs:9:83
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/readiness_boundaries/plain_report_cannot_satisfy_performance_production_readiness.rs
   |
-9 |     let _ = require_foundational_performance_milestone8_production_test_readiness(&report);
+  |     let _ = require_foundational_performance_milestone8_production_test_readiness(&report);
   |             --------------------------------------------------------------------- ^^^^^^^ expected `&Artifact<..., ..., ..., ...>`, found `&...`
   |             |
   |             arguments to this function are incorrect
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
   = note: expected reference `&worth_proof::artifact::carrier::Artifact<FoundationalPerformanceProductionTestReady, FoundationalPerformanceProductionReadinessReport, worth_proof::proof::sets::Proof<FoundationalPerformanceProductionReadinessCertified, FoundationalPerformanceProductionReadinessAuthority>, worth_proof::assumption::freshness::FreshnessScopedBasis<worth_proof::assumption::freshness::CurrentValidity, worth_proof::assumption::basis::AssumptionBasis<FoundationalPerformanceProductionReadinessScope>>>`
              found reference `&FoundationalPerformanceProductionReadinessReport`
 note: function defined here
- --> src/performance/readiness/certification.rs
+ --> $WORKSPACE/crates/worth-foundational/src/performance/readiness/certification.rs
   |
   | pub fn require_foundational_performance_milestone8_production_test_readiness(
   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,8 +1,17 @@
-pub use {worth_query::facade::consumer_kit::in_memory_test_runtime, worth_query::facade::consumer_kit::WorthQueryTestBackendSchema};
-pub use {worth_query::facade::runtime::WorthQueryWorkspace};
-pub use {worth_server::WorthServerQueryHandoffOperation, worth_server::WorthServerQueryWorkspaceBindingError, worth_server::WorthServerQueryWorkspaceBindingRequest, worth_server::WorthServerQueryWorkspaceBindingTarget, worth_server::WorthServerQueryWorkspaceProvider};
+pub use worth_query::facade::runtime::WorthQueryWorkspace;
+pub use {
+    worth_query::facade::consumer_kit::in_memory_test_runtime,
+    worth_query::facade::consumer_kit::WorthQueryTestBackendSchema,
+};
+pub use {
+    worth_server::WorthServerQueryHandoffOperation,
+    worth_server::WorthServerQueryWorkspaceBindingError,
+    worth_server::WorthServerQueryWorkspaceBindingRequest,
+    worth_server::WorthServerQueryWorkspaceBindingTarget,
+    worth_server::WorthServerQueryWorkspaceProvider,
+};
 
-pub use {crate::shared_support_query_handoff_runtime::runtime_aspect_contracts::query_handoff_aspect_contracts};
+pub use crate::shared_support_query_handoff_runtime::runtime_aspect_contracts::query_handoff_aspect_contracts;
 
 #[derive(Clone, Debug, Default)]
 pub struct RealMutationWorkspaceProvider;
@@ -18,12 +27,13 @@ impl WorthServerQueryWorkspaceProvider for RealMutationWorkspaceProvider {
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
         crate::shared_support_test_bootstrap_policy::with_bootstrap(|request_execution| {
             match request.target() {
-                worth_server::WorthServerQueryWorkspaceBindingTarget::QueryHandoff { operation }
-                    if matches!(
-                        operation.as_ref(),
-                        worth_server::WorthServerQueryHandoffOperation::DirectMutation { .. }
-                            | worth_server::WorthServerQueryHandoffOperation::QueryMutation { .. }
-                    ) => {}
+                worth_server::WorthServerQueryWorkspaceBindingTarget::QueryHandoff {
+                    operation,
+                } if matches!(
+                    operation.as_ref(),
+                    worth_server::WorthServerQueryHandoffOperation::DirectMutation { .. }
+                        | worth_server::WorthServerQueryHandoffOperation::QueryMutation { .. }
+                ) => {}
                 target => {
                     return Err(worth_server::WorthServerQueryWorkspaceBindingError::new(
                     "workspace_target",

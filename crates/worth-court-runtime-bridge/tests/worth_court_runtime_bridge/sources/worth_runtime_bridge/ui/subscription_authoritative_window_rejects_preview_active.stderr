@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/subscription_authoritative_window_rejects_preview_active.rs:10:9
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_authoritative_window_rejects_preview_active.rs:10:9
    |
  9 |     let _ = runtime.open_subscription_delivery_window(
    |                     --------------------------------- arguments to this method are incorrect

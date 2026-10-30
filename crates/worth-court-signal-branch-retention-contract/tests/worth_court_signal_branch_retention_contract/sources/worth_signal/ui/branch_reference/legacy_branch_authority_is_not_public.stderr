@@ -1,5 +1,5 @@
 error[E0432]: unresolved imports `worth_signal::facade::runtime::BranchTargetedTransactionRequest`, `worth_signal::facade::runtime::SignalBranchForkRequest`, `worth_signal::facade::runtime::SignalBranchRetirementRequest`, `worth_signal::facade::runtime::SignalBranchTransactionHead`
- --> tests/ui/branch_reference/legacy_branch_authority_is_not_public.rs:2:5
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/legacy_branch_authority_is_not_public.rs:2:5
   |
 2 |     BranchTargetedTransactionRequest, SignalBranchForkRequest, SignalBranchRetirementRequest,
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

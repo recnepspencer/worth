@@ -1,4 +1,8 @@
-pub use {worth_server::WorthServerCompatibilityExport, worth_server::WorthServerCompatibilityRead, worth_server::WorthServerCompatibilityStream, worth_server::WorthServerStreamCancellationKind, worth_server::WorthServerStreamCancellationReceipt};
+pub use {
+    worth_server::WorthServerCompatibilityExport, worth_server::WorthServerCompatibilityRead,
+    worth_server::WorthServerCompatibilityStream, worth_server::WorthServerStreamCancellationKind,
+    worth_server::WorthServerStreamCancellationReceipt,
+};
 
 pub const STREAMING_COUNTER_NAMES: [&str; 8] = [
     "compat_http.streaming.chunks_emitted",
@@ -47,11 +51,7 @@ pub fn assert_read_artifact_parity(
     );
 }
 
-pub fn assert_export_counter(
-    export: &WorthServerCompatibilityExport,
-    name: &str,
-    expected: u64,
-) {
+pub fn assert_export_counter(export: &WorthServerCompatibilityExport, name: &str, expected: u64) {
     assert_eq!(
         export.performance_receipt().counter(name),
         Some(expected),

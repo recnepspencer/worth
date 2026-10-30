@@ -1,16 +1,16 @@
 error[E0423]: cannot initialize a tuple struct which contains private fields
- --> tests/ui/performance/readiness_boundaries/performance_readiness_authority_cannot_be_minted.rs:2:13
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/readiness_boundaries/performance_readiness_authority_cannot_be_minted.rs
   |
-2 |     let _ = worth_foundational::FoundationalPerformanceProductionReadinessAuthority(());
+  |     let _ = worth_foundational::FoundationalPerformanceProductionReadinessAuthority(());
   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
- ::: src/performance/mod.rs
+ ::: $WORKSPACE/crates/worth-foundational/src/performance/mod.rs
   |
   | pub struct FoundationalPerformanceProductionReadinessCertified;
   | -------------------------------------------------------------- similarly named unit struct `FoundationalPerformanceProductionReadinessCertified` defined here
   |
 note: constructor is not visible here due to private fields
- --> src/performance/readiness/authority.rs
+ --> $WORKSPACE/crates/worth-foundational/src/performance/readiness/authority.rs
   |
   | pub struct FoundationalPerformanceProductionReadinessAuthority(());
   |                                                                ^^ private field

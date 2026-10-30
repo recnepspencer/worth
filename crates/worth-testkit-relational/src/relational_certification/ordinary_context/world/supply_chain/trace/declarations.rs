@@ -318,9 +318,7 @@ pub fn apply_mutation(
     Ok(())
 }
 
-pub fn observed_as_expected(
-    observed: &ObservedSupplyChainState,
-) -> ExpectedSupplyChainObservation {
+pub fn observed_as_expected(observed: &ObservedSupplyChainState) -> ExpectedSupplyChainObservation {
     ExpectedSupplyChainObservation {
         schema: crate::relational_certification::ordinary_context::world::supply_chain::schema::SupplyChainSchema::canonical(observed.schema),
         entities: observed.entities.clone(),

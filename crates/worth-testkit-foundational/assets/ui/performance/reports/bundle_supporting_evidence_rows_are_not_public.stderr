@@ -1,12 +1,12 @@
 error[E0624]: method `supporting_evidence_rows` is private
-  --> tests/ui/performance/reports/bundle_supporting_evidence_rows_are_not_public.rs:22:20
-   |
-22 |       let _ = bundle.supporting_evidence_rows();
-   |                      ^^^^^^^^^^^^^^^^^^^^^^^^ private method
-   |
-  ::: src/performance/basis/bundle.rs
-   |
-   | /     pub(crate) fn supporting_evidence_rows(
-   | |         &self,
-   | |     ) -> &[FoundationalPerformanceSupportingEvidenceRow] {
-   | |________________________________________________________- private method defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/reports/bundle_supporting_evidence_rows_are_not_public.rs
+  |
+  |       let _ = bundle.supporting_evidence_rows();
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^ private method
+  |
+ ::: $WORKSPACE/crates/worth-foundational/src/performance/basis/bundle.rs
+  |
+  | /     pub(crate) fn supporting_evidence_rows(
+  | |         &self,
+  | |     ) -> &[FoundationalPerformanceSupportingEvidenceRow] {
+  | |________________________________________________________- private method defined here

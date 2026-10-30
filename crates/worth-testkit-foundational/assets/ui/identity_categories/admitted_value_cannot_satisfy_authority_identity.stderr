@@ -1,17 +1,17 @@
 error[E0308]: mismatched types
-  --> tests/ui/identity_categories/admitted_value_cannot_satisfy_authority_identity.rs:28:21
-   |
-28 |     needs_authority(admitted);
-   |     --------------- ^^^^^^^^ expected `FoundationalAuthorityIdentity<u64, ..., ...>`, found `FoundationalAdmittedIdentityValue<u64, ..., ...>`
-   |     |
-   |     arguments to this function are incorrect
-   |
-   = note: expected struct `FoundationalAuthorityIdentity<u64, QueryIdentityAuthority, QueryCommitIdentityKind>`
-              found struct `FoundationalAdmittedIdentityValue<u64, QueryIdentityAuthority, QueryCommitIdentityKind>`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/admitted_value_cannot_satisfy_authority_identity.rs
+  |
+  |     needs_authority(admitted);
+  |     --------------- ^^^^^^^^ expected `FoundationalAuthorityIdentity<u64, ..., ...>`, found `FoundationalAdmittedIdentityValue<u64, ..., ...>`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected struct `FoundationalAuthorityIdentity<u64, QueryIdentityAuthority, QueryCommitIdentityKind>`
+             found struct `FoundationalAdmittedIdentityValue<u64, QueryIdentityAuthority, QueryCommitIdentityKind>`
 note: function defined here
-  --> tests/ui/identity_categories/admitted_value_cannot_satisfy_authority_identity.rs:17:4
-   |
-17 | fn needs_authority(
-   |    ^^^^^^^^^^^^^^^
-18 |     _identity: FoundationalAuthorityIdentity<u64, QueryIdentityAuthority, QueryCommitIdentityKind>,
-   |     ----------------------------------------------------------------------------------------------
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/admitted_value_cannot_satisfy_authority_identity.rs
+  |
+  | fn needs_authority(
+  |    ^^^^^^^^^^^^^^^
+  |     _identity: FoundationalAuthorityIdentity<u64, QueryIdentityAuthority, QueryCommitIdentityKind>,
+  |     ----------------------------------------------------------------------------------------------

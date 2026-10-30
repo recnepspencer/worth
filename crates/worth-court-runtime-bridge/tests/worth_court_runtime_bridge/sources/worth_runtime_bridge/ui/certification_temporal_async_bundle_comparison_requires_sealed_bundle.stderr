@@ -1,5 +1,5 @@
 error[E0308]: arguments to this method are incorrect
-  --> tests/ui/certification_temporal_async_bundle_comparison_requires_sealed_bundle.rs:12:21
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/certification_temporal_async_bundle_comparison_requires_sealed_bundle.rs:12:21
    |
 12 |     let _ = runtime.compare_temporal_async_certification_bundles(&draft, &draft);
    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ------  ------ expected `BridgeTemporalAsyncCertificationBundleSealed`, found `BridgeTemporalAsyncCertificationBundleDraft`

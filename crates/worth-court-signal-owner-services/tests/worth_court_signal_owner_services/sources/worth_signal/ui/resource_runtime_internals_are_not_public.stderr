@@ -1,5 +1,5 @@
 error[E0603]: module `logic` is private
- --> tests/ui/resource_runtime_internals_are_not_public.rs:1:19
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_runtime_internals_are_not_public.rs:1:19
   |
 1 | use worth_signal::logic::transaction::runtime::state::resource::ResourceRuntimeState;
   |                   ^^^^^ private module                -------- module `resource` is not publicly re-exported

@@ -1,5 +1,5 @@
 error[E0624]: associated function `from_components` is private
- --> tests/ui/manufacture_owner_results.rs:3:45
+ --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/manufacture_owner_results.rs:3:45
   |
 3 |       let _ = CompositeOwnerExecutionResults::from_components;
   |                                               ^^^^^^^^^^^^^^^ private associated function
@@ -13,7 +13,7 @@ error[E0624]: associated function `from_components` is private
   | |_____________- private associated function defined here
 
 error[E0624]: associated function `durability_unresolved` is private
- --> tests/ui/manufacture_owner_results.rs:4:45
+ --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/manufacture_owner_results.rs:4:45
   |
 4 |       let _ = CompositeRelationalOwnerResult::durability_unresolved;
   |                                               ^^^^^^^^^^^^^^^^^^^^^ private associated function
@@ -26,7 +26,7 @@ error[E0624]: associated function `durability_unresolved` is private
   | |_____________- private associated function defined here
 
 error[E0624]: associated function `settlement_required` is private
- --> tests/ui/manufacture_owner_results.rs:5:45
+ --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/manufacture_owner_results.rs:5:45
   |
 5 |       let _ = CompositeRelationalOwnerResult::settlement_required;
   |                                               ^^^^^^^^^^^^^^^^^^^ private associated function

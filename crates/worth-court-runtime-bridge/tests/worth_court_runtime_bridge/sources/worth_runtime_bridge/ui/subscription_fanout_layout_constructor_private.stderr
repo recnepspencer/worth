@@ -1,5 +1,5 @@
 error[E0624]: associated function `build` is private
- --> tests/ui/subscription_fanout_layout_constructor_private.rs:4:56
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_fanout_layout_constructor_private.rs:4:56
   |
 4 |       let _constructor = BridgeSubscriptionFanoutLayout::build;
   |                                                          ^^^^^ private associated function

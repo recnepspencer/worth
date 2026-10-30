@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> tests/ui/subscription_delivery_replay_requires_resume_admission.rs:12:63
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_delivery_replay_requires_resume_admission.rs:12:63
    |
 12 |     let _ = runtime.plan_subscription_delivery_replay(active, checkpoint, seeds);
    |                     ---------------------------------         ^^^^^^^^^^ expected `BridgeSubscriptionResumeAdmission`, found `BridgeSubscriptionCheckpoint`

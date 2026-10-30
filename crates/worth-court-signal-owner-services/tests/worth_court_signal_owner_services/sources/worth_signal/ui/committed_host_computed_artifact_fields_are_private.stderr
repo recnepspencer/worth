@@ -1,5 +1,5 @@
 warning: unreachable expression
- --> tests/ui/committed_host_computed_artifact_fields_are_private.rs:4:13
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/committed_host_computed_artifact_fields_are_private.rs:4:13
   |
 4 |     let _ = CommittedHostComputedArtifact { staged: loop {} };
   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-------^^
@@ -10,7 +10,7 @@ warning: unreachable expression
   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
 
 error[E0451]: field `staged` of struct `CommittedHostComputedArtifact` is private
- --> tests/ui/committed_host_computed_artifact_fields_are_private.rs:4:45
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/committed_host_computed_artifact_fields_are_private.rs:4:45
   |
 4 |     let _ = CommittedHostComputedArtifact { staged: loop {} };
   |                                             ^^^^^^ private field
