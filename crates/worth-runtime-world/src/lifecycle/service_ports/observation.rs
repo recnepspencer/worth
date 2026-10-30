@@ -8,6 +8,52 @@ pub struct RuntimeWorldObservationPort {
     owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
 }
 impl RuntimeWorldObservationPort {
+    /// Install prepared state while both exact product heads remain current.
+    /// All owner admission precedes the guarded section. The callback must not
+    /// call either World owner or access either product cell; return custody
+    /// for cleanup after the callback. Either refusal returns the argument.
+    pub fn while_product_branches_current<Argument, Output>(
+        &self,
+        first: &crate::branch::ProductBranchObservation,
+        second: &crate::branch::ProductBranchObservation,
+        argument: Argument,
+        install: impl for<'guard> FnOnce(
+            Argument,
+            crate::branch::CurrentProductHead<'guard>,
+            crate::branch::CurrentProductHead<'guard>,
+        ) -> Output,
+    ) -> Result<Output, crate::branch::ProductBranchCurrentnessFailure<Argument>> {
+        use crate::branch::ProductBranchCurrentnessFailure as Failure;
+        let service = match self.service() {
+            Ok(service) => service,
+            Err(denial) => {
+                return Err(Failure::AdmissionDenied {
+                    denial: denial.into(),
+                    argument,
+                })
+            }
+        };
+        let first = match service.admit_product_branch_currentness(first) {
+            Ok(scope) => scope,
+            Err(denial) => {
+                return Err(Failure::AdmissionDenied {
+                    denial: super::super::RuntimeWorldServiceDenial::Denied(denial),
+                    argument,
+                })
+            }
+        };
+        let second = match service.admit_product_branch_currentness(second) {
+            Ok(scope) => scope,
+            Err(denial) => {
+                return Err(Failure::AdmissionDenied {
+                    denial: super::super::RuntimeWorldServiceDenial::Denied(denial),
+                    argument,
+                })
+            }
+        };
+        first.while_both_current(second, argument, install)
+    }
+
     /// Install prepared derived state while the exact issued head stays current.
     /// The callback receives currentness evidence but no mutation authority.
     /// Perform allocation/admission beforehand and return cleanup values from

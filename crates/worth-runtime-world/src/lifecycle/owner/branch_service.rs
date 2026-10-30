@@ -339,3 +339,6 @@ mod tests;
 #[cfg(test)]
 #[path = "branch_service_contract_tests.rs"]
 mod contract_tests;
+
+#[cfg(test)]
+mod currentness_pair_tests;

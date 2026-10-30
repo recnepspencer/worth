@@ -1841,14 +1841,19 @@ stand in for this acceptance.
 The public expected-source fork prerequisite is qualified. It consumes an
 admitted application selection, retains that exact source
 with the created candidate, and preserves candidate/source custody on refused
-close. Stored expected-basis readmission, proposal persistence, guarded model-head
-adoption and the complete private acceptance journey remain unfinished.
+close. Guarded model-head adoption is also a qualified public prerequisite:
+the candidate checks Native bases and holds World's exact source/candidate
+currentness guards across replacement of the application's actual branch slot,
+checking the same request's liveness inside the guarded section. Stored
+expected-basis readmission, proposal persistence and the complete private
+acceptance journey remain unfinished.
 **Owner:** Query entry/basis admission, Native/World source-basis receivers and
 Proprietary authoring.
 **Depends on:** ordinary governed application requests and existing source
 operation/correction contracts. Independent of spatial indexing and Phases 8–9.
-The missing ordinary expected-source handoff is a prerequisite delivered within
-this phase, not a reason to substitute a private currentness check.
+The ordinary expected-source handoff belongs to this phase; CAD must consume
+the platform's selected-source custody rather than substitute a private
+currentness check.
 
 ### Requirements And Acceptance
 
@@ -1876,10 +1881,13 @@ CAD's `CadSession::apply` checks a process-owned model revision, while its insta
 runtime later forks the branch currently selected by the model's head map. The
 counter is not an owner-issued Native/World basis. Query's ordinary fork builder
 admits the source occurrence when creating the fork; it does not consume the
-proposal's previously selected basis. Native already rechecks an admitted fork
-source under its transition coordination, and World carries an expected source
-observation through branch creation. Complete that existing handoff; do not
-duplicate currentness or fork authority in CAD.
+proposal's previously selected basis. Query's expected-source fork now consumes
+an admitted selection instead. Native rechecks that fork source under its
+transition coordination, and World carries the expected source observation
+through creation. The resulting candidate retains the source admission and
+offers guarded replacement of the actual model-owned branch slot. CAD still
+needs to join these ordinary platform transitions; it must not duplicate
+currentness or fork authority.
 
 The decisive installed journey records a real edit against model A, releases the
 recording request and later accepts under the current caller. Recording must not
@@ -1960,8 +1968,13 @@ worth-query-execution/src/
     creation/expected_source.rs         C required admitted-selection handoff
   domain_computation/primary_graph/
     product_operation/branches.rs        E application lifecycle composition
+    product_operation/branches/
+      expected_source.rs                C candidate and selected-source custody
+      expected_source/adoption.rs       C guarded application head replacement
 worth-runtime-world/src/
   branch/creation/lowered.rs             E expected composite source
+  branch/currentness_scope.rs           E exact source/candidate reference guards
+  lifecycle/service_ports/observation.rs E admission before guarded installation
   lifecycle/owner/branch_service/
     creation/execution/forks.rs          E component-owner fork and source recheck
 worth-relational/src/branch/

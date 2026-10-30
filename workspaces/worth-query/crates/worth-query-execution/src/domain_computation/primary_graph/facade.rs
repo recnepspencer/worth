@@ -308,6 +308,7 @@ pub use super::product_operation::{
     WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
     WorthQueryCorrectionOutputProjectionDenial, WorthQueryCorrectionRestoredSupportDenial,
     WorthQueryCorrectionSelectionDenial, WorthQueryExpectedProductBranch,
+    WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
     WorthQueryExpectedProductBranchCloseFailure, WorthQueryExpectedProductBranchFork,
     WorthQueryGeneratedEntity, WorthQueryGeneratedOutputInvariantAdmissionDenial,
     WorthQueryGeneratedOutputPublicationNoEffect,

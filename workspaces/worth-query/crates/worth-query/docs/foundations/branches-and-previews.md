@@ -62,7 +62,29 @@ let branch = candidate.branch();
 Run ordinary requests with `.on_branch(branch)`. Keep `candidate` while working:
 it retains the exact source admission alongside the new branch.
 `candidate.expected_source()` returns descriptive information about that source.
-The application's model-state owner chooses which branch subsequent requests use.
+
+To select the candidate as a model's head, pass the model owner's actual mutable
+branch slot to `adopt`. Run the authored requests before this call:
+
+```rust,ignore
+let previous = candidate.adopt(&mut model.head, &phase)?;
+// Subsequent requests use model.head. Retire the previous branch separately.
+application.on_branch(previous).close(&phase)?;
+```
+
+Adoption compares the slot with the original source and checks the source's exact
+Native/World basis while replacing the slot. It refuses if the source moved during
+candidate evaluation, even if the source's values later returned to their original
+values. A retired candidate or a phase from another runtime also refuses. The
+operation synchronizes with ordinary commits and protects both heads against
+retirement during replacement. Cancellation or deadline expiry refuses before
+the slot changes, including interruption while waiting for the guards.
+
+A refused adoption leaves the supplied head unchanged and returns the candidate
+and typed denial through `failure.into_parts()`. Its ordinary request effects
+still exist on the candidate; retain it for inspection or discard it with `close`.
+A refused close of the previous branch after successful adoption leaves the new
+head selected. Handle that close's retry or pending cleanup separately.
 
 Discard the candidate with `candidate.close(&phase)`. A refused close returns
 the candidate and original denial through `failure.into_parts()`; inspect
@@ -72,6 +94,9 @@ Complete that recovery before issuing another creation attempt.
 
 If the expected source is stale, obtain a fresh selection before creating a
 replacement candidate. A selection from another application is refused.
+The [compiled adoption cases](../../../worth-query-certification/tests/application_graph/proposal_acceptance/adoption.rs)
+show ordinary candidate requests, head replacement, stale-source refusal and
+cleanup.
 
 ### Branch history and retirement
 

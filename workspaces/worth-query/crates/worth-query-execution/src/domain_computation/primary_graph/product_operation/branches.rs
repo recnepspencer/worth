@@ -20,7 +20,8 @@ use crate::basis::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 pub use expected_source::{
-    WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchCloseFailure,
+    WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
+    WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
     WorthQueryExpectedProductBranchFork,
 };
 

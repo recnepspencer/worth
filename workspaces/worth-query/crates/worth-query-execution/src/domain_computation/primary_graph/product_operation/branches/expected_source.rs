@@ -12,6 +12,11 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::branch::WorthQueryProductBranchComponents;
 
+mod adoption;
+pub use adoption::{
+    WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
+};
+
 #[must_use = "configure and create the expected-source fork, or drop its admission"]
 pub struct WorthQueryExpectedProductBranchFork<'runtime, Schema> {
     application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,

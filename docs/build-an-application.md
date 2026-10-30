@@ -1847,8 +1847,13 @@ For an isolated branch from a selection already admitted in a host advancement,
 consume that selection with `runtime.branches().fork_expected(selected)` and
 create it with the same runtime's phase. The returned candidate retains its
 source; use `candidate.branch()` for ordinary requests and `candidate.close(&phase)`
-to discard it. Source movement refuses creation, and a refused close retains the
-candidate with its original denial. See
+to discard it. After the requests succeed, `candidate.adopt(&mut model.head, &phase)`
+replaces the actual model-owned branch slot only while the original source is
+still current. It returns the previous branch for ordinary close. A refused
+adoption leaves the slot unchanged and returns the candidate with its typed
+denial; a later refused close of the previous branch does not undo adoption.
+Source movement also refuses creation, and a refused candidate close retains
+the candidate with its original denial. See
 [fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection).
 
 Its own methods:
