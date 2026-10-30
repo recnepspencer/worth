@@ -2510,6 +2510,42 @@ Only outcomes classified by the native owner as retryable return `Progress` with
 operation and typed denial. Match these variants before deciding what can be
 retried or closed.
 
+To evaluate ordered edits before selecting them as a model's state, create an
+exact-source candidate with `select_expected` and `fork_expected`. Check that
+the admitted product branch equals the model owner's actual head before
+construction: copied branches can contain the same entity occurrences. Assess
+current mutation authority on the source, then construct each ordinary execution
+owner on the candidate branch. A captured source-bound operation cannot be
+retargeted to the candidate.
+
+For that source assessment, use
+`request.advanced().mutate(input).without_source().assess_current_capability_authorization()`
+when the binding requires a capability. The raw request's
+`assess_current_authorization()` checks conventional policy. Both return an
+observation without claiming a key or running a handler; retain no execution
+permission from the result. An already retained operation's
+`assess_current_authorization(&fresh_request)` selects its binding's declared
+authorization mode itself.
+
+The [compiled staging example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/candidate.rs)
+loads a recorded three-day edit under a fresh caller, reads three on the staged
+candidate while the model still reads seven, and uses `candidate.adopt` to replace
+the model's actual mutable head. Prebuild metadata before this commit point and
+move it into the model while holding exclusive access to that model. Keep the
+returned previous branch and actual ordinary completion evidence; close the
+previous branch separately. In its two-edit case, the second request for eleven
+days receives the installed invariant refusal. The first staged edit remains
+readable as three, the model remains seven, and explicit close disposes of the
+retained candidate and operation.
+
+Handle a close refusal according to its owning posture. A refusal before
+retirement retains the candidate for a later close. `OwnerCleanupPending` means
+the candidate is already retired and carries the original cleanup owner. To
+dispose of that staged work, release its terminal evidence and retained readers,
+then retry that cleanup owner. A held reader can keep returning
+`WorldHistoryStillRetained`; keep the cleanup it returns until the reader is
+released and cleanup completes.
+
 #### Capture complete original meaning
 
 Install a program and declare the exact typed action occurrence and its delivery.

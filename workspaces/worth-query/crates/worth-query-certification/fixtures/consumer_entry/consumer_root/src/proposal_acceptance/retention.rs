@@ -19,6 +19,11 @@ pub enum Denial {
     ModelOccurrence,
     TargetMembership,
 }
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct StepKey {
+    pub attempt: u64,
+    pub ordinal: u64,
+}
 worth_query_structured_value_binding!(pub InputBinding for RetentionEdit {identity:"proposal-application.retention.input.v1"});
 worth_query_structured_value_binding!(pub ResultBinding for Changed {identity:"proposal-application.retention.result.v1"});
 worth_query_structured_value_binding!(pub DenialBinding for Denial {identity:"proposal-application.retention.denial.v1"});
@@ -30,7 +35,7 @@ fn model(input: &RetentionEdit) -> String {
 }
 worth_query_mutation_binding!(pub Binding for RetentionEdit,schema Schema,
     identity "proposal-application.retention.binding.v1",input InputBinding,operation SetRetention,
-    result ResultBinding,idempotency u64,identity "proposal-application.retention.key.v1",
+    result ResultBinding,idempotency StepKey,identity "proposal-application.retention.key.v2",
     decision WorthQueryInvariantMutationTarget<Schema,Target>,denial DenialBinding,
     handler identity "proposal-application.retention.handler.v1",
     admission ApplicationCapabilityAdmission<mutation_access::EditRetention>,program required,

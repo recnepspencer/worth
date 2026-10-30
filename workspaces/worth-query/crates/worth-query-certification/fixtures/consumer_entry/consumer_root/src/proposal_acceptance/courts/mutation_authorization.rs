@@ -48,6 +48,14 @@ fn retained_action_rechecks_mutation_authority_while_model_and_proposal_reads_st
     let request = host
         .request(&reviewer.principal, reviewer.scope)
         .on_branch(model.branch());
+    let assess_source = || {
+        request
+            .advanced()
+            .mutate(edit(&model, 4))
+            .without_source()
+            .assess_current_capability_authorization()
+    };
+    assess_source().unwrap();
     let operation = construct(&host, &model, &reviewer, edit(&model, 3), 643);
     operation.assess_current_authorization(&request).unwrap();
     complete(operation, &request, 3);
@@ -92,6 +100,10 @@ fn retained_action_rechecks_mutation_authority_while_model_and_proposal_reads_st
     assert_eq!(model.read(&reviewer).unwrap().days, 3);
     storage.load(&reviewer, &reference).unwrap();
     denied(
+        assess_source().unwrap_err(),
+        WorthQueryOperationAuthorizationRefusalKind::CapabilityAuthorizationMissing,
+    );
+    denied(
         operation
             .assess_current_authorization(&request)
             .unwrap_err(),
@@ -115,6 +127,7 @@ fn retained_action_rechecks_mutation_authority_while_model_and_proposal_reads_st
         change(true, 646),
         WorthQueryApplicationMutationOutcome::Committed { .. }
     ));
+    assess_source().unwrap();
     operation.assess_current_authorization(&request).unwrap();
     complete(operation, &request, 4);
     assert_eq!(model.read(&reviewer).unwrap().days, 4);

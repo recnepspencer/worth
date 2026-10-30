@@ -11,6 +11,7 @@ pub struct Model<'host> {
     pub(super) owner: OwnedBranch<'host>,
     pub identity: ModelReference,
     pub target: TargetReference,
+    pub(super) last_adoption: Option<super::candidate::AdoptionMetadata>,
 }
 #[derive(Debug)]
 pub enum CreationFailure<'host> {
@@ -32,6 +33,7 @@ impl<'host> Model<'host> {
                 owner,
                 identity,
                 target,
+                last_adoption: None,
             }),
             Err(cause) => Err(CreationFailure::AfterFork(InitializationFailure {
                 owner,
@@ -190,7 +192,7 @@ fn initialize(
     ))
 }
 
-fn read_target(
+pub(super) fn read_target(
     host: &Host,
     branch: WorthQueryProductBranch,
     caller: &Caller<'_>,

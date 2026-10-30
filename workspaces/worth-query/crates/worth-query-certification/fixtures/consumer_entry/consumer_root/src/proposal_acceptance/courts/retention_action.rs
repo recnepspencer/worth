@@ -1,21 +1,14 @@
 //! Construction and close of the real installed source-completion action.
 use super::super::{
-    application::model::Model,
+    application::{model::Model, retention_action},
     authentication::Caller,
     host::*,
     retention,
     schema::{data::RetentionEdit, Schema},
 };
-use worth_query_decl::facade::application_program::ApplicationSourceCompletion;
 use worth_query_host::facade::application_entry::*;
 
-pub(super) type Operation = WorthQuerySourceOnlyOperation<
-    Schema,
-    RetentionEdit,
-    Program,
-    RetentionAction,
-    ApplicationSourceCompletion,
->;
+pub(super) use retention_action::Operation;
 pub(super) fn edit(model: &Model<'_>, days: u64) -> RetentionEdit {
     RetentionEdit {
         model: model.identity.clone(),
@@ -30,14 +23,17 @@ pub(super) fn construct(
     input: RetentionEdit,
     key: u64,
 ) -> Operation {
-    host.request(&caller.principal, caller.scope)
-        .on_branch(model.branch())
-        .mutate(input)
-        .without_source()
-        .idempotency_owned(key)
-        .unwrap_or_else(|(_, _, cause)| panic!("capture original input: {cause:?}"))
-        .retain_operation::<Program, RetentionAction>(host)
-        .unwrap_or_else(|(_, cause)| panic!("resolve installed retention action: {cause:?}"))
+    retention_action::construct(
+        host,
+        model.branch(),
+        caller,
+        &input,
+        retention::StepKey {
+            attempt: key,
+            ordinal: 0,
+        },
+    )
+    .unwrap_or_else(|cause| panic!("construct ordinary retention action: {cause:?}"))
 }
 pub(super) fn complete(
     operation: Operation,

@@ -14,12 +14,15 @@ mod storage_query;
 
 mod application {
     pub(super) mod branch;
+    pub(super) mod candidate;
     pub(super) mod model;
+    pub(super) mod retention_action;
     pub(super) mod storage;
 }
 
 #[cfg(test)]
 mod courts {
+    mod candidate;
     mod disclosure;
     mod mutation;
     mod mutation_authorization;
