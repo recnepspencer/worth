@@ -27,147 +27,6 @@ const SURVEYED_RAISED: &str = "manual-wide-raised-a";
 /// A surveyed body of the planar kind, whose producer also preserves.
 const PRESERVED: &str = "surveyed-a";
 
-/// The demand that committed settles on its own publication. The row keeps
-/// no facts, so it is no candidate: the next demand asks for the Preserve
-/// posture, and this kind has no producer for it.
-#[test]
-fn a_commit_whose_facts_cannot_be_rebased_settles_and_leaves_no_candidate() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install_manual_bodies();
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-
-    let performed = direct_demand(&request, &application, SURVEYED);
-    assert_eq!(
-        performed.posture(),
-        WorthQueryOutputSettlementPosture::Performed
-    );
-    assert_eq!(performed.producer_contacts_in_this_demand(), 1);
-    assert!(performed.application_commit_receipt().is_some());
-    drop(performed);
-
-    for _ in 0..2 {
-        let before =
-            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-        let denial = demand_outcome(&request, &application, SURVEYED)
-            .map_err(|stop| *stop)
-            .err()
-            .expect("a row without facts is not reused");
-        assert!(
-            matches!(&denial, WorthQueryApplicationOutputDemandDenial::Demand(cause)
-                if cause.kind() == WorthQueryOutputDemandDenialKind::MissingApplicableProducer),
-            "{denial:?}"
-        );
-        let after =
-            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-        assert_eq!(before.selected_commit(), after.selected_commit());
-    }
-}
-
-/// The same producer without the survey: its commit rebases, the row keeps
-/// its facts, and every later demand reuses it with no producer contact.
-#[test]
-fn a_commit_whose_facts_rebase_is_reused_where_no_producer_preserves() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install_manual_bodies();
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-
-    let performed = direct_demand(&request, &application, RESOLVED);
-    assert_eq!(performed.producer_contacts_in_this_demand(), 1);
-    drop(performed);
-
-    for _ in 0..2 {
-        let before =
-            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-        let reused = direct_demand(&request, &application, RESOLVED);
-        assert_eq!(reused.producer_contacts_in_this_demand(), 0);
-        drop(reused);
-        let after =
-            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-        assert_eq!(before.selected_commit(), after.selected_commit());
-    }
-}
-
-/// A commit whose effect moved one of its own reads is superseded at its own
-/// publication. The commit that rebased kept the fact and reads it stale; the
-/// one that could not rebase carries the same answer out with no fact. Both
-/// land, refresh, and are refused the Preserve producer this kind lacks.
-#[test]
-fn a_commit_that_moved_its_own_read_refreshes_whether_or_not_it_rebased() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install_manual_bodies();
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-
-    let demanded = |root: &str| {
-        let before =
-            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-        let outcome = demand_outcome(&request, &application, root).map_err(|stop| *stop);
-        let after =
-            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-        let landed = before.selected_commit() != after.selected_commit();
-        let standing = match outcome {
-            Ok(settled) => format!("{:?}", settled.posture()),
-            Err(WorthQueryApplicationOutputDemandDenial::Demand(cause)) => {
-                format!("{:?}", cause.kind())
-            }
-            Err(other) => format!("{other:?}"),
-        };
-        (landed, standing)
-    };
-    let rebased = demanded(RAISED);
-    assert_eq!(
-        rebased,
-        (true, "MissingApplicableProducer".to_owned()),
-        "the rebased commit is born stale and refreshes"
-    );
-    assert_eq!(
-        demanded(SURVEYED_RAISED),
-        rebased,
-        "a failed rebase answers as the rebase that succeeded"
-    );
-}
-
-/// The same failure where a producer preserves. The commit settles its own
-/// demand and each demand after it while its publication is the one
-/// selected: no producer runs and nothing lands. Any later publication, here
-/// one for an unrelated body, supersedes it. The next demand runs the
-/// Preserve producer, whose commit adds no body to the ones it surveyed,
-/// rebases, and is reused from then on.
-#[test]
-fn a_failed_rebase_settles_until_a_later_publication_where_a_producer_preserves() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install_manual_bodies();
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-
-    // Whether the demand landed a commit, and its producer contacts.
-    let demanded = || {
-        let before =
-            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-        let settled = direct_demand(&request, &application, PRESERVED);
-        let contacts = settled.producer_contacts_in_this_demand();
-        drop(settled);
-        let after =
-            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
-        (
-            before.selected_commit() != after.selected_commit(),
-            contacts,
-        )
-    };
-    assert_eq!(demanded(), (true, 1), "the commit whose rebase fails");
-    for _ in 0..2 {
-        assert_eq!(demanded(), (false, 0), "its own publication is selected");
-    }
-
-    drop(direct_demand(&request, &application, RESOLVED));
-    assert_eq!(demanded(), (true, 1), "superseded, the row is preserved");
-    for _ in 0..2 {
-        assert_eq!(demanded(), (false, 0), "the commit that rebased is reused");
-    }
-}
-
 fn demand_outcome<'application, 'principal, 'scope>(
     request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
         'application,
@@ -238,6 +97,151 @@ fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
                     key(&format!("{family}{to}")),
                 ))
                 .unwrap();
+        }
+    }
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    /// The demand that committed settles on its own publication. The row keeps
+    /// no facts, so it is no candidate: the next demand asks for the Preserve
+    /// posture, and this kind has no producer for it.
+    #[test]
+    fn a_commit_whose_facts_cannot_be_rebased_settles_and_leaves_no_candidate() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install_manual_bodies();
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+
+        let performed = direct_demand(&request, &application, SURVEYED);
+        assert_eq!(
+            performed.posture(),
+            WorthQueryOutputSettlementPosture::Performed
+        );
+        assert_eq!(performed.producer_contacts_in_this_demand(), 1);
+        assert!(performed.application_commit_receipt().is_some());
+        drop(performed);
+
+        for _ in 0..2 {
+            let before =
+                crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+            let denial = demand_outcome(&request, &application, SURVEYED)
+                .map_err(|stop| *stop)
+                .err()
+                .expect("a row without facts is not reused");
+            assert!(
+                matches!(&denial, WorthQueryApplicationOutputDemandDenial::Demand(cause)
+                if cause.kind() == WorthQueryOutputDemandDenialKind::MissingApplicableProducer),
+                "{denial:?}"
+            );
+            let after =
+                crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+            assert_eq!(before.selected_commit(), after.selected_commit());
+        }
+    }
+
+    /// The same producer without the survey: its commit rebases, the row keeps
+    /// its facts, and every later demand reuses it with no producer contact.
+    #[test]
+    fn a_commit_whose_facts_rebase_is_reused_where_no_producer_preserves() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install_manual_bodies();
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+
+        let performed = direct_demand(&request, &application, RESOLVED);
+        assert_eq!(performed.producer_contacts_in_this_demand(), 1);
+        drop(performed);
+
+        for _ in 0..2 {
+            let before =
+                crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+            let reused = direct_demand(&request, &application, RESOLVED);
+            assert_eq!(reused.producer_contacts_in_this_demand(), 0);
+            drop(reused);
+            let after =
+                crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+            assert_eq!(before.selected_commit(), after.selected_commit());
+        }
+    }
+
+    /// A commit whose effect moved one of its own reads is superseded at its own
+    /// publication. The commit that rebased kept the fact and reads it stale; the
+    /// one that could not rebase carries the same answer out with no fact. Both
+    /// land, refresh, and are refused the Preserve producer this kind lacks.
+    #[test]
+    fn a_commit_that_moved_its_own_read_refreshes_whether_or_not_it_rebased() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install_manual_bodies();
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+
+        let demanded = |root: &str| {
+            let before =
+                crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+            let outcome = demand_outcome(&request, &application, root).map_err(|stop| *stop);
+            let after =
+                crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+            let landed = before.selected_commit() != after.selected_commit();
+            let standing = match outcome {
+                Ok(settled) => format!("{:?}", settled.posture()),
+                Err(WorthQueryApplicationOutputDemandDenial::Demand(cause)) => {
+                    format!("{:?}", cause.kind())
+                }
+                Err(other) => format!("{other:?}"),
+            };
+            (landed, standing)
+        };
+        let rebased = demanded(RAISED);
+        assert_eq!(
+            rebased,
+            (true, "MissingApplicableProducer".to_owned()),
+            "the rebased commit is born stale and refreshes"
+        );
+        assert_eq!(
+            demanded(SURVEYED_RAISED),
+            rebased,
+            "a failed rebase answers as the rebase that succeeded"
+        );
+    }
+
+    /// The same failure where a producer preserves. The commit settles its own
+    /// demand and each demand after it while its publication is the one
+    /// selected: no producer runs and nothing lands. Any later publication, here
+    /// one for an unrelated body, supersedes it. The next demand runs the
+    /// Preserve producer, whose commit adds no body to the ones it surveyed,
+    /// rebases, and is reused from then on.
+    #[test]
+    fn a_failed_rebase_settles_until_a_later_publication_where_a_producer_preserves() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install_manual_bodies();
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+
+        // Whether the demand landed a commit, and its producer contacts.
+        let demanded = || {
+            let before =
+                crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+            let settled = direct_demand(&request, &application, PRESERVED);
+            let contacts = settled.producer_contacts_in_this_demand();
+            drop(settled);
+            let after =
+                crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+            (
+                before.selected_commit() != after.selected_commit(),
+                contacts,
+            )
+        };
+        assert_eq!(demanded(), (true, 1), "the commit whose rebase fails");
+        for _ in 0..2 {
+            assert_eq!(demanded(), (false, 0), "its own publication is selected");
+        }
+
+        drop(direct_demand(&request, &application, RESOLVED));
+        assert_eq!(demanded(), (true, 1), "superseded, the row is preserved");
+        for _ in 0..2 {
+            assert_eq!(demanded(), (false, 0), "the commit that rebased is reused");
         }
     }
 }

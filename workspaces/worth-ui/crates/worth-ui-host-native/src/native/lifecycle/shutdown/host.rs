@@ -49,17 +49,16 @@ impl UiNativeShutdownPort for UiNativeHostShutdownPort<'_> {
         }
         if let Some(crate::native::UiNativePresentationOwners { device, surface }) =
             self.state.presentation_owners.take()
-        {
-            if let Err(owners) = crate::native::lifecycle::close_platform_owners(
+            && let Err(owners) = crate::native::lifecycle::close_platform_owners(
                 device,
                 surface,
                 &mut self.state.resources,
-            ) {
-                let (device, surface) = *owners;
-                self.state.presentation_owners =
-                    Some(crate::native::UiNativePresentationOwners { device, surface });
-                return false;
-            }
+            )
+        {
+            let (device, surface) = *owners;
+            self.state.presentation_owners =
+                Some(crate::native::UiNativePresentationOwners { device, surface });
+            return false;
         }
         if let Some(window) = self.state.window.take() {
             window.close(&mut self.state.resources);

@@ -231,26 +231,54 @@ impl CustomInvariantWorkMeter {
             return false;
         }
         if let Some(leased) = &self.leased
-            && leased
-                .consumed_work
-                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                    current
+            && {
+                let update_counter = &leased.consumed_work;
+                let mut current = update_counter.load(Ordering::Relaxed);
+                loop {
+                    let Some(updated_value) = current
                         .checked_add(units)
                         .filter(|next| leased.work_ceiling.is_none_or(|ceiling| *next <= ceiling))
-                })
-                .is_err()
+                    else {
+                        break Err(current);
+                    };
+                    match update_counter.compare_exchange_weak(
+                        current,
+                        updated_value,
+                        Ordering::Relaxed,
+                        Ordering::Relaxed,
+                    ) {
+                        Ok(previous) => break Ok(previous),
+                        Err(reloaded_value) => current = reloaded_value,
+                    }
+                }
+            }
+            .is_err()
         {
             self.stop(CustomPreparationStop::WorkExhausted);
             return false;
         }
-        if self
-            .consumed
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                current
+        if {
+            let update_counter = &self.consumed;
+            let mut current = update_counter.load(Ordering::Relaxed);
+            loop {
+                let Some(updated_value) = current
                     .checked_add(units)
                     .filter(|next| self.maximum.is_none_or(|maximum| *next <= maximum.get()))
-            })
-            .is_err()
+                else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .is_err()
         {
             self.stop(CustomPreparationStop::WorkExhausted);
             return false;

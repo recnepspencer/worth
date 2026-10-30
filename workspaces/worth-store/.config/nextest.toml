@@ -11,22 +11,6 @@ status-level = "fail"
 final-status-level = "slow"
 slow-timeout = { period = "60s", terminate-after = 10 }
 
-# trybuild builds every crate's cases in one shared project tree, and its
-# cross-process lock does not hold on Windows (the heartbeat never advances the
-# lock file's mtime). nextest runs each test in its own process, so two
-# sessions at once overwrite each other's generated manifest: one at a time.
-[test-groups.compiler-boundary]
-# Trybuild fixtures share Cargo's artifact lock; concurrent fixtures spend
-# their timeout waiting for the same build and multiply Cargo's job budget.
-max-threads = 1
-
-[[profile.default.overrides]]
-filter = 'binary(/compile_fail|_ui$|_compile$/)'
-test-group = 'compiler-boundary'
-# A cold Windows dependency build alone can exceed twelve minutes before the
-# first pass/fail fixture starts. Keep a bounded aggregate compiler envelope.
-slow-timeout = { period = "60s", terminate-after = 30 }
-
 # These proofs build scale worlds or enumerate every physical interruption.
 # Give each the whole fixture pool: their internal readers/writers still run
 # concurrently, while unrelated worlds cannot consume the same I/O budget.
@@ -49,7 +33,7 @@ slow-timeout = { period = "60s", terminate-after = 30 }
 # Libtest also serializes these sweeps within its process. All merged lifecycle
 # cases stay.
 [[profile.default.overrides]]
-filter = 'binary_id(=worth-store-relational::relational_home) & test(media_sweep::)'
+filter = 'binary_id(=worth-store-court-relational::worth_store_court_relational) & test(media_sweep::)'
 threads-required = "num-test-threads"
 
 # Residency member publication expands checkpoint replacement to 590 admitted
@@ -58,11 +42,11 @@ threads-required = "num-test-threads"
 # to whole minutes. A loaded diagnostic took 894.77 s, leaving 56% of the
 # CI guard unused. Phase costs and qualification timings are in the README.
 [[profile.default.overrides]]
-filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_checkpoint_replacement_recovers)'
+filter = 'binary_id(=worth-store-court-relational::worth_store_court_relational) & test(=process::relational::relational_home::media_sweep::every_media_operation_of_a_checkpoint_replacement_recovers)'
 slow-timeout = { period = "60s", terminate-after = 17 }
 
 [[profile.ci.overrides]]
-filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_checkpoint_replacement_recovers)'
+filter = 'binary_id(=worth-store-court-relational::worth_store_court_relational) & test(=process::relational::relational_home::media_sweep::every_media_operation_of_a_checkpoint_replacement_recovers)'
 slow-timeout = { period = "60s", terminate-after = 34 }
 
 # The first checkpoint adds 472 admitted cuts (236 per seed; 576 scheduled,
@@ -70,11 +54,11 @@ slow-timeout = { period = "60s", terminate-after = 34 }
 # 176-cut matrix's 300 s/default and 600 s/CI allowance: 472/176 * 300 =
 # 804.55 s and 472/176 * 600 = 1,609.09 s, rounded up to 14 / 27 minutes.
 [[profile.default.overrides]]
-filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_the_first_checkpoint_recovers)'
+filter = 'binary_id(=worth-store-court-relational::worth_store_court_relational) & test(=process::relational::relational_home::media_sweep::every_media_operation_of_the_first_checkpoint_recovers)'
 slow-timeout = { period = "60s", terminate-after = 14 }
 
 [[profile.ci.overrides]]
-filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_the_first_checkpoint_recovers)'
+filter = 'binary_id(=worth-store-court-relational::worth_store_court_relational) & test(=process::relational::relational_home::media_sweep::every_media_operation_of_the_first_checkpoint_recovers)'
 slow-timeout = { period = "60s", terminate-after = 27 }
 
 # Cold-region setup and recovery dominate its 12 admitted cuts (24 scheduled).
@@ -85,11 +69,11 @@ slow-timeout = { period = "60s", terminate-after = 27 }
 # 89.2% / 94.6% unused at the nextest timing, and 62.3% / 81.2% at the slower
 # diagnostic. No cut or per-operation deadline is removed or relaxed.
 [[profile.default.overrides]]
-filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_cold_region_load_recovers)'
+filter = 'binary_id(=worth-store-court-relational::worth_store_court_relational) & test(=process::relational::relational_home::media_sweep::every_media_operation_of_a_cold_region_load_recovers)'
 slow-timeout = { period = "60s", terminate-after = 11 }
 
 [[profile.ci.overrides]]
-filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_cold_region_load_recovers)'
+filter = 'binary_id(=worth-store-court-relational::worth_store_court_relational) & test(=process::relational::relational_home::media_sweep::every_media_operation_of_a_cold_region_load_recovers)'
 slow-timeout = { period = "60s", terminate-after = 22 }
 
 # This test runs archive, deletion-request and delete matrices under one timer:
@@ -97,11 +81,11 @@ slow-timeout = { period = "60s", terminate-after = 22 }
 # than giving their combined work one ordinary case's guard. The loaded
 # diagnostic took 709.13 s across all three, leaving 61% of the CI guard unused.
 [[profile.default.overrides]]
-filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_archive_and_delete_transitions_recovers)'
+filter = 'binary_id(=worth-store-court-relational::worth_store_court_relational) & test(=process::relational::relational_home::media_sweep::every_media_operation_of_archive_and_delete_transitions_recovers)'
 slow-timeout = { period = "60s", terminate-after = 15 }
 
 [[profile.ci.overrides]]
-filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_archive_and_delete_transitions_recovers)'
+filter = 'binary_id(=worth-store-court-relational::worth_store_court_relational) & test(=process::relational::relational_home::media_sweep::every_media_operation_of_archive_and_delete_transitions_recovers)'
 slow-timeout = { period = "60s", terminate-after = 30 }
 
 # Scheduled maximum-roster proof: 64 chunks, 63 partial drops, one checkpoint,
@@ -109,11 +93,7 @@ slow-timeout = { period = "60s", terminate-after = 30 }
 # Under continuous builds it passed in 732.6 s (8.34 s/drop, 196 s ingest),
 # leaving 59% of this dedicated 1,800 s guard unused.
 [[profile.default.overrides]]
-filter = 'test(=certified_release_serving::certificate_roster_scale::maximum_certificate_roster_checkpoints_recovers_and_rejoins)'
+filter = 'test(=cost::recovery_runtime::production_entry::certified_release_serving::certificate_roster_scale::maximum_certificate_roster_checkpoints_recovers_and_rejoins)'
 threads-required = "num-test-threads"
 slow-timeout = { period = "60s", terminate-after = 30 }
 
-[[profile.ci.overrides]]
-filter = 'binary(/compile_fail|_ui$|_compile$/)'
-test-group = 'compiler-boundary'
-slow-timeout = { period = "60s", terminate-after = 15 }

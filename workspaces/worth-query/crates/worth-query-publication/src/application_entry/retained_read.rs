@@ -81,7 +81,7 @@ phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvan
         Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<
             Schema,
         >,
-    {
+{
         application.begin_preview(phase, &self.retained, request)
     }
 

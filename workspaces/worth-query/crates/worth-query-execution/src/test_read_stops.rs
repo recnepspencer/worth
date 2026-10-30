@@ -7,7 +7,7 @@ use worth_execution::{
 type ConsultRun<T, E> = (Result<T, E>, u64, usize);
 type ReadDoor<'a, T, E> = dyn Fn(&ExecutionRequest<'_, '_>) -> Result<T, E> + 'a;
 type CountedDoor<'a, T, E> = dyn Fn(&ReadDoor<'_, T, E>) -> ConsultRun<T, E> + 'a;
-pub(crate) fn every_consult<T: Eq + Debug, E: Eq + Debug>(
+pub fn every_consult<T: Eq + Debug, E: Eq + Debug>(
     door: impl Fn(&ExecutionRequest<'_, '_>) -> Result<T, E>,
     cancelled: E,
     exhausted: E,
@@ -16,7 +16,7 @@ pub(crate) fn every_consult<T: Eq + Debug, E: Eq + Debug>(
 }
 
 /// Builds fresh mutable custody and opens its door before installing the observer.
-pub(crate) fn every_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
+pub fn every_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
     healthy_work: u64,
     with_door: impl Fn(&CountedDoor<'_, T, E>) -> ConsultRun<T, E>,
     cancelled: E,
@@ -26,7 +26,7 @@ pub(crate) fn every_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
 }
 
 /// Counts only consults within a guarded read-only semantic observation.
-pub(crate) fn every_selected_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
+pub fn every_selected_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
     healthy_work: u64,
     observes: impl Fn() -> bool + 'static,
     with_door: impl Fn(&CountedDoor<'_, T, E>) -> ConsultRun<T, E>,
@@ -45,7 +45,7 @@ pub(crate) fn every_selected_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
 
 /// Full-value oracles can assert which consult answered and every charged prefix.
 #[allow(dead_code)] // The Host proof imports this shared oracle owner.
-pub(crate) fn selected_consult_answers<T: Eq + Debug, E: Eq + Debug>(
+pub fn selected_consult_answers<T: Eq + Debug, E: Eq + Debug>(
     healthy_work: u64,
     observes: impl Fn() -> bool + 'static,
     with_door: impl Fn(&CountedDoor<'_, T, E>) -> ConsultRun<T, E>,
@@ -64,7 +64,7 @@ pub(crate) fn selected_consult_answers<T: Eq + Debug, E: Eq + Debug>(
     );
 }
 
-pub(crate) fn every_consult_under<T: Eq + Debug, E: Eq + Debug>(
+pub fn every_consult_under<T: Eq + Debug, E: Eq + Debug>(
     parent: &ExecutionRequest<'_, '_>,
     door: impl Fn(&ExecutionRequest<'_, '_>) -> Result<T, E>,
     cancelled: E,
@@ -219,7 +219,7 @@ fn selected_consult_answers_under<T: Eq + Debug, E: Eq + Debug>(
 }
 
 /// The same counted oracle for doors borrowing their request from a phase.
-pub(crate) fn every_advancement_consult<T: Eq + Debug, E: Eq + Debug>(
+pub fn every_advancement_consult<T: Eq + Debug, E: Eq + Debug>(
     door: impl Fn(
         &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         u64,
@@ -236,7 +236,7 @@ type AdvancementDoor<'a, T, E> = dyn Fn(
     ) -> Result<T, E>
     + 'a;
 type CountedAdvancementDoor<'a, T, E> = dyn Fn(&AdvancementDoor<'_, T, E>) -> ConsultRun<T, E> + 'a;
-pub(crate) fn every_advancement_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
+pub fn every_advancement_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
     with_door: impl Fn(&CountedAdvancementDoor<'_, T, E>) -> ConsultRun<T, E>,
     cancelled: E,
     exhausted: E,
@@ -325,7 +325,7 @@ fn assert_every_consult<T: Eq + Debug, E: Eq + Debug>(
 
 /// Signals external cancellation inside a named read consult, using the sealed
 /// SDK observation door this oracle owner already holds.
-pub(crate) fn cancelled_at_consult_for_test<T>(
+pub fn cancelled_at_consult_for_test<T>(
     at: usize,
     source: worth_execution::CancellationSource,
     read: impl FnOnce() -> T,
@@ -342,20 +342,20 @@ pub(crate) fn cancelled_at_consult_for_test<T>(
 }
 
 /// Receiver-owned SDK observation guard; only signals the supplied request.
-pub(crate) fn observe_consults_for_test(
+pub fn observe_consults_for_test(
     observe: impl FnMut(usize) + 'static,
 ) -> worth_execution::RequestConsultObservationForTest {
     worth_execution::RequestConsultObservationForTest::install_on_this_thread_for_test(observe)
 }
 
-pub(crate) fn consult_count_for_test(
+pub fn consult_count_for_test(
     observation: &worth_execution::RequestConsultObservationForTest,
 ) -> usize {
     observation.count_for_test()
 }
 
 #[allow(dead_code)] // The Host clock proof imports this shared harness.
-pub(crate) fn charged_prefixes_for_test(
+pub fn charged_prefixes_for_test(
     observation: &worth_execution::RequestConsultObservationForTest,
 ) -> Vec<(usize, u64)> {
     observation.charged_prefixes_for_test()

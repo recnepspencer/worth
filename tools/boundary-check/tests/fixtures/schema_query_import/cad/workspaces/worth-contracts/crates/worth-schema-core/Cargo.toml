@@ -1,7 +1,0 @@
-[package]
-name = "worth-schema-core"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-worth-query = { path = "../../../../../vendor/WORTH-query" }

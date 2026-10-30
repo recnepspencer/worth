@@ -107,13 +107,13 @@ impl WorthUiRuntime {
         let arena_identity = crate::runtime::WorthUiHandleArenaIdentity::from_host_session(
             host_plan_binding.session_identity(),
         );
-        if let Some(candidate_snapshot_digest) = candidate_snapshot_digest {
-            if candidate_snapshot_digest != snapshot_digest.as_u64() {
-                return Err(WorthUiRuntimeLaunchDenial::CandidateSnapshotMismatch {
-                    candidate_snapshot_digest,
-                    app_snapshot_digest: snapshot_digest.as_u64(),
-                });
-            }
+        if let Some(candidate_snapshot_digest) = candidate_snapshot_digest
+            && candidate_snapshot_digest != snapshot_digest.as_u64()
+        {
+            return Err(WorthUiRuntimeLaunchDenial::CandidateSnapshotMismatch {
+                candidate_snapshot_digest,
+                app_snapshot_digest: snapshot_digest.as_u64(),
+            });
         }
         let (active_artifact, artifact_digest) = match candidate_artifact_digest {
             Some(artifact_digest) => (

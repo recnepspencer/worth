@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Bank external rail: a real, separate-process, TCP-reachable external
 //! service boundary with controllable faults, built to close Gate 8.2's
 //! exit proof.

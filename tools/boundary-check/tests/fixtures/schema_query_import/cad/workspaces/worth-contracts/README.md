@@ -1,1 +1,0 @@
-# worth-contracts fixture

@@ -7,7 +7,6 @@ use stats_alloc::Region;
 use std::sync::{Arc, Mutex};
 use worth_query_host::facade::{
     admission::authenticated_principal::*,
-    application_contribution::*,
     application_entry::*,
     primary_graph::*,
     runtime::{MapKernelStop, WorkCeilingDenial},

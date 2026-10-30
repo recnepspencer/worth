@@ -1,0 +1,30 @@
+error[E0624]: associated function `new` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_mapper_envelope_constructor_private.rs:4:44
+  |
+4 |       let _ = BridgeWritebackMapperEnvelope::new();
+  |                                              ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/writeback/mapper/envelope.rs
+  |
+  | /     pub(crate) fn new(
+  | |         contract: &AdmittedBridgeWritebackContract,
+  | |         causality: &BridgeWritebackNativeCausalityInputs,
+  | |         effect_intent: BridgeWritebackEffectIntent,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here
+
+error[E0061]: this function takes 3 arguments but 0 arguments were supplied
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_mapper_envelope_constructor_private.rs:4:13
+  |
+4 |     let _ = BridgeWritebackMapperEnvelope::new();
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-- three arguments of type `&AdmittedBridgeWritebackContract`, `&BridgeWritebackNativeCausalityInputs`, and `BridgeWritebackEffectIntent` are missing
+  |
+note: associated function defined here
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/writeback/mapper/envelope.rs
+  |
+  |     pub(crate) fn new(
+  |                   ^^^
+help: provide the arguments
+  |
+4 |     let _ = BridgeWritebackMapperEnvelope::new(/* &AdmittedBridgeWritebackContract */, /* &BridgeWritebackNativeCausalityInputs */, /* BridgeWritebackEffectIntent */);
+  |                                                ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

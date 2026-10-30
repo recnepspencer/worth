@@ -73,7 +73,7 @@ pub(super) fn admit_addressed_member(
                 .observed()
                 .map_err(|failure| unread.keep(failure))?
                 .bytes()
-                .map(<[u8]>::to_vec)
+                .map(|chunk| chunk.to_vec())
                 .ok_or(())
         },
     )

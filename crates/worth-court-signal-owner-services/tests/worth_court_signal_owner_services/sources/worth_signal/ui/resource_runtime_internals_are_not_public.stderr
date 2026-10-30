@@ -1,0 +1,11 @@
+error[E0603]: module `logic` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_runtime_internals_are_not_public.rs:1:19
+  |
+1 | use worth_signal::logic::transaction::runtime::state::resource::ResourceRuntimeState;
+  |                   ^^^^^ private module                -------- module `resource` is not publicly re-exported
+  |
+note: the module `logic` is defined here
+ --> $WORKSPACE/crates/worth-signal/src/lib.rs
+  |
+  | mod logic;
+  | ^^^^^^^^^

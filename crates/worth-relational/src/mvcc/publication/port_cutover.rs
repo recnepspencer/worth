@@ -131,7 +131,7 @@ impl PreparedBranchPublicationPreflight {
 
         // Keep the caller's original request at the final pre-effect boundary;
         // a separate operation-control token cannot replace its first cause.
-        if let Err(stop) = crate::authority::commit::pipeline::consult_stage_control(
+        if let Err(stop) = crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::PublicationCutover,
         ) {

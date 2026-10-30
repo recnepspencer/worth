@@ -121,8 +121,8 @@ immutable staged continuation advances only after the original request succeeds;
 a refused or cancelled page preserves the last accepted position. Drop captured
 subjects, pages and cursors when finished to release their retained Native and
 World pins. The [installed history guide](../capabilities/record-and-aspect-history.md)
-documents limits and typed gaps. Compiled [entity audit journeys](../../../worth-query-certification/tests/application_graph/document_retention_model/record_history/court.rs)
-and the [physical relation journey](../../../worth-query-certification/tests/application_graph/relation_laws/history/court.rs)
+documents limits and typed gaps. Compiled [entity audit journeys](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/document_retention_model/record_history/court/mod.rs)
+and the [physical relation journey](../../../worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/history/court/mod.rs)
 show capture, fresh permission, continuation and final release through Decl/Host.
 
 ### Keep the original branch across a host default switch
@@ -1047,7 +1047,7 @@ actual completed native refusal. The next explicit `advance` selects the
 original branch again and admits the same input, key, declared action and typed
 preconditions under fresh request authority. It never replaces a caller's
 expected fact with current state, and it performs only one attempt per call.
-The [unpinned stale courts](../../../worth-query-certification/tests/application_graph/source_only/stale_retry.rs)
+The [unpinned stale courts](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/stale_retry/mod.rs)
 exercise that path with a genuine competing ordinary operation.
 
 Live `close` accepts only this proven retryable no-effect custody and delegates
@@ -1077,7 +1077,7 @@ its receipt does not certify external cleanup or crash durability. Collection an
 closed results retain `managed_cleanup_receipt()` when a failed managed run was
 released. Inspect its actual disposition and provider recovery evidence: released
 resource reservations can coexist with logical `RecoveryRequired` evidence.
-The [native posture courts](../../../worth-query-certification/tests/application_graph/source_only/native_postures.rs)
+The [native posture courts](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/native_postures/mod.rs)
 exercise an actual pre-World native writer race and finite retained-observation
 capacity, with unchanged valid counterparts.
 

@@ -160,6 +160,7 @@ dependencies = [
  "thirtyfour",
  "tokio",
  "url",
+ "worth-query-bank-testkit-server",
  "worth-query-decl",
  "worth-query-host",
  "worth-query-package-archive",
@@ -236,6 +237,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "worth-foundational",
+ "worth-query-bank-testkit",
  "worth-query-host",
 ]
 
@@ -3301,6 +3303,164 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-bank-court-domain"
+version = "0.1.0"
+dependencies = [
+ "bank-domain",
+ "worth-query-bank-testkit-domain",
+ "worth-query-decl",
+ "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-bank-court-external-rail"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "tokio",
+ "tokio-rustls",
+ "worth-query-bank-testkit",
+ "worth-query-bank-testkit-external-rail",
+]
+
+[[package]]
+name = "worth-query-bank-court-external-rail-server"
+version = "0.1.0"
+dependencies = [
+ "bank-domain",
+ "bank-server",
+ "worth-foundational",
+ "worth-query-bank-testkit-server",
+ "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-bank-court-http-adapter"
+version = "0.1.0"
+dependencies = [
+ "worth-query-bank-testkit-http-adapter",
+]
+
+[[package]]
+name = "worth-query-bank-court-server"
+version = "0.1.0"
+dependencies = [
+ "bank-server",
+ "serde_json",
+ "worth-query-bank-testkit-estate-certification",
+]
+
+[[package]]
+name = "worth-query-bank-court-source"
+version = "0.1.0"
+dependencies = [
+ "worth-query-bank-testkit-user-node",
+]
+
+[[package]]
+name = "worth-query-bank-court-user-node"
+version = "0.1.0"
+dependencies = [
+ "bank-http-adapter",
+ "bank-user-node",
+ "reqwest 0.12.28",
+ "serde_json",
+ "tokio",
+ "worth-query-bank-testkit",
+ "worth-query-bank-testkit-courtroom",
+ "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-bank-testkit"
+version = "0.1.0"
+
+[[package]]
+name = "worth-query-bank-testkit-courtroom"
+version = "0.1.0"
+dependencies = [
+ "bank-domain",
+ "bank-external-rail",
+ "bank-http-adapter",
+ "bank-server",
+ "bank-user-node",
+ "ed25519-dalek",
+ "rand 0.8.8",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thirtyfour",
+ "tokio",
+ "url",
+ "worth-query-bank-testkit",
+ "worth-query-bank-testkit-server",
+ "worth-query-host",
+ "worth-query-package-archive",
+]
+
+[[package]]
+name = "worth-query-bank-testkit-domain"
+version = "0.1.0"
+dependencies = [
+ "bank-domain",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-bank-testkit-estate-certification"
+version = "0.1.0"
+dependencies = [
+ "bank-domain",
+ "bank-estate-certification",
+ "bank-server",
+ "serde_json",
+ "worth-foundational",
+ "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-bank-testkit-external-rail"
+version = "0.1.0"
+dependencies = [
+ "bank-external-rail",
+ "ed25519-dalek",
+ "rcgen",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "tokio-rustls",
+ "worth-foundational",
+ "worth-query-bank-testkit",
+]
+
+[[package]]
+name = "worth-query-bank-testkit-http-adapter"
+version = "0.1.0"
+dependencies = [
+ "bank-http-adapter",
+]
+
+[[package]]
+name = "worth-query-bank-testkit-server"
+version = "0.1.0"
+dependencies = [
+ "bank-domain",
+ "bank-external-rail",
+ "bank-server",
+ "tokio",
+ "worth-foundational",
+ "worth-query-bank-testkit",
+ "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-bank-testkit-user-node"
+version = "0.1.0"
+
+[[package]]
 name = "worth-query-decl"
 version = "0.1.0"
 dependencies = [
@@ -3379,6 +3539,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "sha2",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-query-admission",

@@ -5,7 +5,7 @@ use crate::domain_computation::{
     primary_graph::{
         application_query::FreshQueryPermissionStop,
         causal_inspection::application_inspection::{
-            comparison_tests::reads, report, rich::WorthQueryApplicationEvidenceFamily as Family,
+            report, rich::WorthQueryApplicationEvidenceFamily as Family,
         },
         tests::fixture::{
             diagnostic_comparison::DiagnosticAccountBinding, installed_inspection_capability_world,
@@ -14,6 +14,7 @@ use crate::domain_computation::{
     },
 };
 use std::time::{Duration, UNIX_EPOCH};
+mod observation;
 
 #[test]
 fn separately_admitted_rich_body_cannot_replace_scope_or_requested_families() {
@@ -23,11 +24,12 @@ fn separately_admitted_rich_body_cannot_replace_scope_or_requested_families() {
         .hold(UNIX_EPOCH + Duration::from_secs(100));
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let (original, rows) =
-        reads::read::<DiagnosticAccountBinding>(&world, &external, &request, "no-match", true);
+    let (original, rows) = observation::read::<DiagnosticAccountBinding>(
+        &world, &external, &request, "no-match", true,
+    );
     assert!(rows.is_empty());
-    let capability_a = reads::capability(&world, &external, &request);
-    let capability_b = reads::capability(&world, &external, &request);
+    let capability_a = observation::capability(&world, &external, &request);
+    let capability_b = observation::capability(&world, &external, &request);
     let installed = world
         .application
         .installed_schema()

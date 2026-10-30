@@ -16,7 +16,6 @@ use crate::facade::{
 };
 
 mod certification;
-mod equivalence_observation;
 mod evaluation_budget;
 mod managed_time;
 mod owned_installation;

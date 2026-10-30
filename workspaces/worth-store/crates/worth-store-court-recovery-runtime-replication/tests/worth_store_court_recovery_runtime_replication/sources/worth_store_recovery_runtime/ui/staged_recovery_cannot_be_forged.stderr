@@ -1,0 +1,59 @@
+warning: unreachable expression
+ --> tests/ui/staged_recovery_cannot_be_forged.rs:6:23
+  |
+5 |         authority: todo!(),
+  |                    ------- any code following this expression is unreachable
+6 |         coordination: todo!(),
+  |                       ^^^^^^^ unreachable expression
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error: cannot construct `StagedPhysicalRecovery` with struct literal syntax due to private fields
+  --> tests/ui/staged_recovery_cannot_be_forged.rs:4:19
+   |
+ 4 |     let _forged = StagedPhysicalRecovery {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^
+ 5 |         authority: todo!(),
+   |         ------------------ private field
+ 6 |         coordination: todo!(),
+   |         --------------------- private field
+ 7 |         selection: todo!(),
+   |         ------------------ private field
+ 8 |         discovery_counters: todo!(),
+   |         --------------------------- private field
+ 9 |         freshness: todo!(),
+   |         ------------------ private field
+10 |         fates: todo!(),
+   |         -------------- private field
+11 |         planning_counters: todo!(),
+   |         -------------------------- private field
+12 |         base: todo!(),
+   |         ------------- private field
+13 |         publication: todo!(),
+   |         -------------------- private field
+14 |         quiescence: todo!(),
+   |         ------------------- private field
+15 |         closed: todo!(),
+   |         --------------- private field
+16 |         staging_counters: todo!(),
+   |         ------------------------- private field
+   |
+   = note: ...and other private fields that were not provided
+help: you might have meant to use the `new` associated function
+   |
+ 4 -     let _forged = StagedPhysicalRecovery {
+ 5 -         authority: todo!(),
+ 6 -         coordination: todo!(),
+ 7 -         selection: todo!(),
+ 8 -         discovery_counters: todo!(),
+ 9 -         freshness: todo!(),
+10 -         fates: todo!(),
+11 -         planning_counters: todo!(),
+12 -         base: todo!(),
+13 -         publication: todo!(),
+14 -         quiescence: todo!(),
+15 -         closed: todo!(),
+16 -         staging_counters: todo!(),
+17 -     };
+ 4 +     let _forged = StagedPhysicalRecovery::new(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _);
+   |

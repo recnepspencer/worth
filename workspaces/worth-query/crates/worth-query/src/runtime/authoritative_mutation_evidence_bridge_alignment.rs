@@ -47,7 +47,8 @@ pub(super) fn assert_bridge_support_alignment(
             ));
         }
     }
-    for family in [BridgeMutationEvidenceSymbolicTargetReferenceFamily::SameBatchDeclaredTarget] {
+    {
+        let family = BridgeMutationEvidenceSymbolicTargetReferenceFamily::SameBatchDeclaredTarget;
         if !bridge_support
             .symbolic_target_reference_families()
             .iter()

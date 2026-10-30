@@ -102,35 +102,42 @@ fn kernel_width_exceeded(peak: usize, workers: usize) -> bool {
     peak > workers
 }
 
-#[test]
-fn four_inner_kernels_cannot_hide_in_one_member_window() {
-    let world = super::super::seeded_world::world(super::super::Family::Empty, super::super::SEED);
-    let control = control::Control::new(world, false, false, 0, true);
-    control.state.lock().unwrap().armed = true;
-    control.dispatched(8);
-    let mut flights = Vec::new();
-    for part in 0..4 {
-        control.enter_compute(8, part, 1);
-        flights.push(control::KernelFlight(&control));
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn four_inner_kernels_cannot_hide_in_one_member_window() {
+        let world = super::super::super::seeded_world::world(
+            super::super::super::Family::Empty,
+            super::super::super::SEED,
+        );
+        let control = control::Control::new(world, false, false, 0, true);
+        control.state.lock().unwrap().armed = true;
+        control.dispatched(8);
+        let mut flights = Vec::new();
+        for part in 0..4 {
+            control.enter_compute(8, part, 1);
+            flights.push(control::KernelFlight(&control));
+        }
+        let measured = {
+            let state = control.state.lock().unwrap();
+            (state.peak, state.kernel_peak)
+        };
+        assert_eq!(
+            measured,
+            (1, 4),
+            "one member window contains four kernel lifetimes"
+        );
+        let peak = control.state.lock().unwrap().kernel_peak;
+        assert!(
+            kernel_width_exceeded(peak, 1),
+            "four inner kernels exceed a one-worker lease despite one member window"
+        );
+        drop(flights);
+        assert_eq!(
+            control.state.lock().unwrap().kernel_active,
+            0,
+            "kernel lifetimes release individually"
+        );
     }
-    let measured = {
-        let state = control.state.lock().unwrap();
-        (state.peak, state.kernel_peak)
-    };
-    assert_eq!(
-        measured,
-        (1, 4),
-        "one member window contains four kernel lifetimes"
-    );
-    let peak = control.state.lock().unwrap().kernel_peak;
-    assert!(
-        kernel_width_exceeded(peak, 1),
-        "four inner kernels exceed a one-worker lease despite one member window"
-    );
-    drop(flights);
-    assert_eq!(
-        control.state.lock().unwrap().kernel_active,
-        0,
-        "kernel lifetimes release individually"
-    );
 }

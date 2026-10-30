@@ -67,137 +67,142 @@ macro_rules! cancelled_inside_middle_refresh {
     };
 }
 
-#[test]
-fn a_queue_frame_whose_stage_defers_leaves_its_row_to_a_later_advance() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = chain_application();
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let (a, b, mut c, mut d) = chain_with_unrelated!(application, request);
-    change_root_input!(request, application, 2, 0x9176_3e00_u64);
-    // The unrelated caller runs the root's refresh as a queue frame, and
-    // that refresh defers its readiness delivery.
-    application.delay_next_output_readiness_delivery_for_test();
-    settled_in_one_advance!(d, request, "the unrelated required demand");
-    // The frame's successor outlived the frame's wave: the last consumer
-    // finishes the deferred row and the chain above it.
-    settled_in_one_advance!(c, request, "the last consumer");
-    drop((a, b, c, d));
-}
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn a_queue_frame_whose_stage_defers_leaves_its_row_to_a_later_advance() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = chain_application();
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let (a, b, mut c, mut d) = chain_with_unrelated!(application, request);
+        change_root_input!(request, application, 2, 0x9176_3e00_u64);
+        // The unrelated caller runs the root's refresh as a queue frame, and
+        // that refresh defers its readiness delivery.
+        application.delay_next_output_readiness_delivery_for_test();
+        settled_in_one_advance!(d, request, "the unrelated required demand");
+        // The frame's successor outlived the frame's wave: the last consumer
+        // finishes the deferred row and the chain above it.
+        settled_in_one_advance!(c, request, "the last consumer");
+        drop((a, b, c, d));
+    }
 
-#[test]
-fn a_required_refresh_its_request_stops_is_left_to_a_later_advance() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = chain_application();
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let (a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
-    change_root_input!(request, application, 2, 0x9176_3f00_u64);
-    // A queue frame leaves the root's refresh waiting on its deferred
-    // readiness delivery.
-    application.delay_next_output_readiness_delivery_for_test();
-    settled_in_one_advance!(d, request, "the unrelated required demand");
-    // A request cancelled inside the middle row's refresh stops there.
-    cancelled_inside_middle_refresh!(application, principal, b);
-    // The stop was the request's, not the row's: the dependent of that row
-    // redoes its refresh on a later advance.
-    settled_in_one_advance!(c, request, "the last consumer");
-    drop((a, b, c, d));
-}
+    #[test]
+    fn a_required_refresh_its_request_stops_is_left_to_a_later_advance() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = chain_application();
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let (a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
+        change_root_input!(request, application, 2, 0x9176_3f00_u64);
+        // A queue frame leaves the root's refresh waiting on its deferred
+        // readiness delivery.
+        application.delay_next_output_readiness_delivery_for_test();
+        settled_in_one_advance!(d, request, "the unrelated required demand");
+        // A request cancelled inside the middle row's refresh stops there.
+        cancelled_inside_middle_refresh!(application, principal, b);
+        // The stop was the request's, not the row's: the dependent of that row
+        // redoes its refresh on a later advance.
+        settled_in_one_advance!(c, request, "the last consumer");
+        drop((a, b, c, d));
+    }
 
-#[test]
-fn a_cancelled_caller_retries_its_own_successor_on_its_next_advance() {
-    let _guard = checkpoint_recovery_test_guard();
-    let provider_observation = crate::producer::ProviderContacts::default();
-    let application = support::observed::install_program_with_seed::<program::ChainProgram>(
-        None,
-        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard(),
-        4_096,
-        source_world::seed,
-        &provider_observation,
-    );
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
-    let mut root_reading = Reading::default();
-    assert_eq!(
-        root_reading.contacts(
-            settled_in_one_advance!(a, request, "the initial root reading")
-                .producer_contacts_in_this_demand(),
-        ),
-        1,
-        "the root baseline includes exactly its initial settlement"
-    );
-    let mut middle_reading = Reading::default();
-    assert_eq!(
-        middle_reading.contacts(
-            settled_in_one_advance!(b, request, "the initial middle reading")
-                .producer_contacts_in_this_demand(),
-        ),
-        1,
-        "the middle baseline includes exactly its initial settlement"
-    );
-    change_root_input!(request, application, 2, 0x9176_3f80_u64);
-    // A queue frame refreshes the root and leaves its readiness delivery
-    // deferred, so the middle row's refresh is still to come.
-    application.delay_next_output_readiness_delivery_for_test();
-    settled_in_one_advance!(d, request, "the unrelated required demand");
-    let cancelled_contacts = cancelled_inside_middle_refresh!(application, principal, b);
-    // The same caller's next advance resumes its own interrupted row and
-    // finishes it, without contacting the root producer that already
-    // refreshed.
-    provider_observation.reset();
-    let resumed = settled_in_one_advance!(b, request, "the cancelled caller");
-    assert_eq!(
-        provider_observation.count(),
-        0,
-        "the already refreshed root producer is not contacted again"
-    );
-    assert_eq!(
-        middle_reading.contacts(resumed.producer_contacts_in_this_demand()) - cancelled_contacts,
-        1,
-        "the cancelled caller refreshes its own row once"
-    );
-    assert_eq!(take_decisions("anchor-b").len(), 1);
-    let last = settled_in_one_advance!(c, request, "the last consumer");
-    assert_eq!(
-        Reading::default().contacts(last.producer_contacts_in_this_demand()),
-        1,
-        "the last consumer has one own execution since its handle opened"
-    );
-    let root = settled_in_one_advance!(a, request, "the open root demand");
-    assert_eq!(
-        root_reading.contacts(root.producer_contacts_in_this_demand()),
-        0
-    );
-    drop((a, b, c, d));
-}
-
-#[test]
-fn a_request_cancelled_before_it_advances_leaves_the_row_to_a_later_advance() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = chain_application();
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let (a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
-    change_root_input!(request, application, 2, 0x9176_3fc0_u64);
-    application.delay_next_output_readiness_delivery_for_test();
-    settled_in_one_advance!(d, request, "the unrelated required demand");
-    // A request already cancelled when the middle consumer advances stops
-    // before the middle row's refresh decides anything.
-    cancelled_middle_advance!(
-        application,
-        principal,
-        b,
-        |cancellation| cancellation.cancel(),
-        0,
-        WorthQueryOutputDemandDenialKind::ExecutionRequest(
-            WorthQueryAdvancementDenial::Interrupted(
-                WorthQueryManagedComputationInterruption::Cancelled,
+    #[test]
+    fn a_cancelled_caller_retries_its_own_successor_on_its_next_advance() {
+        let _guard = checkpoint_recovery_test_guard();
+        let provider_observation = crate::producer::ProviderContacts::default();
+        let application = support::observed::install_program_with_seed::<program::ChainProgram>(
+            None,
+            worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard(),
+            4_096,
+            source_world::seed,
+            &provider_observation,
+        );
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
+        let mut root_reading = Reading::default();
+        assert_eq!(
+            root_reading.contacts(
+                settled_in_one_advance!(a, request, "the initial root reading")
+                    .producer_contacts_in_this_demand(),
             ),
-        )
-    );
-    // The dependent of that row refreshes it on a later advance.
-    settled_in_one_advance!(c, request, "the last consumer");
-    drop((a, b, c, d));
+            1,
+            "the root baseline includes exactly its initial settlement"
+        );
+        let mut middle_reading = Reading::default();
+        assert_eq!(
+            middle_reading.contacts(
+                settled_in_one_advance!(b, request, "the initial middle reading")
+                    .producer_contacts_in_this_demand(),
+            ),
+            1,
+            "the middle baseline includes exactly its initial settlement"
+        );
+        change_root_input!(request, application, 2, 0x9176_3f80_u64);
+        // A queue frame refreshes the root and leaves its readiness delivery
+        // deferred, so the middle row's refresh is still to come.
+        application.delay_next_output_readiness_delivery_for_test();
+        settled_in_one_advance!(d, request, "the unrelated required demand");
+        let cancelled_contacts = cancelled_inside_middle_refresh!(application, principal, b);
+        // The same caller's next advance resumes its own interrupted row and
+        // finishes it, without contacting the root producer that already
+        // refreshed.
+        provider_observation.reset();
+        let resumed = settled_in_one_advance!(b, request, "the cancelled caller");
+        assert_eq!(
+            provider_observation.count(),
+            0,
+            "the already refreshed root producer is not contacted again"
+        );
+        assert_eq!(
+            middle_reading.contacts(resumed.producer_contacts_in_this_demand())
+                - cancelled_contacts,
+            1,
+            "the cancelled caller refreshes its own row once"
+        );
+        assert_eq!(take_decisions("anchor-b").len(), 1);
+        let last = settled_in_one_advance!(c, request, "the last consumer");
+        assert_eq!(
+            Reading::default().contacts(last.producer_contacts_in_this_demand()),
+            1,
+            "the last consumer has one own execution since its handle opened"
+        );
+        let root = settled_in_one_advance!(a, request, "the open root demand");
+        assert_eq!(
+            root_reading.contacts(root.producer_contacts_in_this_demand()),
+            0
+        );
+        drop((a, b, c, d));
+    }
+
+    #[test]
+    fn a_request_cancelled_before_it_advances_leaves_the_row_to_a_later_advance() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = chain_application();
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let (a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
+        change_root_input!(request, application, 2, 0x9176_3fc0_u64);
+        application.delay_next_output_readiness_delivery_for_test();
+        settled_in_one_advance!(d, request, "the unrelated required demand");
+        // A request already cancelled when the middle consumer advances stops
+        // before the middle row's refresh decides anything.
+        cancelled_middle_advance!(
+            application,
+            principal,
+            b,
+            |cancellation| cancellation.cancel(),
+            0,
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                WorthQueryAdvancementDenial::Interrupted(
+                    WorthQueryManagedComputationInterruption::Cancelled,
+                ),
+            )
+        );
+        // The dependent of that row refreshes it on a later advance.
+        settled_in_one_advance!(c, request, "the last consumer");
+        drop((a, b, c, d));
+    }
 }

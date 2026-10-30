@@ -1,0 +1,18 @@
+error: cannot construct `BridgeSubscriptionCertificationAssemblyPlan` with struct literal syntax due to private fields
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_assembly_plan_constructor_private.rs:4:17
+  |
+4 |     let _plan = BridgeSubscriptionCertificationAssemblyPlan {};
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: private fields that were not provided
+help: you might have meant to use an associated function to build this type
+  |
+4 -     let _plan = BridgeSubscriptionCertificationAssemblyPlan {};
+4 +     let _plan = BridgeSubscriptionCertificationAssemblyPlan::plan(_, _);
+  |
+4 -     let _plan = BridgeSubscriptionCertificationAssemblyPlan {};
+4 +     let _plan = BridgeSubscriptionCertificationAssemblyPlan::plan_with_field_expectation(_, _, _);
+  |
+4 -     let _plan = BridgeSubscriptionCertificationAssemblyPlan {};
+4 +     let _plan = BridgeSubscriptionCertificationAssemblyPlan::plan_with_bundle_identity(_, _, _, _);
+  |

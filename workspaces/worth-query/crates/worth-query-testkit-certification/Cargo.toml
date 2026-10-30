@@ -1,0 +1,29 @@
+[package]
+name = "worth-query-testkit-certification"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+serde = { version = "1", features = ["derive", "rc"] }
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query = { workspace = true }
+worth-query-decl = { workspace = true }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-host = { workspace = true }
+worth-query-testkit-certification-granular-invalidation = { path = "../worth-query-testkit-certification-granular-invalidation" }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+worth-query-testkit-host = { path = "../worth-query-testkit-host" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-signal = { path = "../../../../crates/worth-signal" }
+
+[lints]
+workspace = true

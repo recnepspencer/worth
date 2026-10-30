@@ -1,0 +1,12 @@
+#[path = "agreement/mod.rs"]
+pub(crate) mod agreement;
+#[path = "failure/mod.rs"]
+pub(crate) mod failure;
+#[path = "fates/mod.rs"]
+pub(crate) mod fates;
+#[path = "protocol/mod.rs"]
+pub(crate) mod protocol;
+#[path = "recovery_crash/mod.rs"]
+pub(crate) mod recovery_crash;
+#[path = "writer_crash/mod.rs"]
+pub(crate) mod writer_crash;

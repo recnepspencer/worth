@@ -50,7 +50,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     ) -> Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission>
-    {
+{
         self.live_delivery.emissions(publication)
     }
 

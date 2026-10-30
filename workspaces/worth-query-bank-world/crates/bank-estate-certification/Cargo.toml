@@ -1,4 +1,5 @@
 [package]
+autotests = false
 name = "bank-estate-certification"
 edition.workspace = true
 rust-version.workspace = true
@@ -17,3 +18,6 @@ serde_json.workspace = true
 
 [lints]
 workspace = true
+
+[lib]
+test = false

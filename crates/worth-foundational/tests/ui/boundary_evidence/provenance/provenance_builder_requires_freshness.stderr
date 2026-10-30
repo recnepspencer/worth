@@ -1,5 +1,0 @@
-error[E0599]: no method named `finish` found for struct `worth_foundational::boundary_evidence::provenance_front_doors::FoundationalBoundaryEvidenceProvenanceLocalityStep` in the current scope
-  --> tests/ui/boundary_evidence/provenance/provenance_builder_requires_freshness.rs:11:61
-   |
-11 |     let _ = common_path::provenance().current(source_basis).finish();
-   |                                                             ^^^^^^ method not found in `worth_foundational::boundary_evidence::provenance_front_doors::FoundationalBoundaryEvidenceProvenanceLocalityStep`

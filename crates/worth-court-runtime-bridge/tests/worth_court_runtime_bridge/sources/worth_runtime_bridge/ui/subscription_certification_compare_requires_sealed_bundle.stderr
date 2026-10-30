@@ -1,0 +1,17 @@
+error[E0308]: arguments to this method are incorrect
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_certification_compare_requires_sealed_bundle.rs:11:27
+   |
+11 |     let _report = runtime.compare_subscription_certification_bundles(plan, &draft, &draft);
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^       ------  ------ expected `&...`, found `&&...`
+   |                                                                            |
+   |                                                                            expected `&...`, found `&&...`
+   |
+   = note: expected reference `&BridgeSubscriptionCertificationBundleSealed`
+              found reference `&&BridgeSubscriptionCertificationBundleDraft`
+   = note: expected reference `&BridgeSubscriptionCertificationBundleSealed`
+              found reference `&&BridgeSubscriptionCertificationBundleDraft`
+note: method defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/facade/runtime/subscription/certification/bundle_comparison.rs
+   |
+   |     pub fn compare_subscription_certification_bundles(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -26,18 +26,26 @@ struct ConfiguredProvider<S> {
 
 pub(in crate::domain_computation::primary_graph) struct ManagedIndexProviderCatalog<S> {
     entries: HashMap<EqualityTypeId, ConfiguredProvider<S>>,
+    registration_order: Vec<EqualityTypeId>,
     marker: PhantomData<fn() -> S>,
 }
 impl<S> Default for ManagedIndexProviderCatalog<S> {
     fn default() -> Self {
         Self {
             entries: HashMap::new(),
+            registration_order: Vec::new(),
             marker: PhantomData,
         }
     }
 }
 
 impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
+    fn in_registration_order(&self) -> impl Iterator<Item = &ConfiguredProvider<S>> {
+        self.registration_order
+            .iter()
+            .map(|identity| &self.entries[identity])
+    }
+
     pub(in crate::domain_computation::primary_graph) fn take_complete(
         &mut self,
         schema: &WorthQueryInstalledApplicationSchema<S>,
@@ -50,7 +58,7 @@ impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
         &self,
         schema: &WorthQueryInstalledApplicationSchema<S>,
     ) -> Result<(), Denial> {
-        for entry in self.entries.values() {
+        for entry in self.in_registration_order() {
             if !(entry.belongs_to)(entry.adapter.as_ref(), schema) {
                 return Err(Denial::new(
                     Kind::ManagedIndexProviderMeaningMismatch,
@@ -59,17 +67,15 @@ impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
             }
         }
         for member in schema.installed_declaration().members() {
-            if let ApplicationSchemaMember::ManagedIndex { definition } = member {
-                if !self
-                    .entries
-                    .values()
+            if let ApplicationSchemaMember::ManagedIndex { definition } = member
+                && !self
+                    .in_registration_order()
                     .any(|entry| entry.name == definition.parts().name)
-                {
-                    return Err(Denial::new(
-                        Kind::MissingManagedIndexProvider,
-                        &definition.parts().name,
-                    ));
-                }
+            {
+                return Err(Denial::new(
+                    Kind::MissingManagedIndexProvider,
+                    &definition.parts().name,
+                ));
             }
         }
         Ok(())
@@ -106,7 +112,9 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         }
         let index_type = EqualityTypeId::of::<I>();
         if self.entries.contains_key(&index_type)
-            || self.entries.values().any(|entry| entry.name == I::NAME)
+            || self
+                .in_registration_order()
+                .any(|entry| entry.name == I::NAME)
         {
             return Err(Denial::new(Kind::DuplicateManagedIndexProvider, I::NAME));
         }
@@ -125,6 +133,7 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
                 executor,
             },
         );
+        self.registration_order.push(index_type);
         Ok(())
     }
 
@@ -150,15 +159,12 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
             .ok_or(Cause::WorkCounterOverflow)?;
         MaterialCompletion::new(execution, allocation).work(work)?;
         Ok(self
-            .entries
-            .values()
+            .in_registration_order()
             .find(|entry| entry.executor.admits(association))
             .map(|entry| Arc::clone(&entry.executor)))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn get<I>(
-        &self,
-    ) -> Option<Arc<dyn InstalledIndexProvider<S, I>>>
+    pub(super) fn get<I>(&self) -> Option<Arc<dyn InstalledIndexProvider<S, I>>>
     where
         I: ApplicationManagedIndexBinding<S>,
     {

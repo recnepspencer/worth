@@ -5,7 +5,7 @@
 > Phase 9 and capability subphases 9.1-9.11 accepted on 2026-10-30 in their qualified scopes.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
-> Phases 13–14, 16–17 and 19 are complete. Phase 18 remains unfinished.
+> Phases 13–14 and 16–19 are complete in their qualified scopes.
 > Addendum 1 defines correction-aware consecutive source undo.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
@@ -1100,7 +1100,9 @@ worth-query/src/
   runtime/owned_async_{source,lifecycle}.rs                  M displaced orchestration
   runtime/inspection/causal/                                 E old-receipt translation and historical certification only
 worth-query-{decl,host}/src/facade.rs                        E audience exports only
-worth-query-certification/tests/application_graph/           E grouped public journeys
+worth-query-court-query-decl-host/tests/
+  worth_query_court_query_decl_host/certification/application_graph/
+                                                           E grouped public journeys
 ```
 
 Declaration owns portable resource and history meaning; Installation owns their
@@ -1133,7 +1135,7 @@ publication owners. No dependency on unfinished graph phases. Must precede Phase
 
 **Accepted, 2026-10-26.** The existing World route derives its exact commit from
 the admitted immutable Relational observation. The
-[World/Bridge source court](../../crates/worth-runtime-world/tests/runtime_world_certification/owned_async.rs)
+[World/Bridge source court](../../crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/owned_async/mod.rs)
 compares the admitted binding with the native populated-fork target after sibling
 publication and a discarded reserved occurrence; empty sources refuse before
 Signal admission and refused revalidation retains original cleanup custody.
@@ -1186,7 +1188,7 @@ cleanup detail requires both Count and Explanation influence. The Host provider
 and progression surface is implemented with its actual provider and cleanup journeys.
 
 Qualification uses the actual World/Bridge custody courts, one closed compile-fail
-case, five [Resource journeys](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/resources/journeys.rs),
+case, five [Resource journeys](../../workspaces/worth-query/crates/worth-query-testkit-certification-operation/src/certification/application_graph/source_only/capability/resources/journeys.rs),
 the existing ordinary-query revocation control and the
 [combined workflow](../../workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow.rs).
 The integrated tree repeats those six selected application cases and the combined
@@ -1918,7 +1920,7 @@ than building another demonstration runtime or reopening completed portfolios.
    one giant test or duplicate the 9.7 matrix here.
 2. Exercise the public request surface from
    `worth-query-publication/src/application_entry/` and its Host facade.
-   Extend `worth-query-host/tests/application_runtime_surface/inspection.rs`
+   Extend `worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_runtime_surface/inspection.rs`
    for public signature/lifetime changes. Keep the actual runtime journey in
    the existing certification composition; signature compilation alone is not
    evidence of acquisition, admission or cleanup. Applications import only
@@ -1987,8 +1989,8 @@ correction example support. Other crate-relative paths name their crate.
 | [Original supplier custody](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/settlement/observation.rs) | Descriptive original evidence; cannot grant currentness, execution or disclosure. |
 | [Legacy materialization contract](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/materialization/contract.rs) | Preserve its application-evidence admission fence while reusing policy/artifact mechanics behind the admitted route. |
 | [Bridge causal observation](../../crates/worth-runtime-bridge/src/conditional_execution/causal_observation.rs), [causal assembly](../../crates/worth-runtime-bridge/src/diagnostics/causal_envelope/assembly/), [Signal decisions](../../crates/worth-signal/src/data/conditional_execution/decision.rs), [Signal availability](../../crates/worth-signal/src/diagnostics/policy/materialization.rs) | Native evidence provenance, assembly, actual decision meanings and optional-detail availability; Query consumes rather than invents them. |
-| [Correction model](../../workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/), [grouped causal court](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/causal_inspection.rs) | Real installed source/producer/query worlds and independently expected public outcomes. Add semantic scenario modules here, not one test binary per phase. |
-| [Host inspection journey](../../workspaces/worth-query/crates/worth-query-host/tests/application_runtime_surface/inspection.rs) | Real ordinary request/receipt entry, facade type/lifetime contracts and final release. |
+| [Correction model](../../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/), [grouped causal court](../../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/causal_inspection.rs) | Real installed source/producer/query worlds and independently expected public outcomes. Add semantic scenario modules here, not one test binary per phase. |
+| [Host inspection journey](../../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_runtime_surface/inspection.rs) | Real ordinary request/receipt entry, facade type/lifetime contracts and final release. |
 
 **Focused development.** Establish the selected capability's failing public case
 and narrow owner failure before expanding the implementation. Run cheap discovery,
@@ -2220,8 +2222,8 @@ is now required milestone scope by the 2026-10-26 extension.
 **Accepted, 2026-10-27.** The installed Decl/Host route captures exact disclosed
 entity and physical-relation generations from complete one-shot reads, then pages
 canonical changes at a pinned product with fresh SubjectRead and independently
-governed history metadata. The [facade audit journeys](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/document_retention_model/record_history/court.rs)
-and [physical occurrence journey](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/history/court.rs)
+governed history metadata. The [facade audit journeys](../../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/record_history/court.rs)
+and [physical occurrence journey](../../workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/history/court.rs)
 qualify equal-value occurrences, fork/sibling exclusion, ordered/filtered physical
 IDs, deletion/replacement, current-security revoke/regrant, typed retired gaps,
 cancellation and final Native/World release. Native and World owner courts qualify
@@ -2229,7 +2231,7 @@ finite source visits, page backing and immutable request-bound successors.
 Partial ordered/live capture and restart-persistent continuations remain outside
 this contract. The [capability guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md)
 describes the supported route and its explicit work/storage limits. The
-[Native growth court](../../crates/worth-runtime-world/tests/runtime_world_certification/court/record_history/growth.rs)
+[Native growth court](../../crates/worth-court-runtime-world/tests/worth_court_runtime_world/cost/runtime_world/court/record_history/growth/mod.rs)
 compares ten and 10,000 real unrelated retained record changes with identical
 one-entry/one-visit/page-backing limits. Individual request work maxima remain
 equal, and the exact full traversal reaches the independently selected last
@@ -2451,7 +2453,7 @@ workspaces/worth-query/crates/
       entity_field_patch.rs                     [existing: exact unobserved-write refusal]
     application_attempt/compare_and_commit/commit_outcome/denial/
       unique_value.rs                           [existing: preserve lowering cause and stage]
-  worth-query-certification/tests/application_graph/
+  worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/
     proposal_acceptance/                        [created: fresh ordinary acceptance journey]
 ```
 
@@ -2759,26 +2761,31 @@ or replacement cost ledger may stand in for this acceptance.
 ### Destination And Evidence Ownership
 
 ```text
-workspaces/worth-query/crates/worth-query-certification/tests/
-  application_graph.rs                         # existing grouped target
-  application_graph/cell_history.rs            # public functional courtroom
-  application_graph/cell_history/
-    schema.rs                                  # cell/feature meaning
-    edit.rs                                    # ordinary observed cell mutation
-    lifecycle.rs                               # observed replacement and retirement
-    lifecycle_cases.rs                         # complete old/current lifecycle answers
-    checkpoint.rs                              # opaque capture and complete readmission
-    checkpoint_cases.rs                        # source disposal and durable retry behavior
-    committed_patch.rs                         # sealed patch counts and exact Cell occurrence
-    query.rs                                   # selected-basis live-cell projection
-    host.rs                                    # real installation and seed truth
-    live_at.rs                                 # fresh requests and original custody
-    storage.rs                                 # explicit retained-owner census
-    cost.rs                                    # independent scale-axis courts
-    cost/measurement.rs                        # actual owner/query observations
-    cost/workload.rs                           # real retained publications
-    cost/peak.rs                               # requested-object group observer
-    cost/reconstruction.rs                     # independent readmission and first answer
+workspaces/worth-query/crates/
+  worth-query-testkit-document-retention/src/certification/application_graph/
+    cell_history.rs                            # one public Decl/Host model
+    cell_history/
+      schema.rs                                # cell/feature meaning
+      edit.rs                                  # ordinary observed cell mutation
+      lifecycle.rs                             # observed replacement and retirement
+      checkpoint.rs                            # opaque capture and readmission
+      query.rs                                 # selected-basis live-cell projection
+      host.rs                                  # real installation and seed truth
+      live_at.rs                               # fresh requests and original custody
+  worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/
+    application_graph/cell_history/             # public functional courtroom
+      lifecycle_cases.rs                       # complete old/current lifecycle answers
+      checkpoint_cases.rs                      # disposal and durable retry behavior
+  worth-query-court-decl-host-package-archive-replay-application-graph/tests/
+    worth_query_court_decl_host_package_archive_replay_application_graph/cost/
+      certification/application_graph/cell_history/
+        mod.rs                                 # independent scale-axis courts
+        committed_patch.rs                     # sealed patch and exact Cell occurrence
+        storage.rs                             # explicit retained-owner census
+        measurement.rs                         # actual owner/query observations
+        workload.rs                            # real retained publications and census growth
+        peak.rs                                # requested-object group observer
+        reconstruction.rs                      # readmission and independent first answer
 crates/worth-relational/src/
   history/retention/                            # existing historical root authority
   inspection/mvcc/                             # existing read-only allocation observations
@@ -3109,9 +3116,9 @@ contention on the candidate's real adoption guard; release and join precede
 assertions. The retained Ready owner must preserve candidate effects and admit
 a fresh retry. Keep its Execution and World control-owner entries exact and closed.
 
-The [existing expected-source cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance.rs),
-[adoption cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/adoption.rs)
-and [stored-basis cases](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/proposal_acceptance/stored_basis.rs)
+The [existing expected-source cases](../../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/proposal_acceptance/mod.rs),
+[adoption cases](../../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/proposal_acceptance/adoption.rs)
+and [stored-basis cases](../../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/proposal_acceptance/stored_basis.rs)
 already qualify their platform prerequisites. Carry that evidence unless a
 change invalidates it; they do not yet prove stored proposal I/O or ingress.
 Place the complete public application journey in the existing consumer-root
@@ -3198,7 +3205,7 @@ worth-runtime-world/src/
 worth-relational/src/branch/
   owner_services/basis_port.rs           E owner basis readmission/comparison
   fork_source_validation.rs              E source generation/root/version recheck
-worth-query-certification/tests/application_graph/proposal_acceptance/
+worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/proposal_acceptance/
   adoption.rs                           C ordinary requests and guarded adoption
   stored_basis.rs                       C serialized basis owner readmission
 worth-query-certification/fixtures/consumer_entry/consumer_root/src/
@@ -3284,9 +3291,8 @@ milestone history or private adoption claims.
 
 ## Phase 18: Mandatory Current Rust Toolchain Qualification
 
-**Status: unfinished; required. Priority: P3. Rust 1.99.x is not optional.**
-**Owner:** worth-foundational + workspace toolchain/CI owners, with Proprietary
-SDK qualification.
+**Status: complete at the public boundary; Rust 1.99.1 qualified on 2026-10-30. Priority: P3.**
+**Owner:** worth-foundational + public workspace toolchain/CI owners.
 **Depends on:** the canonical sort bound and its existing compatibility contract.
 Source review can run alongside Phase 13; closure includes Phase 13's honest
 refusal on an unqualified compiler.
@@ -3296,9 +3302,10 @@ full compiler commit `58cf8f9c35b355199727627d07ae34a4e2846d67`, with the
 existing 32/64-bit target boundary. Exact core sort, alloc buffer and compiler
 specialization-owner review preserves the existing bounds and canonical version.
 The [contributor toolchain contract](../../CONTRIBUTING.md#rust-toolchain-and-canonical-sort-qualification)
-owns the exact compiler identities and upgrade procedure. Proprietary default
-toolchain adoption and the remaining SDK qualification are unfinished; public
-qualification alone does not close this phase.
+owns the exact compiler identities and upgrade procedure. This phase is certified
+through the public code, consumer courts and repository gates. The consumer has
+confirmed Proprietary adoption; private repository changes, SDK pins and private
+builds are outside this phase's public certification boundary.
 
 ### Requirements And Acceptance
 
@@ -3312,9 +3319,9 @@ evidence: comparison counts already participate in canonical material, so any
 change must follow the existing canonical version/compatibility owner rather
 than silently changing identities or weakening bounds.
 
-Update the supported workspace, CI and Proprietary development toolchain pins
-to the qualified stable release, and pass the affected grouped public tests,
-the correction probe and private SDK qualification. Keep supported older
+Update the supported public workspace and CI toolchain pins to the qualified
+stable release, and pass the affected grouped public tests, public correction
+probe and mandatory repository gates. Keep supported older
 qualification entries only where their compatibility commitment remains valid.
 If a newer official stable Rust release exists when this phase is implemented,
 qualify and adopt that release as well; 1.99 support is the required floor, not
@@ -3406,7 +3413,7 @@ worth-query-execution/src/domain_computation/primary_graph/product_operation/
       overlap.rs                      N compare canonical dependency footprints
       cancellation.rs                 N resolve performed correction relationships
       eligibility.rs                  N produce the checked restoration result
-worth-query-certification/tests/application_graph/
+worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/
   correction/                         N consecutive-source regression scenarios
 ```
 
@@ -3482,7 +3489,7 @@ keeping the same client key for the same command.
 
 Follow the [recorded-source correction guide](../../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources)
 for the request, preparation, publication and retry sequence. The
-[compiled correction example](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs)
+[compiled correction example](../../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs)
 shows the same calls with original receipts and retained endpoint observations.
 
 ## Documentation And Successor Handoff For The Added Phases
@@ -3519,7 +3526,7 @@ shows the same calls with original receipts and retained endpoint observations.
   `cad/docs/plans/platform-gaps.md`, `query-9.18.1-adoption.md` beside it, and the
   existing general-modeling Acceptance 8 sections with actual adoption
   and measurements; a public platform court alone does not assert private closure.
-  Phases 16 and 17 have explicit public-only certification boundaries: their
+  Phases 16, 17 and 18 have explicit public-only certification boundaries: their
   cell-history qualification and proposal recipe close through public Decl/Host
   tests, actual owner observations and public gates. Neither requires a private
   documentation edit or private adoption certificate.
@@ -3542,8 +3549,8 @@ specification change checks links, scope and path claims without compiling runti
   is proved through the current two-facade public composition and grouped courts.
   No added finding is satisfied by a raw re-export, a future-work note or an old
   lower-runtime example alone. Phase 11 closes both cleanup findings in one batch.
-  The retained Proprietary findings include mandatory current Rust
-  qualification, plus P1 consecutive source undo after
+  The retained consumer findings include mandatory current Rust
+  qualification through public Phase 18, plus P1 consecutive source undo after
   verified reversal/restoration. 9.19 owns the general index extension,
   both index readers and their final private locality cutover. Phase numbering
   does not impose serial execution:
@@ -3552,7 +3559,7 @@ specification change checks links, scope and path claims without compiling runti
   update, with its workarounds deleted.
 - Platform certification alone is platform evidence. The Proprietary adoption
   gate stays open until the private build passes.
-- Phases 16 and 17 require certification entirely by their public
+- Phases 16, 17 and 18 require certification entirely by their public
   application/owner courts, public documentation and public gates. Their
   completion requires no private repository
   edit, SDK pin or private build. This exception does not waive another phase's

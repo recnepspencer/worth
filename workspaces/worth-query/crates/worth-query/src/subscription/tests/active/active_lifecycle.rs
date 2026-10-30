@@ -4,7 +4,7 @@ use crate::live::LiveQueryFamily;
 use crate::view_shape_live::LiveViewShapeFamily;
 
 #[test]
-fn active_lane_admission_preserves_activation_digests_and_phase_one_posture() {
+fn active_lane_admission_preserves_activation_digests_and_posture() {
     let activation = activation_for(LiveQueryFamily::Detail, None);
     let activation_digest = activation.activation_projection().label().to_string();
     let admission_digest = activation.admission_projection().label().to_string();
@@ -158,7 +158,7 @@ fn linear_scan_lookup_class_denies_before_lane_exists() {
 }
 
 #[test]
-fn duplicate_active_lane_join_reuses_existing_lane_in_phase_two() {
+fn duplicate_active_lane_join_reuses_existing_lane() {
     let activation = activation_for(LiveQueryFamily::Detail, None);
     let first = admit_active_subscription_lane(
         activation.clone(),

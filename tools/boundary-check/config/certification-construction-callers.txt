@@ -5,10 +5,10 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/correction_disclosure.rs
 bridge workspaces/worth-query/crates/worth-query/src/domain_installation/dependency_impact/compiled/invalidation_manifest/structural_manifest_tests.rs
 installation workspaces/worth-query/crates/worth-query-admission/src/application_query/tests.rs
-installation workspaces/worth-query/crates/worth-query-certification/examples/product_workflow_support/conditional_contribution.rs
-installation workspaces/worth-query/crates/worth-query-certification/tests/granular_invalidation/financial_runtime_world/host/installation.rs
-installation workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/cost/live.rs
-installation workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/query_probe.rs
+installation workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/conditional_contribution.rs
+installation workspaces/worth-query/crates/worth-query-testkit-certification-granular-invalidation/src/certification/granular_invalidation/financial_runtime_world/host/installation.rs
+installation workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/live.rs
+installation workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/query_probe.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/admission_preparation/tests.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/tests/governed_authority.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/tests/support.rs
@@ -54,16 +54,16 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/root_selection/result_set.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/capability_delegation_session.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/capability_elevation/delivery_cutoff/context.rs
-installation workspaces/worth-query/crates/worth-query-host/tests/canonical_graph_progression.rs
-installation workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint.rs
-installation workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/publication_limit.rs
-installation workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/public_live_route.rs
-installation workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/public_product_journey.rs
-installation workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/public_product_journey/conditional_execution.rs
-installation workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/public_product_journey/conditional_execution/product_readback.rs
-installation workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/retained_query_batch.rs
-installation workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/retained_query_batch/direct_limits.rs
-installation workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/selected_product_reads.rs
+installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/canonical_graph_progression/mod.rs
+installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint.rs
+installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/publication_limit.rs
+installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_live_route.rs
+installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_product_journey.rs
+installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_product_journey/conditional_execution.rs
+installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/public_product_journey/conditional_execution/product_readback.rs
+installation workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/retained_query_batch/direct_limits.rs
+installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/runtime_world_branching/selected_product_reads/mod.rs
+installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/selected_product_reads/mod.rs
 installation workspaces/worth-query/crates/worth-query/src/runtime/tests/graph_read_access/graph_read_access_architectural_closeout/application_query_equivalence/support.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/delivery_tests/committed_live_cause_projects_with_bounded_result_buffer_evidenc.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/native_collection/cold_and_incremental.rs
@@ -71,7 +71,7 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/disclosure_noninterference/contract_admission/predicate_access.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/root_guard_basis/root_path_guard_reads_its_pinned_truth_version.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/root_selection/declared_root_paths_retain_per_row_native_witnesses.rs
-installation workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/retained_query_batch/pre_kernel_cancellation_keeps_its_real_execution_cause.rs
+installation workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/retained_query_batch/pre_kernel_cancellation_keeps_its_real_execution_cause/mod.rs
 # Closed pinned-read reconstruction proofs; each constructs its installed fixture query.
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/native_concurrency.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pinning_reasons.rs
@@ -83,10 +83,8 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 
 # Slice5b ruling: installed metadata lookup; real principal/scope admission and execution follow.
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/read.rs
-
 # Slice5b ruling: installed closure metadata; ordinary/admitted requirements and support matching.
 installation workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/complete_closure.rs
-
 # Ruled metadata-only lookup for real declared-orbit principal/scope admission and Native reads.
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/read.rs
 

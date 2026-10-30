@@ -106,29 +106,29 @@ pub(super) fn decoded_provider<R>(
             }));
         },
     );
-    if let Some(cause) = outer_refusal {
-        if !matches!(
+    if let Some(cause) = outer_refusal
+        && !matches!(
             cause,
             WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped)
-        ) {
-            // The same request stop keeps its concrete first owner; a
-            // genuinely different SDK envelope refusal remains authoritative.
-            if let Some(Err(WorthQueryManagedIndexWorkDenial::Controlled(first))) = &returned {
-                let same = match first {
-                    Stop::Request(original) | Stop::ValueDecode(Decode::Scope(original)) => {
-                        *original == cause
-                    }
-                    Stop::ValueDecode(Decode::Checkpoint(original)) => {
-                        cause == WorkCeilingDenial::Stopped(*original)
-                    }
-                    _ => false,
-                };
-                if same {
-                    return Err(first.clone().into());
+        )
+    {
+        // The same request stop keeps its concrete first owner; a
+        // genuinely different SDK envelope refusal remains authoritative.
+        if let Some(Err(WorthQueryManagedIndexWorkDenial::Controlled(first))) = &returned {
+            let same = match first {
+                Stop::Request(original) | Stop::ValueDecode(Decode::Scope(original)) => {
+                    *original == cause
                 }
+                Stop::ValueDecode(Decode::Checkpoint(original)) => {
+                    cause == WorkCeilingDenial::Stopped(*original)
+                }
+                _ => false,
+            };
+            if same {
+                return Err(first.clone().into());
             }
-            return Err(Stop::ValueDecode(Decode::Scope(cause)).into());
         }
+        return Err(Stop::ValueDecode(Decode::Scope(cause)).into());
     }
     match (outcome, returned) {
         (Ok(()), Some(result)) => result,

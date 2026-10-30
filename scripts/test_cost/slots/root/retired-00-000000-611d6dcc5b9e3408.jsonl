@@ -1,0 +1,2 @@
+{"count": 1, "kind": "leaf"}
+{"binary": "worth-testkit-compiler", "slots": 1, "test": "tests::recursive_or_character_class_globs_require_explicit_expansion"}

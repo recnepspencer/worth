@@ -1,0 +1,25 @@
+[package]
+name = "worth-query-bank-court-user-node"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+bank-http-adapter = { workspace = true }
+bank-user-node = { workspace = true }
+reqwest = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+worth-query-bank-testkit = { path = "../worth-query-bank-testkit" }
+worth-query-bank-testkit-courtroom = { path = "../worth-query-bank-testkit-courtroom" }
+worth-query-host = { workspace = true }
+
+[[test]]
+name = "worth_query_bank_court_user_node"
+path = "tests/worth_query_bank_court_user_node.rs"
+
+[lints]
+workspace = true

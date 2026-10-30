@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-io-scheduler"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 2 S.6 hardware-aware I/O, QoS, and background pacing."
+"workspace" = "../.."
+"name" = "worth-store-io-scheduler"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 2 S.6 hardware-aware I/O, QoS, and background pacing."
+"autotests" = false
+
 
 [features]
 certification-test-authority = [
@@ -21,11 +23,11 @@ worth-store-buffer-pool.workspace = true
 worth-store-physical-backend.workspace = true
 worth-store-security.workspace = true
 worth-store-wal.workspace = true
-
 [dev-dependencies]
-worth-store-physical-backend = { workspace = true, features = ["certification-test-authority"] }
-worth-store-physical-format.workspace = true
-worth-store-security = { workspace = true, features = ["certification-test-authority"] }
+"worth-store-physical-backend" = { "workspace" = true, "features" = ["certification-test-authority"] }
+"worth-store-physical-format" = { "workspace" = true }
+"worth-store-security" = { "workspace" = true, "features" = ["certification-test-authority"] }
+
 
 [lints]
 workspace = true

@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/front_doors/raw_bundle_cannot_enter_front_door_export.rs
+  |
+  |         .from_bundle(bundle)
+  |          ----------- ^^^^^^ expected `Artifact<..., ..., ..., ...>`, found `CanonicalBasisBundle`
+  |          |
+  |          arguments to this method are incorrect
+  |
+  = note: expected struct `worth_proof::artifact::carrier::Artifact<CanonicalBundleReady, CanonicalBasisBundle, worth_proof::proof::sets::ProofSetCons<worth_proof::proof::sets::Proof<CanonicalRuleVersionBound, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>, worth_proof::proof::sets::Proof<CanonicalDomainCoherence, worth_foundational::canonicalization::basis::readiness::proofs::CanonicalBasisConstructionAuthority>>, worth_proof::assumption::freshness::FreshnessScopedBasis<worth_proof::assumption::freshness::CurrentValidity, worth_proof::assumption::basis::AssumptionBasis<CanonicalizationRuleVersion>>>`
+             found struct `CanonicalBasisBundle`
+note: method defined here
+ --> $WORKSPACE/crates/worth-foundational/src/canonicalization/front_doors/export.rs
+  |
+  |     pub fn from_bundle(self, bundle: CanonicalBundleReadyArtifact) -> CanonicalExportNameStep {
+  |            ^^^^^^^^^^^

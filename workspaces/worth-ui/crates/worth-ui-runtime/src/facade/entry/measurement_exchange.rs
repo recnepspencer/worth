@@ -12,17 +12,16 @@ impl WorthUiActiveApplicationSession {
         intent: crate::facade::measurement_exchange::UiHostMeasurementIntent,
         now: u64,
     ) -> crate::facade::measurement_exchange::UiHostMeasurementOutcome {
-        if let Some(binding) = intent.binding() {
-            if self.mounted.validate_binding(binding).is_err()
+        if let Some(binding) = intent.binding()
+            && (self.mounted.validate_binding(binding).is_err()
                 || self
                     .mounted
                     .observation_validation_basis()
-                    .binding_requires_reconciliation(binding)
-            {
-                return denied(
-                    crate::facade::measurement_exchange::UiHostMeasurementDenial::UnknownSurfaceBinding,
-                );
-            }
+                    .binding_requires_reconciliation(binding))
+        {
+            return denied(
+                crate::facade::measurement_exchange::UiHostMeasurementDenial::UnknownSurfaceBinding,
+            );
         }
         let current = self.measurement_truth(true);
         self.host_exchange.begin_measurement(

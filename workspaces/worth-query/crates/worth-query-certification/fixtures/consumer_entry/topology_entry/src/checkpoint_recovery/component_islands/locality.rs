@@ -2,16 +2,6 @@
 use super::*;
 use worth_query_host::facade::application_invariants::WorthQueryInvariantProjectionWork;
 
-#[test]
-fn real_split_component_reads_are_unchanged_with_ten_and_ten_thousand_unrelated_islands() {
-    let _guard = checkpoint_recovery_test_guard();
-    let small = split(10);
-    let large = split(10_000);
-    assert_eq!(
-        small, large,
-        "unrelated islands add no preparation or evaluation business reads"
-    );
-}
 fn split(
     unrelated: usize,
 ) -> (
@@ -66,4 +56,19 @@ fn split(
         "the heir keeps the prior name"
     );
     (prepared[0], evaluated[0])
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn real_split_component_reads_are_unchanged_with_ten_and_ten_thousand_unrelated_islands() {
+        let _guard = checkpoint_recovery_test_guard();
+        let small = split(10);
+        let large = split(10_000);
+        assert_eq!(
+            small, large,
+            "unrelated islands add no preparation or evaluation business reads"
+        );
+    }
 }

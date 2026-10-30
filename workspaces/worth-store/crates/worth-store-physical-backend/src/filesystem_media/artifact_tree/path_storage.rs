@@ -105,3 +105,7 @@ impl ArtifactTreeMedia<'_> {
         qualified()
     }
 }
+
+#[cfg(all(test, windows, feature = "recovery-runtime-owner"))]
+#[path = "path_storage_tests.rs"]
+mod tests;

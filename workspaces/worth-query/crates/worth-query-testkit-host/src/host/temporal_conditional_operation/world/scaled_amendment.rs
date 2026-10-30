@@ -1,0 +1,158 @@
+pub use worth_query_host::facade::{primary_graph, product};
+
+pub use super::super::adapters::block_on;
+pub use super::super::schema::*;
+pub use super::{admit_identity_adapter, request_scope, CourtroomWorld};
+
+impl CourtroomWorld {
+    #[allow(dead_code)] // Shared by the certification crate's cost targets.
+    pub fn change_inputs_on_branch(
+        &self,
+        branch: product::WorthQueryProductBranch,
+        touched_records: usize,
+    ) -> primary_graph::WorthQueryApplicationCommitReceipt {
+        let selected = self
+            .application
+            .with_host_advancement(|phase| {
+                self.application.on_branch(branch).select(&phase).unwrap()
+            })
+            .expect("installed host call opens");
+        let schema = self.application.installed_schema();
+        let request = request_scope();
+        let targets = (1..=touched_records)
+            .map(|ordinal| {
+                self.application
+                    .with_host_advancement(|phase| {
+                        selected
+                            .resolve_entity(
+                                &phase,
+                                IntentIdentityField::reference(),
+                                format!("intent-{ordinal}"),
+                                &request,
+                                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                            )
+                            .expect("each populated intent must remain resolvable")
+                    })
+                    .expect("installed host call opens")
+            })
+            .collect::<Vec<_>>();
+        let scope = targets
+            .first()
+            .expect("a scaled amendment must touch at least one record");
+        let principal_binding = schema
+            .principal_binding(TemporalPrincipalBinding::reference())
+            .unwrap();
+        let authentication = admit_identity_adapter(schema);
+        let external = block_on(authentication.authenticate((), &request)).unwrap();
+        let principal = self
+            .application
+            .with_host_advancement(|phase| {
+                selected
+                    .resolve_authenticated_principal(
+                        &phase,
+                        &principal_binding,
+                        &external,
+                        &request,
+                        primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
+        let operation = schema
+            .installed_operation(AmendTemporal::reference())
+            .unwrap();
+        let admission = self
+            .application
+            .with_host_advancement(|phase| {
+                selected
+                    .authorize_operation(
+                        &phase,
+                        &principal,
+                        scope,
+                        &operation,
+                        Default::default(),
+                        &request,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
+        let (_, projection, _) = self
+            .application
+            .with_host_advancement(|phase| {
+                self
+            .invariant
+            .project_admitted_operation(
+                &phase, &admission,
+                |reader, _| {
+                    for ordinal in 1..=touched_records {
+                        let target = reader
+                            .resolve_entity(
+                                IntentIdentityField::reference(),
+                                format!("intent-{ordinal}"),
+                            )
+                            .unwrap();
+                        reader
+                            .decision_field(&target, IntentInputField::reference())
+                            .unwrap();
+                    }
+                },
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap()
+            .into_parts()
+            })
+            .expect("installed host call opens");
+        let mut effects = self
+            .application
+            .with_host_advancement(|phase| {
+                let reads = self
+                    .application
+                    .begin_projected_application_read_attempt(
+                        &phase,
+                        admission,
+                        projection,
+                        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap();
+                reads
+                    .complete_projected_dependencies(
+                        &phase,
+                        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .begin_effect_program()
+            })
+            .expect("installed host call opens");
+        for (ordinal, target) in targets.iter().enumerate() {
+            let target = effects.existing_entity(target).unwrap();
+            effects
+                .write_field(
+                    &target,
+                    IntentInputField::reference(),
+                    format!("scaled-input-{}", ordinal + 1),
+                )
+                .unwrap();
+        }
+        let change = product::WorthQueryAdmittedChange::new(
+            effects.finish().unwrap(),
+            primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<
+                TemporalHostSchema,
+                AmendTemporal,
+                _,
+                _,
+            >(
+                &("scaled-amendment", touched_records),
+                &("scaled-amendment", touched_records),
+            )
+            .unwrap(),
+        );
+        self.application
+            .on_branch(branch)
+            .transaction()
+            .apply(change)
+            .commit()
+            .expect("the scaled change remains on its admitted product")
+            .require_committed()
+            .expect("the scaled public amendment must commit")
+    }
+}

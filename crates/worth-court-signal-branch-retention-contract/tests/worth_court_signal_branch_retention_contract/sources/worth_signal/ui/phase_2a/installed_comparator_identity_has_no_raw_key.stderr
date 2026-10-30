@@ -1,0 +1,10 @@
+error[E0624]: method `graph_instance_id` is private
+ --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/phase_2a/installed_comparator_identity_has_no_raw_key.rs:4:14
+  |
+4 |     identity.graph_instance_id()
+  |              ^^^^^^^^^^^^^^^^^ private method
+  |
+ ::: $WORKSPACE/crates/worth-signal/src/data/comparator.rs
+  |
+  |     pub(crate) const fn graph_instance_id(&self) -> u64 {
+  |     --------------------------------------------------- private method defined here

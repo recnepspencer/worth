@@ -35,12 +35,12 @@ pub(in crate::domain_computation) enum WorthQueryInboundCompletionPreparationDen
     ForeignOrStaleBasis,
     AllocationDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        kind: worth_execution::ExecutionAllocationDenialKind,
+        kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
     StagingUnavailable,
     StagingAllocationDenied {
-        kind: worth_execution::ExecutionAllocationDenialKind,
+        kind: worth_execution::ExecutionAllocationDenialClass,
         requested_payload_bytes: Option<u64>,
     },
     StagingCardinalityOverflow,
@@ -178,7 +178,7 @@ impl WorthQueryPrimaryGraphProvider {
                      worth_execution::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(|denial| match denial {
                         worth_relational::facade::mvcc::RelationalTransactionStagingDenial::AllocationDenied(allocation) => Denial::StagingAllocationDenied {
-                            kind: allocation.kind(),
+                            kind: allocation.classify(),
                             requested_payload_bytes: allocation.requested_payload_bytes(),
                         },
                         worth_relational::facade::mvcc::RelationalTransactionStagingDenial::CardinalityOverflow => Denial::StagingCardinalityOverflow,

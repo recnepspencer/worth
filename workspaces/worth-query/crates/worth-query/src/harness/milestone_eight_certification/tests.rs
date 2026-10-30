@@ -1,7 +1,7 @@
 use super::{MilestoneEightCertificationAdapter, MilestoneEightFailureClass};
 
 #[test]
-fn milestone_eight_saved_query_support_profile_drift_is_typed_rejection() {
+fn saved_query_support_profile_drift_is_typed_rejection() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -21,7 +21,7 @@ fn milestone_eight_saved_query_support_profile_drift_is_typed_rejection() {
 }
 
 #[test]
-fn milestone_eight_deferred_and_grouped_rows_are_typed_rejections() {
+fn deferred_and_grouped_rows_are_typed_rejections() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -50,7 +50,7 @@ fn milestone_eight_deferred_and_grouped_rows_are_typed_rejections() {
 }
 
 #[test]
-fn milestone_eight_grouped_delta_row_is_non_cosmetic() {
+fn grouped_delta_row_is_non_cosmetic() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -74,7 +74,7 @@ fn milestone_eight_grouped_delta_row_is_non_cosmetic() {
 }
 
 #[test]
-fn milestone_eight_grouped_proof_chain_rows_are_present_and_stable() {
+fn grouped_proof_chain_rows_are_present_and_stable() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -129,7 +129,7 @@ fn milestone_eight_grouped_proof_chain_rows_are_present_and_stable() {
 }
 
 #[test]
-fn milestone_eight_parity_rows_are_actually_adversarial() {
+fn parity_rows_are_actually_adversarial() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -172,7 +172,7 @@ fn milestone_eight_parity_rows_are_actually_adversarial() {
 }
 
 #[test]
-fn milestone_eight_identity_aware_inspector_rows_preserve_identity_classification() {
+fn identity_aware_inspector_rows_preserve_identity_classification() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -240,7 +240,7 @@ fn milestone_eight_identity_aware_inspector_rows_preserve_identity_classificatio
 }
 
 #[test]
-fn milestone_eight_support_profile_row_tracks_full_report_state() {
+fn support_profile_row_tracks_full_report_state() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 

@@ -207,10 +207,10 @@ pub(super) fn insert_binding<K: Ord + Clone>(
     binding: super::UiAdmittedScrollInvalidationBinding,
 ) -> Result<(), super::UiScrollInvalidationBindingDenial> {
     let mut bucket = index.get(&owner).cloned().unwrap_or_default();
-    if let Some(prior) = bucket.insert(key.identity_digest(), binding.clone()) {
-        if prior != binding {
-            return Err(super::UiScrollInvalidationBindingDenial::ConflictingContractTarget);
-        }
+    if let Some(prior) = bucket.insert(key.identity_digest(), binding.clone())
+        && prior != binding
+    {
+        return Err(super::UiScrollInvalidationBindingDenial::ConflictingContractTarget);
     }
     index.insert(owner, bucket);
     Ok(())

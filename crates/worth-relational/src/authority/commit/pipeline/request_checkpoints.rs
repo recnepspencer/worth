@@ -30,12 +30,11 @@ pub(crate) enum CommitStage {
 pub(crate) fn consult_stage(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     _stage: CommitStage,
-) -> Result<(), TransactionCommitError> {
+) -> Result<(), worth_execution::WorkCeilingDenial> {
     consult_stage_control(execution, _stage)
-        .map_err(|denial| TransactionCommitError::execution(denial.into()))
 }
 
-pub(crate) fn consult_stage_control(
+fn consult_stage_control(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     _stage: CommitStage,
 ) -> Result<(), worth_execution::WorkCeilingDenial> {
@@ -78,3 +77,9 @@ mod work_account;
 
 #[cfg(test)]
 mod strategy_cancellation;
+
+impl From<worth_execution::WorkCeilingDenial> for TransactionCommitError {
+    fn from(denial: worth_execution::WorkCeilingDenial) -> Self {
+        Self::execution(denial.into())
+    }
+}

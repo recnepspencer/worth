@@ -1,0 +1,5 @@
+error: cannot construct `PhysicalRecoveryConstructionPort` with struct literal syntax due to private fields
+ --> tests/ui/recovery_construction_port_cannot_be_forged.rs:4:5
+  |
+4 |     PhysicalRecoveryConstructionPort {}
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

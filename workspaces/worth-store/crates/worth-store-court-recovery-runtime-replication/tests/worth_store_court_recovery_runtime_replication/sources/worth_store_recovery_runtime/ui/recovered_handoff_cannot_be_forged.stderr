@@ -1,0 +1,11 @@
+error: cannot construct `RecoveredPhysicalRuntimeHandoff` with struct literal syntax due to private fields
+ --> tests/ui/recovered_handoff_cannot_be_forged.rs:4:5
+  |
+4 |     RecoveredPhysicalRuntimeHandoff {}
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: you might have meant to use the `new` associated function
+  |
+4 -     RecoveredPhysicalRuntimeHandoff {}
+4 +     RecoveredPhysicalRuntimeHandoff::new(_, _)
+  |

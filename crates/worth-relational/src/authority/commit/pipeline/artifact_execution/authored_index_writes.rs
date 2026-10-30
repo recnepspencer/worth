@@ -26,6 +26,30 @@ pub(super) fn prepare(
     if !supported {
         return Ok(Evidence::default());
     }
+    let prepare = |execution: ExecutionRequest<'_, '_>| {
+        prepare_evidence(runtime, selected, working, plan, allocations, execution)
+    };
+    let evidence = match (
+        super::super::request_lease(&execution),
+        runtime.commit_work_budget.as_ref(),
+    ) {
+        (Some(_), Some(budget)) => budget
+            .run_stage(execution, || prepare(execution))
+            .map_err(Denial::Request)
+            .and_then(std::convert::identity),
+        _ => prepare(execution),
+    };
+    evidence.map_err(crate::runtime::authored_write_commit_denial)
+}
+
+fn prepare_evidence(
+    runtime: &RelationalPreparationRuntime,
+    selected: &SelectedRelationalBranchState,
+    working: &WorkingState,
+    plan: &MergedCommitPlan,
+    allocations: &[crate::history::data::CanonicalRecordAllocation],
+    execution: ExecutionRequest<'_, '_>,
+) -> Result<Evidence, Denial> {
     crate::history::run_authored_write_stage(execution, |context| {
         let catalog = runtime.index_definitions.snapshot();
         let output = funding::Output::new(execution, context)?;
@@ -52,7 +76,6 @@ pub(super) fn prepare(
             Ok(builder.output.finish(catalog.coverage()))
         }
     })
-    .map_err(crate::runtime::authored_write_commit_denial)
 }
 
 fn work(context: &mut MapKernelContext<'_, '_>, units: u64) -> Result<(), Denial> {

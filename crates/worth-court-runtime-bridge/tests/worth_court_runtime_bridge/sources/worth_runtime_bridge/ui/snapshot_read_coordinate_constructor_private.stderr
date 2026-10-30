@@ -1,0 +1,33 @@
+error[E0624]: associated function `new_subscription_slice` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/snapshot_read_coordinate_constructor_private.rs:7:53
+  |
+7 |       let _coordinate = BridgeSnapshotReadCoordinate::new_subscription_slice(
+  |                                                       ^^^^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/error/coordinates.rs
+  |
+  | /     pub(crate) fn new_subscription_slice(
+  | |         correlation_id: SnapshotReadCorrelationId,
+  | |         entity_identity: impl Into<Arc<str>>,
+  | |         aspect_key: AspectKey,
+  | |         target_identity: SnapshotReadTargetIdentity,
+  | |         slice_kind: SubscriptionSliceKind,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here
+
+error[E0308]: mismatched types
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/snapshot_read_coordinate_constructor_private.rs:11:9
+   |
+ 7 |     let _coordinate = BridgeSnapshotReadCoordinate::new_subscription_slice(
+   |                       ---------------------------------------------------- arguments to this function are incorrect
+...
+11 |         "forged-target-basis",
+   |         ^^^^^^^^^^^^^^^^^^^^^ expected `BridgeIdentity<...>`, found `&str`
+   |
+   = note: expected struct `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::SnapshotReadTargetIdentityTag>`
+           found reference `&'static str`
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-runtime-bridge/src/error/coordinates.rs
+   |
+   |     pub(crate) fn new_subscription_slice(
+   |                   ^^^^^^^^^^^^^^^^^^^^^^

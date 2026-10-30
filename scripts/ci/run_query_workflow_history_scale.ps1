@@ -11,7 +11,8 @@ $testName = switch ($Lane) {
     "Cold" { "workflow_history_locality_smoke" }
     "Diagnostic" { "workflow_history_native_cost_diagnostic" }
 }
-$qualifiedTest = "workflow_history_scale::$testName"
+$court = "worth-query-court-decl-host-package-archive-replay-application-graph"
+$testSuffix = "::application_graph::workflow_history_scale::$testName"
 
 # Fixed development qualification envelope, excluding compilation. Sampled
 # process-private bytes are a watchdog, not production allocation admission.
@@ -22,23 +23,30 @@ $maximumPrivateBytes = 4GB
 $hangWatchdogSeconds = 1800
 $pollMilliseconds = 100
 
-$artifacts = @(& cargo test --manifest-path $queryManifest -p worth-query-certification `
-    --test application_graph --no-run --message-format=json)
+$artifacts = @(& cargo test --manifest-path $queryManifest -p $court `
+    --tests --no-run --message-format=json)
 if ($LASTEXITCODE -ne 0) { throw "workflow history test compilation failed" }
 $executables = @($artifacts | ForEach-Object {
     $message = $_ | ConvertFrom-Json
     if ($message.reason -eq "compiler-artifact" -and
-        $message.target.name -eq "application_graph" -and $message.executable) {
+        $message.target.kind -contains "test" -and $message.executable) {
         $message.executable
     }
 } | Select-Object -Unique)
-if ($executables.Count -ne 1) { throw "expected one application_graph test executable" }
-$testExecutable = (Resolve-Path -LiteralPath $executables[0]).Path
 $laneArguments = if ($Lane -eq "Cold") { @() } else { @("--ignored") }
-$listing = @(& $testExecutable $qualifiedTest @laneArguments --exact --list)
-if ($LASTEXITCODE -ne 0 -or $listing -notcontains "${qualifiedTest}: test") {
-    throw "the exact workflow history test was not discovered"
+$discovered = @()
+foreach ($candidate in $executables) {
+    $listing = @(& $candidate @laneArguments --list --format terse)
+    if ($LASTEXITCODE -ne 0) { throw "workflow history discovery failed: $candidate" }
+    foreach ($entry in $listing) {
+        if ($entry.EndsWith("${testSuffix}: test")) {
+            $discovered += [pscustomobject]@{ Exe = $candidate; Name = $entry.Substring(0, $entry.Length - 6) }
+        }
+    }
 }
+if ($discovered.Count -ne 1) { throw "expected one exact workflow history case; found $($discovered.Count)" }
+$testExecutable = (Resolve-Path -LiteralPath $discovered[0].Exe).Path
+$qualifiedTest = $discovered[0].Name
 
 Write-Output "workflow history lane=$Lane profile=test max_private_bytes=$maximumPrivateBytes hang_watchdog_seconds=$hangWatchdogSeconds poll_ms=$pollMilliseconds"
 Write-Output "os=$([Environment]::OSVersion) logical_processors=$([Environment]::ProcessorCount) process_64bit=$([Environment]::Is64BitProcess)"
@@ -52,6 +60,10 @@ $startInfo.UseShellExecute = $false
 $startInfo.CreateNoWindow = $true
 $startInfo.RedirectStandardOutput = $true
 $startInfo.RedirectStandardError = $true
+# Match Query gate's harness stack for native application frames.
+if (-not $startInfo.EnvironmentVariables.ContainsKey("RUST_MIN_STACK")) {
+    $startInfo.EnvironmentVariables["RUST_MIN_STACK"] = "16777216"
+}
 $testProcess = New-Object System.Diagnostics.Process
 $testProcess.StartInfo = $startInfo
 $peakPrivateBytes = 0L

@@ -110,7 +110,9 @@ fn encode_hex(bytes: &[u8]) -> String {
 fn decode_hex(encoded: &str) -> Vec<u8> {
     encoded
         .as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| {
             let digits = std::str::from_utf8(pair).unwrap();
             u8::from_str_radix(digits, 16).unwrap()

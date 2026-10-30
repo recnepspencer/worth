@@ -8,6 +8,10 @@ use super::{
 };
 
 impl PreparedCanonicalBranchMovement {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(super) fn preflight(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         parts: PreparedRelationalPublicationParts,
@@ -140,7 +144,7 @@ impl PreparedCanonicalBranchMovement {
                 let prepared = participant.prepare(&mut context);
                 // A companion cannot hide an original request stop behind
                 // either a successful preparation or its own refusal.
-                crate::authority::commit::pipeline::consult_stage_control(
+                crate::authority::commit::pipeline::consult_stage(
                     execution,
                     crate::authority::commit::pipeline::CommitStage::Publication,
                 )

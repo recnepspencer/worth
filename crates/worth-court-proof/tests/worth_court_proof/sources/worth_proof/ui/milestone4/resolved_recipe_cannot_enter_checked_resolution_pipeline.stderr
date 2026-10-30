@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone4/resolved_recipe_cannot_enter_checked_resolution_pipeline.rs:29:44
+   |
+29 |     let _ = resolve_lower_and_admit_recipe(resolved, gate, &lower, &admit);
+   |             ------------------------------ ^^^^^^^^ expected `Recipe<Unresolved, _>`, found `Recipe<Resolved, &str>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+   = note: expected struct `Recipe<worth_proof::Unresolved, _>`
+              found struct `Recipe<worth_proof::Resolved, &'static str>`
+note: function defined here
+  --> $WORKSPACE/crates/worth-proof/src/transition/checked_recipe.rs
+   |
+   | pub fn resolve_lower_and_admit_recipe<T, B, ResolutionAuth, LoweringCap, AdmissionAuth, D, De>(
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

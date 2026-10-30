@@ -114,7 +114,7 @@ where
         }
         material
             .affinity(plan.principal)
-            .map_err(&material_failure)?;
+            .map_err(material_failure)?;
     }
     let request_affinity =
         super::super::admitted_result::WorthQueryApplicationQueryRequestAffinity::new(
@@ -147,7 +147,7 @@ where
     if let Some(material) = &material {
         material
             .basis(plan.basis.identity())
-            .map_err(&material_failure)?;
+            .map_err(material_failure)?;
     }
     let basis_identity = plan.basis.identity().clone();
     let basis_version = plan.basis.version_id();

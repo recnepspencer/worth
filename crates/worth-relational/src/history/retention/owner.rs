@@ -305,11 +305,25 @@ pub(super) fn reserve_retirement_slot(
             Err(observed) => current = observed,
         }
     }
-    match owner.next_retirement_generation.fetch_update(
-        Ordering::AcqRel,
-        Ordering::Acquire,
-        |generation| generation.checked_add(1),
-    ) {
+    let retirement_generation = {
+        let update_counter = &owner.next_retirement_generation;
+        let mut generation = update_counter.load(Ordering::Acquire);
+        loop {
+            let Some(updated_value) = generation.checked_add(1) else {
+                break Err(generation);
+            };
+            match update_counter.compare_exchange_weak(
+                generation,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => generation = reloaded_value,
+            }
+        }
+    };
+    match retirement_generation {
         Ok(previous) => Ok(previous + 1),
         Err(_) => {
             release_retirement_slot(owner);

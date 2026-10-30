@@ -1,0 +1,38 @@
+[package]
+name = "worth-query-bank-testkit-courtroom"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+autotests = false
+
+[package.metadata.worth.testkit]
+workspace = "worth-query-bank"
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+bank-domain = { workspace = true }
+bank-external-rail = { workspace = true }
+bank-http-adapter = { workspace = true }
+bank-server = { workspace = true }
+bank-user-node = { workspace = true }
+ed25519-dalek = { workspace = true }
+rand = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+thirtyfour = { workspace = true }
+tokio = { workspace = true }
+url = { workspace = true }
+worth-query-bank-testkit = { path = "../worth-query-bank-testkit" }
+worth-query-bank-testkit-server = { path = "../worth-query-bank-testkit-server" }
+worth-query-host = { workspace = true }
+worth-query-package-archive = { path = "../../../worth-query/crates/worth-query-package-archive" }
+
+[lints]
+workspace = true

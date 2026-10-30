@@ -48,31 +48,31 @@ pub(super) fn present_one_surface(
         start.host.adapter().operational_host_contract().kind(),
     ) {
         let contains_semantic_text = presentation_work.view().contains_semantic_text();
-        if let Some(presentation_async_runtime) = presentation_async.as_deref_mut() {
-            if let Some(observation) = super::semantic_text_raster::present(
+        if let Some(presentation_async_runtime) = presentation_async.as_deref_mut()
+            && let Some(observation) = super::semantic_text_raster::present(
                 start,
                 requirement,
                 presentation_work,
                 progress,
                 text,
                 presentation_async_runtime,
-            ) {
-                let (outcome, text_candidate, request_bases, pending_receipts, foreground_reuse) =
-                    observation.into_parts();
-                progress.semantic_requests.extend(request_bases);
-                return super::presentation_outcome::record(
-                    start,
-                    surface,
-                    expected_effects,
-                    progress,
-                    outcome,
-                    text_candidate,
-                    pending_receipts,
-                    foreground_reuse,
-                    text,
-                    Some(presentation_async_runtime),
-                );
-            }
+            )
+        {
+            let (outcome, text_candidate, request_bases, pending_receipts, foreground_reuse) =
+                observation.into_parts();
+            progress.semantic_requests.extend(request_bases);
+            return super::presentation_outcome::record(
+                start,
+                surface,
+                expected_effects,
+                progress,
+                outcome,
+                text_candidate,
+                pending_receipts,
+                foreground_reuse,
+                text,
+                Some(presentation_async_runtime),
+            );
         }
         if contains_semantic_text {
             progress

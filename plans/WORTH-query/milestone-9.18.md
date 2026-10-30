@@ -57,7 +57,7 @@ operation `ReverseJournal`; this creates a linked compensating journal. It does 
 establish a generic historical correction facade. Estate aftermath declarations
 already distinguish freeze pre-images, disbursement compensation and external death
 notice effects. Bank's generic provisional undo/redo HTTP routes were removed;
-`bank-http-adapter/tests/protocol_boundary.rs` protects that cutover. Install new
+`worth-query-bank-court-http-adapter/tests/worth_query_bank_court_http_adapter/http_adapter/protocol_boundary/mod.rs` protects that cutover. Install new
 accepted correction commands through the real server, HTTP adapter and user node.
 
 ## Adversarial Courtroom
@@ -108,7 +108,7 @@ Do not create a second proof ledger or tests for the tests.
 
 ### Bank: authenticated process, accounting and escaped effects
 
-Extend `bank-courtroom/tests/transport_process_courtroom.rs` and its scenario modules.
+Extend `worth-query-bank-court-user-node/tests/worth_query_bank_court_user_node/process/transport/courtroom/transport_process_courtroom/mod.rs` and its scenario modules.
 Use `TransportProcessWorld`, separately authenticated user nodes, the actual TCP/HTTP
 adapter/server and the rail process where external behavior is under test. A direct
 runtime test cannot substitute for this product journey.

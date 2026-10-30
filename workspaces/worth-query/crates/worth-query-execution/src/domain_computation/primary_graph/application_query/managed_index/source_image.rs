@@ -37,11 +37,12 @@ pub(super) struct SourceImage<S: ApplicationSchema, I: ApplicationManagedIndexBi
     pub(super) tree: WorthQueryApplicationDisclosedProjectionTree,
     pub(super) order: worth_execution::ExecutionArray<usize>,
     pub(super) dependencies: Arc<super::super::observed_source::ManagedSourceDependencies>,
-    pub(super) sources: Vec<WorthQueryObservedSource<SourceQuery<S, I>>>,
-    pub(super) result_set: WorthQueryObservedResultSet<SourceQuery<S, I>>,
-    pub(super) affinity: WorthQueryApplicationQueryRequestAffinity,
+    // Keep the original observations and their custody for this image's lifetime.
+    pub(super) _sources: Vec<WorthQueryObservedSource<SourceQuery<S, I>>>,
+    pub(super) _result_set: WorthQueryObservedResultSet<SourceQuery<S, I>>,
+    pub(super) _affinity: WorthQueryApplicationQueryRequestAffinity,
     pub(super) terminal: Arc<WorthQueryCompletedSourceRead>,
-    pub(super) allocation: Arc<SourceFactsAllocation>,
+    pub(super) _allocation: Arc<SourceFactsAllocation>,
 }
 
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> SourceImage<S, I> {

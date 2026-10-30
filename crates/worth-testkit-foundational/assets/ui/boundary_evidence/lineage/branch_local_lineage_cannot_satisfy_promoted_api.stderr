@@ -1,0 +1,5 @@
+error[E0599]: no method named `promotion_receipt` found for struct `FoundationalBoundaryEvidenceBranchLocalLineageArtifact` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/lineage/branch_local_lineage_cannot_satisfy_promoted_api.rs
+  |
+  |     let _ = branch_local.promotion_receipt();
+  |                          ^^^^^^^^^^^^^^^^^ method not found in `FoundationalBoundaryEvidenceBranchLocalLineageArtifact`

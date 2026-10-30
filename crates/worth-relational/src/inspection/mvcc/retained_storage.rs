@@ -9,8 +9,8 @@ use crate::runtime::RelationalRuntime;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-#[cfg(test)]
-mod tests;
+mod work;
+pub use work::RelationalRetainedStorageWork;
 
 /// Failure yields no partial or weakened byte total.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -35,6 +35,8 @@ pub enum RelationalRetainedStorageInspectionDenial {
 /// before diagnostic clones. It grants no reclamation or currentness authority.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationalRetainedStorageObservation {
+    /// Work performed only by this explicit diagnostic walk.
+    pub work: RelationalRetainedStorageWork,
     pub current_roots: usize,
     /// Noncurrent, nonreclaimable owner rows, including reservations or other custody.
     pub held_roots: usize,
@@ -79,7 +81,7 @@ fn inventory(
         .into_iter()
         .map(|artifact| (artifact.commit_id(), artifact))
         .collect::<BTreeMap<_, _>>();
-    let mut accounting = RelationalAuthoritativeAllocationAccounting::default();
+    let mut accounting = RelationalAuthoritativeAllocationAccounting::profiled_census();
     let mut seen_roots = BTreeSet::new();
     for root in &current {
         observe_root(runtime, root, &catalog, &mut seen_roots, &mut accounting)?;
@@ -113,6 +115,7 @@ fn inventory(
     }
     let total = accounting.unique_bytes();
     Ok(RelationalRetainedStorageObservation {
+        work: accounting.census_work().clone(),
         current_roots,
         held_roots,
         reclaimable_roots,
@@ -135,7 +138,7 @@ fn observe_root(
     if !seen.insert(Arc::as_ptr(root) as usize) {
         return Ok(());
     }
-    accounting.observe_root(runtime.runtime_instance_id(), root)?;
+    accounting.observe_census_root(runtime.runtime_instance_id(), root)?;
     if let Some(commit) = root.commit_id() {
         let artifact = catalog
             .get(&commit)

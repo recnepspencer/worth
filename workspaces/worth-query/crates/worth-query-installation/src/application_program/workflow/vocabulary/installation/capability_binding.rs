@@ -53,6 +53,10 @@ where
         Ok(binding)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(super) fn bind_capability<Capability, Operation, Input>(
         &self,
         denial_kind: WorthQueryApplicationWorkflowInstallationDenialKind,

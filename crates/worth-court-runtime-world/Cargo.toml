@@ -1,0 +1,25 @@
+[package]
+"name" = "worth-court-runtime-world"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-testkit-compiler" = { "path" = "../worth-testkit-compiler" }
+"worth-execution" = { "path" = "../worth-execution" }
+"worth-foundational" = { "path" = "../worth-foundational" }
+"worth-proof" = { "path" = "../worth-proof" }
+"worth-relational" = { "path" = "../worth-relational" }
+"worth-runtime-bridge" = { "path" = "../worth-runtime-bridge" }
+"worth-runtime-world" = { "path" = "../worth-runtime-world" }
+"worth-signal" = { "path" = "../worth-signal" }
+
+[[test]]
+name = "worth_court_runtime_world"
+path = "tests/worth_court_runtime_world.rs"
+
+[lints]
+workspace = true

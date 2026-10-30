@@ -5,6 +5,10 @@ use super::super::program_support_fixture::{validated, BoundedProgram};
 use super::WorthQueryProgramSupportEntry;
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "The test checks type membership by equality; canonical order uses declared identity"
+)]
 fn support_answers_only_declared_operation_and_binding_membership() {
     struct DeclaredOperation;
     struct DeclaredBinding;

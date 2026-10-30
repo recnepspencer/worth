@@ -1,0 +1,10 @@
+error[E0624]: associated function `new` is private
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/worth_native/private_direct_delivery_contract_constructor.rs
+  |
+  |     let _constructor = worth_server::WorthServerDirectDeliveryContract::new;
+  |                                                                         ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-server/src/worth_native/direct/delivery_contract.rs
+  |
+  |     pub(crate) fn new(parts: WorthServerDirectDeliveryContractParts) -> Self {
+  |     ------------------------------------------------------------------------ private associated function defined here

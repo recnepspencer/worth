@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/policy/plain_policy_claim_cannot_satisfy_policy_receipt_api.rs
+  |
+  |     require_policy_receipt(&claim);
+  |     ---------------------- ^^^^^^ expected `&FoundationalPolicyAdmissionReceipt`, found `&...`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected reference `&FoundationalPolicyAdmissionReceipt`
+             found reference `&FoundationalPolicyAdmissionPerformanceClaim`
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/policy/plain_policy_claim_cannot_satisfy_policy_receipt_api.rs
+  |
+  | fn require_policy_receipt(_receipt: &FoundationalPolicyAdmissionReceipt) {}
+  |    ^^^^^^^^^^^^^^^^^^^^^^ ---------------------------------------------

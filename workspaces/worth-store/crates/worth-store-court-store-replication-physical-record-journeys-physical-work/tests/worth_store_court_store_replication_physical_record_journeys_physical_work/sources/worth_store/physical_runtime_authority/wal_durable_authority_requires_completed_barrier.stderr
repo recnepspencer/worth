@@ -1,0 +1,62 @@
+error: cannot construct `PhysicalWalBarrierSettlement` with struct literal syntax due to private fields
+ --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:8:13
+  |
+8 |     let _ = PhysicalWalBarrierSettlement {};
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: cannot construct `WalDurablePhysicalMutation` with struct literal syntax due to private fields
+ --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:9:13
+  |
+9 |     let _ = WalDurablePhysicalMutation {};
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: you might have meant to use the `new` associated function
+  |
+9 -     let _ = WalDurablePhysicalMutation {};
+9 +     let _ = WalDurablePhysicalMutation::new(_, _);
+  |
+
+error[E0277]: the trait bound `WalDurablePhysicalMutation: Clone` is not satisfied
+  --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:10:21
+   |
+10 |     require_clone::<WalDurablePhysicalMutation>();
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `WalDurablePhysicalMutation`
+   |
+note: required by a bound in `require_clone`
+  --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:5:21
+   |
+ 5 | fn require_clone<T: Clone>() {}
+   |                     ^^^^^ required by this bound in `require_clone`
+
+error[E0624]: associated function `new` is private
+  --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:17:33
+   |
+17 |       WalDurablePhysicalMutation::new(appended, settlement)
+   |                                   ^^^ private associated function
+   |
+  ::: src/physical_runtime/durability/mutation/progression/wal_durable.rs
+   |
+   | /     pub(in crate::physical_runtime) fn new(
+   | |         member: WalBarrierMember<WalAppendedPhysicalMutation>,
+   | |         settlement: CompletionBoundPhysicalWalBarrierSettlement,
+   | |     ) -> Self {
+   | |_____________- private associated function defined here
+
+error[E0308]: arguments to this function are incorrect
+  --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:17:5
+   |
+17 |     WalDurablePhysicalMutation::new(appended, settlement)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^           ---------- expected `CompletionBoundPhysicalWalBarrierSettlement`, found `PhysicalWalBarrierSettlement`
+   |
+note: expected `WalBarrierMember<_>`, found `WalAppendedPhysicalMutation`
+  --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:17:37
+   |
+17 |     WalDurablePhysicalMutation::new(appended, settlement)
+   |                                     ^^^^^^^^
+   = note: expected struct `WalBarrierMember<WalAppendedPhysicalMutation>`
+              found struct `WalAppendedPhysicalMutation`
+note: associated function defined here
+  --> src/physical_runtime/durability/mutation/progression/wal_durable.rs
+   |
+   |     pub(in crate::physical_runtime) fn new(
+   |                                        ^^^

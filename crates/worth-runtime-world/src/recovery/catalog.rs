@@ -115,6 +115,10 @@ impl ProductUnpublishedRecoveryCatalog {
         self.state.lock().unwrap_or_else(|error| error.into_inner())
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn affinity(&self) -> usize {
         Arc::as_ptr(&self.state) as usize
     }

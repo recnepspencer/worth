@@ -98,6 +98,10 @@ impl RuntimeWorldPublicationPage {
 }
 
 impl CompositeHistoryCatalog {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn performed_publication_page(
         &self,
         after: Option<&RuntimeWorldPublicationCursor>,
@@ -180,6 +184,10 @@ impl CompositeHistoryCatalog {
         })
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn publication_frontier_is_current(
         &self,
         frontier: &RuntimeWorldPublicationFrontier,

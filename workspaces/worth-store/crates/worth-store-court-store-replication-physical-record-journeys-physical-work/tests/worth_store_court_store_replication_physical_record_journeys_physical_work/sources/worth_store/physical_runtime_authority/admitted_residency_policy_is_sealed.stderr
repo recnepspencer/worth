@@ -1,0 +1,11 @@
+error: cannot construct `AdmittedPhysicalRecordResidencyPolicy` with struct literal syntax due to private fields
+ --> tests/physical_runtime_authority/admitted_residency_policy_is_sealed.rs:4:5
+  |
+4 |     AdmittedPhysicalRecordResidencyPolicy {}
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: you might have meant to use the `canonical` associated function
+  |
+4 -     AdmittedPhysicalRecordResidencyPolicy {}
+4 +     AdmittedPhysicalRecordResidencyPolicy::canonical(_)
+  |

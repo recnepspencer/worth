@@ -1,0 +1,144 @@
+#[allow(unused_imports)]
+use crate::court::ordinary_context::operation_control::combined_race::*;
+pub(crate) use {
+    crate::court::ordinary_context::operation_control::clean,
+    crate::court::ordinary_context::operation_control::signal_prepared,
+    crate::court::ordinary_context::operation_control::WAIT,
+};
+
+#[test]
+fn combined_loser_retains_relational_movement_without_calling_signal_after_head_change() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut court = crate::court::ordinary_context::CompositeSupplyChainCourt::compile();
+    let policy = match court.world.execution_placement() {
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+        | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+            policy
+        }
+    };
+    let root = court.bootstrap();
+    let token = RuntimeWorldCancellationSource::new().token();
+    let (reached, received) = std::sync::mpsc::sync_channel(1);
+    let gate = std::sync::Arc::new(
+        worth_relational::facade::mvcc::RelationalPatchPositionReservationGateForTest::default(),
+    );
+    let candidate = court.records.candidate_with_control(
+        request_execution,
+        root.basis().relational_basis(),
+        "grain",
+        "5",
+        worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted()
+            .with_patch_position_reservation_pause_for_test(reached, std::sync::Arc::clone(&gate)),
+    );
+    let combined = court
+        .world
+        .publication_port()
+        .prepare_with_signal(
+            root.clone(),
+            CompositePublicationIntent::with_signal(Some(RelationalTransactionIntent::ordinary()))
+                .with_prepared_relational_candidate(candidate),
+            &token,
+            None,
+        )
+        .unwrap();
+    let single = signal_prepared(&court, &root, &token);
+    let signal = court
+        .signal
+        .owner_component_services()
+        .unwrap()
+        .basis_port();
+    let before = signal
+        .owner_service_cost_snapshot()
+        .unwrap()
+        .canonical_movements();
+    let mut context = court.context(request_execution, &root);
+    let port = court.world.publication_port();
+    std::thread::scope(|scope| {
+        let release = ReleaseRelational(gate);
+        let worker = scope.spawn(move || {
+            port.execute_with_signal(
+                worth_execution::ExecutionRequest::serial(
+                    &crate::court::ordinary_context::operation_control::serial_request(policy),
+                ),
+                combined,
+                &mut context,
+                &token,
+                |_| panic!("stale combined intent must not enter Signal"),
+            )
+        });
+        received
+            .recv_timeout(WAIT)
+            .expect("real Relational reservation reached");
+        assert_eq!(
+            court.observe(&root).selected_commit(),
+            root.selected_commit()
+        );
+        let RuntimeWorldPublicationOutcome::Performed(winner) =
+            court.world.publication_port().execute_with_signal(
+                worth_execution::ExecutionRequest::serial(
+                    &crate::court::ordinary_context::operation_control::serial_request(policy),
+                ),
+                single,
+                &mut court.context(request_execution, &root),
+                &RuntimeWorldCancellationSource::new().token(),
+                |_| Ok(()),
+            )
+        else {
+            panic!("Signal-only contender wins");
+        };
+        let head = court.observe(&root);
+        assert_eq!(head.selected_commit(), winner.commit().identity());
+        drop(release);
+        let RuntimeWorldPublicationOutcome::ProductUnpublished(loser) = worker.join().unwrap()
+        else {
+            panic!("combined loser retains the real Relational movement");
+        };
+        assert_eq!(loser.owner_effect_count(), 1);
+        assert_eq!(loser.cause(), ProductUnpublishedCause::StaleProductHead);
+        assert!(loser.product_comparison_costs().is_none());
+        assert_eq!(
+            signal
+                .owner_service_cost_snapshot()
+                .unwrap()
+                .canonical_movements(),
+            before + 1
+        );
+        let direct = court
+            .records
+            .runtime
+            .observe_branch(&court.records.runtime.main_branch_identity())
+            .unwrap()
+            .1;
+        assert_eq!(
+            court
+                .records
+                .read(request_execution, &direct)
+                .records
+                .get("grain")
+                .map(String::as_str),
+            Some("5")
+        );
+        assert_eq!(
+            court
+                .records
+                .read(request_execution, head.basis().relational_basis())
+                .records
+                .get("grain")
+                .map(String::as_str),
+            Some("4")
+        );
+        clean(
+            &court,
+            RuntimeWorldPublicationOutcome::ProductUnpublished(loser),
+        );
+        assert_eq!(
+            court.observe(&root).selected_commit(),
+            head.selected_commit()
+        );
+        drop(winner.consume());
+    });
+    drop(root);
+    court.finish();
+}

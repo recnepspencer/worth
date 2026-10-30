@@ -7,7 +7,7 @@ use crate::saved_query::SavedQueryTemporalAsyncSurfacePosture;
 use super::bundle::MilestoneNineFiveHostileMatrixAdapter;
 
 #[test]
-fn milestone_nine_five_rows_enforce_required_assertion_classes() {
+fn rows_enforce_required_assertion_classes() {
     let matrix =
         MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
     let mut covered = Vec::new();
@@ -52,7 +52,7 @@ fn milestone_nine_five_rows_enforce_required_assertion_classes() {
 }
 
 #[test]
-fn milestone_nine_five_parity_rows_keep_canonical_identity_but_not_composition_authority() {
+fn parity_rows_keep_canonical_identity_but_not_composition_authority() {
     let matrix =
         MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
 
@@ -90,7 +90,7 @@ fn milestone_nine_five_parity_rows_keep_canonical_identity_but_not_composition_a
 }
 
 #[test]
-fn milestone_nine_five_projection_and_reuse_rows_shift_only_the_intended_surface() {
+fn projection_and_reuse_rows_shift_only_the_intended_surface() {
     let matrix =
         MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
     let projection = matrix
@@ -143,7 +143,7 @@ fn milestone_nine_five_projection_and_reuse_rows_shift_only_the_intended_surface
 }
 
 #[test]
-fn milestone_nine_five_rejection_rows_preserve_typed_temporal_async_targets() {
+fn rejection_rows_preserve_typed_temporal_async_targets() {
     let matrix =
         MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
     let grouped = matrix

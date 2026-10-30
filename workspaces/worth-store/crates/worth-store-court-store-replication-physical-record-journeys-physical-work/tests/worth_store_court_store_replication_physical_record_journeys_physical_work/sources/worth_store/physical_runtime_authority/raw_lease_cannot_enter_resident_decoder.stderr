@@ -1,0 +1,5 @@
+error[E0599]: no method named `with_owner_decoder` found for reference `&PhysicalFrameLease` in the current scope
+ --> tests/physical_runtime_authority/raw_lease_cannot_enter_resident_decoder.rs:4:11
+  |
+4 |     lease.with_owner_decoder(|bytes| bytes.len());
+  |           ^^^^^^^^^^^^^^^^^^ method not found in `&PhysicalFrameLease`

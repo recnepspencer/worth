@@ -1,31 +1,15 @@
 #!/usr/bin/env python3
 """Fast local gate for the Query line and the crates beneath it.
 
-    python scripts/ci/query_gate.py                  every suite
+    python scripts/ci/query_gate.py                  every non-UI suite
     python scripts/ci/query_gate.py relational,bank  the named suites
+    python scripts/ci/query_gate.py query-landing    all normal Query suites and docs
+    python scripts/ci/query_gate.py bank-landing     all normal Bank suites and docs
     python scripts/ci/query_gate.py --list           suite names
 
-Why it is fast. Running `cargo test -p <one package>` once per package makes
-cargo resolve features again for every selection, so the first-party chain is
-rebuilt for each command. This driver builds each workspace's tests once
-(`cargo test --no-run` over one selection), then runs the produced test
-binaries directly: every listed test by exact name, in chunks, several
-processes at a time. A red test in one binary does not hide the others, and
-rerunning a few suites after a fix costs minutes.
-
-Measured on an 8-core machine: the Bank workspace went from 717 s + 990 s as
-one command per package to 230 s (140 s build, 90 s run) with the same 48
-binaries and 477 tests; the Query packages other than Query Execution went
-from 306 s to 83 s of run time (38 binaries, 4,441 tests).
-
-sccache. When `sccache` is on PATH and no wrapper is configured, it is used.
-It shares third-party crates across workspaces and checkouts (a cold root
-test build went from 272 s to 187 s in a second checkout). Our own crates are
-compiled incrementally and are not cached. Two things defeat it: sccache
-refuses to run with CARGO_INCREMENTAL=1 in the environment (the driver drops
-that variable; the profile default keeps our crates incremental), and it
-hashes every CARGO_* variable into its key, so a CARGO_TARGET_DIR that
-differs per checkout prevents sharing between checkouts.
+Governed workspaces use one census/prebuild execution for every selected suite.
+Category prefixes govern selection. External fixture and scheduled suites retain
+their explicit process scheduling.
 
 Results go to target/query-gate (or --out): <suite>.json and one log per
 build, chunk and command. The exit code is 0 only when every suite is green.
@@ -41,124 +25,41 @@ import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from check_trybuild_test_group import session_tests
 from query_gate_artifacts import test_binaries
 from query_gate_diagnostics import failed_tests, report_failed_command
 from query_gate_environment import environment
+from query_gate_prebuild import GatePrebuild, PrerequisiteFailure, refused_scale_suites
+from query_gate_cost import CostGate, DOC_SUITES, SUITE_ALIASES, expand_suites, governed
+from cargo_capture import CargoRunner
 
-ROOT = Path(__file__).resolve().parents[2]
-QUERY = "workspaces/worth-query/Cargo.toml"
-FIXTURE = (
-    "workspaces/worth-query/crates/worth-query-certification/fixtures/"
-    "consumer_entry/Cargo.toml"
-)
-BANK = "workspaces/worth-query-bank-world/Cargo.toml"
-UI = "workspaces/worth-ui/Cargo.toml"
-BOUNDARY = "tools/boundary-check/Cargo.toml"
-
-def packages(*names):
-    return [part for name in names for part in ("-p", name)]
-
-
-LOWER = ("worth-relational", "worth-execution", "worth-signal",
-         "worth-runtime-bridge", "worth-runtime-world")
-QUERY_PUBLIC = ("worth-query-execution", "worth-query-publication", "worth-query",
-                "worth-query-host")
-FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",
-                    "worth-query-consumer-root")
-
-# One test build per group. Every suite of a group takes its binaries from
-# the same cargo selection, so the first-party chain is compiled once.
-ROOT_TESTS = [
-    *packages("worth-relational", "worth-signal", "worth-execution",
-              "worth-signal-wasm", "worth-server"),
-    "--lib", "--tests",
-]
-GROUPS = {
-    "root": ROOT_TESTS,
-    "query": ["--manifest-path", QUERY, "--workspace", "--lib", "--tests"],
-    "bank": ["--manifest-path", BANK, "--workspace", "--lib", "--bins", "--tests"],
-    # Rust 1.94 repeatedly ICEs in this external schema host's incremental
-    # evaluate_obligation cache. Keep the workaround in its build owner;
-    # ordinary Query and Bank builds retain their incremental settings.
-    "fixture": ["--manifest-path", FIXTURE, *packages(*FIXTURE_PACKAGES),
-                "--lib", "--bins", "--config", "build.incremental=false"],
-    "ui": ["--manifest-path", UI, "-p", "worth-ui-query-binding", "--lib"],
-}
-
-def lib_of(*names):
-    return lambda binary: binary["package"] in names and binary["lib"]
-
-
-def package_of(*names):
-    return lambda binary: binary["package"] in names
-
-def everything(_binary):
-    return True
-
-
-# suite -> (group, which binaries, tests per process, processes at once)
-TEST_SUITES = {
-    "relational": ("root", package_of("worth-relational"), 150, 4),
-    "signal": ("root", package_of("worth-signal", "worth-signal-wasm"), 150, 4),
-    "execution": ("root", package_of("worth-execution"), 150, 2),
-    "query-execution": ("query", lib_of("worth-query-execution"), 80, 4),
-    "query-rest": (
-        "query", lambda binary: not lib_of("worth-query-execution")(binary), 150, 1,
-    ),
-    # Topology cases get individual processes; other fixture owners use normal chunks.
-    "fixture": ("fixture", everything, 150, 16),
-    "ui": ("ui", everything, 100, 2),
-    "bank": ("bank", everything, 150, 1),
-}
-# Bank tests spawn the rail binary; a fresh target folder does not have it.
-BEFORE = {
-    "bank": [("bank-build-rail",
-              ["cargo", "build", "--manifest-path", BANK, "-p", "bank-external-rail"])],
-}
-
-# Tests that read a process-wide allocation counter. Their own comments ask
-# for a serial lane: beside any other test thread they count its allocations.
-PROCESS_WIDE_PROBES = (
-    "managed_run::tests::safe_point_observation::",
-    "managed_run::tests::step_cost_bound::",
-    "managed_run::tests::yield_cost_bound::",
-    "read_set::source_facts::merging::",
-    "tests::application_attempt::predecode_admission::",
-    # The terminal-refusal fixture must use zero days, a process-wide counter
-    # key also used by other document-retention scenarios.
-    "producer_predicate_checkpoint::ordinary_source::terminal_unavailable::",
+from query_gate_courts import (
+    BANK, BEFORE, BOUNDARY, FIXTURE, FIXTURE_PACKAGES, GROUPS, LOWER, QUERY,
+    QUERY_PUBLIC, ROOT, ROOT_TESTS, TEST_SUITES, UI, packages, selected, CATEGORY_SUITES,
 )
 
-# Tests that open a trybuild session. trybuild builds every crate's cases in
-# one shared project under target/tests/trybuild, and its cross-process lock
-# does not hold on Windows: two chunks running sessions at once overwrite each
-# other's generated manifest, so a should-fail case builds from another case's
-# source and passes. They run in the serial lane, as nextest's trybuild-project
-# group runs them; check_trybuild_test_group.py owns which tests those are.
-TRYBUILD_SESSIONS = session_tests()[0]
 
-# Binaries whose every case gets its own process, as nextest gives it. Topology
-# cases touch process-global providers, counters or ledgers. Execution's unit
-# cases construct the process-unique ExecutionAuthority, several with their own
-# configuration ("runs in its own process"), so two in one process race to
-# AlreadyConstructed and poison the shared test lock.
+def in_class(name, cost_class):
+    return cost_class in name.split("::")[:-1]
+
+
+# The root Execution owner still needs one authority configuration per process.
+# Its migration is owned by Track A1. Governed fixture tests use serial paths.
 PROCESS_PER_CASE = {
-    ("fixture", "worth-query-topology-entry"),
     ("execution", "worth-execution"),
 }
-
-FIXTURE_CPU_EXCLUSIVE = (
-    "checkpoint_recovery::parallel_history::matrix::table::required_wave_full_declared_matrix"
-)
 
 def clippy(*selection):
     return ["cargo", "clippy", *selection, "--all-targets", "--", "-D", "warnings"]
 
 def bash():
     # On Windows a bare `bash` can resolve to the WSL launcher.
-    git_bash = Path("C:/Program Files/Git/bin/bash.exe")
-    return str(git_bash) if git_bash.exists() else (shutil.which("bash") or "bash")
+    for candidate in ("C:/Program Files/Git/bin/bash.exe", "C:/Program Files/Git/usr/bin/bash.exe"):
+        if Path(candidate).exists():
+            return candidate
+    return shutil.which("bash") or "bash"
+
+def powershell():
+    return shutil.which("pwsh") or shutil.which("powershell") or "pwsh"
 
 def consumer_doctest_commands():
     configuration = tomllib.loads(
@@ -172,7 +73,7 @@ def consumer_doctest_commands():
     ] + [
         ("doc-owning-fixtures", ["cargo", "test", "--manifest-path", FIXTURE,
          "-p", "worth-query-consumer-root", "-p", "worth-query-topology-entry",
-         "--bins", "--lib", "--no-fail-fast", "--",
+         "--bins", "--lib", "--config", "build.incremental=false", "--no-fail-fast", "--",
          "compiled_examples_match_consumer_documents"]),
         ("doc-owning-examples", ["cargo", "test", "--manifest-path", QUERY,
          *packages("worth-query-declaration", "worth-query-execution", "worth-query-publication",
@@ -194,8 +95,7 @@ COMMAND_SUITES = {
     "lint-lower": [("clippy-lower", clippy(*packages(*LOWER)))],
     "lint-query": [
         ("clippy-query",
-         clippy("--manifest-path", QUERY,
-                *packages(*QUERY_PUBLIC, "worth-query-certification"))),
+         clippy("--manifest-path", QUERY, "--workspace")),
     ],
     "lint-fixture": [
         ("clippy-fixture", clippy("--manifest-path", FIXTURE, *packages(*FIXTURE_PACKAGES))),
@@ -205,28 +105,17 @@ COMMAND_SUITES = {
         ("clippy-ui-binding",
          clippy("--manifest-path", UI, *packages("worth-ui-query-binding"))),
     ],
-    # Compiled doc examples: no other suite builds them.
-    "doc-lower": [
-        ("doc-root", ["cargo", "test", "--doc", "--no-fail-fast", *packages(*LOWER)]),
-    ],
-    "doc": consumer_doctest_commands(),
     "wasm": [
         ("wasm-check", ["cargo", "check", "-p", "worth-signal-wasm", "--all-targets"]),
     ],
     "boundary": [
-        ("boundary-check",
-         ["cargo", "run", "--manifest-path", BOUNDARY, "-p", "boundary-check",
-          "--bin", "boundary-check"]),
-        ("boundary-tests", ["cargo", "test", "--manifest-path", BOUNDARY]),
-        ("agent-context",
-         ["cargo", "run", "--manifest-path", "tools/agent-context/Cargo.toml",
-          "-p", "agent-context", "--bin", "agent-context", "--", "check"]),
+        ("prepare-constitution", [powershell(), "-NoProfile", "-File", "scripts/prepare-constitution-hook.ps1"]),
+        ("constitution", [powershell(), "-NoProfile", "-File", "scripts/check-constitution.ps1"]),
+        ("boundary-tests", ["cargo", "test", "--manifest-path", BOUNDARY,
+                            "--target-dir", "target/constitution-tools"]),
         ("line-caps", [bash(), "scripts/ci/check_workspace_rust_line_caps.sh", "dirty"]),
     ],
     "extra": [
-        ("server-refused-read",
-         ["cargo", "test", *ROOT_TESTS,
-          "refused_basis_advancement_fails_the_slot_and_closes_the_lane"]),
         ("consumer-root",
          ["cargo", "run", "--manifest-path", FIXTURE, "-p", "worth-query-consumer-root"]),
         ("check-query-workspace",
@@ -239,6 +128,7 @@ COMMAND_SUITES = {
 
 # Environment one command adds over the gate's own.
 COMMAND_ENV = {
+    "constitution": {"WORTH_CONSTITUTION_PREBUILT": "1"},
     # sccache 0.18.0 inserts `/WX-` between cc 1.9.0's `-Tp` and its file, so
     # cl reads it as the source and libmimalloc-sys (via apps/platform-pulse)
     # fails to build. The empty wrapper also overrides `rustc-wrapper = sccache` in
@@ -247,24 +137,42 @@ COMMAND_ENV = {
 }
 
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
-         "relational", "signal", "execution", "query-execution", "query-rest",
-         "fixture", "ui", "bank", "doc-lower", "doc", "wasm", "boundary", "extra"]
+         "relational", "signal", "execution", "root-rest", "query-execution", "query-rest",
+         "query-process", "query-exhaustive", "fixture", "bank", "bank-process",
+         "root-doc", "query-doc", "bank-doc", "wasm", "boundary", "extra"]
+ORDER += [name for name in TEST_SUITES if name.startswith(("query-", "bank-", "root-"))
+          and name not in ORDER and not name.endswith("-scale")]
 
 
 class Gate:
-    def __init__(self, out):
+    def __init__(self, out, census=False):
         self.out = out
         self.env = environment(ROOT)
+        # An explicitly supplied build identity governs this complete gate.
+        # Otherwise environment() issues one identity for all its child builds.
+        if build_id := os.environ.get("WORTH_IMPLEMENTATION_BUILD_ID"):
+            self.env["WORTH_IMPLEMENTATION_BUILD_ID"] = build_id
         self.built = {}
+        self.prepared = set()
+        self.census = census
+        self.prerequisites = GatePrebuild(ROOT, out / "prebuilt", self.env)
+        self.cost = CostGate(ROOT, out / "test-cost", self.env)
+
+    def plan(self, suites):
+        self.cost.configure(suites)
 
     def command(self, label, argv):
         log = self.out / f"{label}.log"
         started = time.time()
-        with open(log, "w", encoding="utf-8", errors="replace") as sink:
-            code = subprocess.run(
-                argv, cwd=ROOT, env=dict(self.env, **COMMAND_ENV.get(label, {})),
-                stdout=sink, stderr=subprocess.STDOUT,
-            ).returncode
+        child_environment = dict(self.env, **COMMAND_ENV.get(label, {}))
+        if argv[:1] == ["cargo"]:
+            code = CargoRunner(ROOT, child_environment)(argv, ROOT, log).returncode
+        else:
+            with open(log, "w", encoding="utf-8", errors="replace") as sink:
+                code = subprocess.run(
+                    argv, cwd=ROOT, env=child_environment,
+                    stdout=sink, stderr=subprocess.STDOUT,
+                ).returncode
         text = log.read_text(encoding="utf-8", errors="replace").splitlines()
         if code != 0:
             report_failed_command(label, code, log, text)
@@ -280,12 +188,9 @@ class Gate:
             return self.built[group]
         log = self.out / f"group-{group}-build.log"
         started = time.time()
-        with open(log, "w", encoding="utf-8") as sink:
-            done = subprocess.run(
-                ["cargo", "test", *GROUPS[group], "--no-run", "--message-format=json"],
-                cwd=ROOT, env=self.env, stdout=subprocess.PIPE, stderr=sink, text=True,
-                encoding="utf-8", errors="replace",
-            )
+        done = CargoRunner(ROOT, self.env)(
+            ["cargo", "test", *GROUPS[group], "--no-run", "--timings"], ROOT, log,
+        )
         # Preserve JSON compiler diagnostics even when no test binary was produced.
         log.with_suffix(".jsonl").write_text(done.stdout, encoding="utf-8")
         binaries = test_binaries(done.stdout)
@@ -294,6 +199,10 @@ class Gate:
         return self.built[group]
 
     def chunk(self, suite, index, binary, names, extra=()):
+        if refused_scale_suites([suite], self.census):
+            raise ValueError("ignored scale tests are scheduled-only, outside census execution")
+        if suite.endswith("-scale"):
+            extra = (*extra, "--include-ignored")
         log = self.out / f"{suite}-chunk-{index:03}.log"
         env = dict(self.env, CARGO_MANIFEST_DIR=binary["cwd"])
         started = time.time()
@@ -314,44 +223,68 @@ class Gate:
         }
 
     def tests(self, suite):
+        if refused_scale_suites([suite], self.census):
+            raise ValueError("ignored scale tests are scheduled-only, outside census execution")
+        if governed(suite):
+            return self.cost.run(suite)
+        return self._nonlanding_tests(suite)
+
+    def _nonlanding_tests(self, suite):
         group, want, size, workers = TEST_SUITES[suite]
         for label, argv in BEFORE.get(suite, []):
+            if label in self.prepared:
+                continue
             row = self.command(label, argv)
             if row["exit"] != 0:
                 return {"suite": suite, "build": "FAILED", "log": row["log"], "ok": False}
+            self.prepared.add(label)
         binaries, build_seconds, build_log = self.build(group)
         if binaries is None:
             return {"suite": suite, "build": "FAILED", "log": build_log, "ok": False}
         shared, alone, whole, exclusive, listing, total = [], [], [], [], [], 0
+        prerequisite_binaries = []
         for binary in filter(want, binaries):
             if not binary["harness"]:
                 listing.append((binary["package"], binary["target"], 0))
                 whole.append(binary)
+                prerequisite_binaries.append(binary)
                 continue
             env = dict(self.env, CARGO_MANIFEST_DIR=binary["cwd"])
-            listed = subprocess.run(
+            discovery = subprocess.run(
                 [binary["exe"], "--list", "--format", "terse"], cwd=binary["cwd"],
                 env=env, capture_output=True, text=True, encoding="utf-8",
                 errors="replace",
-            ).stdout
-            names = sorted(line[: -len(": test")] for line in listed.splitlines()
+            )
+            if discovery.returncode:
+                log = self.out / f"{suite}-{binary['package']}-{binary['target']}-list.log"
+                log.write_text(discovery.stdout + discovery.stderr, encoding="utf-8")
+                return {"suite": suite, "ok": False, "listing": "FAILED", "log": log.name}
+            names = sorted(line[: -len(": test")] for line in discovery.stdout.splitlines()
                            if line.endswith(": test"))
+            names = [name for name in names if selected(suite, binary, name)]
+            if names:
+                prerequisite_binaries.append(binary)
             listing.append((binary["package"], binary["target"], len(names)))
             total += len(names)
+            exclusive_names = [n for n in names
+                               if group == "fixture" and in_class(n, "exhaustive")]
+            exclusive += [(binary, [name], ()) for name in exclusive_names]
+            names = [n for n in names if n not in set(exclusive_names)]
             if (suite, binary["package"]) in PROCESS_PER_CASE:
-                shared += [(binary, [name], ()) for name in names
-                           if name != FIXTURE_CPU_EXCLUSIVE]
-                if FIXTURE_CPU_EXCLUSIVE in names:
-                    exclusive.append((binary, [FIXTURE_CPU_EXCLUSIVE], ()))
+                shared += [(binary, [name], ()) for name in names]
                 continue
-            probes = [n for n in names
-                      if any(mark in n for mark in PROCESS_WIDE_PROBES)
-                      or n.rsplit("::", 1)[-1] in TRYBUILD_SESSIONS]
-            rest = [n for n in names if n not in set(probes)]
+            probes = [n for n in names if in_class(n, "compile_fail")]
+            isolated = [n for n in names if in_class(n, "serial") and n not in probes]
+            rest = [n for n in names if n not in set(probes + isolated)]
             shared += [(binary, rest[at:at + size], ()) for at in range(0, len(rest), size)]
-            if probes:
-                alone.append((binary, probes, ("--test-threads=1",)))
-            # (the probes run after every shared chunk has ended)
+            shared += [(binary, [name], ()) for name in isolated]
+            alone += [(binary, [name], ()) for name in probes]
+            # Boundary outcomes are checked after independent chunks have finished.
+        try:
+            self.prerequisites.prepare(group, prerequisite_binaries)
+        except PrerequisiteFailure as failure:
+            return {"suite": suite, "ok": False, "prebuild": "FAILED",
+                    "workspace": failure.workspace, "failure": str(failure)}
         jobs = list(enumerate(
             shared + alone + [(binary, [], ()) for binary in whole] + exclusive
         ))
@@ -374,12 +307,13 @@ class Gate:
             "run_seconds": round(time.time() - started),
             "slowest": sorted(((row["seconds"], row["log"]) for row in results),
                               reverse=True)[:3],
-            "ok": not failed and not bad_exit and bool(total or whole),
+            "ok": not failed and not bad_exit and (bool(total or whole) or suite in CATEGORY_SUITES),
             "chunks": results,
         }
 
     def commands(self, suite):
-        rows = [self.command(label, argv) for label, argv in COMMAND_SUITES[suite]]
+        rows = [self.command(label, argv) for label, argv in COMMAND_SUITES[suite]
+                if label not in ("check-ui-workspace", "clippy-ui-binding")]
         return {
             "suite": suite, "ok": all(row["exit"] == 0 for row in rows),
             "failed": [row["name"] for row in rows if row["exit"] != 0],
@@ -387,27 +321,37 @@ class Gate:
         }
 
     def run(self, suite):
-        result = self.tests(suite) if suite in TEST_SUITES else self.commands(suite)
+        result = self.tests(suite) if suite in TEST_SUITES or suite in DOC_SUITES else self.commands(suite)
         (self.out / f"{suite}.json").write_text(json.dumps(result, indent=1),
                                                 encoding="utf-8")
         return result
 
-def main():
+def main(argv=None, default_suites=None, default_out=None, allowed_suites=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("suites", nargs="?", default=",".join(ORDER),
-                        help="comma-separated suite names (default: all)")
-    parser.add_argument("--out", type=Path, default=ROOT / "target" / "query-gate")
+    parser.add_argument("suites", nargs="?", default=",".join(default_suites or ORDER),
+                        help="suite names or query-landing, bank-landing, doc")
+    parser.add_argument("--out", type=Path, default=default_out or ROOT / "target" / "query-gate")
     parser.add_argument("--list", action="store_true", help="print suite names")
-    args = parser.parse_args()
+    parser.add_argument("--census", action="store_true", help="refuse scheduled scale suites")
+    args = parser.parse_args(argv)
     if args.list:
-        print("\n".join(ORDER))
+        print("\n".join(allowed_suites or dict.fromkeys([*ORDER, *TEST_SUITES, *SUITE_ALIASES, *COMMAND_SUITES])))
         return 0
-    suites = args.suites.split(",")
-    unknown = [name for name in suites if name not in ORDER]
+    suites = expand_suites(args.suites.split(","))
+    unknown = [name for name in suites if name not in TEST_SUITES and name not in COMMAND_SUITES and name not in DOC_SUITES]
     if unknown:
         parser.error("unknown suite: " + ", ".join(unknown))
+    if len(set(suites)) != len(suites):
+        parser.error("suite repeats in the execution plan")
+    if allowed_suites is not None and any(name not in allowed_suites for name in suites):
+        parser.error("suite is outside this workspace gate")
+    if refused_scale_suites(suites, args.census):
+        parser.error("ignored scale tests are scheduled-only, outside census execution")
+    if args.census and "ui" in suites:
+        parser.error("worth-ui is excluded from census execution")
     args.out.mkdir(parents=True, exist_ok=True)
-    gate = Gate(args.out)
+    gate = Gate(args.out, census=args.census)
+    gate.plan(suites)
     red = []
     for suite in suites:
         result = gate.run(suite)

@@ -1,0 +1,12 @@
+error: cannot construct `AuthoritativeRecordAspectState` with struct literal syntax due to private fields
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/authoritative_state/state_fields_are_private.rs
+  |
+  |     let _ = AuthoritativeRecordAspectState {};
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: private field `aspects` that was not provided
+help: you might have meant to use the `from_canonical_map` associated function
+  |
+4 -     let _ = AuthoritativeRecordAspectState {};
+4 +     let _ = AuthoritativeRecordAspectState::from_canonical_map(_);
+  |

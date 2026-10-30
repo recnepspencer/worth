@@ -42,14 +42,14 @@ impl SelectedEvidence<'_> {
             ) {
                 return compatibility;
             }
-            if let Some(report) = self.host_capability_report {
-                if let Some(compatibility) = child_intrinsic_host_compatibility(
+            if let Some(report) = self.host_capability_report
+                && let Some(compatibility) = child_intrinsic_host_compatibility(
                     evidence,
                     report,
                     declaration_support_authority_generation,
-                ) {
-                    return compatibility;
-                }
+                )
+            {
+                return compatibility;
             }
         }
         UiMeasurementGenerationCompatibility::Compatible

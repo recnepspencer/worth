@@ -3,9 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
-use worth_relational::facade::{
-    identity::EntityId, transactions::RelationalExecutionDenialCause as Cause,
-};
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 pub(super) struct MaterialFootprintStorage<'a, 'request, 'authority> {
     execution: &'a ExecutionRequest<'request, 'authority>,

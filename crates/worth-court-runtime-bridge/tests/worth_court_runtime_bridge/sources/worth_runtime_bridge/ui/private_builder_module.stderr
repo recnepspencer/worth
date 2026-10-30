@@ -1,0 +1,11 @@
+error[E0603]: module `builder` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/private_builder_module.rs:1:27
+  |
+1 | use worth_runtime_bridge::builder::RuntimeBridgeBuilder;
+  |                           ^^^^^^^ private module
+  |
+note: the module `builder` is defined here
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/lib.rs
+  |
+  | mod builder;
+  | ^^^^^^^^^^^

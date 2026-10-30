@@ -32,7 +32,7 @@ fn neutral_native_population_keeps_logical_marking_local_and_matches_revision_or
 }
 
 fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
-    let world = installed_authorization_world(true);
+    let world = population_world::install(population);
     world.application.with_host_advancement(|phase| {
  let custody = phase.test_host_request();
  let phase_custody = &custody;

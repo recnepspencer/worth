@@ -1,0 +1,21 @@
+[package]
+name = "worth-query-bank-court-domain"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+bank-domain = { workspace = true }
+worth-query-bank-testkit-domain = { path = "../worth-query-bank-testkit-domain" }
+worth-query-decl = { workspace = true }
+worth-query-host = { workspace = true }
+
+[[test]]
+name = "worth_query_bank_court_domain"
+path = "tests/worth_query_bank_court_domain.rs"
+
+[lints]
+workspace = true

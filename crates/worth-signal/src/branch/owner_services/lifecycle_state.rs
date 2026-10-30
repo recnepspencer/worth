@@ -19,7 +19,9 @@ pub(super) use operation_admission::{
     SignalOwnerMetadataHoldDenial,
 };
 
-static NEXT_SIGNAL_OWNER_LIFECYCLE_IDENTITY: AtomicU64 = AtomicU64::new(1);
+#[path = "lifecycle_state/identity_issuance.rs"]
+mod identity_issuance;
+use identity_issuance::next_lifecycle_identity;
 
 const OWNER_PHASE_SHIFT: u32 = 62;
 const OWNER_COUNT_MASK: u64 = (1_u64 << OWNER_PHASE_SHIFT) - 1;
@@ -376,15 +378,6 @@ fn phase(state: u64) -> u64 {
 
 fn admission_count(state: u64) -> usize {
     (state & OWNER_COUNT_MASK) as usize
-}
-
-fn next_lifecycle_identity() -> SignalOwnerLifecycleIdentity {
-    let identity = NEXT_SIGNAL_OWNER_LIFECYCLE_IDENTITY
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-            current.checked_add(1)
-        })
-        .expect("Signal owner lifecycle identity exhausted");
-    SignalOwnerLifecycleIdentity(identity)
 }
 
 #[cfg(test)]

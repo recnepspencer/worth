@@ -57,10 +57,10 @@ pub(in crate::mounting::projection) fn lower_semantic_text_formatting(
     predecessor: Option<&super::UiMountedSemanticTextSeed>,
     theme_value_changed: bool,
 ) -> Result<Option<UiMountedSemanticTextFormattingSeed>, UiMountedProjectionDenial> {
-    if let Some(crate::mounting::UiMountedSemanticTextContent::Scalar(input)) = input {
-        if let Some(directive) = input.formatting() {
-            return lower_directive(directive).map(Some);
-        }
+    if let Some(crate::mounting::UiMountedSemanticTextContent::Scalar(input)) = input
+        && let Some(directive) = input.formatting()
+    {
+        return lower_directive(directive).map(Some);
     }
     if let Some(predecessor) = predecessor.filter(|_| !theme_value_changed) {
         return Ok(Some(predecessor.formatting().clone()));

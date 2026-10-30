@@ -6,6 +6,9 @@ use super::{
 };
 use crate::branch::{RelationalBranchRoot, RelationalRootAuthoritativeAllocationKind};
 use crate::history::{RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind};
+use crate::inspection::mvcc::retained_storage::RelationalRetainedStorageWork;
+#[path = "sharing_accounting/census.rs"]
+mod census;
 
 #[derive(Debug, Default)]
 pub(in crate::inspection::mvcc) struct RelationalAuthoritativeAllocationAccounting {
@@ -18,6 +21,7 @@ pub(in crate::inspection::mvcc) struct RelationalAuthoritativeAllocationAccounti
     excluded_allocations: BTreeMap<(u8, u64), RelationalExcludedAllocationBytes>,
     seen_payload: BTreeSet<u64>,
     seen_excluded: BTreeSet<u64>,
+    census_work: Option<RelationalRetainedStorageWork>,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -29,6 +33,19 @@ struct RelationalExcludedAllocationBytes {
 }
 
 impl RelationalAuthoritativeAllocationAccounting {
+    pub(in crate::inspection::mvcc) fn profiled_census() -> Self {
+        Self {
+            census_work: Some(Default::default()),
+            ..Self::default()
+        }
+    }
+
+    pub(in crate::inspection::mvcc) fn census_work(&self) -> &RelationalRetainedStorageWork {
+        self.census_work
+            .as_ref()
+            .expect("census accounting was selected")
+    }
+
     pub(super) fn observe_branch_root(
         &mut self,
         runtime_instance_id: u64,
@@ -46,6 +63,9 @@ impl RelationalAuthoritativeAllocationAccounting {
         runtime_instance_id: u64,
         root: &RelationalBranchRoot,
     ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
+        if let Some(work) = self.census_work.as_mut() {
+            work.roots += 1;
+        }
         self.observe_partition_allocations(runtime_instance_id, root)?;
         self.observe_root_allocations(runtime_instance_id, root);
         Ok(())
@@ -123,7 +143,11 @@ impl RelationalAuthoritativeAllocationAccounting {
         runtime_instance_id: u64,
         root: &RelationalBranchRoot,
     ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
+        let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
         for region in root.storage_regions() {
+            if let Some(work) = self.census_work.as_mut() {
+                work.region_entries += 1;
+            }
             self.logical_partition_bytes = self
                 .logical_partition_bytes
                 .saturating_add(region.authoritative_bytes);
@@ -139,6 +163,7 @@ impl RelationalAuthoritativeAllocationAccounting {
                     runtime_instance_id,
                     partition,
                     &mut self.seen_payload,
+                    self.census_work.as_mut(),
                 )
             {
                 self.insert(allocation.locator(), allocation.authoritative_bytes());
@@ -163,6 +188,10 @@ impl RelationalAuthoritativeAllocationAccounting {
                 ),
                 region.partition_state_bytes,
             );
+            let excluded_start = self.census_work.as_ref().map(|_| std::time::Instant::now());
+            if let Some(work) = self.census_work.as_mut() {
+                work.excluded_partition_walks += 1;
+            }
             for (lane, allocation) in
                 crate::inspection::mvcc::partition_allocations::excluded_partition_allocations(
                     partition,
@@ -189,12 +218,25 @@ impl RelationalAuthoritativeAllocationAccounting {
                 self.excluded_allocations
                     .insert((2 + lane as u8, allocation.id), bytes);
             }
+            if let Some(work) = self.census_work.as_mut() {
+                work.excluded_walk_us += excluded_start.unwrap().elapsed().as_micros();
+            }
+        }
+        if let Some(work) = self.census_work.as_mut() {
+            work.partition_walk_us += start.unwrap().elapsed().as_micros();
         }
         Ok(())
     }
 
     fn observe_root_allocations(&mut self, runtime_instance_id: u64, root: &RelationalBranchRoot) {
+        let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
+        if let Some(work) = self.census_work.as_mut() {
+            work.schema_inventory_computations += 1;
+        }
         for allocation in root.authoritative_allocation_observations() {
+            if let Some(work) = self.census_work.as_mut() {
+                work.root_allocation_rows += 1;
+            }
             let kind = match allocation.kind {
                 RelationalRootAuthoritativeAllocationKind::RootMetadata => {
                     self.logical_root_metadata_bytes = self
@@ -244,6 +286,9 @@ impl RelationalAuthoritativeAllocationAccounting {
                 allocation.authoritative_bytes,
             );
         }
+        if let Some(work) = self.census_work.as_mut() {
+            work.root_inventory_us += start.unwrap().elapsed().as_micros();
+        }
     }
 
     pub(in crate::inspection::mvcc) fn observe_commit_allocation(
@@ -252,6 +297,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         artifact: &RelationalCommitArtifact,
         derived_cache_bytes: u64,
     ) {
+        let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
         for allocation in artifact.authoritative_allocation_observations() {
             let kind = match allocation.kind {
                 RelationalCommitAuthoritativeAllocationKind::ArtifactObject => {
@@ -281,17 +327,23 @@ impl RelationalAuthoritativeAllocationAccounting {
                 allocation.authoritative_bytes,
             );
         }
-        let excluded = artifact.excluded_allocation_inventory();
-        self.excluded_allocations.insert(
-            (1, artifact.commit_id().0),
-            RelationalExcludedAllocationBytes {
-                diagnostics: excluded.diagnostic_bytes,
-                optional_cache: excluded
-                    .optional_cache_bytes
-                    .saturating_add(derived_cache_bytes),
-                ..RelationalExcludedAllocationBytes::default()
-            },
-        );
+        if self.census_work.is_none() {
+            let excluded = artifact.excluded_allocation_inventory();
+            self.excluded_allocations.insert(
+                (1, artifact.commit_id().0),
+                RelationalExcludedAllocationBytes {
+                    diagnostics: excluded.diagnostic_bytes,
+                    optional_cache: excluded
+                        .optional_cache_bytes
+                        .saturating_add(derived_cache_bytes),
+                    ..RelationalExcludedAllocationBytes::default()
+                },
+            );
+        }
+        if let Some(work) = self.census_work.as_mut() {
+            work.catalog_artifacts += 1;
+            work.catalog_inventory_us += start.unwrap().elapsed().as_micros();
+        }
     }
 
     fn insert(&mut self, locator: RelationalAuthoritativeAllocationLocator, bytes: u64) {

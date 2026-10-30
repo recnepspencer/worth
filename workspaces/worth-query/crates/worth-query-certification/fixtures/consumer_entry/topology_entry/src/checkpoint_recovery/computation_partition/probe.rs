@@ -149,88 +149,94 @@ fn faulted(id: u64, region: u32, fault: ProbeFault) -> RegionEntry {
     }
 }
 
-#[test]
-fn partition_key_is_its_least_items_key_whatever_order_the_input_holds() {
-    // Two regions. The least entries are 3 and 4, and neither is met first in
-    // either order.
-    let entries = [
-        entry(5, 1),
-        entry(3, 1),
-        entry(9, 2),
-        entry(4, 2),
-        entry(7, 2),
-    ];
-    let mut reversed = entries;
-    reversed.reverse();
-    with_totals::<Probed>(
-        &[("planned", &entries), ("reversed", &reversed)],
-        |demand| {
-            let planned = demand("planned").expect("the probed totals complete");
-            assert_eq!(planned.bits, 7.0_f64.to_bits());
-            assert_eq!(demand("reversed"), Ok(planned));
-        },
-    );
-}
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn partition_key_is_its_least_items_key_whatever_order_the_input_holds() {
+        // Two regions. The least entries are 3 and 4, and neither is met first in
+        // either order.
+        let entries = [
+            entry(5, 1),
+            entry(3, 1),
+            entry(9, 2),
+            entry(4, 2),
+            entry(7, 2),
+        ];
+        let mut reversed = entries;
+        reversed.reverse();
+        with_totals::<Probed>(
+            &[("planned", &entries), ("reversed", &reversed)],
+            |demand| {
+                let planned = demand("planned").expect("the probed totals complete");
+                assert_eq!(planned.bits, 7.0_f64.to_bits());
+                assert_eq!(demand("reversed"), Ok(planned));
+            },
+        );
+    }
 
-#[cfg(panic = "unwind")]
-#[test]
-fn reducer_panic_is_a_typed_failure_and_the_next_demand_runs() {
-    let poisoned = [
-        entry(1, 1),
-        faulted(2, 2, ProbeFault::PoisonReducer),
-        entry(3, 3),
-    ];
-    let clean = [entry(1, 1), entry(2, 2), entry(3, 3)];
-    with_totals::<Probed>(&[("poisoned", &poisoned), ("clean", &clean)], |demand| {
-        assert_eq!(
-            demand("poisoned").map(|total| total.bits),
-            Err(WorthQueryPartitionedComputationDenial::ReducerPanicked)
-        );
-        assert_eq!(
-            kernels_entered(),
-            3,
-            "every partition ran before the reducer"
-        );
-        assert_eq!(
-            demand("clean").map(|total| total.bits),
-            Ok(6.0_f64.to_bits())
-        );
-    });
-}
+    #[cfg(panic = "unwind")]
+    #[test]
+    fn reducer_panic_is_a_typed_failure_and_the_next_demand_runs() {
+        let poisoned = [
+            entry(1, 1),
+            faulted(2, 2, ProbeFault::PoisonReducer),
+            entry(3, 3),
+        ];
+        let clean = [entry(1, 1), entry(2, 2), entry(3, 3)];
+        with_totals::<Probed>(&[("poisoned", &poisoned), ("clean", &clean)], |demand| {
+            assert_eq!(
+                demand("poisoned").map(|total| total.bits),
+                Err(WorthQueryPartitionedComputationDenial::ReducerPanicked)
+            );
+            assert_eq!(
+                kernels_entered(),
+                3,
+                "every partition ran before the reducer"
+            );
+            assert_eq!(
+                demand("clean").map(|total| total.bits),
+                Ok(6.0_f64.to_bits())
+            );
+        });
+    }
 
-#[test]
-fn key_that_cannot_be_encoded_is_denied_naming_its_item_and_nothing_runs() {
-    // Two entries have no key. The denial names the lesser, whichever the
-    // input meets first.
-    let entries = [
-        entry(1, 1),
-        faulted(8, 2, ProbeFault::NoKey),
-        entry(2, 3),
-        faulted(6, 3, ProbeFault::NoKey),
-        entry(9, 1),
-    ];
-    let mut reversed = entries;
-    reversed.reverse();
-    let encodable = [entry(1, 1), entry(2, 3), entry(9, 1)];
-    let sets: facts::Sets<'_> = &[
-        ("unkeyed", &entries),
-        ("reversed", &reversed),
-        ("encodable", &encodable),
-    ];
-    with_totals::<Probed>(sets, |demand| {
-        for input in ["unkeyed", "reversed"] {
-            match demand(input) {
-                Err(WorthQueryPartitionedComputationDenial::KeyNotEncodable { item, .. }) => {
-                    assert_eq!(item, PartitionItemId(6));
+    #[test]
+    fn key_that_cannot_be_encoded_is_denied_naming_its_item_and_nothing_runs() {
+        // Two entries have no key. The denial names the lesser, whichever the
+        // input meets first.
+        let entries = [
+            entry(1, 1),
+            faulted(8, 2, ProbeFault::NoKey),
+            entry(2, 3),
+            faulted(6, 3, ProbeFault::NoKey),
+            entry(9, 1),
+        ];
+        let mut reversed = entries;
+        reversed.reverse();
+        let encodable = [entry(1, 1), entry(2, 3), entry(9, 1)];
+        let sets: facts::Sets<'_> = &[
+            ("unkeyed", &entries),
+            ("reversed", &reversed),
+            ("encodable", &encodable),
+        ];
+        with_totals::<Probed>(sets, |demand| {
+            for input in ["unkeyed", "reversed"] {
+                match demand(input) {
+                    Err(WorthQueryPartitionedComputationDenial::KeyNotEncodable {
+                        item, ..
+                    }) => {
+                        assert_eq!(item, PartitionItemId(6));
+                    }
+                    other => panic!("the key has no encoding: {other:?}"),
                 }
-                other => panic!("the key has no encoding: {other:?}"),
+                assert_eq!(kernels_entered(), 0, "no partition runs");
             }
-            assert_eq!(kernels_entered(), 0, "no partition runs");
-        }
-        assert_eq!(
-            demand("encodable").map(|total| total.bits),
-            Ok(3.0_f64.to_bits())
-        );
-        assert_eq!(kernels_entered(), 2);
-    });
+            assert_eq!(
+                demand("encodable").map(|total| total.bits),
+                Ok(3.0_f64.to_bits())
+            );
+            assert_eq!(kernels_entered(), 2);
+        });
+    }
 }

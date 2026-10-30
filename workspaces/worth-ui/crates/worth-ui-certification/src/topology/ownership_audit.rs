@@ -60,10 +60,10 @@ impl<'a> Visit<'_> for PathCollector<'a> {
             .iter()
             .map(|segment| segment.ident.to_string())
             .collect::<Vec<_>>();
-        if let Some(first) = segments.first_mut() {
-            if let Some(crate_name) = self.crate_aliases.get(first) {
-                *first = crate_name.clone();
-            }
+        if let Some(first) = segments.first_mut()
+            && let Some(crate_name) = self.crate_aliases.get(first)
+        {
+            *first = crate_name.clone();
         }
         self.collected_paths.push(segments);
         visit::visit_path(self, path);

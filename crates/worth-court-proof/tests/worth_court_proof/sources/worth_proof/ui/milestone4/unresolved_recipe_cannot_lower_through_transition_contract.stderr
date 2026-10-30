@@ -1,0 +1,26 @@
+error[E0308]: mismatched types
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone4/unresolved_recipe_cannot_lower_through_transition_contract.rs:15:9
+   |
+13 |     let _ = apply_transition(
+   |             ---------------- arguments to this function are incorrect
+14 |         &LowerRecipeTransition::new(lowering_capability),
+15 |         unresolved,
+   |         ^^^^^^^^^^ expected `Recipe<Resolved, _, ...>`, found `Recipe<Unresolved, &str>`
+   |
+   = note: expected struct `Recipe<worth_proof::Resolved, _, FreshnessScopedBasis<worth_proof::CurrentValidity, AssumptionBasis<_>>>`
+              found struct `Recipe<worth_proof::Unresolved, &str, NoAssumptionBasis>`
+help: the return type of this call is `Recipe<worth_proof::Unresolved, &str>` due to the type of the argument passed
+  --> tests/worth_court_proof/sources/worth_proof/ui/milestone4/unresolved_recipe_cannot_lower_through_transition_contract.rs:13:13
+   |
+13 |       let _ = apply_transition(
+   |  _____________^
+14 | |         &LowerRecipeTransition::new(lowering_capability),
+15 | |         unresolved,
+   | |         ---------- this argument influences the return type of `apply_transition`
+16 | |     );
+   | |_____^
+note: function defined here
+  --> $WORKSPACE/crates/worth-proof/src/transition/contract.rs
+   |
+   | pub fn apply_transition<T, Input>(transition: &T, input: Input) -> T::Output
+   |        ^^^^^^^^^^^^^^^^

@@ -1,28 +1,14 @@
-//! Physical metadata identity stays distinct when genuine readmission shares payloads.
+//! Physical allocation identity, independently of operational root admission.
 use super::*;
-use crate::history::data::BranchId;
-use crate::tests::support::{create_entity_outcome, durable_runtime_with_test_schema};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 #[test]
-fn readmitted_root_metadata_is_distinct_while_unchanged_allocations_remain_shared() {
-    let request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let runtime = durable_runtime_with_test_schema();
-    create_entity_outcome(execution, &runtime, "root-allocation-readmission");
-    let root = runtime
-        .history
-        .branch_cell(&BranchId("main".into()))
-        .unwrap()
-        .root()
-        .unwrap();
-    let readmitted = root
-        .readmit_descriptor(
-            root.descriptor().unwrap().clone(),
-            &runtime.services.symbols.interner_snapshot(),
-        )
-        .unwrap();
+fn distinct_root_metadata_allocations_preserve_shared_immutable_owners() {
+    let root = RelationalBranchRoot::empty();
+    // No runtime receives these values. This tests allocation identity, while
+    // the public checkpoint court exercises genuine operational readmission.
+    let readmitted = Arc::new((*root).clone());
     assert!(!Arc::ptr_eq(&root, &readmitted));
     assert_eq!(root.id(), readmitted.id(), "semantic identity is preserved");
     let original = allocations(&root);

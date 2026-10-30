@@ -1,0 +1,41 @@
+error[E0308]: mismatched types
+ --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/untyped_physical_work_basis_is_rejected.rs:7:18
+  |
+7 |     accept_basis(value);
+  |     ------------ ^^^^^ expected `PhysicalWorkSemanticBasis`, found `AspectValue`
+  |     |
+  |     arguments to this function are incorrect
+  |
+note: function defined here
+ --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/untyped_physical_work_basis_is_rejected.rs:4:4
+  |
+4 | fn accept_basis(_basis: PhysicalWorkSemanticBasis) {}
+  |    ^^^^^^^^^^^^ ---------------------------------
+
+error[E0308]: mismatched types
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/untyped_physical_work_basis_is_rejected.rs:11:18
+   |
+11 |     accept_basis(value);
+   |     ------------ ^^^^^ expected `PhysicalWorkSemanticBasis`, found `Aspect`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/untyped_physical_work_basis_is_rejected.rs:4:4
+   |
+ 4 | fn accept_basis(_basis: PhysicalWorkSemanticBasis) {}
+   |    ^^^^^^^^^^^^ ---------------------------------
+
+error[E0308]: mismatched types
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/untyped_physical_work_basis_is_rejected.rs:15:18
+   |
+15 |     accept_basis(value);
+   |     ------------ ^^^^^ expected `PhysicalWorkSemanticBasis`, found `Value`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/untyped_physical_work_basis_is_rejected.rs:4:4
+   |
+ 4 | fn accept_basis(_basis: PhysicalWorkSemanticBasis) {}
+   |    ^^^^^^^^^^^^ ---------------------------------

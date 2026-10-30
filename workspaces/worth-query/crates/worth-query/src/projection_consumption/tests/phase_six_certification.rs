@@ -3,7 +3,7 @@ use crate::projection_consumption::{
 };
 
 #[test]
-fn closeout_bundle_emits_full_phase_six_surface() {
+fn closeout_bundle_emits_full_surface() {
     let bundle = certify_projection_consumption_closeout_core();
     for lane in [
         ProjectionConsumptionCertificationLane::SupportMatrixSurface,

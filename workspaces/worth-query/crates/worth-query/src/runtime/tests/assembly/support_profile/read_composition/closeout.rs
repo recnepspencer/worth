@@ -1,7 +1,7 @@
 use super::super::super::super::support::*;
 
 #[test]
-fn runtime_public_read_composition_phase_one_closeout_answers_kernel_gate() {
+fn runtime_public_read_composition_closeout_answers_kernel_gate() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

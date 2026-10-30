@@ -1,5 +1,10 @@
 # Milestone 9.15 Phases 2-5 QA Closure Ledger
 
+Historical record: verification commands, counts, and timings below describe the milestone checkout and are not current invocation guidance. For current product-frontier court selection and complete Gate commands, see [Query verification](../../workspaces/worth-query/README.md) and [the Gate entry point](../../scripts/ci/query_gate.py). No current target is credited with these historical results.
+
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
+
 ## Audit state
 
 - Status: **CLOSED — PHASES 2-5 PROVED**

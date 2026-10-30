@@ -1,0 +1,28 @@
+[package]
+name = "worth-query-testkit-query"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+sha2 = "0.10"
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-proof = { path = "../../../../crates/worth-proof" }
+worth-query = { workspace = true }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-testkit-installed-operation-fixture = { path = "../worth-query-testkit-installed-operation-fixture" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-signal = { path = "../../../../crates/worth-signal" }
+
+[lints]
+workspace = true

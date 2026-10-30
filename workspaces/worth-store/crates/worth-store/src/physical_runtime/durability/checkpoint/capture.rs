@@ -173,16 +173,30 @@ impl PhysicalCheckpointCaptureOwner {
     fn next_identity(
         &self,
     ) -> Result<PhysicalCheckpointIdentity, PhysicalCheckpointCaptureFailure> {
-        let sequence = self
-            .next_sequence
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-                current.checked_add(1)
-            })
-            .map_err(|_| {
-                PhysicalCheckpointCaptureFailure::before_candidate(
-                    PhysicalCheckpointCaptureFailureKind::SequenceExhausted,
-                )
-            })?;
+        let sequence = {
+            let update_counter = &self.next_sequence;
+            let mut current = update_counter.load(Ordering::Acquire);
+            loop {
+                let next_value = current.checked_add(1);
+                let Some(updated_value) = next_value else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| {
+            PhysicalCheckpointCaptureFailure::before_candidate(
+                PhysicalCheckpointCaptureFailureKind::SequenceExhausted,
+            )
+        })?;
         let sequence =
             NonZeroU64::new(sequence).ok_or(PhysicalCheckpointCaptureFailure::before_candidate(
                 PhysicalCheckpointCaptureFailureKind::SequenceExhausted,

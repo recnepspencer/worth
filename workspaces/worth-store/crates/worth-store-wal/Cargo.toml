@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-wal"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 1 WAL-coordinated durable mode and semantic write-path contracts."
+"workspace" = "../.."
+"name" = "worth-store-wal"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 1 WAL-coordinated durable mode and semantic write-path contracts."
+"autotests" = false
+
 
 [dependencies]
 sha2 = "0.10"
@@ -20,13 +22,13 @@ default = []
 certification-authority = [
     "worth-store-security/certification-test-authority",
 ]
-
 [dev-dependencies]
-tempfile = "3"
-worth-foundational = { path = "../../../../crates/worth-foundational" }
-worth-proof = { path = "../../../../crates/worth-proof" }
-worth-store-aspect-native.workspace = true
-worth-store-security = { path = "../worth-store-security", features = ["certification-test-authority"] }
+"tempfile" = "3"
+"worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
+"worth-proof" = { "path" = "../../../../crates/worth-proof" }
+"worth-store-aspect-native" = { "workspace" = true }
+"worth-store-security" = { "path" = "../worth-store-security", "features" = ["certification-test-authority"] }
+
 
 [lints]
 workspace = true

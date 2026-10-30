@@ -354,7 +354,7 @@ Expose the simple public valid bridge-backed read-runtime bootstrap as the
 ordinary lane for hostile testing and examples.
 
 - Relevant source surfaces:
-  [tests/support/public_bridge_runtime/mod.rs](../../workspaces/worth-query/crates/worth-query/tests/support/public_bridge_runtime/mod.rs),
+  [tests/support/public_bridge_runtime/mod.rs](../../workspaces/worth-query/crates/worth-query-worlds-query/src/query/support/public_bridge_runtime/mod.rs),
   [runtime/tests/support/bridge/runtime_support.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/support/bridge/runtime_support.rs),
   [runtime/tests/support/stateful_bridge_runtime/mod.rs](../../workspaces/worth-query/crates/worth-query/src/runtime/tests/support/stateful_bridge_runtime/mod.rs).
 - Relevant product surfaces: `WORTHQueryRuntime::builder()`, `runtime_bridge(...)`,

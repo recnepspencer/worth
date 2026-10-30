@@ -6,6 +6,10 @@ const CHILD_PATH: &str = "WORTH_STORE_CONTROL_PROCESS_PATH";
 const CHILD_START: &str = "WORTH_STORE_CONTROL_PROCESS_START";
 const CHILD_TRANSITION: &str = "WORTH_STORE_CONTROL_PROCESS_TRANSITION";
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "category: coordinated storage-owner unit-test harness; purpose: current tail append serializes independent handles across threads; source: worth-store-physical-backend::operational_control::concurrent_append_tests::current_tail_append_serializes_independent_handles_across_threads; lexical counts: std::thread::spawn=1, std::thread::scope=0, std::thread::Scope::spawn=0, available_parallelism=0; barriers, joins and original bounds coordinate the storage-owner claim"
+)]
 #[test]
 fn current_tail_append_serializes_independent_handles_across_threads() {
     let directory = tempfile::tempdir().expect("temp directory");

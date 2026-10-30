@@ -381,10 +381,10 @@ pub(crate) fn normalize_manifest_alias_path(
     manifest_aliases: &HashMap<String, String>,
 ) -> Vec<String> {
     let mut normalized = segments.to_vec();
-    if let Some(first) = normalized.first_mut() {
-        if let Some(package_name) = manifest_aliases.get(first) {
-            *first = package_name.clone();
-        }
+    if let Some(first) = normalized.first_mut()
+        && let Some(package_name) = manifest_aliases.get(first)
+    {
+        *first = package_name.clone();
     }
     normalized
 }

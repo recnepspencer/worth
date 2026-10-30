@@ -1,0 +1,22 @@
+error[E0432]: unresolved imports `worth_runtime_world::facade::ExactComponentBasisKey`, `worth_runtime_world::facade::ExactComponentPinRequest`, `worth_runtime_world::facade::ObservationRetentionObligation`, `worth_runtime_world::facade::PublicationRetentionObligation`, `worth_runtime_world::facade::RetainedPartialRetentionObligation`, `worth_runtime_world::facade::RetentionTransferReceipt`, `worth_runtime_world::facade::RuntimeWorldRetentionOwner`
+ --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/private_retention_surface.rs:2:5
+  |
+2 |     ExactComponentBasisKey, ExactComponentPinRequest, ObservationRetentionObligation,
+  |     ^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `ObservationRetentionObligation` in `facade`
+  |     |                       |
+  |     |                       no `ExactComponentPinRequest` in `facade`
+  |     no `ExactComponentBasisKey` in `facade`
+3 |     PublicationRetentionObligation, RetainedPartialRetentionObligation,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `RetainedPartialRetentionObligation` in `facade`
+  |     |
+  |     no `PublicationRetentionObligation` in `facade`
+4 |     RetentionTransferReceipt, RuntimeWorldRetentionOwner,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^ no `RuntimeWorldRetentionOwner` in `facade`
+  |     |
+  |     no `RetentionTransferReceipt` in `facade`
+  |
+help: a similar name exists in the module
+  |
+4 -     RetentionTransferReceipt, RuntimeWorldRetentionOwner,
+4 +     RetentionTransferReceipt, RuntimeWorldRetentionEntry,
+  |

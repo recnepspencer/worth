@@ -2,26 +2,6 @@
 use super::*;
 use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation};
 
-#[test]
-fn a_new_indexed_match_prevents_equal_upstream_reuse() {
-    journey(true, false);
-}
-
-#[test]
-fn unchanged_indexed_membership_reuses_an_equal_upstream() {
-    journey(false, false);
-}
-
-#[test]
-fn a_new_indexed_match_contacts_the_consumer_with_a_dirty_upstream() {
-    journey(true, true);
-}
-
-#[test]
-fn unchanged_indexed_membership_does_not_contact_over_a_dirty_upstream() {
-    journey(false, true);
-}
-
 fn journey(add_match: bool, leave_dirty: bool) {
     let _guard = checkpoint_recovery_test_guard();
     let app = installation::install_with_indexed_decision();
@@ -222,4 +202,28 @@ pub(super) fn declare_edit(
         .operation_link(operation, PlanarSuccessor::reference())
         .operation_unlink(operation, PlanarSuccessor::reference())
         .application_mutation_binding::<PlanarEditBinding<Schema>>()
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn a_new_indexed_match_prevents_equal_upstream_reuse() {
+        journey(true, false);
+    }
+
+    #[test]
+    fn unchanged_indexed_membership_reuses_an_equal_upstream() {
+        journey(false, false);
+    }
+
+    #[test]
+    fn a_new_indexed_match_contacts_the_consumer_with_a_dirty_upstream() {
+        journey(true, true);
+    }
+
+    #[test]
+    fn unchanged_indexed_membership_does_not_contact_over_a_dirty_upstream() {
+        journey(false, true);
+    }
 }

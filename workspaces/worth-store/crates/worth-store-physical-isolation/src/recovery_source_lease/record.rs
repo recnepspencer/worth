@@ -235,7 +235,9 @@ fn decode_path(platform: u8, bytes: &[u8]) -> Result<PathBuf, RecoverySourceLeas
         return Err(RecoverySourceLeaseDenial::LeaseConflict);
     }
     let units: Vec<u16> = bytes
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
         .collect();
     Ok(std::ffi::OsString::from_wide(&units).into())

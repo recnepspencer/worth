@@ -1,0 +1,24 @@
+[package]
+name = "worth-query-testkit-publication"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+serde = { version = "1", features = ["derive", "rc"] }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-admission = { path = "../worth-query-admission" }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-installation = { path = "../worth-query-installation" }
+worth-query-publication = { path = "../worth-query-publication" }
+
+[lints]
+workspace = true

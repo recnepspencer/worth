@@ -7,6 +7,20 @@ use super::{
     RelationalCanonicalPublicationRoutes,
 };
 
+#[cfg(test)]
+mod tests {
+    use super::RelationalCanonicalPublicationRoutes;
+
+    #[test]
+    fn branch_transition_excludes_settled_owner_inventory_until_release() {
+        let routes = RelationalCanonicalPublicationRoutes::default();
+        let transition = routes.begin_branch_transition();
+        assert_eq!(routes.with_settled_publication_snapshot(|| ()), None);
+        drop(transition);
+        assert_eq!(routes.with_settled_publication_snapshot(|| ()), Some(()));
+    }
+}
+
 impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn with_settled_publication_snapshot<R>(
         &self,

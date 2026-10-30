@@ -6,14 +6,7 @@ use super::differential::{
 use super::*;
 use worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationRunForTest as Run;
 use worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test as verification;
-#[test]
-fn equal_total_live_group_moves_publish_new_attribution_without_unrelated_preparation() {
-    moves([3, 1]);
-}
-#[test]
-fn new_and_last_group_moves_publish_checked_shape_and_latest_readers_without_unrelated_work() {
-    moves([5, 1]);
-}
+
 fn moves(destinations: [u32; 2]) {
     let _guard = checkpoint_recovery_test_guard();
     let mut receipts = Vec::new();
@@ -158,4 +151,18 @@ fn performed(request: &Request<'_, '_, '_>, app: &Application<true>) -> (usize, 
         .expect("performed computation runs")
         .published = published;
     (settled.producer_contacts_in_this_demand(), runs)
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn equal_total_live_group_moves_publish_new_attribution_without_unrelated_preparation() {
+        moves([3, 1]);
+    }
+
+    #[test]
+    fn new_and_last_group_moves_publish_checked_shape_and_latest_readers_without_unrelated_work() {
+        moves([5, 1]);
+    }
 }

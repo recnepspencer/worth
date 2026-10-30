@@ -1,0 +1,22 @@
+error[E0277]: the trait bound `ActiveResourceRevalidationProof: serde::de::DeserializeOwned` is not satisfied
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/active_resource_revalidation_proof_cannot_be_deserialized.rs:6:34
+  |
+6 |     requires_deserialize_owned::<ActiveResourceRevalidationProof>();
+  |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `for<'de> Deserialize<'de>` is not implemented for `ActiveResourceRevalidationProof`
+  |
+  = help: the following other types implement trait `Deserialize<'de>`:
+            &'a Path
+            &'a [u8]
+            &'a serde_json::raw::RawValue
+            &'a str
+            ()
+            (T,)
+            (T0, T1)
+            (T0, T1, T2)
+          and $N others
+  = note: required for `ActiveResourceRevalidationProof` to implement `DeserializeOwned`
+note: required by a bound in `requires_deserialize_owned`
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/active_resource_revalidation_proof_cannot_be_deserialized.rs:3:34
+  |
+3 | fn requires_deserialize_owned<T: serde::de::DeserializeOwned>() {}
+  |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `requires_deserialize_owned`

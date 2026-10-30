@@ -81,10 +81,9 @@ impl UiNativeRetainedDrawList {
             | UiMountedPaintCommandChange::Replace {
                 successor: command, ..
             } = change
+                && let Some(bounds) = visible_bounds(command)
             {
-                if let Some(bounds) = visible_bounds(command) {
-                    self.damage.validate_bounds(bounds)?;
-                }
+                self.damage.validate_bounds(bounds)?;
             }
         }
         for region in regions {
@@ -188,10 +187,10 @@ impl UiNativeRetainedDrawList {
                     successor: UiMountedPaintCommand::SemanticText { .. },
                     ..
                 } => {
-                    if let UiMountedPaintCommandChange::Replace { predecessor, .. } = change {
-                        if *predecessor != identity {
-                            self.glyph_runs.remove(predecessor);
-                        }
+                    if let UiMountedPaintCommandChange::Replace { predecessor, .. } = change
+                        && *predecessor != identity
+                    {
+                        self.glyph_runs.remove(predecessor);
                     }
                     self.glyph_runs.insert(
                         identity,

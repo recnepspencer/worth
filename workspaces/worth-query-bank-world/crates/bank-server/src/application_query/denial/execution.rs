@@ -21,6 +21,11 @@ pub enum BankApplicationPreviewSessionDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankProductSelectionDenialKind {
+    ExpectedDescriptionVersionUnsupported {
+        supported: u16,
+        actual: u16,
+    },
+    ExpectedDescriptionNameInvalid,
     ReadExecution(
         Result<
             worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind,
@@ -144,6 +149,10 @@ pub(super) const fn product_selection(
     match kind {
         QueryProductSelection::Stopped(stop) => Bank::ReadExecution(stop),
         QueryProductSelection::Refused(kind) => match kind {
+            QueryRefusal::ExpectedDescriptionVersionUnsupported { supported, actual } => {
+                Bank::ExpectedDescriptionVersionUnsupported { supported, actual }
+            }
+            QueryRefusal::ExpectedDescriptionNameInvalid => Bank::ExpectedDescriptionNameInvalid,
             QueryRefusal::ForeignPhase => Bank::ForeignPhase,
             QueryRefusal::ObservationStatePoisoned => Bank::ObservationStatePoisoned,
             QueryRefusal::OwnerUnavailable => Bank::OwnerUnavailable,

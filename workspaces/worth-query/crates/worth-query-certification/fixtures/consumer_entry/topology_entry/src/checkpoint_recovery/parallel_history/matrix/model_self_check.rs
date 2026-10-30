@@ -24,30 +24,35 @@ fn charges(actual: (u64, u64), declared: &World) {
         "a dispatched failed wave charges whole compute and takes its critical path"
     );
 }
-#[test]
-fn a_prefix_only_model_and_a_summed_span_are_convicted() {
-    let world = seeded_world::world(seeded_world::Family::Unequal, SEED);
-    let ranks = world
-        .members
-        .iter()
-        .enumerate()
-        .map(|(i, m)| (m.key, i))
-        .collect();
-    let waves = model::waves(&world, &ranks);
-    let failure = Some((world.members[1].key, control::Phase::Complete));
-    let actual = model::advancement(&world, &waves, failure, false);
-    charges((actual.work, actual.span), &world);
-    let prefix = world.members[..1]
-        .iter()
-        .flat_map(|m| &m.partitions)
-        .map(|p| p.work + model::SINGLETON_TREE_WORK)
-        .sum::<u64>();
-    assert!(
-        std::panic::catch_unwind(|| charges((prefix, actual.span), &world)).is_err(),
-        "prefix-only mutant model is red at the charge law"
-    );
-    assert!(
-        std::panic::catch_unwind(|| charges((actual.work, actual.work), &world)).is_err(),
-        "summed-span mutant model is red at the span law"
-    );
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn a_prefix_only_model_and_a_summed_span_are_convicted() {
+        let world = seeded_world::world(seeded_world::Family::Unequal, SEED);
+        let ranks = world
+            .members
+            .iter()
+            .enumerate()
+            .map(|(i, m)| (m.key, i))
+            .collect();
+        let waves = model::waves(&world, &ranks);
+        let failure = Some((world.members[1].key, control::Phase::Complete));
+        let actual = model::advancement(&world, &waves, failure, false);
+        charges((actual.work, actual.span), &world);
+        let prefix = world.members[..1]
+            .iter()
+            .flat_map(|m| &m.partitions)
+            .map(|p| p.work + model::SINGLETON_TREE_WORK)
+            .sum::<u64>();
+        assert!(
+            std::panic::catch_unwind(|| charges((prefix, actual.span), &world)).is_err(),
+            "prefix-only mutant model is red at the charge law"
+        );
+        assert!(
+            std::panic::catch_unwind(|| charges((actual.work, actual.work), &world)).is_err(),
+            "summed-span mutant model is red at the span law"
+        );
+    }
 }

@@ -6,10 +6,6 @@ use crate::history::data::CommitId;
 
 use super::CanonicalPublicationRoute;
 
-#[cfg(test)]
-#[path = "pending_settlement/tests.rs"]
-mod tests;
-
 /// Derived candidates for settlement admission. Route atomics decide whether a
 /// candidate has performed and remains unsettled; membership is not authority.
 /// Registration precedes publication, so settlement cannot race a late insert.

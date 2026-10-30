@@ -1,18 +1,4 @@
 //! Workflow owner doors refuse before their authority reader and open exactly once.
-#[path = "../../tests/approved_payment_workflow/approval.rs"]
-mod approval;
-#[path = "../../tests/approved_payment_workflow/assertions.rs"]
-mod assertions;
-#[path = "../../tests/approved_payment_workflow/authentication.rs"]
-mod authentication;
-#[path = "../../tests/ordinary_reads/fixture.rs"]
-mod fixture;
-#[path = "../../tests/approved_payment_workflow/journey.rs"]
-mod journey;
-#[path = "../../tests/ordinary_mutations/estate_operations/external_effect_dispatch/rail_transport.rs"]
-mod rail_transport;
-#[path = "../../tests/approved_payment_workflow/ready_payment.rs"]
-mod ready_payment;
 use crate::support;
 use assertions::key;
 use bank_domain::schema::{
@@ -21,6 +7,20 @@ use bank_domain::schema::{
 use bank_external_rail::test_control::FaultScript;
 use ready_payment::ReadyPaymentWorld;
 use std::{num::NonZeroUsize, time::Duration};
+#[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/approval.rs"]
+mod approval;
+#[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/assertions.rs"]
+mod assertions;
+#[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/authentication.rs"]
+mod authentication;
+#[path = "../../../worth-query-bank-testkit-server/src/ordinary_reads/fixture.rs"]
+mod fixture;
+#[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/journey.rs"]
+mod journey;
+#[path = "../../../worth-query-bank-testkit-server/src/ordinary_mutations/estate_operations/external_effect_dispatch/rail_transport.rs"]
+mod rail_transport;
+#[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/ready_payment.rs"]
+mod ready_payment;
 use worth_query_host::facade::{
     application_contribution::{
         WorthQueryAdvancementDenial as Denial,

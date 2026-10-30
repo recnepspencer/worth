@@ -34,7 +34,7 @@ where
                 <<Demand::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Query>,
         Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
         <Demand::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Entity: OperationReads<Binding::Operation>,
-    {
+{
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(

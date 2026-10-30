@@ -1,0 +1,19 @@
+[package]
+"name" = "worth-store-court-physical-isolation"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-store-physical-isolation" = { "path" = "../worth-store-physical-isolation" }
+"worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
+
+[[test]]
+name = "worth_store_court_physical_isolation"
+path = "tests/worth_store_court_physical_isolation.rs"
+
+[lints]
+workspace = true

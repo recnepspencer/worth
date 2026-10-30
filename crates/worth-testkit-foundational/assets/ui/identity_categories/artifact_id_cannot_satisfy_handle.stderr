@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/artifact_id_cannot_satisfy_handle.rs
+  |
+  |     needs_handle(artifact_id);
+  |     ------------ ^^^^^^^^^^^ expected `BoundaryHandle`, found `BoundaryArtifactId`
+  |     |
+  |     arguments to this function are incorrect
+  |
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/artifact_id_cannot_satisfy_handle.rs
+  |
+  | fn needs_handle(_handle: BoundaryHandle) {}
+  |    ^^^^^^^^^^^^ -----------------------

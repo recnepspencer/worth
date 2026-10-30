@@ -4,7 +4,7 @@ use crate::application::{
 };
 
 #[test]
-fn phase_sixteen_concurrent_hostile_matrix_closes_with_replay_stable_artifact() {
+fn concurrent_hostile_matrix_closes_with_replay_stable_artifact() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -20,7 +20,7 @@ fn phase_sixteen_concurrent_hostile_matrix_closes_with_replay_stable_artifact() 
 }
 
 #[test]
-fn phase_sixteen_concurrent_hostile_matrix_uses_real_topology_and_runtime_counters() {
+fn concurrent_hostile_matrix_uses_real_topology_and_runtime_counters() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -43,7 +43,7 @@ fn phase_sixteen_concurrent_hostile_matrix_uses_real_topology_and_runtime_counte
 }
 
 #[test]
-fn phase_sixteen_counter_sabotage_opens_the_matrix_posture() {
+fn counter_sabotage_opens_the_matrix_posture() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

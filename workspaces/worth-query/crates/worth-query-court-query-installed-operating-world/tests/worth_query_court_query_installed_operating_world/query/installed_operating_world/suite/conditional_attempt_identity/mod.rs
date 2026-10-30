@@ -1,0 +1,278 @@
+pub(crate) use worth_query_testkit_query::facade::query::suite::conditional_attempt_identity::*;
+
+#[test]
+fn conditional_authority_keeps_query_and_installation_runtime_owners_distinct() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let _unrelated_installation_runtime =
+        worth_query_installation::facade::WorthQueryInstallationRuntimeIdentity::fresh();
+    let node = super::conditional_node_contract::node(
+        "independent-runtime-authorities",
+        domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
+        domain::WorthQuerySemanticLocality::SourceRecord,
+    );
+    let mut workspace = conditional_controlled_workspace(
+        request_execution,
+        "independent-runtime-authorities",
+        node,
+    )
+    .unwrap();
+    let installed = workspace.domain(GeometryDomain).unwrap();
+
+    let executed = bind(&workspace, &installed)
+        .admit_execution_resources(
+            ReadExecutionInput::default(),
+            worth_query_testkit_installed_operation_fixture::facade::query::suite::installed_operation_fixture::execution_resource_request(),
+            &workspace,
+        )
+        .unwrap()
+        .execute(&mut workspace)
+        .unwrap();
+
+    assert_eq!(executed.conditional_provenance().len(), 1);
+    assert_eq!(
+        executed.conditional_provenance()[0].class(),
+        domain::WorthQueryConditionalOutcomeClass::ComputedChanged
+    );
+}
+
+#[test]
+fn fresh_bound_capabilities_mint_distinct_signal_attempt_identities() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
+    let node = conditional_node_result(
+        "distinct-direct-attempts",
+        dependency,
+        domain::WorthQueryConditionalEvaluationCondition::on_demand(),
+        domain::WorthQueryConditionalTrigger::on_demand::<ManualRefresh>(),
+        domain::WorthQueryMaintenancePosture::OnDemandOnly,
+    )
+    .unwrap();
+    let mut installation = conditional_installation(&node);
+    installation.providers =
+        worth_runtime_bridge::facade::BridgeConditionalProviderSet::new().trigger(RequestedTrigger);
+    let versions = Arc::new(AtomicU64::new(0));
+    let mut workspace = conditional_workspace_with(
+        request_execution,
+        "distinct-direct-attempts",
+        node,
+        installation,
+        AdvancingCompute(Arc::clone(&versions)),
+    )
+    .unwrap();
+    let installed = workspace.domain(GeometryDomain).unwrap();
+
+    let first = bind(&workspace, &installed)
+        .admit_execution_resources(
+            ReadExecutionInput::default(),
+            worth_query_testkit_installed_operation_fixture::facade::query::suite::installed_operation_fixture::execution_resource_request(),
+            &workspace,
+        )
+        .unwrap()
+        .execute(&mut workspace)
+        .unwrap();
+    let second = bind(&workspace, &installed)
+        .admit_execution_resources(
+            ReadExecutionInput::default(),
+            worth_query_testkit_installed_operation_fixture::facade::query::suite::installed_operation_fixture::execution_resource_request(),
+            &workspace,
+        )
+        .unwrap()
+        .execute(&mut workspace)
+        .unwrap();
+
+    assert_eq!(
+        first.conditional_provenance()[0].class(),
+        domain::WorthQueryConditionalOutcomeClass::ComputedChanged
+    );
+    assert_eq!(
+        second.conditional_provenance()[0].class(),
+        domain::WorthQueryConditionalOutcomeClass::ComputedChanged
+    );
+    assert_ne!(
+        first.conditional_provenance()[0].signal_projection(),
+        second.conditional_provenance()[0].signal_projection(),
+        "two consumed bound capabilities are two Signal evaluation attempts"
+    );
+}
+
+#[test]
+fn live_promotion_mints_a_fresh_signal_decision_after_settlement() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
+    let node = conditional_node_result(
+        "promotion-fresh-decision",
+        dependency,
+        domain::WorthQueryConditionalEvaluationCondition::on_demand(),
+        domain::WorthQueryConditionalTrigger::on_demand::<ManualRefresh>(),
+        domain::WorthQueryMaintenancePosture::OnDemandOnly,
+    )
+    .unwrap();
+    let mut installation = conditional_installation(&node);
+    installation.providers =
+        worth_runtime_bridge::facade::BridgeConditionalProviderSet::new().trigger(RequestedTrigger);
+    let versions = Arc::new(AtomicU64::new(0));
+    let mut workspace = conditional_workspace_with(
+        request_execution,
+        "promotion-fresh-decision",
+        node,
+        installation,
+        AdvancingCompute(Arc::clone(&versions)),
+    )
+    .unwrap();
+    let installed = workspace.domain(GeometryDomain).unwrap();
+    let bound = bind(&workspace, &installed);
+    let consumer = bound.consumer_projection_contract().unwrap();
+    let executed = bound
+        .admit_execution_resources(
+            ReadExecutionInput::default(),
+            worth_query_testkit_installed_operation_fixture::facade::query::suite::installed_operation_fixture::execution_resource_request(),
+            &workspace,
+        )
+        .unwrap()
+        .execute(&mut workspace)
+        .unwrap();
+    let execution_signal = executed.conditional_provenance()[0]
+        .signal_projection()
+        .label()
+        .to_string();
+    let settled = executed
+        .publish()
+        .unwrap()
+        .consume(consumer, read::project_facts().entity_identities())
+        .unwrap()
+        .settle()
+        .unwrap();
+
+    let live = match settled
+        .into_lifecycle()
+        .promote(request_execution, &mut workspace)
+    {
+        domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
+        _ => panic!("conditional projection did not promote"),
+    };
+    assert_eq!(live.receipt().counters().lifecycle_attempts, 1);
+    assert_eq!(live.receipt().counters().fresh_conditional_decisions, 1);
+    assert_ne!(
+        live.conditional_provenance()[0]
+            .signal_projection()
+            .label()
+            .as_ref(),
+        execution_signal.as_str(),
+        "promotion must not reuse settlement's Signal decision"
+    );
+}
+
+#[test]
+fn replacement_mints_a_fresh_signal_decision_for_the_successor() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
+    let node = conditional_node_result(
+        "replacement-fresh-decision",
+        dependency,
+        domain::WorthQueryConditionalEvaluationCondition::on_demand(),
+        domain::WorthQueryConditionalTrigger::on_demand::<ManualRefresh>(),
+        domain::WorthQueryMaintenancePosture::OnDemandOnly,
+    )
+    .unwrap();
+    let mut installation = conditional_installation(&node);
+    installation.providers =
+        worth_runtime_bridge::facade::BridgeConditionalProviderSet::new().trigger(RequestedTrigger);
+    let versions = Arc::new(AtomicU64::new(0));
+    let mut workspace = conditional_workspace_with(
+        request_execution,
+        "replacement-fresh-decision",
+        node,
+        installation,
+        AdvancingCompute(Arc::clone(&versions)),
+    )
+    .unwrap();
+    let installed = workspace.domain(GeometryDomain).unwrap();
+    let first = settle_bound(bind(&workspace, &installed), &mut workspace);
+    let live = match first
+        .into_lifecycle()
+        .promote(request_execution, &mut workspace)
+    {
+        domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
+        _ => panic!("conditional predecessor did not promote"),
+    };
+    let predecessor_signal = live.conditional_provenance()[0]
+        .signal_projection()
+        .label()
+        .to_string();
+    let candidate = settle_bound(bind(&workspace, &installed), &mut workspace).into_lifecycle();
+    let witness = live.replacement_witness_for(&candidate).unwrap();
+    let replaced = match live.replace_with(request_execution, candidate, witness, &mut workspace) {
+        domain::WorthQueryProjectionReplacementOutcome::Replaced(replaced) => replaced,
+        _ => panic!("conditional replacement did not converge"),
+    };
+
+    assert_eq!(
+        replaced
+            .transition_work()
+            .candidate()
+            .fresh_conditional_decisions,
+        1
+    );
+    assert_ne!(
+        replaced.conditional_provenance()[0]
+            .signal_projection()
+            .label()
+            .as_ref(),
+        predecessor_signal.as_str(),
+        "replacement must mint a new Signal attempt"
+    );
+}
+
+#[test]
+fn stale_conditional_installation_stops_before_lowering_or_signal_work() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let node = super::conditional_node_contract::node(
+        "promotion-stale-conditional",
+        domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
+        domain::WorthQuerySemanticLocality::SourceRecord,
+    );
+    let mut workspace =
+        conditional_controlled_workspace(request_execution, "promotion-stale-conditional", node)
+            .unwrap();
+    let installed = workspace.domain(GeometryDomain).unwrap();
+    let bound = bind(&workspace, &installed);
+    let consumer = bound.consumer_projection_contract().unwrap();
+    let settled = bound
+        .admit_execution_resources(
+            ReadExecutionInput::default(),
+            worth_query_testkit_installed_operation_fixture::facade::query::suite::installed_operation_fixture::execution_resource_request(),
+            &workspace,
+        )
+        .unwrap()
+        .execute(&mut workspace)
+        .unwrap()
+        .publish()
+        .unwrap()
+        .consume(consumer, read::project_facts().entity_identities())
+        .unwrap()
+        .settle()
+        .unwrap();
+    workspace.advance_domain_installation_generation().unwrap();
+
+    let stale = match settled
+        .into_lifecycle()
+        .promote(request_execution, &mut workspace)
+    {
+        domain::WorthQueryProjectionPromotionOutcome::Stale(stale) => stale,
+        _ => panic!("stale conditional installation did not produce stale proof"),
+    };
+    assert_eq!(stale.counters().conditional_lowerings_checked, 0);
+    assert_eq!(stale.counters().lifecycle_attempts, 0);
+    assert_eq!(stale.counters().fresh_conditional_decisions, 0);
+    assert_eq!(stale.counters().planning_attempts, 0);
+}

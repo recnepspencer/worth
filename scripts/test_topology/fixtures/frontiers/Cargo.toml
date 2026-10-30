@@ -1,0 +1,9 @@
+[workspace]
+resolver = "3"
+members = ["crates/worth-base", "crates/worth-host", "crates/worth-extra", "crates/worth-application"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+license = "BUSL-1.1"

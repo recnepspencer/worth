@@ -34,6 +34,10 @@
 pub(crate) struct EqualityTypeId(std::any::TypeId);
 
 impl EqualityTypeId {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+    )]
     pub(crate) fn of<T: ?Sized + 'static>() -> Self {
         Self(std::any::TypeId::of::<T>())
     }

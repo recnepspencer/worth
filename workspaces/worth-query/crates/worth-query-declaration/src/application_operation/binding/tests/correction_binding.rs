@@ -250,7 +250,7 @@ impl ApplicationCorrectionVisitor<MutationSchema> for BindingVisitor {
         <ApplicationInverseBinding<MutationSchema, Correction> as ApplicationMutationBinding<MutationSchema>>::ScopeBinding: ApplicationMutationScopeResolution<
             MutationSchema, <ApplicationInverseBinding<MutationSchema, Correction> as ApplicationMutationBinding<MutationSchema>>::PrincipalIdentity,
         >,
-    {
+{
         Some(TypeId::of::<Correction::Source>())
     }
 }

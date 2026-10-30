@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-blob-chunks"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 2 S.7 native content-addressed blob and object chunk store."
+"workspace" = "../.."
+"name" = "worth-store-blob-chunks"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 2 S.7 native content-addressed blob and object chunk store."
+"autotests" = false
+
 
 [features]
 certification-test-authority = [
@@ -33,16 +35,16 @@ worth-store-retention.workspace = true
 worth-store-security.workspace = true
 worth-store-tiering.workspace = true
 worth-store-wal.workspace = true
-
 [dev-dependencies]
-tempfile = "3"
-worth-store-aspect-native.workspace = true
-worth-store-offline-verifier.workspace = true
-worth-store-physical-backend = { workspace = true, features = ["certification-test-authority"] }
-worth-store-io-scheduler = { workspace = true, features = ["certification-test-authority"] }
-worth-store-physical-isolation = { workspace = true, features = ["certification-authority"] }
-worth-store-reclaim-policy = { workspace = true, features = ["certification-test-authority"] }
-worth-store-tiering = { workspace = true, features = ["certification-test-authority"] }
+"tempfile" = "3"
+"worth-store-aspect-native" = { "workspace" = true }
+"worth-store-offline-verifier" = { "workspace" = true }
+"worth-store-physical-backend" = { "workspace" = true, "features" = ["certification-test-authority"] }
+"worth-store-io-scheduler" = { "workspace" = true, "features" = ["certification-test-authority"] }
+"worth-store-physical-isolation" = { "workspace" = true, "features" = ["certification-authority"] }
+"worth-store-reclaim-policy" = { "workspace" = true, "features" = ["certification-test-authority"] }
+"worth-store-tiering" = { "workspace" = true, "features" = ["certification-test-authority"] }
+
 
 [lints]
 workspace = true

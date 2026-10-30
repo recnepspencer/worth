@@ -10,11 +10,11 @@ Canonical machine constitution: `tools/boundary-check/config/road1.toml`
 - Deferred next homes:
 
 - Public surface: facade-only
-- Facade exports: `WorthQueryGraphObligationAdoptionDenial, WorthQueryGraphObligationAdoptionDenialKind, WorthQueryGraphObligationAdoptionProof, WorthQueryGraphObligationAdoptionRow, admission, application_contribution, application_discovery, application_entry, application_installation, application_invariants, causal_inspection, certification, convergence_epoch, declaration, domain, inspect_installed_graph_obligations, installed, primary_graph, product, publication, runtime, worth_query_application, worth_query_application_contribution, worth_query_application_query, worth_query_application_schema, worth_query_aspect, worth_query_conditional_node, worth_query_effect, worth_query_entity, worth_query_field, worth_query_operation, worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes, worth_query_portable_type, worth_query_principal_binding, worth_query_relation, worth_query_structured_value_binding, worth_query_workflow`
+- Declared facade exports (glob routes remain explicit): `WorthQueryGraphObligationAdoptionDenial, WorthQueryGraphObligationAdoptionDenialKind, WorthQueryGraphObligationAdoptionProof, WorthQueryGraphObligationAdoptionRow, admission, application_contribution, application_discovery, application_entry, application_installation, application_invariants, causal_inspection, certification, convergence_epoch, declaration, domain, inspect_installed_graph_obligations, installed, primary_graph, product, publication, runtime, worth_query_application, worth_query_application_contribution, worth_query_application_query, worth_query_application_schema, worth_query_aspect, worth_query_conditional_node, worth_query_effect, worth_query_entity, worth_query_field, worth_query_operation, worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes, worth_query_portable_type, worth_query_principal_binding, worth_query_relation, worth_query_structured_value_binding, worth_query_workflow`
 - Owned internal modules: `none`
 - Allowed in-tree dependency bands: `none`
 
-Machine fences:
+Boundary guidance (the compiler and retained checks own enforcement):
 - Framework Query audience facade (`host`); legal consuming bands: entry, cert.
 - May depend only on its configured authority packages: `worth-query-admission`, `worth-query-declaration`, `worth-query-execution`, `worth-query-installation`, `worth-query-publication`; must not depend on other audience facades.
 - Leaf re-export surface only; guidance: admission, lowering, and execution.

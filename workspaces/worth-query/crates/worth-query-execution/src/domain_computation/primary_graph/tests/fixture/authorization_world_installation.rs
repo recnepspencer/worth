@@ -106,9 +106,10 @@ pub(super) fn install_authorization_world_with_product_resources(
     spec: AuthorizationWorldSpec<'_>,
     product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
 ) -> AuthorizationWorld {
-    crate::domain_computation::primary_graph::with_test_advancement(|phase| {
-        install_authorization_world_in_advancement(&phase, spec, product_resources)
-    })
+    crate::domain_computation::primary_graph::with_test_bootstrap_advancement(
+        128_000_000,
+        |phase| install_authorization_world_in_advancement(&phase, spec, product_resources),
+    )
 }
 
 /// Fixture installation borrows the test's active request when setup is a phase.

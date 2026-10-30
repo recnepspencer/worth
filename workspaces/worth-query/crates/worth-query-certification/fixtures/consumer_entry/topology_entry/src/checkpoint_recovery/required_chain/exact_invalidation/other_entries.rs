@@ -51,84 +51,88 @@ fn judge_untouched(
     }
 }
 
-/// A commit Query did not make is delivered exactly and marks what the same
-/// write through a declared operation marks: the written ring decides again
-/// over the model, and no other ring is reached.
-#[test]
-fn a_native_writer_marks_what_a_declared_operation_marks() {
-    let _equivalence =
-        primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install(None, ring_world::seed::<3>);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let court = Court::new(&application, &request, 0x9176_3f00);
-    let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    Reading::decisions();
-    for index in 0..rings.len() {
-        court.demand_ring(&mut rings, index, "before any native write");
-    }
-    let inexact = inexact_deliveries();
+#[cfg(test)]
+mod serial {
+    use super::*;
+    /// A commit Query did not make is delivered exactly and marks what the same
+    /// write through a declared operation marks: the written ring decides again
+    /// over the model, and no other ring is reached.
+    #[test]
+    fn a_native_writer_marks_what_a_declared_operation_marks() {
+        let _equivalence =
+            primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
+        let _guard = checkpoint_recovery_test_guard();
+        let application = install(None, ring_world::seed::<3>);
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let court = Court::new(&application, &request, 0x9176_3f00);
+        let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
+        Reading::decisions();
+        for index in 0..rings.len() {
+            court.demand_ring(&mut rings, index, "before any native write");
+        }
+        let inexact = inexact_deliveries();
 
-    let at = "after a native write of a root input";
-    rings[0].a_y = 6;
-    native_write!(application, scope, rings[0].key("a"), PositionY, 6);
-    let ([a, b, ..], decisions) = court.demand_ring(&mut rings, 0, at);
-    assert_eq!(
-        (a.producer_contacts, b.producer_contacts, decisions > 0),
-        (1, 1, true),
-        "{at}: the root executes again and its consumer decides over the new output"
-    );
-    judge_untouched(&court, &mut rings, [1, 2], at);
+        let at = "after a native write of a root input";
+        rings[0].a_y = 6;
+        native_write!(application, scope, rings[0].key("a"), PositionY, 6);
+        let ([a, b, ..], decisions) = court.demand_ring(&mut rings, 0, at);
+        assert_eq!(
+            (a.producer_contacts, b.producer_contacts, decisions > 0),
+            (1, 1, true),
+            "{at}: the root executes again and its consumer decides over the new output"
+        );
+        judge_untouched(&court, &mut rings, [1, 2], at);
 
-    let at = "after a native write of a chain output";
-    let mut last = consumer!(court, rings[1].key("c"), at);
-    assert!(settled!(court, last, at).is_free());
-    assert_eq!(
-        judge_decisions(&mut rings, at),
-        0,
-        "warming the held consumer does not decide"
-    );
-    rings[1].b_length = 44;
-    native_write!(application, scope, rings[1].key("b"), Length, 44);
-    assert_eq!(
-        (
-            court.length(&rings[1].key("b")),
-            court.length(&rings[1].key("c"))
-        ),
-        (44, rings[1].c_length),
-        "the native writer changes B, not C"
-    );
-    assert!(
-        super::super::binding::decisions_snapshot().is_empty(),
-        "the native write itself invokes no chain handler"
-    );
-    // Let C initiate its own refresh before an unrelated caller may pump it.
-    let cost = settled!(court, last, at);
-    // B's own Length is its source and prepared value. Its native overwrite
-    // requires B's new owned publication before C can consume current B.
-    assert_eq!(
-        super::super::binding::decisions_snapshot(),
-        vec![
-            (rings[1].key("b"), vec![rings[1].root_output()]),
-            (rings[1].key("c"), vec![44]),
-        ],
-        "the upstream renews its authority before the original consumer reads the native value"
-    );
-    assert_eq!(
+        let at = "after a native write of a chain output";
+        let mut last = consumer!(court, rings[1].key("c"), at);
+        assert!(settled!(court, last, at).is_free());
+        assert_eq!(
+            judge_decisions(&mut rings, at),
+            0,
+            "warming the held consumer does not decide"
+        );
+        rings[1].b_length = 44;
+        native_write!(application, scope, rings[1].key("b"), Length, 44);
+        assert_eq!(
+            (
+                court.length(&rings[1].key("b")),
+                court.length(&rings[1].key("c"))
+            ),
+            (44, rings[1].c_length),
+            "the native writer changes B, not C"
+        );
+        assert!(
+            super::super::super::binding::decisions_snapshot().is_empty(),
+            "the native write itself invokes no chain handler"
+        );
+        // Let C initiate its own refresh before an unrelated caller may pump it.
+        let cost = settled!(court, last, at);
+        // B's own Length is its source and prepared value. Its native overwrite
+        // requires B's new owned publication before C can consume current B.
+        assert_eq!(
+            super::super::super::binding::decisions_snapshot(),
+            vec![
+                (rings[1].key("b"), vec![rings[1].root_output()]),
+                (rings[1].key("c"), vec![44]),
+            ],
+            "the upstream renews its authority before the original consumer reads the native value"
+        );
+        assert_eq!(
         (cost.producer_contacts, judge_decisions(&mut rings, at)),
         (1, 2),
         "{at}: C owns one new contact; the decision capture also includes its required B refresh"
     );
-    let (costs, decisions) = court.demand_ring(&mut rings, 1, at);
-    assert!(
-        costs.iter().all(Cost::is_free) && decisions == 0,
-        "{at}: the root is untouched and the refreshed chain is current: {costs:?}"
-    );
-    judge_untouched(&court, &mut rings, [0, 2], at);
-    assert_eq!(
-        inexact_deliveries() - inexact,
-        0,
-        "{at}: every native commit is delivered exactly"
-    );
+        let (costs, decisions) = court.demand_ring(&mut rings, 1, at);
+        assert!(
+            costs.iter().all(Cost::is_free) && decisions == 0,
+            "{at}: the root is untouched and the refreshed chain is current: {costs:?}"
+        );
+        judge_untouched(&court, &mut rings, [0, 2], at);
+        assert_eq!(
+            inexact_deliveries() - inexact,
+            0,
+            "{at}: every native commit is delivered exactly"
+        );
+    }
 }

@@ -97,19 +97,17 @@ impl PresentationOutcomeSettlement<'_, '_, '_> {
             crate::native_platform::text_presentation::UiMountedTextForegroundReuseUpdate,
         >,
     ) -> Result<(), UiIndeterminatePresentationEvidence> {
-        if let Some(owner) = self.presentation_async.as_deref_mut() {
-            if semantic_receipts
+        if let Some(owner) = self.presentation_async.as_deref_mut()
+            && semantic_receipts
                 .iter()
                 .any(|receipt| owner.reject_recovery_before_effects(receipt).is_err())
-            {
-                let uncertainty =
-                    super::surface_uncertainty::PresentationSurfaceUncertainty::semantic(
-                        self.surface.requirement().binding(),
-                        None,
-                        semantic_receipts.into_vec(),
-                    );
-                return Err(self.terminalize(uncertainty));
-            }
+        {
+            let uncertainty = super::surface_uncertainty::PresentationSurfaceUncertainty::semantic(
+                self.surface.requirement().binding(),
+                None,
+                semantic_receipts.into_vec(),
+            );
+            return Err(self.terminalize(uncertainty));
         }
         self.progress
             .rejected
@@ -202,10 +200,10 @@ impl PresentationOutcomeSettlement<'_, '_, '_> {
         self.progress
             .completed
             .push(UiMountedSurfacePresentationReceipt::new(witness));
-        if posture == super::presented_semantic_settlement::PresentedSemanticPosture::Current {
-            if let Some(update) = text_reuse {
-                self.text.commit_foreground_reuse(update);
-            }
+        if posture == super::presented_semantic_settlement::PresentedSemanticPosture::Current
+            && let Some(update) = text_reuse
+        {
+            self.text.commit_foreground_reuse(update);
         }
         Ok(())
     }

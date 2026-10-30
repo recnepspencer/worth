@@ -74,10 +74,10 @@ pub(super) fn observe_all(
         counters,
         ingress_trace,
     )
-    .map_err(&preserve_root_denials)?;
+    .map_err(preserve_root_denials)?;
     let (current_manifest_facts, previous_manifest_facts) =
         observe_root_manifest_facts(discovery, limits, &mut roots, counters)
-            .map_err(&preserve_root_denials)?;
+            .map_err(preserve_root_denials)?;
     let preserve_manifest_observations = |failure| {
         preserve_post_manifest_failure(
             failure,
@@ -91,7 +91,7 @@ pub(super) fn observe_all(
             .owner_mut()
             .begin_source_read_allocation()
             .map_err(|cause| checkpoint::window_admission_failure(&declaration, cause))
-            .map_err(&preserve_manifest_observations)?;
+            .map_err(preserve_manifest_observations)?;
         observe_checkpoint(
             discovery,
             limits,
@@ -102,11 +102,11 @@ pub(super) fn observe_all(
             &mut allocation,
         )
     }
-    .map_err(&preserve_manifest_observations)?;
+    .map_err(preserve_manifest_observations)?;
     counters.manifest_bytes = roots.manifest_bytes.spent();
     record_checkpoint_counters(counters, &checkpoint);
     let (wal, residue, wal_entries) = observe_wal(discovery, coordination, limits, counters)
-        .map_err(&preserve_manifest_observations)?;
+        .map_err(preserve_manifest_observations)?;
     record_wal_counters(counters, &wal, &residue, wal_entries);
     if let Err(limit) = RecoveryAllowance::declared(
         &declaration,

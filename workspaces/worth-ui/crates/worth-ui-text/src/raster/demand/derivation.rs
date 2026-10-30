@@ -137,10 +137,10 @@ fn collect_demand_records(
             worth_ui_host_contract::UiPresentationWorkStage::DemandDerivation,
             1,
         );
-        if let UiGlyphRasterDemandSelection::LogicalDamage(damage) = request.selection {
-            if !damage_intersects(positioned.ink_bounds(), request.placement, damage) {
-                continue;
-            }
+        if let UiGlyphRasterDemandSelection::LogicalDamage(damage) = request.selection
+            && !damage_intersects(positioned.ink_bounds(), request.placement, damage)
+        {
+            continue;
         }
         let Some(candidate) =
             candidate_for_positioned(layout, positioned_index, request.scale, request.placement)?

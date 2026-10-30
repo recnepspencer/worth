@@ -37,13 +37,25 @@ impl SignalGraph {
         let generation = predecessor_generation
             .checked_add(1)
             .ok_or(SignalConditionalContractDenial::GenerationExhausted)?;
-        let occurrence = NEXT_CONDITIONAL_CONTRACT_OCCURRENCE
-            .fetch_update(
-                std::sync::atomic::Ordering::Relaxed,
-                std::sync::atomic::Ordering::Relaxed,
-                |value| value.checked_add(1),
-            )
-            .map_err(|_| SignalConditionalContractDenial::OccurrenceExhausted)?;
+        let occurrence = {
+            let update_counter = &NEXT_CONDITIONAL_CONTRACT_OCCURRENCE;
+            let mut value = update_counter.load(std::sync::atomic::Ordering::Relaxed);
+            loop {
+                let Some(updated_value) = value.checked_add(1) else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    std::sync::atomic::Ordering::Relaxed,
+                    std::sync::atomic::Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| SignalConditionalContractDenial::OccurrenceExhausted)?;
         let service_retained_bytes = definition.installation_retained_bytes();
         let semantic_condition = definition.condition;
         let condition =

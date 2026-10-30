@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-tiering"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 1 tiering and durable working-set intelligence."
+"workspace" = "../.."
+"name" = "worth-store-tiering"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 1 tiering and durable working-set intelligence."
+"autotests" = false
+
 
 [features]
 certification-test-authority = [

@@ -1,20 +1,21 @@
 [package]
-workspace = "../.."
-name = "worth-store-maintenance"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 1 maintenance isolation and scheduling contracts."
+"workspace" = "../.."
+"name" = "worth-store-maintenance"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 1 maintenance isolation and scheduling contracts."
+"autotests" = false
+
 
 [dependencies]
 worth-store.workspace = true
 worth-store-contracts.workspace = true
 worth-store-layout-indexes.workspace = true
-
 [dev-dependencies]
-worth-store-physical-format.workspace = true
-worth-store-test-support = { workspace = true, features = ["physical-residency-fixtures"] }
+"worth-store-test-support" = { "workspace" = true, "features" = ["physical-residency-fixtures"] }
+
 
 [lints]
 workspace = true

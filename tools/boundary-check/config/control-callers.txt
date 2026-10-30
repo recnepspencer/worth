@@ -1,4 +1,14 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+# Relocated correction fixtures observe only the original scoped runtime controls.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/output_equivalence/history.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/output_equivalence/retry.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/output_equivalence/rich_connected.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/output_equivalence/rich_query.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/output_equivalence/rich_source.rs
+# Original capture and report refusal retain their actual SDK request frames.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/admitted_capture/retained_stage/tests.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/materialization/tests.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/derived/court/mod.rs
 # Phase17 publication court parks the installed World after real effects; it injects no outcome.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/publication_tests.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/publication_tests.rs
@@ -8,37 +18,33 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/acceptance/adoption_stop.rs
 # Phase17 receiving boundary: pause only a genuine SourceOnly completion before its request handoff.
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts/handoff.rs
-# Original capture court quotes the actual SDK Serial native frame before narrowing storage.
-crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/admitted_capture/retained_stage/tests.rs
-# Report refusal court leaves only its actual SDK unit frame on the original lease.
-crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/materialization/tests.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/derived/court.rs
 # Logical source court observes only real closed-count retention lifecycle.
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/logical/court.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/logical/court/mod.rs
 # Deliberate sort qualification refusal; actual compiler identity cannot be replaced or qualified.
 crates/worth-foundational/ crates/worth-foundational/src/canonicalization/basis/construction/sort_qualification/tests.rs
 crates/worth-foundational/ workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/parameter_canonical_basis.rs
 crates/worth-foundational/ workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/admitted_requirements.rs
 crates/worth-foundational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure/compiler_qualification.rs
 # Closed Resource source comparison; actual Host actions retain ordinary admission.
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/resources/journeys/source_binding.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-operation/src/certification/application_graph/source_only/capability/resources/journeys/source_binding.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow/resource_monitor/source_binding.rs
 # Exact native resource-cell wake observations; no application control audience.
-crates/worth-signal/ crates/worth-runtime-world/tests/worth_runtime_world/fast/runtime_world_certification/owned_async/process_local_retention/native.rs
-crates/worth-signal/ crates/worth-runtime-world/tests/worth_runtime_world/fast/runtime_world_certification/owned_async/process_local_retention/bridge.rs
-crates/worth-runtime-bridge/ crates/worth-runtime-world/tests/worth_runtime_world/fast/runtime_world_certification/owned_async/process_local_retention/bridge.rs
+crates/worth-signal/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/owned_async/process_local_retention/native/mod.rs
+crates/worth-signal/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/owned_async/process_local_retention/bridge/mod.rs
+crates/worth-runtime-bridge/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/owned_async/process_local_retention/bridge/mod.rs
 crates/worth-signal/ crates/worth-runtime-bridge/src/conditional_execution/owned_async/wake_observation_for_test.rs
-crates/worth-signal/ crates/worth-runtime-world/tests/worth_runtime_world/fast/runtime_world_certification/owned_async/initial_custody.rs
-crates/worth-runtime-bridge/ crates/worth-runtime-world/tests/worth_runtime_world/fast/runtime_world_certification/owned_async/initial_custody.rs
+crates/worth-signal/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/owned_async/initial_custody/mod.rs
+crates/worth-runtime-bridge/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/owned_async/initial_custody/mod.rs
 
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/history_reapplication.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/fork_head_adoption.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/fork_head_cleanup.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/history_reapplication.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/fork_head_adoption.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/fork_head_cleanup.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/history.rs
 # Combined publication courts exercise actual owner settlement, cancellation and World CAS.
-crates/worth-signal/ crates/worth-runtime-world/tests/worth_runtime_world/exhaustive/runtime_world_certification/court/operation_control/combined_cancellation.rs
-crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/correction_race_court.rs
-crates/worth-relational/ crates/worth-runtime-world/tests/worth_runtime_world/fast/runtime_world_certification/court/operation_control/combined_race.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/correction_race_court.rs
+crates/worth-signal/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/oracle/runtime_world/court/operation_control/combined_cancellation/mod.rs
+crates/worth-relational/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/operation_control/combined_race/mod.rs
+crates/worth-relational/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/support/court/ordinary_context/operation_control/combined_race/declarations.rs
 crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query/src/runtime/tests/live_state/async_source_binding.rs
 crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query/src/runtime/tests/live_state/async_source_drift.rs
 crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-certification/tests/application_contracts/projection_authority/qp_05.rs
@@ -60,24 +66,24 @@ crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/tests/
 crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/tests/operation_control/pre_effect_unwind.rs
 crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/tests/operation_control/restore_unwind.rs
 crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/tests/operation_control/snapshot_unwind.rs
-crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/cost/active_attempts.rs
-crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/cost/independent_writers.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/parked_publications.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/independent_writers.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/unwind_custody.rs
 crates/worth-signal/ crates/worth-runtime-world/src/branch/reference_test_fixture/owner_inputs.rs
 crates/worth-signal/ crates/worth-runtime-world/src/lifecycle/owner_tests/bootstrap_boundary.rs
 crates/worth-signal/ crates/worth-runtime-world/src/retention/registry/owner/tests/operation_control.rs
-crates/worth-signal/ crates/worth-runtime-world/tests/worth_runtime_world/exhaustive/runtime_world_certification/court/operation_control/faults.rs
-crates/worth-signal/ crates/worth-runtime-world/tests/worth_runtime_world/fast/runtime_world_certification/court/operation_control/mod.rs
-crates/worth-signal/ crates/worth-runtime-world/tests/worth_runtime_world/exhaustive/runtime_world_certification/court/operation_control/progress.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-courtroom/tests/transport_process_courtroom/payment.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/worth-query-bank-court-user-node/tests/worth_query_bank_court_user_node/process/http_workflows/courtroom/transport_process_courtroom/payment/mod.rs
+crates/worth-signal/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/operation_control/faults/mod.rs
+crates/worth-signal/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/support/court/ordinary_context/operation_control/declarations.rs
+crates/worth-signal/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/operation_control/progress/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/src/approved_payment_workflow/request_phase.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/src/estate_capability_admission/advancement_custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/src/estate_capability_admission/capability_revocation/advancement_custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/src/estate_capability_admission/delegation_progression/advancement_custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/src/estate_capability_admission/lifecycle_progression/advancement_custody.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/approved_payment_workflow/assessment_settlement.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/ordinary_reads/advancement_custody.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/approved_payment_workflow/assessment_settlement/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-server/src/ordinary_reads/advancement_custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/dependent_recovery.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/discovered.rs
@@ -134,61 +140,62 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/recovery_isolation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/request_stops.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/branch_adoption.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/correction_race_court.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/branch_adoption_recovery/two_same_head_adoptions_report_one_performed_world_transition.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/request_lifetime.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/support_retirement_races.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/workflow_participant.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/recorded_replay_ordering.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/recorded_replay_ordering/lookup_growth.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/commit_boundary.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/custody.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/instance_cancellation_capacity.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/instance_deadline.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/lineage_evidence_budget.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/lineage_pin_capacity.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/lineage_step_budget.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/replay.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/wait_revocation.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_assessment.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_assessment/conditional_requirement.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_assessment/early_collection.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_assessment/observation_close.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_assessment/relation_aba.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_compilation.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_execution.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_history_scale.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_navigation.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_ordinary_navigation.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_progress_retention.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/granular_invalidation/retained_delivery.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/granular_invalidation/long_gap.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/cost.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/cost/active_attempts.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/cost/independent_writers.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/model.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/advancement_custody.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/adoption/branch_adoption/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/correction_race_court.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/adoption/branch_adoption_recovery/two_same_head_adoptions_report_one_performed_world_transition/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/adoption/request_lifetime.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/adoption/support_retirement_races/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/adoption/workflow_participant/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/process/serial/certification/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/recorded_replay_ordering/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/recorded_replay_ordering/lookup_growth/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_approval/commit_boundary.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/custody/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/instance_cancellation_capacity/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_approval/instance_deadline.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/lineage_evidence_budget/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_approval/lineage_pin_capacity.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/lineage_step_budget/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/replay/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_approval/wait_revocation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_assessment/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_assessment/conditional_requirement/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_assessment/early_collection/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_assessment/observation_close.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_assessment/relation_aba/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_compilation/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_execution/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_history_scale.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_history_scale/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_navigation/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_ordinary_navigation/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_progress_retention/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-granular-invalidation/src/certification/granular_invalidation/retained_delivery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-granular-invalidation/src/certification/granular_invalidation/long_gap.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/active_attempts.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/parked_publications.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/cost/independent_writers.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/runtime_world_branching/model.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/advancement_custody.rs
 # Ruled test caller: writes the native field to compare reconsideration bits, charged work and delivery order across widths.
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/advancement_custody/width_differential.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/funded_capture.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition/related/companion_transition/capture_lineage.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/courtroom/native_writer.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/courtroom/non_accepted_observation.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/courtroom_settlement.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query/tests/installed_operating_world/advancement_custody.rs
-
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/advancement_custody/width_differential.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/funded_capture/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/funded_capture.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/canonical_transition/related/companion_transition/capture_lineage/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/courtroom/native_writer.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/courtroom/non_accepted_observation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/courtroom_settlement.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-query/src/query/installed_operating_world/advancement_custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/observation_scope.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/allocation_custody.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition/successor/pre_effect_indexes.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_bound_replay.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/allocation_custody/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/successor/pre_effect_indexes.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/process/certification/application_graph/source_bound_replay/mod.rs
 # Consumed-custody reclamation and cancellation proofs inspect their own runtime ledger.
-
 # Named test callers exposed by automatic door discovery; no production callers.
-workspaces/worth-query-bank-world/crates/bank-http-adapter/ workspaces/worth-query-bank-world/crates/bank-courtroom/tests/async_identity_courtroom/credential_denials.rs
+workspaces/worth-query-bank-world/crates/bank-http-adapter/ workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-courtroom/src/async_identity_courtroom/credential_denials.rs
 workspaces/worth-query/crates/worth-query-admission/ workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/rows/rejection/narrowing/relationship_proof.rs
 workspaces/worth-query/crates/worth-query-admission/ workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/rows/rejection/narrowing/reuse_budget.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/advancement_bootstrap.rs
@@ -202,19 +209,17 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/owner.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/performed_head_movement.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/request_lifetime/entry_custody.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/granular_invalidation/financial_runtime_world/host/installation.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/world.rs
-
-workspaces/worth-query-bank-world/crates/bank-http-adapter/ workspaces/worth-query-bank-world/crates/bank-courtroom/tests/async_identity_courtroom/credential_lifecycle.rs
-
-workspaces/worth-query-bank-world/crates/bank-http-adapter/ workspaces/worth-query-bank-world/crates/bank-courtroom/tests/async_identity_courtroom/installed_identity.rs
-
-# Named test callers exposed by automatic door discovery; no production callers.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/adoption/request_lifetime/entry_custody.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-granular-invalidation/src/certification/granular_invalidation/financial_runtime_world/host/installation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_runtime_surface/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/world.rs
+workspaces/worth-query-bank-world/crates/bank-http-adapter/ workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-courtroom/src/async_identity_courtroom/credential_lifecycle.rs
+workspaces/worth-query-bank-world/crates/bank-http-adapter/ workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-courtroom/src/async_identity_courtroom/installed_identity.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/absence.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/branch_sharing.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/counts.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/counts/serial.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/cutoff.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/differential.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/handler_absence.rs
@@ -222,9 +227,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/republication.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/restoration.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/worker_axis.rs
-
 # The fresh-success calibration proof reads Signal charges before the refused run.
-
 # Wave-driver certification proofs: exact callers of the sealed single-build doors.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/decision_plan.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/owner/decision_plan.rs
@@ -245,129 +248,98 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/request_stops/requested_custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/selection_at_inspection.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/charge_prefix/cost_cell.rs
-
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/computation/wave_dispatch.rs
-
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/operation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/runtime.rs
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/observation.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/transfer_history.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/assessment_history.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-server/src/parallel_history/observation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-server/src/parallel_history/transfer_history.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/oracle/server_owned_effects/server/parallel_history/assessment_history/mod.rs
 # Only the armed certification path enters the sealed detached resource ledger.
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement/native_certification.rs
-
 # Exact reader of the one-stage framework reservation.
-
 # Diagnostic resource proof uses the same sealed detached meter.
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement/certification_tests.rs
-
 # Owned assessment-phase reports are read by this exact test adapter.
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/assessment_trace.rs
-workspaces/worth-query/crates/worth-query-execution/ crates/worth-server/tests/worth_server/fast/operation_scheduler_phase_eight/refused_basis_read.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/ordinary_mutations/posting_lease.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-server/src/parallel_history/assessment_trace.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-server/src/ordinary_mutations/posting_lease.rs
+workspaces/worth-query/crates/worth-query-execution/ crates/worth-court-server-product-operation-phase-eleven/tests/worth_court_server_product_operation_phase_eleven/server/operation_scheduler_phase_eight/refused_basis_read/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/lifecycle/supersession_retires_pending_predecessor.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/parameter_entry/src/parameter_invariant/lease_tests.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/exact_invalidation/discontinuity/forked_branch.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/conditional_clock_observation_preserves_real_snapshot_capacity_d.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/temporal_integrity_lease.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/conditional_clock_observation_preserves_real_snapshot_capacity_d.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/selected_product_lifecycle/retained_read_defers_component_cleanup_and_preserves_retry_autho.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/runtime_world_branching/conditional_clock_observation_preserves_real_snapshot_capacity_d/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/temporal_integrity_lease.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/conditional_clock_observation_preserves_real_snapshot_capacity_d/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/runtime_world_branching/selected_product_lifecycle/retained_read_defers_component_cleanup_and_preserves_retry_autho/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/selected_product_lifecycle/retained_read_defers_component_cleanup_and_preserves_retry_autho/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-ui/crates/worth-ui-query-binding/src/product_projection/status_integrity/lease_tests.rs
-
 # Read-track counted consultation and exact primary-generation proof callers.
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/index_maintenance_interruptions/consumers.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/index_maintenance_interruptions/refresh_consults.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/test_read_stops.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/src/identity_runtime/certification_controls.rs
 workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/currency_work_stop.rs
-
 # The currency proof borrows placement and budget from its owned Query listener.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/currency_work_stop.rs
-
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/reuse_opt_out/every_consult.rs
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/counted_read_stops.rs
-
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/oracle/host/temporal_conditional_operation/counted_read_stops/mod.rs
 # Preview custody uses the existing receiver-owned residue fault; no new control.
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/read_ceiling_terminal.rs
-
-
-
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/read_ceiling_terminal.rs
 # Full-value charge proofs borrow the SDK observer through the Query test oracle.
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/compare_and_commit/commit_outcome/denial/execution/authority_cause.rs
-crates/worth-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/counted_read_stops.rs
-crates/worth-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/read_ceiling_terminal.rs
-
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/oracle/host/temporal_conditional_operation/counted_read_stops/mod.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/read_ceiling_terminal.rs
 # Receiver-owned cfg(test) native preparation interruption guard.
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/deadline.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-server/src/parallel_history/deadline.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/runtime/interruption.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/parallel_history_reuse/engagement.rs
 crates/worth-relational/ crates/worth-runtime-bridge/src/relational_source/runtime_source/lock_observation.rs
 crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner.rs
-
 # Unit-only custody of the Bridge lock-observation guard for the pinned-read proof.
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner.rs
-
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/fact/consult_observation.rs
-
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/fact/cancellation_tests.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/decision_facts/comparison/tests/indexed.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program/migration/lineage.rs
-
 # Exact callers of owned read-stop controls on the joined tree.
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/decision_facts/authorization/durable_dependencies/cancellation_tests.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/retained_activation_read_tests.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/equality_stop_oracle.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/workflow_approval_revalidation/read_stop_oracle.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/checkpoint_restore.rs
-
 # Caller-only program stop at the existing admitted advancement observation.
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/request_cancellation.rs
-crates/worth-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/request_cancellation.rs
-
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/contribution_installation/request_cancellation/mod.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/temporal_conditional_operation/contribution_installation/request_cancellation/mod.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/request_cancellation.rs
 # Phase A receiver-scoped SourceOnly publication posture controls (root boundary ruling).
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/keyed_resolution.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/keyed_resolution/mod.rs
 # The owning retention court consumes the existing durable append boundary.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_replay.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_replay/supersession.rs
-
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_missing_carrier/guard_lifecycle.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/grant_commands.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/workflow/captured_actor.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/capability/grant_commands/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/native_workflow_operations/capability/grant_commands/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-operation/src/certification/application_graph/source_only/capability/workflow/captured_actor.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_branch_affinity.rs
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/stale_retry.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/stale_retry/race.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/stale_retry/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-operation/src/certification/application_graph/source_only/stale_retry/race.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/source_only_pinned/commit_stale.rs
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/native_postures.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/native_postures/retained_capacity.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/native_postures/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/retained/native_postures/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_native_postures.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/observation/transfer.rs
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/managed_cleanup.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/managed_cleanup/retained_capacity.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-server/src/parallel_history/observation/transfer.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/retained_capacity/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_managed_cleanup.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/temporal_conditional_oracle_parity/managed_cleanup.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/temporal_conditional_oracle_parity/managed_cleanup/lag.rs
-
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/oracle/certification/temporal_conditional_oracle_parity/managed_cleanup/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/oracle/certification/temporal_conditional_oracle_parity/managed_cleanup/lag/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/exact_invalidation/managed_cleanup.rs
-
-
-
-
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/discovered/retention.rs
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/workflow_actor_contract.rs
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/workflow_actor_contract/generation.rs
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval/workflow_actor_contract/allocation.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_owning/keyed.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_owning/assessment_cleanup.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/workflow_actor_contract/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/workflow_actor_contract/generation/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/workflow_actor_contract/allocation/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_owning/keyed/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_owning/assessment_cleanup/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/discovered/currentness.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/discovered/currentness/deep_output.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/discovered/currentness/dependent.rs
@@ -375,19 +347,15 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/operation_cost/measurement.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/operation_cost/stops.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/operation_cost/capture.rs
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_start_intent.rs
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/document_retention_model/workflow/governed_read/court.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/history/court.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/history/custody.rs
-
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_start_intent/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/document_retention_model/workflow/governed_read/court/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/native_operation_bodies/document_retention_model/workflow/governed_read/court/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/native_workflow_operations/document_retention_model/workflow/governed_read/court/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/history/court/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/history/custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery.rs
-
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/construction.rs
-
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/selected_meaning.rs
-
 # 9.17.6.6: exact-observation closed certification courts observe producer contacts.
 # Exact combined-source recovery exercises the installed Signal outcome fault.
 crates/worth-signal/ crates/worth-runtime-bridge/src/conditional_execution/sealed_runtime_assembly.rs
@@ -395,10 +363,8 @@ crates/worth-signal/ workspaces/worth-query/crates/worth-query-execution/src/dom
 crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/operation_control.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/exact_observation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/exact_observation/selected_action.rs
-
 # M2.7.1: test-only native locality observations; adjacent sources gain no authority.
 # Unit worker rendezvous is separate from the shared integration observer.
-
 # Private CAD installation omission: named implementation, mount, hooks and facade;
 # the sole external test consumer is this exact integration leaf (not its neighbors).
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/input_cutoff/checkpoint_polling.rs
@@ -408,30 +374,99 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/output_availability/races.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/output_availability/races/nested.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/output_availability/races/interruption.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/tests/shared_execution.rs
-
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/tests/worth_query_topology_entry/fast/shared_execution/mod.rs
 # 9.18: exact family/locality courts observe native owner work and selected roots.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/correction.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/locality.rs
-
 # Native inherited-accounting refusal leaves exactly the SDK-owned outer frame.
 crates/worth-execution/ crates/worth-relational/src/tests/transactions/core/snapshot_and_retention/request_owned.rs
 
+# Exact consumers preserve their former in-owner access across the court move.
+workspaces/worth-query/crates/worth-query-testkit-document-retention/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/authentication/mod.rs
+workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/process/server_owned_effects/server/approved_payment_workflow/postures/mod.rs
+
+# Relocated owner-internal integration sources retain their prior control audience.
+crates/worth-relational/ crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/relational/relational_certification/mvcc_cancellation_publication_boundaries/mod.rs
+crates/worth-relational/ crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/relational/relational_certification/schema_transition_cancellation/mod.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/lifecycle_locality/mod.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/owner_lifecycle_observation/mod.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/support/relational_certification/ordinary_context/mvcc_owner_phase_locality_court/declarations.rs
+crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/operation_control/races/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/cost/signal/signal_owner_services/adversarial/diagnostic_retention/unarmed_operation_control_is_cost_neutral/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/adversarial/operation_control/cancellation/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/adversarial/operation_control/cancellation_progress/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/adversarial/operation_control/close/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/adversarial/operation_control/close_progress/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/adversarial/operation_control/fork_and_advance_progress/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/adversarial/operation_control/fork_panic/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/adversarial/operation_control/independent_progress/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/adversarial/operation_control/panic/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/adversarial/operation_control/races/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/adversarial/operation_control/races/retirement_fences/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/adversarial/operation_control/snapshot_progress/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/facade_smoke/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/signal/signal_owner_services/legacy_surface/sealed_inspection/mod.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/operation_control_constructor_is_private.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/sources/worth_signal/signal_owner_services/ui/operation_control_matrix.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/ordinary_context/adversarial/operation_control/cancellation_progress/declarations.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/ordinary_context/adversarial/operation_control/close_progress/declarations.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/ordinary_context/adversarial/operation_control/independent_progress/declarations.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/ordinary_context/adversarial/operation_control/independent_progress/retirement_planning/declarations.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/ordinary_context/adversarial/operation_control/observation_race/declarations.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/ordinary_context/adversarial/operation_control/ordered_race/declarations.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/ordinary_context/adversarial/operation_control/races/declarations.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/ordinary_context/legacy_surface/sealed_inspection/declarations.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/reference_context/adversarial/operation_control/ordered_races/declarations.rs
+crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/reference_context/adversarial/operation_control/snapshot_progress/declarations.rs
 # Original witness payer court reads only the actual SDK scope-frame quote.
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/correction_witness/tests.rs
 
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/tree_reapplication.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/tree_reapplication.rs
 
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs
 
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/retry.rs
+# Retained exact source-guard cutover callers from the reviewed boundary branch.
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/read_observation.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/runtime/operation_control.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/operation_control.rs
+crates/worth-signal/ crates/worth-runtime-bridge/src/conditional_execution/sealed_runtime_assembly/wake_observation_for_test.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/operation_cost/measurement.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/advancement_lifetime.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/advancement/observation.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-execution/src/facade/primary_graph.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/advancement_custody/width_differential.rs
+workspaces/worth-query-bank-world/crates/bank-http-adapter/ workspaces/worth-query-bank-world/crates/bank-user-node/src/cold_certification.rs
+workspaces/worth-store/crates/worth-store-physical-backend/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/discovery/observation/wal_observation/allocation.rs
+workspaces/worth-store/crates/worth-store-physical-backend/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/reader_limit.rs
+workspaces/worth-store/crates/worth-store-physical-backend/ workspaces/worth-store/crates/worth-store/src/physical_runtime/mod.rs
+workspaces/worth-store/crates/worth-store-physical-integrity/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/head_v2_tests.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/entry/outcome/block_cause.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/released/historical_redo_tests.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/head_v2_tests.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/pending_wal/head_replay.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/pending_wal/ordered/denial.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/page_observation/ordered_history/head_replay.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/page_observation/ordered_history/walk_failure_tests.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store-recovery-runtime/src/progression/planned/basis/publication_candidate/historical_result/tests.rs
+workspaces/worth-store/crates/worth-store-recovery-physics/ workspaces/worth-store/crates/worth-store/src/physical_runtime/recovery_construction/selected_rejoin/pending_wal_release/delta.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-certification/src/courtroom/protocol_models/replication_admission/scenarios/ordinary_owner_execution.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-certification/src/courtroom/protocol_models/replication_admission/scenarios/ordinary_owner_execution/publication_denials.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/certification/io_scheduling/reclaim_policy/mod.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-io-scheduler/src/backend_capability/tests/secure_frame_security_binding.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-io-scheduler/src/background_pacing/tests/secure_io_preservation.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-io-scheduler/src/queue_execution/grouping_basis_tests.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-offline-verifier/src/truth_composition/tests.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-reclaim-policy/src/reclaim_policy/tests.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-replication/src/tests.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-tiering/src/cold_tier_posture/certification_test_support.rs
+workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-testkit-store/src/physical_record_journeys/physical_work/scheduler/declarations.rs
 
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/rich_query.rs
+# Existing Relational fixture doors cross into their extracted leaf courts.
+crates/worth-testkit-relational/ crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/oracle/relational/relational_certification/production_failures/mod.rs
+crates/worth-testkit-relational/ crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/relational/relational_certification/invariant_branch_selection/mod.rs
+crates/worth-testkit-relational/ crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/relational/relational_certification/production_failures/correspondence/mod.rs
+crates/worth-testkit-relational/ crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/relational/relational_certification/production_failures/mod.rs
+crates/worth-testkit-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/observation_contracts/mod.rs
 
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/rich_connected.rs
-
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/rich_source.rs
-
-# Actual optional conditional history retention; policy control supplies no evidence.
-crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls/inspection_materialization.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/history.rs
+# Existing Bridge history control follows its public eviction court.
+crates/worth-runtime-bridge/ crates/worth-court-runtime-bridge/tests/worth_court_runtime_bridge/runtime_bridge/conditional_evaluations/history.rs

@@ -1,0 +1,5 @@
+error[E0599]: no method named `attested_by` found for struct `worth_foundational::boundary_evidence::support_front_doors::FoundationalBoundaryEvidencePublishedSupportStep` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/support/support_builder_requires_basis_disclosure.rs
+  |
+  |     let _ = boundary_evidence().support().published_evidence().attested_by(
+  |             ---------------------------------------------------^^^^^^^^^^^ method not found in `worth_foundational::boundary_evidence::support_front_doors::FoundationalBoundaryEvidencePublishedSupportStep`

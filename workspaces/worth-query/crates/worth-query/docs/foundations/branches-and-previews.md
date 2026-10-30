@@ -94,7 +94,7 @@ Complete that recovery before issuing another creation attempt.
 
 If the expected source is stale, obtain a fresh selection before creating a
 replacement candidate. A selection from another application is refused.
-The [compiled adoption cases](../../../worth-query-certification/tests/application_graph/proposal_acceptance/adoption.rs)
+The [compiled adoption cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/proposal_acceptance/adoption.rs)
 show ordinary candidate requests, head replacement, stale-source refusal and
 cleanup.
 
@@ -154,7 +154,7 @@ Loading or editing the description grants no domain READ or mutation permission.
 Use ordinary requests for those operations. Creation and adoption still check
 the expected source, so movement after readmission can refuse either operation.
 Keep and close candidate custody as described above. The
-[compiled stored-basis cases](../../../worth-query-certification/tests/application_graph/proposal_acceptance/stored_basis.rs)
+[compiled stored-basis cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/proposal_acceptance/stored_basis.rs)
 show serialization, fresh owner admission, ordinary candidate requests, adoption
 and stale or mixed-basis refusal.
 
@@ -180,7 +180,7 @@ Each history continuation binds its target observation. If the branch advances
 between pages or before selection, obtain a new traversal with a fresh request.
 Keep the command's idempotency key when retrying a submitted correction: an
 equivalent retry resolves its original performed occurrence. The
-[history chooser example](../../../worth-query-certification/examples/application_correction_support/tree_reapplication.rs)
+[history chooser example](../../../worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/tree_reapplication.rs)
 shows explicit older-alternative selection, pagination and ordinary close.
 
 A selected occurrence pins exact history for repeatable reads while the branch
@@ -204,7 +204,7 @@ on the fork leaves the parent's head and history unchanged.
 The fork reads its parent's history as its own, so corrections can select a
 source made on either branch. Retained history grows with the actual authored
 operations across branch selection changes. The
-[fork transaction example](../../../worth-query-certification/examples/application_correction_support/fork_head_adoption.rs)
+[fork transaction example](../../../worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/fork_head_adoption.rs)
 shows request execution, explicit branch selection and retirement.
 History pages are branch-occurrence scoped and bounded by the caller's nonzero
 limit. Their entries are descriptive until `select` asks World to issue an

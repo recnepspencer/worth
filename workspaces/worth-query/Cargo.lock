@@ -737,9 +737,7 @@ name = "worth-query-certification"
 version = "0.1.0"
 dependencies = [
  "serde",
- "serde_json",
  "sha2",
- "tracking-allocator",
  "worth-execution",
  "worth-foundational",
  "worth-harness",
@@ -752,10 +750,166 @@ dependencies = [
  "worth-query-installation",
  "worth-query-package-archive",
  "worth-query-replay",
+ "worth-query-testkit-certification",
+ "worth-query-testkit-certification-correction",
+ "worth-query-testkit-certification-operation",
+ "worth-query-testkit-document-retention",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-signal",
 ]
+
+[[package]]
+name = "worth-query-court-decl"
+version = "0.1.0"
+dependencies = [
+ "worth-query-testkit-decl",
+]
+
+[[package]]
+name = "worth-query-court-decl-host"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-host",
+ "worth-query-testkit-certification-canonical",
+ "worth-query-testkit-certification-operation",
+ "worth-query-testkit-document-retention",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-decl-host-package-archive-replay-application-graph"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "tracking-allocator",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-installation",
+ "worth-query-package-archive",
+ "worth-query-replay",
+ "worth-query-testkit-certification-application-graph",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-decl-host-package-archive-replay-workflow-approval"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-admission",
+ "worth-query-decl",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-testkit-certification-application-graph",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-host-replay"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-replay",
+]
+
+[[package]]
+name = "worth-query-court-installation"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-foundational",
+ "worth-query-declaration",
+ "worth-query-installation",
+ "worth-query-testkit-installation",
+]
+
+[[package]]
+name = "worth-query-court-package-archive"
+version = "0.1.0"
+dependencies = [
+ "worth-query-testkit-package-archive",
+]
+
+[[package]]
+name = "worth-query-court-publication"
+version = "0.1.0"
+dependencies = [
+ "worth-query-testkit-publication",
+]
+
+[[package]]
+name = "worth-query-court-query"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+]
+
+[[package]]
+name = "worth-query-court-query-decl-host"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-testkit-certification",
+ "worth-query-testkit-certification-canonical",
+ "worth-query-testkit-certification-correction",
+ "worth-query-testkit-certification-granular-invalidation",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
+ "worth-relational",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-court-query-installed-operating-world"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+ "worth-runtime-bridge",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-court-query-installed-operations"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-query-testkit-query",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-court-source"
+version = "0.1.0"
 
 [[package]]
 name = "worth-query-decl"
@@ -864,6 +1018,202 @@ name = "worth-query-replay"
 version = "0.1.0"
 dependencies = [
  "worth-query",
+]
+
+[[package]]
+name = "worth-query-testkit-certification"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query",
+ "worth-query-decl",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-testkit-certification-granular-invalidation",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
+ "worth-relational",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-testkit-certification-application-graph"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query",
+ "worth-query-admission",
+ "worth-query-decl",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-installation",
+ "worth-query-package-archive",
+ "worth-query-replay",
+ "worth-query-testkit-certification",
+ "worth-query-testkit-certification-canonical",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
+ "worth-relational",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-testkit-certification-canonical"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-testkit-document-retention",
+ "worth-relational",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-testkit-certification-correction"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-installation",
+ "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-testkit-certification-granular-invalidation"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-testkit-host",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-testkit-certification-operation"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-testkit-document-retention",
+]
+
+[[package]]
+name = "worth-query-testkit-decl"
+version = "0.1.0"
+dependencies = [
+ "worth-query-decl",
+]
+
+[[package]]
+name = "worth-query-testkit-document-retention"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-testkit-host"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-query",
+ "worth-query-admission",
+ "worth-query-decl",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-testkit-installation"
+version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+ "worth-query-declaration",
+ "worth-query-installation",
+]
+
+[[package]]
+name = "worth-query-testkit-installed-operation-fixture"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-testkit-package-archive"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-foundational",
+ "worth-query-declaration",
+ "worth-query-installation",
+ "worth-query-package-archive",
+]
+
+[[package]]
+name = "worth-query-testkit-publication"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-publication",
+]
+
+[[package]]
+name = "worth-query-testkit-query"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-testkit-installed-operation-fixture",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-signal",
 ]
 
 [[package]]

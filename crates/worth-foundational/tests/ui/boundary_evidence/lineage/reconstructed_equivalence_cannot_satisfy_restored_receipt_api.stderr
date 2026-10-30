@@ -1,5 +1,0 @@
-error[E0599]: no method named `restoration_receipt` found for struct `FoundationalBoundaryEvidenceReconstructedEquivalenceArtifact` in the current scope
-  --> tests/ui/boundary_evidence/lineage/reconstructed_equivalence_cannot_satisfy_restored_receipt_api.rs:24:27
-   |
-24 |     let _ = reconstructed.restoration_receipt();
-   |                           ^^^^^^^^^^^^^^^^^^^ method not found in `FoundationalBoundaryEvidenceReconstructedEquivalenceArtifact`

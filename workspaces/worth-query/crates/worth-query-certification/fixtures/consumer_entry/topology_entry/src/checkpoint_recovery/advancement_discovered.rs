@@ -69,41 +69,49 @@ fn assert_cause(denial: &PreparationDenial, memory: bool) {
         assert_eq!(admitted, 0);
     }
 }
-#[test]
-fn discovered_start_recovery_and_advance_each_open_one_request() {
-    let _guard = checkpoint_recovery_test_guard();
-    for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
-        let _restore = Restore(place(placement), bound(None));
-        for memory in [false, true] {
-            bound(None);
-            let application =
-                support::install_program::<DiscoveredProgram>(None, Default::default());
-            let (scope, principal) = authenticate(&application);
-            let request = application.request(&principal, &scope);
-            let read = request
-                .query(PlanarRead {
-                    body_key: "anchor-a".into(),
-                })
-                .execute()
-                .unwrap();
-            let policy = support::observation::CHECKPOINT_EXECUTION_POLICY
-                .accounting()
-                .expect("this fixture declares accounting");
-            bound(Some(worth_foundational::ExecutionBudget::new(
-                NonZeroUsize::MIN,
-                if memory {
-                    Some(0)
-                } else {
-                    policy.charged_memory_bytes()
-                },
-                if memory {
-                    policy.work_ceiling()
-                } else {
-                    Some(0)
-                },
-            )));
-            let before_mutation = reads();
-            let cause = request
+
+mod recovery_entries;
+
+mod outcome_observation;
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn discovered_start_recovery_and_advance_each_open_one_request() {
+        let _guard = checkpoint_recovery_test_guard();
+        for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
+            let _restore = Restore(place(placement), bound(None));
+            for memory in [false, true] {
+                bound(None);
+                let application =
+                    support::install_program::<DiscoveredProgram>(None, Default::default());
+                let (scope, principal) = authenticate(&application);
+                let request = application.request(&principal, &scope);
+                let read = request
+                    .query(PlanarRead {
+                        body_key: "anchor-a".into(),
+                    })
+                    .execute()
+                    .unwrap();
+                let policy = support::observation::CHECKPOINT_EXECUTION_POLICY
+                    .accounting()
+                    .expect("this fixture declares accounting");
+                bound(Some(worth_foundational::ExecutionBudget::new(
+                    NonZeroUsize::MIN,
+                    if memory {
+                        Some(0)
+                    } else {
+                        policy.charged_memory_bytes()
+                    },
+                    if memory {
+                        policy.work_ceiling()
+                    } else {
+                        Some(0)
+                    },
+                )));
+                let before_mutation = reads();
+                let cause = request
                 .advanced()
                 .mutate(PlanarSourceAdjustment {
                     scope_key: "anchor-a".into(),
@@ -117,26 +125,26 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
                 )
                 .err()
                 .unwrap();
-            let worth_query_host::facade::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)) = cause else { panic!("discovered mutation opens before its handler") };
-            if !memory {
-                assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-            } else {
-                let Denial::Resource(Resource::MemoryLimit {
-                    level,
-                    requested,
-                    admitted,
-                }) = cause
-                else {
-                    panic!("exact bytes")
-                };
-                assert_eq!(level, Level::Policy);
-                assert!(requested > 0);
-                assert_eq!(admitted, 0);
-            }
-            assert_eq!(reads(), before_mutation);
-            bound(None);
-            let before_mutation = reads();
-            let observed_outcome = request
+                let worth_query_host::facade::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)) = cause else { panic!("discovered mutation opens before its handler") };
+                if !memory {
+                    assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
+                } else {
+                    let Denial::Resource(Resource::MemoryLimit {
+                        level,
+                        requested,
+                        admitted,
+                    }) = cause
+                    else {
+                        panic!("exact bytes")
+                    };
+                    assert_eq!(level, Level::Policy);
+                    assert!(requested > 0);
+                    assert_eq!(admitted, 0);
+                }
+                assert_eq!(reads(), before_mutation);
+                bound(None);
+                let before_mutation = reads();
+                let observed_outcome = request
                 .advanced()
                 .mutate(PlanarSourceAdjustment {
                     scope_key: "anchor-a".into(),
@@ -149,84 +157,84 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
-            let Outcome::Performed(performed) = observed_outcome else {
-                panic!(
-                    "source must land with discovered custody: {}; placement={placement:?}",
-                    outcome_observation::discovered(&observed_outcome)
-                )
-            };
-            assert!(
-                reads() > before_mutation,
-                "admitted discovered mutation contacts its own reader"
-            );
-            let receipt = performed.receipt().clone();
-            let policy = support::observation::CHECKPOINT_EXECUTION_POLICY
-                .accounting()
-                .expect("this fixture declares accounting");
-            bound(Some(worth_foundational::ExecutionBudget::new(
-                NonZeroUsize::MIN,
-                if memory {
-                    Some(0)
-                } else {
-                    policy.charged_memory_bytes()
-                },
-                if memory {
-                    policy.work_ceiling()
-                } else {
-                    Some(0)
-                },
-            )));
-            reports();
-            let before = reads();
-            let failure = performed
-                .start_required_outputs(&application, &request, Default::default())
-                .err()
-                .expect("zero budget refuses start");
-            assert_cause(failure.denial(), memory);
-            assert_eq!(reads(), before);
-            assert_eq!(reports().len(), 1);
-            let performed = failure.performed();
-            let before = reads();
-            let denial = request
-                .advanced()
-                .recover_discovered_required_outputs::<DiscoveredProgram, DiscoveredRoot>(
-                    &application,
-                    &receipt,
-                    Default::default(),
-                )
-                .err()
-                .expect("zero budget refuses recovery");
-            assert_cause(&denial, memory);
-            assert_eq!(reads(), before);
-            assert_eq!(reports().len(), 1);
-            bound(None);
-            let mut started = performed
-                .start_required_outputs(&application, &request, Default::default())
-                .unwrap_or_else(|_| panic!("admitted discovery starts"));
-            assert_eq!(reports().len(), 1);
-            let before = reads();
-            started
-                .required_output_mut()
-                .advance(&application, &request)
-                .unwrap();
-            assert!(reads() > before);
-            assert_eq!(
-                reports().len(),
-                1,
-                "discovery and demand reads borrow one advance"
-            );
-            drop(started);
-            // Recovery gets its own still-discovered source, before any handle
-            // consumes that source into a started root.
-            let source = request
-                .query(PlanarRead {
-                    body_key: "anchor-a".into(),
-                })
-                .execute()
-                .unwrap()
-                .observed_sources()[0]
-                .clone();
-            let Outcome::Performed(performed) = request
+                let Outcome::Performed(performed) = observed_outcome else {
+                    panic!(
+                        "source must land with discovered custody: {}; placement={placement:?}",
+                        outcome_observation::discovered(&observed_outcome)
+                    )
+                };
+                assert!(
+                    reads() > before_mutation,
+                    "admitted discovered mutation contacts its own reader"
+                );
+                let receipt = performed.receipt().clone();
+                let policy = support::observation::CHECKPOINT_EXECUTION_POLICY
+                    .accounting()
+                    .expect("this fixture declares accounting");
+                bound(Some(worth_foundational::ExecutionBudget::new(
+                    NonZeroUsize::MIN,
+                    if memory {
+                        Some(0)
+                    } else {
+                        policy.charged_memory_bytes()
+                    },
+                    if memory {
+                        policy.work_ceiling()
+                    } else {
+                        Some(0)
+                    },
+                )));
+                reports();
+                let before = reads();
+                let failure = performed
+                    .start_required_outputs(&application, &request, Default::default())
+                    .err()
+                    .expect("zero budget refuses start");
+                assert_cause(failure.denial(), memory);
+                assert_eq!(reads(), before);
+                assert_eq!(reports().len(), 1);
+                let performed = failure.performed();
+                let before = reads();
+                let denial = request
+                    .advanced()
+                    .recover_discovered_required_outputs::<DiscoveredProgram, DiscoveredRoot>(
+                        &application,
+                        &receipt,
+                        Default::default(),
+                    )
+                    .err()
+                    .expect("zero budget refuses recovery");
+                assert_cause(&denial, memory);
+                assert_eq!(reads(), before);
+                assert_eq!(reports().len(), 1);
+                bound(None);
+                let mut started = performed
+                    .start_required_outputs(&application, &request, Default::default())
+                    .unwrap_or_else(|_| panic!("admitted discovery starts"));
+                assert_eq!(reports().len(), 1);
+                let before = reads();
+                started
+                    .required_output_mut()
+                    .advance(&application, &request)
+                    .unwrap();
+                assert!(reads() > before);
+                assert_eq!(
+                    reports().len(),
+                    1,
+                    "discovery and demand reads borrow one advance"
+                );
+                drop(started);
+                // Recovery gets its own still-discovered source, before any handle
+                // consumes that source into a started root.
+                let source = request
+                    .query(PlanarRead {
+                        body_key: "anchor-a".into(),
+                    })
+                    .execute()
+                    .unwrap()
+                    .observed_sources()[0]
+                    .clone();
+                let Outcome::Performed(performed) = request
                 .advanced()
                 .mutate(PlanarSourceAdjustment {
                     scope_key: "anchor-a".into(),
@@ -242,26 +250,23 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
             else {
                 panic!("fresh source retains discovered custody")
             };
-            let receipt = performed.receipt().clone();
-            reports();
-            let mut recovered = request
-                .advanced()
-                .recover_discovered_required_outputs::<DiscoveredProgram, DiscoveredRoot>(
-                    &application,
-                    &receipt,
-                    Default::default(),
-                )
-                .unwrap();
-            assert_eq!(reports().len(), 1);
-            drop(performed);
-            let before = reads();
-            recovered.advance(&application, &request).unwrap();
-            assert!(reads() > before);
-            assert_eq!(reports().len(), 1);
+                let receipt = performed.receipt().clone();
+                reports();
+                let mut recovered = request
+                    .advanced()
+                    .recover_discovered_required_outputs::<DiscoveredProgram, DiscoveredRoot>(
+                        &application,
+                        &receipt,
+                        Default::default(),
+                    )
+                    .unwrap();
+                assert_eq!(reports().len(), 1);
+                drop(performed);
+                let before = reads();
+                recovered.advance(&application, &request).unwrap();
+                assert!(reads() > before);
+                assert_eq!(reports().len(), 1);
+            }
         }
     }
 }
-
-mod recovery_entries;
-
-mod outcome_observation;

@@ -1,0 +1,5 @@
+error[E0599]: no method named `transition_provenance_rows` found for struct `FoundationalBoundaryReceiptSurface` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/receipt_boundaries/plain_boundary_receipt_surface_has_no_transition_receipt_api.rs
+  |
+  |     let _ = receipt.transition_provenance_rows();
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `FoundationalBoundaryReceiptSurface`

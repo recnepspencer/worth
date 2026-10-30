@@ -248,12 +248,16 @@ fn first_run<E: Example>() -> Reduced {
     })
 }
 
-#[test]
-fn compiled_examples_warehouse_inventory_total() {
-    assert_eq!(first_run::<Warehouse>(), Reduced::Inventory(13.0));
-}
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn compiled_examples_warehouse_inventory_total() {
+        assert_eq!(first_run::<Warehouse>(), Reduced::Inventory(13.0));
+    }
 
-#[test]
-fn compiled_examples_sensor_telemetry_peak() {
-    assert_eq!(first_run::<Telemetry>(), Reduced::Telemetry(850));
+    #[test]
+    fn compiled_examples_sensor_telemetry_peak() {
+        assert_eq!(first_run::<Telemetry>(), Reduced::Telemetry(850));
+    }
 }

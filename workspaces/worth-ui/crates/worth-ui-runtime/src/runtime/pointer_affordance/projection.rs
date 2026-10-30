@@ -111,10 +111,9 @@ impl UiPointerAffordanceProjection {
             operability: Err(unavailable),
             ..
         } = &self.target
+            && unavailable.is_withheld_by_publication()
         {
-            if unavailable.is_withheld_by_publication() {
-                return None;
-            }
+            return None;
         }
         Some(match self.family() {
             crate::declaration::UiPointerAffordance::Default => Family::Default,

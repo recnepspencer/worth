@@ -162,28 +162,56 @@ impl FilesystemMediaOwner {
     pub(super) fn issue_file_handle_identity(
         &self,
     ) -> Result<super::MediaHandleIdentity, FilesystemMediaOwnerAdmissionDenial> {
-        let generation = self
-            .next_file_handle_generation
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                current.checked_add(1)
-            })
-            .map_err(|_| {
-                FilesystemMediaOwnerAdmissionDenial::Confinement(
-                    NamespaceConfinementDenial::structural(
-                        super::NamespaceConfinementDenialKind::AuthorityIdentityUnavailable,
-                    ),
-                )
-            })?;
+        let generation = {
+            let update_counter = &self.next_file_handle_generation;
+            let mut current = update_counter.load(Ordering::Relaxed);
+            loop {
+                let next_value = current.checked_add(1);
+                let Some(updated_value) = next_value else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| {
+            FilesystemMediaOwnerAdmissionDenial::Confinement(
+                NamespaceConfinementDenial::structural(
+                    super::NamespaceConfinementDenialKind::AuthorityIdentityUnavailable,
+                ),
+            )
+        })?;
         Ok(super::MediaHandleIdentity::new(self.identity(), generation))
     }
 
     pub(super) fn issue_operation_identity(&self) -> Option<super::MediaOperationIdentity> {
-        let current = self
-            .next_operation_identity
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                current.checked_add(1)
-            })
-            .ok()?;
+        let current = {
+            let update_counter = &self.next_operation_identity;
+            let mut current = update_counter.load(Ordering::Relaxed);
+            loop {
+                let next_value = current.checked_add(1);
+                let Some(updated_value) = next_value else {
+                    break Err(current);
+                };
+                match update_counter.compare_exchange_weak(
+                    current,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => current = reloaded_value,
+                }
+            }
+        }
+        .ok()?;
         Some(super::MediaOperationIdentity::new(current))
     }
 

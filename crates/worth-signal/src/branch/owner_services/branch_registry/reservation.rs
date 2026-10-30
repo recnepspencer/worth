@@ -33,6 +33,10 @@ impl<S> SignalBranchOwnedReservation<S> {
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     pub(crate) fn into_borrowed<'a>(
         mut self,
         registry: &'a SignalBranchRegistry<S>,

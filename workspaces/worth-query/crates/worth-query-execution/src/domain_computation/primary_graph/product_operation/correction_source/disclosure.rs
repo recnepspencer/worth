@@ -77,6 +77,10 @@ pub enum WorthQueryCorrectionDerivationDenial {
 
 type Disclosure<Schema, C> = <C as ApplicationCorrectionBinding<Schema>>::Disclosure;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
+)]
 pub(super) fn disclose_correction_source<Schema, C>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     phase: &WorthQueryAdvancementPhase<'_>,

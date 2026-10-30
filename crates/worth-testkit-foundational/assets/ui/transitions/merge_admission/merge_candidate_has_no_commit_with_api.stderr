@@ -1,0 +1,5 @@
+error[E0599]: no method named `commit_with` found for struct `FoundationalMergeCandidate<T>` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/transitions/merge_admission/merge_candidate_has_no_commit_with_api.rs
+  |
+  |     let _ = candidate.commit_with(());
+  |                       ^^^^^^^^^^^ method not found in `FoundationalMergeCandidate<&str>`

@@ -5822,7 +5822,12 @@ mandatory current Rust qualification. Index implementation and its dependent CAD
 locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
 Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
 19 for consecutive source undo after verified correction/restoration.
-The retained scope has seventeen implementation phases; Phase 18 remains unfinished.
+The retained scope has seventeen implementation phases. Phase 18 is complete at
+the public boundary: official stable Rust 1.99.1, full compiler commit
+`58cf8f9c35b355199727627d07ae34a4e2846d67`, preserves the qualified canonical sort
+bounds and version. Public canonicalization, admission, correction, documentation
+and repository gates qualify that compiler; private repositories and SDK pins
+are outside this public certification.
 Phase 17 is complete at the public application boundary: versioned domain intent
 enters fresh governed READ and mutation admission, exact selected-source creation
 and actual-head adoption. Native attempt resolution preserves frozen input and

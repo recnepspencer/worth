@@ -161,8 +161,8 @@ fn append_surface(
         );
         layers.push((fill, opacity));
     }
-    if let Some((border, width)) = border {
-        if samples_border(
+    if let Some((border, width)) = border
+        && samples_border(
             surface,
             width,
             SurfaceSampleGeometry {
@@ -171,9 +171,9 @@ fn append_surface(
                 x,
                 y,
             },
-        ) {
-            layers.push((border, surface.opacity()));
-        }
+        )
+    {
+        layers.push((border, surface.opacity()));
     }
 }
 

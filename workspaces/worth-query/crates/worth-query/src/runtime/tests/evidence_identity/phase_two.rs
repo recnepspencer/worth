@@ -5,7 +5,7 @@ use crate::runtime::evidence_identities::{
 };
 
 #[test]
-fn support_matrix_and_state_snapshot_remain_in_phase_two_canonical_migration_coverage() {
+fn support_matrix_and_state_snapshot_remain_in_canonical_migration_coverage() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -48,7 +48,7 @@ fn support_matrix_and_state_snapshot_remain_in_phase_two_canonical_migration_cov
 }
 
 #[test]
-fn state_snapshot_with_optional_postures_remains_in_phase_two_canonical_migration_coverage() {
+fn state_snapshot_with_optional_postures_remains_in_canonical_migration_coverage() {
     let ordinary_runtime_posture = crate::ordinary_outcome::WorthQueryOrdinaryRuntimePosture::new(
         crate::ordinary_outcome::WorthQueryOrdinaryRuntimePostureKind::Revalidating,
         crate::ordinary_outcome::WorthQueryOrdinaryRuntimeCausePostureKind::MixedCause,

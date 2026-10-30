@@ -4,9 +4,24 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 fn incarnation() -> u64 {
     static NEXT: AtomicU64 = AtomicU64::new(1);
-    NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-        value.checked_add(1)
-    })
+    {
+        let update_counter = &NEXT;
+        let mut value = update_counter.load(Ordering::Relaxed);
+        loop {
+            let Some(updated_value) = value.checked_add(1) else {
+                break Err(value);
+            };
+            match update_counter.compare_exchange_weak(
+                value,
+                updated_value,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => value = reloaded_value,
+            }
+        }
+    }
     .expect("index catalog incarnation exhausted")
 }
 

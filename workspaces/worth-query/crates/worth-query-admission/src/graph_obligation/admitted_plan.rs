@@ -20,12 +20,26 @@ pub struct WorthQueryGraphWorkPlanIdentity(u64);
 
 impl WorthQueryGraphWorkPlanIdentity {
     pub(super) fn mint() -> Option<Self> {
-        NEXT_GRAPH_WORK_PLAN_IDENTITY
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-                value.checked_add(1)
-            })
-            .ok()
-            .map(Self)
+        {
+            let update_counter = &NEXT_GRAPH_WORK_PLAN_IDENTITY;
+            let mut value = update_counter.load(Ordering::Relaxed);
+            loop {
+                let Some(updated_value) = value.checked_add(1) else {
+                    break Err(value);
+                };
+                match update_counter.compare_exchange_weak(
+                    value,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => value = reloaded_value,
+                }
+            }
+        }
+        .ok()
+        .map(Self)
     }
 
     pub const fn as_u64(self) -> u64 {

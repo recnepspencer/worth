@@ -19,6 +19,10 @@ pub(super) struct NativeFieldBindingExpectation {
 }
 
 impl NativeFieldBindingExpectation {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity serves point lookup; canonical order uses declared identity"
+    )]
     pub(super) fn of<S, E, A, F, V: 'static, W, Q, U>(
         field: schema::ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
     ) -> Self

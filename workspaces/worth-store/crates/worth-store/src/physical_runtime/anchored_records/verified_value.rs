@@ -95,8 +95,11 @@ fn read_member_table(
         let bytes = &mut chunk[..entries * ANCHORED_RECORD_MEMBER_LOCATOR_BYTES];
         require_filled(session, bytes)?;
         record_digest.update(&*bytes);
-        for entry in bytes.chunks_exact(ANCHORED_RECORD_MEMBER_LOCATOR_BYTES) {
-            let entry = entry.try_into().expect("exact chunk");
+        for entry in bytes
+            .as_chunks::<ANCHORED_RECORD_MEMBER_LOCATOR_BYTES>()
+            .0
+            .iter()
+        {
             members.push(decode_member(entry).map_err(Failure::Damaged)?);
         }
         remaining -= entries;

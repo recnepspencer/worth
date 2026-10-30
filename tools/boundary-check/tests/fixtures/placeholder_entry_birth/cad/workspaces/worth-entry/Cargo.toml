@@ -1,8 +1,0 @@
-[workspace]
-members = ["crates/*"]
-
-[workspace.metadata.worth_topology]
-role = "road1_subworkspace"
-constitutional_lane = "worth-entry"
-member_lane = "crates/*"
-allowed_crate_prefixes = ["worth-entry-"]

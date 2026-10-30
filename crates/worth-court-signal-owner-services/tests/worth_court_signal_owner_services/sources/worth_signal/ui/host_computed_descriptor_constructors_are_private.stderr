@@ -1,0 +1,25 @@
+error[E0624]: associated function `new` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/host_computed_descriptor_constructors_are_private.rs:6:40
+  |
+6 |     let id = HostComputedDescriptorId::new(1);
+  |                                        ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-signal/src/data/host_computed/descriptor.rs
+  |
+  |     pub(crate) fn new(value: u64) -> Self {
+  |     ------------------------------------- private associated function defined here
+
+error[E0624]: associated function `new` is private
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/host_computed_descriptor_constructors_are_private.rs:7:37
+  |
+7 |       let _ = HostComputedDescriptor::new(id, NodeId::new(1, 0), HostComputedApiFamily::EasyClosure);
+  |                                       ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-signal/src/data/host_computed/descriptor.rs
+  |
+  | /     pub(crate) fn new(
+  | |         descriptor_id: HostComputedDescriptorId,
+  | |         node: NodeId,
+  | |         api_family: HostComputedApiFamily,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here

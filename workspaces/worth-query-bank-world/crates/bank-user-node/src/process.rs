@@ -39,6 +39,10 @@ struct NodeInstallation {
     external_redirect_url: Option<String>,
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "async-runtime async-blocking=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+)]
 pub async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     let binding = BankUserNodeBinding::bind_local().await?;
     write_posture("bound", binding.local_address())?;

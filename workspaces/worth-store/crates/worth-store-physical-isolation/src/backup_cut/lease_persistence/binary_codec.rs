@@ -100,7 +100,7 @@ fn decode_canonical_owners(
         .try_reserve_exact(count)
         .map_err(|_| BackupReachabilityLeaseRecoveryDenial::AllocationFailed)?;
     let mut previous = None;
-    for row in encoded_owners.chunks_exact(OWNER_BYTES) {
+    for row in encoded_owners.as_chunks::<OWNER_BYTES>().0.iter() {
         let owner = decode_owner(row)?;
         enforce_canonical_successor(previous, owner)?;
         previous = Some(owner);

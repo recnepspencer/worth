@@ -5,9 +5,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use worth_query_host::facade::{
-    admission::authenticated_principal::*, application_entry::*, primary_graph::*,
-};
+use worth_query_host::facade::{application_entry::*, primary_graph::*};
 
 struct LostResponseTransport {
     state: Arc<super::producer::ProducerState>,

@@ -10,33 +10,6 @@ fn seed(graph: &mut Graph) {
     differential::prefix::model().seed(graph);
 }
 
-#[test]
-fn a_republished_output_runs_in_full_with_the_republication_cause() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application =
-        installation::install_variant::<false, TOTALS_WORK, 1, 2>(None, Default::default(), seed);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let (model, initial, mut history) = differential::prefix::run_with_history(&application);
-    let total = initial.last().unwrap().outcome.as_ref().unwrap().0;
-    republish(&application, total);
-    let change = differential::prefix::value_edit(&model);
-    history.edit(&differential::alphabet::Change::Entry(change.clone()));
-    edit(&request, &application, change.clone(), 9903);
-    let (_, kept) = demand(&request, &application);
-    assert_eq!(kept.len(), 1);
-    assert_eq!(kept[0].runs, [Run::Full(Cause::Republished)]);
-    assert_eq!(kept[0].calls, model.expected_calls(None));
-    let fresh = history
-        .install::<false, TOTALS_WORK, 1, 2>(Default::default(), |graph, model| model.seed(graph));
-    let (fresh_scope, fresh_principal) = authenticate(&fresh);
-    let fresh_request = fresh.request(&fresh_principal, &fresh_scope);
-    let (_, reference) = demand(&fresh_request, &fresh);
-    assert_eq!(kept[0].outcome, reference[0].outcome);
-    assert_eq!(kept[0].calls, reference[0].calls);
-    assert_published_state(&kept, &reference);
-}
-
 pub(super) fn republish(application: &Application<false, TOTALS_WORK, 1, 2>, total: u64) {
     let (scope, principal) = authenticate(application);
     let request = application.request(&principal, &scope);
@@ -119,4 +92,40 @@ pub(super) fn republish(application: &Application<false, TOTALS_WORK, 1, 2>, tot
     application
         .restore_generated_output(completed, &scope)
         .unwrap_or_else(|_| panic!("the reconstructed output restores"));
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn a_republished_output_runs_in_full_with_the_republication_cause() {
+        let _guard = checkpoint_recovery_test_guard();
+        let application = installation::install_variant::<false, TOTALS_WORK, 1, 2>(
+            None,
+            Default::default(),
+            seed,
+        );
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let (model, initial, mut history) = differential::prefix::run_with_history(&application);
+        let total = initial.last().unwrap().outcome.as_ref().unwrap().0;
+        republish(&application, total);
+        let change = differential::prefix::value_edit(&model);
+        history.edit(&differential::alphabet::Change::Entry(change.clone()));
+        edit(&request, &application, change.clone(), 9903);
+        let (_, kept) = demand(&request, &application);
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0].runs, [Run::Full(Cause::Republished)]);
+        assert_eq!(kept[0].calls, model.expected_calls(None));
+        let fresh = history
+            .install::<false, TOTALS_WORK, 1, 2>(Default::default(), |graph, model| {
+                model.seed(graph)
+            });
+        let (fresh_scope, fresh_principal) = authenticate(&fresh);
+        let fresh_request = fresh.request(&fresh_principal, &fresh_scope);
+        let (_, reference) = demand(&fresh_request, &fresh);
+        assert_eq!(kept[0].outcome, reference[0].outcome);
+        assert_eq!(kept[0].calls, reference[0].calls);
+        assert_published_state(&kept, &reference);
+    }
 }

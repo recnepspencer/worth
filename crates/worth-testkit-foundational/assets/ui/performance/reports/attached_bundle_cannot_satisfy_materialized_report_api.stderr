@@ -1,0 +1,19 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/reports/attached_bundle_cannot_satisfy_materialized_report_api.rs
+  |
+  |     require_materialized_report(&attached);
+  |     --------------------------- ^^^^^^^^^ expected `FoundationalMaterializedPerformanceReport<...>`, found `FoundationalAttachedPerformanceBundle<...>`
+  |     |
+  |     arguments to this function are incorrect
+  |
+  = note: expected reference `&FoundationalMaterializedPerformanceReport<FoundationalAttachedPerformanceBundle<FoundationalAuthoritativePerformanceClaim>>`
+             found reference `&FoundationalAttachedPerformanceBundle<FoundationalAuthoritativePerformanceClaim>`
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/performance/reports/attached_bundle_cannot_satisfy_materialized_report_api.rs
+  |
+  |   fn require_materialized_report(
+  |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  | /     _report: &FoundationalMaterializedPerformanceReport<
+  | |         FoundationalAttachedPerformanceBundle<FoundationalAuthoritativePerformanceClaim>,
+  | |     >,
+  | |_____-

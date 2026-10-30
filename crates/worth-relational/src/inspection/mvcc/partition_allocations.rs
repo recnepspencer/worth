@@ -14,12 +14,14 @@ pub(super) fn authoritative_partition_allocations(
     runtime_instance_id: u64,
     partition: &PartitionState,
     seen: &mut std::collections::BTreeSet<u64>,
+    work: Option<&mut super::retained_storage::RelationalRetainedStorageWork>,
 ) -> Vec<RelationalAuthoritativeAllocationObservation> {
     let mut walk = PartitionAllocationWalk {
         runtime_instance_id,
         partition_id: partition.partition_id,
         seen,
         allocations: Vec::new(),
+        work,
     };
     partition.visit_authoritative_allocations(false, &mut walk);
     walk.allocations
@@ -30,12 +32,19 @@ struct PartitionAllocationWalk<'a> {
     partition_id: PartitionId,
     seen: &'a mut std::collections::BTreeSet<u64>,
     allocations: Vec<RelationalAuthoritativeAllocationObservation>,
+    work: Option<&'a mut super::retained_storage::RelationalRetainedStorageWork>,
 }
 
 impl StorageAllocationVisitor for PartitionAllocationWalk<'_> {
     fn visit(&mut self, allocation: StorageAllocationObservation) -> bool {
+        if let Some(work) = self.work.as_mut() {
+            work.payload_allocation_attempts += 1;
+        }
         if !self.seen.insert(allocation.id) {
             return false;
+        }
+        if let Some(work) = self.work.as_mut() {
+            work.payload_new_allocations += 1;
         }
         self.allocations
             .push(RelationalAuthoritativeAllocationObservation::new(

@@ -1,0 +1,306 @@
+pub use std::sync::Arc;
+
+pub use worth_query_host::facade::{
+    declaration::application_query::ApplicationQueryParameterSet, primary_graph, product, runtime,
+};
+
+pub use super::adapters::ReplacementPredicate;
+pub use super::courtroom_support::outcome_kind;
+pub use super::product_query_support::{
+    controls, fork_relational_product, principal, product_identity,
+};
+pub use super::schema::*;
+pub use super::world::{self, CourtroomWorld};
+
+pub fn selected_sibling_mutation_carries_one_world_occurrence(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let world = CourtroomWorld::publish("blocked");
+    let request = world::request_scope();
+    let principal = principal(&world, &request);
+    let query = world
+        .application
+        .installed_schema()
+        .certification_query(TemporalIntentQuery::reference())
+        .unwrap();
+    let source = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let source_branch = source.product().product_branch();
+    let source_commit = source.product().selected_commit().clone();
+    let sibling = fork_relational_product(
+        &world,
+        &source,
+        "operation-journey-sibling",
+        "operation-journey-sibling-data",
+    );
+    drop(source);
+
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.application.on_branch(sibling).select(&phase).unwrap())
+        .expect("installed host call opens");
+    let sibling_commit = selected.product().selected_commit().clone();
+    let scope = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    IntentIdentityField::reference(),
+                    "intent-1".to_string(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let access = primary_graph::WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
+    let retained = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new(),
+                    controls(&request),
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
+
+    let warm = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(sibling)
+                .select(&phase)
+                .unwrap()
+                .conditional_clock(
+                    &phase
+                        .checked_execution_request_for(world.application.product_runtime())
+                        .expect("phase belongs to application"),
+                    &world.clock,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens")
+        .observe(request_execution);
+    let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(warm) = warm else {
+        panic!("the sibling condition must warm: {}", outcome_kind(&warm))
+    };
+    assert_eq!(warm.retained_suppressed_wake_count(), 1);
+    drop(warm);
+    let selected_sibling = world
+        .application
+        .with_host_advancement(|phase| world.application.on_branch(sibling).select(&phase).unwrap())
+        .expect("installed host call opens");
+    let (replacement, _) = ReplacementPredicate::controlled(world.contacts.clone());
+    let definition = selected_sibling
+        .publish_conditional_definition(
+            &world.clock,
+            Arc::new(replacement),
+            &runtime::RuntimeWorldCancellationSource::new().token(),
+        )
+        .unwrap();
+    let primary_graph::WorthQueryConditionalDefinitionPublicationOutcome::Performed(definition) =
+        definition
+    else {
+        panic!("the sibling conditional definition must publish")
+    };
+    drop(definition);
+
+    let mut publication = world
+        .change_input_on_branch(sibling, "changed-on-sibling")
+        .require_committed()
+        .expect("the selected sibling mutation must commit");
+    assert_eq!(publication.product_branch(), sibling);
+    let change = publication
+        .take_performed_relational_product_change()
+        .expect("the application commit must retain World's performed publication");
+    let sibling_after = world
+        .application
+        .with_host_advancement(|phase| world.application.on_branch(sibling).select(&phase).unwrap())
+        .expect("installed host call opens");
+    assert_ne!(sibling_after.product().selected_commit(), &sibling_commit);
+    assert_eq!(
+        change.product_commit(),
+        sibling_after.product().selected_commit()
+    );
+    let delivery = world
+        .application
+        .with_application_advancement(&world::request_scope(), |phase| {
+            sibling_after.deliver_relational_change_to_conditional(&phase, &world.clock, 0, change)
+        })
+        .expect("the declared host request admits delivery")
+        .expect("the performed sibling patch belongs to this selected product");
+    let runtime::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivery) =
+        delivery
+    else {
+        panic!("unexpected sibling delivery outcome: {delivery:?}")
+    };
+    assert_eq!(delivery.source_envelopes_loaded(), 1);
+    assert_eq!(delivery.signal_seeds_emitted(), 1);
+    drop(delivery);
+    drop(sibling_after);
+
+    let predecessor_interlude = selected_sibling
+        .conditional_clock(request_execution, &world.clock)
+        .unwrap()
+        .observe(request_execution);
+    let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(
+        predecessor_interlude,
+    ) = predecessor_interlude
+    else {
+        panic!("the retained predecessor product must remain independently observable")
+    };
+    assert_eq!(predecessor_interlude.committed_operation_count(), 0);
+    drop(predecessor_interlude);
+
+    world.clock_control.push(3, 11);
+    let execution = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(sibling)
+                .select(&phase)
+                .unwrap()
+                .conditional_clock(
+                    &phase
+                        .checked_execution_request_for(world.application.product_runtime())
+                        .expect("phase belongs to application"),
+                    &world.clock,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens")
+        .observe(request_execution);
+    let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(execution) =
+        execution
+    else {
+        panic!(
+            "conditional reentry must use sibling truth: {}",
+            outcome_kind(&execution)
+        )
+    };
+    assert_eq!(execution.committed_operation_count(), 1);
+    assert_eq!(execution.authoritative_commit_count(), 1);
+    drop(execution);
+
+    let read = |branch: product::WorthQueryProductBranch| {
+        let selected = world
+            .application
+            .with_host_advancement(|phase| {
+                world.application.on_branch(branch).select(&phase).unwrap()
+            })
+            .expect("installed host call opens");
+        let scope = world
+            .application
+            .with_host_advancement(|phase| {
+                selected
+                    .resolve_entity(
+                        &phase,
+                        IntentIdentityField::reference(),
+                        "intent-1".to_string(),
+                        &request,
+                        primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
+        let access =
+            primary_graph::WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
+        let plan = world
+            .application
+            .with_host_advancement(|phase| {
+                selected
+                    .admit_application_query(
+                        &phase,
+                        &query,
+                        &access,
+                        ApplicationQueryParameterSet::new(),
+                        controls(&request),
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
+        world
+            .application
+            .with_host_advancement(|phase| {
+                world
+                    .application
+                    .execute_application_query_one_shot(&phase, plan)
+                    .unwrap()
+            })
+            .expect("installed host call opens")
+    };
+    let sibling_fresh = read(sibling);
+    assert_eq!(sibling_fresh.rows()[0].input, "changed-on-sibling");
+    assert_eq!(
+        product_identity(sibling_fresh.receipt()).product_branch(),
+        sibling
+    );
+    drop(sibling_fresh);
+
+    let source_fresh = read(source_branch);
+    assert_eq!(source_fresh.rows()[0].input, "payload");
+    assert_eq!(
+        product_identity(source_fresh.receipt()).selected_commit(),
+        &source_commit
+    );
+    drop(source_fresh);
+
+    let retained = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .execute_application_query_one_shot(&phase, retained)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    assert_eq!(retained.rows()[0].input, "payload");
+    assert_eq!(
+        product_identity(retained.receipt()).selected_commit(),
+        &sibling_commit
+    );
+    drop(retained);
+    assert_eq!(
+        world
+            .application
+            .application_query_basis_observer()
+            .observe()
+            .active(),
+        0
+    );
+}
+
+#[path = "public_product_journey/branch_facade.rs"]
+pub mod branch_facade;
+#[path = "public_product_journey/combined_publication.rs"]
+pub mod combined_publication;
+#[path = "public_product_journey/conditional_execution.rs"]
+pub mod conditional_execution;
+#[path = "public_product_journey/definition_lineage.rs"]
+pub mod definition_lineage;
+#[path = "public_product_journey/idempotency_affinity.rs"]
+pub mod idempotency_affinity;
+#[path = "public_product_journey/projection_and_outbox.rs"]
+pub mod projection_and_outbox;
+pub use branch_facade::creates_and_selects_all_component_postures;
+pub use combined_publication::application_commits_relational_and_signal_in_one_world_publication;
+pub use conditional_execution::publishes_delivers_executes_and_cleans_up;
+pub use definition_lineage::independent_products_advance_and_retain_exact_definitions;
+pub use idempotency_affinity::shared_component_sibling_cannot_claim_another_product_commit;
+pub use idempotency_affinity::shared_component_sibling_revalidates_its_own_security;

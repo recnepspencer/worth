@@ -1,0 +1,229 @@
+{
+  "incoming": "f7aacfe3d3d8692df1efaf34e91f4cff94788140",
+  "audits": [
+    {
+      "constructors": [
+        "worth_execution::ExecutionRequest::<factory>",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::<factory>",
+        "worth_execution::SerialRequest::from_memory",
+        "worth_relational::RelationalRuntime::<factory>",
+        "worth_runtime_bridge::RuntimeBridge::<factory>",
+        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
+        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
+        "worth_signal::SignalGraph::<factory>",
+        "worth_signal::facade::SignalGraph::new"
+      ],
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/currentness_pair_tests.rs",
+      "test": "lifecycle::owner::branch_service::currentness_pair_tests::pair_currentness_locks_both_retirement_cells_only_through_installation",
+      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
+      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
+    },
+    {
+      "constructors": [
+        "worth_execution::ExecutionRequest::<factory>",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::<factory>",
+        "worth_execution::SerialRequest::from_memory",
+        "worth_relational::RelationalRuntime::<factory>",
+        "worth_runtime_bridge::RuntimeBridge::<factory>",
+        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
+        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
+        "worth_signal::SignalGraph::<factory>",
+        "worth_signal::facade::SignalGraph::new"
+      ],
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/currentness_pair_tests.rs",
+      "test": "lifecycle::owner::branch_service::currentness_pair_tests::pair_currentness_returns_identical_custody_when_candidate_retires_after_admission",
+      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
+      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
+    },
+    {
+      "constructors": [
+        "worth_execution::ExecutionRequest::<factory>",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::<factory>",
+        "worth_execution::SerialRequest::from_memory",
+        "worth_relational::RelationalRuntime::<factory>",
+        "worth_runtime_bridge::RuntimeBridge::<factory>",
+        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
+        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
+        "worth_signal::SignalGraph::<factory>",
+        "worth_signal::facade::SignalGraph::new"
+      ],
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/reference_description_tests.rs",
+      "test": "lifecycle::owner::branch_service::reference_description_tests::stored_reference_description_refuses_retirement_and_same_name_recreation",
+      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
+      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
+    },
+    {
+      "constructors": [
+        "worth_execution::ExecutionRequest::<factory>",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::<factory>",
+        "worth_execution::SerialRequest::from_memory"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/product_branch_creation_recovery/creation_release.rs",
+      "test": "domain_computation::primary_graph::tests::product_branch_creation_recovery::creation_release::creation_release_retains_live_recovery_and_defers_actual_owner_cleanup",
+      "audit": "Private-logic source audit under the existing ratchet rule, 2026-10-30; only the newly observed original Execution request constructors are admitted.",
+      "private_subject": "Creation recovery wrapper and genuine deferred owner cleanup: reaches the private installed primary graph/integration runtime to hold an actual fork operation, then proves the native cleanup receipt and last release. Moving it would require exposing private runtime access or weakening the control observation."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs",
+      "test": "tests::durability::contracts::derived_index_checkpoint::artifact_affinity::legacy_index_affinity_is_checked_before_replacing_a_live_recovery_target",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "durable_runtime_with_test_schema"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private derived-index checkpoint transport/readmission: exact legacy index affinity before replacing a live target, and admitted envelope artifacts before installation. Public retirement journeys have moved to their court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs",
+      "test": "tests::durability::contracts::derived_index_checkpoint::artifact_affinity::envelope_index_affinity_requires_admission_before_installation",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "durable_runtime_with_test_schema"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private derived-index checkpoint transport/readmission: exact legacy index affinity before replacing a live target, and admitted envelope artifacts before installation. Public retirement journeys have moved to their court."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/conditional/output_readiness_contract/typed/tests/scalar.rs",
+      "test": "domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::scalar::scalar_readiness_uses_exact_declared_and_installed_binding",
+      "constructors": [
+        "WorthQueryInstalledPackageIndex::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private FieldExpectation declaration and seal, exact aspect/native binding, and delivery ordinal; public readback cannot construct substituted owner fields."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/registry/tests/output_equivalence.rs",
+      "test": "domain_computation::primary_graph::application_contribution::producer::registry::tests::output_equivalence::installed_output_equivalence_binds_field_shape_revision_role_and_opt_in",
+      "constructors": [
+        "WorthQueryInstalledPackageIndex::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private DeclaredProducerBinding and InstalledProducerEdition seals: shape/revision/role opt-in identity, missing sibling field, and unsealed/substituted equivalence. Uses installed declarations as setup, not a consumer journey."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/registry/tests/output_equivalence.rs",
+      "test": "domain_computation::primary_graph::application_contribution::producer::registry::tests::output_equivalence::missing_output_field_refuses_instead_of_substituting_its_sibling",
+      "constructors": [
+        "WorthQueryInstalledPackageIndex::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private DeclaredProducerBinding and InstalledProducerEdition seals: shape/revision/role opt-in identity, missing sibling field, and unsealed/substituted equivalence. Uses installed declarations as setup, not a consumer journey."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/registry/tests/output_equivalence.rs",
+      "test": "domain_computation::primary_graph::application_contribution::producer::registry::tests::output_equivalence::edition_refuses_unsealed_or_substituted_output_equivalence",
+      "constructors": [
+        "WorthQueryInstalledPackageIndex::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private DeclaredProducerBinding and InstalledProducerEdition seals: shape/revision/role opt-in identity, missing sibling field, and unsealed/substituted equivalence. Uses installed declarations as setup, not a consumer journey."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-installation/src/application_operation/contracts/graph_touches/tests.rs",
+      "test": "application_operation::contracts::graph_touches::tests::installed_parent_removal_readmission_requires_complete_same_binding_native_reads",
+      "constructors": [
+        "WorthQueryInstalledPackageIndex::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private install_portable_graph_touches readmission checks complete same-binding Native reads, real RemoveAspect and NotRequired/foreign binding counterexamples."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-installation/src/application_schema/native_contract/compilation/scalar_aspect/tests/installed_read_scope.rs",
+      "test": "application_schema::native_contract::compilation::scalar_aspect::tests::explicit_scalar_storage_preserves_binding_and_refuses_extra_or_optional_children",
+      "constructors": [
+        "WorthQueryInstalledPackageIndex::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private portable native-contract and operation-contract compilation: scalar whole-mask versus struct exact field, and exact compiled operation projection scope."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/admitted_capture/retained_stage/tests.rs",
+      "test": "domain_computation::primary_graph::admitted_capture::retained_stage::tests::original_retained_capture_preserves_live_backing_through_success_and_refusal",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::from_memory"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private retained capture phase with real request/frame/two-copy reservations: second-copy refusal must precede clone and preserve live original backing; no installed application world."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/materialization/tests.rs",
+      "test": "domain_computation::primary_graph::causal_inspection::application_inspection::admission::materialization::tests::real_report_refusal_preserves_original_payer_until_owned_denial_closes",
+      "constructors": [
+        "worth_execution::ExecutionAuthority::serial"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private post-check materialization boundary: fill the actual original lease after read.check, refuse report allocation, and keep the original payer until owned denial closes."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/publication_tests.rs",
+      "test": "domain_computation::primary_graph::causal_inspection::application_inspection::admission::publication_tests::cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer",
+      "constructors": [
+        "worth_execution::ExecutionAuthority::serial"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private consuming terminal completion followed by cancellation before publication; receiver scope/subject/governance affinity and exact payer release require owner-only phase values."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/publication_tests/affinity.rs",
+      "test": "domain_computation::primary_graph::causal_inspection::application_inspection::admission::publication_tests::cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer",
+      "constructors": [
+        "borrowed original &worth_execution::ExecutionRequest; no new request factory"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Exact helper for the private post-completion publication test: session target, subject and governance affinity. No public test door or ordinary consumer case is retained."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/rich/tests.rs",
+      "test": "domain_computation::primary_graph::causal_inspection::application_inspection::admission::rich::tests::separately_admitted_rich_body_cannot_replace_scope_or_requested_families",
+      "constructors": [
+        "installed_inspection_capability_world"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private rich-body and family seals from two independently admitted sessions: substitution must be rejected by the completed receiver. Public rich journeys live in courts."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/tests/scope_replacement.rs",
+      "test": "domain_computation::primary_graph::causal_inspection::application_inspection::scope_replacement::same_scope_reused_slot_cannot_inherit_original_observation_generation",
+      "constructors": [
+        "installed_authorization_world"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private reclamation setup forces the identical physical storage slot with a strictly newer generation, then checks old-original denial and fresh-original success. The public full-ID replacement journey cannot force or certify actual slot reuse."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention.rs",
+      "test": "builder::tests::correspondence::conditional_compatibility::source_packet_affinity::causal_retention::envelope_private_associations_retain_only_the_original_native_observation",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "RuntimeBridgeBuilder::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private destructive performed-receipt consumption is single-use and preserves exact executed Signal target; Bridge-owned external evidence associations admit genuine original envelopes and reject foreign/native-less/mismatched association substitutions. Ordinary reentry and reader lifecycle moved to public court."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention/envelope.rs",
+      "test": "builder::tests::correspondence::conditional_compatibility::source_packet_affinity::causal_retention::envelope_private_associations_retain_only_the_original_native_observation",
+      "constructors": [
+        "RuntimeBridgeBuilder::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Exact private envelope helper: BridgeIdentityEvidence owner-only factories and query reference associations; malformed association and projection-only counterexamples cannot be constructed via consumer facades."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention/history.rs",
+      "test": "builder::tests::correspondence::conditional_compatibility::source_packet_affinity::causal_retention::history::real_optional_capacity_denial_is_tolerated_but_request_stop_is_preserved",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::from_policy"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Direct private ConditionalExecutionHistory::capture consumes genuine executed Signal evidence; real optional capacity refusal is tolerated while cancellation remains a request stop. Ordinary eviction and owner-close journeys moved to public court."
+    }
+  ]
+}

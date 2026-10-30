@@ -197,7 +197,7 @@ after a fresh installation. Scoped/governed lineage reads and tracked lineage
 decisions are unavailable through these inspection APIs.
 Generic Native branch reconciliation has separate existing execution limitations
 and retains its typed refusal.
-The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)
+The [installed orbit court](../../../worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/orbit/mod.rs)
 exercises native refusals and atomic lawful mutations through the ordinary
 authenticated program.
 
@@ -429,7 +429,7 @@ dependency.
                             .unwrap();
 ```
 
-The [logical composition court](../../../worth-query-certification/tests/application_graph/relation_laws/logical/committed.rs)
+The [logical composition court](../../../worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/logical/committed.rs)
 compares this reader's genuine component with the ordinary tracked decision and
 checks refusal of a foreign projection's member beside a lawful local read.
 This reader observes the selected stored snapshot. A feature-history-prefix
@@ -559,7 +559,7 @@ the compiled pair example uses this declaration:
 
 <!-- compiled: relation_pair_declaration.rs -->
 ```rust
-const PAIRED_UNIQUE: ApplicationRelationIntegrity =
+pub const PAIRED_UNIQUE: ApplicationRelationIntegrity =
     ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
         .symmetric()
         .unique(ApplicationRelationUniquenessScope::DirectedSemanticEdge);
@@ -575,12 +575,13 @@ that law, the compiled partition example declares:
 
 <!-- compiled: relation_partition_declaration.rs -->
 ```rust
-const EXPLICIT_CONTEXTS: ApplicationRelationIntegrity = ApplicationRelationIntegrity::new(
+pub const EXPLICIT_CONTEXTS: ApplicationRelationIntegrity = ApplicationRelationIntegrity::new(
     ApplicationRelationEndpoints::new(true, ApplicationRelationCrossContextPolicy::AllowExplicit),
     ApplicationRelationCardinality::unbounded(),
     ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
 );
-const PARTITION_LOCAL: ApplicationRelationIntegrity = EXPLICIT_CONTEXTS.same_partition_endpoints();
+pub const PARTITION_LOCAL: ApplicationRelationIntegrity =
+    EXPLICIT_CONTEXTS.same_partition_endpoints();
 ```
 
 Register `PARTITION_LOCAL` on the relation. Linking an existing node to a new
@@ -594,7 +595,7 @@ uses the authored entity name:
 
 <!-- compiled: relation_minimum_declaration.rs -->
 ```rust
-const MINIMUM_TWO: ApplicationRelationIntegrity =
+pub const MINIMUM_TWO: ApplicationRelationIntegrity =
     ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
         .reaches_at_least(2, &["Node"]);
 ```

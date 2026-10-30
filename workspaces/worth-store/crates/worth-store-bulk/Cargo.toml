@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-bulk"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Roadmap 1 deterministic bulk ingest and transform paths."
+"workspace" = "../.."
+"name" = "worth-store-bulk"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Roadmap 1 deterministic bulk ingest and transform paths."
+"autotests" = false
+
 
 [dependencies]
 worth-store-authority.workspace = true
@@ -14,3 +16,6 @@ worth-store-wal.workspace = true
 
 [lints]
 workspace = true
+
+[lib]
+"test" = false

@@ -1,5 +1,0 @@
-error[E0599]: no method named `transition_class` found for struct `FoundationalMergeVerdict<T>` in the current scope
-  --> tests/ui/transitions/committed_authority/merge_verdict_has_no_committed_authority_api.rs:68:21
-   |
-68 |     let _ = verdict.transition_class();
-   |                     ^^^^^^^^^^^^^^^^ method not found in `FoundationalMergeVerdict<&str>`

@@ -1,11 +1,13 @@
 [package]
-workspace = "../.."
-name = "worth-store-offline-verifier"
-edition.workspace = true
-rust-version.workspace = true
-version.workspace = true
-license.workspace = true
-description = "Read-only verifier for persisted Worth Store physical bytes."
+"workspace" = "../.."
+"name" = "worth-store-offline-verifier"
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+"description" = "Read-only verifier for persisted Worth Store physical bytes."
+"autotests" = false
+
 
 [dependencies]
 sha2 = "0.10"
@@ -21,13 +23,13 @@ worth-store-physical-isolation.workspace = true
 worth-store-replication.workspace = true
 worth-store-security.workspace = true
 worth-store-wal.workspace = true
-
 [dev-dependencies]
-filetime = "0.2"
-tempfile = "3"
-worth-store-aspect-native.workspace = true
-worth-store-authority.workspace = true
-worth-store-security = { workspace = true, features = ["certification-test-authority"] }
+"filetime" = "0.2"
+"tempfile" = "3"
+"worth-store-aspect-native" = { "workspace" = true }
+"worth-store-authority" = { "workspace" = true }
+"worth-store-security" = { "workspace" = true, "features" = ["certification-test-authority"] }
+
 
 [lints]
 workspace = true

@@ -158,8 +158,12 @@ fn relation_scope_preparation_preserves_supplied_allocation_stop() {
         TransactionCommitError::Conflict { error, .. } => {
             let denial = error.allocation_denial().expect("full allocation cause");
             assert_eq!(
-                denial.kind(),
-                worth_execution::ExecutionAllocationDenialKind::Cancelled
+                denial.classify(),
+                worth_execution::ExecutionAllocationDenialClass::Request(
+                    worth_execution::WorkCeilingDenial::Stopped(
+                        worth_execution::MapKernelStop::Cancelled
+                    )
+                )
             );
             assert_eq!(denial.requested_payload_bytes(), None);
         }

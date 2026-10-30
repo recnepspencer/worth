@@ -168,10 +168,10 @@ impl<'ast> Visit<'ast> for ProductionAdapterVisitor {
     }
 
     fn visit_path(&mut self, path: &'ast SynPath) {
-        if let Some(symbol) = mutable_owner_symbol(path) {
-            if !self.mutable_owner_symbols.iter().any(|seen| seen == symbol) {
-                self.mutable_owner_symbols.push(symbol.to_owned());
-            }
+        if let Some(symbol) = mutable_owner_symbol(path)
+            && !self.mutable_owner_symbols.iter().any(|seen| seen == symbol)
+        {
+            self.mutable_owner_symbols.push(symbol.to_owned());
         }
         visit::visit_path(self, path);
     }
@@ -196,15 +196,14 @@ impl<'ast> Visit<'ast> for ProductionAdapterVisitor {
     }
 
     fn visit_expr_call(&mut self, call: &'ast ExprCall) {
-        if let Expr::Path(path) = call.func.as_ref() {
-            if path
+        if let Expr::Path(path) = call.func.as_ref()
+            && path
                 .path
                 .segments
                 .last()
                 .is_some_and(|segment| segment.ident == CLOSE_AUTHORITY_METHOD)
-            {
-                self.close_calls += 1;
-            }
+        {
+            self.close_calls += 1;
         }
         visit::visit_expr_call(self, call);
     }

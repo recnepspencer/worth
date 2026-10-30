@@ -196,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn public_surface_inventory_reconciles_remaining_phase_six_boundary_seams() {
+    fn public_surface_inventory_reconciles_remaining_boundary_seams() {
         let inventory = worth_query_lower_runtime_public_surface_inventory();
 
         for seam_key in [

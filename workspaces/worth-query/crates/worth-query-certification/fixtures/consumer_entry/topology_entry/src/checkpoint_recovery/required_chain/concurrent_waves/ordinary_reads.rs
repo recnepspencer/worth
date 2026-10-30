@@ -211,37 +211,42 @@ fn run(workers: usize, defer: bool) -> History {
     );
     History { commits, values }
 }
-#[test]
-fn an_ordinary_read_is_rechecked_after_an_earlier_member_writes_it() {
-    let _guard = checkpoint_recovery_test_guard();
-    if let Ok(workers) = std::env::var("WORTH_ORDINARY_READ_WIDTH") {
-        println!(
-            "\nWORTH_ORDINARY_READ_HISTORY:{:?}",
-            run(workers.parse().unwrap(), false)
-        );
-        return;
-    }
-    let mut serial = None;
-    for workers in [0, 1, 2, 4] {
-        let output = std::process::Command::new(std::env::current_exe().unwrap()).args(["--exact", "checkpoint_recovery::required_chain::concurrent_waves::ordinary_reads::an_ordinary_read_is_rechecked_after_an_earlier_member_writes_it", "--nocapture"]).env("WORTH_ORDINARY_READ_WIDTH", workers.to_string()).output().unwrap();
-        assert!(
-            output.status.success(),
-            "width {workers}: {}{}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-        let stdout = String::from_utf8(output.stdout).unwrap();
-        let actual = stdout
-            .lines()
-            .find_map(|line| line.strip_prefix("WORTH_ORDINARY_READ_HISTORY:"))
-            .unwrap()
-            .to_owned();
-        assert_eq!(actual, *serial.get_or_insert_with(|| actual.clone()));
-    }
-}
 
-#[test]
-fn a_stale_credit_cannot_reselect_after_a_queued_deferral() {
-    let _guard = checkpoint_recovery_test_guard();
-    run(0, true);
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn an_ordinary_read_is_rechecked_after_an_earlier_member_writes_it() {
+        let _guard = checkpoint_recovery_test_guard();
+        if let Ok(workers) = std::env::var("WORTH_ORDINARY_READ_WIDTH") {
+            println!(
+                "\nWORTH_ORDINARY_READ_HISTORY:{:?}",
+                run(workers.parse().unwrap(), false)
+            );
+            return;
+        }
+        let mut serial = None;
+        for workers in [0, 1, 2, 4] {
+            let output = std::process::Command::new(std::env::current_exe().unwrap()).args(["--exact", "checkpoint_recovery::required_chain::concurrent_waves::ordinary_reads::serial::an_ordinary_read_is_rechecked_after_an_earlier_member_writes_it", "--nocapture"]).env("WORTH_ORDINARY_READ_WIDTH", workers.to_string()).output().unwrap();
+            assert!(
+                output.status.success(),
+                "width {workers}: {}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let stdout = String::from_utf8(output.stdout).unwrap();
+            let actual = stdout
+                .lines()
+                .find_map(|line| line.strip_prefix("WORTH_ORDINARY_READ_HISTORY:"))
+                .unwrap()
+                .to_owned();
+            assert_eq!(actual, *serial.get_or_insert_with(|| actual.clone()));
+        }
+    }
+
+    #[test]
+    fn a_stale_credit_cannot_reselect_after_a_queued_deferral() {
+        let _guard = checkpoint_recovery_test_guard();
+        run(0, true);
+    }
 }

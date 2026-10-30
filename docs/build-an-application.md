@@ -19,7 +19,7 @@ this guide explain the underlying contracts and support specialized composition.
 | Your next task | Start here | What you supply |
 |---|---|---|
 | Explain a query result or an authored operation | [Inspect original evidence](#inspect-original-source-and-query-evidence) | Saved source/query receipts and current inspection permissions |
-| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
+| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
@@ -154,7 +154,7 @@ for contribution-wide invariants, host setup and standalone conditionals.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// workspaces/worth-query/crates/worth-query-certification/examples/product_workflow_support/schema.rs (abridged)
+// workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/schema.rs (abridged)
 worth_query_application! {
     pub TemporalHostSchema {
         owner: "temporal_host_courtroom",
@@ -387,7 +387,7 @@ Ordinary deletion and producer Retire alone do not authorize a fresh Birth. Nati
 recovery preserves the same physical carrier and unchanged authored records,
 retires the old output before adopting target contracts and indexes, and leaves
 reconstruction to the installed target producer. The
-[native codec journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition/successor/adoption.rs)
+[native codec journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/successor/adoption.rs)
 uses nonempty authored source, incompatible V1/V2 output codecs, real producer
 publication, a source edit through Preserve, and current-format reopen.
 
@@ -411,11 +411,11 @@ eligibility-only fields or a different node. Consume it with
 exercise full optional aspects, nested wire changes, concrete binding mismatch
 and reordered delivery/eligibility inputs.
 
-The executable [nested-value model](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value/model.rs)
-and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value.rs)
+The executable [nested-value model](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_value/model.rs)
+and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_value.rs)
 exercise nondefault values through the entry binding, installed catalog,
 authenticated read and current-format native recovery. The
-[compiler fixtures](../crates/worth-foundational/tests/worth_foundational/compile_fail/value_shape/compiler.rs)
+[compiler fixtures](../crates/worth-court-foundational-expressions/tests/worth_court_foundational_expressions/compile_fail/foundational/value_shape/compiler/mod.rs)
 cover supported and refused grammar.
 
 Read canonical fields with `reader.field(...)` or the installed query's row
@@ -431,16 +431,16 @@ refusal remains attached to the read, so catching its error still prevents
 managed collection-pair reads share it until their atomic view decision.
 Continuation and live delivery retain it through finalization and recheck the
 request after application projection returns. See the
-[canonical read examples](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission.rs),
-[read-attempt example](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/ordinary_attempt.rs)
-and [paired-read example](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/paired.rs).
+[canonical read examples](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_admission.rs),
+[read-attempt example](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_admission/ordinary_attempt.rs)
+and [paired-read example](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_admission/paired.rs).
 
 For several reads from a retained invariant snapshot, use
 `snapshot.read_fields(&execution, |read| { /* read.field(&identity, field) */ })`.
 The closure borrows the existing native pin and shares decode state across its
 field reads. A field refusal or late cancellation discards the closure's output.
 `snapshot.field(&execution, &identity, field)` remains a single completed read.
-See the [retained snapshot example](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/retained_snapshot.rs)
+See the [retained snapshot example](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_admission/retained_snapshot.rs)
 for fresh-request retry at the original version after a source edit.
 
 Representation bounds, request grants, resident retained-size accounting and
@@ -1763,7 +1763,7 @@ lifetimes, failure types and measured-result handling.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// workspaces/worth-query/crates/worth-query-certification/examples/product_workflow_support/application.rs
+// workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/application.rs
 use worth_query_host::facade::{application_installation, primary_graph, runtime};
 
 let declaration = TemporalHostSchema::declaration().expect("the example schema is valid");
@@ -1918,6 +1918,19 @@ activation to name a supported program. For an app-owned predecessor mapping,
 through the ordinary program/roster installation path. The predecessor rendering
 never becomes a program revision or a roster member.
 
+For fresh installation with a separately funded setup request, borrow that original
+request with `host::application_contribution::with_bootstrap_advancement_from_request`.
+Call `host::application_installation::in_memory_rostered_program_in_advancement` with
+the phase first, followed by the validated program, roster, declaration,
+configuration, build identity, World limits and ordinary seed callback. It uses the
+same construction and roster core as default installation. The phase's original
+work, memory, cancellation and deadline govern all setup; the installed World's
+request policy remains the one declared in its limits. A larger seed grant therefore
+cannot make a zero-work runtime query succeed. Default `in_memory_program` and
+`in_memory_rostered_program` still open their bootstrap from the World policy.
+The public-entry funding, cancellation and memory regressions live in
+`topology_entry/src/checkpoint_recovery/support/bootstrap_funding.rs`.
+
 When installation belongs to an already admitted execution attempt, borrow its
 `ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
 and pass the resulting phase to
@@ -1957,9 +1970,9 @@ the same successor without reauthoring. The existing phase/policy repair method
 remains available for its explicit contract; its `Execution(&lease)` must be the
 caller lease that funds the call or one of its ancestors, and any other lease
 refuses `UnrelatedNestedLease`. The runnable
-[original request fixture](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs)
+[original request fixture](../workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs)
 uses the real nonempty native transition; its
-[capture repair companion](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
+[capture repair companion](../workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
 retains the native capsule across stopped attempts.
 
 Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
@@ -2030,7 +2043,7 @@ let token = continuation.expect("another child page");
 let second = fresh_original_request.query(read_children).resume(token, width, work)?;
 ```
 
-The [related-output journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition/related/continuation.rs)
+The [related-output journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/related/continuation.rs)
 publishes three output roles and two internal relations. An original token still
 reads the old child total `12` after Preserve advances all three original outputs
 to `37`; the genuine target producer emits child total `1012`, then Preserve
@@ -2306,7 +2319,7 @@ the delete grant. In `decide`, resolve the target, call
 supplies the native dependency used by deletion lowering. In `build_candidate`,
 project that target, call `writer.delete_entity(...)`, and bind its declared
 Retire role with `writer.retire_output::<Role>(&target)`. The
-[compiled retirement handler](../workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/source_output_handlers.rs)
+[compiled retirement handler](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/source_output_handlers.rs)
 shows this sequence with ordinary installed read and delete authority.
 
 The full, compiling version of all three is
@@ -2753,7 +2766,7 @@ required-output settlement nor permission to publish a positive result. Native
 eligibility still refuses unresolved preparation, partial work, already settled
 roots, dependent trees and discovered aggregates. No source or producer is
 reexecuted to close. The executable ordinary fixed-leaf court is
-[`terminal_unavailable.rs`](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs).
+[`terminal_unavailable.rs`](../workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs).
 
 Capture the original meaning once. Supply a fresh authenticated ordinary request
 for every `advance`, delivery and close. Native admission checks current authority
@@ -3521,50 +3534,50 @@ The following fixture deliberately coordinates native output custody through
 
 <!-- compiled: checkpoint_recovery/required_chain/concurrent_waves/application.rs -->
 ```rust
-    use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome;
+        use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome;
 
-    let request = application.request(&principal, &scope);
-    for (key, y, idempotency) in [
-        ("diamond-left", 5, 0x9176_8200_u64),
-        ("diamond-right", 54, 0x9176_8201_u64),
-    ] {
-        let selected = request
-            .query(PlanarRead {
-                body_key: key.to_owned(),
-            })
-            .execute()
-            .unwrap();
-        let changed = request
-            .advanced()
-            .mutate(PlanarSourceAdjustment {
-                scope_key: key.to_owned(),
-                replacement_y: length(y),
-            })
-            .expect_source(selected.observed_sources()[0].clone())
-            .idempotency(&idempotency)
-            .execute_performed::<Program, program::ChainRoot>(
-                &application,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
+        let request = application.request(&principal, &scope);
+        for (key, y, idempotency) in [
+            ("diamond-left", 5, 0x9176_8200_u64),
+            ("diamond-right", 54, 0x9176_8201_u64),
+        ] {
+            let selected = request
+                .query(PlanarRead {
+                    body_key: key.to_owned(),
+                })
+                .execute()
+                .unwrap();
+            let changed = request
+                .advanced()
+                .mutate(PlanarSourceAdjustment {
+                    scope_key: key.to_owned(),
+                    replacement_y: length(y),
+                })
+                .expect_source(selected.observed_sources()[0].clone())
+                .idempotency(&idempotency)
+                .execute_performed::<Program, program::ChainRoot>(
+                    &application,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            assert!(matches!(
+                changed,
+                WorthQueryApplicationPerformedMutationOutcome::Performed(_)
+            ));
+        }
         assert!(matches!(
-            changed,
-            WorthQueryApplicationPerformedMutationOutcome::Performed(_)
+            join.advance(&request).unwrap(),
+            WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
-    }
-    assert!(matches!(
-        join.advance(&request).unwrap(),
-        WorthQueryApplicationOutputDemandProgress::Settled(_)
-    ));
-    for (key, expected) in [("diamond-left", 6), ("diamond-right", 55)] {
-        let output = request
-            .query(PlanarOutputRead {
-                body_key: key.to_owned(),
-            })
-            .execute()
-            .unwrap();
-        assert_eq!(output.rows()[0].value, length(expected));
-    }
+        for (key, expected) in [("diamond-left", 6), ("diamond-right", 55)] {
+            let output = request
+                .query(PlanarOutputRead {
+                    body_key: key.to_owned(),
+                })
+                .execute()
+                .unwrap();
+            assert_eq!(output.rows()[0].value, length(expected));
+        }
 ```
 
 ---
@@ -3930,7 +3943,7 @@ keys interned only while preparing an unpublished attempt do not change the
 checkpoint. The runtime's live symbol interner can still resolve those pending
 keys; recovery persists the selected retained truth.
 
-The [temporal integrity rule](../workspaces/worth-query/crates/worth-query-certification/examples/product_workflow_support/integrity.rs)
+The [temporal integrity rule](../workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/integrity.rs)
 returns `TemporalIntegrityRefusal::InvalidState` with the candidate revision and
 lifecycle. The [installed refusal courts](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/typed_invariant_refusal.rs)
 exercise original-caller decoding, unchanged native checkpoints, cancellation,
@@ -4442,7 +4455,7 @@ legacy policy. Manual implementations return the direct requirement type.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// workspaces/worth-query/crates/worth-query-certification/tests/application_graph/document_retention_model/retention_entry/occurrence_write.rs (abridged)
+// workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/retention_entry/occurrence_write.rs (abridged)
 worth_query_decl::facade::worth_query_mutation_binding!(
     pub OccurrenceSetRetentionBinding for SetRetentionInput, schema DocumentRetentionSchema,
     // ... identity, input, operation, result, idempotency, decision, handler ...
@@ -5217,7 +5230,7 @@ authentication must still be current at publication.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/branch_adoption.rs
+// workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/adoption/branch_adoption.rs
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryBranchAdoptionPublicationOutcome,
 };

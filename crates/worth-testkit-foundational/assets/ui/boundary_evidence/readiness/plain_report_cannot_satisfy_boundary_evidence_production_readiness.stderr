@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_evidence/readiness/plain_report_cannot_satisfy_boundary_evidence_production_readiness.rs
+  |
+  |     let _ = require_foundational_boundary_evidence_milestone7_production_test_readiness(&report);
+  |             --------------------------------------------------------------------------- ^^^^^^^ expected `&Artifact<..., ..., ..., ...>`, found `&...`
+  |             |
+  |             arguments to this function are incorrect
+  |
+  = note: expected reference `&worth_proof::artifact::carrier::Artifact<FoundationalBoundaryEvidenceProductionTestReady, FoundationalBoundaryEvidenceProductionReadinessReport, worth_proof::proof::sets::Proof<FoundationalBoundaryEvidenceProductionReadinessCertified, FoundationalBoundaryEvidenceProductionReadinessAuthority>, worth_proof::assumption::freshness::FreshnessScopedBasis<worth_proof::assumption::freshness::CurrentValidity, worth_proof::assumption::basis::AssumptionBasis<FoundationalBoundaryEvidenceProductionReadinessScope>>>`
+             found reference `&FoundationalBoundaryEvidenceProductionReadinessReport`
+note: function defined here
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_evidence/readiness/certification.rs
+  |
+  | pub fn require_foundational_boundary_evidence_milestone7_production_test_readiness(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

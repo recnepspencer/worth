@@ -1,0 +1,5 @@
+{"count": 4, "kind": "leaf"}
+{"binary": "bank-domain", "slots": 2, "test": "schema::values::tests::estate_disbursement_is_a_distinct_round_tripping_posting_purpose"}
+{"binary": "bank-http-adapter", "slots": 2, "test": "http::server::tests::mutation_transport::closed_money_worker_is_unavailable_with_exact_runtime_cleanup_access"}
+{"binary": "bank-http-adapter", "slots": 2, "test": "http::server::tests::mutation_transport::owning_shutdown_failure_drop_preserves_independent_resumption"}
+{"binary": "worth-query-bank-court-external-rail-server::worth_query_bank_court_external_rail_server", "slots": 2, "test": "process::server_owned_effects::server::ordinary_mutations::estate_operations::phase8_safe_retry::unresolved_redispatch_retains_the_handle_for_a_later_completed_attempt"}

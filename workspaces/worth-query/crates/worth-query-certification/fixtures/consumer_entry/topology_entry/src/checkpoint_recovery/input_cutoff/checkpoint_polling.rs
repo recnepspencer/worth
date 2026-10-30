@@ -11,21 +11,6 @@ use worth_query_host::facade::{
     },
 };
 
-#[test]
-fn swallowed_cancellation_refuses_before_candidate_and_a_fresh_request_retries() {
-    interrupted(false, false);
-}
-
-#[test]
-fn swallowed_deadline_refuses_before_candidate_and_a_fresh_request_retries() {
-    interrupted(true, false);
-}
-
-#[test]
-fn decision_poll_retains_the_first_deadline_when_cancellation_arrives_later() {
-    interrupted(true, true);
-}
-
 fn interrupted(deadline: bool, later_cancel: bool) {
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None);
@@ -135,67 +120,6 @@ fn interrupted(deadline: bool, later_cancel: bool) {
     assert_eq!(polling.candidates(), 1);
 }
 
-#[test]
-fn successful_polling_still_executes_and_publishes_changed_input() {
-    let _guard = checkpoint_recovery_test_guard();
-    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    take_facts();
-    let application = install(None);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let first = direct_demand(&request, &application, "anchor-a");
-    assert_eq!(first.producer_contacts_in_this_demand(), 1);
-    let source = request
-        .query(PlanarRead {
-            body_key: "anchor-a".to_owned(),
-        })
-        .execute()
-        .unwrap();
-    request
-        .advanced()
-        .mutate(PlanarSourceAdjustment {
-            scope_key: "anchor-a".to_owned(),
-            replacement_y: length(3),
-        })
-        .expect_source(source.observed_sources()[0].clone())
-        .idempotency(&991_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(
-            &application,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    drop(source);
-    let polling = PollObservation::arm(|| {}, || {});
-    let before = support::retain_read(&application, &request).unwrap();
-    let changed = direct_demand(&request, &application, "anchor-a");
-    let after = support::retain_read(&application, &request).unwrap();
-    assert_eq!(
-        changed.posture(),
-        WorthQueryOutputSettlementPosture::Performed
-    );
-    assert_eq!(changed.producer_contacts_in_this_demand(), 1);
-    assert!(changed.application_commit_receipt().is_some());
-    assert_ne!(before.selected_commit(), after.selected_commit());
-    assert_eq!(polling.polls(), [Ok(()), Ok(())]);
-    assert_eq!(polling.candidates(), 1);
-    let observed = take_facts();
-    assert_eq!(observed.input_cutoffs_omitted, 0, "{observed:?}");
-    assert!(observed.input_cutoffs.iter().flatten().any(|receipt|
-        receipt.gate == Gate::InputIdentity && receipt.outcome == Outcome::Fresh),
-        "the actual changed input must select fresh execution: {observed:?}");
-    let output = request
-        .query(PlanarOutputRead {
-            body_key: "anchor-a".to_owned(),
-        })
-        .execute()
-        .unwrap();
-    assert_eq!(
-        output.rows()[0].value,
-        length(4),
-        "the new declared input reaches the real author"
-    );
-}
-
 /// Exercise the existing equal-input native producer without another fixture.
 pub(super) fn equal_input_receipt(run: impl FnOnce()) {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
@@ -217,4 +141,90 @@ pub(super) fn equal_input_receipt(run: impl FnOnce()) {
                 && receipt.gate == Gate::PublicationApply),
         "{observed:?}"
     );
+}
+
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn swallowed_cancellation_refuses_before_candidate_and_a_fresh_request_retries() {
+        interrupted(false, false);
+    }
+
+    #[test]
+    fn swallowed_deadline_refuses_before_candidate_and_a_fresh_request_retries() {
+        interrupted(true, false);
+    }
+
+    #[test]
+    fn decision_poll_retains_the_first_deadline_when_cancellation_arrives_later() {
+        interrupted(true, true);
+    }
+
+    #[test]
+    fn successful_polling_still_executes_and_publishes_changed_input() {
+        let _guard = checkpoint_recovery_test_guard();
+        let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+        take_facts();
+        let application = install(None);
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let first = direct_demand(&request, &application, "anchor-a");
+        assert_eq!(first.producer_contacts_in_this_demand(), 1);
+        let source = request
+            .query(PlanarRead {
+                body_key: "anchor-a".to_owned(),
+            })
+            .execute()
+            .unwrap();
+        request
+            .advanced()
+            .mutate(PlanarSourceAdjustment {
+                scope_key: "anchor-a".to_owned(),
+                replacement_y: length(3),
+            })
+            .expect_source(source.observed_sources()[0].clone())
+            .idempotency(&991_u64)
+            .execute_performed::<CheckpointProgram, CheckpointRoot>(
+                &application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
+        drop(source);
+        let polling = PollObservation::arm(|| {}, || {});
+        let before = support::retain_read(&application, &request).unwrap();
+        let changed = direct_demand(&request, &application, "anchor-a");
+        let after = support::retain_read(&application, &request).unwrap();
+        assert_eq!(
+            changed.posture(),
+            WorthQueryOutputSettlementPosture::Performed
+        );
+        assert_eq!(changed.producer_contacts_in_this_demand(), 1);
+        assert!(changed.application_commit_receipt().is_some());
+        assert_ne!(before.selected_commit(), after.selected_commit());
+        assert_eq!(polling.polls(), [Ok(()), Ok(())]);
+        assert_eq!(polling.candidates(), 1);
+        let observed = take_facts();
+        assert_eq!(observed.input_cutoffs_omitted, 0, "{observed:?}");
+        assert!(
+            observed
+                .input_cutoffs
+                .iter()
+                .flatten()
+                .any(|receipt| receipt.gate == Gate::InputIdentity
+                    && receipt.outcome == Outcome::Fresh),
+            "the actual changed input must select fresh execution: {observed:?}"
+        );
+        let output = request
+            .query(PlanarOutputRead {
+                body_key: "anchor-a".to_owned(),
+            })
+            .execute()
+            .unwrap();
+        assert_eq!(
+            output.rows()[0].value,
+            length(4),
+            "the new declared input reaches the real author"
+        );
+    }
 }

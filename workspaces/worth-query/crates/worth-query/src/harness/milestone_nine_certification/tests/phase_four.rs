@@ -1,7 +1,7 @@
 use super::super::{MilestoneNineCertificationAdapter, MilestoneNineFailureClass};
 
 #[test]
-fn milestone_nine_phase_four_closeout_rows_are_concrete() {
+fn closeout_rows_are_concrete() {
     let matrix = MilestoneNineCertificationAdapter::policy_tenant_context_admission_test();
     let employee = matrix
         .rows

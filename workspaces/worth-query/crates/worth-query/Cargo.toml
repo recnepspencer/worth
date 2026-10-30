@@ -28,18 +28,6 @@ serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
 sha2 = "0.10"
 
-[[test]]
-name = "public_declarative_journeys"
-path = "tests/public_declarative_journeys.rs"
-
-[[test]]
-name = "runtime_public_journeys"
-path = "tests/runtime_public_journeys.rs"
-
-[[test]]
-name = "installed_operating_world"
-path = "tests/installed_operating_world.rs"
-
 [lints]
 workspace = true
 

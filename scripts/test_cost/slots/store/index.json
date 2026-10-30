@@ -1,0 +1,54 @@
+{
+  "schema": 2,
+  "purpose": "telemetry-only scheduling; never a correctness or timing gate",
+  "aggregation": "maximum recommendation from every successful complete sample per exact identity",
+  "status": "partial",
+  "complete_samples": 5785,
+  "scheduler_samples": 5785,
+  "standalone_complete_samples": 0,
+  "unmeasured_samples": 3,
+  "failed_child_samples": 36,
+  "sample_count": 5824,
+  "measured_identities": 4627,
+  "policy_identities": 66,
+  "retired_identities": 451,
+  "inventory_basis": {
+    "scope": "explicit complete current inventory",
+    "identities": 4408,
+    "sha256": "3435da974bde9300e64bf594331e2989128cfd44eb9b6e148da23a70315a90be"
+  },
+  "source_count": 9,
+  "pending_claim_count": 0,
+  "catalogs": {
+    "sources": {
+      "file": "sources-00-000000-09d3dd10b72737d0.jsonl",
+      "sha256": "09d3dd10b72737d057b205b6d25e2544839e35fa33886cc62fdbc3e6e6fd3342",
+      "records": 9
+    },
+    "samples": {
+      "file": "samples-01-000000-9a9f8601f7c6158b.jsonl",
+      "sha256": "9a9f8601f7c6158bb2f13d2212ff91551a13a0112f473256ec474197bbaf4751",
+      "records": 5824
+    },
+    "rules": {
+      "file": "rules-00-000000-b43f0ddca30d3baa.jsonl",
+      "sha256": "b43f0ddca30d3baab332b7dfe030d12614e4c0a25b3c672930ab5d49424ffa49",
+      "records": 66
+    },
+    "baselines": {
+      "file": "baselines-01-000000-18782b2f4e5b9016.jsonl",
+      "sha256": "18782b2f4e5b9016d5374c3559381ec0d460c96b2f88560cd240296fef5673fa",
+      "records": 4627
+    },
+    "retired": {
+      "file": "retired-01-000000-cf6dddf3cc0096e8.jsonl",
+      "sha256": "cf6dddf3cc0096e86928f45a3edc1efd35e48eee0274305bf2a524c8bc26df66",
+      "records": 451
+    },
+    "pending": {
+      "file": "pending-00-000000-646c58e7dd066d8d.jsonl",
+      "sha256": "646c58e7dd066d8d2c68e7bee384807c0a531bf9ca4b234341fe1f23c6a4c98f",
+      "records": 0
+    }
+  }
+}

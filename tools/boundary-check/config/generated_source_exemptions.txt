@@ -1,2 +1,0 @@
-# Workspace-relative production `.rs` paths generated outside Cargo's module graph.
-# Keep this list empty unless a reviewed generator genuinely requires an exemption.

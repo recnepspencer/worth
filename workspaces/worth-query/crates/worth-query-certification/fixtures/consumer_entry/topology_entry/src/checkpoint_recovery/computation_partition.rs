@@ -264,74 +264,78 @@ where
     .map(|denial| denial.kind())
 }
 
-#[test]
-fn program_with_one_partitioned_computation_installs_with_its_owner() {
-    let _guard = checkpoint_recovery_test_guard();
-    let program = ApplicationProgramAuthoring::<
-        CheckpointSchema,
-        RegionTotalsProgram<owner::PartitionedOwner>,
-    >::begin()
-    .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
-    .validated_program()
-    .expect("the region totals program is complete");
-    let computations = program
-        .features()
-        .iter()
-        .flat_map(|feature| feature.managed_computations())
-        .collect::<Vec<_>>();
-    assert_eq!(computations.len(), 1);
-    assert_eq!(
-        computations[0].execution(),
-        ApplicationComputationExecution::DeterministicPartitioned
-    );
-    assert_eq!(computations[0].partition(), RegionKey::IDENTITY);
-    assert_eq!(
-        computations[0].determinism(),
-        DeterminismContract::CanonicalBitwise
-    );
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn program_with_one_partitioned_computation_installs_with_its_owner() {
+        let _guard = checkpoint_recovery_test_guard();
+        let program = ApplicationProgramAuthoring::<
+            CheckpointSchema,
+            RegionTotalsProgram<owner::PartitionedOwner>,
+        >::begin()
+        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
+        .validated_program()
+        .expect("the region totals program is complete");
+        let computations = program
+            .features()
+            .iter()
+            .flat_map(|feature| feature.managed_computations())
+            .collect::<Vec<_>>();
+        assert_eq!(computations.len(), 1);
+        assert_eq!(
+            computations[0].execution(),
+            ApplicationComputationExecution::DeterministicPartitioned
+        );
+        assert_eq!(computations[0].partition(), RegionKey::IDENTITY);
+        assert_eq!(
+            computations[0].determinism(),
+            DeterminismContract::CanonicalBitwise
+        );
 
-    let application = support::install_program::<RegionTotalsProgram<owner::PartitionedOwner>>(
-        None,
-        Default::default(),
-    );
-    let (scope, principal) = authenticate(&application);
-    crate::checkpoint_recovery::support::retain_read(
-        &application,
-        &application.request(&principal, &scope),
-    )
-    .expect("the installed program serves a read");
-}
+        let application = support::install_program::<RegionTotalsProgram<owner::PartitionedOwner>>(
+            None,
+            Default::default(),
+        );
+        let (scope, principal) = authenticate(&application);
+        crate::checkpoint_recovery::support::retain_read(
+            &application,
+            &application.request(&principal, &scope),
+        )
+        .expect("the installed program serves a read");
+    }
 
-#[test]
-fn computation_partition_key_identity_is_program_revision_meaning() {
-    assert_eq!(revision_of::<RegionTotals>(), revision_of::<RegionTotals>());
-    assert_ne!(
-        revision_of::<RegionTotals>(),
-        revision_of::<RenamedKeyTotals>()
-    );
-}
+    #[test]
+    fn computation_partition_key_identity_is_program_revision_meaning() {
+        assert_eq!(revision_of::<RegionTotals>(), revision_of::<RegionTotals>());
+        assert_ne!(
+            revision_of::<RegionTotals>(),
+            revision_of::<RenamedKeyTotals>()
+        );
+    }
 
-#[test]
-fn determinism_contract_is_program_revision_meaning() {
-    assert_ne!(
-        revision_of::<RegionTotals>(),
-        revision_of::<EquivalentTotals>()
-    );
-}
+    #[test]
+    fn determinism_contract_is_program_revision_meaning() {
+        assert_ne!(
+            revision_of::<RegionTotals>(),
+            revision_of::<EquivalentTotals>()
+        );
+    }
 
-#[test]
-fn partitioned_computation_may_not_declare_the_single_partition() {
-    assert_eq!(denial_of::<RegionTotals>(), None);
-    assert_eq!(
-        denial_of::<SingleKeyPartitionedTotals>(),
-        Some(ApplicationProgramValidationDenialKind::MismatchedManagedComputationPartition)
-    );
-}
+    #[test]
+    fn partitioned_computation_may_not_declare_the_single_partition() {
+        assert_eq!(denial_of::<RegionTotals>(), None);
+        assert_eq!(
+            denial_of::<SingleKeyPartitionedTotals>(),
+            Some(ApplicationProgramValidationDenialKind::MismatchedManagedComputationPartition)
+        );
+    }
 
-#[test]
-fn deterministic_computation_may_not_declare_its_own_partition_key() {
-    assert_eq!(
-        denial_of::<KeyedSerialTotals>(),
-        Some(ApplicationProgramValidationDenialKind::MismatchedManagedComputationPartition)
-    );
+    #[test]
+    fn deterministic_computation_may_not_declare_its_own_partition_key() {
+        assert_eq!(
+            denial_of::<KeyedSerialTotals>(),
+            Some(ApplicationProgramValidationDenialKind::MismatchedManagedComputationPartition)
+        );
+    }
 }

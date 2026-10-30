@@ -1,0 +1,13 @@
+error[E0624]: associated function `admit` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_resume_admission_constructor_private.rs:4:59
+  |
+4 |       let _constructor = BridgeSubscriptionResumeAdmission::admit;
+  |                                                             ^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/resume.rs
+  |
+  | /     pub(crate) fn admit(
+  | |         active_subscription: &BridgeActiveSubscription,
+  | |         checkpoint: &BridgeSubscriptionCheckpoint,
+  | |     ) -> Result<Self, BridgeSubscriptionResumeAdmissionRejection> {
+  | |_________________________________________________________________- private associated function defined here

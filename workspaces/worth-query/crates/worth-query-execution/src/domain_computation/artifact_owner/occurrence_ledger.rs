@@ -89,8 +89,23 @@ impl WorthQueryArtifactOccurrenceSnapshot {
 }
 
 fn decrement(counter: &AtomicUsize, amount: usize) {
-    let result = counter.fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-        current.checked_sub(amount)
-    });
+    let result = {
+        let update_counter = counter;
+        let mut current = update_counter.load(Ordering::Acquire);
+        loop {
+            let Some(updated_value) = current.checked_sub(amount) else {
+                break Err(current);
+            };
+            match update_counter.compare_exchange_weak(
+                current,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => current = reloaded_value,
+            }
+        }
+    };
     debug_assert!(result.is_ok(), "artifact occurrence accounting underflow");
 }

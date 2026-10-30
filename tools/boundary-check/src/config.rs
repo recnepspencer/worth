@@ -1,386 +1,362 @@
-use serde::Deserialize;
+//! Configuration and the stable diagnostic wire contract.
+use serde::{
+    ser::{SerializeStruct, Serializer},
+    Serialize,
+};
+use std::collections::BTreeMap;
 
-#[derive(Deserialize)]
-pub(crate) struct Road1Config {
-    pub(crate) machine_authority: MachineAuthorityConfig,
-    pub(crate) root_manifest: String,
-    pub(crate) forbidden_root_prefixes: Vec<String>,
-    pub(crate) naming: NamingConfig,
-    pub(crate) rule_contracts: RuleContracts,
-    pub(crate) born_crates: Vec<BornCrateConfig>,
-    pub(crate) seed_skeletons: Vec<SeedSkeletonConfig>,
-    pub(crate) subworkspaces: Vec<SubworkspaceConfig>,
-    #[serde(default)]
-    pub(crate) snapshot_dependency_packages: Vec<SnapshotDependencyPackagesConfig>,
-    #[serde(default)]
-    pub(crate) context_workspaces: Vec<ContextWorkspaceConfig>,
-    pub(crate) legacy_reference_ratchet: LegacyReferenceRatchetConfig,
-    /// Compile-time law substrates legal outside the band grammar (e.g. worth-proof).
-    #[serde(default)]
-    pub(crate) law_substrates: Vec<LawSubstrateConfig>,
-    #[serde(default)]
-    pub(crate) dependency_denials: Vec<DependencyDenialConfig>,
-    #[serde(default)]
-    pub(crate) dependency_target_allowlists: Vec<DependencyTargetAllowlistConfig>,
-    #[serde(default)]
-    pub(crate) source_dependency_allowlists: Vec<SourceDependencyAllowlistConfig>,
-    #[serde(default)]
-    pub(crate) source_identifier_denials: Vec<SourceIdentifierDenialConfig>,
-    #[serde(default)]
-    pub(crate) source_owner_isolations: Vec<SourceOwnerIsolationConfig>,
-    #[serde(default)]
-    pub(crate) raw_geometry_denials: Vec<RawGeometryDenialConfig>,
-    #[serde(default)]
-    pub(crate) truth_type_denials: Vec<TruthTypeDenialConfig>,
-    #[serde(default)]
-    pub(crate) threading_sites: Vec<ThreadingSiteConfig>,
-    #[serde(default)]
-    pub(crate) request_constructor_denials: Vec<RequestConstructorDenialConfig>,
+pub const CONFIG: &str = "tools/boundary-check/config/";
+pub fn workspace_manifest(directory: &str) -> String {
+    if directory == "." {
+        "Cargo.toml".into()
+    } else {
+        format!("{directory}/Cargo.toml")
+    }
 }
-
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct RequestConstructorDenialConfig {
-    pub(crate) crate_root: String,
-    pub(crate) host_entry: Option<String>,
-    #[serde(default)]
-    pub(crate) wrapper_callers: Vec<String>,
-    #[serde(default)]
-    pub(crate) carried_signal_only: bool,
-    #[serde(default)]
-    pub(crate) signal_doors_only: bool,
-    #[serde(default)]
-    pub(crate) caller_paid_work: bool,
-    /// Additional constructor spellings forbidden in the production module graph.
-    #[serde(default)]
-    pub(crate) constructor_names: Vec<String>,
-    pub(crate) guidance: String,
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Code {
+    Dependency,
+    Clippy,
+    Control,
+    Construction,
+    DocumentRegion,
+    DocumentLink,
+    OneBuild,
+    Topology,
+    InputFailure,
 }
-
-/// An observed production thread or parallel-computation site. A legacy lane
-/// must name the phase that removes it; a non-compute thread must name its role.
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct ThreadingSiteConfig {
-    pub(crate) source: String,
-    pub(crate) item: String,
-    pub(crate) kind: String,
-    pub(crate) count: usize,
-    pub(crate) category: String,
-    pub(crate) reason: String,
-    #[serde(default)]
-    pub(crate) retire_phase: Option<u8>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct SnapshotDependencyPackagesConfig {
-    pub(crate) workspace_manifest: String,
-    pub(crate) packages: Vec<String>,
-    #[serde(default)]
-    pub(crate) required_edges: Vec<SnapshotDependencyEdgeConfig>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct SnapshotDependencyEdgeConfig {
-    pub(crate) source: String,
-    pub(crate) target: String,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct ContextWorkspaceConfig {
-    pub(crate) path: String,
-    pub(crate) package_prefix: String,
-    #[serde(default)]
-    pub(crate) certification_packages: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct DependencyDenialConfig {
-    pub(crate) workspace_manifest: String,
-    pub(crate) sources: Vec<String>,
-    #[serde(default)]
-    pub(crate) source_prefixes: Vec<String>,
-    pub(crate) forbidden_targets: Vec<String>,
-    #[serde(default)]
-    pub(crate) forbidden_target_prefixes: Vec<String>,
-    pub(crate) guidance: String,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct DependencyTargetAllowlistConfig {
-    pub(crate) workspace_manifest: String,
-    pub(crate) governed_source_prefixes: Vec<String>,
-    pub(crate) target: String,
-    pub(crate) allowed_sources: Vec<String>,
-    pub(crate) guidance: String,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct SourceDependencyAllowlistConfig {
-    pub(crate) workspace_manifest: String,
-    pub(crate) sources: Vec<String>,
-    pub(crate) allowed_targets: Vec<String>,
-    #[serde(default)]
-    pub(crate) dependency_contracts: Vec<SourceDependencyContractConfig>,
-    pub(crate) guidance: String,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct SourceDependencyContractConfig {
-    pub(crate) target: String,
-    pub(crate) version_requirement: String,
-    pub(crate) uses_default_features: bool,
-    pub(crate) features: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct SourceIdentifierDenialConfig {
-    pub(crate) root: String,
-    #[serde(default)]
-    pub(crate) exclude_paths: Vec<String>,
-    pub(crate) forbidden_identifiers: Vec<String>,
-    #[serde(default)]
-    pub(crate) forbidden_identifier_fragments: Vec<String>,
-    pub(crate) guidance: String,
-}
-
-/// Source roots that may never reach an isolated owner, by path or by any
-/// type the owner declares.
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct SourceOwnerIsolationConfig {
-    pub(crate) owner_roots: Vec<String>,
-    pub(crate) guarded_roots: Vec<String>,
-    /// Consecutive path segments that name the owner, such as
-    /// `["primary_graph", "workflow"]`.
-    pub(crate) forbidden_paths: Vec<Vec<String>>,
-    pub(crate) guidance: String,
-}
-
-/// One crate whose production source may hold raw coordinates only at the
-/// declared edges.
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct RawGeometryDenialConfig {
-    pub(crate) crate_root: String,
-    pub(crate) guidance: String,
-    pub(crate) edges: Vec<RawGeometryEdgeConfig>,
-}
-
-/// A source file or directory, relative to the crate root, and optionally the
-/// item paths within it, where raw coordinates are the declared form.
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct RawGeometryEdgeConfig {
-    pub(crate) path: String,
-    #[serde(default)]
-    pub(crate) items: Vec<String>,
-    pub(crate) kind: RawGeometryEdgeKind,
-    pub(crate) reason: String,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) enum RawGeometryEdgeKind {
-    Serialization,
-    PlatformEvent,
-    GpuUpload,
-    SpatialIndex,
-    SealedOwner,
-    CommittedLayout,
-}
-
-impl RawGeometryEdgeKind {
-    pub(crate) fn as_str(self) -> &'static str {
+impl Code {
+    pub fn as_str(self) -> &'static str {
         match self {
-            Self::Serialization => "serialization",
-            Self::PlatformEvent => "platform-event",
-            Self::GpuUpload => "gpu-upload",
-            Self::SpatialIndex => "spatial-index",
-            Self::SealedOwner => "sealed-owner",
-            Self::CommittedLayout => "committed-layout",
+            Self::Dependency => "BC2001_BAND_DEPENDENCY_VIOLATION",
+            Self::Clippy => "BC7009_CANONICAL_ORDER",
+            Self::Control => "BC7012_CONTROL_SEAL",
+            Self::Construction => "BC7013_CERTIFICATION_CONSTRUCTION_SEAL",
+            Self::DocumentRegion => "BC8008_CONSUMER_DOC_MARKER",
+            Self::DocumentLink => "BC8009_CONSUMER_DOC_LINK",
+            Self::OneBuild => "BC9001_ONE_BUILD",
+            Self::Topology => "BC9002_TEST_TOPOLOGY",
+            Self::InputFailure => "BOUNDARY_INPUT_FAILURE",
+        }
+    }
+    fn legal_home(self) -> &'static str {
+        match self {
+            Self::Dependency => "tools/boundary-check/config/road1.toml [rule_contracts]",
+            Self::Clippy => "tools/boundary-check/src/text_rules.rs; local Clippy configuration must include every root setting",
+            Self::Control => "tools/boundary-check/src/seal_rules.rs; Law 1, reach: control references belong only to owners and closed test/certification callers",
+            Self::Construction => "tools/boundary-check/config/certification-construction-callers.txt; sealed construction references belong only to owners and the closed caller paths",
+            Self::DocumentRegion => "tools/boundary-check/config/consumer-docs.toml; restore exact marker grammar and byte agreement with the named source",
+            Self::DocumentLink => "tools/boundary-check/config/consumer-docs.toml; repair the relative destination or GitHub heading fragment in the named document",
+            Self::OneBuild => "tools/boundary-check/src/graph_rules.rs; remove the build predicate or feature declaration and use an owned inert control",
+            Self::Topology => "docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts",
+            Self::InputFailure => "tools/boundary-check/src/inputs.rs; restore readable Git inputs and offline Cargo metadata before judging boundaries",
         }
     }
 }
-
-/// One crate whose sealed truth types are constructed only by their owners and
-/// at declared callers, and whose lifecycle state has no `Default`.
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct TruthTypeDenialConfig {
-    pub(crate) crate_root: String,
-    pub(crate) guidance: String,
-    #[serde(default)]
-    pub(crate) sealed: Vec<SealedTruthTypeConfig>,
-    #[serde(default)]
-    pub(crate) mints: Vec<SealedMintConfig>,
-    #[serde(default)]
-    pub(crate) lifecycle_states: Vec<String>,
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Diagnostic {
+    pub code: Code,
+    pub subject: String,
+    pub message: String,
+    pub legal_home: String,
+}
+pub fn diagnostic(code: Code, subject: &str, message: impl Into<String>) -> Diagnostic {
+    Diagnostic {
+        code,
+        subject: subject.into(),
+        message: message.into(),
+        legal_home: code.legal_home().into(),
+    }
+}
+pub type Files = BTreeMap<String, String>;
+pub fn under(path: &str, directory: &str) -> bool {
+    path == directory
+        || path
+            .strip_prefix(directory.trim_end_matches('/'))
+            .is_some_and(|s| s.starts_with('/'))
+}
+pub fn governed(path: &str) -> bool {
+    ![
+        "workspaces/worth-store",
+        "workspaces/worth-ui",
+        "crates/worth-proof",
+    ]
+    .iter()
+    .any(|p| under(path, p))
+}
+pub fn table<'a>(value: &'a toml::Value, key: &str) -> Vec<&'a toml::Value> {
+    value
+        .get(key)
+        .and_then(toml::Value::as_array)
+        .map(|v| v.iter().collect())
+        .unwrap_or_default()
+}
+pub fn strings(value: &toml::Value, key: &str) -> Vec<String> {
+    table(value, key)
+        .iter()
+        .filter_map(|v| v.as_str().map(str::to_owned))
+        .collect()
+}
+pub fn string<'a>(value: &'a toml::Value, key: &str) -> &'a str {
+    value.get(key).and_then(toml::Value::as_str).unwrap_or("")
+}
+pub fn pairs(text: &str) -> Vec<(&str, &str)> {
+    text.lines()
+        .map(str::trim)
+        .filter(|l| !l.starts_with('#'))
+        .filter_map(|l| l.split_once(' '))
+        .collect()
+}
+/// Admit kept policy fields before running graph processes or rules.
+pub fn validate_policy(config: &toml::Value) -> Result<(), String> {
+    for (section, text_fields, list_fields) in [
+        (
+            "dependency_denials",
+            &["workspace_manifest", "guidance"][..],
+            &["sources", "forbidden_targets"][..],
+        ),
+        (
+            "source_dependency_allowlists",
+            &["workspace_manifest", "guidance"][..],
+            &["sources", "allowed_targets"][..],
+        ),
+        (
+            "dependency_target_allowlists",
+            &["workspace_manifest", "target", "guidance"][..],
+            &["governed_source_prefixes", "allowed_sources"][..],
+        ),
+        (
+            "source_identifier_denials",
+            &["root", "guidance"][..],
+            &["forbidden_identifiers"][..],
+        ),
+    ] {
+        let Some(value) = config.get(section) else {
+            continue;
+        };
+        let rules = value
+            .as_array()
+            .ok_or_else(|| format!("{section} must be a table array"))?;
+        for rule in rules {
+            if let Some(contracts) = rule.get("dependency_contracts") {
+                let contracts = contracts
+                    .as_array()
+                    .ok_or("dependency_contracts must be a table array")?;
+                for contract in contracts {
+                    if ["target", "version_requirement"]
+                        .iter()
+                        .any(|k| contract.get(*k).and_then(toml::Value::as_str).is_none())
+                        || contract
+                            .get("uses_default_features")
+                            .and_then(toml::Value::as_bool)
+                            .is_none()
+                        || contract
+                            .get("features")
+                            .and_then(toml::Value::as_array)
+                            .is_none_or(|a| a.iter().any(|v| v.as_str().is_none()))
+                    {
+                        return Err("invalid dependency contract".into());
+                    }
+                }
+            }
+            for key in text_fields {
+                if rule.get(*key).and_then(toml::Value::as_str).is_none() {
+                    return Err(format!("{section}.{key} must be a string"));
+                }
+            }
+            for key in list_fields {
+                if rule
+                    .get(*key)
+                    .and_then(toml::Value::as_array)
+                    .is_none_or(|a| a.iter().any(|v| v.as_str().is_none()))
+                {
+                    return Err(format!("{section}.{key} must be a string array"));
+                }
+            }
+            for key in [
+                "source_prefixes",
+                "forbidden_target_prefixes",
+                "exclude_paths",
+                "forbidden_identifier_fragments",
+            ] {
+                if rule.get(key).is_some_and(|v| {
+                    v.as_array()
+                        .is_none_or(|a| a.iter().any(|v| v.as_str().is_none()))
+                }) {
+                    return Err(format!("{section}.{key} must be a string array"));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+pub fn validate_auxiliary(name: &str, value: &toml::Value) -> Result<(), String> {
+    let fields: &[(&str, &[&str])] = match name {
+        "runtime-roots.toml" => &[("roots", &["type"])],
+        "consumer-docs.toml" => &[
+            (
+                "compiled_sources",
+                &["name", "crate_root", "target", "source"],
+            ),
+            ("facts", &["id", "manifest", "item", "document"]),
+        ],
+        "court-frontier-splits.toml" => &[("splits", &["court", "area"])],
+        _ => &[],
+    };
+    if name == "runtime-roots.toml" && value.get("roots").is_none() {
+        return Err("runtime root registry missing".into());
+    }
+    if name == "consumer-docs.toml"
+        && value
+            .get("documents")
+            .and_then(toml::Value::as_array)
+            .is_none_or(|a| a.iter().any(|v| v.as_str().is_none()))
+    {
+        return Err("consumer documents must be a string array".into());
+    }
+    for (key, strings) in fields {
+        if let Some(rows) = value.get(*key) {
+            let rows = rows
+                .as_array()
+                .ok_or_else(|| format!("{name}.{key} must be a table array"))?;
+            if rows.iter().any(|r| {
+                strings
+                    .iter()
+                    .any(|k| r.get(*k).and_then(toml::Value::as_str).is_none())
+            }) {
+                return Err(format!("{name}.{key} has invalid fields"));
+            }
+        }
+    }
+    Ok(())
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn malformed_policy_arrays_are_refused_before_rules_run() {
+        assert!(validate_policy(&toml::from_str("[[dependency_denials]]\nworkspace_manifest='Cargo.toml'\nsources=[]\nforbidden_targets=[]\nguidance='closed'").unwrap()).is_ok());
+        assert!(
+            validate_policy(&toml::from_str("dependency_denials='disabled'").unwrap()).is_err()
+        );
+        assert!(validate_auxiliary(
+            "consumer-docs.toml",
+            &toml::from_str("documents='disabled'").unwrap()
+        )
+        .is_err());
+    }
+    #[test]
+    fn diagnostics_preserve_wire_identifiers_and_point_to_their_current_owner() {
+        for (code, wire, owner) in [
+            (
+                Code::Dependency,
+                "BC2001_BAND_DEPENDENCY_VIOLATION",
+                "tools/boundary-check/config/road1.toml",
+            ),
+            (
+                Code::Clippy,
+                "BC7009_CANONICAL_ORDER",
+                "tools/boundary-check/src/text_rules.rs",
+            ),
+            (
+                Code::Control,
+                "BC7012_CONTROL_SEAL",
+                "tools/boundary-check/src/seal_rules.rs",
+            ),
+            (
+                Code::Construction,
+                "BC7013_CERTIFICATION_CONSTRUCTION_SEAL",
+                "tools/boundary-check/config/certification-construction-callers.txt",
+            ),
+            (
+                Code::DocumentRegion,
+                "BC8008_CONSUMER_DOC_MARKER",
+                "tools/boundary-check/config/consumer-docs.toml",
+            ),
+            (
+                Code::DocumentLink,
+                "BC8009_CONSUMER_DOC_LINK",
+                "tools/boundary-check/config/consumer-docs.toml",
+            ),
+            (
+                Code::OneBuild,
+                "BC9001_ONE_BUILD",
+                "tools/boundary-check/src/graph_rules.rs",
+            ),
+            (
+                Code::Topology,
+                "BC9002_TEST_TOPOLOGY",
+                "docs/coding-guidelines/iteration_laws.md",
+            ),
+            (
+                Code::InputFailure,
+                "BOUNDARY_INPUT_FAILURE",
+                "tools/boundary-check/src/inputs.rs",
+            ),
+        ] {
+            let json = serde_json::to_value(diagnostic(code, "subject", "message")).unwrap();
+            assert_eq!(json.as_object().unwrap().len(), 4);
+            assert_eq!(json["code"], wire);
+            assert_eq!(json["subject"], "subject");
+            assert_eq!(json["message"], "message");
+            assert!(json["legal_home"].as_str().unwrap().starts_with(owner));
+        }
+    }
+}
+#[derive(Default)]
+pub struct Metadata {
+    pub packages: Vec<Package>,
+    pub workspace_members: Vec<String>,
+    pub resolve: Option<Resolve>,
+}
+#[derive(Default)]
+pub struct Package {
+    pub id: String,
+    pub name: String,
+    pub manifest_path: String,
+    pub dependencies: Vec<Dependency>,
+    pub targets: Vec<Target>,
+}
+#[derive(Default)]
+pub struct Dependency {
+    pub name: String,
+    pub kind: Option<String>,
+    pub req: String,
+    pub uses_default_features: bool,
+    pub features: Vec<String>,
+}
+#[derive(Default)]
+pub struct Target {
+    pub name: String,
+    pub kind: Vec<String>,
+    pub src_path: String,
+}
+#[derive(Default)]
+pub struct Resolve {
+    pub nodes: Vec<Node>,
+}
+#[derive(Default)]
+pub struct Node {
+    pub id: String,
+    pub deps: Vec<Edge>,
+}
+#[derive(Default)]
+pub struct Edge {
+    pub pkg: String,
+    pub dep_kinds: Vec<Kind>,
+}
+#[derive(Default)]
+pub struct Kind {
+    pub kind: Option<String>,
 }
 
-/// A requirement 1 or 3 type and the sources, relative to the crate root,
-/// that own it.
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct SealedTruthTypeConfig {
-    pub(crate) name: String,
-    pub(crate) requirement: u8,
-    pub(crate) owners: Vec<String>,
-}
-
-/// A constructor called outside its owner, and the only sites that call it.
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct SealedMintConfig {
-    /// `Type::constructor`, as a path names it.
-    pub(crate) call: String,
-    /// The method's path in the root `clippy.toml` `disallowed-methods`, for a
-    /// mint called as a method, whose receiver only Clippy resolves. Each
-    /// caller then carries the `expect` that admits it.
-    #[serde(default)]
-    pub(crate) clippy: Option<String>,
-    pub(crate) callers: Vec<SealedMintCallerConfig>,
-    pub(crate) reason: String,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct SealedMintCallerConfig {
-    pub(crate) path: String,
-    #[serde(default)]
-    pub(crate) items: Vec<String>,
-}
-
-/// One machine-owned law substrate: package identity plus legal tier/band sets.
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct LawSubstrateConfig {
-    pub(crate) package: String,
-    pub(crate) tiers: Vec<String>,
-    pub(crate) bands: Vec<String>,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct LegacyReferenceRatchetConfig {
-    pub(crate) governed_roots: Vec<String>,
-    pub(crate) forbidden_fragments: Vec<String>,
-    pub(crate) snapshot: String,
-    pub(crate) exclude_paths: Vec<String>,
-    pub(crate) replacement_guidance: String,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct MachineAuthorityConfig {
-    pub(crate) canonical_config: String,
-    pub(crate) mirrored_docs: Vec<String>,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct NamingConfig {
-    pub(crate) bands: Vec<String>,
-    pub(crate) reserved_domains: Vec<ReservedDomainConfig>,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct ReservedDomainConfig {
-    pub(crate) tier: String,
-    pub(crate) band: String,
-    pub(crate) domains: Vec<String>,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct RuleContracts {
-    pub(crate) query_audience: QueryAudienceContract,
-    pub(crate) replay_surfaces: Vec<ReplaySurfaceConfig>,
-    pub(crate) band_rules: Vec<BandRuleConfig>,
-    #[serde(default)]
-    pub(crate) worth_ui_query_edge: Option<WorthUiQueryEdgeContract>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct WorthUiQueryEdgeContract {
-    pub(crate) workspace: String,
-    pub(crate) engine_package: String,
-    pub(crate) allowed_production_consumers: Vec<String>,
-    pub(crate) guidance: String,
-}
-
-/// Machine-owned Query audience matrix: one engine package plus leaf facade rows.
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct QueryAudienceContract {
-    #[serde(default = "default_query_workspace")]
-    pub(crate) workspace: String,
-    pub(crate) engine_package: String,
-    #[serde(default)]
-    pub(crate) certification_package: Option<String>,
-    #[serde(default)]
-    pub(crate) certification_authority_packages: Vec<String>,
-    #[serde(default)]
-    pub(crate) certification_consumers: Vec<String>,
-    #[serde(default)]
-    pub(crate) internal_packages: Vec<String>,
-    #[serde(default)]
-    pub(crate) facade_surfaces: Vec<QueryFacadeSurfaceConfig>,
-    pub(crate) audiences: Vec<QueryAudienceFacadeConfig>,
-}
-
-fn default_query_workspace() -> String {
-    ".".to_owned()
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct QueryFacadeSurfaceConfig {
-    pub(crate) label: String,
-    pub(crate) source: String,
-    #[serde(default)]
-    pub(crate) namespace: Option<String>,
-    #[serde(default)]
-    pub(crate) reexport: Option<String>,
-    #[serde(default)]
-    pub(crate) owner_source: Option<String>,
-}
-
-/// One audience facade row: package identity, legal bands, and repair guidance.
-#[derive(Clone, Debug, Deserialize)]
-pub(crate) struct QueryAudienceFacadeConfig {
-    pub(crate) package: String,
-    pub(crate) label: String,
-    pub(crate) allowed_bands: Vec<String>,
-    pub(crate) guidance: String,
-    #[serde(default)]
-    pub(crate) authority_packages: Vec<String>,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct BandRuleConfig {
-    pub(crate) source_band: String,
-    pub(crate) allowed_target_bands: Vec<String>,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct ReplaySurfaceConfig {
-    pub(crate) label: String,
-    pub(crate) package_prefixes: Vec<String>,
-    pub(crate) cert_domains: Vec<String>,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct BornCrateConfig {
-    pub(crate) path: String,
-    pub(crate) package: String,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct SeedSkeletonConfig {
-    pub(crate) path: String,
-    pub(crate) package: String,
-    pub(crate) lib_rs: String,
-    pub(crate) facade_rs: String,
-    pub(crate) allowed_entries: Vec<String>,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct SubworkspaceConfig {
-    pub(crate) path: String,
-    pub(crate) allowed_crate_prefixes: Vec<String>,
-    pub(crate) member_lane: String,
+impl Serialize for Diagnostic {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut state = serializer.serialize_struct("Diagnostic", 4)?;
+        state.serialize_field("code", self.code.as_str())?;
+        state.serialize_field("subject", &self.subject)?;
+        state.serialize_field("message", &self.message)?;
+        state.serialize_field("legal_home", &self.legal_home)?;
+        state.end()
+    }
 }

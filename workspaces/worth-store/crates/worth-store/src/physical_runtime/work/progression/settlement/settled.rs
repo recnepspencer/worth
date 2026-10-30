@@ -53,10 +53,8 @@ impl SettledPhysicalWork {
                     created.write_operation()
                 } else if let Some(appended) = physical.appended() {
                     appended.operation()
-                } else if let Some(verified) = physical.verified() {
-                    verified.operation()
                 } else {
-                    return None;
+                    physical.verified()?.operation()
                 }
             }
             PhysicalWorkSettlementEvidence::PublicationEffect { physical, .. } => {

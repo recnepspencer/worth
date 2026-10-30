@@ -1,5 +1,10 @@
 # Milestone 9.16 Runtime Phase 7 Closure Ledger
 
+Historical record: verification commands, counts, and timings below describe the milestone checkout and are not current invocation guidance. For current product-frontier court selection and complete Gate commands, see [Query verification](../../workspaces/worth-query/README.md) and [the Gate entry point](../../scripts/ci/query_gate.py). No current target is credited with these historical results.
+
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
+
 **Owner:** Runtime Hardening Track, Phase 7
 **Canonical specification:** `milestone-9.16.md`
 **Status:** Runtime Phase 7 is closed through Phase 7.7 Gate D. Milestone
@@ -465,7 +470,7 @@ Corrective verification:
   tests::query::indexes::bounded_relation_join_lookup -- --nocapture`: all
   `4` exact-endpoint, generation/overflow, substituted-relation, and missing-
   candidate parity tests passed;
-- `cargo test -p worth-query-execution capability_delegation_performance --
+- `cargo test -p worth-query-execution capability_delegation_performance
   --nocapture`: all `4` exact slope, both unrelated-population axes, and
   exact-pair overflow tests passed;
 - the original Bank same-estate reproducer and the complete `10`-test Bank

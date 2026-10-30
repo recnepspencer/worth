@@ -11,6 +11,10 @@ impl ExecutionAuthorityConfig {
     }
     /// Proposes the machine's available workers, or one on a serial platform.
     /// The caller still declares and admits its request's worker budget.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Execution owns the machine worker-width observation"
+    )]
     pub fn available_worker_count() -> NonZeroUsize {
         if crate::backend::HAS_OS_THREADS {
             std::thread::available_parallelism().unwrap_or(NonZeroUsize::MIN)

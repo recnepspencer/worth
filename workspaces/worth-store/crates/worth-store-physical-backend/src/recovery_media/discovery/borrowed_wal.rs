@@ -29,14 +29,28 @@ impl QualifiedFilesystemMedia {
         if maximum_entries == 0 {
             return Err(RecoveryFilesystemQualificationError::InvalidDiscoveryLimit);
         }
-        let incarnation = self
-            .wal_observation_incarnations
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |prior| {
-                prior.checked_add(1)
-            })
-            .map_err(|_| RecoveryFilesystemQualificationError::InvalidDiscoveryLimit)?
-            .checked_add(1)
-            .expect("checked owner-issued incarnation");
+        let incarnation = {
+            let update_counter = &self.wal_observation_incarnations;
+            let mut prior = update_counter.load(Ordering::Relaxed);
+            loop {
+                let next_value = prior.checked_add(1);
+                let Some(updated_value) = next_value else {
+                    break Err(prior);
+                };
+                match update_counter.compare_exchange_weak(
+                    prior,
+                    updated_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(previous) => break Ok(previous),
+                    Err(reloaded_value) => prior = reloaded_value,
+                }
+            }
+        }
+        .map_err(|_| RecoveryFilesystemQualificationError::InvalidDiscoveryLimit)?
+        .checked_add(1)
+        .expect("checked owner-issued incarnation");
         Ok(BorrowedWalFilesystemObservation {
             discovery: FilesystemObservation {
                 parts: BorrowedMediaBacking { media: self },

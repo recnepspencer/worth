@@ -1,0 +1,10 @@
+error[E0624]: associated function `select` is private
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_duplicate_replay_policy_constructor_private.rs:4:65
+  |
+4 |     let _constructor = BridgeSubscriptionDuplicateReplayPolicy::select;
+  |                                                                 ^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/subscription/checkpoint/duplicate_policy.rs
+  |
+  |     pub(crate) fn select(policy_kind: BridgeSubscriptionDuplicateReplayPolicyKind) -> Self {
+  |     -------------------------------------------------------------------------------------- private associated function defined here

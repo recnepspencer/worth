@@ -3,6 +3,12 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
+type EmptyMaterialStorage = (
+    BTreeMap<u64, Weak<dyn RegisteredDerivedView>>,
+    Vec<(u64, OwnedDerivedView)>,
+    Vec<Arc<SourceFactsAllocation>>,
+);
+
 impl RegistryState {
     pub(super) fn admit_index(
         &mut self,
@@ -58,13 +64,7 @@ impl RegistryState {
         Ok(())
     }
 
-    pub(super) fn take_empty_material_storage(
-        &mut self,
-    ) -> Option<(
-        BTreeMap<u64, Weak<dyn RegisteredDerivedView>>,
-        Vec<(u64, OwnedDerivedView)>,
-        Vec<Arc<SourceFactsAllocation>>,
-    )> {
+    pub(super) fn take_empty_material_storage(&mut self) -> Option<EmptyMaterialStorage> {
         (self.views.is_empty() && self.owned.is_empty()).then(|| {
             (
                 std::mem::take(&mut self.views),

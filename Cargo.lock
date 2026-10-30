@@ -970,15 +970,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_spanned"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e7523beb55eece201a2356bee0bbca0d1ab466c14c07703b2e0ee6d42cb0c2c"
-dependencies = [
- "serde_core",
-]
-
-[[package]]
 name = "serde_stacker"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1113,21 +1104,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bf256ce5efdfa370213c1dabab5935a12e49f2c58d15e9eac2870d3b4f27263"
 
 [[package]]
-name = "target-tuple"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "876fef147edbcbddc8ac5cbbba92c7b86519e314e86638596c09673b2ed01e7f"
-
-[[package]]
-name = "termcolor"
-version = "1.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
-dependencies = [
- "winapi-util",
-]
-
-[[package]]
 name = "tokio"
 version = "1.53.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1150,21 +1126,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.9",
-]
-
-[[package]]
-name = "toml"
-version = "1.1.8+spec-1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20489e00e4d8741d6be680764cc12e270655e375a20d1011e844a9c3379e678d"
-dependencies = [
- "indexmap",
- "serde_core",
- "serde_spanned",
- "toml_datetime",
- "toml_parser",
- "toml_writer",
- "winnow",
 ]
 
 [[package]]
@@ -1196,12 +1157,6 @@ checksum = "baa693a8032d7e1cada7d0041e96126df243179ff061456783ac7f12bda4744c"
 dependencies = [
  "winnow",
 ]
-
-[[package]]
-name = "toml_writer"
-version = "1.1.3+spec-1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06bdbd8cfc056b8d2e2e85f29b56a3bdbecb527cef81eb39e3e7b98af4652770"
 
 [[package]]
 name = "tower"
@@ -1256,21 +1211,6 @@ name = "tracking-allocator"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b61e0cb3385e17df7db29c565b40fd0350dfe8a076c7eea83d416e30cfd0581"
-
-[[package]]
-name = "trybuild"
-version = "1.0.122"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62db9c92d704393fbf2132041720cc80b689f2d3f28521015c2ac866223c11b8"
-dependencies = [
- "glob",
- "serde",
- "serde_derive",
- "serde_json",
- "target-tuple",
- "termcolor",
- "toml",
-]
 
 [[package]]
 name = "typenum"
@@ -1348,15 +1288,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "winapi-util"
-version = "0.1.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
-dependencies = [
- "windows-sys",
-]
-
-[[package]]
 name = "windows-link"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1381,14 +1312,215 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-court-execution"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-testkit-compiler",
+]
+
+[[package]]
+name = "worth-court-foundational-certification-boundary-artifacts"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "worth-foundational",
+ "worth-proof",
+ "worth-testkit-compiler",
+ "worth-testkit-foundational",
+]
+
+[[package]]
+name = "worth-court-foundational-certification-boundary-evidence"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "worth-foundational",
+ "worth-proof",
+ "worth-testkit-foundational",
+]
+
+[[package]]
+name = "worth-court-foundational-expressions"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "stats_alloc",
+ "worth-foundational",
+ "worth-proof",
+ "worth-testkit-compiler",
+ "worth-testkit-foundational",
+]
+
+[[package]]
+name = "worth-court-proof"
+version = "0.1.0"
+dependencies = [
+ "worth-proof",
+ "worth-testkit-compiler",
+]
+
+[[package]]
+name = "worth-court-relational-branch-reference-compile-time"
+version = "0.1.0"
+dependencies = [
+ "rmp-serde",
+ "serde",
+ "sha2",
+ "stats_alloc",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-testkit-compiler",
+ "worth-testkit-relational",
+]
+
+[[package]]
+name = "worth-court-relational-certification"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-relational",
+ "worth-testkit-relational",
+]
+
+[[package]]
+name = "worth-court-runtime-bridge"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-runtime-bridge",
+ "worth-signal",
+ "worth-testkit-compiler",
+]
+
+[[package]]
+name = "worth-court-runtime-world"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
+ "worth-signal",
+ "worth-testkit-compiler",
+]
+
+[[package]]
+name = "worth-court-server-certification-suite"
+version = "0.1.0"
+dependencies = [
+ "flate2",
+ "serde",
+ "serde_json",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-host",
+ "worth-runtime-bridge",
+ "worth-server",
+ "worth-testkit-compiler",
+ "worth-testkit-server",
+]
+
+[[package]]
+name = "worth-court-server-product-operation-phase-eleven"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "flate2",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "tower",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-host",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-server",
+ "worth-testkit-server",
+]
+
+[[package]]
+name = "worth-court-server-product-operation-phase-thirteen-shared-read"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-host",
+ "worth-runtime-bridge",
+ "worth-server",
+ "worth-testkit-compiler",
+ "worth-testkit-server",
+]
+
+[[package]]
+name = "worth-court-signal-branch-retention-contract"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+ "worth-testkit-compiler",
+]
+
+[[package]]
+name = "worth-court-signal-owner-services"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+ "worth-testkit-compiler",
+]
+
+[[package]]
+name = "worth-court-signal-wasm"
+version = "0.1.0"
+dependencies = [
+ "worth-proof",
+ "worth-signal",
+ "worth-signal-wasm",
+ "worth-testkit-compiler",
+]
+
+[[package]]
 name = "worth-execution"
 version = "0.1.0"
 dependencies = [
  "allocator-api2",
  "rayon",
- "serde",
- "serde_json",
- "trybuild",
  "worth-foundational",
  "worth-proof",
 ]
@@ -1402,8 +1534,6 @@ dependencies = [
  "serde_stacker",
  "sha2",
  "stacker",
- "stats_alloc",
- "trybuild",
  "worth-proof",
  "worth-value-shape-derive",
 ]
@@ -1419,9 +1549,6 @@ dependencies = [
 [[package]]
 name = "worth-proof"
 version = "0.1.0"
-dependencies = [
- "trybuild",
-]
 
 [[package]]
 name = "worth-query"
@@ -1545,11 +1672,11 @@ dependencies = [
  "sized-chunks",
  "smallvec",
  "stats_alloc",
- "trybuild",
  "worth-execution",
  "worth-foundational",
  "worth-harness",
  "worth-proof",
+ "worth-testkit-relational",
 ]
 
 [[package]]
@@ -1559,7 +1686,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "trybuild",
  "worth-execution",
  "worth-foundational",
  "worth-harness",
@@ -1572,7 +1698,6 @@ dependencies = [
 name = "worth-runtime-world"
 version = "0.1.0"
 dependencies = [
- "trybuild",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -1597,15 +1722,11 @@ dependencies = [
  "serde_json",
  "sha2",
  "tokio",
- "tower",
- "trybuild",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-query",
  "worth-query-host",
- "worth-relational",
- "worth-runtime-bridge",
 ]
 
 [[package]]
@@ -1628,7 +1749,6 @@ dependencies = [
  "smallvec",
  "stats_alloc",
  "tracking-allocator",
- "trybuild",
  "wasm-bindgen",
  "worth-execution",
  "worth-foundational",
@@ -1648,12 +1768,55 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "sha2",
- "trybuild",
  "wasm-bindgen",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-signal",
+]
+
+[[package]]
+name = "worth-testkit-compiler"
+version = "0.1.0"
+dependencies = [
+ "glob",
+ "serde_json",
+]
+
+[[package]]
+name = "worth-testkit-foundational"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-foundational",
+ "worth-proof",
+]
+
+[[package]]
+name = "worth-testkit-relational"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-testkit-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "serde",
+ "serde_json",
+ "tower",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query",
+ "worth-query-host",
+ "worth-runtime-bridge",
+ "worth-server",
 ]
 
 [[package]]

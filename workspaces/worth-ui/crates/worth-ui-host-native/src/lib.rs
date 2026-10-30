@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Qualified native mechanics profiles and the Worth-owned native host.
 
 mod native;

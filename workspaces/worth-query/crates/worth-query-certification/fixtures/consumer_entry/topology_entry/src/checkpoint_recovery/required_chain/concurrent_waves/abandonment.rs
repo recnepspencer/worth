@@ -106,20 +106,24 @@ fn case(cancel: bool, check_entry: bool) {
     );
 }
 
-#[test]
-fn dropping_the_deferred_owner_does_not_orphan_a_published_checkpoint() {
-    let _guard = checkpoint_recovery_test_guard();
-    case(false, false);
-}
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn dropping_the_deferred_owner_does_not_orphan_a_published_checkpoint() {
+        let _guard = checkpoint_recovery_test_guard();
+        case(false, false);
+    }
 
-#[test]
-fn cancelling_the_deferred_owner_does_not_orphan_a_published_checkpoint() {
-    let _guard = checkpoint_recovery_test_guard();
-    case(true, false);
-}
+    #[test]
+    fn cancelling_the_deferred_owner_does_not_orphan_a_published_checkpoint() {
+        let _guard = checkpoint_recovery_test_guard();
+        case(true, false);
+    }
 
-#[test]
-fn a_different_ready_caller_enters_frozen_without_losing_its_result() {
-    let _guard = checkpoint_recovery_test_guard();
-    case(false, true);
+    #[test]
+    fn a_different_ready_caller_enters_frozen_without_losing_its_result() {
+        let _guard = checkpoint_recovery_test_guard();
+        case(false, true);
+    }
 }

@@ -61,11 +61,9 @@ impl UiNativeLifecycleProtocol {
             binding,
             completion_identity,
         );
-        if remembered {
-            if let Some(epoch) = self.completed_epoch() {
-                self.phase = UiNativeLifecyclePhase::SuccessorInFlight;
-                self.predecessor = Some(epoch);
-            }
+        if remembered && let Some(epoch) = self.completed_epoch() {
+            self.phase = UiNativeLifecyclePhase::SuccessorInFlight;
+            self.predecessor = Some(epoch);
         }
         self.transition(
             if remembered {

@@ -145,19 +145,19 @@ impl<'session> WorthUiPreparedMountedContentRebind<'session> {
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> WorthUiMountedContentRebindOutcome<'session> {
-        if let WorthUiMountedContentPublication::ThemeSwitch { theme, .. } = &self.publication {
-            if self.frame.prepared_theme_binding() != Some(theme.prepared().successor())
+        if let WorthUiMountedContentPublication::ThemeSwitch { theme, .. } = &self.publication
+            && (self.frame.prepared_theme_binding() != Some(theme.prepared().successor())
                 || self
                     .session
                     .presentation
                     .appearance_theme_state()
-                    .is_none_or(|state| state.validate_prepared_switch(theme.prepared()).is_err())
-            {
-                return WorthUiMountedContentRebindOutcome::AdmissionDenied {
-                    denial: crate::mounting::UiMountedPresentationAdmissionDenial::PreparedFrameBasisChanged,
-                    retry: self,
-                };
-            }
+                    .is_none_or(|state| state.validate_prepared_switch(theme.prepared()).is_err()))
+        {
+            return WorthUiMountedContentRebindOutcome::AdmissionDenied {
+                denial:
+                    crate::mounting::UiMountedPresentationAdmissionDenial::PreparedFrameBasisChanged,
+                retry: self,
+            };
         }
         if !self.publication.prepared_owners_are_current(self.session) {
             return WorthUiMountedContentRebindOutcome::AdmissionDenied {

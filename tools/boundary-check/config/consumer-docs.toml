@@ -118,51 +118,51 @@ source = "examples/invariant_reads.rs"
 
 [[compiled_sources]]
 name = "relation_law_declaration.rs"
-crate_root = "workspaces/worth-query/crates/worth-query-certification"
-target = "tests/application_graph.rs"
-source = "tests/application_graph/relation_laws/schema.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-testkit-certification-application-graph"
+target = "src/lib.rs"
+source = "src/certification/application_graph/relation_laws/schema.rs"
 
 [[compiled_sources]]
 name = "relation_law_request.rs"
-crate_root = "workspaces/worth-query/crates/worth-query-certification"
-target = "tests/application_graph.rs"
-source = "tests/application_graph/relation_laws/installation.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-testkit-certification-application-graph"
+target = "src/lib.rs"
+source = "src/certification/application_graph/relation_laws/installation.rs"
 
 [[compiled_sources]]
 name = "relation_pair_declaration.rs"
-crate_root = "workspaces/worth-query/crates/worth-query-certification"
-target = "tests/application_graph.rs"
-source = "tests/application_graph/relation_laws/schema/paired_unique.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-testkit-certification-application-graph"
+target = "src/lib.rs"
+source = "src/certification/application_graph/relation_laws/schema/paired_unique.rs"
 
 [[compiled_sources]]
 name = "relation_partition_declaration.rs"
-crate_root = "workspaces/worth-query/crates/worth-query-certification"
-target = "tests/application_graph.rs"
-source = "tests/application_graph/relation_laws/schema/partition.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-testkit-certification-application-graph"
+target = "src/lib.rs"
+source = "src/certification/application_graph/relation_laws/schema/partition.rs"
 
 [[compiled_sources]]
 name = "relation_minimum_declaration.rs"
-crate_root = "workspaces/worth-query/crates/worth-query-certification"
-target = "tests/application_graph.rs"
-source = "tests/application_graph/relation_laws/schema/minimum.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-testkit-certification-application-graph"
+target = "src/lib.rs"
+source = "src/certification/application_graph/relation_laws/schema/minimum.rs"
 
 [[compiled_sources]]
 name = "logical_relation_source.rs"
-crate_root = "workspaces/worth-query/crates/worth-query-certification"
-target = "tests/application_graph.rs"
-source = "tests/application_graph/relation_laws/logical.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-testkit-certification-application-graph"
+target = "src/lib.rs"
+source = "src/certification/application_graph/relation_laws/logical.rs"
 
 [[compiled_sources]]
 name = "logical_relation_rule.rs"
-crate_root = "workspaces/worth-query/crates/worth-query-certification"
-target = "tests/application_graph.rs"
-source = "tests/application_graph/relation_laws/logical/rule.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-testkit-certification-application-graph"
+target = "src/lib.rs"
+source = "src/certification/application_graph/relation_laws/logical/rule.rs"
 
 [[compiled_sources]]
 name = "logical_relation_projection.rs"
-crate_root = "workspaces/worth-query/crates/worth-query-certification"
-target = "tests/application_graph.rs"
-source = "tests/application_graph/relation_laws/logical/committed.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-testkit-certification-application-graph"
+target = "src/lib.rs"
+source = "src/certification/application_graph/relation_laws/logical/committed.rs"
 
 [[compiled_sources]]
 name = "managed_prefix_index.rs"

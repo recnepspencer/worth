@@ -1,5 +1,0 @@
-error[E0515]: cannot return reference to function parameter `lease`
- --> tests/physical_runtime_authority/frame_view_cannot_outlive_lease.rs:4:5
-  |
-4 |     &lease
-  |     ^^^^^^ returns a reference to data owned by the current function

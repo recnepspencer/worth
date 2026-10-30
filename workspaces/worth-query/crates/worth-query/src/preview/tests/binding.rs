@@ -259,7 +259,7 @@ fn promotion_linkage_rejects_even_for_promotion_eligible_active_binding() {
 }
 
 #[test]
-fn replay_bundle_rejects_for_phase_one_and_two_active_binding() {
+fn replay_bundle_rejects_for_active_binding() {
     let preflight = execution_preflights::direct_runtime_preflight();
     let (_runtime, active, execution_record) =
         active_preview_artifacts("preview-replay-linkage-denied");

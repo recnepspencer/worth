@@ -61,6 +61,10 @@ impl BankRailCompletionContinuation {
 
     /// One explicit bounded owner cue after the HTTP listener has closed.
     /// The retained route preserves the original verifier installation.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "async-runtime async-blocking=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+    )]
     pub async fn continue_once(&self) -> BankRailCloseAssessment {
         let Some(deadline) = Instant::now().checked_add(self.maximum_deadline) else {
             return BankRailCloseAssessment::Unavailable;

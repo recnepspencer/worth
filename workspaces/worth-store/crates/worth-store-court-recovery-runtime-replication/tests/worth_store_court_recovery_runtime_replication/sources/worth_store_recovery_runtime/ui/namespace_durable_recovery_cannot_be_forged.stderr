@@ -1,0 +1,11 @@
+error: cannot construct `NamespaceDurablePhysicalRecovery` with struct literal syntax due to private fields
+ --> tests/ui/namespace_durable_recovery_cannot_be_forged.rs:4:5
+  |
+4 |     NamespaceDurablePhysicalRecovery {}
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: you might have meant to use the `new` associated function
+  |
+4 -     NamespaceDurablePhysicalRecovery {}
+4 +     NamespaceDurablePhysicalRecovery::new(_, _, _, _)
+  |

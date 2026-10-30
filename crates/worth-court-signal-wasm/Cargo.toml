@@ -1,0 +1,21 @@
+[package]
+"name" = "worth-court-signal-wasm"
+"autotests" = false
+"publish" = false
+"edition" = { "workspace" = true }
+"rust-version" = { "workspace" = true }
+"version" = { "workspace" = true }
+"license" = { "workspace" = true }
+
+[dependencies]
+"worth-testkit-compiler" = { "path" = "../worth-testkit-compiler" }
+"worth-proof" = { "path" = "../worth-proof" }
+"worth-signal" = { "path" = "../worth-signal", "default-features" = false }
+"worth-signal-wasm" = { "path" = "../worth-signal-wasm" }
+
+[[test]]
+name = "worth_court_signal_wasm"
+path = "tests/worth_court_signal_wasm.rs"
+
+[lints]
+workspace = true

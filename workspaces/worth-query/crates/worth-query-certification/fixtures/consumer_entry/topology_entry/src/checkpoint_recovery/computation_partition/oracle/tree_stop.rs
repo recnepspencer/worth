@@ -98,38 +98,42 @@ fn stopped(
     })
 }
 
-#[test]
-fn stopped_tree_builds_match_serial_and_stopped_edits_are_exact_at_every_width() {
-    let _guard = checkpoint_recovery_test_guard();
-    for fault in fault_positions() {
-        for retained in [false, true] {
-            let serial = stopped(Placement::Serial, retained, fault, None);
-            assert!(matches!(
-                serial.outcome,
-                Err(WorthQueryPartitionedComputationDenial::ReducerPanicked)
-            ));
-            let [tree] = serial.tree_runs.as_slice() else {
-                panic!("one stopped tree report")
-            };
-            assert!(tree_work::reducer_calls(&serial) > 0);
-            assert!(tree_work::completed_nodes(&serial) > 0);
-            if retained {
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn stopped_tree_builds_match_serial_and_stopped_edits_are_exact_at_every_width() {
+        let _guard = checkpoint_recovery_test_guard();
+        for fault in fault_positions() {
+            for retained in [false, true] {
+                let serial = stopped(Placement::Serial, retained, fault, None);
                 assert!(matches!(
-                    tree,
-                    TreeRun::Rebuilt(Rebuild::ReducerPanicked, _)
+                    serial.outcome,
+                    Err(WorthQueryPartitionedComputationDenial::ReducerPanicked)
                 ));
-            } else {
-                assert!(matches!(tree, TreeRun::Full(_, _)));
-            }
-            for workers in [1, 2, 4] {
-                let run = stopped(
-                    Placement::Leased(NonZeroUsize::new(workers).unwrap()),
-                    retained,
-                    fault,
-                    Some(&serial.tree_runs),
-                );
-                assert_eq!(run.outcome, serial.outcome);
-                assert_eq!(run.tree_runs, serial.tree_runs);
+                let [tree] = serial.tree_runs.as_slice() else {
+                    panic!("one stopped tree report")
+                };
+                assert!(tree_work::reducer_calls(&serial) > 0);
+                assert!(tree_work::completed_nodes(&serial) > 0);
+                if retained {
+                    assert!(matches!(
+                        tree,
+                        TreeRun::Rebuilt(Rebuild::ReducerPanicked, _)
+                    ));
+                } else {
+                    assert!(matches!(tree, TreeRun::Full(_, _)));
+                }
+                for workers in [1, 2, 4] {
+                    let run = stopped(
+                        Placement::Leased(NonZeroUsize::new(workers).unwrap()),
+                        retained,
+                        fault,
+                        Some(&serial.tree_runs),
+                    );
+                    assert_eq!(run.outcome, serial.outcome);
+                    assert_eq!(run.tree_runs, serial.tree_runs);
+                }
             }
         }
     }

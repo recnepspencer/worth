@@ -268,21 +268,7 @@ fn whole_clear(contract: &worth_foundational::facade::AspectContract) -> Portabl
     }])
 }
 
-fn optional_string_contract(name: &str) -> worth_foundational::facade::AspectContract {
-    let key = aspect_key(name);
-    aspects()
-        .contract()
-        .for_key(key.clone())
-        .identified_by(AspectIdentity(991))
-        .at_revision(aspects().vocabulary().revision(1))
-        .scalar_with(
-            ScalarAspectType::String,
-            AspectMaskContract::scalar(),
-            AbsenceLaw::Optional,
-            AspectEquivalenceBasis::ExactCanonicalValue,
-            AspectEvolutionPolicy::ExplicitBreakRequired,
-        )
-}
+use worth_testkit_relational::aspect_storage::definition::optional_string_contract;
 
 fn contract_for_entity(
     runtime: &RelationalRuntime,
@@ -315,6 +301,3 @@ mod checkpoint_readmission;
 
 #[path = "native_aspect_mutations/stale_contract.rs"]
 mod stale_contract;
-
-#[path = "native_aspect_mutations/canonical_field_effect.rs"]
-mod canonical_field_effect;

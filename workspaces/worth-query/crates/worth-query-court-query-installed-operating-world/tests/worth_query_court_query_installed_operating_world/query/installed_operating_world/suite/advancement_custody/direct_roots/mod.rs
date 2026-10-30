@@ -1,0 +1,129 @@
+pub(crate) use worth_query_testkit_query::facade::query::suite::advancement_custody::direct_roots::*;
+
+#[test]
+fn direct_execute_opens_before_its_reader() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    verify(
+        "direct execute",
+        || {
+            let workspace = workspace(request_execution);
+            let operation = admitted(&workspace);
+            (workspace, operation)
+        },
+        |operation, workspace| match operation.execute(workspace) {
+            TransitionOutcome::Success(_) => None,
+            TransitionOutcome::Denied(denial) => match denial.kind() {
+                domain::WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause) => Some(*cause),
+                other => panic!("unexpected direct denial: {other:?}"),
+            },
+            _ => panic!("unexpected direct execution posture"),
+        },
+    );
+}
+
+#[test]
+fn direct_promotion_opens_before_its_reader() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    verify(
+        "direct promotion",
+        || {
+            let mut workspace = workspace(request_execution);
+            let current = current(&mut workspace);
+            (workspace, current)
+        },
+        |current, workspace| match current.promote(request_execution, workspace) {
+            domain::WorthQueryProjectionPromotionOutcome::Promoted(_) => None,
+            domain::WorthQueryProjectionPromotionOutcome::Denied(stop) => match stop.kind() {
+                domain::WorthQueryProjectionPromotionDenialKind::ExecutionRequest(cause) => {
+                    Some(cause)
+                }
+                other => panic!("unexpected direct promotion denial: {other:?}"),
+            },
+            _ => panic!("unexpected direct promotion posture"),
+        },
+    );
+}
+
+#[test]
+fn direct_replacement_opens_before_its_reader() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    verify(
+        "direct replacement",
+        || {
+            let mut workspace = workspace(request_execution);
+            let current = current(&mut workspace);
+            let live = promoted(request_execution, current, &mut workspace);
+            let candidate = self::current(&mut workspace);
+            let witness = live.replacement_witness_for(&candidate).unwrap();
+            (workspace, (live, candidate, witness))
+        },
+        |(live, candidate, witness), workspace| match live.replace_with(
+            request_execution,
+            candidate,
+            witness,
+            workspace,
+        ) {
+            domain::WorthQueryProjectionReplacementOutcome::Replaced(_) => None,
+            domain::WorthQueryProjectionReplacementOutcome::Stopped(stop) => match stop.kind() {
+                domain::WorthQueryProjectionTransitionDenialKind::ExecutionRequest(cause) => {
+                    Some(cause)
+                }
+                other => panic!("unexpected direct replacement denial: {other:?}"),
+            },
+            _ => panic!("unexpected direct replacement posture"),
+        },
+    );
+}
+
+#[test]
+fn direct_rebinding_opens_before_its_reader() {
+    let host_request = worth_query_testkit_installed_operation_fixture::facade::query::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    verify(
+        "direct rebinding",
+        || {
+            let mut workspace = configured_runtime()
+                .controlled_workspace(request_execution, "direct-rebind-custody")
+                .unwrap();
+            let prior = workspace.domain(GeometryDomain).unwrap();
+            let current = current(&mut workspace);
+            let live = promoted(request_execution, current, &mut workspace);
+            workspace.advance_domain_installation_generation().unwrap();
+            let (_, receipt) = workspace
+                .rebind_domain(prior.rebind_request())
+                .unwrap()
+                .into_parts();
+            let candidate = self::current(&mut workspace);
+            let witness = live.rebind_witness_for(&candidate, receipt).unwrap();
+            (workspace, (live, candidate, witness))
+        },
+        |(live, candidate, witness), workspace| match live.rebind_with(
+            request_execution,
+            candidate,
+            witness,
+            workspace,
+        ) {
+            domain::WorthQueryProjectionRebindOutcome::Rebound(_) => None,
+            domain::WorthQueryProjectionRebindOutcome::Stopped(stop) => match stop.kind() {
+                domain::WorthQueryProjectionTransitionDenialKind::ExecutionRequest(cause) => {
+                    Some(cause)
+                }
+                other => panic!("unexpected direct rebind denial: {other:?}"),
+            },
+            _ => panic!("unexpected direct rebinding posture"),
+        },
+    );
+}
+
+pub(crate) mod foreign_phase_tests;

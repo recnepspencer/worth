@@ -13,12 +13,15 @@ worth-query-host.workspace = true
 worth-query-replay.workspace = true
 
 [dev-dependencies]
+worth-query-testkit-certification = { path = "../worth-query-testkit-certification" }
+worth-query-testkit-certification-correction = { path = "../worth-query-testkit-certification-correction" }
+worth-query-testkit-certification-operation = { path = "../worth-query-testkit-certification-operation" }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-harness = { path = "../../../../crates/worth-harness" }
 serde.workspace = true
-serde_json = "1"
 sha2.workspace = true
-tracking-allocator = { version = "0.4", default-features = false }
 worth-foundational.workspace = true
 worth-query.workspace = true
 worth-query-decl.workspace = true
@@ -31,27 +34,6 @@ worth-proof.workspace = true
 worth-relational.workspace = true
 worth-runtime-bridge.workspace = true
 worth-signal.workspace = true
-
-[[test]]
-name = "composition_guards"
-path = "tests/composition_guards.rs"
-
-[[test]]
-name = "installed_audience_journey"
-path = "tests/pass/installed_audience_journey.rs"
-harness = false
-
-[[test]]
-name = "temporal_conditional_oracle_parity"
-path = "tests/temporal_conditional_oracle_parity.rs"
-
-[[test]]
-name = "granular_invalidation"
-path = "tests/granular_invalidation.rs"
-
-[[test]]
-name = "runtime_world_branching"
-path = "tests/runtime_world_branching.rs"
 
 [[example]]
 name = "ordinary_product_workflow"
@@ -83,26 +65,8 @@ path = "examples/application_correction.rs"
 test = true
 harness = false
 
-[[test]]
-name = "program_example_authority"
-path = "tests/program_example_authority.rs"
-
-[[test]]
-name = "application_graph"
-path = "tests/application_graph.rs"
-
-[[test]]
-name = "native_operation_bodies"
-path = "tests/native_operation_bodies.rs"
-
-[[test]]
-name = "native_workflow_operations"
-path = "tests/native_workflow_operations.rs"
-
-[[test]]
-name = "native_graph_input_guards"
-path = "tests/native_graph_input_guards.rs"
-
-
 [lints]
 workspace = true
+
+[lib]
+test = false

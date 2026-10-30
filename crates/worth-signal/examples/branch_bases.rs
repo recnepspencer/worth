@@ -19,6 +19,10 @@ use worth_signal::facade::{SignalGraph, SignalRuntime};
 
 type ExampleRuntime = SignalRuntime<(), (), (), (), ()>;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "owner-thread thread-builder=1: The example owns and joins its Signal workflow thread with the required native stack"
+)]
 pub fn main() {
     // A `SignalRuntime` is a large value and Windows gives a debug binary's main
     // thread a 1 MiB stack, so this example runs its workflow on a thread with

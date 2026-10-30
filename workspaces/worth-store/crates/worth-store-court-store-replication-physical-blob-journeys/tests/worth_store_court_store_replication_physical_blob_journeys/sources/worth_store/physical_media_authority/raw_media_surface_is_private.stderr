@@ -1,0 +1,47 @@
+error[E0599]: no associated function or constant named `for_test` found for struct `FilesystemMediaAdmissionAuthority` in the current scope
+  --> tests/physical_media_authority/raw_media_surface_is_private.rs:11:40
+   |
+11 |     FilesystemMediaAdmissionAuthority::for_test()
+   |                                        ^^^^^^^^ associated function or constant not found in `FilesystemMediaAdmissionAuthority`
+
+error[E0599]: no method named `into_runtime_parts` found for struct `QualifiedFilesystemMedia` in the current scope
+  --> tests/physical_media_authority/raw_media_surface_is_private.rs:15:19
+   |
+15 |     let _ = media.into_runtime_parts();
+   |                   ^^^^^^^^^^^^^^^^^^ method not found in `QualifiedFilesystemMedia`
+
+error[E0599]: no associated function or constant named `for_role` found for struct `NamespaceRelativePath` in the current scope
+  --> tests/physical_media_authority/raw_media_surface_is_private.rs:19:36
+   |
+19 |     let _ = NamespaceRelativePath::for_role(StoreNamespaceRelativeRole::IdentityRecord);
+   |                                    ^^^^^^^^ associated function or constant not found in `NamespaceRelativePath`
+   |
+help: there is a method `role` with a similar name, but with different arguments
+  --> $WORKSPACE/crates/worth-store-physical-backend/src/filesystem_media/namespace_confinement.rs
+   |
+   |     pub const fn role(&self) -> MediaPathRole {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no associated function or constant named `for_identity` found for struct `StagedNamespacePath` in the current scope
+  --> tests/physical_media_authority/raw_media_surface_is_private.rs:22:34
+   |
+22 |     let _ = StagedNamespacePath::for_identity(&staged);
+   |                                  ^^^^^^^^^^^^ associated function or constant not found in `StagedNamespacePath`
+
+error[E0599]: no associated function or constant named `identity_record` found for struct `NamespacePublicationTarget` in the current scope
+  --> tests/physical_media_authority/raw_media_surface_is_private.rs:23:41
+   |
+23 |     let _ = NamespacePublicationTarget::identity_record();
+   |                                         ^^^^^^^^^^^^^^^ associated function or constant not found in `NamespacePublicationTarget`
+
+error[E0599]: no method named `positioned_write` found for reference `&NamespaceFileHandle<'_, ReadOnlyFileAccess>` in the current scope
+  --> tests/physical_media_authority/raw_media_surface_is_private.rs:27:20
+   |
+27 |     let _ = handle.positioned_write(PositionedWriteRequest::new(0, b"forbidden"));
+   |                    ^^^^^^^^^^^^^^^^
+   |
+help: there is a method `positioned_read` with a similar name
+   |
+27 -     let _ = handle.positioned_write(PositionedWriteRequest::new(0, b"forbidden"));
+27 +     let _ = handle.positioned_read(PositionedWriteRequest::new(0, b"forbidden"));
+   |

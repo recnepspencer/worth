@@ -1,0 +1,70 @@
+#[allow(unused_imports)] use crate::certification::ordinary_context::canonicalization::golden_artifacts::equivalence_and_mismatch::*;
+
+#[test]
+fn equivalence_golden_artifact_fixes_exact_basis_semantics_for_reordered_entries() {
+    match compare(
+        ready([value_entry("zeta", 2), value_entry("alpha", 1)]),
+        ready([value_entry("alpha", 1), value_entry("zeta", 2)]),
+    ) {
+        worth_foundational::CanonicalComparisonOutcome::Equivalent(equivalent) => {
+            assert_eq!(
+                equivalent.equivalence_basis(),
+                worth_foundational::CanonicalEquivalenceBasis::ExactCanonicalBasis
+            );
+            assert_eq!(
+                equivalent.domain(),
+                worth_foundational::CanonicalBasisDomain::Value
+            );
+            assert_eq!(equivalent.entry_count(), 2);
+        }
+        other => panic!("golden equivalence fixture changed unexpectedly: {other:?}"),
+    }
+}
+
+#[test]
+fn mismatch_golden_artifact_fixes_first_locus_and_kind_semantics() {
+    match compare(
+        ready([
+            value_entry("alpha", 1),
+            value_entry("beta", 20),
+            value_entry("gamma", 3),
+        ]),
+        ready([
+            value_entry("alpha", 1),
+            value_entry("beta", 21),
+            value_entry("gamma", 4),
+        ]),
+    ) {
+        worth_foundational::CanonicalComparisonOutcome::Mismatched(mismatch) => {
+            assert_eq!(
+                mismatch.kind(),
+                worth_foundational::CanonicalMismatchKind::ValueMismatch
+            );
+            assert_eq!(
+                mismatch.left_locus(),
+                Some(&worth_foundational::CanonicalBasisLocus::Named(
+                    "beta".into()
+                ))
+            );
+            assert_eq!(
+                mismatch.right_locus(),
+                Some(&worth_foundational::CanonicalBasisLocus::Named(
+                    "beta".into()
+                ))
+            );
+            assert_eq!(
+                mismatch.left_domain(),
+                worth_foundational::CanonicalBasisDomain::Value
+            );
+            assert_eq!(
+                mismatch.right_domain(),
+                worth_foundational::CanonicalBasisDomain::Value
+            );
+            assert_eq!(
+                mismatch.equivalence_basis(),
+                worth_foundational::CanonicalEquivalenceBasis::ExactCanonicalBasis
+            );
+        }
+        other => panic!("golden mismatch fixture changed unexpectedly: {other:?}"),
+    }
+}

@@ -1,0 +1,25 @@
+warning: unreachable statement
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/fork_basis_cannot_open_snapshot.rs:6:5
+  |
+5 |     let runtime: &RelationalRuntime = todo!();
+  |                                       ------- any code following this expression is unreachable
+6 |     let basis: AdmittedRelationalForkSourceBasis = todo!();
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable statement
+  |
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0308]: mismatched types
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/branch_reference/fork_basis_cannot_open_snapshot.rs:7:58
+  |
+7 |     let _ = runtime.snapshots().snapshot_for_observation(&basis);
+  |                                 ------------------------ ^^^^^^ expected `&RelationalBranchObservation`, found `&AdmittedRelationalForkSourceBasis`
+  |                                 |
+  |                                 arguments to this method are incorrect
+  |
+  = note: expected reference `&RelationalBranchObservation`
+             found reference `&AdmittedRelationalForkSourceBasis`
+note: method defined here
+ --> $WORKSPACE/crates/worth-relational/src/visibility/snapshot_admission.rs
+  |
+  |     pub fn snapshot_for_observation(
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^

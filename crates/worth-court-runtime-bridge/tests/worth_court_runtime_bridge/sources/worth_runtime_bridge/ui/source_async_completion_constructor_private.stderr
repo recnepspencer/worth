@@ -1,0 +1,15 @@
+error: cannot construct `AdmittedBridgeAsyncCompletion` with struct literal syntax due to private fields
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/source_async_completion_constructor_private.rs:4:13
+  |
+4 |     let _ = AdmittedBridgeAsyncCompletion {};
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: private fields that were not provided
+help: you might have meant to use an associated function to build this type
+  |
+4 -     let _ = AdmittedBridgeAsyncCompletion {};
+4 +     let _ = AdmittedBridgeAsyncCompletion::new(_, _, _, _);
+  |
+4 -     let _ = AdmittedBridgeAsyncCompletion {};
+4 +     let _ = AdmittedBridgeAsyncCompletion::new_with_class(_, _, _, _, _);
+  |

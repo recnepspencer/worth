@@ -48,6 +48,10 @@ impl PartialEq for DerivedRelationReadIdentity {
 }
 impl Eq for DerivedRelationReadIdentity {}
 impl Hash for DerivedRelationReadIdentity {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
     fn hash<H: Hasher>(&self, state: &mut H) {
         // Membership only: no ordering, serialized key or graph identity follows
         // from these opaque owners. Full equality also compares the proposal.

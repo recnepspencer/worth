@@ -1,0 +1,30 @@
+[package]
+name = "worth-query-court-decl-host-package-archive-replay-application-graph"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+tracking-allocator = { version = "0.4", default-features = false }
+sha2 = "=0.10.9"
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-host = { path = "../worth-query-host" }
+worth-query-installation = { path = "../worth-query-installation" }
+worth-query-package-archive = { path = "../worth-query-package-archive" }
+worth-query-replay = { path = "../worth-query-replay" }
+worth-query-testkit-certification-application-graph = { path = "../worth-query-testkit-certification-application-graph" }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+worth-query-testkit-host = { path = "../worth-query-testkit-host" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_decl_host_package_archive_replay_application_graph"
+path = "tests/worth_query_court_decl_host_package_archive_replay_application_graph.rs"

@@ -1,0 +1,5 @@
+error[E0599]: no method named `clone` found for struct `StagedResourceCompletionEffect` in the current scope
+ --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/staged_resource_completion_effect_cannot_be_cloned.rs:4:20
+  |
+4 |     let _ = effect.clone();
+  |                    ^^^^^ method not found in `StagedResourceCompletionEffect`

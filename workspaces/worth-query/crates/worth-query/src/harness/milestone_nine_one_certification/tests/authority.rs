@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn milestone_nine_one_shared_bridge_rows_still_preserve_query_meaning() {
+fn shared_bridge_rows_still_preserve_query_meaning() {
     let matrix = MilestoneNineOneCertificationAdapter::
         query_subscription_declaration_and_lowering_parity_test();
 
@@ -43,7 +43,7 @@ fn milestone_nine_one_shared_bridge_rows_still_preserve_query_meaning() {
 }
 
 #[test]
-fn milestone_nine_one_activation_certification_binds_scale_source_identity() {
+fn activation_certification_binds_scale_source_identity() {
     let matrix = MilestoneNineOneCertificationAdapter::
         query_subscription_declaration_and_lowering_parity_test();
 
@@ -62,7 +62,7 @@ fn milestone_nine_one_activation_certification_binds_scale_source_identity() {
 }
 
 #[test]
-fn milestone_nine_one_basis_request_binds_policy_and_tenant_meaning() {
+fn basis_request_binds_policy_and_tenant_meaning() {
     let matrix = MilestoneNineOneCertificationAdapter::
         query_subscription_declaration_and_lowering_parity_test();
     let row = matrix
@@ -86,7 +86,7 @@ fn milestone_nine_one_basis_request_binds_policy_and_tenant_meaning() {
 }
 
 #[test]
-fn milestone_nine_one_relationship_proof_binds_subscription_meaning() {
+fn relationship_proof_binds_subscription_meaning() {
     let matrix = MilestoneNineOneCertificationAdapter::
         query_subscription_declaration_and_lowering_parity_test();
     let row = matrix
@@ -110,7 +110,7 @@ fn milestone_nine_one_relationship_proof_binds_subscription_meaning() {
 }
 
 #[test]
-fn milestone_nine_one_rejection_rows_are_typed_and_non_cosmetic() {
+fn rejection_rows_are_typed_and_non_cosmetic() {
     let matrix = MilestoneNineOneCertificationAdapter::
         query_subscription_declaration_and_lowering_parity_test();
 

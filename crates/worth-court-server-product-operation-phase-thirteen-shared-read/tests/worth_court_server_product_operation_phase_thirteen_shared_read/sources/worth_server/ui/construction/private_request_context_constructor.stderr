@@ -1,0 +1,15 @@
+error[E0624]: associated function `new` is private
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/private_request_context_constructor.rs
+  |
+  |       let _context = WorthServerRequestContext::new(
+  |                                                 ^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-server/src/request_context/context.rs
+  |
+  | /     pub(crate) fn new(
+  | |         authenticated_principal: WorthServerAuthenticatedPrincipal,
+  | |         workspace_target: WorthServerWorkspaceTarget,
+  | |         branch_target: WorthServerBranchTarget,
+  | |         diagnostics_profile: DiagnosticRichnessProfile,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here

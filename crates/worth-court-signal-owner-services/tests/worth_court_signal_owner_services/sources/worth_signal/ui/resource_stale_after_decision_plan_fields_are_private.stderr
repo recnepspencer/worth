@@ -1,0 +1,15 @@
+error[E0451]: fields `descriptor_id`, `semantic_name`, `class`, `stale_after` and `decision_digest` of struct `ResourceStaleAfterDecisionPlan` are private
+  --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/resource_stale_after_decision_plan_fields_are_private.rs:11:9
+   |
+10 |     let _plan = ResourceStaleAfterDecisionPlan {
+   |                 ------------------------------ in this type
+11 |         descriptor_id: fake(),
+   |         ^^^^^^^^^^^^^ private field
+12 |         semantic_name: String::from("signal.resource.stale-after.runtime-stale-after"),
+   |         ^^^^^^^^^^^^^ private field
+13 |         class: ResourceStaleAfterDecisionClass::RuntimeStaleAfter,
+   |         ^^^^^ private field
+14 |         stale_after: fake(),
+   |         ^^^^^^^^^^^ private field
+15 |         decision_digest: fake(),
+   |         ^^^^^^^^^^^^^^^ private field

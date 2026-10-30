@@ -319,7 +319,7 @@ mod tests {
     }
 
     #[test]
-    fn closure_test_hostile_lane_aggregates_phase_seven_hostile_obligations() {
+    fn closure_test_hostile_lane_aggregates_hostile_obligations() {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

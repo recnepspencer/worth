@@ -1,5 +1,10 @@
 # WORTH Query Aspect-Native Query Refactor
 
+Historical record: verification commands, counts, and timings below describe the milestone checkout and are not current invocation guidance. For current product-frontier court selection and complete Gate commands, see [Query verification](../../workspaces/worth-query/README.md) and [the Gate entry point](../../scripts/ci/query_gate.py). No current target is credited with these historical results.
+
+Cargo recipes below use the current court selectors; recorded results and counts remain evidence from the dated runs.
+
+
 > Status: Active implementation spec
 >
 > Roadmap parent: [worth_query_roadmap.md](worth_query_roadmap.md)

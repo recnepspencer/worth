@@ -60,11 +60,3 @@ mod target;
 #[cfg(test)]
 mod tests;
 pub(in crate::domain_computation) use target::WorthQueryApplicationInspectionTarget;
-
-#[cfg(test)]
-#[path = "application_inspection/tests/comparison.rs"]
-mod comparison_tests;
-
-#[cfg(test)]
-#[path = "application_inspection/tests/receipt_affinity.rs"]
-mod receipt_affinity_tests;

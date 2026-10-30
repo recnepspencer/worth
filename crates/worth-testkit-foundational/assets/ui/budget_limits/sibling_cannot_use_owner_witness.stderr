@@ -1,0 +1,8 @@
+error[E0624]: associated function `witness` is private
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/budget_limits/sibling_cannot_use_owner_witness.rs
+  |
+  |     worth_proof::authority_marker!(pub OwnerAuthority);
+  |     -------------------------------------------------- private associated function defined here
+...
+  |             &super::owner::OwnerAuthority::witness(),
+  |                                            ^^^^^^^ private associated function

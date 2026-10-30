@@ -1,6 +1,6 @@
 //! Close the genuine metadata owner on its original routing branch without executing an input.
 use super::*;
-pub(super) enum Owner {
+pub(in crate::proposal_acceptance::application::acceptance) enum Owner {
     Pending(ClaimOperation),
     Completed(ClaimCompleted),
     Terminal(ClaimTerminal),

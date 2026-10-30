@@ -48,7 +48,7 @@ pub fn application_derived_relation_source_closure<'schema>(
             }
         }
         if let Member::DerivedRelation { definition } = member {
-            definition.validate().map_err(&fail)?;
+            definition.validate().map_err(fail)?;
             if definitions
                 .insert(definition.parts().relation.as_str(), definition)
                 .is_some()

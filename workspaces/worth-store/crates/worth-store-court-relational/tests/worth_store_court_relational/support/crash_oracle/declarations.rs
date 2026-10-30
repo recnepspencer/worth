@@ -1,0 +1,177 @@
+//! What a recovered home must hold after its previous incarnation stopped
+//! with at most one commit or branch transition in flight, and what it must do next.
+//!
+//! The recovered artifacts are the stopped run's acknowledged artifacts plus
+//! at most the one in-flight commit, each byte-identical to the reference's
+//! at its position (D11); the journal's `resolve` agrees with that; record
+//! states and branch postures equal the two-stream reference prefix; the rest of the
+//! script then runs to completion on the reference states; and a fresh
+//! recovery reaches the same history.
+
+pub(crate) use std::path::Path;
+
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_relational::facade::history::CommitId;
+pub(crate) use worth_relational::facade::publication::PatchStreamPosition;
+pub(crate) use worth_store_relational::RelationalStoreCommitFate;
+pub(crate) use worth_store_relational::RelationalStoreHome;
+pub(crate) use {
+    worth_relational::facade::durability::RelationalCanonicalCommitArtifact,
+    worth_relational::facade::durability::RelationalCanonicalCommitArtifactDigest,
+    worth_relational::facade::durability::RelationalDurabilityUnresolved,
+    worth_relational::facade::durability::RelationalDurabilityUnresolvedSubject,
+};
+
+pub(crate) use crate::identity_safety;
+pub(crate) use {
+    crate::durable_run::apply, crate::durable_run::assert_holds,
+    crate::durable_run::assert_lifecycle_prefix, crate::durable_run::assert_reference_artifacts,
+    crate::durable_run::open_declaring, crate::durable_run::served_schema,
+};
+pub(crate) use {crate::workload, crate::workload::Script};
+
+/// What the stopped run knew about the commit in flight when it stopped.
+#[derive(Debug)]
+pub(crate) enum InFlight {
+    /// Nothing was in flight, or it was acknowledged and is in the
+    /// acknowledged artifacts.
+    Nothing,
+    /// The medium proved it had no effect; it must not be recovered.
+    Refused,
+    /// Stopped before Store committed it; it must not be recovered.
+    NotDurable,
+    /// Stopped after Store made it durable; it must be recovered although the
+    /// stopped runtime never installed it.
+    Durable,
+    /// The fate was unresolved; it is recovered exactly when the journal says
+    /// it committed, and then it is the artifact the fate names.
+    Unresolved(RelationalDurabilityUnresolved),
+}
+
+pub(crate) fn commit_subject(
+    fate: &RelationalDurabilityUnresolved,
+) -> (
+    PatchStreamPosition,
+    CommitId,
+    RelationalCanonicalCommitArtifactDigest,
+) {
+    let worth_relational::facade::durability::RelationalDurabilityUnresolvedSubject::CanonicalCommit {
+        position,
+        commit_id,
+        digest,
+    } = fate.subject()
+    else {
+        panic!("expected a canonical commit fate")
+    };
+    (position, commit_id, digest)
+}
+
+/// Check the recovered home against the stopped run. Returns how many commits
+/// it recovered.
+pub(crate) fn assert_recovered(
+    home: &RelationalStoreHome,
+    script: &Script,
+    acknowledged: &[Vec<u8>],
+    in_flight: &InFlight,
+    case: &str,
+) -> usize {
+    let recovered = crate::workload::artifacts_of(home.runtime());
+    let held = acknowledged.len();
+    assert!(
+        recovered.len() >= held,
+        "{case}: an acknowledged commit was lost ({} < {held})",
+        recovered.len()
+    );
+    for (index, (found, expected)) in recovered.iter().zip(acknowledged).enumerate() {
+        assert!(found == expected, "{case}: artifact {} differs", index + 1);
+    }
+    assert_reference_artifacts(&recovered, script, case);
+    let extra = recovered.len() - held;
+    assert!(
+        extra <= 1,
+        "{case}: {extra} commits beyond the acknowledged"
+    );
+    let next = held as u64 + 1;
+    let digest_of = |bytes: &Vec<u8>| {
+        worth_relational::facade::durability::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone())
+            .expect("an artifact frame")
+            .payload_digest()
+    };
+    // Any commit's digest probes presence; the recovered one's proves identity.
+    let probe = recovered
+        .get(held)
+        .map(digest_of)
+        .or(match &in_flight {
+            crate::crash_oracle::InFlight::Unresolved(fate) => Some(commit_subject(fate).2),
+            _ => None,
+        })
+        .or_else(|| acknowledged.last().map(digest_of));
+    if let Some(probe) = probe {
+        let resolution = home
+            .resolve(PatchStreamPosition(next), probe)
+            .unwrap_or_else(|refusal| panic!("{case}: resolve {next}: {refusal:?}"));
+        let expected = match recovered.get(held) {
+            Some(_) => worth_store_relational::RelationalStoreCommitFate::Committed,
+            None => worth_store_relational::RelationalStoreCommitFate::NotCommitted {
+                head: held as u64,
+            },
+        };
+        assert_eq!(resolution, expected, "{case}: resolve {next}");
+    }
+    match in_flight {
+        crate::crash_oracle::InFlight::Nothing
+        | crate::crash_oracle::InFlight::Refused
+        | crate::crash_oracle::InFlight::NotDurable => {
+            assert_eq!(extra, 0, "{case}: {in_flight:?} was recovered")
+        }
+        crate::crash_oracle::InFlight::Durable => {
+            assert_eq!(extra, 1, "{case}: a durable commit was lost")
+        }
+        crate::crash_oracle::InFlight::Unresolved(fate) => {
+            let (position, commit_id, digest) = commit_subject(fate);
+            assert_eq!(position.0, next, "{case}: the fate's position");
+            if let Some(bytes) = recovered.get(held) {
+                let artifact =
+                    worth_relational::facade::durability::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone())
+                        .expect("a recovered artifact frame");
+                assert_eq!(artifact.commit_id(), commit_id, "{case}");
+                assert_eq!(artifact.payload_digest(), digest, "{case}");
+            }
+        }
+    }
+    let commits = recovered.len();
+    assert_lifecycle_prefix(home, script, commits, case);
+    commits
+}
+
+/// Run the rest of the script on the recovered home, require the reference
+/// states and the recovered history as its prefix, then require a fresh
+/// recovery to agree and the next creates to issue fresh identities.
+pub(crate) fn assert_continues(
+    location: &Path,
+    home: RelationalStoreHome,
+    script: &Script,
+    recovered: usize,
+    execution: &ExecutionRequest<'_, '_>,
+    case: &str,
+) {
+    let before = crate::workload::artifacts_of(home.runtime());
+    let transitions = crate::branch_lifecycle::artifacts_of_home(&home).len();
+    apply(
+        &home,
+        execution,
+        crate::branch_lifecycle::steps_after(script, recovered, transitions),
+    );
+    let everything = crate::workload::artifacts_of(home.runtime());
+    assert!(
+        everything[..recovered] == before[..],
+        "{case}: history moved"
+    );
+    assert_holds(&home, script, &everything);
+    home.close();
+    let again = open_declaring(location, served_schema(&script.steps), execution)
+        .unwrap_or_else(|refusal| panic!("{case}: reopen: {refusal:?}"));
+    assert_holds(&again, script, &everything);
+    crate::identity_safety::assert_creates_are_fresh(&again, script, execution, case);
+    again.close();
+}

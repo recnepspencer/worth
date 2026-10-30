@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/basis_id_cannot_satisfy_epoch.rs
+  |
+  |     needs_epoch(basis_id);
+  |     ----------- ^^^^^^^^ expected `BoundaryEpoch`, found `EquivalenceBasisId`
+  |     |
+  |     arguments to this function are incorrect
+  |
+note: function defined here
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/basis_id_cannot_satisfy_epoch.rs
+  |
+  | fn needs_epoch(_epoch: BoundaryEpoch) {}
+  |    ^^^^^^^^^^^ ---------------------

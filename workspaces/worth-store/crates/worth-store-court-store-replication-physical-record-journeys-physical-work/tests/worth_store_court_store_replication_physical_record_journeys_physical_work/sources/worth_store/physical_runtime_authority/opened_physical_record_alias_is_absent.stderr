@@ -1,0 +1,13 @@
+error[E0432]: unresolved import `worth_store::physical_runtime::OpenedPhysicalRecord`
+ --> tests/physical_runtime_authority/opened_physical_record_alias_is_absent.rs:1:5
+  |
+1 | use worth_store::physical_runtime::OpenedPhysicalRecord;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^--------------------
+  |                                    |
+  |                                    no `OpenedPhysicalRecord` in `physical_runtime`
+  |
+help: a similar name exists in the module
+  |
+1 - use worth_store::physical_runtime::OpenedPhysicalRecord;
+1 + use worth_store::physical_runtime::ScannedPhysicalRecord;
+  |

@@ -67,20 +67,19 @@ pub(crate) fn inert_view() -> UiMountedFrameConsumptionView<'static> {
     else {
         unreachable!("the current protocol is self-compatible")
     };
-    let view =
-        UiMountedFrameConsumptionView::from_inert_mechanics(UiMountedFrameConsumptionInput {
-            authority: Rc::new(()),
-            host_session_identity: 1,
-            protocol,
-            capability_generation: requirement.capability_generation(),
-            capability_profile_digest: requirement.capability_profile_digest(),
-            attempt: UiMountedPresentationAttemptIdentity::mint_unbound().unwrap(),
-            deadline: UiPresentationDeadline::at_tick(10),
-            requirement,
-            presentation_work: UiMountedPresentationWorkView::Unchanged(unchanged),
-            appearance_work: None,
-            qualified_text: &(),
-            text_raster_work: None,
-        });
-    view
+
+    UiMountedFrameConsumptionView::from_inert_mechanics(UiMountedFrameConsumptionInput {
+        authority: Rc::new(()),
+        host_session_identity: 1,
+        protocol,
+        capability_generation: requirement.capability_generation(),
+        capability_profile_digest: requirement.capability_profile_digest(),
+        attempt: UiMountedPresentationAttemptIdentity::mint_unbound().unwrap(),
+        deadline: UiPresentationDeadline::at_tick(10),
+        requirement,
+        presentation_work: UiMountedPresentationWorkView::Unchanged(unchanged),
+        appearance_work: None,
+        qualified_text: &(),
+        text_raster_work: None,
+    })
 }

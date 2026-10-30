@@ -27,6 +27,7 @@ pub use crate::inspection::mvcc::cost::{
 };
 pub use crate::inspection::mvcc::retained_storage::{
     RelationalRetainedStorageInspectionDenial, RelationalRetainedStorageObservation,
+    RelationalRetainedStorageWork,
 };
 pub use crate::inspection::mvcc::sharing::{
     RelationalAuthoritativeAllocationKind, RelationalAuthoritativeAllocationLocator,

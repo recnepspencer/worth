@@ -1,5 +1,0 @@
-error[E0599]: no method named `reconstruct_rich_diagnostics` found for reference `&BridgeSubscriptionDeliveryWindowOpen` in the current scope
- --> tests/ui/subscription_delivery_window_no_rich_diagnostics.rs:4:20
-  |
-4 |     let _ = window.reconstruct_rich_diagnostics();
-  |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `&BridgeSubscriptionDeliveryWindowOpen`

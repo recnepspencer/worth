@@ -14,7 +14,7 @@ pub use crate::domain_computation::primary_graph::application_resource::{
 /// Read-only aggregate lineage vocabulary and original commit occurrence diagnostics.
 pub use worth_foundational::facade::AggregateLineageKind;
 /// Original Native commit occurrence; lineage diagnostics grant no authority.
-pub use worth_relational::facade::history::CommitId;
+pub use worth_relational::facade::history::{CommitId, RelationalAuthoredWriteDenial};
 
 pub use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,

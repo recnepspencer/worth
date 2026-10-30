@@ -1,0 +1,269 @@
+//! Repeated public components at exact 100/1k/10k expanded-node sizes.
+
+pub use std::time::{Duration, Instant};
+
+pub use worth_query_host::facade::{
+    admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
+    application_entry::{
+        WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
+        WorkflowInstanceStartOutcome, WorthQueryApplicationRequestExt,
+    },
+    declaration::application_program::{
+        ApplicationWorkflowComponentBuilder, ApplicationWorkflowComponentLimits,
+        ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
+        ApplicationWorkflowDefinitionLimits, AuthoredWorkflowDefinition,
+    },
+};
+pub use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
+pub use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
+
+pub use super::document_retention_model::{
+    host::publish_on_first_program_for_workflow_scale,
+    operator_identity::authenticate_operator,
+    retention_entry::DOCUMENT_IDENTITY,
+    workflow::{
+        retain_workflow_with_resources, start_instance, ReviewedDocumentWorkflow,
+        WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringIntent,
+        WorkflowDefinitionAuthoringOperation,
+    },
+};
+
+pub const FRAGMENT_NODES: u16 = 9;
+pub const FRAGMENT_CONNECTIONS: u16 = FRAGMENT_NODES - 1;
+
+pub fn component_definition(
+    occurrences: u16,
+) -> AuthoredWorkflowDefinition<ReviewedDocumentWorkflow> {
+    let nodes = occurrences * FRAGMENT_NODES + 1;
+    let connections = nodes - 1;
+    let component_limits = component_limits(occurrences);
+    let limits = ApplicationWorkflowDefinitionLimits::new(
+        nodes,
+        connections,
+        connections,
+        component_limits,
+        super::document_retention_model::host::WORKFLOW_DEFINITION_BYTES,
+    )
+    .expect("finite repeated component definition limits");
+    let mut fragment =
+        ApplicationWorkflowComponentBuilder::<ReviewedDocumentWorkflow>::new("solver-fragment")
+            .expect("component identity");
+    let operations = (0..FRAGMENT_NODES)
+        .map(|index| {
+            fragment
+                .operation::<WorkflowDefinitionAuthoringOperation>(
+                    format!("operation-{index}"),
+                    false,
+                )
+                .expect("component operation")
+        })
+        .collect::<Vec<_>>();
+    for pair in operations.windows(2) {
+        fragment
+            .control(
+                &pair[0],
+                ApplicationWorkflowControlOutcome::Completed,
+                &pair[1],
+            )
+            .expect("internal control");
+    }
+    let input = fragment
+        .input_port("input", &operations[0])
+        .expect("component input");
+    let output = fragment
+        .output_port("output", operations.last().expect("nonempty fragment"))
+        .expect("component output");
+    let fragment = fragment.finish().expect("component closes");
+    let mut definition = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
+        "repeated-solver-fragment",
+        limits,
+    )
+    .expect("definition identity");
+    let mut previous = None;
+    for index in 0..occurrences {
+        let expanded = definition
+            .expand_component(&format!("fragment-{index:04}"), &fragment)
+            .expect("bounded component expansion");
+        let entry = expanded.input(&input).expect("exported input binds");
+        let exit = expanded.output(&output).expect("exported output binds");
+        if let Some(previous) = previous {
+            definition.control(
+                &previous,
+                ApplicationWorkflowControlOutcome::Completed,
+                &entry,
+            );
+        } else {
+            definition.start(&entry);
+        }
+        previous = Some(exit);
+    }
+    let terminal = definition.terminal("done").expect("terminal node");
+    definition.control(
+        &previous.expect("nonempty component sequence"),
+        ApplicationWorkflowControlOutcome::Completed,
+        &terminal,
+    );
+    definition.finish().expect("repeated definition closes")
+}
+
+pub fn component_limits(occurrences: u16) -> ApplicationWorkflowComponentLimits {
+    ApplicationWorkflowComponentLimits::new(
+        occurrences,
+        1,
+        u32::from(occurrences) * u32::from(FRAGMENT_NODES),
+        u32::from(occurrences) * u32::from(FRAGMENT_CONNECTIONS),
+        u32::from(occurrences) * 2,
+    )
+    .expect("independent occurrence and provenance budgets")
+}
+
+/// Publishes one repeated-component definition and returns its expanded
+/// node count and the publication's new authoritative bytes.
+pub fn qualify(occurrences: u16, key: u64) -> (u64, u64) {
+    let nodes = occurrences * FRAGMENT_NODES + 1;
+    let connections = nodes - 1;
+    let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
+        nodes,
+        connections,
+        connections,
+        component_limits(occurrences),
+        super::document_retention_model::host::WORKFLOW_DEFINITION_BYTES,
+        2,
+        u32::from(nodes),
+        256 * 1024,
+    )
+    .expect("finite workflow resources");
+    let application =
+        retain_workflow_with_resources(publish_on_first_program_for_workflow_scale(), resources);
+    let runtime = application.runtime();
+    let cancellation = WorthQueryCancellationSource::new();
+    let scope = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(300)),
+        cancellation.token(),
+    );
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let started_at = Instant::now();
+    let authored = component_definition(occurrences);
+    let authored_ms = started_at.elapsed().as_millis();
+    let validated = authored
+        .validate()
+        .expect("the repeated component graph validates");
+    assert_eq!(validated.nodes().len(), usize::from(nodes));
+    assert_eq!(validated.connections().len(), usize::from(connections));
+    assert_eq!(
+        validated.component_expansions().len(),
+        usize::from(occurrences)
+    );
+    let work = validated.validation_work();
+    assert_eq!(work.provenance_records(), u64::from(occurrences));
+    assert_eq!(work.indexed_nodes(), u64::from(nodes));
+    assert_eq!(work.indexed_connections(), u64::from(connections));
+    assert!(
+        work.total_visits() <= u64::from(nodes) * 64,
+        "repeated components must not cause broad validation scans: {work:?}"
+    );
+    let validated_ms = started_at.elapsed().as_millis();
+    println!("repeated component nodes={nodes} authored_ms={authored_ms} validated_ms={validated_ms} validation_work={work:?}");
+    let cost_scope = application
+        .with_host_advancement(|host_phase| {
+            runtime
+                .capture_certification_cost_scope(&host_phase, application.current_world())
+                .expect("component branch remains measurable")
+        })
+        .expect("installed host call opens");
+    let draft = runtime
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .mutate(WorkflowDefinitionAuthoringIntent {
+                    input: WorkflowDefinitionAuthoringInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 8,
+                    },
+                })
+                .workflow(&host_phase, &application, component_definition(occurrences))
+                .expect("the component binds to installed vocabulary")
+        })
+        .expect("installed host call opens");
+    println!(
+        "repeated component nodes={nodes} ordinary_draft_ms={}",
+        started_at.elapsed().as_millis()
+    );
+    let publication_started_at = Instant::now();
+    let publication = draft
+        .publish(WorkflowDefinitionExpectedPredecessor::Absent)
+        .idempotency(&key)
+        .execute()
+        .expect("the repeated definition prepares for publication");
+    println!(
+        "repeated component nodes={nodes} through_publication_ms={} publication_execute_ms={}",
+        started_at.elapsed().as_millis(),
+        publication_started_at.elapsed().as_millis()
+    );
+    let WorkflowDefinitionPublicationOutcome::Published(published) = publication else {
+        panic!("expected repeated component publication: {publication:?}");
+    };
+    assert_eq!(
+        published.definition().content_identity(),
+        validated.content_identity()
+    );
+    let cost = application
+        .with_host_advancement(|host_phase| {
+            runtime
+                .observe_certification_cost(&host_phase, &cost_scope)
+                .expect("publication cost remains measurable")
+        })
+        .expect("installed host call opens");
+    let sharing = cost.relational().sharing_cost_delta();
+    assert_eq!(sharing.copied_truth_bytes, 0);
+    assert!(sharing.publication_new_authoritative_bytes > 0);
+    assert!(
+        sharing.publication_content_values_hashed <= u64::from(nodes) * 64,
+        "native content hashing must remain proportional to expanded nodes"
+    );
+    let through_publication_ms = started_at.elapsed().as_millis();
+    let before = runtime.workflow_compilation_reuse_counters();
+    let cold_started_at = Instant::now();
+    assert!(matches!(
+        start_instance(&application, published.definition().clone(), key + 1)
+            .expect("cold start fits its own operation budget"),
+        WorkflowInstanceStartOutcome::Started(_)
+    ));
+    let cold_ms = cold_started_at.elapsed().as_millis();
+    let cold = runtime.workflow_compilation_reuse_counters();
+    assert_eq!(cold.cold_misses(), before.cold_misses() + 1);
+    assert!(matches!(
+        start_instance(&application, published.definition().clone(), key + 2)
+            .expect("warm start reuses compiled meaning"),
+        WorkflowInstanceStartOutcome::Started(_)
+    ));
+    let warm = runtime.workflow_compilation_reuse_counters();
+    assert_eq!(warm.warm_hits(), cold.warm_hits() + 1);
+    assert_eq!(warm.cold_misses(), cold.cold_misses());
+    println!(
+        "repeated component nodes={nodes} occurrences={occurrences} validated_ms={validated_ms} through_publication_ms={through_publication_ms} cold_ms={cold_ms} copied_truth_bytes={} new_authoritative_bytes={}",
+        sharing.copied_truth_bytes,
+        sharing.publication_new_authoritative_bytes,
+    );
+    (
+        u64::from(nodes),
+        sharing.publication_new_authoritative_bytes,
+    )
+}
+
+/// Each publication carries one fixed term (the touched region's arena and
+/// root granularity) beside its per-node truth, so growth is the marginal
+/// bytes per added node against a one-occurrence publication: doubling the
+/// occurrences keeps that marginal within a quarter of the smaller run's.
+pub fn assert_marginal_bytes_per_node_stay_flat(occurrences: u16, key: u64) {
+    let (base_nodes, base_bytes) = qualify(1, key + 100);
+    let (nodes, bytes) = qualify(occurrences, key);
+    let (doubled, doubled_bytes) = qualify(occurrences * 2, key + 200);
+    let (added, added_bytes) = (nodes - base_nodes, bytes - base_bytes);
+    let (doubled_added, doubled_added_bytes) = (doubled - base_nodes, doubled_bytes - base_bytes);
+    assert!(
+        u128::from(doubled_added_bytes) * u128::from(added) * 4
+            <= u128::from(added_bytes) * u128::from(doubled_added) * 5,
+        "marginal bytes per node grew: {base_bytes} at {base_nodes} nodes, {bytes} at {nodes} nodes, {doubled_bytes} at {doubled} nodes"
+    );
+}

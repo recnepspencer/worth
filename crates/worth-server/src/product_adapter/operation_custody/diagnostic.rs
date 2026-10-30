@@ -113,6 +113,7 @@ fn source(cause: &WorthQuerySourceExpectationDenial) -> WorthServerSourceDiagnos
         WorkBudgetExceeded => "source_work_denied",
         PreparationMemoryExceeded => "source_memory_denied",
         RetainedSourceStorageDenied => "source_storage_denied",
+        ManagedSourceExpansionUnsupported => "managed_source_expansion_unsupported",
     };
     WorthServerSourceDiagnostic::new(WorthServerSourceDiagnosticCategory::Source, code)
 }

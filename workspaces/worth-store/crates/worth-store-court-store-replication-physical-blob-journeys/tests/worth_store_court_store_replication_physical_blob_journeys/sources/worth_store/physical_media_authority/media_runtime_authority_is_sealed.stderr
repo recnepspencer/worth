@@ -1,0 +1,41 @@
+error: cannot construct `MediaOwnedPhysicalRuntime` with struct literal syntax due to private fields
+ --> tests/physical_media_authority/media_runtime_authority_is_sealed.rs:4:5
+  |
+4 |     MediaOwnedPhysicalRuntime {}
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: you might have meant to use the `new` associated function
+  |
+4 -     MediaOwnedPhysicalRuntime {}
+4 +     MediaOwnedPhysicalRuntime::new(_, _)
+  |
+
+error[E0308]: mismatched types
+ --> tests/physical_media_authority/media_runtime_authority_is_sealed.rs:8:5
+  |
+7 | fn clone_media_runtime(runtime: &MediaOwnedPhysicalRuntime) -> MediaOwnedPhysicalRuntime {
+  |                                                                ------------------------- expected `MediaOwnedPhysicalRuntime` because of return type
+8 |     runtime.clone()
+  |     ^^^^^^^^^^^^^^^ expected `MediaOwnedPhysicalRuntime`, found `&MediaOwnedPhysicalRuntime`
+  |
+note: `MediaOwnedPhysicalRuntime` does not implement `Clone`, so `&MediaOwnedPhysicalRuntime` was cloned instead
+ --> tests/physical_media_authority/media_runtime_authority_is_sealed.rs:8:5
+  |
+8 |     runtime.clone()
+  |     ^^^^^^^
+
+error[E0382]: borrow of moved value: `runtime`
+  --> tests/physical_media_authority/media_runtime_authority_is_sealed.rs:13:13
+   |
+11 | fn reuse_after_close(runtime: MediaOwnedPhysicalRuntime) {
+   |                      ------- move occurs because `runtime` has type `MediaOwnedPhysicalRuntime`, which does not implement the `Copy` trait
+12 |     let _closed = runtime.close();
+   |                           ------- `runtime` moved due to this method call
+13 |     let _ = runtime.store_identity();
+   |             ^^^^^^^ value borrowed here after move
+   |
+note: `worth_store::physical_runtime::MediaOwnedPhysicalRuntime::close` takes ownership of the receiver `self`, which moves `runtime`
+  --> src/physical_runtime/media_ownership/runtime.rs
+   |
+   |     pub fn close(self) -> MediaShutdownOutcome<ClosedRuntime> {
+   |                  ^^^^

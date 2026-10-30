@@ -1,0 +1,13 @@
+error[E0432]: unresolved import `worth_store::physical_runtime::PhysicalResidencyPool`
+ --> tests/physical_adapter_authority/pool_construction_is_sealed.rs:1:5
+  |
+1 | use worth_store::physical_runtime::PhysicalResidencyPool;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^---------------------
+  |                                    |
+  |                                    no `PhysicalResidencyPool` in `physical_runtime`
+  |
+help: a similar name exists in the module
+  |
+1 - use worth_store::physical_runtime::PhysicalResidencyPool;
+1 + use worth_store::physical_runtime::PhysicalResidencyDenial;
+  |

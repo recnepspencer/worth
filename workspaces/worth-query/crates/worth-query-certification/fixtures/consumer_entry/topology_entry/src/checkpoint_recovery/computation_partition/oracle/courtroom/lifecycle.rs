@@ -71,89 +71,93 @@ fn judge(
     kept
 }
 
-#[test]
-fn seeded_edits_cross_restore_and_republication_with_model_counts() {
-    let _guard = checkpoint_recovery_test_guard();
-    for seed in SEEDS {
-        let mut rng = Lcg(seed);
-        let mut model = Model::new(&mut rng);
-        let mut history = Reference::new(&model);
-        let mut app = installation::install_variant::<false, TOTALS_WORK, 1, 2>(
-            None,
-            Default::default(),
-            |g| model.seed(g),
-        );
-        let mut prior = None;
-        let mut last_facts = None;
-        judge(
-            &app,
-            &model,
-            &mut history,
-            &mut prior,
-            &mut last_facts,
-            None,
-            Some(Cause::FirstRun),
-        );
-        let mut command = 0x612_11fe;
-        for _ in 0..ROUNDS {
-            let mut kinds = KINDS;
-            for place in (1..kinds.len()).rev() {
-                kinds.swap(place, rng.below(place + 1));
-            }
-            for kind in kinds.into_iter().flat_map(|kind| match kind {
-                Kind::Fault => vec![kind, Kind::Repair],
-                kind => vec![kind],
-            }) {
-                let step = model.step(kind, &mut rng);
+#[cfg(test)]
+mod serial {
+    use super::*;
+    #[test]
+    fn seeded_edits_cross_restore_and_republication_with_model_counts() {
+        let _guard = checkpoint_recovery_test_guard();
+        for seed in SEEDS {
+            let mut rng = Lcg(seed);
+            let mut model = Model::new(&mut rng);
+            let mut history = Reference::new(&model);
+            let mut app = installation::install_variant::<false, TOTALS_WORK, 1, 2>(
+                None,
+                Default::default(),
+                |g| model.seed(g),
+            );
+            let mut prior = None;
+            let mut last_facts = None;
+            judge(
+                &app,
+                &model,
+                &mut history,
+                &mut prior,
+                &mut last_facts,
+                None,
+                Some(Cause::FirstRun),
+            );
+            let mut command = 0x612_11fe;
+            for _ in 0..ROUNDS {
+                let mut kinds = KINDS;
+                for place in (1..kinds.len()).rev() {
+                    kinds.swap(place, rng.below(place + 1));
+                }
+                for kind in kinds.into_iter().flat_map(|kind| match kind {
+                    Kind::Fault => vec![kind, Kind::Repair],
+                    kind => vec![kind],
+                }) {
+                    let step = model.step(kind, &mut rng);
+                    apply(&app, &step.changes, &mut history, &mut command);
+                    judge(
+                        &app,
+                        &model,
+                        &mut history,
+                        &mut prior,
+                        &mut last_facts,
+                        step.own_write,
+                        None,
+                    );
+                    if let Some(write) = step.own_write {
+                        model.written(write);
+                    }
+                }
+                let checkpoint = app.with_host_advancement(|phase| app.capture_application_checkpoint(&phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap()).expect("installed host call opens");
+                drop(app);
+                app = installation::install_variant::<false, TOTALS_WORK, 1, 2>(
+                    Some(checkpoint),
+                    Default::default(),
+                    |_| panic!("restore does not reseed"),
+                );
+                prior = None;
+                let step = model.step(Kind::Value, &mut rng);
                 apply(&app, &step.changes, &mut history, &mut command);
-                judge(
+                let restored = judge(
                     &app,
                     &model,
                     &mut history,
                     &mut prior,
                     &mut last_facts,
-                    step.own_write,
                     None,
+                    Some(Cause::Restored),
                 );
-                if let Some(write) = step.own_write {
-                    model.written(write);
-                }
+                assert_eq!(restored.len(), 1);
+                let total = restored[0].outcome.as_ref().unwrap().0;
+                super::super::super::republication::republish(&app, total);
+                prior = None;
+                let step = model.step(Kind::Value, &mut rng);
+                apply(&app, &step.changes, &mut history, &mut command);
+                let republished = judge(
+                    &app,
+                    &model,
+                    &mut history,
+                    &mut prior,
+                    &mut last_facts,
+                    None,
+                    Some(Cause::Republished),
+                );
+                assert_eq!(republished.len(), 1);
             }
-            let checkpoint = app.with_host_advancement(|phase| app.capture_application_checkpoint(&phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap()).expect("installed host call opens");
-            drop(app);
-            app = installation::install_variant::<false, TOTALS_WORK, 1, 2>(
-                Some(checkpoint),
-                Default::default(),
-                |_| panic!("restore does not reseed"),
-            );
-            prior = None;
-            let step = model.step(Kind::Value, &mut rng);
-            apply(&app, &step.changes, &mut history, &mut command);
-            let restored = judge(
-                &app,
-                &model,
-                &mut history,
-                &mut prior,
-                &mut last_facts,
-                None,
-                Some(Cause::Restored),
-            );
-            assert_eq!(restored.len(), 1);
-            let total = restored[0].outcome.as_ref().unwrap().0;
-            super::super::republication::republish(&app, total);
-            prior = None;
-            let step = model.step(Kind::Value, &mut rng);
-            apply(&app, &step.changes, &mut history, &mut command);
-            let republished = judge(
-                &app,
-                &model,
-                &mut history,
-                &mut prior,
-                &mut last_facts,
-                None,
-                Some(Cause::Republished),
-            );
-            assert_eq!(republished.len(), 1);
         }
     }
 }

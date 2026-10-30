@@ -86,9 +86,7 @@ Use these laws with [QA Review Guide](qa_review_guide.md).
 
 ## Cost and integrity
 
-18. Test topology is performance architecture. In Rust, group scenario families
-    into a small number of intentional integration targets and avoid duplicated
-    compiler sessions and dependency graphs.
+18. Test topology and iteration costs obey [Iteration Laws](iteration_laws.md).
 
 19. Assign tests to focused, CI, or scheduled lanes. Expensive suites need a
     runtime or resource budget. Run cheap discovery, configuration, fixture,

@@ -79,7 +79,7 @@ where
     >
     where
         Demand: worth_query_execution::facade::application_contribution::WorthQueryApplicationOutputDemand<Schema>,
-    {
+{
         let required = match self.prepared {
             PreparedWorkflowAdvance::AwaitingAssessment(prepared) => prepared.into_required(),
             PreparedWorkflowAdvance::Transition { .. }
@@ -120,7 +120,7 @@ where
     >
     where
         Demand: worth_query_execution::facade::application_contribution::WorthQueryApplicationOutputDemand<Schema>,
-    {
+{
         let current = match &self.prepared {
             PreparedWorkflowAdvance::AwaitingAssessment(prepared) => prepared.required(),
             PreparedWorkflowAdvance::Transition { .. }

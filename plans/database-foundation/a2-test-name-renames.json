@@ -1,0 +1,2178 @@
+[
+  {
+    "workspace": "query",
+    "old": "host_and_internal_conditional_oracle_agree_across_phase_nine_matrix",
+    "new": "host_and_internal_conditional_oracle_agree_across_matrix",
+    "source": "workspaces/worth-query/crates/worth-query-certification/tests/temporal_conditional_oracle_parity.rs",
+    "current_source": "workspaces/worth-query/crates/worth-query-court-execution-conditional-oracle/tests/worth_query_court_execution_conditional_oracle/oracle/certification/temporal_conditional_oracle_parity/mod.rs"
+  },
+  {
+    "workspace": "query",
+    "old": "manifest_frame_is_deterministic_and_reenters_phase_three",
+    "new": "manifest_frame_is_deterministic",
+    "source": "workspaces/worth-query/crates/worth-query-package-archive/tests/archive_protocol/manifest_frame.rs",
+    "current_source": "workspaces/worth-query/crates/worth-query-court-package-archive/tests/worth_query_court_package_archive/determinism/package_archive/archive_protocol/manifest_frame/mod.rs"
+  },
+  {
+    "workspace": "query",
+    "old": "caller_limits_reject_claims_before_phase_three",
+    "new": "caller_limits_reject_claims",
+    "source": "workspaces/worth-query/crates/worth-query-package-archive/tests/archive_protocol/manifest_frame.rs",
+    "current_source": "workspaces/worth-query/crates/worth-query-court-package-archive/tests/worth_query_court_package_archive/package_archive/archive_protocol/manifest_frame/mod.rs"
+  },
+  {
+    "workspace": "query",
+    "old": "unsupported_definition_kind_fails_before_phase_three",
+    "new": "unsupported_definition_kind_fails",
+    "source": "workspaces/worth-query/crates/worth-query-package-archive/tests/archive_protocol/package_root_record.rs",
+    "current_source": "workspaces/worth-query/crates/worth-query-court-package-archive/tests/worth_query_court_package_archive/package_archive/archive_protocol/package_root_record/mod.rs"
+  },
+  {
+    "workspace": "query",
+    "old": "phase_three_rejects_reordered_record_frames",
+    "new": "rejects_reordered_record_frames",
+    "source": "workspaces/worth-query/crates/worth-query-package-archive/tests/archive_protocol/package_root_record.rs",
+    "current_source": "workspaces/worth-query/crates/worth-query-court-package-archive/tests/worth_query_court_package_archive/package_archive/archive_protocol/package_root_record/mod.rs"
+  },
+  {
+    "workspace": "bank",
+    "old": "r8_50_superseded_aftermath_authorities_are_removed",
+    "new": "superseded_aftermath_authorities_are_removed",
+    "source": "workspaces/worth-query-bank-world/crates/worth-query-bank-court-server-fast/tests/worth_query_bank_court_server_fast/fast/server/ordinary_mutations/estate_operations/phase8_residue/mod.rs",
+    "reason": "Strip requirement/phase identifier only."
+  },
+  {
+    "workspace": "bank",
+    "old": "r8_3_ordinary_phase8_paths_do_not_call_for_replay_retention",
+    "new": "ordinary_paths_do_not_call_for_replay_retention",
+    "source": "workspaces/worth-query-bank-world/crates/worth-query-bank-court-server-fast/tests/worth_query_bank_court_server_fast/fast/server/ordinary_mutations/estate_operations/phase8_residue/mod.rs",
+    "reason": "Strip requirement/phase identifier only."
+  },
+  {
+    "workspace": "bank",
+    "old": "r8_11_no_signal_decision_classifies_aftermath",
+    "new": "no_signal_decision_classifies_aftermath",
+    "source": "workspaces/worth-query-bank-world/crates/worth-query-bank-court-server-fast/tests/worth_query_bank_court_server_fast/fast/server/ordinary_mutations/estate_operations/phase8_residue/mod.rs",
+    "reason": "Strip requirement/phase identifier only."
+  },
+  {
+    "workspace": "bank",
+    "old": "r8_49_wire_protocol_carries_no_runtime_or_aftermath_authority",
+    "new": "wire_protocol_carries_no_runtime_or_aftermath_authority",
+    "source": "workspaces/worth-query-bank-world/crates/worth-query-bank-court-user-node-fast/tests/worth_query_bank_court_user_node_fast/fast/http_adapter/protocol_boundary/mod.rs",
+    "reason": "Strip requirement/phase identifier only."
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/application/declaration_receipt/tests/non_success.rs",
+    "old": "denied_route_receipts_preserve_typed_phase_nine_cause",
+    "new": "denied_route_receipts_preserve_typed_cause",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Route-denial and receipt retain IntentRequired.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/application/declaration_receipt/tests/non_success.rs:14"
+    ],
+    "full_before": "application::declaration_receipt::tests::non_success::denied_route_receipts_preserve_typed_phase_nine_cause",
+    "full_after": "application::declaration_receipt::tests::non_success::denied_route_receipts_preserve_typed_cause",
+    "body_sha256": "6f5c9f86dedb35835af7d27097980c051652261d22aa1b1f75367a302c9204aa",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 14
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/application/support/tests/milestone_nine_seven_closure.rs",
+    "old": "milestone_nine_seven_closes_only_from_required_phase_local_closures",
+    "new": "closes_only_from_required_phase_local_closures",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Opening any required local closure or omitting its digest reopens derived closure.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/application/support/tests/milestone_nine_seven_closure.rs:7"
+    ],
+    "full_before": "application::support::tests::milestone_nine_seven_closure::milestone_nine_seven_closes_only_from_required_phase_local_closures",
+    "full_after": "application::support::tests::milestone_nine_seven_closure::closes_only_from_required_phase_local_closures",
+    "body_sha256": "062fb1fd907580a0781baf7001c803b580cc3502ee3be07b22f26c2134c3f852",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 7
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/application/support/tests/milestone_nine_seven_closure.rs",
+    "old": "milestone_nine_seven_support_profile_contract_names_defended_exclusion",
+    "new": "support_profile_contract_names_defended_exclusion",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Partial support publication names defended store-backed parity exclusion.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/application/support/tests/milestone_nine_seven_closure.rs:40"
+    ],
+    "full_before": "application::support::tests::milestone_nine_seven_closure::milestone_nine_seven_support_profile_contract_names_defended_exclusion",
+    "full_after": "application::support::tests::milestone_nine_seven_closure::support_profile_contract_names_defended_exclusion",
+    "body_sha256": "2c4ad7a753a601408b6afa492e7c14417379f77cfe20146c2477936c461d795e",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 40
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/domain_capabilities/certification/surface/mod.rs",
+    "old": "certified_surface_inventory_covers_each_named_phase_six_category_once",
+    "new": "certified_surface_inventory_covers_each_named_category_once",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Seven semantic capability categories are present exactly once.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/domain_capabilities/certification/surface/mod.rs:170"
+    ],
+    "full_before": "domain_capabilities::certification::surface::tests::certified_surface_inventory_covers_each_named_phase_six_category_once",
+    "full_after": "domain_capabilities::certification::surface::tests::certified_surface_inventory_covers_each_named_category_once",
+    "body_sha256": "a8bba0c249bb8d258d830794ff6d348040a458bab893d399cbda27c299053dc9",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 170
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/closeout/certification.rs",
+    "old": "phase4_certification_covers_named_execution_and_boundary_lanes",
+    "new": "certification_covers_named_execution_and_boundary_lanes",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Certification contains execution, denial, replay, oracle and boundary lanes.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/closeout/certification.rs:119"
+    ],
+    "full_before": "effect_lifecycle::tests::certification::phase4_certification_covers_named_execution_and_boundary_lanes",
+    "full_after": "effect_lifecycle::tests::certification::certification_covers_named_execution_and_boundary_lanes",
+    "body_sha256": "905d633b290007029088eddd840a9f9f8f5555f03f2fc9d8f99c09339f5c02f0",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 119
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/closeout/certification.rs",
+    "old": "phase4_certification_retains_batch_native_and_zero_rediscovery_evidence",
+    "new": "certification_retains_batch_native_and_zero_rediscovery_evidence",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Batch evidence has one lowering and zero executor rediscovery.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/closeout/certification.rs:171"
+    ],
+    "full_before": "effect_lifecycle::tests::certification::phase4_certification_retains_batch_native_and_zero_rediscovery_evidence",
+    "full_after": "effect_lifecycle::tests::certification::certification_retains_batch_native_and_zero_rediscovery_evidence",
+    "body_sha256": "679d2c2f33f9ab11411d72698c1e613bec66f84f7ee456eae3d6d295f0208acb",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 171
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/closeout/certification/unified_effect_execution_certification_binds_phase4_seeded_and_p.rs",
+    "old": "unified_effect_execution_certification_binds_phase4_seeded_and_phase5_surfaces",
+    "new": "unified_effect_execution_certification_binds_seeded_and_surfaces",
+    "reason": "Strictly remove historical phase4/phase5 IDs only; keep seeded, and, and surfaces unchanged. Body and assertions remain unchanged.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/closeout/certification/unified_effect_execution_certification_binds_phase4_seeded_and_p.rs:5"
+    ],
+    "full_before": "effect_lifecycle::tests::certification::unified_effect_execution_certification_binds_phase4_seeded_and_p::unified_effect_execution_certification_binds_phase4_seeded_and_phase5_surfaces",
+    "full_after": "effect_lifecycle::tests::certification::unified_effect_execution_certification_binds_phase4_seeded_and_p::unified_effect_execution_certification_binds_seeded_and_surfaces",
+    "body_sha256": "499bba0cf505c88eaf250e2a79899d9f208bc2d6c9ea0004f8b67c055e1f1d95",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 5
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/tests.rs",
+    "old": "historical_diff_branch_to_branch_lane_emits_exact_phase_three_posture",
+    "new": "historical_diff_branch_to_branch_lane_emits_exact_posture",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Branch-to-branch diff retains exact comparison/budget/cost posture and observed counters.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/tests.rs:4"
+    ],
+    "full_before": "harness::historical_diff_certification::tests::historical_diff_branch_to_branch_lane_emits_exact_phase_three_posture",
+    "full_after": "harness::historical_diff_certification::tests::historical_diff_branch_to_branch_lane_emits_exact_posture",
+    "body_sha256": "84dcc161b7148cd0f9adcaa35ae02ef768df887bc4e9bd3d053dd461cfe3aefe",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 4
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/tests.rs",
+    "old": "historical_diff_rejection_rows_emit_exact_phase_three_failure_counters",
+    "new": "historical_diff_rejection_rows_emit_exact_failure_counters",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Historical rejection rows retain typed failures and exact broadening counters.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/historical_diff_certification/tests.rs:100"
+    ],
+    "full_before": "harness::historical_diff_certification::tests::historical_diff_rejection_rows_emit_exact_phase_three_failure_counters",
+    "full_after": "harness::historical_diff_certification::tests::historical_diff_rejection_rows_emit_exact_failure_counters",
+    "body_sha256": "547b51e84932c2e757de7ab64e1b0f5906910f449eccb8bbe710a8c6c2a3c0d7",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 100
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs",
+    "old": "milestone_eight_deferred_and_grouped_rows_are_typed_rejections",
+    "new": "deferred_and_grouped_rows_are_typed_rejections",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Durable saved query and grouped hidden refresh rows retain typed failures.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs:24"
+    ],
+    "full_before": "harness::milestone_eight_certification::tests::milestone_eight_deferred_and_grouped_rows_are_typed_rejections",
+    "full_after": "harness::milestone_eight_certification::tests::deferred_and_grouped_rows_are_typed_rejections",
+    "body_sha256": "48d630690ea9a3cc2920f45e1be7362bec3b3f515ca81064fbce551c37fb4243",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 24
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs",
+    "old": "milestone_eight_grouped_delta_row_is_non_cosmetic",
+    "new": "grouped_delta_row_is_non_cosmetic",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Grouped delta changes delivery and counter snapshots.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs:53"
+    ],
+    "full_before": "harness::milestone_eight_certification::tests::milestone_eight_grouped_delta_row_is_non_cosmetic",
+    "full_after": "harness::milestone_eight_certification::tests::grouped_delta_row_is_non_cosmetic",
+    "body_sha256": "d4680524169ab6d8f2a3b8cb74d4d2563cd22cf6f20f990701b8dc2b77442957",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 53
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs",
+    "old": "milestone_eight_grouped_proof_chain_rows_are_present_and_stable",
+    "new": "grouped_proof_chain_rows_are_present_and_stable",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Grouped truth-view/execution/proof-chain parity is stable and hostile evidence differs.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs:77"
+    ],
+    "full_before": "harness::milestone_eight_certification::tests::milestone_eight_grouped_proof_chain_rows_are_present_and_stable",
+    "full_after": "harness::milestone_eight_certification::tests::grouped_proof_chain_rows_are_present_and_stable",
+    "body_sha256": "aaa98e3521b5ccc1fef4db54c8e0e5b1d52a12137fcd85d653a5955e896cf8f2",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 77
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs",
+    "old": "milestone_eight_identity_aware_inspector_rows_preserve_identity_classification",
+    "new": "identity_aware_inspector_rows_preserve_identity_classification",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Inspector classifications distinguish authoritative continuity, advisory candidates and identity break.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs:175"
+    ],
+    "full_before": "harness::milestone_eight_certification::tests::milestone_eight_identity_aware_inspector_rows_preserve_identity_classification",
+    "full_after": "harness::milestone_eight_certification::tests::identity_aware_inspector_rows_preserve_identity_classification",
+    "body_sha256": "e9bd66836b71aeccec4f7c3ec786bff3480488b5393223cd1f50e69e7a9e3a9c",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 175
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs",
+    "old": "milestone_eight_parity_rows_are_actually_adversarial",
+    "new": "parity_rows_are_actually_adversarial",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Scope/template parity keeps query meaning while hostile delivery/counter evidence differs.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs:132"
+    ],
+    "full_before": "harness::milestone_eight_certification::tests::milestone_eight_parity_rows_are_actually_adversarial",
+    "full_after": "harness::milestone_eight_certification::tests::parity_rows_are_actually_adversarial",
+    "body_sha256": "839dc66761a311222839cd9417035ad4b5397e9db4e28f4c92a2cb5d53a2d3b6",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 132
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs",
+    "old": "milestone_eight_saved_query_support_profile_drift_is_typed_rejection",
+    "new": "saved_query_support_profile_drift_is_typed_rejection",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Saved-query support-profile drift is a typed failure.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs:4"
+    ],
+    "full_before": "harness::milestone_eight_certification::tests::milestone_eight_saved_query_support_profile_drift_is_typed_rejection",
+    "full_after": "harness::milestone_eight_certification::tests::saved_query_support_profile_drift_is_typed_rejection",
+    "body_sha256": "095dbab5bf57745528ca368dea6b2a8452567808ceb97a857bd4a42635a4fdc3",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 4
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs",
+    "old": "milestone_eight_support_profile_row_tracks_full_report_state",
+    "new": "support_profile_row_tracks_full_report_state",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Support-profile and artifact-binding evidence tracks the full report state.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_eight_certification/tests.rs:243"
+    ],
+    "full_before": "harness::milestone_eight_certification::tests::milestone_eight_support_profile_row_tracks_full_report_state",
+    "full_after": "harness::milestone_eight_certification::tests::support_profile_row_tracks_full_report_state",
+    "body_sha256": "c981f9715933bc9dad494ec8f72b1b0316fa65192979d8be788f210a5fd4d7fd",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 243
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/admission.rs",
+    "old": "milestone_nine_certification_rows_enforce_declared_lane_semantics",
+    "new": "certification_rows_enforce_declared_lane_semantics",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Admission matrix enforces equality, inequality, typed failure and zero-residue classes.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/admission.rs:9"
+    ],
+    "full_before": "harness::milestone_nine_certification::tests::admission::milestone_nine_certification_rows_enforce_declared_lane_semantics",
+    "full_after": "harness::milestone_nine_certification::tests::admission::certification_rows_enforce_declared_lane_semantics",
+    "body_sha256": "8bd617c3d50f42b4e281fe21bd6d1c392fd95f1fbf2bd274dc3c64adcb1d190a",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 9
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/admission.rs",
+    "old": "milestone_nine_execution_seam_denials_are_typed",
+    "new": "execution_seam_denials_are_typed",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Live/diff unsupported execution seams retain typed denial.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/admission.rs:100"
+    ],
+    "full_before": "harness::milestone_nine_certification::tests::admission::milestone_nine_execution_seam_denials_are_typed",
+    "full_after": "harness::milestone_nine_certification::tests::admission::execution_seam_denials_are_typed",
+    "body_sha256": "320e127b5162faabd9e8522cc1e49d151a08a0914a1ec612b702443d5304d12d",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 100
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/admission.rs",
+    "old": "milestone_nine_policy_narrowing_changes_only_the_admission_disposition",
+    "new": "policy_narrowing_changes_only_the_admission_disposition",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Policy narrowing changes admission disposition while query and tenant basis stay fixed.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/admission.rs:128"
+    ],
+    "full_before": "harness::milestone_nine_certification::tests::admission::milestone_nine_policy_narrowing_changes_only_the_admission_disposition",
+    "full_after": "harness::milestone_nine_certification::tests::admission::policy_narrowing_changes_only_the_admission_disposition",
+    "body_sha256": "5e7f13841f6886362e89af67b679bf767b61d3a09a878d139d12c2ade4f504ea",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 128
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/admission.rs",
+    "old": "milestone_nine_runtime_store_and_durable_handoff_is_explicit",
+    "new": "runtime_store_and_durable_handoff_is_explicit",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Durable cursor/reload/delivery rejections retain distinct handoff evidence.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/admission.rs:173"
+    ],
+    "full_before": "harness::milestone_nine_certification::tests::admission::milestone_nine_runtime_store_and_durable_handoff_is_explicit",
+    "full_after": "harness::milestone_nine_certification::tests::admission::runtime_store_and_durable_handoff_is_explicit",
+    "body_sha256": "2efb0f97c0e2f41b4ba01933fe137e78f739a9eee93e47215bea9ada787677f9",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 173
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/admission.rs",
+    "old": "milestone_nine_work_budget_is_part_of_admission_evidence",
+    "new": "work_budget_is_part_of_admission_evidence",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Policy work budget and unknown-cost refusal remain admission evidence.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/admission.rs:151"
+    ],
+    "full_before": "harness::milestone_nine_certification::tests::admission::milestone_nine_work_budget_is_part_of_admission_evidence",
+    "full_after": "harness::milestone_nine_certification::tests::admission::work_budget_is_part_of_admission_evidence",
+    "body_sha256": "96c15bb5e83a4775e967b19b020604d3673e9fccfe0d1841809b626148c3f8c9",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 151
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/phase_four.rs",
+    "old": "milestone_nine_phase_four_closeout_rows_are_concrete",
+    "new": "closeout_rows_are_concrete",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Employee, scale, delivery and live-drift evidence plus masked/allocation/fanout/bypass refusals are concrete.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_certification/tests/phase_four.rs:4"
+    ],
+    "full_before": "harness::milestone_nine_certification::tests::phase_four::milestone_nine_phase_four_closeout_rows_are_concrete",
+    "full_after": "harness::milestone_nine_certification::tests::phase_four::closeout_rows_are_concrete",
+    "body_sha256": "c7a3b8b582eeca862126d8c1207aecb9db54ae30236252155a86acbcb29d0f3c",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 4
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_five_hostile_matrix/tests.rs",
+    "old": "milestone_nine_five_parity_rows_keep_canonical_identity_but_not_composition_authority",
+    "new": "parity_rows_keep_canonical_identity_but_not_composition_authority",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Parity preserves canonical identity but not composition authority.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_five_hostile_matrix/tests.rs:55"
+    ],
+    "full_before": "harness::milestone_nine_five_hostile_matrix::tests::milestone_nine_five_parity_rows_keep_canonical_identity_but_not_composition_authority",
+    "full_after": "harness::milestone_nine_five_hostile_matrix::tests::parity_rows_keep_canonical_identity_but_not_composition_authority",
+    "body_sha256": "5434a1b13042601d41591ea2fa253b437fe41ead42159d672fdc3038fe04530d",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 55
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_five_hostile_matrix/tests.rs",
+    "old": "milestone_nine_five_projection_and_reuse_rows_shift_only_the_intended_surface",
+    "new": "projection_and_reuse_rows_shift_only_the_intended_surface",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Retained/live projection and grouped reuse alter only intended evidence surfaces.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_five_hostile_matrix/tests.rs:93"
+    ],
+    "full_before": "harness::milestone_nine_five_hostile_matrix::tests::milestone_nine_five_projection_and_reuse_rows_shift_only_the_intended_surface",
+    "full_after": "harness::milestone_nine_five_hostile_matrix::tests::projection_and_reuse_rows_shift_only_the_intended_surface",
+    "body_sha256": "251b49def9a5278c094f81c9b527297e7277e5796601b57b9636efd16812d821",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 93
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_five_hostile_matrix/tests.rs",
+    "old": "milestone_nine_five_rejection_rows_preserve_typed_temporal_async_targets",
+    "new": "rejection_rows_preserve_typed_temporal_async_targets",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Rejection rows preserve ordinary-only versus visible-but-deferred temporal/async posture.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_five_hostile_matrix/tests.rs:146"
+    ],
+    "full_before": "harness::milestone_nine_five_hostile_matrix::tests::milestone_nine_five_rejection_rows_preserve_typed_temporal_async_targets",
+    "full_after": "harness::milestone_nine_five_hostile_matrix::tests::rejection_rows_preserve_typed_temporal_async_targets",
+    "body_sha256": "736506bdc8a43b5f209d1f4f5b6f52c5cf727aed18255c4821f7d20cf34183da",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 146
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_five_hostile_matrix/tests.rs",
+    "old": "milestone_nine_five_rows_enforce_required_assertion_classes",
+    "new": "rows_enforce_required_assertion_classes",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Hostile matrix covers required equality/inequality/failure/zero-residue assertions.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_five_hostile_matrix/tests.rs:10"
+    ],
+    "full_before": "harness::milestone_nine_five_hostile_matrix::tests::milestone_nine_five_rows_enforce_required_assertion_classes",
+    "full_after": "harness::milestone_nine_five_hostile_matrix::tests::rows_enforce_required_assertion_classes",
+    "body_sha256": "2a1818a6e99bfdcd860f2eb1e002a58cf5af8e776720a193caf22e52a0cf1449",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 10
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/authority.rs",
+    "old": "milestone_nine_one_activation_certification_binds_scale_source_identity",
+    "new": "activation_certification_binds_scale_source_identity",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Activation certification binds exact activation and admission identities to scale source.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/authority.rs:46"
+    ],
+    "full_before": "harness::milestone_nine_one_certification::tests::authority::milestone_nine_one_activation_certification_binds_scale_source_identity",
+    "full_after": "harness::milestone_nine_one_certification::tests::authority::activation_certification_binds_scale_source_identity",
+    "body_sha256": "5761c6722c854baf6cdb913e5481bf01f9c1b19685931c53aff0b83749f49da2",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 46
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/authority.rs",
+    "old": "milestone_nine_one_basis_request_binds_policy_and_tenant_meaning",
+    "new": "basis_request_binds_policy_and_tenant_meaning",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Policy/tenant changes alter declaration and basis-request digests.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/authority.rs:65"
+    ],
+    "full_before": "harness::milestone_nine_one_certification::tests::authority::milestone_nine_one_basis_request_binds_policy_and_tenant_meaning",
+    "full_after": "harness::milestone_nine_one_certification::tests::authority::basis_request_binds_policy_and_tenant_meaning",
+    "body_sha256": "1a88fc88b15b628f5cfc633a63a19e1570832922a822e91405748511fd3506f1",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 65
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/authority.rs",
+    "old": "milestone_nine_one_rejection_rows_are_typed_and_non_cosmetic",
+    "new": "rejection_rows_are_typed_and_non_cosmetic",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Typed view, bridge, masked, relationship, durable and scale refusals carry distinct diagnostics and counters.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/authority.rs:113"
+    ],
+    "full_before": "harness::milestone_nine_one_certification::tests::authority::milestone_nine_one_rejection_rows_are_typed_and_non_cosmetic",
+    "full_after": "harness::milestone_nine_one_certification::tests::authority::rejection_rows_are_typed_and_non_cosmetic",
+    "body_sha256": "0f7122674bc37ccc25a55e75804694b47ffb8400e80bf18bfa5ce95fe86cabdb",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 113
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/authority.rs",
+    "old": "milestone_nine_one_relationship_proof_binds_subscription_meaning",
+    "new": "relationship_proof_binds_subscription_meaning",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Relationship-proof meaning changes subscription declaration and basis digests.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/authority.rs:89"
+    ],
+    "full_before": "harness::milestone_nine_one_certification::tests::authority::milestone_nine_one_relationship_proof_binds_subscription_meaning",
+    "full_after": "harness::milestone_nine_one_certification::tests::authority::relationship_proof_binds_subscription_meaning",
+    "body_sha256": "e7f5b29c2a966e8ad3f92600b127a5db338f525f90f1845794c7068907c11b63",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 89
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/authority.rs",
+    "old": "milestone_nine_one_shared_bridge_rows_still_preserve_query_meaning",
+    "new": "shared_bridge_rows_still_preserve_query_meaning",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Grouped and inspector query meanings remain distinct within shared Bridge families.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/authority.rs:4"
+    ],
+    "full_before": "harness::milestone_nine_one_certification::tests::authority::milestone_nine_one_shared_bridge_rows_still_preserve_query_meaning",
+    "full_after": "harness::milestone_nine_one_certification::tests::authority::shared_bridge_rows_still_preserve_query_meaning",
+    "body_sha256": "6dcd68b106e0bb5dcdf96c5ad1f924d8565326000de52913166520ea7c543db7",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 4
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/matrix.rs",
+    "old": "milestone_nine_one_rows_enforce_declared_lane_semantics",
+    "new": "rows_enforce_declared_lane_semantics",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Subscription matrix enforces declared control/hostile/parity semantics and required assertion classes.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_one_certification/tests/matrix.rs:4"
+    ],
+    "full_before": "harness::milestone_nine_one_certification::tests::matrix::milestone_nine_one_rows_enforce_declared_lane_semantics",
+    "full_after": "harness::milestone_nine_one_certification::tests::matrix::rows_enforce_declared_lane_semantics",
+    "body_sha256": "336aab33a6f1468e2408dbd7e37c9d50e983109d3fdff39319233859fb559ccf",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 4
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_three_certification/tests.rs",
+    "old": "milestone_nine_three_declaration_family_drift_row_distinguishes_runtime_churn_from_declaration_identity",
+    "new": "declaration_family_drift_row_distinguishes_runtime_churn_from_declaration_identity",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Lifecycle churn leaves declaration identity stable while certification identities change.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_three_certification/tests.rs:175"
+    ],
+    "full_before": "harness::milestone_nine_three_certification::tests::milestone_nine_three_declaration_family_drift_row_distinguishes_runtime_churn_from_declaration_identity",
+    "full_after": "harness::milestone_nine_three_certification::tests::declaration_family_drift_row_distinguishes_runtime_churn_from_declaration_identity",
+    "body_sha256": "5d50a281e38c271c7ec89bd8fda71ceae8475ff1294211d5e4ae93169e185380",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 175
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_three_certification/tests.rs",
+    "old": "milestone_nine_three_grouped_and_inspector_rows_preserve_query_family_distinction",
+    "new": "grouped_and_inspector_rows_preserve_query_family_distinction",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Grouped/inspector retain distinct query families despite shared Bridge family labels.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_three_certification/tests.rs:50"
+    ],
+    "full_before": "harness::milestone_nine_three_certification::tests::milestone_nine_three_grouped_and_inspector_rows_preserve_query_family_distinction",
+    "full_after": "harness::milestone_nine_three_certification::tests::grouped_and_inspector_rows_preserve_query_family_distinction",
+    "body_sha256": "e443e4c0f4036792c813a84a797df09a8e952ba3c75b1752b60147de457d38ae",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 50
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_three_certification/tests.rs",
+    "old": "milestone_nine_three_rows_enforce_required_assertion_classes",
+    "new": "rows_enforce_required_assertion_classes",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Subscription diagnostic matrix covers required assertion classes.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_three_certification/tests.rs:8"
+    ],
+    "full_before": "harness::milestone_nine_three_certification::tests::milestone_nine_three_rows_enforce_required_assertion_classes",
+    "full_after": "harness::milestone_nine_three_certification::tests::rows_enforce_required_assertion_classes",
+    "body_sha256": "75f9a3608534af7c670d1fe597c31ced5b63e09b449e0451c302bc299c7295dc",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 8
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_three_certification/tests.rs",
+    "old": "milestone_nine_three_support_scale_row_keeps_query_meaning_fixed_while_cost_posture_changes",
+    "new": "support_scale_row_keeps_query_meaning_fixed_while_cost_posture_changes",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Scale posture changes coverage/cost certification while Query semantic evidence stays fixed.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_three_certification/tests.rs:102"
+    ],
+    "full_before": "harness::milestone_nine_three_certification::tests::milestone_nine_three_support_scale_row_keeps_query_meaning_fixed_while_cost_posture_changes",
+    "full_after": "harness::milestone_nine_three_certification::tests::support_scale_row_keeps_query_meaning_fixed_while_cost_posture_changes",
+    "body_sha256": "acb34996e0a485cc47ba3820e79e24b14dfc022a8c6f083de167b0a817e99c3b",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 102
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs",
+    "old": "milestone_nine_two_performance_receipt_row_is_posture_sensitive",
+    "new": "performance_receipt_row_is_posture_sensitive",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Performance receipt changes with density/allocation posture while query meaning stays fixed.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs:101"
+    ],
+    "full_before": "harness::milestone_nine_two_certification::tests::milestone_nine_two_performance_receipt_row_is_posture_sensitive",
+    "full_after": "harness::milestone_nine_two_certification::tests::performance_receipt_row_is_posture_sensitive",
+    "body_sha256": "22274d4d48d5b72996f843114b76c226132f855589b0dd507e8345718da4ae8c",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 101
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs",
+    "old": "milestone_nine_two_preview_rows_emit_real_preview_evidence",
+    "new": "preview_rows_emit_real_preview_evidence",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Preview discard/promotion rows emit real isolation and residue evidence.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs:49"
+    ],
+    "full_before": "harness::milestone_nine_two_certification::tests::milestone_nine_two_preview_rows_emit_real_preview_evidence",
+    "full_after": "harness::milestone_nine_two_certification::tests::preview_rows_emit_real_preview_evidence",
+    "body_sha256": "d4dd090785622370163e4e5028203afe7159e8fd9acb3e82ee99d24070e85891",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 49
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs",
+    "old": "milestone_nine_two_rows_enforce_lifecycle_semantics",
+    "new": "rows_enforce_lifecycle_semantics",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Lifecycle matrix preserves declared hostile/parity relationships and typed failures.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs:8"
+    ],
+    "full_before": "harness::milestone_nine_two_certification::tests::milestone_nine_two_rows_enforce_lifecycle_semantics",
+    "full_after": "harness::milestone_nine_two_certification::tests::rows_enforce_lifecycle_semantics",
+    "body_sha256": "0d005fd4796539e3ebd39718b4938eef6109f0c8f7025b74d44d3af728a79045",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 8
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs",
+    "old": "milestone_nine_two_scale_row_binds_widths_not_only_row_count",
+    "new": "scale_row_binds_widths_not_only_row_count",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Scale row covers unrelated population, active lanes, consumers and groups.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs:130"
+    ],
+    "full_before": "harness::milestone_nine_two_certification::tests::milestone_nine_two_scale_row_binds_widths_not_only_row_count",
+    "full_after": "harness::milestone_nine_two_certification::tests::scale_row_binds_widths_not_only_row_count",
+    "body_sha256": "98e32b1820c0e933f1467fce83abf0af0b79b79d91a755a912a3bcff184cae78",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 130
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs",
+    "old": "milestone_nine_two_sharing_row_proves_shared_lane_and_consumer_local_delivery",
+    "new": "sharing_row_proves_shared_lane_and_consumer_local_delivery",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Equivalent subscriptions share one lane and retain consumer-local delivery evidence.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/harness/milestone_nine_two_certification/tests.rs:73"
+    ],
+    "full_before": "harness::milestone_nine_two_certification::tests::milestone_nine_two_sharing_row_proves_shared_lane_and_consumer_local_delivery",
+    "full_after": "harness::milestone_nine_two_certification::tests::sharing_row_proves_shared_lane_and_consumer_local_delivery",
+    "body_sha256": "1d2c1ae796e2f11de97ed17765296cf3006b3366497b5030d810e710c2d2cdc7",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 73
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/live/tests/artifact.rs",
+    "old": "live_execution_report_emits_milestone_five_digest_fields",
+    "new": "live_execution_report_emits_digest_fields",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Live execution report emits query, result, delivery and replay digests.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/live/tests/artifact.rs:86"
+    ],
+    "full_before": "live::tests::artifact::live_execution_report_emits_milestone_five_digest_fields",
+    "full_after": "live::tests::artifact::live_execution_report_emits_digest_fields",
+    "body_sha256": "3f7d440b053bcd302217af6fe707463ffdb251a670400869d077be286625beaa",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 86
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/boundary_certification/boundary_reconciliation.rs",
+    "old": "reconciliation_report_covers_remaining_phase_six_boundary_seams",
+    "new": "reconciliation_report_covers_remaining_boundary_seams",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Boundary reconciliation contains every required seam key.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/boundary_certification/boundary_reconciliation.rs:157"
+    ],
+    "full_before": "lower_runtime_routing::certification::boundary_certification::boundary_reconciliation::tests::reconciliation_report_covers_remaining_phase_six_boundary_seams",
+    "full_after": "lower_runtime_routing::certification::boundary_certification::boundary_reconciliation::tests::reconciliation_report_covers_remaining_boundary_seams",
+    "body_sha256": "a43f3051a9de04385e3da1d78d816a06dae12d6b5848275a0676a90cb325e2e7",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 157
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/boundary_certification/non_bypass/non_bypass_tests.rs",
+    "old": "routed_surface_scan_targets_reconcile_remaining_phase_six_seam_files",
+    "new": "routed_surface_scan_targets_reconcile_remaining_seam_files",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Non-bypass scan targets cover the named concrete seam source files.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/boundary_certification/non_bypass/non_bypass_tests.rs:34"
+    ],
+    "full_before": "lower_runtime_routing::certification::boundary_certification::non_bypass::non_bypass_tests::routed_surface_scan_targets_reconcile_remaining_phase_six_seam_files",
+    "full_after": "lower_runtime_routing::certification::boundary_certification::non_bypass::non_bypass_tests::routed_surface_scan_targets_reconcile_remaining_seam_files",
+    "body_sha256": "c81e08140517e58de3158a61fbf55ff214a37c3e814541dc71d2a6685692d8d8",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 34
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/boundary_certification/public_surface/mod.rs",
+    "old": "public_surface_inventory_reconciles_remaining_phase_six_boundary_seams",
+    "new": "public_surface_inventory_reconciles_remaining_boundary_seams",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Public inventory contains the named runtime, subscription, basis, history, effect, intent, projection and causal seams.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/boundary_certification/public_surface/mod.rs:199"
+    ],
+    "full_before": "lower_runtime_routing::certification::boundary_certification::public_surface::tests::public_surface_inventory_reconciles_remaining_phase_six_boundary_seams",
+    "full_after": "lower_runtime_routing::certification::boundary_certification::public_surface::tests::public_surface_inventory_reconciles_remaining_boundary_seams",
+    "body_sha256": "d76707e6d2551acd24a90a171ccfa06b4ff74282954e840ad6474c162e33ca41",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 199
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/closeout_artifacts/closure_test.rs",
+    "old": "closure_test_hostile_lane_aggregates_phase_seven_hostile_obligations",
+    "new": "closure_test_hostile_lane_aggregates_hostile_obligations",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Closure hostile lane hashes acceptance, former-specialist closure and deferred-neighbor failure evidence.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/closeout_artifacts/closure_test.rs:322"
+    ],
+    "full_before": "lower_runtime_routing::certification::closeout_artifacts::closure_test::tests::closure_test_hostile_lane_aggregates_phase_seven_hostile_obligations",
+    "full_after": "lower_runtime_routing::certification::closeout_artifacts::closure_test::tests::closure_test_hostile_lane_aggregates_hostile_obligations",
+    "body_sha256": "93fbd96f66e0598981180b9a7ce23ea51d2d914c5494f257b70cbc773b75cfd4",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 322
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/performance/tests.rs",
+    "old": "slope_report_emits_all_phase_seven_outputs_from_observed_profiles",
+    "new": "slope_report_emits_all_outputs_from_observed_profiles",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Slope report maps each observed profile family to its output digest.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/performance/tests.rs:48",
+      "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/phase_manifest/mod.rs:253"
+    ],
+    "full_before": "lower_runtime_routing::certification::performance::tests::slope_report_emits_all_phase_seven_outputs_from_observed_profiles",
+    "full_after": "lower_runtime_routing::certification::performance::tests::slope_report_emits_all_outputs_from_observed_profiles",
+    "body_sha256": "3520e126ec2d2100100833e56c68c9adca4f8744aa4a3284895f93d096b5e445",
+    "body_reviewed": true,
+    "non_definition_references": [
+      {
+        "path": "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/phase_manifest/mod.rs",
+        "line": 253,
+        "line_text": "\"slope_report_emits_all_phase_seven_outputs_from_observed_profiles\","
+      }
+    ],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 48
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/surface/acceptance_checks_tests.rs",
+    "old": "required_phase_six_concrete_seams_are_enforced_hostilely",
+    "new": "required_concrete_seams_are_enforced_hostilely",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Inventory-synthesized evidence for a required concrete seam is rejected.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/surface/acceptance_checks_tests.rs:11"
+    ],
+    "full_before": "lower_runtime_routing::certification::surface::acceptance_checks_tests::required_phase_six_concrete_seams_are_enforced_hostilely",
+    "full_after": "lower_runtime_routing::certification::surface::acceptance_checks_tests::required_concrete_seams_are_enforced_hostilely",
+    "body_sha256": "15e58c1573987bbf973d9150b263cd4182ded4a5d562dcef539a634d450cb681",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 11
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/surface/evidence_tests.rs",
+    "old": "representative_surface_uses_runtime_backed_fixtures_for_named_phase_six_seams",
+    "new": "representative_surface_uses_runtime_backed_fixtures_for_named_seams",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Required named seams use runtime-backed fixtures.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/surface/evidence_tests.rs:23"
+    ],
+    "full_before": "lower_runtime_routing::certification::surface::evidence_tests::representative_surface_uses_runtime_backed_fixtures_for_named_phase_six_seams",
+    "full_after": "lower_runtime_routing::certification::surface::evidence_tests::representative_surface_uses_runtime_backed_fixtures_for_named_seams",
+    "body_sha256": "7071300ca6900470565911a185802d4267b5cf5a3f622acbc41d0f76ec6464b0",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 23
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/tests.rs",
+    "old": "certification_bundle_contains_phase_seven_lanes",
+    "new": "certification_bundle_contains_lanes",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Certification bundle contains the required crossing/boundary/acceptance/parity/proof/performance lanes.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/tests.rs:27"
+    ],
+    "full_before": "lower_runtime_routing::certification::tests::certification_bundle_contains_phase_seven_lanes",
+    "full_after": "lower_runtime_routing::certification::tests::certification_bundle_contains_lanes",
+    "body_sha256": "51d5aaffc73644b50e5859571fa69bc22b799c88eb5998739d5aa1162b25d955",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 27
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/tests/concrete_seams.rs",
+    "old": "certification_bundle_phase_six_required_seams_are_concrete",
+    "new": "certification_bundle_required_seams_are_concrete",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Required certified seams retain runtime-backed evidence.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/lower_runtime_routing/certification/tests/concrete_seams.rs:4"
+    ],
+    "full_before": "lower_runtime_routing::certification::tests::concrete_seams::certification_bundle_phase_six_required_seams_are_concrete",
+    "full_after": "lower_runtime_routing::certification::tests::concrete_seams::certification_bundle_required_seams_are_concrete",
+    "body_sha256": "19c31b10fcaa04c575959bd576ff5143a5e70c7e9506d0b24daaef45c958856b",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 4
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/policy_execution_seam/tests.rs",
+    "old": "phase_four_execution_shortcuts_are_typed_denials_with_exact_counters",
+    "new": "execution_shortcuts_are_typed_denials_with_exact_counters",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Policy execution shortcuts produce typed denials and exact refusal counters.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/policy_execution_seam/tests.rs:154"
+    ],
+    "full_before": "policy_execution_seam::tests::phase_four_execution_shortcuts_are_typed_denials_with_exact_counters",
+    "full_after": "policy_execution_seam::tests::execution_shortcuts_are_typed_denials_with_exact_counters",
+    "body_sha256": "f2da05b03af7026e7ba916ce20bf835d7cbdf6fd55604c4d61a013a4f9c423dd",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 154
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/preview/tests/binding.rs",
+    "old": "replay_bundle_rejects_for_phase_one_and_two_active_binding",
+    "new": "replay_bundle_rejects_for_active_binding",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Attaching a promoted replay bundle to an active preview binding refuses promotion linkage.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/preview/tests/binding.rs:262"
+    ],
+    "full_before": "preview::tests::binding::replay_bundle_rejects_for_phase_one_and_two_active_binding",
+    "full_after": "preview::tests::binding::replay_bundle_rejects_for_active_binding",
+    "body_sha256": "20a0226417cfc3490616a3a818b1643ae5e0e150922e9fd215fcd30cee0ba014",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 262
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/projection_consumption/certification/audits/support_matrix.rs",
+    "old": "family_inventory_includes_retained_and_live_phase_ten_surfaces",
+    "new": "family_inventory_includes_retained_and_live_surfaces",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Inventory includes retained-derived and live artifact source families.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/projection_consumption/certification/audits/support_matrix.rs:281"
+    ],
+    "full_before": "projection_consumption::certification::audits::support_matrix::tests::family_inventory_includes_retained_and_live_phase_ten_surfaces",
+    "full_after": "projection_consumption::certification::audits::support_matrix::tests::family_inventory_includes_retained_and_live_surfaces",
+    "body_sha256": "798d9c241706172f3a7973a58397df319109d2e7039cae957dd2e46561ee07ab",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 281
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/projection_consumption/certification/audits/support_matrix.rs",
+    "old": "retained_and_live_certified_surfaces_capture_phase_eleven_admitted_subsets",
+    "new": "retained_and_live_certified_surfaces_capture_admitted_subsets",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Retained/live certified fact subsets distinguish admitted source-reference/entity-identity from source mismatches.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/projection_consumption/certification/audits/support_matrix.rs:315"
+    ],
+    "full_before": "projection_consumption::certification::audits::support_matrix::tests::retained_and_live_certified_surfaces_capture_phase_eleven_admitted_subsets",
+    "full_after": "projection_consumption::certification::audits::support_matrix::tests::retained_and_live_certified_surfaces_capture_admitted_subsets",
+    "body_sha256": "7d1ff2c400edf2047b30c298a5384b944028b3bf2c282ab79f15fbbf34e2b5b6",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 315
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/foundation/matrix.rs",
+    "old": "support_discovery_and_eligibility_stay_in_sync_for_all_phase_one_two_lanes",
+    "new": "support_discovery_and_eligibility_stay_in_sync_for_all_lanes",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Each source-family/fact support report agrees with eligibility outcomes.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/foundation/matrix.rs:12"
+    ],
+    "full_before": "projection_consumption::tests::foundation::matrix::support_discovery_and_eligibility_stay_in_sync_for_all_phase_one_two_lanes",
+    "full_after": "projection_consumption::tests::foundation::matrix::support_discovery_and_eligibility_stay_in_sync_for_all_lanes",
+    "body_sha256": "d41dda704d18636c2c77dc7cdf82129430fbfd2ae3e2eb2d89b481a2163f1f0b",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 12
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/phase_four/remaining_sources.rs",
+    "old": "bridge_phase_four_entry_points_are_publicly_reachable",
+    "new": "bridge_entry_points_are_publicly_reachable",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Bridge materialized row-set/grouped extraction entrypoints are public.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/phase_four/remaining_sources.rs:215"
+    ],
+    "full_before": "projection_consumption::tests::phase_four::remaining_sources::bridge_phase_four_entry_points_are_publicly_reachable",
+    "full_after": "projection_consumption::tests::phase_four::remaining_sources::bridge_entry_points_are_publicly_reachable",
+    "body_sha256": "f664263fc9631eefe1ada719754c4630e13b8dec4f334725e949ae07fb70a3c9",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 215
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/phase_one_authoring.rs",
+    "old": "query_owned_phase_one_entry_points_exist",
+    "new": "query_owned_entry_points_exist",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Query receipt/context projection declaration entrypoints exist.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/phase_one_authoring.rs:129"
+    ],
+    "full_before": "projection_consumption::tests::phase_one_authoring::query_owned_phase_one_entry_points_exist",
+    "full_after": "projection_consumption::tests::phase_one_authoring::query_owned_entry_points_exist",
+    "body_sha256": "dc6ee0fe3a20b307312efb8b644c2230cb2ab00a2e6b4244a3c592c49e709c46",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 129
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/phase_one_authoring.rs",
+    "old": "relational_phase_one_authoring_surfaces_build_declarations",
+    "new": "relational_authoring_surfaces_build_declarations",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Relational row-set/grouped authoring constructs typed declarations.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/phase_one_authoring.rs:187"
+    ],
+    "full_before": "projection_consumption::tests::phase_one_authoring::relational_phase_one_authoring_surfaces_build_declarations",
+    "full_after": "projection_consumption::tests::phase_one_authoring::relational_authoring_surfaces_build_declarations",
+    "body_sha256": "54bfe252ffba8b33e1afa536b49a520953922edffd5fb9c82f572c84790687a3",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 187
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/phase_one_authoring.rs",
+    "old": "source_locked_phase_one_authoring_surfaces_exist_for_all_declared_families",
+    "new": "source_locked_authoring_surfaces_exist_for_all_declared_families",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Source-locked authoring surfaces cover relational/Bridge row-set/grouped families.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/phase_one_authoring.rs:159"
+    ],
+    "full_before": "projection_consumption::tests::phase_one_authoring::source_locked_phase_one_authoring_surfaces_exist_for_all_declared_families",
+    "full_after": "projection_consumption::tests::phase_one_authoring::source_locked_authoring_surfaces_exist_for_all_declared_families",
+    "body_sha256": "67ca433de4b23edd4bb287fbfa7d3224eebc6bc6fb1feede70c42f7092baa34c",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 159
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/phase_six_certification.rs",
+    "old": "closeout_bundle_emits_full_phase_six_surface",
+    "new": "closeout_bundle_emits_full_surface",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Projection closeout contains required support/boundary/proof/fallback/oracle/replay/downstream lanes.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/phase_six_certification.rs:6"
+    ],
+    "full_before": "projection_consumption::tests::phase_six_certification::closeout_bundle_emits_full_phase_six_surface",
+    "full_after": "projection_consumption::tests::phase_six_certification::closeout_bundle_emits_full_surface",
+    "body_sha256": "6e383c283804f0152dacca57b3c18d827c102960a322bc2f0154944150554676",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 6
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/retained_live/phase_eleven/support_and_eligibility.rs",
+    "old": "retained_and_live_support_reports_match_phase_eleven_family_boundaries",
+    "new": "retained_and_live_support_reports_match_family_boundaries",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Retained/live support reports preserve distinct family fact boundaries.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/projection_consumption/tests/retained_live/phase_eleven/support_and_eligibility.rs:105"
+    ],
+    "full_before": "projection_consumption::tests::retained_live::phase_eleven::support_and_eligibility::retained_and_live_support_reports_match_phase_eleven_family_boundaries",
+    "full_after": "projection_consumption::tests::retained_live::phase_eleven::support_and_eligibility::retained_and_live_support_reports_match_family_boundaries",
+    "body_sha256": "0324dcceaa353fa91fd552669fa9746c46682f0ea6f57ca2c097327552bb22c9",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 105
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/assembly/support_profile/facade_phase_nine.rs",
+    "old": "phase_nine_facade_families_are_supported_and_admitted",
+    "new": "facade_families_are_supported_and_admitted",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. SharedRead and Submission facade families are supported and admitted with recorded owner closure.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/assembly/support_profile/facade_phase_nine.rs:36"
+    ],
+    "full_before": "runtime::tests::assembly::support_profile::facade_phase_nine::phase_nine_facade_families_are_supported_and_admitted",
+    "full_after": "runtime::tests::assembly::support_profile::facade_phase_nine::facade_families_are_supported_and_admitted",
+    "body_sha256": "705cddca8462a63a58b7867d53a14e71378440e96abd7e9cd7ae854f7bfd2331",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 36
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/assembly/support_profile/read_composition/closeout.rs",
+    "old": "runtime_public_read_composition_phase_one_closeout_answers_kernel_gate",
+    "new": "runtime_public_read_composition_closeout_answers_kernel_gate",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Read-composition closeout reports kernel gate teaching, migration and verification guidance.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/assembly/support_profile/read_composition/closeout.rs:4"
+    ],
+    "full_before": "runtime::tests::assembly::support_profile::read_composition::closeout::runtime_public_read_composition_phase_one_closeout_answers_kernel_gate",
+    "full_after": "runtime::tests::assembly::support_profile::read_composition::closeout::runtime_public_read_composition_closeout_answers_kernel_gate",
+    "body_sha256": "fb5be591c9bb6769aed5f3375e386aefcbe7163c43e85dfbad3f13f35f8155f8",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 4
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/assembly/support_profile/read_composition/support.rs",
+    "old": "runtime_public_read_composition_support_report_freezes_phase_one_kernel_surface",
+    "new": "runtime_public_read_composition_support_report_freezes_kernel_surface",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Read-composition support freezes concrete entrypoints, scope classes, engines, operators and hooks.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/assembly/support_profile/read_composition/support.rs:4"
+    ],
+    "full_before": "runtime::tests::assembly::support_profile::read_composition::support::runtime_public_read_composition_support_report_freezes_phase_one_kernel_surface",
+    "full_after": "runtime::tests::assembly::support_profile::read_composition::support::runtime_public_read_composition_support_report_freezes_kernel_surface",
+    "body_sha256": "48d78dc98c60a2a106998bdbdf4a2451629a2c94f3a1adf1391d684052234e7c",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 4
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/causal_inspection/anchor_reference/anchor_derivation.rs",
+    "old": "phase_one_anchors_cover_changed_suppressed_denied_preview_and_replay_observations",
+    "new": "anchors_cover_changed_suppressed_denied_preview_and_replay_observations",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Causal anchors preserve changed, suppressed, denied, preview and replay observation meaning.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/causal_inspection/anchor_reference/anchor_derivation.rs:4"
+    ],
+    "full_before": "runtime::tests::causal_inspection::anchor_reference::anchor_derivation::phase_one_anchors_cover_changed_suppressed_denied_preview_and_replay_observations",
+    "full_after": "runtime::tests::causal_inspection::anchor_reference::anchor_derivation::anchors_cover_changed_suppressed_denied_preview_and_replay_observations",
+    "body_sha256": "672c8513e76e936942f889fed93395e86c11ca7ca610b3a3a2624a717c2b6740",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 4
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/concurrent_hostile_matrix.rs",
+    "old": "phase_sixteen_concurrent_hostile_matrix_closes_with_replay_stable_artifact",
+    "new": "concurrent_hostile_matrix_closes_with_replay_stable_artifact",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Concurrent hostile matrix closes with nonempty stable replay evidence.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/concurrent_hostile_matrix.rs:7"
+    ],
+    "full_before": "runtime::tests::concurrent_hostile_matrix::phase_sixteen_concurrent_hostile_matrix_closes_with_replay_stable_artifact",
+    "full_after": "runtime::tests::concurrent_hostile_matrix::concurrent_hostile_matrix_closes_with_replay_stable_artifact",
+    "body_sha256": "a7f7375a917514538333002c4c91b3cce9c4f45b38074d423b0becfc3a4d24c5",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 7
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/concurrent_hostile_matrix.rs",
+    "old": "phase_sixteen_concurrent_hostile_matrix_uses_real_topology_and_runtime_counters",
+    "new": "concurrent_hostile_matrix_uses_real_topology_and_runtime_counters",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Concurrent matrix uses real reader/submitter topology and runtime counters.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/concurrent_hostile_matrix.rs:23"
+    ],
+    "full_before": "runtime::tests::concurrent_hostile_matrix::phase_sixteen_concurrent_hostile_matrix_uses_real_topology_and_runtime_counters",
+    "full_after": "runtime::tests::concurrent_hostile_matrix::concurrent_hostile_matrix_uses_real_topology_and_runtime_counters",
+    "body_sha256": "f0ca805439e0f29374db8bc651dea472b2568061b39ce87fb258bc2448cecee1",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 23
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/concurrent_hostile_matrix.rs",
+    "old": "phase_sixteen_counter_sabotage_opens_the_matrix_posture",
+    "new": "counter_sabotage_opens_the_matrix_posture",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Counter sabotages reopen concurrent matrix closure posture.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/concurrent_hostile_matrix.rs:46"
+    ],
+    "full_before": "runtime::tests::concurrent_hostile_matrix::phase_sixteen_counter_sabotage_opens_the_matrix_posture",
+    "full_after": "runtime::tests::concurrent_hostile_matrix::counter_sabotage_opens_the_matrix_posture",
+    "body_sha256": "339b80090110ca215a3e27205b9df6a189ba4e470e4f56a2b7b75226c467724a",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 46
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/evidence_identity/phase_two.rs",
+    "old": "state_snapshot_with_optional_postures_remains_in_phase_two_canonical_migration_coverage",
+    "new": "state_snapshot_with_optional_postures_remains_in_canonical_migration_coverage",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Optional snapshot postures remain covered by canonical state identity composition.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/evidence_identity/phase_two.rs:51"
+    ],
+    "full_before": "runtime::tests::evidence_identity::phase_two::state_snapshot_with_optional_postures_remains_in_phase_two_canonical_migration_coverage",
+    "full_after": "runtime::tests::evidence_identity::phase_two::state_snapshot_with_optional_postures_remains_in_canonical_migration_coverage",
+    "body_sha256": "a9a4b5fe9b0783e1fa896bf5a5157f8a2e006639e3e6af8a79e62e2edce4861b",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 51
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/evidence_identity/phase_two.rs",
+    "old": "support_matrix_and_state_snapshot_remain_in_phase_two_canonical_migration_coverage",
+    "new": "support_matrix_and_state_snapshot_remain_in_canonical_migration_coverage",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Support matrix and state snapshots use canonical evidence identity composition.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/evidence_identity/phase_two.rs:8"
+    ],
+    "full_before": "runtime::tests::evidence_identity::phase_two::support_matrix_and_state_snapshot_remain_in_phase_two_canonical_migration_coverage",
+    "full_after": "runtime::tests::evidence_identity::phase_two::support_matrix_and_state_snapshot_remain_in_canonical_migration_coverage",
+    "body_sha256": "0edb22dd263ad4be75d2d74fdd309818400c96e6346f21c1304f2c510cc294dd",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 8
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/hostile_certification.rs",
+    "old": "hostile_certification_counters_prove_zero_shared_read_lock_and_phase_eleven_residue",
+    "new": "hostile_certification_counters_prove_zero_shared_read_lock_and_residue",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Hostile runtime schedule proves zero read locks and pin/generation/journal/delivery residue.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/hostile_certification.rs:19"
+    ],
+    "full_before": "runtime::tests::hostile_certification::hostile_certification_counters_prove_zero_shared_read_lock_and_phase_eleven_residue",
+    "full_after": "runtime::tests::hostile_certification::hostile_certification_counters_prove_zero_shared_read_lock_and_residue",
+    "body_sha256": "b32928dee178a5950dc7022fbfe4c4a4bad517068acc787ac2d6d253ffc66b62",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 19
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/intent_admission/certification/foundation.rs",
+    "old": "intent_admission_certification_bundle_assembles_phase_six_foundation_artifacts",
+    "new": "intent_admission_certification_bundle_assembles_foundation_artifacts",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Intent-admission bundle exactly binds foundation/extension output manifests and artifact digests.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/intent_admission/certification/foundation.rs:5"
+    ],
+    "full_before": "runtime::tests::intent_admission::certification::foundation::intent_admission_certification_bundle_assembles_phase_six_foundation_artifacts",
+    "full_after": "runtime::tests::intent_admission::certification::foundation::intent_admission_certification_bundle_assembles_foundation_artifacts",
+    "body_sha256": "b2253935e98e58721ca3a0d3abfb05be03a9824134f38f1f63a0c2d8a073e56a",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 5
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/intent_admission/certification/representative.rs",
+    "old": "intent_admission_certification_topology_and_representative_family_artifacts_match_phase_six_scope",
+    "new": "intent_admission_certification_topology_and_representative_family_artifacts_match_scope",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Intent topology and representative family rows bind their authority/neighbor surfaces and evidence.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/intent_admission/certification/representative.rs:5"
+    ],
+    "full_before": "runtime::tests::intent_admission::certification::representative::intent_admission_certification_topology_and_representative_family_artifacts_match_phase_six_scope",
+    "full_after": "runtime::tests::intent_admission::certification::representative::intent_admission_certification_topology_and_representative_family_artifacts_match_scope",
+    "body_sha256": "10cf4b5ca439291c7a1ec456f1e5ee9c1d250042d6a8f38bf1eb5e0b8e0497b2",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 5
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/intent_admission/phases/phase_two/read.rs",
+    "old": "read_execution_basis_context_mismatch_stops_as_phase_two_violation",
+    "new": "read_execution_basis_context_mismatch_stops_as_violation",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Read-basis mismatch is an explicit eligibility/admission violation.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/intent_admission/phases/phase_two/read.rs:45"
+    ],
+    "full_before": "runtime::tests::intent_admission::phases::phase_two::read::read_execution_basis_context_mismatch_stops_as_phase_two_violation",
+    "full_after": "runtime::tests::intent_admission::phases::phase_two::read::read_execution_basis_context_mismatch_stops_as_violation",
+    "body_sha256": "2b0627f771045213b6409cb80b034618c8e76f7994581eff8092030c8892c415",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 45
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/intent_admission/phases/phase_two/runtime.rs",
+    "old": "authority_lane_mismatch_stops_as_phase_two_violation",
+    "new": "authority_lane_mismatch_stops_as_violation",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Preview-truth target mismatch is an explicit authority-admission violation.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/intent_admission/phases/phase_two/runtime.rs:174"
+    ],
+    "full_before": "runtime::tests::intent_admission::phases::phase_two::runtime::authority_lane_mismatch_stops_as_phase_two_violation",
+    "full_after": "runtime::tests::intent_admission::phases::phase_two::runtime::authority_lane_mismatch_stops_as_violation",
+    "body_sha256": "07f30a44ff4873b7fd59b133a0bd3fdf793bf0189619ece56878b3ebcc09b3ea",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 174
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/intent_admission/phases/phase_two/runtime.rs",
+    "old": "mismatched_runtime_floor_eligibility_stops_as_phase_two_violation",
+    "new": "mismatched_runtime_floor_eligibility_stops_as_violation",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Effect-triggered source mismatch is an explicit source-lane admission violation.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/intent_admission/phases/phase_two/runtime.rs:121"
+    ],
+    "full_before": "runtime::tests::intent_admission::phases::phase_two::runtime::mismatched_runtime_floor_eligibility_stops_as_phase_two_violation",
+    "full_after": "runtime::tests::intent_admission::phases::phase_two::runtime::mismatched_runtime_floor_eligibility_stops_as_violation",
+    "body_sha256": "a39da3aaa77b951d71be69980f7cf33363bc72d030dc1473034a0e4700ee55fb",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 121
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/session_label_outputs.rs",
+    "old": "canonical_session_label_intake_phase_six_outputs_are_non_empty_and_stable",
+    "new": "canonical_session_label_intake_outputs_are_non_empty_and_stable",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Session label intake binds distinct preview/branch basis identities and detects display-equivalent identity collisions.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/session_label_outputs.rs:218"
+    ],
+    "full_before": "runtime::tests::session_label_outputs::canonical_session_label_intake_phase_six_outputs_are_non_empty_and_stable",
+    "full_after": "runtime::tests::session_label_outputs::canonical_session_label_intake_outputs_are_non_empty_and_stable",
+    "body_sha256": "db6ca996513b7fa953cc147f1243a9257ee1f5b4ab4001a3ea36e7245120efd0",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 218
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/hostile_matrix.rs",
+    "old": "shared_read_pinning_boundary_closes_only_with_all_phase_thirteen_evidence",
+    "new": "shared_read_pinning_boundary_closes_only_with_all_evidence",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Shared-read boundary closes only with inventory, counters, portability, stale denial and hostile matrix evidence.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/hostile_matrix.rs:6"
+    ],
+    "full_before": "runtime::tests::shared_read_pinning::hostile_matrix::shared_read_pinning_boundary_closes_only_with_all_phase_thirteen_evidence",
+    "full_after": "runtime::tests::shared_read_pinning::hostile_matrix::shared_read_pinning_boundary_closes_only_with_all_evidence",
+    "body_sha256": "46d02fde4dfb7d676cef5c91b944ffbb55daa51703a7df2c97271ca0e370f0c9",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 6
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/inventory.rs",
+    "old": "shared_read_phase_twelve_inventory_names_required_operations",
+    "new": "shared_read_inventory_names_required_operations",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Shared-read pinning inventory names all required physical operations.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/inventory.rs:32"
+    ],
+    "full_before": "runtime::tests::shared_read_pinning::inventory::shared_read_phase_twelve_inventory_names_required_operations",
+    "full_after": "runtime::tests::shared_read_pinning::inventory::shared_read_inventory_names_required_operations",
+    "body_sha256": "c75d3c2a411a7998add86324ae2a0c56085af99744815786c338cb7cb5d07882",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 32
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/inventory.rs",
+    "old": "shared_read_phase_twelve_inventory_rejects_pin_and_retire_residue",
+    "new": "shared_read_inventory_rejects_pin_and_retire_residue",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Shared-read source scans reject hot-path and retirement residue and require canonical patterns.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/inventory.rs:10"
+    ],
+    "full_before": "runtime::tests::shared_read_pinning::inventory::shared_read_phase_twelve_inventory_rejects_pin_and_retire_residue",
+    "full_after": "runtime::tests::shared_read_pinning::inventory::shared_read_inventory_rejects_pin_and_retire_residue",
+    "body_sha256": "51e97afe77bbf92170181371e209c9d16f53ca8974dee7d97ace9d63c51d80ac",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 10
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/sabotage.rs",
+    "old": "shared_read_phase_thirteen_closure_sabotage_reopens_boundary_posture",
+    "new": "shared_read_closure_sabotage_reopens_boundary_posture",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Sabotaging any required shared-read closure evidence reopens boundary posture.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/sabotage.rs:47"
+    ],
+    "full_before": "runtime::tests::shared_read_pinning::sabotage::shared_read_phase_thirteen_closure_sabotage_reopens_boundary_posture",
+    "full_after": "runtime::tests::shared_read_pinning::sabotage::shared_read_closure_sabotage_reopens_boundary_posture",
+    "body_sha256": "db9eec9f04c25bcada651a4c2ec39bffc50074c4bc8dd7ed1f7f4685396a3313",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 47
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/sabotage.rs",
+    "old": "shared_read_phase_twelve_counter_sabotage_reopens_lock_posture",
+    "new": "shared_read_counter_sabotage_reopens_lock_posture",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Injected shared-read hot-path lock counter reopens lock posture.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/sabotage.rs:5"
+    ],
+    "full_before": "runtime::tests::shared_read_pinning::sabotage::shared_read_phase_twelve_counter_sabotage_reopens_lock_posture",
+    "full_after": "runtime::tests::shared_read_pinning::sabotage::shared_read_counter_sabotage_reopens_lock_posture",
+    "body_sha256": "057fd69c8f07e7a0eb981b1302a276617fed593ae59f5ece826972475331ad9b",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 5
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/sabotage.rs",
+    "old": "shared_read_phase_twelve_counter_sabotage_reopens_pin_residue",
+    "new": "shared_read_counter_sabotage_reopens_pin_residue",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. A real held retired-generation pin reopens pin residue until released and drained.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/shared_read_pinning/sabotage.rs:24"
+    ],
+    "full_before": "runtime::tests::shared_read_pinning::sabotage::shared_read_phase_twelve_counter_sabotage_reopens_pin_residue",
+    "full_after": "runtime::tests::shared_read_pinning::sabotage::shared_read_counter_sabotage_reopens_pin_residue",
+    "body_sha256": "7b08d66eb1e72ee2a8c5c3664c85d7a85cc68628277988f47639dc10ffc80936",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 24
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/stop_class/digests.rs",
+    "old": "typed_stop_class_matching_phase_four_outputs_are_non_empty_and_stable",
+    "new": "typed_stop_class_matching_outputs_are_non_empty_and_stable",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Stop-class matching emits distinct route/admission/message-drift/failure digests.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/stop_class/digests.rs:52"
+    ],
+    "full_before": "runtime::tests::stop_class::digests::typed_stop_class_matching_phase_four_outputs_are_non_empty_and_stable",
+    "full_after": "runtime::tests::stop_class::digests::typed_stop_class_matching_outputs_are_non_empty_and_stable",
+    "body_sha256": "98137ba978c1d87d7ab5a8179475cbf53c356bdfda68f612fb94d4d8ff633a05",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 52
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/runtime/tests/stop_class/digests.rs",
+    "old": "typed_stop_class_taxonomy_phase_three_outputs_are_non_empty_and_stable",
+    "new": "typed_stop_class_taxonomy_outputs_are_non_empty_and_stable",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Stop-class taxonomy emits distinct support, promotion, intent and failure digests.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/runtime/tests/stop_class/digests.rs:26"
+    ],
+    "full_before": "runtime::tests::stop_class::digests::typed_stop_class_taxonomy_phase_three_outputs_are_non_empty_and_stable",
+    "full_after": "runtime::tests::stop_class::digests::typed_stop_class_taxonomy_outputs_are_non_empty_and_stable",
+    "body_sha256": "630856915432bc8090e4ed786c97995d0fa36ebc0ba734b99202845d6fd3c417",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 26
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/session_label/tests/digests.rs",
+    "old": "canonical_session_label_phase_five_outputs_are_non_empty_and_stable",
+    "new": "canonical_session_label_outputs_are_non_empty_and_stable",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Session label identity/scope/display/failure outputs are stable and display collisions retain distinct identities.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/session_label/tests/digests.rs:5"
+    ],
+    "full_before": "session_label::tests::digests::canonical_session_label_phase_five_outputs_are_non_empty_and_stable",
+    "full_after": "session_label::tests::digests::canonical_session_label_outputs_are_non_empty_and_stable",
+    "body_sha256": "809e9cdbaf086495fac8b49951a73e68fea799baebbea376629f6d307c79dbb9",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 5
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/subscription/tests/active/active_lifecycle.rs",
+    "old": "active_lane_admission_preserves_activation_digests_and_phase_one_posture",
+    "new": "active_lane_admission_preserves_activation_digests_and_posture",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Active lane admission retains activation/declaration/basis/strategy digests and semantic SingleConsumer delivery/allocation posture.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/subscription/tests/active/active_lifecycle.rs:7"
+    ],
+    "full_before": "subscription::tests::active::active_lifecycle::active_lane_admission_preserves_activation_digests_and_phase_one_posture",
+    "full_after": "subscription::tests::active::active_lifecycle::active_lane_admission_preserves_activation_digests_and_posture",
+    "body_sha256": "735556ac5100f2525c44dfcb22aa3db0e6ef4d4b3f87841eadb9ca6df1603c8b",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 7
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/subscription/tests/active/active_lifecycle.rs",
+    "old": "duplicate_active_lane_join_reuses_existing_lane_in_phase_two",
+    "new": "duplicate_active_lane_join_reuses_existing_lane",
+    "reason": "Remove historical phase_two suffix and its now-dangling preposition in; Duplicate activation joins one existing lane with a new registry generation and exact sharing counters.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/subscription/tests/active/active_lifecycle.rs:161"
+    ],
+    "full_before": "subscription::tests::active::active_lifecycle::duplicate_active_lane_join_reuses_existing_lane_in_phase_two",
+    "full_after": "subscription::tests::active::active_lifecycle::duplicate_active_lane_join_reuses_existing_lane",
+    "body_sha256": "4179f7849ee7f82561356da2b086ae51cda41d72613394e8c1c2a34aacbcf8d8",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 161
+  },
+  {
+    "package": "worth-query",
+    "source": "workspaces/worth-query/crates/worth-query/src/subscription/tests/declaration/delivery_intent.rs",
+    "old": "every_phase_one_family_maps_to_typed_delivery_intent",
+    "new": "every_family_maps_to_typed_delivery_intent",
+    "reason": "Remove historical milestone/build-phase ID; preserve the asserted behavior. Every supported live/view family maps to its exact typed delivery intent.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query/src/subscription/tests/declaration/delivery_intent.rs:6"
+    ],
+    "full_before": "subscription::tests::declaration::delivery_intent::every_phase_one_family_maps_to_typed_delivery_intent",
+    "full_after": "subscription::tests::declaration::delivery_intent::every_family_maps_to_typed_delivery_intent",
+    "body_sha256": "7aedb28889ccd643a32956aa7ff9251624e3ea267a6bf486022cd2b5cee4664e",
+    "body_reviewed": true,
+    "non_definition_references": [],
+    "status": "proposed",
+    "collision_check": {
+      "same_full_module_collisions": [],
+      "same_source_existing_function_collisions": []
+    },
+    "workspace": "query",
+    "line_before": 6
+  },
+  {
+    "package": "worth-query-admission",
+    "source": "workspaces/worth-query/crates/worth-query-admission/src/graph_obligation/tests.rs",
+    "old": "admission_accepts_only_real_phase_one_semantic_owners",
+    "new": "admission_accepts_only_real_semantic_owners",
+    "reason": "Strip phase_one: the assertions check exact semantic-owner sets for graph reads, authorization, mutation and invariant work; there is no numbered protocol state.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query-admission/src/graph_obligation/tests.rs:11",
+      "workspaces/worth-query/crates/worth-query-admission/src/graph_obligation/support_admission.rs:203"
+    ],
+    "runtime_name_before": "graph_obligation::tests::admission_accepts_only_real_phase_one_semantic_owners",
+    "runtime_name_after": "graph_obligation::tests::admission_accepts_only_real_semantic_owners",
+    "baseline_occurrences": 1,
+    "edit_scope": "Only the #[test] function identifier; keep source location, body, assertions, attributes and ignore status.",
+    "workspace": "query",
+    "line_before": 11
+  },
+  {
+    "package": "worth-query-admission",
+    "source": "workspaces/worth-query/crates/worth-query-admission/src/domain_computation/policy_basis/tests.rs",
+    "old": "support_profile_names_phase_one_deferred_execution_surfaces",
+    "new": "support_profile_names_deferred_execution_surfaces",
+    "reason": "Strip phase_one: this is the project rollout/support-profile label. The test checks admitted/deferred execution modes and verified/deferred surfaces, not progression through protocol phase one.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query-admission/src/domain_computation/policy_basis/tests.rs:310",
+      "workspaces/worth-query/crates/worth-query-admission/src/domain_computation/policy_basis/support.rs:79",
+      "workspaces/worth-query/crates/worth-query-admission/src/domain_computation/policy_basis/support.rs:6",
+      "workspaces/worth-query/crates/worth-query-admission/src/domain_computation/policy_basis/artifacts.rs:79",
+      "workspaces/worth-query/crates/worth-query-admission/src/domain_computation/policy_basis/authority.rs:53"
+    ],
+    "runtime_name_before": "domain_computation::policy_basis::tests::support_profile_names_phase_one_deferred_execution_surfaces",
+    "runtime_name_after": "domain_computation::policy_basis::tests::support_profile_names_deferred_execution_surfaces",
+    "baseline_occurrences": 1,
+    "edit_scope": "Only the #[test] function identifier; keep source location, body, assertions, attributes and ignore status.",
+    "workspace": "query",
+    "line_before": 310
+  },
+  {
+    "package": "worth-query-execution",
+    "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/recovery_handle/tests.rs",
+    "old": "phase8_world_construction_installs_via_production_derivation",
+    "new": "world_construction_installs_via_production_derivation",
+    "reason": "Strip phase8: the fixture constructs an installed aftermath contract through production schema/package derivation and checks Reconcilable posture; 8 names the delivery milestone, not a runtime protocol phase.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/recovery_handle/tests.rs:106",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/aftermath_schema_fixture/mod.rs:31",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/aftermath_schema_fixture/mod.rs:59",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/aftermath_schema_fixture/mod.rs:79"
+    ],
+    "runtime_name_before": "domain_computation::application_aftermath::recovery_handle::tests::phase8_world_construction_installs_via_production_derivation",
+    "runtime_name_after": "domain_computation::application_aftermath::recovery_handle::tests::world_construction_installs_via_production_derivation",
+    "baseline_occurrences": 1,
+    "edit_scope": "Only the #[test] function identifier; keep source location, body, assertions, attributes and ignore status.",
+    "workspace": "query",
+    "line_before": 106
+  },
+  {
+    "package": "worth-query-execution",
+    "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/managed_run/tests/combined_provider_capability.rs",
+    "old": "one_installed_anchor_retains_convergence_and_phase_seven_through_ten",
+    "new": "one_installed_anchor_retains_convergence",
+    "reason": "Strip and_phase_seven_through_ten (including the now-dangling connective): these are project delivery phases. The unchanged predicate checks simultaneous convergence, session lifecycle, decision-fact, provisional-attempt and invariant capability retention; there is no numbered protocol transition.",
+    "reference_paths": [
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/managed_run/tests/combined_provider_capability.rs:61",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/managed_run/tests/combined_provider_capability.rs:69",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/provider_session/graph_provider/bounded_step/provider_anchor.rs:192"
+    ],
+    "runtime_name_before": "domain_computation::managed_run::tests::combined_provider_capability::one_installed_anchor_retains_convergence_and_phase_seven_through_ten",
+    "runtime_name_after": "domain_computation::managed_run::tests::combined_provider_capability::one_installed_anchor_retains_convergence",
+    "baseline_occurrences": 1,
+    "edit_scope": "Only the #[test] function identifier; keep source location, body, assertions, attributes and ignore status.",
+    "workspace": "query",
+    "line_before": 61
+  },
+  {
+    "package": "worth-query-bank-court-domain",
+    "source": "workspaces/worth-query-bank-world/crates/worth-query-bank-court-domain/tests/worth_query_bank_court_domain/domain/domain_contracts/estate_schema_inventory/mod.rs",
+    "old": "estate_capabilities_and_installed_phase_seven_programs_are_declared",
+    "new": "estate_capabilities_and_installed_programs_are_declared",
+    "reason": "phase_seven names the historical Milestone 9.16 Runtime Phase 7/7.7 implementation cutover, not a program/protocol revision. The test only checks declaration capability inventory and the exact installed estate-operation set; its assertion message explicitly credits Phase 7.7. Removing phase_seven preserves the behavior sentence and every assertion/body.",
+    "reference_paths": [
+      "workspaces/worth-query-bank-world/crates/worth-query-bank-court-domain/tests/worth_query_bank_court_domain/domain/domain_contracts/estate_schema_inventory/mod.rs",
+      "workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-domain/src/estate_schema_inventory.rs",
+      "workspaces/worth-query-bank-world/crates/bank-domain/src/schema/estate/operation_program_installation/mod.rs",
+      "workspaces/worth-query-bank-world/crates/bank-domain/src/schema/estate/operation_program_installation/lifecycle.rs",
+      "plans/WORTH-query/milestone-9.16-runtime-phase-7-closure-ledger.md"
+    ],
+    "name_before": "domain::domain_contracts::estate_schema_inventory::estate_capabilities_and_installed_phase_seven_programs_are_declared",
+    "name_after": "domain::domain_contracts::estate_schema_inventory::estate_capabilities_and_installed_programs_are_declared",
+    "evidence": [
+      {
+        "path": "workspaces/worth-query-bank-world/crates/worth-query-bank-court-domain/tests/worth_query_bank_court_domain/domain/domain_contracts/estate_schema_inventory/mod.rs",
+        "line": 61,
+        "meaning": "Test declaration embeds phase_seven; it constructs BankSchema::declaration and compares operation/capability inventories."
+      },
+      {
+        "path": "workspaces/worth-query-bank-world/crates/worth-query-bank-court-domain/tests/worth_query_bank_court_domain/domain/domain_contracts/estate_schema_inventory/mod.rs",
+        "line": 100,
+        "meaning": "Assertion text explicitly says Phase 7.7 installs the emergency lifecycle and completed ordinary estate mutation programs."
+      },
+      {
+        "path": "workspaces/worth-query-bank-world/crates/worth-query-bank-testkit-domain/src/estate_schema_inventory.rs",
+        "meaning": "operation_program_name matches ordinary ApplicationSchemaMember::OperationProgram and returns the operation name; no phase or version discriminator is read."
+      },
+      {
+        "path": "workspaces/worth-query-bank-world/crates/bank-domain/src/schema/estate/operation_program_installation/mod.rs",
+        "meaning": "Installation composes lifecycle, delegation, revocation and ordinary estate operation installers; phase_seven is not a program type or protocol discriminator."
+      },
+      {
+        "path": "plans/WORTH-query/milestone-9.16-runtime-phase-7-closure-ledger.md",
+        "line": 8,
+        "meaning": "Ledger identifies Runtime Phase 7 closure through Phase 7.7 Gate D."
+      },
+      {
+        "path": "plans/WORTH-query/milestone-9.16-runtime-phase-7-closure-ledger.md",
+        "line": 47,
+        "meaning": "R7.13 assigns the public Query estate-operation cutover to Phase 7.7."
+      },
+      {
+        "path": "plans/WORTH-query/milestone-9.16-runtime-phase-7-closure-ledger.md",
+        "line": 85,
+        "meaning": "Q7.16 explicitly explains estate commands intentionally lacked executable operation programs until Phase 7.7, confirming a delivery phase rather than protocol meaning."
+      }
+    ],
+    "workspace": "bank"
+  }
+]

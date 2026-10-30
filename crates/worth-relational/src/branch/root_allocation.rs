@@ -1,4 +1,7 @@
 use super::RelationalBranchRoot;
+use crate::branch::root_regions::RelationalPersistentRegionNodeObservation;
+#[path = "root_allocation/union.rs"]
+mod union;
 
 #[cfg(test)]
 #[path = "root_allocation_tests.rs"]
@@ -21,6 +24,47 @@ pub(crate) struct RelationalRootAuthoritativeAllocationObservation {
     pub(crate) authoritative_bytes: u64,
 }
 
+pub(crate) trait RelationalRootAllocationVisitor {
+    type Error;
+    /// Returning false prunes the children of this immutable allocation.
+    fn allocation(&mut self, allocation: RelationalRootAuthoritativeAllocationObservation) -> bool;
+    fn region(
+        &mut self,
+        region: super::RelationalRootRegionObservation,
+        partition: Result<
+            Option<&crate::storage::overlay::PartitionState>,
+            crate::storage::data::RelationalStorageUnavailable,
+        >,
+    ) -> Result<(), Self::Error>;
+}
+
+impl From<RelationalPersistentRegionNodeObservation>
+    for RelationalRootAuthoritativeAllocationObservation
+{
+    fn from(node: RelationalPersistentRegionNodeObservation) -> Self {
+        use crate::branch::RelationalPersistentRegionAllocationKind as Region;
+        let kind = match node.allocation_kind {
+            Region::SetObject => {
+                RelationalRootAuthoritativeAllocationKind::PersistentRegionSetObject
+            }
+            Region::MapNodeObject => {
+                RelationalRootAuthoritativeAllocationKind::PersistentRegionMapNodeObject
+            }
+            Region::ReplacementStorage => {
+                RelationalRootAuthoritativeAllocationKind::PersistentRegionReplacementStorage
+            }
+            Region::RemovalStorage => {
+                RelationalRootAuthoritativeAllocationKind::PersistentRegionRemovalStorage
+            }
+        };
+        Self {
+            kind,
+            owner_id: node.node_id,
+            authoritative_bytes: node.authoritative_bytes,
+        }
+    }
+}
+
 impl RelationalBranchRoot {
     pub(crate) fn authoritative_allocation_observations(
         &self,
@@ -38,25 +82,7 @@ impl RelationalBranchRoot {
             authoritative_bytes: self.schema_authority().authoritative_allocation_bytes(),
         });
         for node in self.regions.allocation_observations() {
-            let kind = match node.allocation_kind {
-                crate::branch::RelationalPersistentRegionAllocationKind::SetObject => {
-                    RelationalRootAuthoritativeAllocationKind::PersistentRegionSetObject
-                }
-                crate::branch::RelationalPersistentRegionAllocationKind::MapNodeObject => {
-                    RelationalRootAuthoritativeAllocationKind::PersistentRegionMapNodeObject
-                }
-                crate::branch::RelationalPersistentRegionAllocationKind::ReplacementStorage => {
-                    RelationalRootAuthoritativeAllocationKind::PersistentRegionReplacementStorage
-                }
-                crate::branch::RelationalPersistentRegionAllocationKind::RemovalStorage => {
-                    RelationalRootAuthoritativeAllocationKind::PersistentRegionRemovalStorage
-                }
-            };
-            observations.push(RelationalRootAuthoritativeAllocationObservation {
-                kind,
-                owner_id: node.node_id,
-                authoritative_bytes: node.authoritative_bytes,
-            });
+            observations.push(node.into());
         }
         observations
     }

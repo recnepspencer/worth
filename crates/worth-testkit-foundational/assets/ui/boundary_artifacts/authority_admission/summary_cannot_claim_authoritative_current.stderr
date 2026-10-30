@@ -1,0 +1,16 @@
+error[E0271]: type mismatch resolving `<FoundationalBoundarySummarySurface as FoundationalBoundaryCategorySurface>::Category == ArtifactCategory`
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/authority_admission/summary_cannot_claim_authoritative_current.rs
+  |
+  |     let _ = admit_authoritative_current_boundary_surface(
+  |             -------------------------------------------- required by a bound introduced by this call
+  |         summary,
+  |         ^^^^^^^ expected `ArtifactCategory`, found `SummaryCategory`
+  |
+note: required by a bound in `admit_authoritative_current_boundary_surface`
+ --> $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/authority.rs
+  |
+  | pub fn admit_authoritative_current_boundary_surface<Surface>(
+  |        -------------------------------------------- required by a bound in this function
+...
+  |     Surface: FoundationalBoundaryCategorySurface<Category = ArtifactCategory>,
+  |                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `admit_authoritative_current_boundary_surface`

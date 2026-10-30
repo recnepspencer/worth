@@ -1,282 +1,90 @@
-use std::{collections::BTreeSet, path::Path};
-
+//! Court selections generated from the applied court plan. Categories are prefixes.
 use super::TestExecutionUnit;
+use std::path::Path;
 
-#[derive(Clone, Copy)]
-struct IntegrationTarget {
-    package: &'static str,
-    target: &'static str,
-    feature: Option<&'static str>,
+pub(super) fn scenario(shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutionUnit> {
+    units(
+        "scenario",
+        &["ordinary", "process", "determinism"],
+        shard,
+        root,
+    )
 }
-
-pub(super) fn scenario(
-    shard: Option<(usize, usize)>,
-    workspace_root: &Path,
-) -> Vec<TestExecutionUnit> {
-    integration_units("scenario", SCENARIO_TARGETS, shard, workspace_root)
+pub(super) fn ui(shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutionUnit> {
+    units("ui", &["compile_fail"], shard, root)
 }
-
-pub(super) fn ui(shard: Option<(usize, usize)>, workspace_root: &Path) -> Vec<TestExecutionUnit> {
-    integration_units("ui", UI_TARGETS, shard, workspace_root)
+pub(super) fn formal(shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutionUnit> {
+    units("formal", &["oracle"], shard, root)
 }
-
-pub(super) fn formal(
-    shard: Option<(usize, usize)>,
-    workspace_root: &Path,
-) -> Vec<TestExecutionUnit> {
-    integration_units("formal", FORMAL_TARGETS, shard, workspace_root)
+pub(super) fn cost(shard: Option<(usize, usize)>, root: &Path) -> Vec<TestExecutionUnit> {
+    units("cost", &["cost"], shard, root)
 }
-
-fn integration_units(
+fn units(
     lane: &str,
-    selections: &[IntegrationTarget],
+    categories: &[&str],
     shard: Option<(usize, usize)>,
-    workspace_root: &Path,
+    root: &Path,
 ) -> Vec<TestExecutionUnit> {
-    // Process tests build the independent executables they run themselves.
-    vec![TestExecutionUnit::cargo(
-        format!("{lane}::nextest"),
-        workspace_root,
-        integration_arguments(selections, shard),
-    )]
-}
-
-fn integration_arguments(
-    selections: &[IntegrationTarget],
-    shard: Option<(usize, usize)>,
-) -> Vec<String> {
-    let target_names = selections
-        .iter()
-        .map(|selection| selection.target)
-        .collect::<BTreeSet<_>>();
-    let features = selections
-        .iter()
-        .filter_map(|selection| selection.feature)
-        .collect::<BTreeSet<_>>();
-    let filter = selections
-        .iter()
-        .map(|selection| format!("binary_id(={}::{})", selection.package, selection.target))
-        .collect::<Vec<_>>()
-        .join(" + ");
-    let mut arguments = vec![
-        "nextest".into(),
-        "run".into(),
-        "--workspace".into(),
-        "--no-fail-fast".into(),
-        "--no-tests=fail".into(),
-        "--filterset".into(),
-        filter,
-    ];
-    for target in target_names {
-        arguments.extend(["--test".into(), target.into()]);
+    let mut args: Vec<String> = [
+        "nextest",
+        "run",
+        "--workspace",
+        "--tests",
+        "--no-fail-fast",
+        "--no-tests=fail",
+        "--filterset",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect();
+    let mut filters = Vec::new();
+    for &(package, binary) in COURTS {
+        for &category in categories {
+            let prefix = match category {
+                "ordinary" => "not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))".to_owned(),
+                "process" | "oracle" | "cost" | "determinism" | "compile_fail" => format!("test(/^{category}::/)"),
+                other => panic!("unregistered category {other}"),
+            };
+            filters.push(format!("(binary_id(={package}::{binary}) & ({prefix}))"));
+        }
     }
-    for feature in features {
-        arguments.extend(["--features".into(), feature.into()]);
-    }
+    args.push(filters.join(" + "));
     if let Some((index, count)) = shard {
-        arguments.extend([
+        args.extend([
             "--partition".into(),
             format!("hash:{}/{}", index + 1, count),
         ]);
     }
-    arguments
+    vec![TestExecutionUnit::cargo(
+        format!("{lane}::nextest"),
+        root,
+        args,
+    )]
 }
-
-const CERTIFICATION_FEATURE: Option<&str> = Some("worth-store/certification-test-authority");
-
-const SCENARIO_TARGETS: &[IntegrationTarget] = &[
-    target(
-        "worth-store-relational",
-        "relational_home",
-        Some("worth-store-relational/certification-test-authority"),
-    ),
-    target(
-        "worth-store",
-        "physical_media_journeys",
-        CERTIFICATION_FEATURE,
-    ),
-    target(
-        "worth-store",
-        "physical_record_journeys",
-        CERTIFICATION_FEATURE,
-    ),
-    target(
-        "worth-store",
-        "public_facade_downstream",
-        CERTIFICATION_FEATURE,
-    ),
-    target("worth-store", "runtime_authority_pressure_journey", None),
-    target("worth-store", "sealed_runtime_lifecycle_journey", None),
-    target("worth-store-buffer-pool", "clean_authority", None),
-    target("worth-store-physical-format", "manifest_access", None),
-    target(
-        "worth-store-physical-format",
-        "physical_record_access",
-        None,
-    ),
-    target(
-        "worth-store-offline-verifier",
-        "phase_eight_observer_cli",
-        None,
-    ),
-    target("worth-store-physical-isolation", "layout_scenarios", None),
-    target("worth-store-layout-indexes", "layout_scenarios", None),
-    target("worth-store-branch-deltas", "layout_scenarios", None),
-    target("worth-store-snapshots", "layout_scenarios", None),
-    target("worth-store-recovery-runtime", "authority_compile", None),
-    target(
-        "worth-store-recovery-runtime",
-        "phase_five_cancellation",
-        None,
-    ),
-    target("worth-store-recovery-runtime", "phase_five_faults", None),
-    target(
-        "worth-store-recovery-runtime",
-        "phase_five_generation_axes",
-        None,
-    ),
-    target(
-        "worth-store-recovery-runtime",
-        "phase_five_prefix_completion",
-        None,
-    ),
-    target("worth-store-recovery-runtime", "phase_five_staging", None),
-    target("worth-store-recovery-runtime", "phase_four_planning", None),
-    target("worth-store-recovery-runtime", "phase_four_process", None),
-    target("worth-store-recovery-runtime", "phase_seven_cleanup", None),
-    target("worth-store-recovery-runtime", "phase_seven_faults", None),
-    target("worth-store-recovery-runtime", "phase_three_denials", None),
-    target(
-        "worth-store-recovery-runtime",
-        "phase_three_discovery",
-        None,
-    ),
-    target(
-        "worth-store-recovery-runtime",
-        "phase_three_manifest_denials",
-        None,
-    ),
-    target(
-        "worth-store-recovery-runtime",
-        "phase_three_media_denials",
-        None,
-    ),
-    target(
-        "worth-store-recovery-runtime",
-        "phase_three_root_anchor",
-        None,
-    ),
-    target("worth-store-recovery-runtime", "production_entry", None),
-    target(
-        "worth-store-certification",
-        "aspect_native_terminal_projection",
-        None,
-    ),
-    target(
-        "worth-store-certification",
-        "aspect_native_terminal_projection_hostile_readmission",
-        None,
-    ),
-    target("worth-store-certification", "blob_chunks", None),
-    target("worth-store-certification", "io_scheduling", None),
-    target("worth-store-certification", "layout_access", None),
-    target("worth-store-certification", "operational_security", None),
-    target("worth-store-certification", "physical_isolation", None),
-    target(
-        "worth-store-certification",
-        "scheduler_queue_execution",
-        None,
-    ),
-    target("store-test-runner", "cli", None),
+const COURTS: &[(&str, &str)] = &[
+    ("worth-store-court-source", "worth_store_court_source"),
+    ("worth-store-court-store", "worth_store_court_store"),
+    ("worth-store-court-store-replication-physical-record-journeys-durability-admission", "worth_store_court_store_replication_physical_record_journeys_durability_admission"),
+    ("worth-store-court-store-replication-physical-record-journeys-physical-work", "worth_store_court_store_replication_physical_record_journeys_physical_work"),
+    ("worth-store-court-store-replication-physical-blob-journeys", "worth_store_court_store_replication_physical_blob_journeys"),
+    ("worth-store-court-store-replication", "worth_store_court_store_replication"),
+    ("worth-store-court-aspect-native", "worth_store_court_aspect_native"),
+    ("worth-store-court-branch-deltas", "worth_store_court_branch_deltas"),
+    ("worth-store-court-buffer-pool", "worth_store_court_buffer_pool"),
+    ("worth-store-court-layout-indexes", "worth_store_court_layout_indexes"),
+    ("worth-store-court-layout-indexes-replication", "worth_store_court_layout_indexes_replication"),
+    ("worth-store-court-maintenance-recovery-runtime-replication", "worth_store_court_maintenance_recovery_runtime_replication"),
+    ("worth-store-court-physical-format", "worth_store_court_physical_format"),
+    ("worth-store-court-physical-integrity", "worth_store_court_physical_integrity"),
+    ("worth-store-court-physical-isolation", "worth_store_court_physical_isolation"),
+    ("worth-store-court-recovery-runtime-replication", "worth_store_court_recovery_runtime_replication"),
+    ("worth-store-court-recovery-runtime-replication-phase-eight-process", "worth_store_court_recovery_runtime_replication_phase_eight_process"),
+    ("worth-store-court-recovery-runtime-replication-production-entry-certified-release-serving", "worth_store_court_recovery_runtime_replication_production_entry_certified_release_serving"),
+    ("worth-store-court-recovery-runtime-replication-production-entry-accumulator-only-pending-wal", "worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal"),
+    ("worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving", "worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving"),
+    ("worth-store-court-recovery-runtime-replication-store-physical-blob-journeys", "worth_store_court_recovery_runtime_replication_store_physical_blob_journeys"),
+    ("worth-store-court-recovery-runtime-replication-store-physical-record-journeys-durability-admission", "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_durability_admission"),
+    ("worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views", "worth_store_court_recovery_runtime_replication_store_physical_record_journeys_record_chunk_views"),
+    ("worth-store-court-relational", "worth_store_court_relational"),
+    ("worth-store-court-snapshots", "worth_store_court_snapshots"),
 ];
-
-const UI_TARGETS: &[IntegrationTarget] = &[
-    target("worth-store", "physical_adapter_authority_ui", None),
-    target(
-        "worth-store",
-        "physical_media_authority_ui",
-        CERTIFICATION_FEATURE,
-    ),
-    target(
-        "worth-store",
-        "physical_runtime_authority_ui",
-        CERTIFICATION_FEATURE,
-    ),
-    target(
-        "worth-store-test-support",
-        "harness_authority_compile_fail",
-        None,
-    ),
-    target("worth-store-layout-indexes", "layout_compile_fail", None),
-    target(
-        "worth-store-physical-certification",
-        "backend_qualification_public_boundary_compile_fail",
-        None,
-    ),
-    target(
-        "worth-store-physical-certification",
-        "blob_harness_public_boundary_compile_fail",
-        None,
-    ),
-    target(
-        "worth-store-certification",
-        "aspect_native_authority_ui",
-        None,
-    ),
-    target(
-        "worth-store-certification",
-        "authority_projection_readmission_ui",
-        None,
-    ),
-    target(
-        "worth-store-certification",
-        "s4_5_driver_contract_boundary_compile_fail",
-        None,
-    ),
-    target(
-        "worth-store-certification",
-        "s5_1_security_scope_admission_compile_fail",
-        None,
-    ),
-    target(
-        "worth-store-certification",
-        "recovery_read_authority_compile_fail",
-        None,
-    ),
-    target(
-        "worth-store-certification",
-        "s5_tier_movement_future_chunk_compile_fail",
-        None,
-    ),
-    target(
-        "worth-store-certification",
-        "s6_secure_io_authority_compile_fail",
-        None,
-    ),
-    target(
-        "worth-store-certification",
-        "terminal_projection_quarantine_ui",
-        None,
-    ),
-];
-
-const FORMAL_TARGETS: &[IntegrationTarget] = &[
-    target("worth-store-formal-models", "backend_assumptions", None),
-    target(
-        "worth-store-formal-models",
-        "compaction_visibility_owner_execution",
-        None,
-    ),
-];
-
-const fn target(
-    package: &'static str,
-    target: &'static str,
-    feature: Option<&'static str>,
-) -> IntegrationTarget {
-    IntegrationTarget {
-        package,
-        target,
-        feature,
-    }
-}

@@ -350,19 +350,49 @@ pub(crate) fn process_counter_snapshot() -> ProcessRuntimeCounterSnapshot {
 }
 
 fn increment(counter: &AtomicU64, amount: u64) {
-    counter
-        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-            Some(current.saturating_add(amount))
-        })
-        .expect("the counter update closure always returns a value");
+    {
+        let update_counter = counter;
+        let mut current = update_counter.load(Ordering::Acquire);
+        loop {
+            let next_value = Some(current.saturating_add(amount));
+            let Some(updated_value) = next_value else {
+                break Err(current);
+            };
+            match update_counter.compare_exchange_weak(
+                current,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => current = reloaded_value,
+            }
+        }
+    }
+    .expect("the counter update closure always returns a value");
 }
 
 fn decrement(counter: &AtomicU64) {
-    counter
-        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-            current.checked_sub(1)
-        })
-        .expect("resource release must correspond to an active acquisition");
+    {
+        let update_counter = counter;
+        let mut current = update_counter.load(Ordering::Acquire);
+        loop {
+            let next_value = current.checked_sub(1);
+            let Some(updated_value) = next_value else {
+                break Err(current);
+            };
+            match update_counter.compare_exchange_weak(
+                current,
+                updated_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(previous) => break Ok(previous),
+                Err(reloaded_value) => current = reloaded_value,
+            }
+        }
+    }
+    .expect("resource release must correspond to an active acquisition");
 }
 
 fn load(counter: &AtomicU64) -> u64 {

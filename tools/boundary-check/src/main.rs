@@ -1,164 +1,120 @@
-mod cargo_graph;
-mod certification_construction;
 mod config;
-mod configured_dependency_denials;
-mod configured_source_dependency_allowlists;
-mod configured_source_identifier_denials;
-mod configured_source_owner_isolations;
-mod consumer_docs;
-mod context_workspace_rules;
-mod control_seal;
-mod dependency_rules;
-mod derived_skills;
-mod diagnostics;
-mod facade_docs;
-mod governed_sources;
-mod hook_authority;
-mod legacy_references;
-mod manifest_types;
-mod naming;
-mod one_build;
-mod query_audience;
-mod scan;
-mod scan_profile;
-mod sealed_sources;
-mod seed_contracts;
-mod snapshots;
-mod source_documents;
-mod source_rules;
-mod source_syntax;
-mod source_workers;
-mod subworkspace_rules;
-
-use crate::diagnostics::{render_human, render_json};
-use crate::snapshots::SnapshotMode;
-use std::{env, path::PathBuf};
-
-struct Arguments {
-    root: PathBuf,
-    config_path: PathBuf,
-    format: OutputFormat,
-    snapshot_mode: SnapshotMode,
-    profile_path: Option<PathBuf>,
-    width: usize,
-    write_guidance: bool,
-    sealed_sources_only: bool,
-}
-
-enum OutputFormat {
-    Human,
-    Json,
-}
+mod document_rules;
+mod graph_rules;
+mod inputs;
+mod lexical;
+mod runtime_courts;
+mod seal_rules;
+mod text_rules;
+use config::{diagnostic, Code, Diagnostic};
+use inputs::Inputs;
+use std::{env, path::PathBuf, thread};
 
 fn main() {
-    let Arguments {
-        root,
-        config_path,
-        format,
-        snapshot_mode,
-        profile_path,
-        width,
-        write_guidance,
-        sealed_sources_only,
-    } = match parse_args() {
-        Ok(args) => args,
-        Err(error) => {
-            eprintln!("{error}");
-            std::process::exit(1);
-        }
-    };
-
-    if write_guidance {
-        match consumer_docs::write_guidance(&root) {
-            Ok(()) => println!("boundary-check: generated guidance regions and derived skills"),
-            Err(error) => {
-                eprintln!("{error}");
-                std::process::exit(1);
+    let mut root = PathBuf::from(".");
+    let mut config = format!("{}road1.toml", config::CONFIG);
+    let mut json = false;
+    let mut args = env::args().skip(1);
+    while let Some(arg) = args.next() {
+        match (arg.as_str(), args.next()) {
+            ("--root", Some(value)) => root = value.into(),
+            ("--config", Some(value)) => config = value,
+            ("--format", Some(value)) if value == "json" || value == "human" => {
+                json = value == "json"
+            }
+            _ => {
+                eprintln!(
+                    "usage: boundary-check [--root PATH] [--config PATH] [--format human|json]"
+                );
+                std::process::exit(2);
             }
         }
-        return;
     }
-    let profile = scan_profile::Session::new(profile_path);
-    let result = if sealed_sources_only {
-        let diagnostics = sealed_sources::validate(&root);
-        if diagnostics.is_empty() {
-            Ok(())
-        } else {
-            Err(diagnostics)
-        }
-    } else {
-        scan::run(root, config_path, snapshot_mode, width)
+    let result = root
+        .canonicalize()
+        .map_err(|e| e.to_string())
+        .and_then(|root| Inputs::read(&root, &config));
+    let outcome = match result {
+        Ok(input) => thread::scope(|s| {
+            let rules: [fn(&Inputs) -> Vec<Diagnostic>; 5] = [
+                graph_rules::check,
+                text_rules::check,
+                document_rules::check,
+                seal_rules::check,
+                runtime_courts::check,
+            ];
+            let handles: Vec<_> = rules
+                .into_iter()
+                .map(|rule| {
+                    let input = &input;
+                    s.spawn(move || rule(input))
+                })
+                .collect();
+            handles
+                .into_iter()
+                .flat_map(|h| h.join().expect("rule panicked"))
+                .collect::<Vec<_>>()
+        }),
+        Err(error) => return emit(Outcome::InputFailure(error), json),
     };
-    drop(profile);
-    match result {
-        Ok(()) if sealed_sources_only => println!("boundary-check: sealed source reach is valid"),
-        Ok(()) => println!("boundary-check: Road 1 Cargo topology is valid"),
-        Err(diagnostics) => {
-            let output = match format {
-                OutputFormat::Human => Ok(render_human(&diagnostics)),
-                OutputFormat::Json => render_json(&diagnostics),
-            };
-            eprintln!("{}", output.unwrap_or_else(|error| error));
-            std::process::exit(1);
+    emit(Outcome::Checked(outcome), json);
+}
+enum Outcome {
+    Checked(Vec<Diagnostic>),
+    InputFailure(String),
+}
+impl Outcome {
+    fn report(self) -> (Vec<Diagnostic>, i32) {
+        match self {
+            Self::Checked(mut diagnostics) => {
+                diagnostics.sort();
+                diagnostics.dedup();
+                let status = i32::from(!diagnostics.is_empty());
+                (diagnostics, status)
+            }
+            Self::InputFailure(error) => (vec![diagnostic(Code::InputFailure, "inputs", error)], 2),
         }
     }
 }
-
-fn parse_args() -> Result<Arguments, String> {
-    let mut root = PathBuf::from(".");
-    let mut config = PathBuf::from("tools/boundary-check/config/road1.toml");
-    let mut format = OutputFormat::Human;
-    let mut snapshot_mode = SnapshotMode::Check;
-    let mut profile = None;
-    let mut width = std::thread::available_parallelism().map_or(1, usize::from);
-    let mut write_guidance = false;
-    let mut sealed_sources_only = false;
-    let mut args = env::args().skip(1);
-    while let Some(arg) = args.next() {
-        match arg.as_str() {
-            "--root" => root = PathBuf::from(args.next().ok_or("missing --root value")?),
-            "--config" => config = PathBuf::from(args.next().ok_or("missing --config value")?),
-            "--format" => {
-                let value = args.next().ok_or("missing --format value")?;
-                format = match value.as_str() {
-                    "human" => OutputFormat::Human,
-                    "json" => OutputFormat::Json,
-                    other => return Err(format!("unknown --format value: {other}")),
-                };
-            }
-            "--profile" => {
-                profile = Some(PathBuf::from(args.next().ok_or("missing --profile value")?))
-            }
-            "--width" => {
-                width = args
-                    .next()
-                    .ok_or("missing --width value")?
-                    .parse()
-                    .map_err(|_| "--width must be a positive integer")?;
-                if width == 0 {
-                    return Err("--width must be a positive integer".into());
-                }
-            }
-            "--write-guidance" => write_guidance = true,
-            "--sealed-sources-only" => sealed_sources_only = true,
-            "--update-snapshots" => snapshot_mode = SnapshotMode::Update,
-            other => return Err(format!("unknown argument: {other}")),
+fn emit(outcome: Outcome, json: bool) {
+    let (diagnostics, status) = outcome.report();
+    if json {
+        println!("{}", serde_json::to_string_pretty(&diagnostics).unwrap());
+    } else if diagnostics.is_empty() {
+        println!("boundary-check: repository boundaries are valid");
+    } else {
+        for d in &diagnostics {
+            eprintln!(
+                "{} {}: {}\nbelongs: {}",
+                d.code.as_str(),
+                d.subject,
+                d.message,
+                d.legal_home
+            );
         }
     }
-    if write_guidance && matches!(snapshot_mode, SnapshotMode::Update) {
-        return Err("guidance writes and snapshot updates are separate operations".into());
+    if status != 0 {
+        std::process::exit(status);
     }
-    if sealed_sources_only && (write_guidance || matches!(snapshot_mode, SnapshotMode::Update)) {
-        return Err("sealed-source validation cannot write guidance or snapshots".into());
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn unavailable_inputs_are_distinct_from_checked_dependency_violations() {
+        let (unchecked, status) = Outcome::InputFailure("graph unavailable".into()).report();
+        assert_eq!(status, 2);
+        let json: serde_json::Value =
+            serde_json::from_str(&serde_json::to_string(&unchecked).unwrap()).unwrap();
+        assert_eq!(json[0]["code"], "BOUNDARY_INPUT_FAILURE");
+        let (checked, status) = Outcome::Checked(vec![diagnostic(
+            Code::Dependency,
+            "crate",
+            "forbidden dependency",
+        )])
+        .report();
+        assert_eq!(status, 1);
+        assert_eq!(checked[0].code, Code::Dependency);
+        assert_eq!(Outcome::Checked(Vec::new()).report().1, 0);
     }
-    Ok(Arguments {
-        root,
-        config_path: config,
-        format,
-        snapshot_mode,
-        profile_path: profile,
-        width,
-        write_guidance,
-        sealed_sources_only,
-    })
 }

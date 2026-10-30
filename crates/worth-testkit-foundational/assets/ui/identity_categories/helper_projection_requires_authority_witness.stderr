@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/helper_projection_requires_authority_witness.rs
+  |
+  |     let _projection = project_foundational_identity(&identity, "query:commit:42".to_string(), ());
+  |                       ----------------------------- arguments to this function are incorrect  ^^ expected `AuthorityWitness<QueryIdentityAuthority>`, found `()`
+  |
+  = note: expected struct `worth_proof::AuthorityWitness<QueryIdentityAuthority>`
+          found unit type `()`
+note: function defined here
+ --> $WORKSPACE/crates/worth-foundational/src/identities/authority_identity/lifecycle.rs
+  |
+  | pub fn project_foundational_identity<Label, Value, Authority, Kind>(
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,0 +1,14 @@
+error[E0624]: associated function `for_rule` is private
+ --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/invariants/registration_constructor_is_private.rs:6:36
+  |
+6 |       let _ = InvariantRegistration::for_rule(
+  |                                      ^^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-relational/src/validation/data/catalog/mod.rs
+  |
+  | /     pub(crate) fn for_rule(
+  | |         rule: InvariantRule,
+  | |         execution_point: InvariantExecutionPoint,
+  | |         failure_effect: InvariantFailureEffect,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here

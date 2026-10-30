@@ -1,0 +1,42 @@
+error[E0599]: no function or associated item named `try_new_aspect_surface` found for struct `NormalizedSubscriptionSliceIntent` in the current scope
+ --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/subscription_slice_generic_aspect_surface_removed.rs:7:54
+  |
+7 |     let _intent = NormalizedSubscriptionSliceIntent::try_new_aspect_surface(
+  |                                                      ^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `NormalizedSubscriptionSliceIntent`
+  |
+note: if you're trying to build a new `NormalizedSubscriptionSliceIntent` consider using one of the following associated functions:
+      NormalizedSubscriptionSliceIntent::try_new_entity_field
+      NormalizedSubscriptionSliceIntent::try_new_entity_relation_endpoint
+      NormalizedSubscriptionSliceIntent::try_new_entity_region
+      NormalizedSubscriptionSliceIntent::try_new_entity_partition
+      and $N others
+ --> $WORKSPACE/crates/worth-runtime-bridge/src/subscription/declaration/slice_intent.rs
+  |
+  | /     pub fn try_new_entity_field(
+  | |         entity_identity: impl Into<Arc<str>>,
+  | |         aspect_key: AspectKey,
+  | |         field_key: FieldKey,
+  | |         slice_kind: SubscriptionSliceKind,
+  | |     ) -> Result<Self, NormalizedSubscriptionSliceIntentError> {
+  | |_____________________________________________________________^
+...
+  | /     pub fn try_new_entity_relation_endpoint(
+  | |         entity_identity: impl Into<Arc<str>>,
+  | |         aspect_key: AspectKey,
+  | |         slice_kind: SubscriptionSliceKind,
+  | |     ) -> Result<Self, NormalizedSubscriptionSliceIntentError> {
+  | |_____________________________________________________________^
+...
+  | /     pub fn try_new_entity_region(
+  | |         entity_identity: impl Into<Arc<str>>,
+  | |         aspect_key: AspectKey,
+  | |         slice_kind: SubscriptionSliceKind,
+  | |     ) -> Result<Self, NormalizedSubscriptionSliceIntentError> {
+  | |_____________________________________________________________^
+...
+  | /     pub fn try_new_entity_partition(
+  | |         entity_identity: impl Into<Arc<str>>,
+  | |         aspect_key: AspectKey,
+  | |         slice_kind: SubscriptionSliceKind,
+  | |     ) -> Result<Self, NormalizedSubscriptionSliceIntentError> {
+  | |_____________________________________________________________^

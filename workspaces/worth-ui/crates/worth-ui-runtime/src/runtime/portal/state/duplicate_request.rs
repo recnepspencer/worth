@@ -100,13 +100,13 @@ pub(super) fn classify(
     super::super::UiPortalLifecyclePosture,
     super::super::UiPortalServiceDisposition,
 ) {
-    if let Some(prior) = prior.filter(|prior| repeats_exact_request(*prior, request, placement)) {
-        if settles_idempotently(prior.posture, request) {
-            return (
-                prior.posture,
-                super::super::UiPortalServiceDisposition::Idempotent,
-            );
-        }
+    if let Some(prior) = prior.filter(|prior| repeats_exact_request(*prior, request, placement))
+        && settles_idempotently(prior.posture, request)
+    {
+        return (
+            prior.posture,
+            super::super::UiPortalServiceDisposition::Idempotent,
+        );
     }
     match request.operation() {
         super::super::request::UiPortalServiceOperation::Open => (

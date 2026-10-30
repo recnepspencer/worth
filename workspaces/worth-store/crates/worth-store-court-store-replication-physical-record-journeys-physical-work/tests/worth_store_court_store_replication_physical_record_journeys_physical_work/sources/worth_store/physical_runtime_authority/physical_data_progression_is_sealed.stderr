@@ -1,0 +1,126 @@
+error: cannot construct `DataDispatchedPhysicalMutation` with struct literal syntax due to private fields
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:10:13
+   |
+10 |     let _ = DataDispatchedPhysicalMutation {};
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: you might have meant to use an associated function to build this type
+   |
+10 -     let _ = DataDispatchedPhysicalMutation {};
+10 +     let _ = DataDispatchedPhysicalMutation::new(_, _);
+   |
+10 -     let _ = DataDispatchedPhysicalMutation {};
+10 +     let _ = DataDispatchedPhysicalMutation::from_source_copy(_);
+   |
+10 -     let _ = DataDispatchedPhysicalMutation {};
+10 +     let _ = DataDispatchedPhysicalMutation::from_terminal_head_retirement(_);
+   |
+
+error: cannot construct `DataSettledPhysicalMutation` with struct literal syntax due to private fields
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:11:13
+   |
+11 |     let _ = DataSettledPhysicalMutation {};
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: you might have meant to use the `new` associated function
+   |
+11 -     let _ = DataSettledPhysicalMutation {};
+11 +     let _ = DataSettledPhysicalMutation::new(_);
+   |
+
+error[E0277]: the trait bound `WalDurablePhysicalMutation: Clone` is not satisfied
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:12:21
+   |
+12 |     require_clone::<WalDurablePhysicalMutation>();
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `WalDurablePhysicalMutation`
+   |
+note: required by a bound in `require_clone`
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:7:21
+   |
+ 7 | fn require_clone<T: Clone>() {}
+   |                     ^^^^^ required by this bound in `require_clone`
+
+error[E0277]: the trait bound `DataDispatchedPhysicalMutation: Clone` is not satisfied
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:13:21
+   |
+13 |     require_clone::<DataDispatchedPhysicalMutation>();
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `DataDispatchedPhysicalMutation`
+   |
+note: required by a bound in `require_clone`
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:7:21
+   |
+ 7 | fn require_clone<T: Clone>() {}
+   |                     ^^^^^ required by this bound in `require_clone`
+
+error[E0277]: the trait bound `DataSettledPhysicalMutation: Clone` is not satisfied
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:14:21
+   |
+14 |     require_clone::<DataSettledPhysicalMutation>();
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `DataSettledPhysicalMutation`
+   |
+note: required by a bound in `require_clone`
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:7:21
+   |
+ 7 | fn require_clone<T: Clone>() {}
+   |                     ^^^^^ required by this bound in `require_clone`
+
+error[E0308]: mismatched types
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:21:50
+   |
+21 |     let _ = submission.dispatch_wal_durable_data(appended);
+   |                        ------------------------- ^^^^^^^^ expected `WalDurablePhysicalMutation`, found `WalAppendedPhysicalMutation`
+   |                        |
+   |                        arguments to this method are incorrect
+   |
+note: method defined here
+  --> src/physical_runtime/record_serving/publication/director/certification_submission.rs
+   |
+   |     pub fn dispatch_wal_durable_data(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `settle_exact_effects` found for struct `WalDurablePhysicalMutation` in the current scope
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:25:21
+   |
+25 |     let _ = durable.settle_exact_effects();
+   |                     ^^^^^^^^^^^^^^^^^^^^ method not found in `WalDurablePhysicalMutation`
+
+error[E0624]: associated function `new` is private
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:31:37
+   |
+31 |       DataDispatchedPhysicalMutation::new(durable, Vec::new())
+   |                                       ^^^ private associated function
+   |
+  ::: src/physical_runtime/durability/mutation/progression/data_dispatched.rs
+   |
+   | /     pub(in crate::physical_runtime) fn new(
+   | |         durable: WalDurablePhysicalMutation,
+   | |         effects: Vec<PhysicalDataEffectSettlement>,
+   | |     ) -> Self {
+   | |_____________- private associated function defined here
+
+error[E0624]: associated function `new` is private
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:37:34
+   |
+37 |       DataSettledPhysicalMutation::new(dispatched)
+   |                                    ^^^ private associated function
+   |
+  ::: src/physical_runtime/durability/mutation/progression/data_settled.rs
+   |
+   | /     pub(in crate::physical_runtime) fn new(
+   | |         settlement: CompletionBoundPhysicalDataSettlement,
+   | |     ) -> Self {
+   | |_____________- private associated function defined here
+
+error[E0308]: mismatched types
+  --> tests/physical_runtime_authority/physical_data_progression_is_sealed.rs:37:38
+   |
+37 |     DataSettledPhysicalMutation::new(dispatched)
+   |     -------------------------------- ^^^^^^^^^^ expected `CompletionBoundPhysicalDataSettlement`, found `DataDispatchedPhysicalMutation`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> src/physical_runtime/durability/mutation/progression/data_settled.rs
+   |
+   |     pub(in crate::physical_runtime) fn new(
+   |                                        ^^^

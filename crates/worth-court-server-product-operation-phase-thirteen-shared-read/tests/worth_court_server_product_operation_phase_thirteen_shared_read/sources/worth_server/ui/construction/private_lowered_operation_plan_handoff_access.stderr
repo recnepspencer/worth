@@ -1,0 +1,10 @@
+error[E0624]: method `into_query_handoff` is private
+ --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/private_lowered_operation_plan_handoff_access.rs
+  |
+  |     let _ = plan.into_query_handoff();
+  |                  ^^^^^^^^^^^^^^^^^^ private method
+  |
+ ::: $WORKSPACE/crates/worth-server/src/operation_planning/plan.rs
+  |
+  |     pub(crate) fn into_query_handoff(self) -> WorthServerQueryHandoff {
+  |     ----------------------------------------------------------------- private method defined here

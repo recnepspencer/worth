@@ -1,0 +1,20 @@
+[package]
+name = "worth-query-bank-testkit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+autotests = false
+
+[package.metadata.worth.testkit]
+workspace = "worth-query-bank"
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+
+[lints]
+workspace = true
