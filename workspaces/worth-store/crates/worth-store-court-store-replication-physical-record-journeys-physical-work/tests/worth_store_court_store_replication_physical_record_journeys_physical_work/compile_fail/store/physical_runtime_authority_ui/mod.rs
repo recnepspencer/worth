@@ -19,7 +19,11 @@ fn external_consumers_cannot_forge_or_duplicate_runtime_authority() {
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/borrowed_physical_work_submission_is_rejected.rs")).expect("prebuilt compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/legacy_mutation_and_writeback_routes_are_absent.rs")).expect("prebuilt compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/residency_writeback_internals_are_sealed.rs")).expect("prebuilt compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/raw_residency_policy_cannot_enter_open.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/raw_residency_policy_cannot_enter_open.rs"),
+        "E0308",
+        &["AdmittedPhysicalRecordResidencyPolicy", "PhysicalRecordResidencyPolicyBuilder"],
+    ).expect("prebuilt semantic compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/admitted_residency_policy_is_sealed.rs")).expect("prebuilt compiler denial");
     durability_policy_cases();
     record_chunk_view_cases();
@@ -27,8 +31,16 @@ fn external_consumers_cannot_forge_or_duplicate_runtime_authority() {
 
 #[test]
 fn resident_admission_contracts_are_compile_sealed() {
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/raw_lease_cannot_enter_resident_decoder.rs")).expect("prebuilt compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/resident_admission_internals_are_sealed.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/raw_lease_cannot_enter_resident_decoder.rs"),
+        "E0599",
+        &["with_owner_decoder", "PhysicalFrameLease"],
+    ).expect("prebuilt semantic compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/resident_admission_internals_are_sealed.rs"),
+        "E0432",
+        &["worth_store::physical_runtime::IntegrityAdmittedResidentPage", "worth_store::physical_runtime::ResidentAdmissionContext", "worth_store::physical_runtime::ResidentIntegrityRecordBinding"],
+    ).expect("prebuilt semantic compiler denial");
 }
 
 #[test]

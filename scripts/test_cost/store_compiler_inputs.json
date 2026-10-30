@@ -251,173 +251,44 @@
         {
           "audience": "worth-store",
           "authority": {
-            "declaration": "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/support/physical_runtime_authority_ui/declarations.rs",
+            "declaration": "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/compile_fail/store/physical_runtime_authority_ui/mod.rs",
             "source_commit": "b69bbaa0d9",
-            "suite_identity": "record-chunk-view-pool-authority"
+            "suite_identity": "physical-runtime-authority-ui"
           },
           "dependencies": [
-            {
-              "default_features": true,
-              "features": [],
-              "name": "getrandom",
-              "version": "0.4"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "serde_json",
-              "version": "1"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "sha2",
-              "version": "0.10"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "tempfile",
-              "version": "3"
-            },
-            {
-              "default_features": false,
-              "features": [],
-              "name": "tracking-allocator",
-              "version": "0.4"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-execution",
-              "path": "crates/worth-execution"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-foundational",
-              "path": "crates/worth-foundational"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-proof",
-              "path": "crates/worth-proof"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-signal",
-              "path": "crates/worth-signal"
-            },
-            {
-              "default_features": true,
-              "features": [
-                "certification-test-authority"
-              ],
-              "name": "worth-store",
-              "path": "workspaces/worth-store/crates/worth-store"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-aspect-native",
-              "path": "workspaces/worth-store/crates/worth-store-aspect-native"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-authority",
-              "path": "workspaces/worth-store/crates/worth-store-authority"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-blob-chunks",
-              "path": "workspaces/worth-store/crates/worth-store-blob-chunks"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-buffer-pool",
-              "path": "workspaces/worth-store/crates/worth-store-buffer-pool"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-contracts",
-              "path": "workspaces/worth-store/crates/worth-store-contracts"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-io-scheduler",
-              "path": "workspaces/worth-store/crates/worth-store-io-scheduler"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-layout-indexes",
-              "path": "workspaces/worth-store/crates/worth-store-layout-indexes"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-lsm-authority",
-              "path": "workspaces/worth-store/crates/worth-store-lsm-authority"
-            },
-            {
-              "default_features": true,
-              "features": [
-                "store-runtime-owner",
-                "volatile-sync-for-tests"
-              ],
-              "name": "worth-store-physical-backend",
-              "path": "workspaces/worth-store/crates/worth-store-physical-backend"
-            },
-            {
-              "default_features": true,
-              "features": [
-                "certification-test-authority"
-              ],
-              "name": "worth-store-physical-format",
-              "path": "workspaces/worth-store/crates/worth-store-physical-format"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-physical-integrity",
-              "path": "workspaces/worth-store/crates/worth-store-physical-integrity"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-physical-isolation",
-              "path": "workspaces/worth-store/crates/worth-store-physical-isolation"
-            },
-            {
-              "default_features": true,
-              "features": [
-                "test-support"
-              ],
-              "name": "worth-store-recovery-physics",
-              "path": "workspaces/worth-store/crates/worth-store-recovery-physics"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-security",
-              "path": "workspaces/worth-store/crates/worth-store-security"
-            },
-            {
-              "default_features": true,
-              "features": [],
-              "name": "worth-store-wal",
-              "path": "workspaces/worth-store/crates/worth-store-wal"
-            }
+            {"default_features": true, "features": [], "name": "getrandom", "version": "0.4"},
+            {"default_features": true, "features": [], "name": "serde_json", "version": "1"},
+            {"default_features": true, "features": [], "name": "sha2", "version": "0.10"},
+            {"default_features": true, "features": [], "name": "tempfile", "version": "3"},
+            {"default_features": false, "features": [], "name": "tracking-allocator", "version": "0.4"},
+            {"default_features": true, "features": [], "name": "worth-execution", "path": "crates/worth-execution"},
+            {"default_features": true, "features": [], "name": "worth-foundational", "path": "crates/worth-foundational"},
+            {"default_features": true, "features": [], "name": "worth-proof", "path": "crates/worth-proof"},
+            {"default_features": true, "features": [], "name": "worth-signal", "path": "crates/worth-signal"},
+            {"default_features": true, "features": ["certification-test-authority"], "name": "worth-store", "path": "workspaces/worth-store/crates/worth-store"},
+            {"default_features": true, "features": [], "name": "worth-store-aspect-native", "path": "workspaces/worth-store/crates/worth-store-aspect-native"},
+            {"default_features": true, "features": [], "name": "worth-store-authority", "path": "workspaces/worth-store/crates/worth-store-authority"},
+            {"default_features": true, "features": [], "name": "worth-store-blob-chunks", "path": "workspaces/worth-store/crates/worth-store-blob-chunks"},
+            {"default_features": true, "features": [], "name": "worth-store-buffer-pool", "path": "workspaces/worth-store/crates/worth-store-buffer-pool"},
+            {"default_features": true, "features": [], "name": "worth-store-contracts", "path": "workspaces/worth-store/crates/worth-store-contracts"},
+            {"default_features": true, "features": [], "name": "worth-store-io-scheduler", "path": "workspaces/worth-store/crates/worth-store-io-scheduler"},
+            {"default_features": true, "features": [], "name": "worth-store-layout-indexes", "path": "workspaces/worth-store/crates/worth-store-layout-indexes"},
+            {"default_features": true, "features": [], "name": "worth-store-lsm-authority", "path": "workspaces/worth-store/crates/worth-store-lsm-authority"},
+            {"default_features": true, "features": ["store-runtime-owner", "volatile-sync-for-tests"], "name": "worth-store-physical-backend", "path": "workspaces/worth-store/crates/worth-store-physical-backend"},
+            {"default_features": true, "features": ["certification-test-authority"], "name": "worth-store-physical-format", "path": "workspaces/worth-store/crates/worth-store-physical-format"},
+            {"default_features": true, "features": [], "name": "worth-store-physical-integrity", "path": "workspaces/worth-store/crates/worth-store-physical-integrity"},
+            {"default_features": true, "features": [], "name": "worth-store-physical-isolation", "path": "workspaces/worth-store/crates/worth-store-physical-isolation"},
+            {"default_features": true, "features": ["test-support"], "name": "worth-store-recovery-physics", "path": "workspaces/worth-store/crates/worth-store-recovery-physics"},
+            {"default_features": true, "features": [], "name": "worth-store-security", "path": "workspaces/worth-store/crates/worth-store-security"},
+            {"default_features": true, "features": [], "name": "worth-store-wal", "path": "workspaces/worth-store/crates/worth-store-wal"}
           ],
           "sources": [
-            "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_exposes_no_pool_authority.rs"
+            "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_exposes_no_pool_authority.rs",
+            "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/root_observation_cannot_mint_reader.rs",
+            "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/opened_physical_record_alias_is_absent.rs",
+            "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/raw_lease_cannot_enter_resident_decoder.rs",
+            "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/resident_admission_internals_are_sealed.rs",
+            "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/raw_residency_policy_cannot_enter_open.rs"
           ]
         }
       ]
