@@ -27,8 +27,9 @@ pub use application_publication::{
     RequiredOutputPublicationAuthority,
 };
 pub use managed_source::{
-    AdmittedManagedIndexSourceAudience, ManagedIndexSourceAudienceAuthority,
-    ManagedIndexSourceAudienceIssuer,
+    AdmittedManagedIndexSourceAudience, AdmittedManagedIndexSourceInitialization,
+    ManagedIndexSourceAudienceAuthority, ManagedIndexSourceAudienceIssuer,
+    ManagedIndexSourceInitializationAuthority, ManagedIndexSourceInitializationIssuer,
 };
 mod transition;
 mod type_level;

@@ -57,7 +57,7 @@ impl WorthQueryManagedIndexInvariantDenial {
     /// No material was available for this particular read posture. This is
     /// diagnostic only; an unavailable Source never means empty membership.
     pub fn source_unavailable(&self) -> bool {
-        matches!(self, Self::Native(NativeDenial::RootUnavailable))
+        matches!(self, Self::Native(cause) if cause.source_unavailable())
     }
 }
 

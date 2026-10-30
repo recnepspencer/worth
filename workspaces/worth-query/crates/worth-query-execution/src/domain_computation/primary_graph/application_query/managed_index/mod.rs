@@ -27,7 +27,13 @@ mod source_dependencies;
 mod source_image;
 mod source_order;
 mod source_rows;
-pub(in crate::domain_computation::primary_graph) use source::ManagedSourceInstallation;
+pub(in crate::domain_computation::primary_graph) use source::{
+    initialization::{
+        initialization_execution_denial, SelectedSources, SourceInitializationIssuer,
+        SourceInitializationRequest,
+    },
+    ManagedSourceInstallation,
+};
 mod stop;
 
 pub use candidates::WorthQueryManagedIndexCandidateWriter;

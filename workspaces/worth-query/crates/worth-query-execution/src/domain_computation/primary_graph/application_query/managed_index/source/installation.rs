@@ -23,10 +23,17 @@ impl ManagedSourceInstallation {
         self.sources.is_empty()
     }
     pub(in crate::domain_computation::primary_graph) fn compile<S: ApplicationSchema>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         providers: &ManagedIndexProviderCatalog<S>,
         layout: &WorthQueryPrimaryGraphLayout,
         requirements: impl Iterator<Item = ApplicationInvariantManagedIndexSource>,
-    ) -> Result<Self, Denial> {
+    ) -> Result<
+        (
+            Self,
+            Option<super::initialization::SourceInitializationIssuer>,
+        ),
+        Denial,
+    > {
         let mut required = HashMap::new();
         for requirement in requirements {
             let program = layout.managed_source(requirement.index()).ok_or_else(|| {
@@ -46,12 +53,26 @@ impl ManagedSourceInstallation {
                 entry.1 = Cold::Refuse;
             }
         }
-        Ok(Self {
-            sources: required
-                .into_iter()
-                .map(|(program, (provider, cold))| (program.clone(), provider.bind(program, cold)))
-                .collect(),
-        })
+        if required.is_empty() {
+            return Ok((Self::default(), None));
+        }
+        let (issuer, authority) =
+            super::initialization::SourceInitializationIssuer::install(execution)
+                .map_err(super::initialization::initialization_execution_denial)?;
+        Ok((
+            Self {
+                sources: required
+                    .into_iter()
+                    .map(|(program, (provider, cold))| {
+                        (
+                            program.clone(),
+                            provider.bind(program, cold, authority.clone()),
+                        )
+                    })
+                    .collect(),
+            },
+            Some(issuer),
+        ))
     }
     pub(in crate::domain_computation::primary_graph) fn service(
         &self,

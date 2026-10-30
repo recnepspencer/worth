@@ -10,6 +10,7 @@ mod maintained;
 mod mutation;
 mod prefix;
 mod query;
+mod refusing;
 mod schema;
 #[cfg(test)]
 mod value_edits;

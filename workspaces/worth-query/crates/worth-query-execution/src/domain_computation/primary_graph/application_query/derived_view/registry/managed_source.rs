@@ -10,6 +10,7 @@ use worth_relational::facade::{
     },
 };
 mod fork;
+pub(super) mod initialization;
 
 /// This lookup is mutated only under the registry mutex; it has no persistent
 /// map clones. Its dedicated grant covers the actual key and conservative node.
@@ -60,6 +61,16 @@ impl ManagedDerivedViewRegistry {
         {
             return Err(Denial::ForeignSource);
         }
+        let initialization = self
+            .initialization
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .upgrade();
+        let initializing = initialization
+            .as_ref()
+            .map(|session| session.applies_to(source))
+            .transpose()?
+            .unwrap_or(false);
         let mut roots = Vec::new();
         roots.try_reserve_exact(source.scopes().len()).map_err(|_| {
             Denial::Source(worth_relational::facade::runtime::DerivedRelationReadDenial::Request(
@@ -79,11 +90,23 @@ impl ManagedDerivedViewRegistry {
                 .map(|image| image.payload().retained(source.program(), scope.scope()))
                 .transpose()?
                 .flatten();
-            roots.push(service.prepare(
-                execution,
-                scope,
-                retained.as_ref().and_then(|entry| entry.payload()),
-            )?);
+            let retained = retained.as_ref().and_then(|entry| entry.payload());
+            if initializing && !scope.committed_scope_exists()? && scope.scope_exists()? {
+                roots.push(
+                    service.prepare_initial(
+                        execution,
+                        &initialization
+                            .as_ref()
+                            .expect("admitted active session")
+                            .request
+                            .proof,
+                        scope,
+                        retained,
+                    )?,
+                );
+            } else {
+                roots.push(service.prepare(execution, scope, retained)?);
+            }
         }
         execution.consult().map_err(|cause| {
             Denial::Source(

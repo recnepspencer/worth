@@ -82,6 +82,7 @@ struct RegistryState {
 pub(in crate::domain_computation::primary_graph) struct ManagedDerivedViewRegistry {
     state: Mutex<RegistryState>,
     sources: super::super::managed_index::ManagedSourceInstallation,
+    initialization: Mutex<Weak<managed_source::initialization::InitializationSession>>,
 }
 
 impl ManagedDerivedViewRegistry {
@@ -91,6 +92,7 @@ impl ManagedDerivedViewRegistry {
         Self {
             state: Mutex::new(RegistryState::default()),
             sources,
+            initialization: Mutex::new(Weak::new()),
         }
     }
     pub(in crate::domain_computation::primary_graph) fn has_live_views(&self) -> bool {

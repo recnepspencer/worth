@@ -32,12 +32,29 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     fn definition(
         &self,
     ) -> &worth_query_declaration::facade::application_query::ErasedApplicationManagedIndexDefinition;
-    fn bind(self: Arc<Self>, program: Program, cold: Cold) -> Arc<dyn SourceService>;
+    fn bind(
+        self: Arc<Self>,
+        program: Program,
+        cold: Cold,
+        authority: super::initialization::SourceInitializationAuthority,
+    ) -> Arc<dyn SourceService>;
 }
 pub(in crate::domain_computation::primary_graph) trait SourceService:
     Send + Sync
 {
     fn program(&self) -> &Program;
+    fn binding_type(&self) -> std::any::TypeId;
+    fn admits_initialization(
+        &self,
+        proof: &worth_proof::AdmittedManagedIndexSourceInitialization,
+    ) -> bool;
+    fn prepare_initial(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        proof: &worth_proof::AdmittedManagedIndexSourceInitialization,
+        scope: ManagedIndexSourceScope<'_>,
+        retained: Option<&Payload>,
+    ) -> Result<PreparedManagedIndexSourceRoot, Denial>;
     fn prepare(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -62,10 +79,12 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     _allocation: Arc<SourceFactsAllocation>,
 }
-struct TypedSourceService<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P> {
-    provider: Arc<TypedIndexProvider<S, I, P>>,
-    program: Program,
+pub(super) struct TypedSourceService<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P>
+{
+    pub(super) provider: Arc<TypedIndexProvider<S, I, P>>,
+    pub(super) program: Program,
     cold: Cold,
+    pub(super) initialization: super::initialization::SourceInitializationAuthority,
 }
 impl<S, I, P> SourceFactory for TypedIndexProvider<S, I, P>
 where
@@ -79,11 +98,17 @@ where
     {
         self.installed.definition()
     }
-    fn bind(self: Arc<Self>, program: Program, cold: Cold) -> Arc<dyn SourceService> {
+    fn bind(
+        self: Arc<Self>,
+        program: Program,
+        cold: Cold,
+        authority: super::initialization::SourceInitializationAuthority,
+    ) -> Arc<dyn SourceService> {
         Arc::new(TypedSourceService {
             provider: self,
             program,
             cold,
+            initialization: authority,
         })
     }
 }
@@ -95,6 +120,24 @@ where
 {
     fn program(&self) -> &Program {
         &self.program
+    }
+    fn admits_initialization(
+        &self,
+        proof: &worth_proof::AdmittedManagedIndexSourceInitialization,
+    ) -> bool {
+        self.initialization.admits(proof)
+    }
+    fn binding_type(&self) -> std::any::TypeId {
+        std::any::TypeId::of::<(S, I)>()
+    }
+    fn prepare_initial(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        proof: &worth_proof::AdmittedManagedIndexSourceInitialization,
+        scope: ManagedIndexSourceScope<'_>,
+        retained: Option<&Payload>,
+    ) -> Result<PreparedManagedIndexSourceRoot, Denial> {
+        self.initial_root(execution, proof, scope, retained)
     }
     fn prepare(
         &self,
@@ -157,7 +200,7 @@ where
     I: ApplicationManagedIndexBinding<S>,
     P: WorthQueryManagedIndexProvider<S, I>,
 {
-    fn cold(
+    pub(super) fn cold(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         scope: &ManagedIndexSourceScope<'_>,

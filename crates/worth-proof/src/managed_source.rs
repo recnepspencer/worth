@@ -34,3 +34,9 @@ impl ManagedIndexSourceAudienceAuthority {
         Arc::ptr_eq(&self.0, &evidence.0)
     }
 }
+
+mod initialization;
+pub use initialization::{
+    AdmittedManagedIndexSourceInitialization, ManagedIndexSourceInitializationAuthority,
+    ManagedIndexSourceInitializationIssuer,
+};

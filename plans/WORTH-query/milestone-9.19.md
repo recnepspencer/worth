@@ -576,9 +576,18 @@ owner regression and all 18 lease owner controls. This explicit reconstruction
 walks Source twice (ordinary admitted query and Native occurrence projection);
 both traversals and their combined cold peak use the original request. It is not
 warm-growth evidence.
-The honest Refuse initialization/bootstrap twin, remaining lifecycle/affinity
-hostile controls, materialization/recovery composition and the required
-1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
+Explicit bootstrap Source initialization is now qualified with a separate fixed
+Refuse application. Its next seed attempt consumes the installed-index selection;
+omitted, empty, unrelated-batch and foreign-binding controls preserve typed
+refusals. Normal seed invariants still judge construction. Warm edits stay warm;
+an evicted shared scope refuses before rules until public rebuild, and ordinary
+new scopes still refuse after bootstrap. All 25 public managed-index controls pass,
+including eight maintained courts and this Refuse allocation court with exact
+final-owner balance. A focused proof matrix rejects foreign issuers, and a
+compile-fail check proves installed runtime has no initializer. This qualifies
+fresh unpublished initialization only; recovery is not qualified by this court.
+Remaining lifecycle/affinity hostile controls, materialization/recovery composition
+and the required 1,000/2,000 whole-path growth court remain incomplete. Local algorithm checks
 cannot substitute for Source acquisition, reverse-scope discovery, publication
 and final-owner release across that path.
 
@@ -1066,6 +1075,85 @@ The ordinary declared invariant read/applicability closure is still required.
 `retain_managed_index` has no caller scope/root argument; a reference to an
 undeclared index or an unfrozen scope is denied. The actual box adapter uses
 these same entrances with its validated dimensional/frame/versioned probe.
+
+#### Explicit Bootstrap Source Initialization
+
+`Refuse` remains the ordinary cold/new/evicted preparation policy. A fresh,
+unpublished application bootstrap can separately select an installed index for
+initial construction from new scopes in its next seed batch:
+
+```rust,ignore
+graph.initialize_managed_index::<NamesByPrefix>(phase)?;
+graph.bind_entity(directory_seed)?;
+// Other principal, entity and relation seeds belong to this same batch.
+graph.commit_seed_batch(phase)?;
+```
+
+This is installation construction, not public READ/rebuild admission and not a
+change to the archived cold posture. It changes no Source interpretation-policy
+revision. Existing declarations and bootstrap calls without explicit selection
+retain their refusal behavior. The public method exists only on the move-only
+bootstrap owner; an installed runtime has no such method. Recovered publication
+cannot borrow this lane to warm existing or unavailable Sources.
+
+The legal initialization issuer/authority/admitted-grant family belongs to
+`worth-proof`. Each compiled Source installation owns its matching authority;
+only its unpublished bootstrap owns the issuer. A foreign fresh issuer cannot
+satisfy that authority. Grants are not serialized, recovered, returned to the
+application, stored in published roots, or used to select physical/logical posture.
+The real active session lifetime revokes permission; dropping an issuer alone is
+not revocation of an Arc-backed grant. Original funding follows the last actual
+proof/authority/session backing owner.
+
+Consume selection for one seed attempt before activation or seed work can fail.
+An empty batch with pending initialization returns typed `EmptyBootstrap` and
+cannot carry that permission forward. Nonempty batches consume their selection
+even when no eligible Source scope is discovered. Begin the session only after
+the ordinary initial-program activation commit. Bind the exact owner-admitted
+Native basis occurrence used by the one seed transaction, including admission
+identity, plus the actual compiled Program selections. An exclusive one-shot
+commit call confines the guard; a basis/root/name lookup alone is insufficient.
+The registry keeps only a weak session lookup. An outer guard survives success,
+refusal and unwind, clears the lookup and releases its retained basis/program
+backing beyond runtime/registration locks.
+
+Native remains the sole scope and candidate authority. Initialization applies
+only to an actually absent committed full-generation scope and present proposed
+scope under physically available Native custody, with no retained root. Propagate
+committed-view errors, especially `RootUnavailable`; absence cannot be inferred
+from unavailability. Existing, retired and suspended scopes use the ordinary
+policy/disposition. Prepare the canonical root through the same installed Source
+materializer/provider before the first dependent invariant. Every normal rule
+still judges it; ordinary bootstrap/compound publication installs the exact judged
+material. There is no alternate updater, replay permission, policy toggle,
+caller-authored observation, unjudged seed window or retained initialization flag.
+
+Destination topology (no empty successor placeholders):
+
+- `worth-proof/src/managed_source/initialization.rs` (new): matching legal grants.
+- `bootstrap/managed_source_initialization.rs` (new): public selection, next-batch
+  consumption and unpublished issuer custody; bootstrap publication consumes it.
+- `application_query/managed_index/source/initialization/` (new): funded authority
+  and the initial-root provider preparation beside existing ordinary preparation.
+- `application_query/derived_view/registry/managed_source/initialization.rs`
+  (new): actual resource-owned one-commit session and weak lookup/retirement.
+- existing bootstrap commits, Source installation and Source preparation consume
+  these artifacts; existing public rebuild and later recovery composition remain
+  their separate owners and cannot recover an initialization grant.
+
+The decisive public court uses one fixed refusing application declaration and the
+same actual prefix adapter as the other catalogs. Without explicit initialization,
+installation refuses before its provider/rules. Explicit seed initialization runs
+normal invariants; a subsequent shared edit is warm. Evict B, attempt a shared
+edit from warm A, and require typed cold refusal, no dependent rule, unchanged
+head and old A material. Fresh public rebuild B then permits the same edit without
+an implicit cold build. Ordinary new-scope creation after bootstrap still refuses.
+Also exercise empty-batch consumption and final-owner physical balance. These
+controls convict broadening `Refuse`, a leaked installation flag, skipped rules,
+copied warm roots and public rebuild as a competing canonical updater. Maintain
+compile-fail/type evidence that installed runtime cannot initialize bootstrap
+Sources. The application guide and capability index must show this exact API,
+consumption, denial and lifetime contract.
 
 #### Failure, Cost, Compatibility And Cutover
 

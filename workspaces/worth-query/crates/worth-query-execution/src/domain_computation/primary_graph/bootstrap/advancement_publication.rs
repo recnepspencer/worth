@@ -3,7 +3,7 @@ use super::*;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
     /// The phase witnesses the caller's scope around inline Relational publication.
     pub(in crate::domain_computation::primary_graph) fn publish_with_resource_support(
-        self,
+        mut self,
 
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &mut WorthQueryExecutionRuntime,
@@ -35,6 +35,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
                 "at least one application principal binding is required",
             ));
         }
+        let initialization = self.take_source_initialization();
+        if initialization.is_some()
+            && self.rows.is_empty()
+            && self.entity_rows.is_empty()
+            && self.relation_rows.is_empty()
+        {
+            return Err(primary_graph_denial(
+                WorthQueryPrimaryGraphInstallationDenialKind::EmptyBootstrap,
+                "initial Source construction requires a nonempty next seed batch",
+            ));
+        }
         let row_count = self.committed_principal_count + self.rows.len();
         let entity_count = self.committed_entity_count + self.entity_rows.len();
         let relation_count = self.committed_relation_count + self.relation_rows.len();
@@ -64,6 +75,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
                 commit_bootstrap_rows(
                     execution,
                     &self.graph,
+                    initialization,
                     self.committed_principal_count,
                     self.rows,
                     self.entity_rows,

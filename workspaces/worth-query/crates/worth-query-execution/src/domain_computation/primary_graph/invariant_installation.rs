@@ -150,12 +150,14 @@ where
 
     pub(super) fn lower(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding_identity: ApplicationSchemaBindingIdentity,
         layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
     ) -> Result<
         (
             Vec<CustomInvariantRegistration>,
             super::application_query::managed_index::ManagedSourceInstallation,
+            Option<super::application_query::managed_index::SourceInitializationIssuer>,
         ),
         WorthQueryPrimaryGraphInstallationDenial,
     > {
@@ -174,13 +176,15 @@ where
         // Compile supported physical Source shapes and bind the actual configured
         // providers before publishing factories. Unsupported shapes still refuse
         // in this compiler; every supported rule consumes Native's staged loans.
-        let sources = super::application_query::managed_index::ManagedSourceInstallation::compile(
-            &self.managed_indexes,
-            layout,
-            self.expected
-                .values()
-                .flat_map(|rule| rule.managed_index_sources().iter().cloned()),
-        )?;
+        let (sources, initializer) =
+            super::application_query::managed_index::ManagedSourceInstallation::compile(
+                execution,
+                &self.managed_indexes,
+                layout,
+                self.expected
+                    .values()
+                    .flat_map(|rule| rule.managed_index_sources().iter().cloned()),
+            )?;
         let mut lowered = Vec::with_capacity(self.expected.len());
         for key in self.installed_order {
             let installed = self.expected.remove(&key).ok_or_else(|| {
@@ -269,7 +273,7 @@ where
             lowered.push(registration);
         }
         lowered.push(workflow_publication::registration(layout.workflow())?);
-        Ok((lowered, sources))
+        Ok((lowered, sources, initializer))
     }
 }
 

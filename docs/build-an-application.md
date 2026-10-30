@@ -5540,9 +5540,38 @@ install preserves the previous canonical cache (a cold cache stays cold). A
 completed install survives the outer request's final cancellation poll. This cold lane performs the ordinary Source query and
 a second Native occurrence projection; both use the original request, and their
 combined peak memory is reconstructive cost. It does not initialize a nonexistent
-scope or resolve the remaining initial bootstrap gap for `Cold::Refuse`.
+scope. Initial construction under `Cold::Refuse` uses the separate bootstrap
+entrance below.
 Eviction and reconstruction do not change a complete Source condition when its
 actual support stays unchanged.
+
+An invariant's default `Cold::Refuse` also refuses new scopes during ordinary
+preparation. For a fresh unpublished installation, explicitly select each index
+whose newly created scopes may be constructed in the next seed-batch attempt:
+
+<!-- compiled: managed_prefix_initialization.rs -->
+```rust
+    graph.initialize_managed_index::<prefix::PrefixIndex>(phase)?;
+```
+
+Bind the ordinary principal/entity/relation seeds, then call
+`graph.commit_seed_batch(phase)` or finish normal bootstrap publication. Initial
+program activation still precedes those seeds, and all normal invariants judge
+the canonical roots before the application becomes visible. Initialization does
+not change the declared cold policy or grant public Source READ. A foreign typed
+binding refuses even if its descriptive names match. The next attempted batch
+consumes selection; an empty attempt returns `EmptyBootstrap` and poisons that
+bootstrap. A nonempty unrelated batch also consumes unused selection. A recovered
+bootstrap rejects initialization; an installed runtime has no initialization method.
+
+Once that attempt ends, ordinary new/cold scopes still refuse under `Refuse`.
+A fresh public `rebuild_index` can refill an existing cold association after its
+independent Source READ; it cannot create a nonexistent scope. A refusing seed
+commit preserves its original Source cause through
+`denial.managed_source_denial()` and custom-rule verdict through
+`denial.custom_invariant_denial()`. Failure does not turn an unavailable committed
+view into absent membership. Original proof/session/basis backing releases with
+its actual owners, beyond runtime guards.
 
 Cleanup follows the current World product's genuine selected Native component.
 A `ReuseExact` product can therefore evict and rebuild its selected older image while newer

@@ -21,6 +21,11 @@ impl From<DerivedRelationReadDenial> for ManagedIndexSourcePreparationDenial {
 }
 
 impl ManagedIndexSourcePreparationDenial {
+    /// This exact Source posture had no available root; never means empty rows.
+    pub fn source_unavailable(&self) -> bool {
+        matches!(self, Self::RootUnavailable)
+    }
+
     /// Borrow the provider's original owned failure without changing its custody.
     pub fn provider_failure(&self) -> Option<&super::ManagedIndexSourceProviderFailure> {
         match self {
