@@ -501,6 +501,7 @@ exports = [
     "ProductUnpublishedRecoveryHandle",
     "RecordStructuralChange",
     "RecoveryContinuationContract",
+    "RelationalAuthoredWriteDenial",
     "RelationalBridgeRecordIdentityParts",
     "RelationalExecutionDenialCause",
     "RelationalOperationInterruption",
