@@ -412,3 +412,41 @@ history tests, then one real root owner-target build/run showing only that owner
 test executable and required dependencies. Use the existing target directory;
 no ignored/scale/UI or durability campaign. B4.3 identity and B4.5 default risk
 tiering remain separate. Root owns the external B4.1 instruction cleanup.
+
+### B4.3 verification artifact identity
+
+Boundary review: genuine `application_build.py` calls own fresh application-build
+issuance. Gate construction currently also issues a fresh UUID, even when a
+focused invocation verifies the same existing output artifact. The two named
+Query certification testkits embed it; changing it invalidates their compiler
+inputs. Existing per-workspace `build/binaries-build-units.json` receipts already
+carry the issued input. There is no need for another persisted identity record,
+registry, constructor parameter or product/runtime environment door.
+
+Root and Phase 3 agreed the Python issuance/session scope and named testkit
+files are disjoint; this implementation needs no Rust edit. The reserved Host,
+Execution construction and Store application-home files remain untouched.
+
+Plan: `Gate.plan` resolves selected workspaces before any Cargo work. Without an
+explicit caller ID, reuse one valid issued ID only when every requested workspace
+artifact carries the same ID. Require the existing compiler-plan schema, the
+expected workspace/manifest, native prebuild command and receipt container shape.
+Do not add source/configuration/graph revalidation just to choose a descriptive
+UUID; those checks remain exclusively in the existing compilation owner.
+Missing, malformed, unrelated or mixed receipts keep the one newly
+issued verification ID. Explicit caller identity retains precedence and must
+parse as a nonzero UUID. Freeze the result within that Gate object.
+
+The logical verification artifact is the existing gate output's per-workspace
+native build, across focused invocations in that same output. A different output
+starts a new artifact. This input reuse is never source/evidence freshness:
+normal source checks, graph declarations, builds and result proofs still run.
+Genuine `application_build.py` invocations continue issuing fresh UUIDs.
+
+Write scope: `scripts/ci/query_gate.py`, `query_gate_environment.py`, their owning
+Python tests and this plan. Prove coherent reuse, missing/malformed/mixed/unrelated
+receipt handling and explicit precedence/refusal with
+fixtures; retain the genuine-build issuance tests. Then use one bounded warm
+compiler journey to observe repeated unchanged shared support without UUID-only
+recompilation. No broad Query/compiler campaign or new target directory. Commit
+and independently review this slice separately from the landed B4.2.
