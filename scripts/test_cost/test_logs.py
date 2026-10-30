@@ -66,6 +66,12 @@ class ArtifactObservationTests(unittest.TestCase):
         self.assertEqual([row['invocation_mode'] for row in result['artifacts']], ['check', 'check'])
         self.assertEqual(result['duplicates'][0]['causes'], ['check_mode'])
 
+    def test_equal_own_features_do_not_prove_identical_dependency_or_compiler_inputs(self):
+        result = self.lane([compiled(), compiled(filenames=['C:/x/target/debug/deps/owner-456.rlib'])])
+        self.assertEqual(result['duplicates'][0]['causes'], ['unattributed compiler inputs'])
+        repeated = self.lane([compiled(), compiled()])
+        self.assertEqual(repeated['duplicates'][0]['causes'], ['repeated observed compiler unit'])
+
     def test_text_only_build_is_unknown_rather_than_zero_duplicates(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'lane.log'

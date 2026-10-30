@@ -114,8 +114,11 @@ def duplicates(artifacts):
             continue
         causes = [key for key in ('features', 'profile', 'cargo_profile', 'target_dir', 'check_mode', 'kind', 'target')
                   if len({json.dumps(v[key], sort_keys=True) for v in values}) > 1]
+        if not causes:
+            outputs = {tuple(value.get('filenames', [])) for value in values}
+            causes = ['unattributed compiler inputs' if len(outputs) > 1 else 'repeated observed compiler unit']
         result.append({'package': package, 'compiles': len(values),
-                       'causes': causes or ['repeated identical graph'], 'artifacts': values})
+                       'causes': causes, 'artifacts': values})
     return result
 
 
