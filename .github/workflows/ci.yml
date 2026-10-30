@@ -26,8 +26,27 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  qualification-selection:
+    name: Select consumer qualification from Cargo reach
+    runs-on: ubuntu-latest
+    outputs:
+      consumer_docs: ${{ steps.select.outputs.consumer_docs }}
+      checkpoint_recovery: ${{ steps.select.outputs.checkpoint_recovery }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Select existing qualification jobs
+        id: select
+        run: python scripts/ci/select_qualification.py
+
   consumer-docs:
-    if: github.event_name != 'workflow_dispatch' || inputs.scope != 'checkpoint-only'
+    needs: qualification-selection
+    if: needs.qualification-selection.outputs.consumer_docs == 'true'
     name: Consumer documentation and doctests
     runs-on: ubuntu-latest
     steps:
@@ -114,7 +133,8 @@ jobs:
         run: cargo test --manifest-path tools/boundary-check/Cargo.toml --target-dir target/constitution-tools
 
   query-checkpoint-recovery:
-    if: github.event_name != 'workflow_dispatch' || inputs.scope != 'consumer-docs'
+    needs: qualification-selection
+    if: needs.qualification-selection.outputs.checkpoint_recovery == 'true'
     name: Query checkpoint recovery court
     runs-on: ubuntu-latest
     steps:

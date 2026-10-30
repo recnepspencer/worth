@@ -553,3 +553,41 @@ qualification commands with available lint/static inspection; retain existing
 boundary/full/manual dispatch. Run explicit phase checks, not a Rust campaign.
 Dependency-aware CI job routing remains the next independently reviewed cut and
 must reuse the existing affected-workspace authority rather than duplicate it.
+
+### B4.6 second cut: Cargo reach selects consumer CI jobs
+
+Boundary review: the external affected-lane planner owns the existing local
+package/member reach algorithm and configured document inventory. CI cannot read
+that external file. Rehome those functions in `scripts/test_cost/cargo_reach.py`;
+the external CLI delegates to the selected checkout's module, with no copied
+algorithm or compatibility fallback. Keep its lane descriptors and early landing
+contract validation. A checkout missing the module must merge this cut before
+using the updated external planner. Preserve the external before-image under
+`target/test-cost/b4-scoped-ci/`; historical lane captures remain untouched.
+
+The shared reach includes declared local packages, dependency/member roles and
+inherited manifests, lockfiles, Cargo configuration and compiler pins. Deleted
+inputs still reach their owner. Disable Git rename collapsing so removal and
+addition both participate; preserve complete PR merge-base reach, push before/after
+reach and external dirty/untracked inputs. Cargo metadata uses locked resolution;
+CI may fetch dependencies while the external planner retains offline discovery.
+
+`scripts/ci/select_qualification.py` is a thin selector for the two existing jobs.
+Derive documentation workspaces from the existing gate's `DOC_SUITES`, and use
+the existing fixture manifest for checkpoint recovery's closure. Read the actual
+consumer document inventory. Unlisted top-level docs/plans and slot observation
+data require neither qualification job nor Cargo discovery. Changed qualification
+scripts/workflows/configuration conservatively retain both. An unavailable base,
+graph or configured inventory retains both with an explicit reason. Selection is
+not qualification evidence. Manual all/docs/checkpoint choices keep their original
+meaning. Keep every qualification command, cache, boundary/line-cap dispatch and
+PR-only cancellation policy unchanged; do not add a lane registry or scheduler.
+
+Verify graph/member/transitive reach, configured documents, unrelated data,
+deleted/manifest/config inputs, unknown-base/graph fallback, manual modes and
+output propagation with fixture graphs and a small real Git history. Check the
+external delegation and existing landing contract without executing runtime
+matrices. Run explicit phase constitution/context/line checks, then independently
+review the exact incremental cut with accepted unchanged-source evidence named.
+Hosted workflow selection, cache performance and whole-workspace qualification
+remain unrun by this routing-only cut.
