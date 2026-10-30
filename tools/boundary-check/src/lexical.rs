@@ -6,6 +6,14 @@ pub struct Token<'a> {
     pub end: usize,
     matching: usize,
 }
+fn spacing(source: &str, at: usize) -> bool {
+    source.as_bytes()[at].is_ascii_whitespace()
+        || source.as_bytes()[at] >= 128
+            && matches!(
+                source[at..].chars().next(),
+                Some('\u{85}' | '\u{200e}' | '\u{200f}' | '\u{2028}' | '\u{2029}')
+            )
+}
 pub fn tokens(source: &str) -> Vec<Token<'_>> {
     let b = source.as_bytes();
     let mut result = Vec::new();
@@ -14,9 +22,10 @@ pub fn tokens(source: &str) -> Vec<Token<'_>> {
         let start = i;
         let raw_identifier = b[i..].starts_with(b"r#")
             && b.get(i + 2)
-                .is_some_and(|c| c.is_ascii_alphabetic() || *c == b'_' || *c >= 128);
-        if b[i].is_ascii_whitespace() {
-            i += 1;
+                .is_some_and(|c| c.is_ascii_alphabetic() || *c == b'_' || *c >= 128)
+            && !spacing(source, i + 2);
+        if spacing(source, i) {
+            i += source[i..].chars().next().unwrap().len_utf8();
             continue;
         }
         if b[i..].starts_with(b"//") {
@@ -72,15 +81,17 @@ pub fn tokens(source: &str) -> Vec<Token<'_>> {
                     i += 1;
                 }
             }
-        } else if raw_identifier {
-            i += 2;
-            while i < b.len() && (b[i].is_ascii_alphanumeric() || b[i] == b'_' || b[i] >= 128) {
-                i += 1;
-            }
-        } else if b[i].is_ascii_alphanumeric() || b[i] == b'_' || b[i] >= 128 {
-            i += 1;
-            while i < b.len() && (b[i].is_ascii_alphanumeric() || b[i] == b'_' || b[i] >= 128) {
-                i += 1;
+        } else if raw_identifier || b[i].is_ascii_alphanumeric() || b[i] == b'_' || b[i] >= 128 {
+            i += if raw_identifier { 2 } else { 0 };
+            while i < b.len()
+                && (b[i].is_ascii_alphanumeric() || b[i] == b'_' || b[i] >= 128)
+                && !spacing(source, i)
+            {
+                i += if b[i].is_ascii() {
+                    1
+                } else {
+                    source[i..].chars().next().unwrap().len_utf8()
+                };
             }
         } else {
             i += 1;

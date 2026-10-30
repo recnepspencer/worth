@@ -198,6 +198,7 @@ mod tests {
     fn every_control_reference_requires_its_owner_or_an_exact_caller() {
         for declaration in [
             "fn arm_for_test() {}",
+            "fn\u{200e}arm_for_test() {}",
             "static mut arm_for_test: () = ();",
             "pub macro arm_for_test() {}",
             "pub struct Control { #[cfg(test)] pub arm_for_test: () }",
