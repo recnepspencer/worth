@@ -152,6 +152,15 @@ fn decode(bytes: &[u8], path: &Path) -> Result<PrebuiltCompilerOutcomes, UiRunFa
         ));
     }
     for observed in outcomes.fixtures.values() {
+        if observed.proof_stage != "check" {
+            return Err(malformed(
+                path,
+                format!(
+                    "Store compiler claims require check-stage evidence, observed {}",
+                    observed.proof_stage
+                ),
+            ));
+        }
         if observed.environment_identity.trim().is_empty()
             || observed.audience_identity.trim().is_empty()
             || observed.shared_target_root.trim().is_empty()
@@ -226,6 +235,7 @@ struct PrebuiltFixtureCompilation {
     environment_identity: String,
     audience_identity: String,
     shared_target_root: String,
+    proof_stage: String,
     fate: CompilerFate,
     messages: Vec<serde_json::Value>,
 }

@@ -29,14 +29,57 @@ fn unsupported_or_malformed_outcomes_are_refused_before_fixture_lookup() {
 #[test]
 fn fixture_outcomes_require_the_compiled_audience_identity() {
     for bytes in [
-        br#"{"schema":1,"fixtures":{"fixture.rs":{"environment":"production","environment_identity":"batch","shared_target_root":"target","fate":"denied","messages":[]}}}"#.as_slice(),
-        br#"{"schema":1,"fixtures":{"fixture.rs":{"environment":"production","environment_identity":"batch","audience_identity":"","shared_target_root":"target","fate":"denied","messages":[]}}}"#,
+        br#"{"schema":1,"fixtures":{"fixture.rs":{"environment":"production","environment_identity":"batch","shared_target_root":"target","proof_stage":"check","fate":"denied","messages":[]}}}"#.as_slice(),
+        br#"{"schema":1,"fixtures":{"fixture.rs":{"environment":"production","environment_identity":"batch","audience_identity":"","shared_target_root":"target","proof_stage":"check","fate":"denied","messages":[]}}}"#,
     ] {
         assert!(matches!(
             decode(bytes, Path::new("outcomes.json")),
             Err(UiRunFailure::MalformedPrebuiltOutcomes { .. })
         ));
     }
+}
+
+#[test]
+fn check_stage_observations_preserve_the_strict_wire_contract() {
+    let mut document = check_stage_document();
+    let path = Path::new("outcomes.json");
+    assert!(decode(&serde_json::to_vec(&document).unwrap(), path).is_ok());
+    document["fixtures"]["fixture.rs"]["undeclared_field"] = true.into();
+    assert!(matches!(
+        decode(&serde_json::to_vec(&document).unwrap(), path),
+        Err(UiRunFailure::MalformedPrebuiltOutcomes { .. })
+    ));
+}
+
+#[test]
+fn code_generation_unknown_and_missing_stages_cannot_satisfy_store_check_claims() {
+    let path = Path::new("outcomes.json");
+    for stage in ["codegen", "unrecognized"] {
+        let mut document = check_stage_document();
+        document["fixtures"]["fixture.rs"]["proof_stage"] = stage.into();
+        let failure = decode(&serde_json::to_vec(&document).unwrap(), path);
+        assert!(matches!(
+            failure,
+            Err(UiRunFailure::MalformedPrebuiltOutcomes { reason, .. })
+                if reason.contains("require check-stage evidence")
+        ));
+    }
+    let mut document = check_stage_document();
+    document["fixtures"]["fixture.rs"]
+        .as_object_mut()
+        .unwrap()
+        .remove("proof_stage");
+    assert!(matches!(
+        decode(&serde_json::to_vec(&document).unwrap(), path),
+        Err(UiRunFailure::MalformedPrebuiltOutcomes { reason, .. })
+            if reason.contains("missing field `proof_stage`")
+    ));
+}
+
+fn check_stage_document() -> serde_json::Value {
+    serde_json::from_str(
+        r#"{"schema":1,"fixtures":{"fixture.rs":{"environment":"production","environment_identity":"batch","audience_identity":"audience","shared_target_root":"target","proof_stage":"check","fate":"denied","messages":[]}}}"#,
+    ).unwrap()
 }
 
 #[test]
@@ -124,6 +167,7 @@ fn observation(
         environment_identity: "compiler-batch".to_owned(),
         audience_identity: "compiler-audience".to_owned(),
         shared_target_root: "target".to_owned(),
+        proof_stage: "check".to_owned(),
         fate,
         messages: Vec::new(),
     }

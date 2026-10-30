@@ -192,3 +192,22 @@ are transferred to its mounted `replacement_recovery` test before removing the
 old copy. `category-path-audit.json` in the B3 integration evidence records every
 old mount and named-test counterpart. This removes duplicate source copies,
 not tests, continuations or assertions.
+
+
+### Strict consumer stage and sanctioned test sites
+
+The Store reader accepts the producer's required `proof_stage` field and checks
+its Store check-only contract at the untrusted observation boundary. It retains
+`deny_unknown_fields`; codegen, unknown and missing stages refuse. The named
+`check_stage_observations_preserve_the_strict_wire_contract` and
+`code_generation_unknown_and_missing_stages_cannot_satisfy_store_check_claims`
+tests cover this protocol invariant. Actual compiler-reader owner cases consume
+the previously completed production/certification batches without Cargo in tests.
+
+The coordinator's coordinated storage-owner unit-test ruling permits exactly
+39 existing thread calls in 22 named functions, with function-local categories,
+purposes, source items and lexical method counts. Its positive owner-admission
+ruling permits function-local dead-code expectations on 15 compile-only consumer
+witnesses. No signatures, bodies, barriers, joins, limits, assertions, selectors
+or main behavior change. These are distinct from the independent-case sweep;
+shared-state race proofs retain their original physical coordination.
