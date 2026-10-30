@@ -69,7 +69,11 @@ def markdown(result):
              'Unmeasured means unknown, never zero.', '', '## Source census', '',
              '| Site | Count |', '|---|---:|']
     lines += [f'| {kind} | {count} |' for kind, count in result['source_counts'].items()]
-    lines += ['', '## Lanes', '', '| Lane | Build census | Duplicates | Pass / fail / ignored | Wall seconds |',
+    lines += ['', '## Lanes', '',
+              'Package compilation groups count packages compiled more than once, including distinct '
+              'required targets and dependency graphs. They are not budget violations; the ratchet '
+              'separately checks recompilation of an identical declared unit.', '',
+              '| Lane | Build census | Packages compiled >1 time | Pass / fail / ignored | Wall seconds |',
               '|---|---|---:|---|---:|']
     for name, lane in result['lanes'].items():
         timing = lane['timing_telemetry']
@@ -83,9 +87,13 @@ def markdown(result):
                   f'Build telemetry: {timing["build_seconds"]} s; run telemetry: {timing["run_seconds"]} s.', '',
                   'Slowest observed tests (summed work is not lane wall time):', '']
         lines += [f'- {r["seconds"]:.3f}s: `{r["name"]}` ({r["event"]})' for r in timing['slowest']]
-        lines += ['', 'Duplicate graphs (target kinds and executables remain visible):', '']
-        lines += [f'- `{row["package"]}`: {row["compiles"]} artifacts; causes: {", ".join(row["causes"])}.'
-                  for row in lane['duplicate_graphs']]
+        lines += ['', 'Package compilation inventory (required variants are not duplicate units):', '']
+        for row in lane['duplicate_graphs']:
+            units = (f'{row["distinct_required_units"]} declared required units; '
+                     f'{len(row["repeated_units"])} repeated identical units'
+                     if row.get('unit_observation') == 'declared' else 'required-unit identity unmeasured')
+            lines.append(f'- `{row["package"]}`: {row["compiles"]} compilations; {units}; '
+                         f'causes: {", ".join(row["causes"])}.')
         slots, setup = lane['slot_use_telemetry'], lane['repeated_setup']
         lines += ['', f'CPU/slots: **{slots["status"]}**; complete observations: {len(slots["tests"])}.', '']
         lines += [f'- `{row["binary"]}::{row["test"]}` reserves {row["reserved_slots"]}, '

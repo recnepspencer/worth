@@ -129,5 +129,6 @@ def attribute(event, declaration):
                                              'matches': sorted(unique)}))
     row = next(iter(unique.values()))
     return {'identity': row['identity'], 'roles': row['roles'], 'output': row['output'],
+            'platform': row['platform'], 'declared_target': row['target'],
             'dependency_units': row['dependency_units'], 'declared_profile': row['profile'],
             'compiler_inputs': declaration['compiler_inputs']}

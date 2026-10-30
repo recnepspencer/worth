@@ -7,9 +7,40 @@ import unittest
 
 from census import collect, includes_scheduled_selection, markdown
 from ratchet import source_violations
+from ratchet import build_violations
+from compiler_units import declarations
+from logs import read_lane
+from test_compiler_units import event as compiler_event, graph, unit
 
 
 class CensusFixtureTests(unittest.TestCase):
+    def test_required_package_variants_and_identical_recompilations_are_reported_separately(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = root/'Cargo.toml'
+            manifest.write_text('[package]\nname="fixture-court-runtime"\nversion="0.1.0"\n')
+            (root/'src').mkdir()
+            (root/'src/lib.rs').write_text('')
+            owner = unit('owner', dependencies=[1])
+            def invocation(proof):
+                return [dict(type='cargo-invocation', cargo_profile='dev', mode='check',
+                             unit_plan={'units': declarations(graph(owner, proof)), 'compiler_inputs': 'flags'}),
+                        dict(compiler_event(owner), reason='compiler-artifact', fresh=False)]
+            first = invocation(unit('proof'))
+            second = invocation(unit('proof', features=['cert']))
+            for records, required, repeated in [(first + second, 2, 0), (first + first, 1, 1)]:
+                with self.subTest(required=required, repeated=repeated):
+                    log = root/'build.log'
+                    log.write_text('\n'.join(json.dumps(row) for row in records))
+                    result = collect(manifest, root, [('lane', log)])
+                    rendered = markdown(result)
+                    self.assertIn('Packages compiled >1 time', rendered)
+                    self.assertIn(f'{required} declared required units; {repeated} repeated identical units', rendered)
+                    self.assertIn('They are not budget violations', rendered)
+                    self.assertNotIn('Duplicate graphs (', rendered)
+                    self.assertEqual(bool(build_violations(read_lane(log), {'max_compiles_per_unit': 1})),
+                                     bool(repeated))
+
     def test_small_workspace_reports_cost_sites_logs_and_exact_partition(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

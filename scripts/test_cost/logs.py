@@ -1,5 +1,5 @@
 """Cargo artifacts and libtest/nextest observations from retained lane logs."""
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime
 import json
 from pathlib import Path, PurePosixPath
@@ -124,11 +124,29 @@ def duplicates(artifacts):
             continue
         causes = [key for key in ('features', 'profile', 'cargo_profile', 'target_dir', 'check_mode', 'kind', 'target')
                   if len({json.dumps(v[key], sort_keys=True) for v in values}) > 1]
-        if not causes:
+        units = [value['unit'] for value in values if value.get('unit') is not None
+                 and not value.get('unit_refusal')]
+        fields = {'required_dependency_graph': 'dependency_units', 'physical_role': 'roles',
+                  'target_platform': 'platform', 'required_output': 'output',
+                  'declared_profile': 'declared_profile', 'declared_target': 'declared_target',
+                  'compiler_inputs': 'compiler_inputs'}
+        causes += [cause for cause, field in fields.items()
+                   if len({json.dumps(unit[field], sort_keys=True) for unit in units}) > 1]
+        counts = Counter(unit['identity'] for unit in units)
+        repeated = [{'identity': identity, 'compiles': count}
+                    for identity, count in sorted(counts.items()) if count > 1]
+        if repeated:
+            causes.append('repeated identical required unit')
+        if not causes and len(units) == len(values):
+            causes = ['distinct declared compiler units']
+        elif not causes:
             outputs = {tuple(value.get('filenames', [])) for value in values}
             causes = ['unattributed compiler inputs' if len(outputs) > 1 else 'repeated observed compiler unit']
         result.append({'package': package, 'compiles': len(values),
-                       'causes': causes, 'artifacts': values})
+                       'causes': causes, 'artifacts': values,
+                       'unit_observation': 'declared' if len(units) == len(values) else 'unmeasured',
+                       'distinct_required_units': len(counts) if len(units) == len(values) else None,
+                       'repeated_units': repeated, 'unattributed_compiles': len(values) - len(units)})
     return result
 
 

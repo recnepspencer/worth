@@ -5,6 +5,8 @@ import unittest
 
 from logs import duplicates, llvm_lines, read_lane
 from telemetry import timing_summary
+from compiler_units import declarations
+from test_compiler_units import event as compiler_event, graph, unit
 
 
 def compiled(**changes):
@@ -17,6 +19,44 @@ def compiled(**changes):
 
 
 class ArtifactObservationTests(unittest.TestCase):
+    def declared(self, row, dependencies=(), directory='target'):
+        return [dict(type='cargo-invocation', cargo_profile='dev', mode='check', target_dir=directory,
+                     unit_plan={'units': declarations(graph(row, *dependencies)), 'compiler_inputs': 'flags'}),
+                dict(compiler_event(row, linked=row['mode'] != 'check'), reason='compiler-artifact', fresh=False)]
+
+    def test_required_transitive_variants_are_attributed_without_calling_them_duplicate_units(self):
+        owner = unit('owner', dependencies=[1])
+        first = self.declared(owner, [unit('proof')])
+        second = self.declared(owner, [unit('proof', features=['cert'])])
+        second[1]['filenames'] = ['target/debug/deps/owner-different-hash.rmeta']
+        row = self.lane(first + second)['duplicates'][0]
+        self.assertEqual(row['causes'], ['required_dependency_graph'])
+        self.assertEqual(row['compiles'], 2)
+        self.assertEqual(row['distinct_required_units'], 2)
+        self.assertEqual(row['repeated_units'], [])
+        self.assertEqual(row['unit_observation'], 'declared')
+
+    def test_repeated_identical_unit_is_distinct_from_required_package_variants(self):
+        required = self.declared(unit('owner'))
+        repeated = self.declared(unit('owner'), directory='another-target')
+        row = self.lane(required + repeated)['duplicates'][0]
+        self.assertEqual(row['distinct_required_units'], 1)
+        self.assertEqual(row['repeated_units'][0]['compiles'], 2)
+        self.assertIn('target_dir', row['causes'])
+        self.assertIn('repeated identical required unit', row['causes'])
+
+    def test_declared_output_profile_and_physical_platform_differences_remain_visible(self):
+        for field, value, cause in [('mode', 'build', 'required_output'),
+                                    ('platform', 'wasm32-unknown-unknown', 'target_platform'),
+                                    ('profile', {**unit('owner')['profile'], 'incremental': False}, 'declared_profile')]:
+            first, second = unit('owner'), unit('owner')
+            second[field] = value
+            with self.subTest(field=field):
+                row = self.lane(self.declared(first) + self.declared(second))['duplicates'][0]
+                self.assertIn(cause, row['causes'])
+                self.assertEqual(row['distinct_required_units'], 2)
+                self.assertNotIn('unattributed compiler inputs', row['causes'])
+
     def test_plain_libtest_summaries_retain_counts_without_inventing_test_identities(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'legacy.log'
