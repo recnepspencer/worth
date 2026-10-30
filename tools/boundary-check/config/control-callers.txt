@@ -417,3 +417,5 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/retry.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/rich_query.rs

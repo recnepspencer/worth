@@ -140,6 +140,17 @@ impl ApplicationQueryResultSlotKey {
             },
         }
     }
+    /// The declared result name, when this slot carries a named result contract.
+    pub fn output_name(&self) -> Option<&str> {
+        match &self.contract {
+            ApplicationQueryResultSlotContract::Components { output_name, .. }
+            | ApplicationQueryResultSlotContract::Orbit { output_name, .. }
+            | ApplicationQueryResultSlotContract::Field { output_name, .. }
+            | ApplicationQueryResultSlotContract::Relation { output_name, .. } => Some(output_name),
+            _ => None,
+        }
+    }
+
     pub fn query_identity(&self) -> WorthQueryPortableTypeIdentity {
         self.query.clone()
     }

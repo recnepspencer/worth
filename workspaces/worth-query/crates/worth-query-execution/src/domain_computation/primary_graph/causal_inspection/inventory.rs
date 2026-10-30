@@ -49,6 +49,36 @@ pub enum CausalEvidenceFamily {
 }
 
 impl CausalEvidenceFamily {
+    pub const ALL: [Self; 27] = [
+        Self::QueryInspection,
+        Self::QueryMutationCausality,
+        Self::QueryMutationProvenance,
+        Self::RelationalAuthority,
+        Self::RelationalDecision,
+        Self::BridgeRoute,
+        Self::BridgeEvaluation,
+        Self::BridgeSourceMaterialization,
+        Self::BridgeSourceFailure,
+        Self::BridgeContinuity,
+        Self::BridgeMerge,
+        Self::BridgeStructural,
+        Self::BridgeStream,
+        Self::BridgePreview,
+        Self::BridgeWriteback,
+        Self::BridgeMapper,
+        Self::BridgeReplay,
+        Self::SignalInvalidation,
+        Self::SignalEvaluation,
+        Self::SignalForensicAvailability,
+        Self::SignalReplayCursor,
+        Self::SignalLineage,
+        Self::SignalProvenance,
+        Self::Lineage,
+        Self::Provenance,
+        Self::Policy,
+        Self::Redaction,
+    ];
+
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::QueryInspection => "query_inspection",

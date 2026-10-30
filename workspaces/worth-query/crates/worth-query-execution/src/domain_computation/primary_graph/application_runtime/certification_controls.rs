@@ -3,6 +3,7 @@
 // panic reports a violated test scenario, never an ordinary product refusal.
 mod actor_retention;
 mod correction_history_indexes;
+mod inspection_materialization;
 mod managed_cleanup;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 #[path = "certification_controls/workflow_membership.rs"]

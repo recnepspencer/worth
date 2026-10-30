@@ -111,6 +111,11 @@ impl BridgeCausalEvidenceBinding {
         self.binding_class
     }
 
+    /// Descriptive original reference; this borrowed label supplies no authority.
+    pub fn reference_for_reporting(&self) -> &str {
+        self.reference_identity.terminal_projection_for_reporting()
+    }
+
     pub fn reference_evidence_identity(&self) -> BridgeIdentityEvidence {
         self.reference_identity.clone()
     }

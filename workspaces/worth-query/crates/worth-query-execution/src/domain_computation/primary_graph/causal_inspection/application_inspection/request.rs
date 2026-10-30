@@ -17,12 +17,14 @@ pub use changed::{
 };
 pub(super) mod binding;
 mod governed;
+mod rich;
 use super::super::WorthQueryApplicationQueryObservation;
 use super::{
     stop::{InspectionCause, WorthQueryApplicationInspectionDenial},
     WorthQueryObservedApplicationInspection,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+pub use rich::WorthQueryMaterializedInspectionRequest;
 use std::marker::PhantomData;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionMemoryReservation, ExecutionRequest};
 use worth_query_admission::facade::authenticated_principal::{
@@ -108,14 +110,9 @@ where
     where
         'a: 'funding,
     {
-        WorthQueryReferenceOnlyInspectionRequest(WorthQueryApplicationInspectionRequest {
-            runtime: self.0.runtime,
-            external: self.0.external,
-            request: self.0.request,
-            original: self.0.original,
-            allocation_policy,
-            binding: PhantomData,
-        })
+        WorthQueryReferenceOnlyInspectionRequest(
+            self.0.with_allocation_policy_core(allocation_policy),
+        )
     }
 
     pub fn execute(
@@ -123,6 +120,27 @@ where
     ) -> Result<WorthQueryObservedApplicationInspection<'o>, WorthQueryApplicationInspectionDenial>
     {
         self.0.execute_with(|_, _, _, _, _| Ok(None))
+    }
+}
+
+impl<'a, 'p, 'r, 'o, Schema, Binding>
+    WorthQueryApplicationInspectionRequest<'a, 'p, 'r, 'o, Schema, Binding>
+{
+    fn with_allocation_policy_core<'funding>(
+        self,
+        allocation_policy: ExecutionAllocationPolicy<'funding, 'funding>,
+    ) -> WorthQueryApplicationInspectionRequest<'funding, 'p, 'r, 'o, Schema, Binding>
+    where
+        'a: 'funding,
+    {
+        WorthQueryApplicationInspectionRequest {
+            runtime: self.runtime,
+            external: self.external,
+            request: self.request,
+            original: self.original,
+            allocation_policy,
+            binding: PhantomData,
+        }
     }
 }
 

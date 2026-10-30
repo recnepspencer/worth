@@ -35,7 +35,7 @@ type Scope = ApplicationQueryFieldScope<
     NoApplicationUnit,
 >;
 
-pub(super) trait DiagnosticBinding:
+pub(in super::super) trait DiagnosticBinding:
     ApplicationQueryBinding<
     IdentityExecutionSchema,
     Input = AccountSummaryParameters,
@@ -75,7 +75,7 @@ pub(super) type Capability = WorthQueryAdmittedApplicationCapabilityAccess<
     CapabilityTouchInput,
 >;
 
-pub(super) fn capability(
+pub(in super::super) fn capability(
     world: &AuthorizationWorld,
     external: &WorthQueryAuthenticatedExternalPrincipal<IdentityExecutionSchema>,
     request: &WorthQueryRequestScope,
@@ -99,7 +99,7 @@ pub(super) fn capability(
         .unwrap()
 }
 
-pub(super) fn read<B: DiagnosticBinding>(
+pub(in super::super) fn read<B: DiagnosticBinding>(
     world: &AuthorizationWorld,
     external: &WorthQueryAuthenticatedExternalPrincipal<IdentityExecutionSchema>,
     request: &WorthQueryRequestScope,

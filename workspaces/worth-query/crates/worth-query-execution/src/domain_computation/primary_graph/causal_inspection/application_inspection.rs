@@ -9,6 +9,15 @@ pub use connection::{
 };
 mod identity;
 mod report;
+mod rich;
+pub use rich::{
+    WorthQueryApplicationEvidenceFamily, WorthQueryApplicationMaterializationPolicy,
+    WorthQueryApplicationMaterializationRequest, WorthQueryApplicationRichMaterialization,
+    WorthQueryMaterializedEvidenceReference, WorthQueryMaterializedFamilyOutcome,
+    WorthQueryMaterializedFieldValue, WorthQueryMaterializedQueryField,
+    WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
+    WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
+};
 mod request;
 mod result;
 mod stop;
@@ -16,14 +25,15 @@ pub use request::{
     WorthQueryApplicationInspectionRequest, WorthQueryChangedInspectionRequest,
     WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryConnectedInspectionRequest,
     WorthQueryConnectedReferenceOnlyInspectionRequest, WorthQueryEvaluatedInspectionRequest,
-    WorthQueryEvaluatedReferenceOnlyInspectionRequest, WorthQueryObservedInspectionRequest,
-    WorthQueryPerformedSourceInspectionRequest, WorthQueryReferenceOnlyInspectionRequest,
-    WorthQuerySourceInspectionRequest, WorthQuerySourceReferenceOnlyInspectionRequest,
+    WorthQueryEvaluatedReferenceOnlyInspectionRequest, WorthQueryMaterializedInspectionRequest,
+    WorthQueryObservedInspectionRequest, WorthQueryPerformedSourceInspectionRequest,
+    WorthQueryReferenceOnlyInspectionRequest, WorthQuerySourceInspectionRequest,
+    WorthQuerySourceReferenceOnlyInspectionRequest,
 };
 pub use result::{
     WorthQueryComparedApplicationInspection, WorthQueryConnectedApplicationInspection,
-    WorthQueryEvaluatedApplicationInspection, WorthQueryObservedApplicationInspection,
-    WorthQueryPerformedSourceInspection,
+    WorthQueryEvaluatedApplicationInspection, WorthQueryMaterializedApplicationInspection,
+    WorthQueryObservedApplicationInspection, WorthQueryPerformedSourceInspection,
 };
 pub use stop::{
     WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,

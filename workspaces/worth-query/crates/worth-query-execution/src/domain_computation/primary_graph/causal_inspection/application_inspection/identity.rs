@@ -365,3 +365,5 @@ fn compose<Stop>(
         bridge_truth_external_identity_token(token),
     ))
 }
+
+pub(super) mod rich;

@@ -16,6 +16,7 @@ mod governance_binding;
 mod materialization;
 #[cfg(test)]
 mod publication_tests;
+pub(super) mod rich;
 mod terminal;
 use super::target::InspectionTargetDenial;
 use super::WorthQueryApplicationInspectionTarget;
@@ -51,6 +52,7 @@ pub(super) enum InspectionAdmissionDenial {
     ComparisonParameters(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<()>),
     Connection(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<super::connection::ConnectionRefusal>),
     MissingOriginalProjection,
+    Rich(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::application_query::WorthQueryProjectionMaterializationRefusal>),
     Comparison(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::application_query::ProjectionComparisonDenial>),
     DiagnosticContract(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial>),
     DiagnosticPreparation(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticPreparationDenial>),
@@ -83,6 +85,36 @@ pub(super) struct InspectionComparisonPreparation<'original> {
     pub(super) pending: crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
 }
 
+pub(super) enum InspectionDiagnosticPreparation<'o> {
+    Comparison(InspectionComparisonPreparation<'o>),
+    Rich {
+        request:super::rich::WorthQueryApplicationMaterializationRequest,
+        pending:crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
+    },
+}
+impl<'o> InspectionDiagnosticPreparation<'o> {
+    fn before(
+        &self,
+    ) -> Option<&'o super::super::application_observation::WorthQueryApplicationQueryObservation>
+    {
+        match self {
+            Self::Comparison(value) => Some(value.before),
+            Self::Rich { .. } => None,
+        }
+    }
+    fn rich_request(&self) -> Option<super::rich::WorthQueryApplicationMaterializationRequest> {
+        match self {
+            Self::Rich { request, .. } => Some(*request),
+            _ => None,
+        }
+    }
+    fn into_pending(self)->crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance{
+        match self {
+            Self::Comparison(value) => value.pending,
+            Self::Rich { pending, .. } => pending,
+        }
+    }
+}
 pub(super) fn require_request(
     execution: &ExecutionRequest<'_, '_>,
     request: &WorthQueryRequestScope,

@@ -1381,7 +1381,7 @@ scope. Mostly complete and in-progress work still needs the named closure.
 | 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
 | 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
 | 9.8 | Genuine equivalent-output suppression explanations | Complete for qualified exact-u64 performed evaluation, Stable/restored contrasts and Native non-compute protection | 9.9 optional rich materialization |
-| 9.9 | Optional rich materialization | Open | Freshly admitted, demand-driven views from existing evidence owners |
+| 9.9 | Optional rich materialization | In progress; original-query rich view qualified, connected source/evaluation views remain | Freshly admitted, demand-driven views from existing evidence owners |
 | 9.10 | Evidence availability, expiry and retention lifecycle | In progress; retained-availability Source is unqualified | Real owner availability/expiry and release |
 | 9.11 | Integrated application qualification and consumer handoff | Open | Coherent public capability, executable guidance and phase acceptance |
 
@@ -1620,7 +1620,23 @@ checks pass. Phases 9.9-9.11 and parent Phase 9 remain open.
 
 #### Phase 9.9: Optional Rich Materialization
 
-**Status: open. Depends on: 9.1 and 9.4 plus the selected qualified evidence
+**First slice qualified.** The explicit original-query
+rich request consumes a fresh session-bound diagnostic loan before retained-body
+availability, shares the original disclosed projection owner, and publishes only
+through the matching consuming inspection terminal. Requested family selection,
+actual original projection outcome and policy bind the versioned rich identity.
+The three legacy materialization fences remain intact. Existing grouped public and
+owner courts cover earlier values after a head change, nested rows, fresh grant
+withdrawal, actual mid-assembly cancellation, empty versus unretained projections,
+Diagnostic denial before availability, scope substitution and reservation release.
+Connected-source and qualified performed-evaluation rich views remain unfinished;
+this slice does not close Phase 9.9 or the parent phase.
+Validation: 56 existing grouped public correction tests and 23 focused owner
+tests pass, including the unchanged legacy fences; topology, context, dirty Rust
+line caps, function review and diff checks pass. The independent reviewer cleared
+the slice before commit. No new test binary or runtime schema was added.
+
+**Status: in progress. Depends on: 9.1 and 9.4 plus the selected qualified evidence
 mode.** Carry existing CausalInspection/Bridge/Signal materialization and omission
 meaning through Decl/Host. Admit current READ, metadata and DiagnosticMask before
 revealing fields, links, counts or family availability. Materialize only on demand

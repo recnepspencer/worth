@@ -1,9 +1,12 @@
 //! Descriptive results borrow originals and release the same actual session.
 mod connected;
+mod rich;
 pub(super) use connected::SourceInspectionResult;
 pub use connected::{
     WorthQueryConnectedApplicationInspection, WorthQueryEvaluatedApplicationInspection,
 };
+pub(super) use rich::PreparedRichInspection;
+pub use rich::WorthQueryMaterializedApplicationInspection;
 mod comparison;
 mod source;
 use super::super::{

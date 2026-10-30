@@ -390,3 +390,5 @@ impl WorthQueryApplicationProjectedRelation {
         self.slot_key.as_ref() == &selector.slot_key() && self.cardinality == selector.cardinality()
     }
 }
+
+pub(in crate::domain_computation::primary_graph::application_query::projection) mod materialization;

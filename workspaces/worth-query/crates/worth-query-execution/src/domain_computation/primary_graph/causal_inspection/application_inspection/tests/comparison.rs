@@ -21,7 +21,7 @@ use worth_query_admission::facade::authenticated_principal::{
 #[path = "comparison_controls.rs"]
 mod controls;
 #[path = "comparison_reads.rs"]
-mod reads;
+pub(super) mod reads;
 use reads::{
     account, activity, capability, clear_optional_field, compare, read, write, DiagnosticBinding,
 };
@@ -178,3 +178,6 @@ fn paired_native_nested_order_and_optional_presence_are_disclosed_output_changes
     result.close();
     assert_eq!(registry.observe().active(), baseline);
 }
+
+#[path = "rich_query.rs"]
+mod rich_query;

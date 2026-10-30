@@ -92,3 +92,11 @@ pub(in crate::domain_computation::primary_graph::application_query) fn retain(
 
 #[cfg(test)]
 mod tests;
+
+mod materialization;
+pub(in crate::domain_computation::primary_graph) use materialization::materialize_original_projection;
+pub use materialization::{
+    WorthQueryMaterializedFieldValue, WorthQueryMaterializedQueryField,
+    WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
+    WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
+};

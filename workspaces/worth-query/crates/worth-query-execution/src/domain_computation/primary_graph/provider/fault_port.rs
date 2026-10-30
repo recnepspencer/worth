@@ -1,6 +1,8 @@
 //! Injected provider terminal-outcome boundary.
 
 use std::sync::Arc;
+mod cancellation;
+use cancellation::BoundaryCancellation;
 
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFault {
@@ -37,6 +39,13 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryPrimaryGraphFau
     fn aftermath_ready_for_sealing(&self) {}
 
     fn output_comparison_completed(&self) {}
+    fn inspection_materialization_prepared(&self) {}
+    fn cancel_after_next_inspection_materialization_for_test(
+        &self,
+        _source:worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> bool {
+        false
+    }
 
     fn cancel_after_next_output_comparison_for_test(
         &self,
@@ -60,39 +69,29 @@ pub(in crate::domain_computation::primary_graph) fn production_fault_port(
 #[derive(Default)]
 struct WorthQueryScriptedPrimaryGraphFaults {
     scheduled: std::sync::atomic::AtomicU16,
-    output_comparison_cancellation: std::sync::Mutex<
-        Option<
-            worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
-        >,
-    >,
+    output_comparison_cancellation: BoundaryCancellation,
+    inspection_materialization_cancellation: BoundaryCancellation,
 }
 
 impl WorthQueryPrimaryGraphFaultPort for WorthQueryScriptedPrimaryGraphFaults {
     fn output_comparison_completed(&self) {
-        let source = self
-            .output_comparison_cancellation
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .take();
-        if let Some(source) = source {
-            source.cancel();
-        }
+        self.output_comparison_cancellation.fire();
+    }
+    fn inspection_materialization_prepared(&self) {
+        self.inspection_materialization_cancellation.fire();
     }
     fn cancel_after_next_output_comparison_for_test(
         &self,
-        source: worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+        source:worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
     ) -> bool {
-        let mut pending = self
-            .output_comparison_cancellation
-            .lock()
-            .unwrap_or_else(|p| p.into_inner());
-        if pending.is_some() {
-            return false;
-        }
-        *pending = Some(source);
-        true
+        self.output_comparison_cancellation.arm(source)
     }
-
+    fn cancel_after_next_inspection_materialization_for_test(
+        &self,
+        source:worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> bool {
+        self.inspection_materialization_cancellation.arm(source)
+    }
     fn take(&self, fault: WorthQueryPrimaryGraphFault) -> bool {
         let mask = fault_mask(fault);
         let mut scheduled = self.scheduled.load(std::sync::atomic::Ordering::Acquire);
@@ -200,6 +199,19 @@ impl super::WorthQueryPrimaryGraphProvider {
 mod output_comparison_cancellation_tests {
     use super::*;
     use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
+    #[test]
+    fn materialization_and_output_comparison_cancel_only_their_own_boundary() {
+        let port = WorthQueryScriptedPrimaryGraphFaults::default();
+        let comparison = WorthQueryCancellationSource::new();
+        let materialization = WorthQueryCancellationSource::new();
+        assert!(port.cancel_after_next_output_comparison_for_test(comparison.clone()));
+        assert!(port.cancel_after_next_inspection_materialization_for_test(materialization.clone()));
+        port.output_comparison_completed();
+        assert!(comparison.token().is_cancelled());
+        assert!(!materialization.token().is_cancelled());
+        port.inspection_materialization_prepared();
+        assert!(materialization.token().is_cancelled());
+    }
     #[test]
     fn comparison_cancellation_is_one_shot_and_refuses_pending_replacement() {
         let port = WorthQueryScriptedPrimaryGraphFaults::default();

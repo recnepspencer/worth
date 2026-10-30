@@ -14,6 +14,7 @@ pub(in crate::domain_computation) struct WorthQueryApplicationInspectionTarget {
     original: InspectionOriginal,
     contract: WorthQueryInstalledApplicationInspectionContract,
     connection_source: Option<Arc<Self>>,
+    rich: Option<super::rich::WorthQueryApplicationMaterializationRequest>,
 }
 
 enum InspectionOriginal {
@@ -59,6 +60,7 @@ impl WorthQueryApplicationInspectionTarget {
                 },
                 contract,
                 connection_source: None,
+                rich: None,
             }))
         })
         .map_err(InspectionTargetDenial::Storage)
@@ -84,6 +86,7 @@ impl WorthQueryApplicationInspectionTarget {
                 original: InspectionOriginal::Source(original.clone()),
                 contract,
                 connection_source: None,
+                rich: None,
             }))
         })
         .map_err(InspectionTargetDenial::Storage)
@@ -129,8 +132,19 @@ impl WorthQueryApplicationInspectionTarget {
     pub(super) fn connection_source(&self) -> Option<&Arc<Self>> {
         self.connection_source.as_ref()
     }
+    pub(super) fn bind_rich_request(
+        target: &mut Arc<Self>,
+        request: super::rich::WorthQueryApplicationMaterializationRequest,
+    ) {
+        Arc::get_mut(target).expect("unpublished rich target").rich = Some(request);
+    }
+    pub(super) fn rich_request(
+        &self,
+    ) -> Option<super::rich::WorthQueryApplicationMaterializationRequest> {
+        self.rich
+    }
     pub(super) fn needs_diagnostic(&self) -> bool {
-        self.before().is_some() || self.connection_source.is_some()
+        self.before().is_some() || self.connection_source.is_some() || self.rich.is_some()
     }
     pub(super) fn source(&self) -> Option<&super::source_original::SourceOriginal> {
         match &self.original {

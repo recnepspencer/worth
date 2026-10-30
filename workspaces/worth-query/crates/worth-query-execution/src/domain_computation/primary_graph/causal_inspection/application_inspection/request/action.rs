@@ -1,6 +1,6 @@
 //! Fresh guards end before the actual Product and consuming basis terminal.
 use super::super::{
-    admission::InspectionComparisonPreparation,
+    admission::{InspectionComparisonPreparation, InspectionDiagnosticPreparation},
     report::{FundedComparisonReport, FundedInspectionReport},
     result::{
         PreparedComparedInspection, PreparedObservedInspection,
@@ -19,10 +19,12 @@ use worth_relational::facade::identity::EntityId;
 
 enum MaterializedInspection {
     Observed(FundedInspectionReport),
+    Rich(super::super::report::rich::FundedRichInspectionReport),
     Compared(FundedComparisonReport),
 }
 enum PreparedInspection<'o> {
     Observed(PreparedObservedInspection<'o>),
+    Rich(super::super::result::PreparedRichInspection<'o>),
     Compared(PreparedComparedInspection<'o>),
 }
 
@@ -43,10 +45,14 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
         >,
     ) -> Result<WorthQueryObservedApplicationInspection<'o>, WorthQueryApplicationInspectionDenial>
     {
-        let (prepared, memory) =
-            self.execute_inner(None, None, |execution, query, principal, scope, memory| {
+        let (prepared, memory) = self.execute_inner(
+            None,
+            None,
+            None,
+            |execution, query, principal, scope, memory| {
                 pending(execution, query, principal, scope, memory).map(|pending| (pending, None))
-            })?;
+            },
+        )?;
         match prepared {
             PreparedInspection::Observed(prepared) => Ok(prepared.fund(memory)),
             _ => Err(WorthQueryApplicationInspectionDenial::new(
@@ -82,6 +88,7 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
         let (prepared, memory) = self.execute_inner(
             Some(before),
             source,
+            None,
             |execution, query, principal, scope, memory| {
                 pending(execution, query, principal, scope, memory)
                     .map(|(metadata, diagnostic)| (metadata, Some(diagnostic)))
@@ -98,13 +105,86 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
         }
     }
 
+    pub(super) fn execute_rich_with(
+        self,
+        request: super::super::rich::WorthQueryApplicationMaterializationRequest,
+        pending: impl FnOnce(
+            &ExecutionRequest<'_, '_>,
+            &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
+            EntityId,
+            EntityId,
+            &mut Option<ExecutionMemoryReservation>,
+        ) -> Result<
+            (
+                Option<WorthQueryPendingApplicationQueryGovernance>,
+                WorthQueryPendingApplicationQueryGovernance,
+            ),
+            InspectionCause,
+        >,
+    ) -> Result<
+        super::super::result::WorthQueryMaterializedApplicationInspection<'o>,
+        WorthQueryApplicationInspectionDenial,
+    > {
+        let (prepared, memory) =
+            self.execute_inner(None, None, Some(request), |e, q, p, s, m| {
+                pending(e, q, p, s, m).map(|(metadata, diagnostic)| (metadata, Some(diagnostic)))
+            })?;
+        match prepared {
+            PreparedInspection::Rich(prepared) => Ok(prepared.fund(memory)),
+            _ => Err(WorthQueryApplicationInspectionDenial::new(
+                InspectionCause::Admission(
+                    super::super::admission::InspectionAdmissionDenial::ForeignIssuedAccess,
+                ),
+                memory,
+            )),
+        }
+    }
+
     fn execute_inner(
         self,
         before: Option<&'o WorthQueryApplicationQueryObservation>,
         source: Option<
             &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         >,
+        rich: Option<super::super::rich::WorthQueryApplicationMaterializationRequest>,
         pending: impl FnOnce(
+            &ExecutionRequest<'_, '_>,
+            &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
+            EntityId,
+            EntityId,
+            &mut Option<ExecutionMemoryReservation>,
+        ) -> Result<
+            (
+                Option<WorthQueryPendingApplicationQueryGovernance>,
+                Option<WorthQueryPendingApplicationQueryGovernance>,
+            ),
+            InspectionCause,
+        >,
+    ) -> Result<
+        (PreparedInspection<'o>, Option<ExecutionMemoryReservation>),
+        WorthQueryApplicationInspectionDenial,
+    > {
+        let mut pending = Some(pending);
+        self.execute_inner_core(
+            before,
+            source,
+            rich,
+            &mut |execution, query, principal, scope, memory| {
+                pending.take().expect("one private policy preparation")(
+                    execution, query, principal, scope, memory,
+                )
+            },
+        )
+    }
+
+    fn execute_inner_core(
+        self,
+        before: Option<&'o WorthQueryApplicationQueryObservation>,
+        source: Option<
+            &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        >,
+        rich: Option<super::super::rich::WorthQueryApplicationMaterializationRequest>,
+        pending: &mut dyn FnMut(
             &ExecutionRequest<'_, '_>,
             &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
             EntityId,
@@ -171,9 +251,10 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
                             storage,
                         )
                         .map_err(FreshQueryPermissionStop::Inspect)?;
-                        let comparison = match (before, diagnostic) {
-                            (Some(before), Some(pending)) => Some(InspectionComparisonPreparation { before, pending }),
-                            (None, None) => None,
+                        let comparison = match (before, diagnostic, rich) {
+                            (Some(before), Some(pending),None) => Some(InspectionDiagnosticPreparation::Comparison(InspectionComparisonPreparation { before, pending })),
+                            (None,Some(pending),Some(request))=>Some(InspectionDiagnosticPreparation::Rich {request,pending}),
+                            (None, None,None) => None,
                             _ => return Err(FreshQueryPermissionStop::Inspect(InspectionCause::Admission(
                                 super::super::admission::InspectionAdmissionDenial::ForeignIssuedAccess))),
                         };
@@ -193,7 +274,9 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
                         .map_err(|cause| {
                             FreshQueryPermissionStop::Inspect(InspectionCause::Admission(cause))
                         })?;
-                        let report = if before.is_some() {
+                        let report = if rich.is_some() {
+                            read.materialize_rich(execution,installed.query()).map(MaterializedInspection::Rich)
+                        } else if before.is_some() {
                             read.materialize_comparison(execution, installed.query(), source).map(MaterializedInspection::Compared)
                         } else { read.materialize(execution).map(MaterializedInspection::Observed) }
                         .map_err(|cause| FreshQueryPermissionStop::Inspect(InspectionCause::Admission(cause)))?;
@@ -216,6 +299,8 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
                 .complete(execution, basis.release())
                 .map_err(InspectionCause::Admission)?;
             match (before, report) {
+                (None,MaterializedInspection::Rich(report))=>completed
+                    .publish_rich(execution,self.original,report,&mut memory).map(PreparedInspection::Rich),
                 (None, MaterializedInspection::Observed(report)) => completed
                     .publish(execution, self.original, report, &mut memory)
                     .map(PreparedInspection::Observed),

@@ -16,3 +16,6 @@ mod restoration;
 mod reuse;
 pub use restoration::restored_output_has_no_original_in_memory_evaluation;
 pub use reuse::stable_input_reuse_has_no_performed_output_evaluation;
+
+mod rich_query;
+pub use rich_query::rich_original_query_survives_head_change_and_private_assembly_cancellation;

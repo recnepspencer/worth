@@ -22,6 +22,7 @@ use worth_runtime_bridge::facade::{
 };
 
 mod connected;
+pub(super) mod rich;
 pub(super) use connected::{materialize_connected, FundedConnectedReport};
 mod comparison;
 pub(super) use comparison::{
@@ -34,6 +35,7 @@ pub(super) enum InspectionReportDenial {
     Input(BridgeQueryObservationReportingInputDenial),
     Bridge(BridgeQueryObservationReportingStop<ResourceStop>),
     ForeignComparison,
+    ForeignMaterialization,
     Storage(RetainedStorageDenial),
 }
 
@@ -135,6 +137,9 @@ impl FundedInspectionReport {
 }
 
 impl InspectionReportPayload {
+    pub(super) fn envelope(&self) -> &BridgeCausalExplanationEnvelope {
+        &self.envelope
+    }
     pub(super) fn report_identity(&self) -> &str {
         self.envelope.envelope_for_reporting()
     }

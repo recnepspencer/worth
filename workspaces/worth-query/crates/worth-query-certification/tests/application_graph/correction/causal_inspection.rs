@@ -142,3 +142,8 @@ fn stable_input_reuse_cannot_claim_a_performed_equivalent_evaluation() {
 fn restored_output_cannot_recreate_its_original_in_memory_evaluation() {
     super::model::causal_inspection::output_equivalence::restored_output_has_no_original_in_memory_evaluation();
 }
+
+#[test]
+fn rich_original_query_keeps_original_cells_and_rechecks_live_authority() {
+    super::model::causal_inspection::output_equivalence::rich_original_query_survives_head_change_and_private_assembly_cancellation();
+}

@@ -52,6 +52,17 @@ impl WorthQueryApplicationInspectionDenial {
         }
     }
 
+    pub fn materialization_refusal(&self)->Option<crate::domain_computation::primary_graph::application_query::WorthQueryProjectionMaterializationRefusal>{
+        match &self.cause {
+            InspectionCause::Admission(super::admission::InspectionAdmissionDenial::Rich(
+                CaptureStop::Kernel(worth_execution::ScopeStop::Failure(
+                    worth_execution::MapKernelFailure::Domain(cause),
+                )),
+            )) => Some(*cause),
+            _ => None,
+        }
+    }
+
     /// Output join detail after fresh diagnostic admission; no identifiers or values.
     /// With multiple disclosed candidates, reports the longest satisfied prefix,
     /// retaining the first candidate in original order when equally deep.

@@ -174,3 +174,13 @@ pub mod integration {
 }
 
 pub use super::application_contribution::WorthQueryProducerEvaluationIneligibility;
+
+pub use application_inspection::{
+    WorthQueryApplicationEvidenceFamily, WorthQueryApplicationMaterializationPolicy,
+    WorthQueryApplicationMaterializationRequest, WorthQueryApplicationRichMaterialization,
+    WorthQueryMaterializedApplicationInspection, WorthQueryMaterializedEvidenceReference,
+    WorthQueryMaterializedFamilyOutcome, WorthQueryMaterializedFieldValue,
+    WorthQueryMaterializedInspectionRequest, WorthQueryMaterializedQueryField,
+    WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
+    WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
+};

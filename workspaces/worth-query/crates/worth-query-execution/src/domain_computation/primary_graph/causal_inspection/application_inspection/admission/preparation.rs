@@ -46,7 +46,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     request: &'a WorthQueryRequestScope,
     original: InspectionSubject<'_>,
     pending: Option<WorthQueryPendingApplicationQueryGovernance>,
-    comparison: Option<InspectionComparisonPreparation<'_>>,
+    comparison: Option<InspectionDiagnosticPreparation<'_>>,
     memory: &'storage mut Option<ExecutionMemoryReservation>,
 ) -> Result<InspectionRead<'a, 'storage, Schema, Scope<Schema, Binding>>, InspectionAdmissionDenial>
 where
@@ -55,7 +55,12 @@ where
 {
     let reserved = WorthQueryPreparedProductReadSessionIdentity::reserve()
         .map_err(InspectionAdmissionDenial::Session)?;
-    let before = comparison.as_ref().map(|comparison| comparison.before);
+    let before = comparison
+        .as_ref()
+        .and_then(InspectionDiagnosticPreparation::before);
+    let rich = comparison
+        .as_ref()
+        .and_then(InspectionDiagnosticPreparation::rich_request);
     if let Some(before) = before {
         InspectionSubject::Query(before).validate(
             runtime,
@@ -74,11 +79,14 @@ where
         request,
         original,
         pending,
-        comparison.map(|v| v.pending),
+        comparison.map(InspectionDiagnosticPreparation::into_pending),
         &reserved,
         memory,
     )?;
-    let target = original.capture(execution, before, contract, memory)?;
+    let mut target = original.capture(execution, before, contract, memory)?;
+    if let Some(request) = rich {
+        WorthQueryApplicationInspectionTarget::bind_rich_request(&mut target, request);
+    }
     start(
         runtime,
         execution,

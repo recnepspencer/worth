@@ -171,3 +171,10 @@ pub use observed_source::retained_dependencies::{
 
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use read_execution::component_native_acquisitions_on_this_thread_for_test;
+
+pub(in crate::domain_computation::primary_graph) use projection::retained_projection::materialize_original_projection;
+pub use projection::retained_projection::{
+    WorthQueryMaterializedFieldValue, WorthQueryMaterializedQueryField,
+    WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
+    WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
+};

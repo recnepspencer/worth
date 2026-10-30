@@ -483,3 +483,54 @@ again at the consuming terminal. An immutable proof is not permanent authorizati
 Retain genuine originals and use a fresh request and capabilities for a lawful retry.
 Closing a report or owned denial releases its own reservation; it neither undoes the
 business operation nor discards another owner's original evidence.
+
+
+## Rich original query materialization
+
+A new request can materialize an original complete, retained projection after fresh
+READ, inspection metadata and Diagnostic field/relation/influence admission:
+
+```rust,ignore
+let detail = WorthQueryApplicationMaterializationRequest::family(
+    WorthQueryApplicationEvidenceFamily::QueryInspection,
+);
+let rich = fresh.inspect::<Binding>(&original).why_observed()
+    .materialize(detail)
+    .execute_governed(current_metadata, current_diagnostic)?;
+for row in rich.materialization().original_query().into_iter().flat_map(|p| p.rows()) {
+    for field in row.fields() {
+        // Borrowed declared output name, canonical result path, and original Native value.
+        consume(field.output_name(), field.result_path(), field.value());
+    }
+}
+rich.close();
+```
+
+Public inspection metadata uses `execute_with_diagnostic(current_diagnostic)`.
+A reference-only report never grants a subsequent rich read. The new request
+uses the same inspection session and consuming publication terminal as the
+reference path. It shares the original disclosed cells and their original owner;
+it does not run a query against the current head. Rows include their original
+ordered nested relations. Names come from the exact retained compiled slot
+contract. Internal working nodes, predicate sources and operational handles are
+not part of this view. The fresh request pays for the new report; close and refusal
+release its existing reservation.
+
+A retained empty projection is `Provided` with zero rows. An original captured
+without `retain_projection_for_inspection()` reports `OriginalProjectionNotRetained`.
+Current diagnostic policy admits before this availability lookup, even for empty
+results. Unrequested families report `NotRequested`; a requested family outside
+this selected original-query mode reports
+`RequestedButNotProvidedBySelectedObservationMode`. This is a selection outcome,
+not a Signal retention or expiry verdict. Owner/family references are the actual
+freshly assembled Query envelope bindings. The rich report has a distinct versioned
+identity bound to the original, policy, requested families and actual projection
+outcome. Original-query materialization currently uses the existing
+`OfflineInterpretableArtifact` policy. Rich connected-source and performed-evaluation
+views remain subsequent Phase 9.9 work.
+
+Cancellation after private projection preparation refuses before any public rich
+artifact, without changing business output. Previously admitted descriptive
+results remain usable after later grant revocation; every new request rechecks
+current access. The older unadmitted generic materialization door continues to
+refuse application observation envelopes with `NativeInspectionAdmissionRequired`.

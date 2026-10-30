@@ -59,6 +59,7 @@ fn admission(cause: &InspectionAdmissionDenial) -> Option<Refusal<'_>> {
         Cause::DiagnosticPreparation(stop) => capture(stop, |_| None),
         Cause::DiagnosticAdmission(stop) => capture(stop, |_| None),
         Cause::ComparisonParameters(stop) => capture(stop, |_| None),
+        Cause::Rich(stop) => capture(stop, |_| None),
         Cause::Connection(stop) => capture(stop, |_| None),
         Cause::Comparison(stop) => capture(stop, |cause| {
             match cause {
