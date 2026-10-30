@@ -1918,6 +1918,25 @@ Keep stdout formatting and reporting outside measured intervals. The first
 public-answer interval includes fresh request scope/authentication, Query
 execution and owned row extraction; name that boundary rather than attributing
 its entire cost to Native materialization.
+Requested-object peak qualification uses the existing application court binary
+with one always-compiled tracking System allocator wrapper. Mark the complete
+artifact instrumented: wrapper layout and overhead remain present even between
+measurement groups. Do not label its elapsed samples uninstrumented or transfer
+raw latency across allocator postures. Earlier unwrapped System evidence keeps
+only its unchanged named production scope.
+
+Measure group-tagged requested-object high-water and live bytes at return for
+actual setup with retained receipts, each fresh public edit, historical answer,
+capture/transport, transport copy, readmission constructor and first public
+answer. Source-group frees count on any thread; pre-existing objects, wrapper
+headers, allocator metadata and untagged other-thread allocations are excluded.
+The difference between peak and return is a group metric, not total transient
+heap. Serialize measurement groups, preserve cleanup on unwind, and close the
+group before verification allocations, formatting or reporting. Use the same
+scale matrix and existing publication growth envelope for the measured local
+edit peak, so full-body/history transient allocation cannot hide behind retained
+owner totals. No new build profile, feature, target or resource-admission invoice
+implements this observation.
 
 Separate current authoritative storage, held historical roots/artifacts,
 derived/index storage, reclaimable queued storage, transient/peak allocation and

@@ -6,6 +6,7 @@ dependencies = [
     "serde",
     "serde_json",
     "sha2",
+    "tracking-allocator",
     "worth-execution",
     "worth-foundational",
     "worth-harness",

@@ -4,7 +4,7 @@ use super::{
         host::{self, Host},
         live_at,
     },
-    measurement, reconstruction,
+    measurement, peak, reconstruction,
 };
 use std::time::Instant;
 use worth_query_host::facade::{
@@ -25,28 +25,29 @@ impl CellHistory {
     pub fn build(live: u64, history: u64) -> Self {
         assert!(live > 0 && history > 0);
         let setup = Instant::now();
-        let initial: Vec<_> = (1..=live).map(|key| (key, key + 7)).collect();
-        let mut seeds: Vec<_> = initial
-            .iter()
-            .map(|&(key, value)| (key, 1, value))
-            .collect();
-        seeds.push((30_000, 2, 29));
-        let host = host::install_cells(&seeds, history + SAMPLES);
-        let mut receipts = Vec::new();
-        for step in 1..=history {
-            receipts.push(committed(&host, live, 1_000 + step, 10_000 + step));
-        }
-        println!(
-            "cell setup live={live} retained_steps={history} elapsed_us={} retained_receipts={}",
-            setup.elapsed().as_micros(),
-            receipts.len()
-        );
-        Self {
-            host,
-            live,
-            receipts,
-            initial,
-        }
+        let (court, requested) = peak::measure(|| {
+            let initial: Vec<_> = (1..=live).map(|key| (key, key + 7)).collect();
+            let mut seeds: Vec<_> = initial
+                .iter()
+                .map(|&(key, value)| (key, 1, value))
+                .collect();
+            seeds.push((30_000, 2, 29));
+            let host = host::install_cells(&seeds, history + SAMPLES);
+            let mut receipts = Vec::new();
+            for step in 1..=history {
+                receipts.push(committed(&host, live, 1_000 + step, 10_000 + step));
+            }
+            Self {
+                host,
+                live,
+                receipts,
+                initial,
+            }
+        });
+        let elapsed = setup.elapsed().as_micros();
+        println!("cell setup allocator=instrumented-tracking-system live={live} retained_steps={history} elapsed_us={elapsed} retained_receipts={}", court.receipts.len());
+        peak::report("setup-and-retained-history", requested);
+        court
     }
 
     pub fn measure(self) -> measurement::WarmPublication {
@@ -55,12 +56,14 @@ impl CellHistory {
         let mut decision_facts = 0;
         for sample in 0..SAMPLES {
             let start = Instant::now();
-            let receipt = committed(&self.host, self.live, 200_000 + sample, 1_000_000 + sample);
+            let (receipt, allocation) = peak::measure(|| {
+                committed(&self.host, self.live, 200_000 + sample, 1_000_000 + sample)
+            });
+            micros.push((start.elapsed().as_micros(), allocation));
             decision_facts += receipt
                 .mutation_work()
                 .expect("the original commit retains native mutation work")
                 .decision_fact_count();
-            micros.push(start.elapsed().as_micros());
         }
         let observation = measurement::observe(&self.host, &before);
         assert!(
@@ -110,9 +113,11 @@ impl CellHistory {
         // allocation and elapsed work are diagnostic, never publication work.
         super::super::storage::observe(&self.host);
         let start = Instant::now();
-        let bytes = super::super::checkpoint::capture(&self.host);
+        let (bytes, allocation) = peak::measure(|| super::super::checkpoint::capture(&self.host));
+        let capture_elapsed = start.elapsed().as_micros();
+        peak::report("checkpoint-capture-and-transport", allocation);
         println!("cell cold capture_transport_samples=1 capture_transport_us={} live={} retained_steps={} checkpoint_payload_bytes={}",
-            start.elapsed().as_micros(), self.live, self.receipts.len(), bytes.len());
+            capture_elapsed, self.live, self.receipts.len(), bytes.len());
         let history = self.receipts.len() as u64;
         let Self { host, receipts, .. } = self;
         drop(receipts);

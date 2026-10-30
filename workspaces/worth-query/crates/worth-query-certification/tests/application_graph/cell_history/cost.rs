@@ -1,6 +1,8 @@
 //! Independent retained-history and live-body axes through ordinary cell edits.
 #[path = "cost/measurement.rs"]
 mod measurement;
+#[path = "cost/peak.rs"]
+mod peak;
 #[path = "cost/reconstruction.rs"]
 mod reconstruction;
 #[path = "cost/workload.rs"]
@@ -9,7 +11,7 @@ mod workload;
 use workload::CellHistory;
 
 fn history_axis(scales: &[u64]) {
-    println!("cell workload=single-field-last-cell policy=Serial/CanonicalBitwise os={} arch={} available_logical_cpus={} history_axis={scales:?} expectation=affected-cell-plus-native-persistent-path; historical-output-sized; head-bytes-exclude-held-history", std::env::consts::OS, std::env::consts::ARCH, std::thread::available_parallelism().unwrap());
+    report_runtime("retained_history", scales);
     // A fixed live body and one changed cell: publication may traverse Native
     // persistent paths, but must not copy or hash the entire retained history.
     let mut samples = Vec::new();
@@ -21,6 +23,7 @@ fn history_axis(scales: &[u64]) {
 }
 
 fn body_axis(scales: &[u64]) {
+    report_runtime("live_body", scales);
     // The LAST cell is edited, so a first-match scan cannot counterfeit locality.
     // Historical materialization remains output-sized; its reads are reported
     // separately rather than charged to the warm publication interval.
@@ -34,6 +37,8 @@ fn body_axis(scales: &[u64]) {
 
 fn assert_sublinear_publication(samples: &[measurement::WarmPublication]) {
     for pair in samples.windows(2) {
+        assert!(pair[1].requested_object_peak_bytes <= pair[0].requested_object_peak_bytes.saturating_mul(8),
+            "local edit transient requested-object peak scales with the independent population: {pair:?}");
         // These axes grow by at least 100x. An 8x envelope permits persistent
         // path/physical-page growth, while rejecting body/history-sized copies.
         assert!(
@@ -71,6 +76,10 @@ fn assert_sublinear_publication(samples: &[measurement::WarmPublication]) {
             <= pair[0].native_index_retention_roots_examined.max(granule).saturating_mul(8),
             "ordinary Native index cleanup scanned retained history beyond its delta/sweep granule: {pair:?}");
     }
+}
+
+fn report_runtime(axis: &str, scales: &[u64]) {
+    println!("cell workload=single-field-last-cell policy=Serial/CanonicalBitwise allocator=instrumented-tracking-system;wrapper-always-present;no-uninstrumented-latency-claim os={} arch={} available_logical_cpus={} axis={axis} scales={scales:?} expectation=affected-cell-plus-native-persistent-path; historical-output-sized; head-bytes-exclude-held-history", std::env::consts::OS, std::env::consts::ARCH, std::thread::available_parallelism().unwrap());
 }
 
 #[test]

@@ -18,11 +18,14 @@ pub fn measure(bytes: Box<[u8]>, retained_steps: u64, current: &[CellRow], untou
     let mut materializations = Vec::with_capacity(REPETITIONS);
     for sample in 0..REPETITIONS {
         let copy_start = Instant::now();
-        let transport = bytes.clone();
+        let (transport, allocation) = super::peak::measure(|| bytes.clone());
         copies.push(copy_start.elapsed().as_micros());
+        super::peak::report("checkpoint-transport-copy", allocation);
         let start = Instant::now();
-        let host = checkpoint::restore(transport, retained_steps);
+        let (host, allocation) =
+            super::peak::measure(|| checkpoint::restore(transport, retained_steps));
         readmissions.push(start.elapsed().as_micros());
+        super::peak::report("checkpoint-readmission-constructor", allocation);
         materializations.push(first_answer(&host, sample, current));
         assert_eq!(
             super::super::live_at::current(&host, 2),
@@ -41,29 +44,34 @@ pub fn measure(bytes: Box<[u8]>, retained_steps: u64, current: &[CellRow], untou
 
 fn first_answer(host: &Host, sample: usize, expected: &[CellRow]) -> u128 {
     let start = Instant::now();
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let result = host
-        .runtime()
-        .request(&principal, &scope)
-        .query(LiveCells { feature: 1 })
-        .execute()
-        .unwrap();
-    let work = result.receipt().inspect().read_work();
-    assert_eq!(
-        work.truncation_count(),
-        0,
-        "the first cold answer is complete"
-    );
-    let reads = work.reads();
-    let mut rows = result.rows().to_vec();
+    let ((mut rows, reads, truncated), allocation) = super::peak::measure(|| {
+        let scope = request_scope();
+        let principal = authenticate_operator(host.installed_schema(), &scope);
+        let result = host
+            .runtime()
+            .request(&principal, &scope)
+            .query(LiveCells { feature: 1 })
+            .execute()
+            .unwrap();
+        let work = result.receipt().inspect().read_work();
+        (
+            result.rows().to_vec(),
+            work.reads(),
+            work.truncation_count(),
+        )
+    });
     let elapsed = start.elapsed().as_micros();
+    assert_eq!(truncated, 0, "the first cold answer is complete");
     rows.sort_by_key(|row| row.key);
     assert_eq!(
         rows, expected,
         "readmission preserves every value and issued occurrence"
     );
-    println!("cell cold first_public_answer_sample={sample} includes=fresh-scope-authentication-query-owned-row-extraction rows={} elapsed_us={elapsed} query_fields={} query_adjacencies={} query_edges={} query_endpoints={} query_index_candidates={} returned_row_capacity_bytes={}",
+    super::peak::report(
+        "first-public-answer-including-auth-and-owned-rows",
+        allocation,
+    );
+    println!("cell cold allocator=instrumented-tracking-system first_public_answer_sample={sample} includes=fresh-scope-authentication-query-owned-row-extraction rows={} elapsed_us={elapsed} query_fields={} query_adjacencies={} query_edges={} query_endpoints={} query_index_candidates={} returned_row_capacity_bytes={}",
         rows.len(), reads.field_reads(), reads.adjacency_lists_read(),
         reads.adjacency_edges_inspected(), reads.endpoint_records_read(),
         reads.index_candidates_examined(), rows.capacity() * std::mem::size_of::<CellRow>());
