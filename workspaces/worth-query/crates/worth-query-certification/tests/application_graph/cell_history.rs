@@ -4,6 +4,8 @@
 mod checkpoint;
 #[path = "cell_history/checkpoint_cases.rs"]
 mod checkpoint_cases;
+#[path = "cell_history/committed_patch.rs"]
+mod committed_patch;
 #[path = "cell_history/cost.rs"]
 mod cost;
 #[path = "cell_history/edit.rs"]
@@ -44,12 +46,19 @@ fn retained_feature_steps_read_original_cell_versions_after_later_local_edits() 
         panic!("the first cell edit commits")
     };
     let step_one_read = live_at::observe(&host);
+    committed_patch::assert_one_updated_cell(&step_one, initial[0].occurrence);
     assert_ne!(step_zero.selected_commit(), step_one_read.selected_commit());
-    let WorthQueryApplicationMutationOutcome::Committed { .. } =
-        live_at::edit(&host, 1, 10, 43, 102)
+    let WorthQueryApplicationMutationOutcome::Committed {
+        receipt: step_two, ..
+    } = live_at::edit(&host, 1, 10, 43, 102)
     else {
         panic!("the later cell edit commits")
     };
+    committed_patch::assert_one_updated_cell(&step_two, initial[0].occurrence);
+    assert_ne!(
+        step_one.commit_reference().version_id,
+        step_two.commit_reference().version_id
+    );
     let current = live_at::current(&host, 1);
     let current_basis = live_at::observe(&host);
     assert_ne!(
@@ -84,6 +93,10 @@ fn retained_feature_steps_read_original_cell_versions_after_later_local_edits() 
     assert!(
         replayed.is_same_authoritative_commit(&step_one),
         "the retry must identify the original authoritative commit"
+    );
+    assert_eq!(
+        replayed.commit_reference().version_id,
+        step_one.commit_reference().version_id
     );
     assert_eq!(
         live_at::observe(&host).selected_commit(),

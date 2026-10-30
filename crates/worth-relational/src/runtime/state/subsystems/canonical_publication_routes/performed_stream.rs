@@ -53,19 +53,6 @@ impl PerformedPublicationStream {
         }
     }
 
-    pub(super) fn first_unsettled_commit(&self) -> Option<CommitId> {
-        let mut first = None;
-        let mut cursor = self.head.load_full();
-        while let Some(node) = cursor {
-            if node.route.is_performed() && !node.route.is_settled() {
-                let commit_id = node.route.commit.commit_id;
-                first = Some(first.map_or(commit_id, |current: CommitId| current.min(commit_id)));
-            }
-            cursor = node.previous.clone();
-        }
-        first
-    }
-
     pub(super) fn still_selects(&self, selection: &PerformedCheckpointSelection) -> bool {
         same_head(&self.head.load_full(), &selection.head)
     }

@@ -51,6 +51,12 @@ impl CellHistory {
     }
 
     pub fn measure(self) -> measurement::WarmPublication {
+        let occurrence = live_at::current(&self.host, 1)
+            .into_iter()
+            .find(|row| row.key == self.live)
+            .unwrap()
+            .occurrence;
+        let mut previous_version = self.receipts.last().unwrap().commit_reference().version_id;
         let before = measurement::capture(&self.host);
         let mut micros = Vec::new();
         let mut decision_facts = 0;
@@ -60,6 +66,9 @@ impl CellHistory {
                 committed(&self.host, self.live, 200_000 + sample, 1_000_000 + sample)
             });
             micros.push((start.elapsed().as_micros(), allocation));
+            super::super::committed_patch::assert_one_updated_cell(&receipt, occurrence);
+            assert_ne!(receipt.commit_reference().version_id, previous_version);
+            previous_version = receipt.commit_reference().version_id;
             decision_facts += receipt
                 .mutation_work()
                 .expect("the original commit retains native mutation work")

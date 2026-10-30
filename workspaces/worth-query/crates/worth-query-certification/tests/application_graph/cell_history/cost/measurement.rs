@@ -25,6 +25,7 @@ pub struct WarmPublication {
     pub native_index_retention_roots_examined: u64,
     pub native_retention_sweep_granule: u64,
     pub requested_object_peak_bytes: usize,
+    pub canonical_settlement_route_visits: u64,
 }
 
 pub fn capture(host: &Host) -> WorthQueryCertificationCostScope {
@@ -74,6 +75,9 @@ pub fn report_warm(
     let mut micros: Vec<_> = samples.iter().map(|(micros, _)| *micros).collect();
     micros.sort_unstable();
     let delta = observation.relational().sharing_cost_delta();
+    let canonical_settlement_route_visits =
+        observation.relational().canonical_settlement_route_visits();
+    println!("cell warm canonical_settlement_route_visits={canonical_settlement_route_visits}");
     assert!(
         delta.copied_truth_bytes > 0,
         "the actual cell edits must copy changed truth"
@@ -124,6 +128,7 @@ pub fn report_warm(
         native_index_retention_roots_examined,
         native_retention_sweep_granule,
         requested_object_peak_bytes,
+        canonical_settlement_route_visits,
     }
 }
 

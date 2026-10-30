@@ -37,6 +37,14 @@ fn body_axis(scales: &[u64]) {
 
 fn assert_sublinear_publication(samples: &[measurement::WarmPublication]) {
     for pair in samples.windows(2) {
+        assert!(
+            pair[1].canonical_settlement_route_visits
+                <= pair[0]
+                    .canonical_settlement_route_visits
+                    .max(8)
+                    .saturating_mul(8),
+            "settled-publication admission revisited retained canonical history: {pair:?}"
+        );
         assert!(pair[1].requested_object_peak_bytes <= pair[0].requested_object_peak_bytes.saturating_mul(8),
             "local edit transient requested-object peak scales with the independent population: {pair:?}");
         // These axes grow by at least 100x. An 8x envelope permits persistent

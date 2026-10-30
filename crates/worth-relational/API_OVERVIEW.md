@@ -118,6 +118,12 @@ an absent branch, `None`, or the string `"main"` as authority.
 - `runtime.inspect_what_happened()`
 - `runtime.publication()`
 
+For cost diagnosis, capture `RelationalMvccCostScope` from `facade::inspection`
+before the operation and call `runtime.observe_mvcc_counters(&scope)` afterwards.
+`canonical_settlement_route_visits()` reports actual runtime-wide candidates
+examined for unsettled-publication admission, including other branches. It is
+separate from retained-root maintenance work and grants no publication authority.
+
 ### Retained owner footprints
 
 Call `runtime.observe_retained_storage()` outside ordinary operation timing to

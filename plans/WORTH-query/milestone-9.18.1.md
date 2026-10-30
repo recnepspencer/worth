@@ -1845,6 +1845,15 @@ versions made per local edit, and actual historical query work at 1, 100 and
 10,000 feature steps. Independently vary retained history length and live body
 size, including long history with a small live body and a large body with short
 history. Declare which feature/cell population each workload changes.
+For each measured fresh field edit, observe the sealed original public receipt
+outside allocation measurement: its authoritative patch contains exactly one
+Updated entity at the complete queried Cell occurrence and the provider's one
+real Created idempotency registration entity at a distinct occurrence: two
+entity patches in total, no relation patches and no Deleted entity. Do not infer
+record meaning from partition numbers or patch order. Compare actual owner-issued version identities
+across non-noop edits; retry must identify the original version. The public
+receipt's total changed-record count and entity-change iterator derive from the
+same canonical patch, so their difference is the actual relation-patch count.
 
 State the expected growth class before measuring. A local edit must scale with
 its affected cells and the Native persistent-path/physical granule, rather than
@@ -1900,6 +1909,23 @@ branch deletion, cross-branch global retention, exact schema/affinity refusal,
 more-than-batch affected indexes and held-prefix release across cursor wraps.
 No new application version table, retention authority or publisher resource
 invoice may replace these owner lookups.
+
+Canonical settlement admission is also part of this ordinary interval. It must
+not walk settled performed-stream history. The canonical route owner registers
+an active candidate before returning preparation, removes that exact route on
+unperformed rollback and only after actual envelope settlement, and excludes
+already settled recovered routes. Actual performed/settled route atomics remain
+authority; the derived candidate index is ordered by CommitId and checks only
+active reserved/pending routes, not patch-position order. Its bound is O(active
+reservations/pending settlement), not unconditional constant time. Do not hold
+its lock across durable callbacks, cutover, settlement or payload destruction.
+Expose actual receiver-wide candidate visits separately from retained-root work;
+the same observer must detect the old settled-history scan and the replacement.
+Prove zero settled-history visits, invisible unperformed reservations, rollback
+withdrawal, minimum-CommitId refusal through reverse publication/settlement,
+recovery exclusion and existing real checkpoint/fork refusals. Requalify the
+history axis after replacing an ordinary scan; allocation-only evidence cannot
+certify that traversal work.
 
 Separate setup, warm local publication, historical read/materialization, cold
 checkpoint reconstruction and diagnostic allocation inspection. Report their
