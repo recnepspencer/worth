@@ -15,6 +15,7 @@ use worth_query_host::facade::{
     application_entry::*, primary_graph::*, product::*, runtime::ExecutionAllocationPolicy,
 };
 mod arbitration;
+mod disposal;
 
 fn progress(event: Result<Event, Failure>) {
     assert!(matches!(event.unwrap(), Event::Progress));
@@ -148,6 +149,15 @@ fn ingress_adopts_once_and_recovers_a_result_read_gap_with_the_same_owner() {
     );
     assert_eq!(model.branch(), head);
     assert_eq!(model.read(&reviewer).unwrap().days, 3);
+    let disposal = model.dispose_pending(&reviewer).unwrap();
+    assert!(matches!(
+        disposal,
+        super::super::application::acceptance::DisposalEvent::Retained(
+            super::super::application::acceptance::DisposalClass::CommittedContinuationRetained
+        )
+    ));
+    assert!(!format!("{disposal:?}").contains(&reference.key));
+    assert_eq!(model.branch(), head);
     let close = model.close(&reviewer).unwrap_err();
     assert!(matches!(close.cause, ModelCloseRefusal::Pending));
     model = close.model;

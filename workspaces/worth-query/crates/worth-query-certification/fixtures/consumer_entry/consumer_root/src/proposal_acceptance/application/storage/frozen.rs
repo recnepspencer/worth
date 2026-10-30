@@ -9,6 +9,9 @@ pub struct LoadedProposal {
     proposal: StoredProposal,
 }
 impl LoadedProposal {
+    pub(in crate::proposal_acceptance::application) fn source(&self) -> WorthQueryProductBranch {
+        self.source
+    }
     pub fn reference(&self) -> &ProposalReference {
         &self.reference
     }

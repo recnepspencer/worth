@@ -17,9 +17,11 @@ use worth_query_host::facade::{
 };
 
 mod delivery;
+mod disposal;
 mod ingress;
 mod registration;
 mod staging;
+pub use disposal::{DisposalClass, DisposalEvent, DisposalView, Disposed};
 
 pub(super) struct Attempt<'host> {
     loaded: LoadedProposal,
@@ -52,6 +54,7 @@ enum Phase<'host> {
         failure: PreviousCloseFailure<'host>,
         result: StoredResult,
     },
+    Disposing(disposal::State<'host>),
 }
 struct Registration {
     claim: ClaimReference,
@@ -127,6 +130,7 @@ pub enum View<'a, 'host> {
         terminal: &'a ResultTerminal,
     },
     PreviousClose(&'a PreviousCloseFailure<'host>),
+    Disposal(DisposalView<'a>),
 }
 impl std::fmt::Debug for Attempt<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -159,6 +163,7 @@ impl<'host> Attempt<'host> {
                 },
             },
             Phase::PreviousClose { failure, .. } => View::PreviousClose(failure),
+            Phase::Disposing(state) => View::Disposal(state.view()),
         }
     }
 }

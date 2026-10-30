@@ -2592,6 +2592,22 @@ restore the ordinary grant and resume it. Successful retries read the recorded
 result without adopting again. Closing the model while an acceptance is pending
 returns the whole model so its operation and branch custody remain owned.
 
+To abandon a pre-adoption attempt, use the model owner's `dispose_pending` with
+a live request scope. It closes the actual metadata or candidate owner; it does
+not execute an unexecuted edit. This owner-local cleanup works even after the
+storage object has retired, without reading business data or disclosing inputs,
+results or identifiers. The response is opaque; detailed native refusal evidence
+stays inside the attempt and requires ordinary admission to inspect.
+
+If candidate close returns `OwnerCleanupPending`, retry the retained cleanup
+owner rather than closing the retired branch again. Release external readers
+and disposed evidence receipts before expecting their retained history to clear.
+Disposing a registered attempt leaves its real Claim row committed; the same key
+with no result or continuation still refuses. After adoption, disposal retains
+the committed continuation. Use acceptance for result recording and normal
+previous-head close. Inspect retained close failures through the admitted
+`inspect_attempt` entrance.
+
 #### Record an actual adoption result
 
 Keep canonical result data separate from the command that records it. In the
