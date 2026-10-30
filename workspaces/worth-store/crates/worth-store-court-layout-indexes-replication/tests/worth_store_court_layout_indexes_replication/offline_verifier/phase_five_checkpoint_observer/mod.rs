@@ -1,9 +1,5 @@
-#[allow(unused_imports)] use crate::phase_five_checkpoint_observer::*;
-use {std::num::NonZeroU64};
-
-use {worth_store_offline_verifier::observe_recovery_artifacts, worth_store_offline_verifier::RecoveryObserverLimits, worth_store_offline_verifier::RecoveryObserverReport};
-use {worth_store_physical_format::store_namespace::ProposedStoreIdentity, worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord, worth_store_physical_format::store_namespace::StoreNamespaceVersion};
-use {worth_store_physical_format::CheckpointBindingCompactionHeader, worth_store_physical_format::CheckpointDirtyFrameBasis, worth_store_physical_format::CheckpointRootBasis, worth_store_physical_format::CheckpointStreamEncoder, worth_store_physical_format::CheckpointWalSourceRange, worth_store_physical_format::PhysicalCheckpointIdentity, worth_store_physical_format::PhysicalCheckpointSource, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+#[allow(unused_imports)]
+use crate::phase_five_checkpoint_observer::*;
 
 #[test]
 fn real_observer_entry_admits_a_complete_checkpoint_stream() {

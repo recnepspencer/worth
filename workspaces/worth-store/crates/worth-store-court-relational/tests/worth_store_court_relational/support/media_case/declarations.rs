@@ -2,19 +2,29 @@
 //! fault, the target run under it, the home abandoned, recovered through the
 //! production `open` and held to the crash oracle.
 
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_relational::facade::mvcc::RelationalPublicationDenial};
-pub(crate) use {worth_relational::facade::transactions::CommitResult, worth_relational::facade::transactions::TransactionCommitError};
-pub(crate) use {worth_store::physical_runtime::AnchoredRecordPublicationFailure};
-pub(crate) use {worth_store_relational::RelationalStoreCheckpointFailure, worth_store_relational::RelationalStoreCheckpointRecordRefusal, worth_store_relational::RelationalStoreHome};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use worth_relational::facade::mvcc::RelationalPublicationDenial;
+pub(crate) use worth_store::physical_runtime::AnchoredRecordPublicationFailure;
+pub(crate) use {
+    worth_relational::facade::transactions::CommitResult,
+    worth_relational::facade::transactions::TransactionCommitError,
+};
+pub(crate) use {
+    worth_store_relational::RelationalStoreCheckpointFailure,
+    worth_store_relational::RelationalStoreCheckpointRecordRefusal,
+    worth_store_relational::RelationalStoreHome,
+};
 
-pub(crate) use {crate::batches};
-pub(crate) use {crate::crash_oracle::assert_continues, crate::crash_oracle::assert_recovered, crate::crash_oracle::InFlight};
+pub(crate) use crate::batches;
+pub(crate) use crate::media_sweep::prepared_sweep_home::PreparedSweepHome;
+pub(crate) use crate::selected_checkpoint;
+pub(crate) use {
+    crate::crash_oracle::assert_continues, crate::crash_oracle::assert_recovered,
+    crate::crash_oracle::InFlight,
+};
 pub(crate) use {crate::durable_run::apply, crate::durable_run::open};
 pub(crate) use {crate::media_faults, crate::media_faults::FaultedMedia};
-pub(crate) use {crate::media_sweep::prepared_sweep_home::PreparedSweepHome};
-pub(crate) use {crate::selected_checkpoint};
 pub(crate) use {crate::workload, crate::workload::Script, crate::workload::Step};
 
 /// The label of the create that probes an unresolved runtime.
@@ -93,7 +103,12 @@ pub(crate) fn run_case(
                 "{case}: the fault did not fire"
             );
             let (ended, checkpoints) = checkpoint_outcome(outcome, checkpoint_before, case);
-            (ended, before, crate::crash_oracle::InFlight::Nothing, checkpoints)
+            (
+                ended,
+                before,
+                crate::crash_oracle::InFlight::Nothing,
+                checkpoints,
+            )
         }
         crate::media_case::Target::RegionLoad(_) => {
             let outcome = crate::residency_media::read_first(&home, script, execution);
@@ -120,7 +135,12 @@ pub(crate) fn run_case(
                 &crate::workload::states_of(home.runtime(), &script.records),
                 expected
             );
-            (ended, before, crate::crash_oracle::InFlight::Nothing, vec![checkpoint_before])
+            (
+                ended,
+                before,
+                crate::crash_oracle::InFlight::Nothing,
+                vec![checkpoint_before],
+            )
         }
         crate::media_case::Target::BranchTransition(index) => {
             let outcome = script.steps[index].lifecycle(home.runtime(), execution);
@@ -147,7 +167,12 @@ pub(crate) fn run_case(
             );
             acknowledged_transitions = acknowledged;
             transition_flight = flight;
-            (ended, before, crate::crash_oracle::InFlight::Nothing, vec![checkpoint_before])
+            (
+                ended,
+                before,
+                crate::crash_oracle::InFlight::Nothing,
+                vec![checkpoint_before],
+            )
         }
     };
     home.certification_abort();
@@ -189,7 +214,9 @@ pub(crate) fn run_case(
         case,
     );
     match ended {
-        crate::media_case::Ended::Unresolved { .. } => crate::media_case::Ended::Unresolved { recovered: landed },
+        crate::media_case::Ended::Unresolved { .. } => {
+            crate::media_case::Ended::Unresolved { recovered: landed }
+        }
         other => other,
     }
 }
@@ -292,14 +319,17 @@ pub(crate) fn checkpoint_outcome(
             (crate::media_case::Ended::Acknowledged, vec![new])
         }
         // The record is selected; only Store's own checkpoint did not finish.
-        Err(worth_store_relational::RelationalStoreCheckpointFailure::PhysicalCheckpoint { .. }) => {
-            (crate::media_case::Ended::Acknowledged, vec![new])
-        }
+        Err(worth_store_relational::RelationalStoreCheckpointFailure::PhysicalCheckpoint {
+            ..
+        }) => (crate::media_case::Ended::Acknowledged, vec![new]),
         Err(worth_store_relational::RelationalStoreCheckpointFailure::Record(
             worth_store_relational::RelationalStoreCheckpointRecordRefusal::Publication(
                 worth_store::physical_runtime::AnchoredRecordPublicationFailure::ProvenNoEffect(_),
             ),
         )) => (crate::media_case::Ended::Refused, vec![old]),
-        Err(_) => (crate::media_case::Ended::Unresolved { recovered: false }, vec![old, new]),
+        Err(_) => (
+            crate::media_case::Ended::Unresolved { recovered: false },
+            vec![old, new],
+        ),
     }
 }

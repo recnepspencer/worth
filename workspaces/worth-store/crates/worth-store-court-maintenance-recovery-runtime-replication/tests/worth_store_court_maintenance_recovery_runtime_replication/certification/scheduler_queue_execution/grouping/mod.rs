@@ -1,6 +1,7 @@
-use {worth_store_certification::S6CertifiedQueueExecutionEvidence};
-use {worth_store_io_scheduler::execute_grouped_ready_queue_plans, worth_store_io_scheduler::group_ready_queue_pair, worth_store_io_scheduler::QueueGroupingOutcome};
-use {worth_store_physical_backend::BackendQueueExecutionAdaptation, worth_store_physical_backend::BackendQueueExecutionCompletion, worth_store_physical_backend::BackendQueueExecutionPosture, worth_store_physical_backend::BackendQueueSpeculativeScope};
+use {
+    worth_store_io_scheduler::execute_grouped_ready_queue_plans,
+    worth_store_io_scheduler::group_ready_queue_pair,
+};
 
 use {crate::support::admitted_plan, crate::support::backend_witness};
 
@@ -17,23 +18,26 @@ fn grouped_certification_preserves_secondary_replay_identity() {
         grouped.first().grouping_basis().key_scope(),
     );
     let witness = backend_witness();
-    let posture = worth_store_physical_backend::BackendQueueExecutionPosture::from_admitted_capability(
-        &witness,
-        worth_store_physical_backend::BackendQueueExecutionAdaptation::None,
-    )
-    .expect("certification backend posture should admit");
-    let completion = worth_store_physical_backend::BackendQueueExecutionCompletion::for_certification(
-        grouped
-            .backend_completion_binding()
-            .backend_execution_binding(),
-        posture,
-    )
-    .observe_queue_depth(1)
-    .observe_read_ahead(1, scope);
+    let posture =
+        worth_store_physical_backend::BackendQueueExecutionPosture::from_admitted_capability(
+            &witness,
+            worth_store_physical_backend::BackendQueueExecutionAdaptation::None,
+        )
+        .expect("certification backend posture should admit");
+    let completion =
+        worth_store_physical_backend::BackendQueueExecutionCompletion::for_certification(
+            grouped
+                .backend_completion_binding()
+                .backend_execution_binding(),
+            posture,
+        )
+        .observe_queue_depth(1)
+        .observe_read_ahead(1, scope);
     let outcome = execute_grouped_ready_queue_plans(*grouped, completion);
 
-    let certified = worth_store_certification::S6CertifiedQueueExecutionEvidence::from_outcome(&outcome)
-        .expect("executed grouped outcome should certify");
+    let certified =
+        worth_store_certification::S6CertifiedQueueExecutionEvidence::from_outcome(&outcome)
+            .expect("executed grouped outcome should certify");
 
     assert_eq!(
         certified.secondary_replay_identity(),

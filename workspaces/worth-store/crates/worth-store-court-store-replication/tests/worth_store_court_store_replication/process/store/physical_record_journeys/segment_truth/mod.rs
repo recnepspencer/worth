@@ -1,11 +1,11 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::segment_truth::*;
-use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PageFillPercent, worth_store::physical_runtime::PhysicalManifestCapacityTransition, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationPreparationDenial, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PhysicalWalGroupAppendFailureCause, worth_store::physical_runtime::PhysicalWalGroupAppendOutcome, worth_store::physical_runtime::PhysicalWalReservationDenial, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordAppendDenial, worth_store::physical_runtime::RecordBootstrapDenial, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordServingTerminalPosture, worth_store::physical_runtime::SegmentPageCount, worth_store::physical_runtime::StalePhysicalRecordPlacement};
-use {worth_store_physical_backend::MediaOperationRole};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::segment_truth::*;
 
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
-
-
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn segment_filename_and_header_disagreement_is_denied_before_record_decode() {
@@ -20,13 +20,18 @@ fn segment_filename_and_header_disagreement_is_denied_before_record_decode() {
         .admit(format)
         .unwrap();
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let payloads = [vec![1_u8; 4_000], vec![2_u8; 4_000], vec![3_u8; 4_000]];
     let published = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("segment-header-disagreement", 1),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "segment-header-disagreement",
+            1,
+        ),
         worth_store::physical_runtime::RecordAppendBatch::try_from_iter(payloads.iter()).unwrap(),
     );
     let first = published.settled_members()[0].record_id(0).unwrap();
@@ -69,13 +74,19 @@ fn checksum_valid_slot_generation_drift_preserves_exact_read_observation() {
     let root = parent.path().join("slot-generation-drift");
     let (format, placement, access) = configuration();
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let published = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("slot-generation-drift", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"record".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "slot-generation-drift",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"record".as_slice()])
+            .unwrap(),
     );
     let record = published.settled_members()[0].record_id(0).unwrap();
     serving.close();
@@ -93,14 +104,18 @@ fn checksum_valid_slot_generation_drift_preserves_exact_read_observation() {
     }));
     let error = match reopened.records().expect("read protection admission").open(
         record,
-        worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(32).unwrap()),
+        worth_store::physical_runtime::RecordReadLimits::new(
+            worth_store::physical_runtime::RecordByteLimit::new(32).unwrap(),
+        ),
     ) {
         Err(error) => error,
         Ok(_) => panic!("slot generation drift cannot open a clean record session"),
     };
     assert_eq!(
         error.denial(),
-        worth_store::physical_runtime::RecordReadDenial::StalePlacement(worth_store::physical_runtime::StalePhysicalRecordPlacement::SlotGeneration)
+        worth_store::physical_runtime::RecordReadDenial::StalePlacement(
+            worth_store::physical_runtime::StalePhysicalRecordPlacement::SlotGeneration
+        )
     );
     assert_eq!(error.observation().generation_checks(), 4);
     assert_eq!(error.observation().generation_rejections(), 1);
@@ -113,14 +128,20 @@ fn checksum_valid_extent_generation_drift_is_stale_membership() {
     let root = parent.path().join("extent-generation-drift");
     let (format, placement, access) = configuration();
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let payload = vec![7_u8; 40_000];
     let published = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("extent-generation-drift", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload.as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "extent-generation-drift",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([payload.as_slice()])
+            .unwrap(),
     );
     let record = published.settled_members()[0].record_id(0).unwrap();
     serving.close();
@@ -136,14 +157,18 @@ fn checksum_valid_extent_generation_drift_is_stale_membership() {
     }));
     let error = match reopened.records().expect("read protection admission").open(
         record,
-        worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap()),
+        worth_store::physical_runtime::RecordReadLimits::new(
+            worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap(),
+        ),
     ) {
         Err(error) => error,
         Ok(_) => panic!("extent generation drift cannot open a clean record session"),
     };
     assert_eq!(
         error.denial(),
-        worth_store::physical_runtime::RecordReadDenial::StalePlacement(worth_store::physical_runtime::StalePhysicalRecordPlacement::ExtentMembership)
+        worth_store::physical_runtime::RecordReadDenial::StalePlacement(
+            worth_store::physical_runtime::StalePhysicalRecordPlacement::ExtentMembership
+        )
     );
     assert_eq!(error.observation().generation_checks(), 1);
     assert_eq!(error.observation().generation_rejections(), 1);
@@ -156,13 +181,19 @@ fn dishonest_inline_tail_owner_is_denied_before_candidate_effects() {
     let root = parent.path().join("store");
     let (format, placement, access) = configuration();
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("segment-manifest-damage", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"published".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "segment-manifest-damage",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"published".as_slice()])
+            .unwrap(),
     );
     serving.close();
 
@@ -190,13 +221,14 @@ fn dishonest_inline_tail_owner_is_denied_before_candidate_effects() {
         placement,
         worth_store::physical_runtime::PhysicalManifestCapacityTransition::PreserveCurrent,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([207; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"candidate".as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"candidate".as_slice()])
+            .unwrap(),
     )
     .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
         _ => panic!("damaged published layout is discovered during canonical data planning"),
     };
     assert!(matches!(

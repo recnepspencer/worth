@@ -2,20 +2,42 @@
 
 pub(crate) use {std::num::NonZeroU16, std::num::NonZeroU64, std::path::Path};
 
+pub(crate) use worth_store_physical_format::IndexedThroughBlobPublication;
+pub(crate) use worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld;
 pub(crate) use {worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimReceipt, worth_store::physical_runtime::BlobReclaimRequest, worth_store::physical_runtime::BlobReclaimRetirement, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope, worth_store::physical_runtime::PhysicalPageSizeClass, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PublishedBlobGeneration, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_physical_format::IndexedThroughBlobPublication};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOpenRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery};
-pub(crate) use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReadOpenFailure,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimReceipt,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::BlobReclaimRetirement,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope,
+    worth_store::physical_runtime::PhysicalPageSizeClass,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PublishedBlobGeneration,
+    worth_store::physical_runtime::RecordReadDenial,
+    worth_store::physical_runtime::RecoveredPhysicalCheckpointCustody,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving};
-
-
-
-
-
-
-
+pub(crate) use {
+    worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope,
+    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
+};
 
 pub(crate) const CHUNK: usize = 256 << 10;
 pub(crate) const SCOPE_NAME: &str = "c11.recovery.release.shared.source.first";
@@ -31,10 +53,16 @@ pub(crate) fn run() {
     .expect("genuine shared-reuse recovery world");
     let scope = admitted_blob_scope(SCOPE_NAME);
     let payload = crate::production_entry::release_reopen::shared_reuse_custody::world::payload();
-    let original = crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(&world, &scope, &payload);
+    let original =
+        crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(
+            &world, &scope, &payload,
+        );
     let original_marker = selected_marker(world.serving());
     checkpoint(world.serving(), [0xd1; 32]);
-    let destination = crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(&world, &scope, &payload);
+    let destination =
+        crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(
+            &world, &scope, &payload,
+        );
     let destination_marker = selected_marker(world.serving());
     read_exact(world.serving(), &scope, original, &payload);
     // Both reuse claims still select chunk, publication, and leaf witnesses.
@@ -43,7 +71,11 @@ pub(crate) fn run() {
         6
     );
     for index in 0..4_u8 {
-        crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(&world, &scope, &vec![0x20 + index; CHUNK]);
+        crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(
+            &world,
+            &scope,
+            &vec![0x20 + index; CHUNK],
+        );
         checkpoint(world.serving(), [0xd2 + index; 32]);
     }
 
@@ -65,7 +97,9 @@ pub(crate) fn run() {
     let producer_policy = world.serving().residency_observation().admitted_policy();
     let recovery_bytes = producer_policy
         .operation_bytes()
-        .min(producer_policy.scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery));
+        .min(producer_policy.scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery,
+        ));
     let retained = world.retained_root();
     let root = retained.path().to_path_buf();
     drop(world);
@@ -82,7 +116,9 @@ pub(crate) fn run() {
     assert_eq!(read_exact(&serving, &scope, destination, &payload), 4);
     let released_destination = release(
         &serving,
-        crate::production_entry::release_reopen::shared_reuse_custody::world::shared_placement(format),
+        crate::production_entry::release_reopen::shared_reuse_custody::world::shared_placement(
+            format,
+        ),
         destination,
         destination_marker,
     );
@@ -91,7 +127,9 @@ pub(crate) fn run() {
     assert_absent(&serving, &scope, destination.object().bytes());
     finish_source(
         &serving,
-        crate::production_entry::release_reopen::shared_reuse_custody::world::shared_placement(format),
+        crate::production_entry::release_reopen::shared_reuse_custody::world::shared_placement(
+            format,
+        ),
         original,
         original_marker,
     );
@@ -129,7 +167,9 @@ pub(crate) fn recover_serving(
     worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::admit_serving_with_seal_and_format(root, seal, format)
 }
 
-pub(crate) fn recover_custody(request: PhysicalRecoveryOpenRequest) -> RecoveredPhysicalCheckpointCustody {
+pub(crate) fn recover_custody(
+    request: PhysicalRecoveryOpenRequest,
+) -> RecoveredPhysicalCheckpointCustody {
     let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(request);
     let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         match outcome {
@@ -200,7 +240,8 @@ pub(crate) fn release_request(
     worth_store::physical_runtime::BlobReclaimRequest::released(
         proof,
         placement,
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(512).unwrap(),
             std::num::NonZeroU64::new(64 << 20).unwrap(),
@@ -244,7 +285,10 @@ pub(crate) fn finish_source(
 }
 
 pub(crate) fn assert_retired(receipt: &BlobReclaimReceipt) {
-    assert_eq!(receipt.retirement(), worth_store::physical_runtime::BlobReclaimRetirement::Completed);
+    assert_eq!(
+        receipt.retirement(),
+        worth_store::physical_runtime::BlobReclaimRetirement::Completed
+    );
     assert!(receipt.bytes_released() > 0);
     assert_eq!(
         receipt.bytes_released(),
@@ -259,19 +303,29 @@ pub(crate) fn assert_retired(receipt: &BlobReclaimReceipt) {
 pub(crate) fn checkpoint(serving: &ServingPhysicalRuntime, key: [u8; 32]) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new(key),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("source-first checkpoint must admit")
     };
     let outcome = handle.wait();
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "checkpoint {key:02x?}: {outcome:?}"
     );
 }
 
-pub(crate) fn assert_absent(serving: &ServingPhysicalRuntime, scope: &AdmittedBlobScope, object: [u8; 16]) {
+pub(crate) fn assert_absent(
+    serving: &ServingPhysicalRuntime,
+    scope: &AdmittedBlobScope,
+    object: [u8; 16],
+) {
     match serving.blobs().unwrap().resolve_publication(
         object,
         1,
@@ -279,8 +333,10 @@ pub(crate) fn assert_absent(serving: &ServingPhysicalRuntime, scope: &AdmittedBl
         worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(1).unwrap()),
     ) {
         Err(worth_store::physical_runtime::BlobReadOpenFailure::PublicationNotFound) => {}
-        Err(worth_store::physical_runtime::BlobReadOpenFailure::Read(worth_store::physical_runtime::BlobReadFailure::RecordRead(error)))
-            if error.denial() == worth_store::physical_runtime::RecordReadDenial::RecordNotFound => {}
+        Err(worth_store::physical_runtime::BlobReadOpenFailure::Read(
+            worth_store::physical_runtime::BlobReadFailure::RecordRead(error),
+        )) if error.denial() == worth_store::physical_runtime::RecordReadDenial::RecordNotFound => {
+        }
         other => panic!("released source remained visible: {other:?}"),
     }
 }
@@ -298,7 +354,9 @@ pub(crate) fn read_exact(
             scope,
             0,
             expected.len() as u64,
-            worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(1).unwrap()),
+            worth_store::physical_runtime::BlobReadLimits::new(
+                std::num::NonZeroU64::new(1).unwrap(),
+            ),
         )
         .expect("selected destination read");
     let mut bytes = vec![0_u8; expected.len()];

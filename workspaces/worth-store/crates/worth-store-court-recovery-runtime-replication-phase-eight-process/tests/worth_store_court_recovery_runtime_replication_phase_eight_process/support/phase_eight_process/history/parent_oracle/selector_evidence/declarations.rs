@@ -1,6 +1,9 @@
-pub(crate) use {std::collections::BTreeSet};
+pub(crate) use std::collections::BTreeSet;
 
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::observe_artifact_at_path, crate::history::parent_oracle::evidence_digest::DigestBuilder};
+pub(crate) use {
+    crate::history::parent_oracle::evidence_digest::DigestBuilder,
+    crate::phase_eight_process::history::parent_oracle::artifact_facts::observe_artifact_at_path,
+};
 
 pub(crate) struct SelectorEvidence {
     pub(crate) count: u64,
@@ -42,7 +45,9 @@ pub(crate) fn derive(files: &[(String, Vec<u8>)]) -> SelectorEvidence {
                 .is_some_and(|identity| !selector_ids.contains(&identity))
         })
         .count() as u64;
-    let mut digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(b"worth.store.recovery-observer.durable-selector.v1");
+    let mut digest = crate::history::parent_oracle::evidence_digest::DigestBuilder::new(
+        b"worth.store.recovery-observer.durable-selector.v1",
+    );
     for selector in &selectors {
         let linked = selector.linked.unwrap_or(0);
         let unpaired = selector

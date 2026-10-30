@@ -1,6 +1,11 @@
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
-pub(crate) use {worth_store_physical_format::durable_artifact_checksum, worth_store_physical_format::DurableFreeSpaceManifestHeader, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::RecordArtifactFile};
+pub(crate) use {
+    worth_store_physical_format::durable_artifact_checksum,
+    worth_store_physical_format::DurableFreeSpaceManifestHeader,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::RecordArtifactFile,
+};
 
 pub(crate) fn candidate_topology(root: &Path, generation: u64) -> Vec<(String, Vec<u8>)> {
     let generation = format!("{generation:016x}");
@@ -46,11 +51,9 @@ pub(crate) fn selected_root_bytes(root: &Path, generation: u64) -> (Vec<u8>, Vec
     let records = root.join("families/records");
     let selector = std::fs::read(records.join("root-current.selector"))
         .expect("read selected current selector");
-    let manifest = std::fs::read(
-        records
-            .join("roots")
-            .join(worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name()),
-    )
+    let manifest = std::fs::read(records.join("roots").join(
+        worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name(),
+    ))
     .expect("read selected root manifest");
     (selector, manifest)
 }
@@ -78,15 +81,17 @@ pub(crate) fn mutate_candidate(root: &Path, generation: u64, hostile: &str) {
         mutate_free_header(root, generation, &bytes);
         return;
     }
-    let (candidate, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(&bytes, u16::MAX)
-        .expect("decode successor root candidate");
+    let (candidate, format) =
+        worth_store_physical_format::DurablePhysicalRootManifest::decode(&bytes, u16::MAX)
+            .expect("decode successor root candidate");
     if hostile == "selected-routing-root" {
         let selected_path = candidate_root_path(root, generation - 1);
-        let (selected, selected_format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(
-            &std::fs::read(selected_path).expect("read selected root"),
-            u16::MAX,
-        )
-        .expect("decode selected root");
+        let (selected, selected_format) =
+            worth_store_physical_format::DurablePhysicalRootManifest::decode(
+                &std::fs::read(selected_path).expect("read selected root"),
+                u16::MAX,
+            )
+            .expect("decode selected root");
         assert_eq!(selected_format, format);
         assert_eq!(
             candidate.last_inline_record(),
@@ -142,10 +147,13 @@ pub(crate) fn mutate_candidate(root: &Path, generation: u64, hostile: &str) {
 }
 
 pub(crate) fn mutate_free_header(root: &Path, generation: u64, root_bytes: &[u8]) {
-    let (candidate, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(root_bytes, u16::MAX).unwrap();
-    let header_path = root
-        .join("families/records/free-space")
-        .join(worth_store_physical_format::RecordArtifactFile::FreeSpaceManifest { generation }.file_name());
+    let (candidate, format) =
+        worth_store_physical_format::DurablePhysicalRootManifest::decode(root_bytes, u16::MAX)
+            .unwrap();
+    let header_path = root.join("families/records/free-space").join(
+        worth_store_physical_format::RecordArtifactFile::FreeSpaceManifest { generation }
+            .file_name(),
+    );
     let mut header_bytes = std::fs::read(&header_path).unwrap();
     mutate_frame_metadata(&mut header_bytes);
     std::fs::write(header_path, &header_bytes).unwrap();
@@ -199,7 +207,8 @@ pub(crate) fn corrupt_child(root: &Path, generation: u64, hostile: &str) {
 
 pub(crate) fn hostile_artifact(root: &Path, generation: u64, hostile: &str) -> RecordArtifactFile {
     let bytes = std::fs::read(candidate_root_path(root, generation)).unwrap();
-    let (candidate, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(&bytes, u16::MAX).unwrap();
+    let (candidate, format) =
+        worth_store_physical_format::DurablePhysicalRootManifest::decode(&bytes, u16::MAX).unwrap();
     match hostile {
         "root-routing-child" => {
             let reference = candidate.routing_root().expect("candidate routing root");
@@ -218,14 +227,16 @@ pub(crate) fn hostile_artifact(root: &Path, generation: u64, hostile: &str) -> R
             }
         }
         "free-space-child" => {
-            let header_path = root
-                .join("families/records/free-space")
-                .join(worth_store_physical_format::RecordArtifactFile::FreeSpaceManifest { generation }.file_name());
-            let (header, found_format) = worth_store_physical_format::DurableFreeSpaceManifestHeader::decode(
-                &std::fs::read(header_path).unwrap(),
-                candidate.node_capacity(),
-            )
-            .unwrap();
+            let header_path = root.join("families/records/free-space").join(
+                worth_store_physical_format::RecordArtifactFile::FreeSpaceManifest { generation }
+                    .file_name(),
+            );
+            let (header, found_format) =
+                worth_store_physical_format::DurableFreeSpaceManifestHeader::decode(
+                    &std::fs::read(header_path).unwrap(),
+                    candidate.node_capacity(),
+                )
+                .unwrap();
             assert_eq!(found_format, format);
             let reference = header.root().expect("candidate free-space root");
             assert_eq!(reference.generation(), generation);
@@ -241,7 +252,8 @@ pub(crate) fn hostile_artifact(root: &Path, generation: u64, hostile: &str) -> R
 pub(crate) fn artifact_path(root: &Path, artifact: RecordArtifactFile) -> PathBuf {
     let records = root.join("families/records");
     match artifact {
-        worth_store_physical_format::RecordArtifactFile::RootManifest { .. } | worth_store_physical_format::RecordArtifactFile::RootRoutingBlock { .. } => {
+        worth_store_physical_format::RecordArtifactFile::RootManifest { .. }
+        | worth_store_physical_format::RecordArtifactFile::RootRoutingBlock { .. } => {
             records.join("roots").join(artifact.file_name())
         }
         worth_store_physical_format::RecordArtifactFile::SegmentMembershipBlock { .. } => {
@@ -256,8 +268,9 @@ pub(crate) fn artifact_path(root: &Path, artifact: RecordArtifactFile) -> PathBu
 }
 
 pub(crate) fn candidate_root_path(root: &Path, generation: u64) -> PathBuf {
-    root.join("families/records/roots")
-        .join(worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name())
+    root.join("families/records/roots").join(
+        worth_store_physical_format::RecordArtifactFile::RootManifest { generation }.file_name(),
+    )
 }
 
 pub(crate) fn remove_candidate_topology(root: &Path, generation: u64) {

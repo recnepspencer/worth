@@ -1,9 +1,12 @@
-pub(crate) use {worth_store::physical_runtime::ExternalPhysicalRecordLocator, worth_store::physical_runtime::PhysicalRecordId};
-pub(crate) use {worth_store_offline_verifier::OfflineDurableManifestWalk};
+pub(crate) use worth_store_offline_verifier::OfflineDurableManifestWalk;
+pub(crate) use {
+    worth_store::physical_runtime::ExternalPhysicalRecordLocator,
+    worth_store::physical_runtime::PhysicalRecordId,
+};
 
-pub(crate) use {crate::physical_record_journeys::scale_invalid_worlds::InvalidScaleWorlds};
-pub(crate) use {worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence};
-pub(crate) use {crate::manifest_scale::ScaleObservation};
+pub(crate) use crate::manifest_scale::ScaleObservation;
+pub(crate) use crate::physical_record_journeys::scale_invalid_worlds::InvalidScaleWorlds;
+pub(crate) use worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence;
 
 pub(crate) struct ScaleCourtroomEvidence<'world> {
     pub(crate) record_count: u16,

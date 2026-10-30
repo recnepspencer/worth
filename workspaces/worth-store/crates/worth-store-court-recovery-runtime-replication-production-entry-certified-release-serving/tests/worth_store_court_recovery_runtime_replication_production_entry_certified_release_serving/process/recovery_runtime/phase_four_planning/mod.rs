@@ -1,56 +1,14 @@
 #[allow(unused_imports)]
 use crate::phase_four_planning::*;
-use std::num::NonZeroU64;
-use {std::path::Path, std::path::PathBuf};
 
-use worth_proof::TransitionOutcome;
 use {
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::StoreRecoveryBindingSampleDenial,
-};
-use {
-    worth_store_physical_format::encode_data_frame_page_lsn,
-    worth_store_physical_format::CheckpointBindingCompactionHeader,
-    worth_store_physical_format::CheckpointRootBasis,
-    worth_store_physical_format::CheckpointStreamEncoder,
-    worth_store_physical_format::CheckpointWalSourceRange,
-    worth_store_physical_format::DurableFrameKind,
-    worth_store_physical_format::PhysicalCheckpointIdentity,
-    worth_store_physical_format::PhysicalCheckpointSource,
-    worth_store_physical_format::PhysicalPageLsn, worth_store_physical_format::RecordArtifactFile,
-};
-use {
-    worth_store_recovery_physics::PhysicalRedoDecisionKind,
-    worth_store_recovery_physics::PhysicalRedoPlanningDenial,
-    worth_store_recovery_physics::PhysicalRedoTargetIdentity,
-    worth_store_recovery_physics::RecoveryOperationFate,
-    worth_store_recovery_physics::RecoveryPlanCostDenial,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration,
-    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryLimits,
     worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
     worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits,
     worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,
     worth_store_testkit_recovery_runtime::phase_three_support::initialize_store,
-    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
     worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_checkpoint,
     worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_covered_wal,
     worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis,
-};
-use {
-    worth_store_test_support::harness::physical_residency::canonical_durable_wal_attempt_without_execution,
-    worth_store_test_support::harness::physical_residency::canonical_physical_mutation_acknowledgment,
-    worth_store_test_support::harness::physical_residency::canonical_rooted_mutation_without_acknowledgment,
-    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
 };
 
 #[test]
@@ -277,7 +235,6 @@ fn ordinary_store_mutation_reopens_as_a_nonempty_effect_free_plan() {
 pub(crate) mod page_extent_recovery;
 #[path = "phase_six_publication/mod.rs"]
 pub(crate) mod phase_six_publication;
-#[cfg(all())]
 #[path = "phase_six_publication_counters/mod.rs"]
 pub(crate) mod phase_six_publication_counters;
 #[path = "root_protocol_terminal_evidence/mod.rs"]

@@ -1,9 +1,48 @@
-pub(crate) use {worth_store_test_support::harness::physical_isolation::epoch_scope as support};
+pub(crate) use worth_store_test_support::harness::physical_isolation::epoch_scope as support;
 
-pub(crate) use {worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_segment_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority, worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout};
-pub(crate) use {worth_foundational::FoundationalBoundaryArtifactRole, worth_foundational::FoundationalDiagnosticArtifactKind, worth_foundational::FoundationalDiagnosticBreachClass};
-pub(crate) use {worth_store_physical_format::PhysicalExtentId, worth_store_physical_format::PhysicalFutureChunkId, worth_store_physical_format::PhysicalFutureChunkReference, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalReferenceAuthority, worth_store_physical_format::PhysicalSegmentId};
-pub(crate) use {worth_store_physical_isolation::admit_seed_stable_read_plan, worth_store_physical_isolation::ChunkMigrationReadInterlockPlan, worth_store_physical_isolation::FutureBlobMigrationNonClaim, worth_store_physical_isolation::FutureChunkStabilityBasis, worth_store_physical_isolation::GenerationCountedPhysicalReference, worth_store_physical_isolation::MovablePhysicalRef, worth_store_physical_isolation::PhysicalChunkStabilityPlaceholder, worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics, worth_store_physical_isolation::ProtectedPhysicalReferenceSet, worth_store_physical_isolation::PublishedReaderHazard, worth_store_physical_isolation::ReadPlanAdmissionScratchArena, worth_store_physical_isolation::StablePhysicalReadPlan, worth_store_physical_isolation::TierMovementAdmissionLabel, worth_store_physical_isolation::TierMovementReadInterlockPlan, worth_store_physical_isolation::TierMovementStabilityDenial, worth_store_physical_isolation::TierMovementStabilityVerdict, worth_store_physical_isolation::TraversalAdmissionGuard, worth_store_physical_isolation::UnprotectedReadIntent, worth_store_physical_isolation::UnsupportedTierMovementClaim, worth_store_physical_isolation::UnsupportedTierMovementRequest};
+pub(crate) use {
+    worth_foundational::FoundationalBoundaryArtifactRole,
+    worth_foundational::FoundationalDiagnosticArtifactKind,
+    worth_foundational::FoundationalDiagnosticBreachClass,
+};
+pub(crate) use {
+    worth_store_physical_format::PhysicalExtentId,
+    worth_store_physical_format::PhysicalFutureChunkId,
+    worth_store_physical_format::PhysicalFutureChunkReference,
+    worth_store_physical_format::PhysicalGeneration,
+    worth_store_physical_format::PhysicalGenerationAuthority,
+    worth_store_physical_format::PhysicalReferenceAuthority,
+    worth_store_physical_format::PhysicalSegmentId,
+};
+pub(crate) use {
+    worth_store_physical_isolation::admit_seed_stable_read_plan,
+    worth_store_physical_isolation::ChunkMigrationReadInterlockPlan,
+    worth_store_physical_isolation::FutureBlobMigrationNonClaim,
+    worth_store_physical_isolation::FutureChunkStabilityBasis,
+    worth_store_physical_isolation::GenerationCountedPhysicalReference,
+    worth_store_physical_isolation::MovablePhysicalRef,
+    worth_store_physical_isolation::PhysicalChunkStabilityPlaceholder,
+    worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics,
+    worth_store_physical_isolation::ProtectedPhysicalReferenceSet,
+    worth_store_physical_isolation::PublishedReaderHazard,
+    worth_store_physical_isolation::ReadPlanAdmissionScratchArena,
+    worth_store_physical_isolation::StablePhysicalReadPlan,
+    worth_store_physical_isolation::TierMovementAdmissionLabel,
+    worth_store_physical_isolation::TierMovementReadInterlockPlan,
+    worth_store_physical_isolation::TierMovementStabilityDenial,
+    worth_store_physical_isolation::TierMovementStabilityVerdict,
+    worth_store_physical_isolation::TraversalAdmissionGuard,
+    worth_store_physical_isolation::UnprotectedReadIntent,
+    worth_store_physical_isolation::UnsupportedTierMovementClaim,
+    worth_store_physical_isolation::UnsupportedTierMovementRequest,
+};
+pub(crate) use {
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_extent_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_segment_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout,
+};
 
 pub(crate) fn ordinary_plan() -> StablePhysicalReadPlan {
     let authority = physical_authority_from_complete_closeout();
@@ -18,9 +57,14 @@ pub(crate) fn ordinary_plan() -> StablePhysicalReadPlan {
     )
     .unwrap();
     let observed = references.clone();
-    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(root, references, 8192)
-        .with_release_semantics(worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all());
-    let hazard = worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap();
+    let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(
+        root, references, 8192,
+    )
+    .with_release_semantics(
+        worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all(),
+    );
+    let hazard =
+        worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap();
     let observation =
         worth_store_physical_isolation::PostProtectionPhysicalReadObservation::from_authority_after_hazard_publication(
             &authority, &hazard, root, observed,
@@ -60,8 +104,13 @@ pub(crate) fn future_chunk_placeholder_with_reference(
     barrier: worth_store_physical_isolation::PhysicalReadReachabilityBarrier,
 ) -> PhysicalChunkStabilityPlaceholder {
     let epoch = future_chunk_epoch();
-    let basis = worth_store_physical_isolation::FutureChunkStabilityBasis::from_stability_receipt(reference, epoch, barrier);
-    worth_store_physical_isolation::PhysicalChunkStabilityPlaceholder::admit_with_epoch(reference, epoch, basis).unwrap()
+    let basis = worth_store_physical_isolation::FutureChunkStabilityBasis::from_stability_receipt(
+        reference, epoch, barrier,
+    );
+    worth_store_physical_isolation::PhysicalChunkStabilityPlaceholder::admit_with_epoch(
+        reference, epoch, basis,
+    )
+    .unwrap()
 }
 
 pub(crate) fn future_chunk_reference(id: u64, generation: u64) -> PhysicalFutureChunkReference {
@@ -126,13 +175,21 @@ pub(crate) fn future_chunk_epoch() -> worth_store_physical_isolation::ChunkEpoch
         .epoch()
 }
 
-pub(crate) fn generation_counted_extent_reference(generation: u64) -> GenerationCountedPhysicalReference {
-    let generations = worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format();
-    let references = worth_store_physical_format::PhysicalReferenceAuthority::for_canonical_physical_format();
+pub(crate) fn generation_counted_extent_reference(
+    generation: u64,
+) -> GenerationCountedPhysicalReference {
+    let generations =
+        worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format();
+    let references =
+        worth_store_physical_format::PhysicalReferenceAuthority::for_canonical_physical_format();
     let segment = worth_store_physical_format::PhysicalSegmentId::from_raw(29).unwrap();
     let extent = worth_store_physical_format::PhysicalExtentId::from_raw(31).unwrap();
     let cell = generations
         .extent_cell(segment, extent)
-        .with_extent_generation(worth_store_physical_format::PhysicalGeneration::from_raw(generation).unwrap());
-    worth_store_physical_isolation::GenerationCountedPhysicalReference::from_admitted_reference(references.admit_extent(cell))
+        .with_extent_generation(
+            worth_store_physical_format::PhysicalGeneration::from_raw(generation).unwrap(),
+        );
+    worth_store_physical_isolation::GenerationCountedPhysicalReference::from_admitted_reference(
+        references.admit_extent(cell),
+    )
 }

@@ -12,17 +12,26 @@ pub(crate) fn recover_core(root: &Path) -> RecoveredPhysicalRuntimeCore {
     handoff.into_core()
 }
 
-pub(crate) fn checkpoint(serving: &worth_store::physical_runtime::ServingPhysicalRuntime, key: [u8; 32]) {
+pub(crate) fn checkpoint(
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+    key: [u8; 32],
+) {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new(key),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("genuine release checkpoint must admit")
     };
     let outcome = handle.wait();
     assert!(
-        matches!(outcome, worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)),
+        matches!(
+            outcome,
+            worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(_)
+        ),
         "release checkpoint: {outcome:?}"
     );
 }
@@ -30,8 +39,12 @@ pub(crate) fn checkpoint(serving: &worth_store::physical_runtime::ServingPhysica
 pub(crate) fn policy_with_different_recovery_scope(
     format: AdmittedPhysicalRecordFormat,
 ) -> AdmittedPhysicalRecordResidencyPolicy {
-    use {worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Kind};
-    let canonical = worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy::canonical(format);
+    use {
+        worth_store::physical_runtime::PhysicalRecordResidencyPolicy,
+        worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Kind,
+    };
+    let canonical =
+        worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy::canonical(format);
     let bytes = |value| std::num::NonZeroU64::new(value).unwrap();
     let count = |value| std::num::NonZeroU32::new(value).unwrap();
     let mut builder = PhysicalRecordResidencyPolicy::builder()
@@ -54,7 +67,10 @@ pub(crate) fn policy_with_different_recovery_scope(
         worth_store::physical_runtime::PhysicalOperationAllocationScope::Verification,
         worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob,
     ] {
-        let value = canonical.scope_bytes(scope) - u64::from(scope == worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery);
+        let value = canonical.scope_bytes(scope)
+            - u64::from(
+                scope == worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery,
+            );
         builder = builder.scope_bytes(scope, bytes(value));
     }
     for kind in [Kind::ReadAhead, Kind::Prefetch, Kind::WriteBehind] {
@@ -72,8 +88,8 @@ pub(crate) fn open_with_policy(
     format: AdmittedPhysicalRecordFormat,
     policy: AdmittedPhysicalRecordResidencyPolicy,
 ) -> worth_store::physical_runtime::RecordStoreOpenOutcome {
-    use {std::num::NonZeroU32};
-    use {worth_store::physical_runtime::*};
+    use std::num::NonZeroU32;
+    use worth_store::physical_runtime::*;
     let access = PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
     let runtime = PhysicalStore::admit(PhysicalRuntimeAdmission::new(root).unwrap()).unwrap();
     let worth_proof::TransitionOutcome::Success(media) = runtime
@@ -84,26 +100,27 @@ pub(crate) fn open_with_policy(
     else {
         panic!("real Serving media must admit")
     };
-    let worth_proof::TransitionOutcome::Success(durability) = PhysicalDurabilityDeclaration::builder()
-        .group_commit(
-            GroupCommitLimit::new(NonZeroU32::new(32).unwrap()),
-            GroupCommitDelay::new(std::num::NonZeroU64::MIN),
-        )
-        .wal(PhysicalWalPolicy::segmented(
-            WalSegmentByteLimit::new(std::num::NonZeroU64::new(16 << 20).unwrap()),
-            WalSegmentInventoryLimit::new(NonZeroU32::new(1024).unwrap()),
-        ))
-        .idempotency(PhysicalIdempotencyPolicy::new(
-            IdempotencyRetentionGenerations::new(std::num::NonZeroU64::new(4).unwrap()),
-            PendingUnresolvedMutationLimit::new(NonZeroU32::new(1024).unwrap()),
-            LiveIdempotencyBindingLimit::new(NonZeroU32::new(4096).unwrap()),
-        ))
-        .checkpoint(PhysicalCheckpointPolicy::fuzzy(
-            CheckpointMemoryLimit::new(std::num::NonZeroU64::new(16 << 20).unwrap()),
-            RetainedWalTailLimit::new(std::num::NonZeroU64::new(64 << 20).unwrap()),
-        ))
-        .admit(media.physical_durability_admission_basis().unwrap())
-        .into_raw()
+    let worth_proof::TransitionOutcome::Success(durability) =
+        PhysicalDurabilityDeclaration::builder()
+            .group_commit(
+                GroupCommitLimit::new(NonZeroU32::new(32).unwrap()),
+                GroupCommitDelay::new(std::num::NonZeroU64::MIN),
+            )
+            .wal(PhysicalWalPolicy::segmented(
+                WalSegmentByteLimit::new(std::num::NonZeroU64::new(16 << 20).unwrap()),
+                WalSegmentInventoryLimit::new(NonZeroU32::new(1024).unwrap()),
+            ))
+            .idempotency(PhysicalIdempotencyPolicy::new(
+                IdempotencyRetentionGenerations::new(std::num::NonZeroU64::new(4).unwrap()),
+                PendingUnresolvedMutationLimit::new(NonZeroU32::new(1024).unwrap()),
+                LiveIdempotencyBindingLimit::new(NonZeroU32::new(4096).unwrap()),
+            ))
+            .checkpoint(PhysicalCheckpointPolicy::fuzzy(
+                CheckpointMemoryLimit::new(std::num::NonZeroU64::new(16 << 20).unwrap()),
+                RetainedWalTailLimit::new(std::num::NonZeroU64::new(64 << 20).unwrap()),
+            ))
+            .admit(media.physical_durability_admission_basis().unwrap())
+            .into_raw()
     else {
         panic!("real Serving durability must admit")
     };

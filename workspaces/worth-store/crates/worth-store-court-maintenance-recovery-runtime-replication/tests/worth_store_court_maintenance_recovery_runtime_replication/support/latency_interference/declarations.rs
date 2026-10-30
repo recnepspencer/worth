@@ -1,10 +1,51 @@
-pub(crate) use {worth_foundational::performance, worth_foundational::FoundationalPerformanceAccessPatternPosture, worth_foundational::FoundationalPerformanceBoundary, worth_foundational::FoundationalPerformanceBreadthLocalityPosture, worth_foundational::FoundationalPerformanceBudgetKind, worth_foundational::FoundationalPerformanceEvidenceStrength, worth_foundational::FoundationalPerformanceExecutionTemperature, worth_foundational::FoundationalPerformanceFallbackDebtPosture, worth_foundational::FoundationalPerformanceFreshnessRetentionPosture, worth_foundational::FoundationalPerformanceWorkClass, worth_foundational::FoundationalPolicyAdmissionReceipt};
-pub(crate) use {worth_store_budgets::CounterEvidenceStrength};
-pub(crate) use {worth_store_certification::S6LatencyInterferenceEvidence};
-pub(crate) use {worth_store_contracts::QueueProducerResourceShape};
-pub(crate) use {worth_store_io_scheduler::foreground_reservation::admitted_point_read_reservation_for_certification_test};
-pub(crate) use {worth_store_io_scheduler::admit_backend_capability_for_scheduler_claim, worth_store_io_scheduler::admit_queue_execution_plan, worth_store_io_scheduler::admit_secure_io_scope_for_scheduler, worth_store_io_scheduler::admit_security_scope_for_scheduler, worth_store_io_scheduler::assess_queue_latency_envelope, worth_store_io_scheduler::execute_ready_queue_plan, worth_store_io_scheduler::BackgroundResourceBudget, worth_store_io_scheduler::CacheResidencyHint, worth_store_io_scheduler::InterferenceCounterName, worth_store_io_scheduler::InterferenceCounterRequirement, worth_store_io_scheduler::LatencyEnvelopeClaim, worth_store_io_scheduler::QueueExecutionReadyPlan, worth_store_io_scheduler::QueueSlot, worth_store_io_scheduler::ReadAheadWindow, worth_store_io_scheduler::SecureIoOperation, worth_store_io_scheduler::SecureIoPostureRequirement, worth_store_io_scheduler::SecureIoPreservationRequest, worth_store_io_scheduler::WorkerPermit};
-pub(crate) use {worth_store_physical_backend::AdmittedBackendCapabilityWitness, worth_store_physical_backend::BackendCapabilityAdmissionRequest, worth_store_physical_backend::BackendCapabilityEvidenceBasis, worth_store_physical_backend::BackendCapabilitySupportSet, worth_store_physical_backend::BackendMediaAssumptionSet, worth_store_physical_backend::BackendQueueExecutionAdaptation, worth_store_physical_backend::BackendQueueExecutionCompletion, worth_store_physical_backend::BackendQueueExecutionPosture, worth_store_physical_backend::BackendQueueSpeculativeScope, worth_store_physical_backend::BackendRebindTriggers, worth_store_physical_backend::BackendTargetProfile, worth_store_physical_backend::PhysicalBackendCapabilityAdmissionAuthority};
+pub(crate) use worth_store_budgets::CounterEvidenceStrength;
+pub(crate) use worth_store_certification::S6LatencyInterferenceEvidence;
+pub(crate) use worth_store_contracts::QueueProducerResourceShape;
+pub(crate) use worth_store_io_scheduler::foreground_reservation::admitted_point_read_reservation_for_certification_test;
+pub(crate) use {
+    worth_foundational::performance,
+    worth_foundational::FoundationalPerformanceAccessPatternPosture,
+    worth_foundational::FoundationalPerformanceBoundary,
+    worth_foundational::FoundationalPerformanceBreadthLocalityPosture,
+    worth_foundational::FoundationalPerformanceBudgetKind,
+    worth_foundational::FoundationalPerformanceEvidenceStrength,
+    worth_foundational::FoundationalPerformanceExecutionTemperature,
+    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
+    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
+    worth_foundational::FoundationalPerformanceWorkClass,
+    worth_foundational::FoundationalPolicyAdmissionReceipt,
+};
+pub(crate) use {
+    worth_store_io_scheduler::admit_backend_capability_for_scheduler_claim,
+    worth_store_io_scheduler::admit_queue_execution_plan,
+    worth_store_io_scheduler::admit_secure_io_scope_for_scheduler,
+    worth_store_io_scheduler::admit_security_scope_for_scheduler,
+    worth_store_io_scheduler::assess_queue_latency_envelope,
+    worth_store_io_scheduler::execute_ready_queue_plan,
+    worth_store_io_scheduler::BackgroundResourceBudget,
+    worth_store_io_scheduler::CacheResidencyHint,
+    worth_store_io_scheduler::InterferenceCounterName,
+    worth_store_io_scheduler::InterferenceCounterRequirement,
+    worth_store_io_scheduler::LatencyEnvelopeClaim,
+    worth_store_io_scheduler::QueueExecutionReadyPlan, worth_store_io_scheduler::QueueSlot,
+    worth_store_io_scheduler::ReadAheadWindow, worth_store_io_scheduler::SecureIoOperation,
+    worth_store_io_scheduler::SecureIoPostureRequirement,
+    worth_store_io_scheduler::SecureIoPreservationRequest, worth_store_io_scheduler::WorkerPermit,
+};
+pub(crate) use {
+    worth_store_physical_backend::AdmittedBackendCapabilityWitness,
+    worth_store_physical_backend::BackendCapabilityAdmissionRequest,
+    worth_store_physical_backend::BackendCapabilityEvidenceBasis,
+    worth_store_physical_backend::BackendCapabilitySupportSet,
+    worth_store_physical_backend::BackendMediaAssumptionSet,
+    worth_store_physical_backend::BackendQueueExecutionAdaptation,
+    worth_store_physical_backend::BackendQueueExecutionCompletion,
+    worth_store_physical_backend::BackendQueueExecutionPosture,
+    worth_store_physical_backend::BackendQueueSpeculativeScope,
+    worth_store_physical_backend::BackendRebindTriggers,
+    worth_store_physical_backend::BackendTargetProfile,
+    worth_store_physical_backend::PhysicalBackendCapabilityAdmissionAuthority,
+};
 
 pub(crate) fn certified_latency_evidence(queue_depth: u32) -> S6LatencyInterferenceEvidence {
     let plan = admitted_read_ahead_plan();
@@ -12,9 +53,12 @@ pub(crate) fn certified_latency_evidence(queue_depth: u32) -> S6LatencyInterfere
     let lane = plan.work().class();
     let completion = completion_for(&plan, queue_depth);
     let outcome = execute_ready_queue_plan(plan, completion);
-    let claim =
-        worth_store_io_scheduler::LatencyEnvelopeClaim::for_queue_execution(replay_identity, "s6-profile/posix-file", lane)
-            .require_counter(worth_store_io_scheduler::InterferenceCounterRequirement::queue_depth());
+    let claim = worth_store_io_scheduler::LatencyEnvelopeClaim::for_queue_execution(
+        replay_identity,
+        "s6-profile/posix-file",
+        lane,
+    )
+    .require_counter(worth_store_io_scheduler::InterferenceCounterRequirement::queue_depth());
     let assessment = assess_queue_latency_envelope(&claim, &outcome)
         .expect("real queue execution should assess latency evidence");
 
@@ -51,8 +95,12 @@ pub(crate) fn admitted_read_ahead_plan() -> QueueExecutionReadyPlan {
     .expect("backend should admit test queue work");
     let security = io_qos_security_scope_admission();
     let secure_io = admit_secure_io_scope_for_scheduler(
-        worth_store_io_scheduler::SecureIoPreservationRequest::new(worth_store_io_scheduler::SecureIoOperation::ReadAhead, &security, &backend)
-            .require_posture(worth_store_io_scheduler::SecureIoPostureRequirement::ScopePreserving),
+        worth_store_io_scheduler::SecureIoPreservationRequest::new(
+            worth_store_io_scheduler::SecureIoOperation::ReadAhead,
+            &security,
+            &backend,
+        )
+        .require_posture(worth_store_io_scheduler::SecureIoPostureRequirement::ScopePreserving),
     )
     .expect("read-ahead secure-I/O should admit");
     let work = work.with_secure_io_scope(secure_io);
@@ -69,11 +117,12 @@ pub(crate) fn completion_for(
     queue_depth: u32,
 ) -> BackendQueueExecutionCompletion {
     let witness = backend_witness();
-    let posture = worth_store_physical_backend::BackendQueueExecutionPosture::from_admitted_capability(
-        &witness,
-        worth_store_physical_backend::BackendQueueExecutionAdaptation::None,
-    )
-    .expect("backend posture should admit");
+    let posture =
+        worth_store_physical_backend::BackendQueueExecutionPosture::from_admitted_capability(
+            &witness,
+            worth_store_physical_backend::BackendQueueExecutionAdaptation::None,
+        )
+        .expect("backend posture should admit");
     worth_store_physical_backend::BackendQueueExecutionCompletion::for_certification(
         plan.backend_completion_binding()
             .backend_execution_binding(),
@@ -128,22 +177,34 @@ pub(crate) fn backend_witness() -> AdmittedBackendCapabilityWitness {
         .expect("backend witness should admit")
 }
 
-pub(crate) fn io_qos_security_scope_admission() -> worth_store_io_scheduler::IoSchedulerSecurityScopeAdmission
-{
+pub(crate) fn io_qos_security_scope_admission(
+) -> worth_store_io_scheduler::IoSchedulerSecurityScopeAdmission {
     let scope = worth_store_security::admitted_store_internal_security_scope_for_io_qos_test();
     admit_security_scope_for_scheduler(&scope).expect("scheduler security scope should admit")
 }
 
-pub(crate) fn policy_receipt(budget: BackgroundResourceBudget) -> FoundationalPolicyAdmissionReceipt {
+pub(crate) fn policy_receipt(
+    budget: BackgroundResourceBudget,
+) -> FoundationalPolicyAdmissionReceipt {
     let claim = performance()
         .claim()
         .policy_admission()
         .boundary(worth_foundational::FoundationalPerformanceBoundary::AuthoritativeExecution)
-        .evidence_strength(worth_foundational::FoundationalPerformanceEvidenceStrength::RuntimePolicyAdmission)
-        .breadth_locality(worth_foundational::FoundationalPerformanceBreadthLocalityPosture::PointLocal)
-        .access_pattern(worth_foundational::FoundationalPerformanceAccessPatternPosture::TraversalLocal)
-        .execution_temperature(worth_foundational::FoundationalPerformanceExecutionTemperature::HotPath)
-        .freshness_retention(worth_foundational::FoundationalPerformanceFreshnessRetentionPosture::ExactBasisCurrent)
+        .evidence_strength(
+            worth_foundational::FoundationalPerformanceEvidenceStrength::RuntimePolicyAdmission,
+        )
+        .breadth_locality(
+            worth_foundational::FoundationalPerformanceBreadthLocalityPosture::PointLocal,
+        )
+        .access_pattern(
+            worth_foundational::FoundationalPerformanceAccessPatternPosture::TraversalLocal,
+        )
+        .execution_temperature(
+            worth_foundational::FoundationalPerformanceExecutionTemperature::HotPath,
+        )
+        .freshness_retention(
+            worth_foundational::FoundationalPerformanceFreshnessRetentionPosture::ExactBasisCurrent,
+        )
         .fallback_debt(worth_foundational::FoundationalPerformanceFallbackDebtPosture::Verified)
         .include_work(worth_foundational::FoundationalPerformanceWorkClass::AuthoritativeRead)
         .exclude_work(worth_foundational::FoundationalPerformanceWorkClass::SupportReportAssembly)

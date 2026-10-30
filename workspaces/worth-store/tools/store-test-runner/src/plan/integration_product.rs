@@ -79,10 +79,10 @@ fn units(
 }
 const COURTS: &[(&str, &str, &[&str])] = &[
     ("worth-store-court-source", "worth_store_court_source", &["process"]),
-    ("worth-store-court-store-entry", "worth_store_court_store_entry", &["compile_fail", "ordinary", "process"]),
-    ("worth-store-court-store-physical-record-journeys-durability-admission", "worth_store_court_store_physical_record_journeys_durability_admission", &["ordinary", "process"]),
-    ("worth-store-court-store-physical-record-journeys-physical-work", "worth_store_court_store_physical_record_journeys_physical_work", &["compile_fail", "process"]),
-    ("worth-store-court-store-physical-blob-journeys", "worth_store_court_store_physical_blob_journeys", &["compile_fail", "process"]),
+    ("worth-store-court-store", "worth_store_court_store", &["compile_fail", "ordinary", "process"]),
+    ("worth-store-court-store-replication-physical-record-journeys-durability-admission", "worth_store_court_store_replication_physical_record_journeys_durability_admission", &["ordinary", "process"]),
+    ("worth-store-court-store-replication-physical-record-journeys-physical-work", "worth_store_court_store_replication_physical_record_journeys_physical_work", &["compile_fail", "process"]),
+    ("worth-store-court-store-replication-physical-blob-journeys", "worth_store_court_store_replication_physical_blob_journeys", &["compile_fail", "process"]),
     ("worth-store-court-store-replication", "worth_store_court_store_replication", &["process"]),
     ("worth-store-court-aspect-native", "worth_store_court_aspect_native", &["ordinary"]),
     ("worth-store-court-branch-deltas", "worth_store_court_branch_deltas", &["ordinary"]),
@@ -93,7 +93,7 @@ const COURTS: &[(&str, &str, &[&str])] = &[
     ("worth-store-court-physical-format", "worth_store_court_physical_format", &["ordinary", "process"]),
     ("worth-store-court-physical-integrity", "worth_store_court_physical_integrity", &["ordinary"]),
     ("worth-store-court-physical-isolation", "worth_store_court_physical_isolation", &["ordinary"]),
-    ("worth-store-court-recovery-runtime", "worth_store_court_recovery_runtime", &["ordinary", "process"]),
+    ("worth-store-court-recovery-runtime-replication", "worth_store_court_recovery_runtime_replication", &["ordinary", "process"]),
     ("worth-store-court-recovery-runtime-replication-phase-eight-process", "worth_store_court_recovery_runtime_replication_phase_eight_process", &["oracle", "ordinary", "process"]),
     ("worth-store-court-recovery-runtime-replication-production-entry-certified-release-serving", "worth_store_court_recovery_runtime_replication_production_entry_certified_release_serving", &["cost", "ordinary", "process"]),
     ("worth-store-court-recovery-runtime-replication-production-entry-accumulator-only-pending-wal", "worth_store_court_recovery_runtime_replication_production_entry_accumulator_only_pending_wal", &["ordinary", "process"]),

@@ -4,34 +4,6 @@
 
 #[allow(unused_imports)]
 use crate::pending_wal_fold::directory_media::*;
-use {std::fs, std::io::Read, std::io::Seek, std::io::SeekFrom, std::io::Write, std::path::Path};
-
-use {
-    worth_store::physical_runtime::PhysicalRecoverySelectedRejoinMismatch,
-    worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial,
-};
-use {
-    worth_store_physical_format::decode_extent_chunk,
-    worth_store_physical_format::durable_artifact_checksum,
-    worth_store_physical_format::encode_extent_chunk,
-    worth_store_physical_format::CurrentPhysicalRecordPlacement,
-    worth_store_physical_format::DerivedFamilyRootDirectoryV1,
-    worth_store_physical_format::DerivedFamilyRootEntry,
-    worth_store_physical_format::DurableExtentManifest,
-    worth_store_physical_format::DurablePhysicalRootManifest,
-    worth_store_physical_format::ExtentArenaFrameLayout,
-    worth_store_physical_format::ExtentChunkCoordinate,
-    worth_store_physical_format::PersistedRecordIdentity,
-    worth_store_physical_format::PhysicalRootRoutingBlock,
-    worth_store_physical_format::RecordArtifactFile,
-    worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES,
-    worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES,
-    worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::WorthStoreRecovery,
-};
 
 #[test]
 fn substituted_replacement_directory_frame_denies_store_rejoin() {

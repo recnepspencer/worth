@@ -1,9 +1,67 @@
-pub(crate) use {worth_store_physical_backend::BackendCapabilityAdmissionRequest, worth_store_physical_backend::BackendCapabilityEvidenceBasis, worth_store_physical_backend::BackendCapabilitySupportSet, worth_store_physical_backend::BackendMediaAssumptionSet, worth_store_physical_backend::BackendRebindTriggers, worth_store_physical_backend::BackendTargetProfile, worth_store_physical_backend::PhysicalBackendCapabilityAdmissionAuthority};
-pub(crate) use {worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalReclaimRegion, worth_store_physical_format::PhysicalRecordSlot, worth_store_physical_format::PhysicalReference, worth_store_physical_format::PhysicalReferenceAuthority, worth_store_physical_format::PhysicalSegmentId, worth_store_physical_format::ReclaimedByteInterpretation};
-pub(crate) use {worth_store_physical_isolation::admit_seed_stable_read_plan, worth_store_physical_isolation::BackupReachabilityLeaseIndexSnapshot, worth_store_physical_isolation::CompactProtectedReferenceSet, worth_store_physical_isolation::CurrentPhysicalRoot, worth_store_physical_isolation::ExecutedReachabilityEvidence, worth_store_physical_isolation::HazardLeaseEpochIndexSnapshot, worth_store_physical_isolation::HazardLeaseTable, worth_store_physical_isolation::HazardLeaseTableCapacity, worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics, worth_store_physical_isolation::PostProtectionPhysicalReadObservation, worth_store_physical_isolation::ProtectedPhysicalReferenceSet, worth_store_physical_isolation::ProtectedReferenceLease, worth_store_physical_isolation::PublishedReaderHazard, worth_store_physical_isolation::ReadPlanAdmissionScratchArena, worth_store_physical_isolation::ReclaimCandidateSet, worth_store_physical_isolation::ReclaimEligibilityProof, worth_store_physical_isolation::ReleasedOldReachability, worth_store_physical_isolation::S6ReclaimReachabilityRemovalEvidence, worth_store_physical_isolation::TraversalAdmissionGuard, worth_store_physical_isolation::UnprotectedReadIntent};
-pub(crate) use {worth_store_reclaim_policy::AdmittedReclaimPolicy, worth_store_reclaim_policy::PhysicalStoreReclaimPolicyExecutor, worth_store_reclaim_policy::ReclaimPermit, worth_store_reclaim_policy::ReclaimPolicyAdmission, worth_store_reclaim_policy::ReclaimPolicyExecutionObservation, worth_store_reclaim_policy::ReclaimPolicyExecutionReceipt, worth_store_reclaim_policy::ReclaimPolicyExecutionRequest, worth_store_reclaim_policy::ReclaimPolicyExecutionSession, worth_store_reclaim_policy::ReclaimPolicyProofAuthority, worth_store_reclaim_policy::ReclaimPolicyReachabilityDenial, worth_store_reclaim_policy::ReclaimPolicyReachabilityProof, worth_store_reclaim_policy::ReclaimPolicyRequest, worth_store_reclaim_policy::ReclaimPolicySecurityScope, worth_store_reclaim_policy::ReclaimPolicyViolation, worth_store_reclaim_policy::StoreOwnedReclaimPolicyExecution};
+pub(crate) use {
+    worth_store_physical_backend::BackendCapabilityAdmissionRequest,
+    worth_store_physical_backend::BackendCapabilityEvidenceBasis,
+    worth_store_physical_backend::BackendCapabilitySupportSet,
+    worth_store_physical_backend::BackendMediaAssumptionSet,
+    worth_store_physical_backend::BackendRebindTriggers,
+    worth_store_physical_backend::BackendTargetProfile,
+    worth_store_physical_backend::PhysicalBackendCapabilityAdmissionAuthority,
+};
+pub(crate) use {
+    worth_store_physical_format::PhysicalGeneration,
+    worth_store_physical_format::PhysicalGenerationAuthority,
+    worth_store_physical_format::PhysicalPageId,
+    worth_store_physical_format::PhysicalReclaimRegion,
+    worth_store_physical_format::PhysicalRecordSlot,
+    worth_store_physical_format::PhysicalReference,
+    worth_store_physical_format::PhysicalReferenceAuthority,
+    worth_store_physical_format::PhysicalSegmentId,
+    worth_store_physical_format::ReclaimedByteInterpretation,
+};
+pub(crate) use {
+    worth_store_physical_isolation::admit_seed_stable_read_plan,
+    worth_store_physical_isolation::BackupReachabilityLeaseIndexSnapshot,
+    worth_store_physical_isolation::CompactProtectedReferenceSet,
+    worth_store_physical_isolation::CurrentPhysicalRoot,
+    worth_store_physical_isolation::ExecutedReachabilityEvidence,
+    worth_store_physical_isolation::HazardLeaseEpochIndexSnapshot,
+    worth_store_physical_isolation::HazardLeaseTable,
+    worth_store_physical_isolation::HazardLeaseTableCapacity,
+    worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics,
+    worth_store_physical_isolation::PostProtectionPhysicalReadObservation,
+    worth_store_physical_isolation::ProtectedPhysicalReferenceSet,
+    worth_store_physical_isolation::ProtectedReferenceLease,
+    worth_store_physical_isolation::PublishedReaderHazard,
+    worth_store_physical_isolation::ReadPlanAdmissionScratchArena,
+    worth_store_physical_isolation::ReclaimCandidateSet,
+    worth_store_physical_isolation::ReclaimEligibilityProof,
+    worth_store_physical_isolation::ReleasedOldReachability,
+    worth_store_physical_isolation::S6ReclaimReachabilityRemovalEvidence,
+    worth_store_physical_isolation::TraversalAdmissionGuard,
+    worth_store_physical_isolation::UnprotectedReadIntent,
+};
+pub(crate) use {
+    worth_store_reclaim_policy::AdmittedReclaimPolicy,
+    worth_store_reclaim_policy::PhysicalStoreReclaimPolicyExecutor,
+    worth_store_reclaim_policy::ReclaimPermit, worth_store_reclaim_policy::ReclaimPolicyAdmission,
+    worth_store_reclaim_policy::ReclaimPolicyExecutionObservation,
+    worth_store_reclaim_policy::ReclaimPolicyExecutionReceipt,
+    worth_store_reclaim_policy::ReclaimPolicyExecutionRequest,
+    worth_store_reclaim_policy::ReclaimPolicyExecutionSession,
+    worth_store_reclaim_policy::ReclaimPolicyProofAuthority,
+    worth_store_reclaim_policy::ReclaimPolicyReachabilityDenial,
+    worth_store_reclaim_policy::ReclaimPolicyReachabilityProof,
+    worth_store_reclaim_policy::ReclaimPolicyRequest,
+    worth_store_reclaim_policy::ReclaimPolicySecurityScope,
+    worth_store_reclaim_policy::ReclaimPolicyViolation,
+    worth_store_reclaim_policy::StoreOwnedReclaimPolicyExecution,
+};
 
-pub(crate) use {worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference, worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority, worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout};
+pub(crate) use {
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_generation_page_reference,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::current_root_from_authority,
+    worth_store_test_support::harness::physical_isolation::epoch_scope::physical_authority_from_complete_closeout,
+};
 
 #[derive(Clone)]
 pub(crate) struct ObservingBackend {
@@ -45,11 +103,21 @@ impl S6ReclaimFixture {
             worth_store_physical_isolation::ReadPlanAdmissionScratchArena::for_protected_reference_capacity(1),
         )
         .unwrap();
-        let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(root, references, 4096)
-            .with_release_semantics(worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all());
-        let hazard = worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent).unwrap();
+        let intent = worth_store_physical_isolation::UnprotectedReadIntent::for_known_footprint(
+            root, references, 4096,
+        )
+        .with_release_semantics(
+            worth_store_physical_isolation::PhysicalReadPlanReleaseSemantics::reader_releases_all(),
+        );
+        let hazard =
+            worth_store_physical_isolation::PublishedReaderHazard::publish(&authority, intent)
+                .unwrap();
         let live_lease =
-            worth_store_physical_isolation::ProtectedReferenceLease::from_reader_hazard(&hazard, compact.clone()).unwrap();
+            worth_store_physical_isolation::ProtectedReferenceLease::from_reader_hazard(
+                &hazard,
+                compact.clone(),
+            )
+            .unwrap();
         let observed =
             worth_store_physical_isolation::PostProtectionPhysicalReadObservation::from_authority_after_hazard_publication(
                 &authority,
@@ -78,7 +146,10 @@ impl S6ReclaimFixture {
             .admit_release(read_release)
             .unwrap();
         let candidates =
-            worth_store_physical_isolation::ReclaimCandidateSet::from_released_old_reachability(released, &compact).unwrap();
+            worth_store_physical_isolation::ReclaimCandidateSet::from_released_old_reachability(
+                released, &compact,
+            )
+            .unwrap();
         Self {
             candidates,
             released,
@@ -96,8 +167,9 @@ impl S6ReclaimFixture {
     }
 
     pub(crate) fn live_hazard_snapshot(&self) -> HazardLeaseEpochIndexSnapshot {
-        let mut table =
-            worth_store_physical_isolation::HazardLeaseTable::with_capacity(worth_store_physical_isolation::HazardLeaseTableCapacity::bounded_slots(1).unwrap());
+        let mut table = worth_store_physical_isolation::HazardLeaseTable::with_capacity(
+            worth_store_physical_isolation::HazardLeaseTableCapacity::bounded_slots(1).unwrap(),
+        );
         table.acquire(self.root, self.live_lease.clone()).unwrap();
         table.live_index_snapshot()
     }
@@ -108,7 +180,8 @@ pub(crate) fn admitted_policy_for_region(
     interpretation: ReclaimedByteInterpretation,
 ) -> AdmittedReclaimPolicy {
     let backend = admitted_backend();
-    let authority = worth_store_reclaim_policy::ReclaimPolicyProofAuthority::for_admitted_backend(&backend);
+    let authority =
+        worth_store_reclaim_policy::ReclaimPolicyProofAuthority::for_admitted_backend(&backend);
     worth_store_reclaim_policy::ReclaimPolicyAdmission::admit(
         authority,
         base_real_chain_request(
@@ -155,11 +228,14 @@ pub(crate) fn real_reachability_for_region(
     generation: u64,
     region: PhysicalReclaimRegion,
 ) -> ReclaimPolicyReachabilityProof {
-    let world = crate::io_scheduling::reclaim_policy::reclaim_support::S6ReclaimFixture::new(generation);
+    let world =
+        crate::io_scheduling::reclaim_policy::reclaim_support::S6ReclaimFixture::new(generation);
     let proof = worth_store_physical_isolation::ReclaimEligibilityProof::admit(
         world.executed_reachability(),
-        worth_store_physical_isolation::HazardLeaseTable::with_capacity(worth_store_physical_isolation::HazardLeaseTableCapacity::bounded_slots(1).unwrap())
-            .live_index_snapshot(),
+        worth_store_physical_isolation::HazardLeaseTable::with_capacity(
+            worth_store_physical_isolation::HazardLeaseTableCapacity::bounded_slots(1).unwrap(),
+        )
+        .live_index_snapshot(),
         worth_store_physical_isolation::BackupReachabilityLeaseIndexSnapshot::empty(),
     )
     .unwrap();
@@ -211,17 +287,24 @@ pub(crate) fn backend_without_reclaim_posture(
 }
 
 pub(crate) fn region_for_generation(generation: u64) -> PhysicalReclaimRegion {
-    worth_store_physical_format::PhysicalReclaimRegion::new(reference_for_generation(generation), 4096).unwrap()
+    worth_store_physical_format::PhysicalReclaimRegion::new(
+        reference_for_generation(generation),
+        4096,
+    )
+    .unwrap()
 }
 
 pub(crate) fn reference_for_generation(generation: u64) -> PhysicalReference {
-    let cell = worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
-        .slot_cell(
-            worth_store_physical_format::PhysicalSegmentId::from_raw(17).unwrap(),
-            worth_store_physical_format::PhysicalPageId::from_raw(23).unwrap(),
-            worth_store_physical_format::PhysicalRecordSlot::from_raw(1).unwrap(),
-        )
-        .with_slot_generation(worth_store_physical_format::PhysicalGeneration::from_raw(generation).unwrap());
+    let cell =
+        worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
+            .slot_cell(
+                worth_store_physical_format::PhysicalSegmentId::from_raw(17).unwrap(),
+                worth_store_physical_format::PhysicalPageId::from_raw(23).unwrap(),
+                worth_store_physical_format::PhysicalRecordSlot::from_raw(1).unwrap(),
+            )
+            .with_slot_generation(
+                worth_store_physical_format::PhysicalGeneration::from_raw(generation).unwrap(),
+            );
     worth_store_physical_format::PhysicalReferenceAuthority::for_canonical_physical_format()
         .admit_page_slot(cell)
         .reference()

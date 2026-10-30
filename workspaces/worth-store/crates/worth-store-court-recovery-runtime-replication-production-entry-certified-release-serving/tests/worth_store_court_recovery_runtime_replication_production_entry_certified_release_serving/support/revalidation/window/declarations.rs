@@ -8,13 +8,19 @@
 //! Both settle cleanup first, then Store's rejoin denies the changed media,
 //! and the indeterminate outcome names the cleanup debt it left behind.
 
-pub(crate) use {std::cell::Cell};
-pub(crate) use {std::io::Write};
+pub(crate) use std::cell::Cell;
+pub(crate) use std::io::Write;
+pub(crate) use std::rc::Rc;
 pub(crate) use {std::path::Path, std::path::PathBuf};
-pub(crate) use {std::rc::Rc};
 
-pub(crate) use {worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial};
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPublicationIndeterminate, worth_store_recovery_runtime::RecoveryCleanupEvidence, worth_store_recovery_runtime::RecoveryCleanupPosture, worth_store_recovery_runtime::ReopenedPhysicalRecovery};
+pub(crate) use worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial;
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPublicationIndeterminate,
+    worth_store_recovery_runtime::RecoveryCleanupEvidence,
+    worth_store_recovery_runtime::RecoveryCleanupPosture,
+    worth_store_recovery_runtime::ReopenedPhysicalRecovery,
+};
 
 /// Applies `change` after Store's residue gate and before cleanup
 /// revalidates; nothing restores it.
@@ -38,7 +44,9 @@ pub(crate) fn rejoin_denied(
     outcome: PhysicalRecoveryOutcome,
 ) -> PhysicalRecoveryPublicationIndeterminate {
     let indeterminate = match outcome {
-        worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(indeterminate) => indeterminate,
+        worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+            indeterminate,
+        ) => indeterminate,
         other => panic!(
             "changed selected media must deny Store's rejoin, got {}",
             outcome_name(&other)
@@ -58,7 +66,9 @@ pub(crate) fn rejoin_denied(
 pub(crate) fn deferred_cleanup(
     indeterminate: &PhysicalRecoveryPublicationIndeterminate,
 ) -> &RecoveryCleanupEvidence {
-    let Some(worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence)) = indeterminate.cleanup_posture() else {
+    let Some(worth_store_recovery_runtime::RecoveryCleanupPosture::Deferred(evidence)) =
+        indeterminate.cleanup_posture()
+    else {
         panic!("settled cleanup debt must stay named on the indeterminate outcome")
     };
     evidence
@@ -69,7 +79,9 @@ pub(crate) fn outcome_name(outcome: &PhysicalRecoveryOutcome) -> &'static str {
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(_) => "Recovered",
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Refused(_) => "Refused",
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(_) => "Blocked",
-        worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(_) => "PublicationIndeterminate",
+        worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(_) => {
+            "PublicationIndeterminate"
+        }
     }
 }
 

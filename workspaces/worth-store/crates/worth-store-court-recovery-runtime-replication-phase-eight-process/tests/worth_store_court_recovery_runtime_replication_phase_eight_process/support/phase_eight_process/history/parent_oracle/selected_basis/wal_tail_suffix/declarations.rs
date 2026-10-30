@@ -1,6 +1,6 @@
 pub(crate) use {sha2::Digest, sha2::Sha256};
 
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::artifact_facts::WalFacts};
+pub(crate) use crate::phase_eight_process::history::parent_oracle::artifact_facts::WalFacts;
 
 pub(crate) const HEADER_BYTES: usize = 116;
 pub(crate) const FOOTER_BYTES: usize = 32;
@@ -91,7 +91,8 @@ pub(crate) fn read_frame(bytes: &[u8]) -> Result<Frame, String> {
         .ok_or_else(|| "selected-basis WAL frame omitted end LSN".to_owned())?;
     let payload = &frame[HEADER_BYTES..HEADER_BYTES + payload_bytes];
     let payload_digest: [u8; 32] = sha2::Sha256::digest(payload).into();
-    let frame_digest: [u8; 32] = sha2::Sha256::digest(&frame[..HEADER_BYTES + payload_bytes]).into();
+    let frame_digest: [u8; 32] =
+        sha2::Sha256::digest(&frame[..HEADER_BYTES + payload_bytes]).into();
     if read_u64(header, 12).is_none()
         || read_u64(header, 20).is_none()
         || payload_bytes == 0

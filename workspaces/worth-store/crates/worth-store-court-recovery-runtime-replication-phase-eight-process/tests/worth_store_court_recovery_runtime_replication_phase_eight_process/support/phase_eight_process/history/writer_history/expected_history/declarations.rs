@@ -1,8 +1,8 @@
-pub(crate) use {std::collections::BTreeMap};
-pub(crate) use {std::path::Path};
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use std::path::Path;
 
+pub(crate) use crate::history::schedule::in_flight_mutation::ExpectedInFlightMutation;
 pub(crate) use {crate::history::parent_oracle, crate::phase_eight_process::history::schedule};
-pub(crate) use {crate::history::schedule::in_flight_mutation::ExpectedInFlightMutation};
 
 pub(crate) const RECOVERY_MEMORY_BUDGET_BYTES: usize = 512 * 1024;
 
@@ -24,14 +24,23 @@ impl ExpectedWriterHistory {
         in_flight: ExpectedInFlightMutation,
     ) -> Self {
         assert!(
-            operation_count * crate::phase_eight_process::history::schedule::OPERATION_PAYLOAD_BYTES > RECOVERY_MEMORY_BUDGET_BYTES,
+            operation_count
+                * crate::phase_eight_process::history::schedule::OPERATION_PAYLOAD_BYTES
+                > RECOVERY_MEMORY_BUDGET_BYTES,
             "C8 fixture must exceed its admitted recovery memory budget"
         );
-        let no_effect_identity = crate::phase_eight_process::history::schedule::no_effect_material(in_flight.perturbation_seed());
+        let no_effect_identity = crate::phase_eight_process::history::schedule::no_effect_material(
+            in_flight.perturbation_seed(),
+        );
         Self {
             seed: schedule_seed,
             payloads: (0..operation_count)
-                .map(|ordinal| crate::phase_eight_process::history::schedule::payload(schedule_seed, ordinal as u64))
+                .map(|ordinal| {
+                    crate::phase_eight_process::history::schedule::payload(
+                        schedule_seed,
+                        ordinal as u64,
+                    )
+                })
                 .collect(),
             in_flight,
             no_effect_identity,
@@ -55,7 +64,7 @@ impl ExpectedWriterHistory {
 
     pub(crate) fn durable_bindings(
         &self,
-    ) -> &BTreeMap<[u8; 32], crate::phase_eight_process::history::parent_oracle::canonical_membership::ExpectedCanonicalRecord> {
+    ) -> &BTreeMap<[u8; 32], crate::phase_eight_process::history::parent_oracle::canonical_membership::ExpectedCanonicalRecord>{
         &self.durable_bindings
     }
 

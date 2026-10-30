@@ -1,5 +1,5 @@
+pub(crate) use worth_store_physical_format::PHYSICAL_MUTATION_BINDING_COMPACTION_RECORD_DOMAIN;
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store_physical_format::PHYSICAL_MUTATION_BINDING_COMPACTION_RECORD_DOMAIN};
 
 pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WCP7REC\0";
 pub(crate) const TERMINAL_STATE: u8 = 3;
@@ -30,7 +30,8 @@ pub(crate) fn contains_persisted_no_effect_terminal(
 }
 
 pub(crate) fn is_proven_no_effect_terminal(bytes: &[u8], identity: &[u8]) -> bool {
-    let mut cursor = crate::phase_eight_process::history::parent_oracle::terminal::FieldCursor::new(bytes);
+    let mut cursor =
+        crate::phase_eight_process::history::parent_oracle::terminal::FieldCursor::new(bytes);
     if cursor.field() != Some(PHYSICAL_MUTATION_BINDING_COMPACTION_RECORD_DOMAIN)
         || cursor.byte() != Some(TERMINAL_STATE)
     {

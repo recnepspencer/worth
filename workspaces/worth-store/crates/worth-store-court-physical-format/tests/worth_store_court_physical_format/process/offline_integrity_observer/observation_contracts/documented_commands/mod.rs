@@ -1,5 +1,4 @@
 use crate::support::fixtures::clean_store;
-use std::process::Command;
 
 #[test]
 fn operator_guide_observe_command_executes_verbatim_with_only_path_substitution() {

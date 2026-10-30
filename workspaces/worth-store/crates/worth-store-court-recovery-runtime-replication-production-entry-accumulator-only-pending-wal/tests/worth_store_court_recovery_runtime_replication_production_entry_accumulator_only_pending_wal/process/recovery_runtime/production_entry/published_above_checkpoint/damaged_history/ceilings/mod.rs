@@ -5,10 +5,15 @@
 //! left, a head block past its page. The checkpoint stream has no ceiling of
 //! its own, so the bytes recovery may observe are what a longer one passes.
 
-#[allow(unused_imports)] use crate::production_entry::published_above_checkpoint::damaged_history::ceilings::*;
-use {crate::production_entry::published_above_checkpoint::damaged_history::PAST_ONE_PAGE, std::path::Path, std::path::PathBuf, worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryOpenRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::WorthStoreRecovery, worth_store_testkit_recovery_runtime::production_entry::certified_release_serving, std::fs, worth_store_testkit_recovery_runtime::production_entry::pending_successor_above_history, worth_store_testkit_recovery_runtime::production_entry::pending_wal_world, crate::production_entry::published_above_checkpoint, crate::production_entry::published_above_checkpoint::damaged_history::recover_with_longer, crate::production_entry::published_above_checkpoint::damaged_history::recover_with_oversized, crate::production_entry::published_above_checkpoint::damaged_history::root_manifest, crate::production_entry::published_above_checkpoint::damaged_history::routing_blocks};
-use {worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::PendingWalWorld};
-use {worth_store_recovery_runtime::PhysicalRecoveryLimitDimension};
+#[allow(unused_imports)]
+use crate::production_entry::published_above_checkpoint::damaged_history::ceilings::*;
+use {
+    crate::production_entry::published_above_checkpoint::damaged_history::recover_with_longer,
+    crate::production_entry::published_above_checkpoint::damaged_history::recover_with_oversized,
+    crate::production_entry::published_above_checkpoint::damaged_history::root_manifest,
+    crate::production_entry::published_above_checkpoint::damaged_history::routing_blocks,
+    crate::production_entry::published_above_checkpoint::damaged_history::PAST_ONE_PAGE,
+};
 
 /// A selector is a fixed 107 bytes. That is its own length, not a limit: a
 /// longer one is rejected as any damaged selector is.
@@ -22,7 +27,10 @@ fn a_selector_longer_than_a_selector_is_damage_not_a_limit() {
         blocks_as_damage(outcome, &current),
         "the current one is read"
     );
-    let serving = crate::production_entry::published_above_checkpoint::serve(&world, "after the damaged attempt");
+    let serving = crate::production_entry::published_above_checkpoint::serve(
+        &world,
+        "after the damaged attempt",
+    );
     world.assert_objects_read_back(&serving);
     serving.close();
 
@@ -37,11 +45,17 @@ fn a_selector_longer_than_a_selector_is_damage_not_a_limit() {
         worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::recovery_request::request_with_manifest_entries(world.root(), 4096),
     );
     assert!(
-        matches!(outcome, worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(_)),
+        matches!(
+            outcome,
+            worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(_)
+        ),
         "a rejected previous selector stops nothing: {outcome:?}",
     );
     drop(outcome);
-    let serving = crate::production_entry::published_above_checkpoint::serve(&world, "after the rejected previous selector");
+    let serving = crate::production_entry::published_above_checkpoint::serve(
+        &world,
+        "after the rejected previous selector",
+    );
     world.assert_objects_read_back(&serving);
     serving.close();
 }
@@ -83,7 +97,10 @@ fn a_manifest_longer_than_the_observation_bytes_is_damage_not_a_limit() {
         panic!("the undamaged store recovers under the same observation bytes")
     };
     drop(handoff);
-    let serving = crate::production_entry::published_above_checkpoint::serve(&world, "after the damaged attempts");
+    let serving = crate::production_entry::published_above_checkpoint::serve(
+        &world,
+        "after the damaged attempts",
+    );
     world.assert_objects_read_back(&serving);
     serving.close();
 }
@@ -113,7 +130,10 @@ fn an_oversized_routing_block_is_damage_whatever_manifest_bytes_are_left() {
     let to_page = (page - length) as usize;
     let limit = |observed, admitted| Some((observed, admitted));
     let as_written = |manifest_bytes| {
-        worth_store_recovery_runtime::WorthStoreRecovery::recover(under_manifest_bytes(world.root(), manifest_bytes))
+        worth_store_recovery_runtime::WorthStoreRecovery::recover(under_manifest_bytes(
+            world.root(),
+            manifest_bytes,
+        ))
     };
     let longer_by = |extra, manifest_bytes| {
         recover_with_longer(&block, extra, || {
@@ -147,7 +167,8 @@ fn an_oversized_routing_block_is_damage_whatever_manifest_bytes_are_left() {
     // page or so left it names none.
     for left in [0, 1, page - 1, page, page + 1] {
         let outcome = longer_by(to_page + 1, before + left);
-        let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) = outcome else {
+        let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) = outcome
+        else {
             panic!("{left} left: {outcome:?}")
         };
         assert_eq!(blocked.recovery_effects(), 0);
@@ -160,7 +181,10 @@ fn an_oversized_routing_block_is_damage_whatever_manifest_bytes_are_left() {
         if left + 1 >= page {
             assert_eq!(
                 (blocked.cause().damage(), named),
-                (Some(worth_store_recovery_runtime::PhysicalRecoveryBlockKind::SourceSelection), None),
+                (
+                    Some(worth_store_recovery_runtime::PhysicalRecoveryBlockKind::SourceSelection),
+                    None
+                ),
                 "{left} manifest bytes left",
             );
         }
@@ -171,7 +195,10 @@ fn an_oversized_routing_block_is_damage_whatever_manifest_bytes_are_left() {
         manifest_byte_limit(&longer_by(to_page, before + page - 1)),
         limit(before + page, before + page - 1)
     );
-    let serving = crate::production_entry::published_above_checkpoint::serve(&world, "after the damaged attempts");
+    let serving = crate::production_entry::published_above_checkpoint::serve(
+        &world,
+        "after the damaged attempts",
+    );
     world.assert_objects_read_back(&serving);
     serving.close();
 }
@@ -207,7 +234,10 @@ fn a_checkpoint_stream_longer_than_the_observation_bytes_is_that_limit_from_the_
             OBSERVATION_BYTES,
         )),
     );
-    let serving = crate::production_entry::published_above_checkpoint::serve(&world, "after the oversized stream");
+    let serving = crate::production_entry::published_above_checkpoint::serve(
+        &world,
+        "after the oversized stream",
+    );
     world.assert_objects_read_back(&serving);
     serving.close();
 }

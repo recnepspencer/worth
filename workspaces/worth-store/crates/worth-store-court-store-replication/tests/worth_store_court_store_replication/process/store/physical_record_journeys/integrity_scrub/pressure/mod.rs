@@ -1,10 +1,13 @@
-#[allow(unused_imports)] use crate::physical_record_journeys::integrity_scrub::pressure::*;
-use {crate::physical_record_journeys::integrity_scrub::pressure_world::read_record, crate::physical_record_journeys::integrity_scrub::pressure_world::snapshot, crate::physical_record_journeys::integrity_scrub::pressure_world::PressureWorld, crate::physical_record_journeys::integrity_scrub::pressure_world::PAGE_BYTES, crate::physical_record_journeys::integrity_scrub::pressure_world::RESIDENT_BYTES};
-use {worth_store_testkit_store::integrity_scrub::assert_released, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress as Progress, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest as Request, worth_store::physical_runtime::PhysicalIntegrityScrubTarget as Target};
-use {std::time::Duration};
-use {worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint as Checkpoint, worth_store::physical_runtime::PhysicalIntegrityScrubDeferral, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration, worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope, worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget, worth_store_io_scheduler::foreground_reservation::QueueSlot};
-use {worth_store_physical_integrity::PhysicalIntegrityObservationOutcome};
+#[allow(unused_imports)]
+use crate::physical_record_journeys::integrity_scrub::pressure::*;
+use worth_store_testkit_store::integrity_scrub::assert_released;
+use {
+    crate::physical_record_journeys::integrity_scrub::pressure_world::read_record,
+    crate::physical_record_journeys::integrity_scrub::pressure_world::snapshot,
+    crate::physical_record_journeys::integrity_scrub::pressure_world::PressureWorld,
+    crate::physical_record_journeys::integrity_scrub::pressure_world::PAGE_BYTES,
+    crate::physical_record_journeys::integrity_scrub::pressure_world::RESIDENT_BYTES,
+};
 
 #[test]
 fn bounded_scrub_preserves_foreground_progress_at_thirty_two_times_residency() {
@@ -13,7 +16,9 @@ fn bounded_scrub_preserves_foreground_progress_at_thirty_two_times_residency() {
         serving,
         targets,
         records,
-    } = crate::physical_record_journeys::integrity_scrub::pressure_world::PressureWorld::new(parent.path());
+    } = crate::physical_record_journeys::integrity_scrub::pressure_world::PressureWorld::new(
+        parent.path(),
+    );
     let unchanged = snapshot(parent.path());
     let request = || {
         worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest::new(
@@ -27,7 +32,9 @@ fn bounded_scrub_preserves_foreground_progress_at_thirty_two_times_residency() {
     };
     let mut cancelled = serving.start_physical_integrity_scrub(request()).unwrap();
     cancelled.cancellation().cancel();
-    assert!(matches!(cancelled.next_window(), worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::Cancelled(c) if c.acquired_bytes == 0));
+    assert!(
+        matches!(cancelled.next_window(), worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::Cancelled(c) if c.acquired_bytes == 0)
+    );
     let mut scrub = serving.start_physical_integrity_scrub(request()).unwrap();
 
     // A real foreground reservation consumes the background share, while leaving
@@ -49,9 +56,11 @@ fn bounded_scrub_preserves_foreground_progress_at_thirty_two_times_residency() {
     let before = serving.media_counters();
     assert!(matches!(
         scrub.next_window(),
-        worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::Deferred(worth_store::physical_runtime::PhysicalIntegrityScrubDeferral::SchedulerOrDependency(
-            worth_store::physical_runtime::PhysicalIntegrityScrubReadDeferral::Capacity(_)
-        ))
+        worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::Deferred(
+            worth_store::physical_runtime::PhysicalIntegrityScrubDeferral::SchedulerOrDependency(
+                worth_store::physical_runtime::PhysicalIntegrityScrubReadDeferral::Capacity(_)
+            )
+        )
     ));
     assert_eq!(
         serving.media_counters(),
@@ -78,7 +87,9 @@ fn bounded_scrub_preserves_foreground_progress_at_thirty_two_times_residency() {
         serving
             .residency_observation()
             .counters()
-            .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Scrub),
+            .active_operation_bytes_for(
+                worth_store::physical_runtime::PhysicalOperationAllocationScope::Scrub
+            ),
         0
     );
     let ordinary = worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration::artifact_metadata_read()
@@ -99,11 +110,17 @@ fn bounded_scrub_preserves_foreground_progress_at_thirty_two_times_residency() {
     assert_released(&serving);
 
     let resume = scrub.pause();
-    assert!(matches!(scrub.next_window(), worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::Paused));
+    assert!(matches!(
+        scrub.next_window(),
+        worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::Paused
+    ));
     scrub.resume(resume).unwrap();
     let before_pressure = serving.residency_observation().counters();
     for (ordinal, target) in targets.iter().enumerate() {
-        let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(window) = scrub.next_window() else {
+        let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(
+            window,
+        ) = scrub.next_window()
+        else {
             panic!("declared page window");
         };
         assert_eq!(window.ordinal, ordinal as u64);

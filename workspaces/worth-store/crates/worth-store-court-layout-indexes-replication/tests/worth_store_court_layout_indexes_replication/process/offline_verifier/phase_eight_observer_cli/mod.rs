@@ -1,11 +1,11 @@
-#[allow(unused_imports)] use crate::phase_eight_observer_cli::*;
-use {sha2::Digest, sha2::Sha256};
-use {std::process::Command, std::process::Output};
-use {std::time::Duration, std::time::Instant};
+#[allow(unused_imports)]
+use crate::phase_eight_observer_cli::*;
+use sha2::Digest;
 
-use {worth_store_offline_verifier::RecoveryObserverDecodeDenial, worth_store_offline_verifier::RecoveryObserverReport, worth_store_offline_verifier::RECOVERY_OBSERVER_REPORT_PROTOCOL, worth_store_offline_verifier::RECOVERY_OBSERVER_REPORT_VERSION};
-use {worth_store_physical_format::store_namespace::ProposedStoreIdentity, worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord, worth_store_physical_format::store_namespace::StoreNamespaceVersion};
-use {worth_store_physical_format::DurableRootSelector, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::RootSelectorIdentity, worth_store_physical_format::RootSelectorRole};
+use {
+    worth_store_offline_verifier::RECOVERY_OBSERVER_REPORT_PROTOCOL,
+    worth_store_offline_verifier::RECOVERY_OBSERVER_REPORT_VERSION,
+};
 
 #[test]
 fn shipped_observer_process_emits_the_version_one_bounded_report() {
@@ -15,11 +15,13 @@ fn shipped_observer_process_emits_the_version_one_bounded_report() {
     let output = output_root.path().join("observer-report.bin");
 
     let process = run_bounded(
-        std::process::Command::new(worth_store_testkit_executables::physical_store_offline_observer())
-            .arg("c8-recovery-observe")
-            .arg(root.path())
-            .arg(&output)
-            .args(["2", "1", "1", "8"]),
+        std::process::Command::new(
+            worth_store_testkit_executables::physical_store_offline_observer(),
+        )
+        .arg("c8-recovery-observe")
+        .arg(root.path())
+        .arg(&output)
+        .args(["2", "1", "1", "8"]),
     );
     assert!(
         process.status.success(),
@@ -28,9 +30,10 @@ fn shipped_observer_process_emits_the_version_one_bounded_report() {
         String::from_utf8_lossy(&process.stderr),
     );
 
-    let report =
-        worth_store_offline_verifier::RecoveryObserverReport::decode(&std::fs::read(output).expect("observer report output"))
-            .expect("version-one observer report");
+    let report = worth_store_offline_verifier::RecoveryObserverReport::decode(
+        &std::fs::read(output).expect("observer report output"),
+    )
+    .expect("version-one observer report");
     assert_eq!(RECOVERY_OBSERVER_REPORT_VERSION.get(), 1);
     assert_eq!(report.artifact_count(), 1);
     assert_eq!(report.bytes_read(), 8);
@@ -45,11 +48,13 @@ fn shipped_observer_process_emits_the_version_one_bounded_report() {
     let forbidden = root.path().join("observer-report-inside-root.bin");
     let before = std::fs::read(root.path().join("selector")).expect("selector before rejection");
     let rejected = run_bounded(
-        std::process::Command::new(worth_store_testkit_executables::physical_store_offline_observer())
-            .arg("c8-recovery-observe")
-            .arg(root.path())
-            .arg(&forbidden)
-            .args(["2", "1", "1", "8"]),
+        std::process::Command::new(
+            worth_store_testkit_executables::physical_store_offline_observer(),
+        )
+        .arg("c8-recovery-observe")
+        .arg(root.path())
+        .arg(&forbidden)
+        .args(["2", "1", "1", "8"]),
     );
     assert!(!rejected.status.success());
     assert!(!forbidden.exists());
@@ -101,11 +106,13 @@ fn shipped_observer_report_rejects_invalid_future_malformed_and_tampered_wire_in
     std::fs::write(root.path().join("selector"), b"observed").expect("observer input");
     let output = output_root.path().join("observer-report.bin");
     let process = run_bounded(
-        std::process::Command::new(worth_store_testkit_executables::physical_store_offline_observer())
-            .arg("c8-recovery-observe")
-            .arg(root.path())
-            .arg(&output)
-            .args(["2", "1", "1", "8"]),
+        std::process::Command::new(
+            worth_store_testkit_executables::physical_store_offline_observer(),
+        )
+        .arg("c8-recovery-observe")
+        .arg(root.path())
+        .arg(&output)
+        .args(["2", "1", "1", "8"]),
     );
     assert!(process.status.success());
     let encoded = std::fs::read(output).expect("observer report output");
@@ -182,14 +189,17 @@ fn shipped_observer_report_rejects_invalid_future_malformed_and_tampered_wire_in
 #[test]
 fn observer_v1_literal_fixture_rejects_every_optional_flag_and_every_truncation() {
     let (encoded, optional_flags) = literal_v1_report();
-    worth_store_offline_verifier::RecoveryObserverReport::decode(&encoded).expect("literal version-one report");
+    worth_store_offline_verifier::RecoveryObserverReport::decode(&encoded)
+        .expect("literal version-one report");
     let valid_payload_end = encoded.len() - 32;
     for length in 0..encoded.len() {
         if length == valid_payload_end {
             continue;
         }
         assert_eq!(
-            worth_store_offline_verifier::RecoveryObserverReport::decode(&rehashed_prefix(&encoded, length)),
+            worth_store_offline_verifier::RecoveryObserverReport::decode(&rehashed_prefix(
+                &encoded, length
+            )),
             Err(worth_store_offline_verifier::RecoveryObserverDecodeDenial::Malformed),
             "literal v1 truncation at {length}"
         );

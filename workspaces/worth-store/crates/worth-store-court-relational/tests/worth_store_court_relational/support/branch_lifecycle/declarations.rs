@@ -1,13 +1,20 @@
 //! The oracle's independent lifecycle script and two-stream reference prefixes.
 
-pub(crate) use {std::collections::BTreeMap};
+pub(crate) use std::collections::BTreeMap;
+pub(crate) use worth_relational::facade::durability::RelationalDurabilityUnresolved;
+pub(crate) use worth_relational::facade::history::BranchId;
+pub(crate) use worth_relational::facade::mvcc::RelationalTransactionIntent;
+pub(crate) use worth_relational::facade::runtime::RelationalRuntime;
+pub(crate) use worth_relational::facade::transactions::RecordRef;
 pub(crate) use {worth_execution::ExecutionAllocationPolicy, worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::branch::RelationalBranchArchiveDenial, worth_relational::facade::branch::RelationalBranchBasisDenial, worth_relational::facade::branch::RelationalBranchDeleteDenial, worth_relational::facade::branch::RelationalBranchDeletionOutcome, worth_relational::facade::branch::RelationalBranchTransitionStop, worth_relational::facade::branch::RelationalForkDenial};
-pub(crate) use {worth_relational::facade::durability::RelationalDurabilityUnresolved};
-pub(crate) use {worth_relational::facade::history::BranchId};
-pub(crate) use {worth_relational::facade::mvcc::RelationalTransactionIntent};
-pub(crate) use {worth_relational::facade::runtime::RelationalRuntime};
-pub(crate) use {worth_relational::facade::transactions::RecordRef};
+pub(crate) use {
+    worth_relational::facade::branch::RelationalBranchArchiveDenial,
+    worth_relational::facade::branch::RelationalBranchBasisDenial,
+    worth_relational::facade::branch::RelationalBranchDeleteDenial,
+    worth_relational::facade::branch::RelationalBranchDeletionOutcome,
+    worth_relational::facade::branch::RelationalBranchTransitionStop,
+    worth_relational::facade::branch::RelationalForkDenial,
+};
 
 pub(crate) use {crate::workload, crate::workload::BranchStates, crate::workload::Step};
 
@@ -59,13 +66,15 @@ pub(crate) fn stop<D>(
     denial: fn(D) -> LifecycleDenial,
 ) -> LifecycleStop {
     match stop {
-        worth_relational::facade::branch::RelationalBranchTransitionStop::DurabilityUnresolved(fate) => {
-            crate::branch_lifecycle::LifecycleStop::Unresolved(fate)
+        worth_relational::facade::branch::RelationalBranchTransitionStop::DurabilityUnresolved(
+            fate,
+        ) => crate::branch_lifecycle::LifecycleStop::Unresolved(fate),
+        worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(reason) => {
+            crate::branch_lifecycle::LifecycleStop::Denied(denial(reason))
         }
-        worth_relational::facade::branch::RelationalBranchTransitionStop::Denied(reason) => crate::branch_lifecycle::LifecycleStop::Denied(denial(reason)),
-        worth_relational::facade::branch::RelationalBranchTransitionStop::RequestStopped(reason) => {
-            crate::branch_lifecycle::LifecycleStop::RequestStopped(reason)
-        }
+        worth_relational::facade::branch::RelationalBranchTransitionStop::RequestStopped(
+            reason,
+        ) => crate::branch_lifecycle::LifecycleStop::RequestStopped(reason),
     }
 }
 
@@ -103,7 +112,10 @@ impl Step {
             Self::RequestDeletion { .. } => {
                 let (_, basis) = runtime.observe_branch(&identity).unwrap();
                 let transaction = runtime
-                    .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+                    .begin_branch_transaction(
+                        &basis,
+                        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                    )
                     .unwrap();
                 let result = port.delete_branch(execution, &identity);
                 if let Ok(outcome) = &result {
@@ -113,16 +125,18 @@ impl Step {
                     ));
                 }
                 drop(transaction);
-                result
-                    .map(|_| ())
-                    .map_err(|reason| stop(reason, crate::branch_lifecycle::LifecycleDenial::Delete))
+                result.map(|_| ()).map_err(|reason| {
+                    stop(reason, crate::branch_lifecycle::LifecycleDenial::Delete)
+                })
             }
             Self::Delete { .. } => port
                 .delete_branch(execution, &identity)
                 .map(|outcome| {
                     assert!(matches!(
                         outcome,
-                        worth_relational::facade::branch::RelationalBranchDeletionOutcome::Deleted(_)
+                        worth_relational::facade::branch::RelationalBranchDeletionOutcome::Deleted(
+                            _
+                        )
                     ))
                 })
                 .map_err(|reason| stop(reason, crate::branch_lifecycle::LifecycleDenial::Delete)),

@@ -1,10 +1,12 @@
 //! Ordinary home journeys: create, commit, close, reopen, continue.
 
-#[allow(unused_imports)] use crate::journeys::*;
-use {worth_execution::ExecutionRequest};
+#[allow(unused_imports)]
+use crate::journeys::*;
 
-use {crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::open, crate::durable_run::steps_after, crate::durable_run::steps_before};
-use {crate::workload, crate::workload::Script};
+use {
+    crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::open,
+    crate::durable_run::steps_after, crate::durable_run::steps_before,
+};
 
 #[test]
 fn the_reference_script_is_deterministic() {
@@ -63,7 +65,8 @@ fn a_fork_committed_after_a_checkpoint_recovers() {
 #[test]
 fn the_reference_script_generates_for_every_seed() {
     for seed in 0x5eed_0400..0x5eed_0440_u64 {
-        let outcome = std::panic::catch_unwind(|| crate::workload::Script::generate(seed, COMMITS, 5));
+        let outcome =
+            std::panic::catch_unwind(|| crate::workload::Script::generate(seed, COMMITS, 5));
         assert!(outcome.is_ok(), "seed {seed:#x} does not generate");
     }
 }

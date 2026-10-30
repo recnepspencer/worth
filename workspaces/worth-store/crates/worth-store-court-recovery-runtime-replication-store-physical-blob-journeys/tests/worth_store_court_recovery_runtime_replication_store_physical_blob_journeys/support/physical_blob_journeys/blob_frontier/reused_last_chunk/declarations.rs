@@ -1,12 +1,37 @@
 pub(crate) use {std::num::NonZeroU64, std::path::Path};
 
-pub(crate) use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestSession, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::PhysicalBlobFacade, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_blob_chunks::BlobChunkSize};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1};
+pub(crate) use worth_store_blob_chunks::BlobChunkSize;
+pub(crate) use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobIngestSession,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::PhysicalBlobFacade,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1,
+};
 
-pub(crate) use {worth_store_testkit_store::physical_blob_journeys::blob_frontier::assert_record_binding, worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records, worth_store_testkit_store::physical_blob_journeys::blob_frontier::CHUNK};
-pub(crate) use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_with_limits, crate::physical_blob_journeys::blob_ingest_process::observed_without_damage, crate::physical_blob_journeys::blob_ingest_process::selected_root};
-pub(crate) use {worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+pub(crate) use {
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_with_limits,
+    crate::physical_blob_journeys::blob_ingest_process::observed_without_damage,
+    crate::physical_blob_journeys::blob_ingest_process::selected_root,
+};
+pub(crate) use {
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
+pub(crate) use {
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::assert_record_binding,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records,
+    worth_store_testkit_store::physical_blob_journeys::blob_frontier::CHUNK,
+};
 
 pub(crate) const REUSED_FILL: u8 = 63;
 
@@ -48,14 +73,16 @@ pub(crate) fn begin<'runtime>(
     scope: &AdmittedBlobScope,
     chunks: usize,
 ) -> BlobIngestSession<'runtime> {
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
         blobs.issue_object_id(limits).unwrap(),
         worth_store_blob_chunks::BlobChunkSize::from_bytes(CHUNK as u64).unwrap(),
         (chunks * CHUNK) as u64,
         scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(300_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(300_000)
+            .unwrap(),
     )
     .unwrap();
     blobs

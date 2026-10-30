@@ -1,8 +1,6 @@
 #[allow(unused_imports)] use crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::evacuation::*;
-use {worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetiredKind, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetirementAction};
-use {worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::ServingPhysicalRuntime, worth_signal::facade::TemporalDuration, worth_proof::TransitionOutcome, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::prepare_extent_rewrite, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::read_record, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::request};
-use {std::process::Command};
-use {worth_store::physical_runtime::ArenaEvacuationThreshold, worth_store::physical_runtime::ExtentArenaCapacity, worth_store::physical_runtime::PhysicalArenaEvacuationPreparationOutcome, worth_store::physical_runtime::PhysicalExtentCopyPhase, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkPressureClass};
+use worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads;
+use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::prepare_extent_rewrite, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::request};
 use {worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES, worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES};
 
 /// Uses the public minimum arena geometry and ordinary append/rewrite/release.
@@ -14,16 +12,22 @@ fn sparse_arena_producer_moves_live_extent_under_compaction_queue_authority() {
     let root = parent.path().join("store");
     let (format, _, access) = configuration();
     let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
-        .arena_capacity(worth_store::physical_runtime::ExtentArenaCapacity::bytes(64 << 20).unwrap())
-        .arena_evacuation(worth_store::physical_runtime::ArenaEvacuationThreshold::percent(99).unwrap())
+        .arena_capacity(
+            worth_store::physical_runtime::ExtentArenaCapacity::bytes(64 << 20).unwrap(),
+        )
+        .arena_evacuation(
+            worth_store::physical_runtime::ArenaEvacuationThreshold::percent(99).unwrap(),
+        )
         .admit(format)
         .unwrap();
     let media = worth_store_testkit_store::physical_record_journeys::media(&root);
     let durability = fill_durability(&media);
     let serving = worth_store_testkit_store::physical_record_journeys::success(
-        media.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
-            format, placement, access, durability,
-        )),
+        media.initialize_record_store(
+            worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                format, placement, access, durability,
+            ),
+        ),
     );
     // Rewrite only the first three ceiling-sized records to make arena 1 sparse.
     // Every remaining live source is beyond that ceiling and requires SourceCopy.
@@ -82,7 +86,9 @@ fn sparse_arena_producer_moves_live_extent_under_compaction_queue_authority() {
     let before = serving.physical_work_counters();
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material(400)))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material(400)),
+        )
         .unwrap();
     let mut outcome = submission
         .prepare_arena_evacuation(placement, request(key.clone()))
@@ -98,7 +104,10 @@ fn sparse_arena_producer_moves_live_extent_under_compaction_queue_authority() {
             .prepare_arena_evacuation(placement, request(key.clone()))
             .unwrap();
     }
-    let worth_store::physical_runtime::PhysicalArenaEvacuationPreparationOutcome::Copying(mut progress) = outcome else {
+    let worth_store::physical_runtime::PhysicalArenaEvacuationPreparationOutcome::Copying(
+        mut progress,
+    ) = outcome
+    else {
         panic!("sparse arena must produce a retained bounded copy session");
     };
     let mut foreground_progress = false;
@@ -110,10 +119,14 @@ fn sparse_arena_producer_moves_live_extent_under_compaction_queue_authority() {
             copied_before_verification =
                 copied_before_verification.max(progress.completed_payload_bytes);
         }
-        if progress.phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption {
+        if progress.phase
+            == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+        {
             break;
         }
-        if progress.phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::Copying && !foreground_progress {
+        if progress.phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::Copying
+            && !foreground_progress
+        {
             completed(prepare(&serving, placement, material(401), &[33; 4096]).execute());
             foreground_progress = true;
         }
@@ -157,7 +170,10 @@ fn sparse_arena_producer_moves_live_extent_under_compaction_queue_authority() {
         foreground_progress,
         "ordinary foreground publication advances during copying"
     );
-    assert_eq!(progress.phase, worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption);
+    assert_eq!(
+        progress.phase,
+        worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+    );
     assert_eq!(copied_before_verification, payload.len() as u64);
     let prepared = submission
         .prepare_completed_extent_copy()
@@ -205,10 +221,15 @@ fn sparse_arena_producer_moves_live_extent_under_compaction_queue_authority() {
     let session = reader
         .open(
             *record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
-    assert_eq!(worth_store_testkit_store::physical_record_journeys::read_record(session, payload.len()).0, payload);
+    assert_eq!(
+        worth_store_testkit_store::physical_record_journeys::read_record(session, payload.len()).0,
+        payload
+    );
     drop(reader);
     let checkpoint = copy_checkpoint(&serving, 1);
     assert!(matches!(

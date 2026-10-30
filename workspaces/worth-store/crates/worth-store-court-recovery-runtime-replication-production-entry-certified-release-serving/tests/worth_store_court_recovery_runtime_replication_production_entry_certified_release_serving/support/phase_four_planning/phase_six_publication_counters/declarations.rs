@@ -1,5 +1,3 @@
-#![cfg(all())]
-
 pub(crate) use {
     worth_store::physical_runtime::certification::MediaFaultDirective,
     worth_store::physical_runtime::certification::MediaOperationRole,

@@ -1,10 +1,16 @@
-pub(crate) use {std::path::PathBuf};
+pub(crate) use std::path::PathBuf;
 
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportEnvelope, worth_store_recovery_runtime::RecoveryReportOutcome};
+pub(crate) use {
+    worth_store_recovery_runtime::RecoveryReportEnvelope,
+    worth_store_recovery_runtime::RecoveryReportOutcome,
+};
 
-pub(crate) use {crate::checkpoint_crash::evidence::snapshot::copy_directory, crate::checkpoint_crash::evidence::snapshot::snapshot_directory};
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::process::recovery_report::fresh_recovery};
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::case::crash_frontier::CrashObservation};
+pub(crate) use crate::phase_eight_process::checkpoint_crash::case::crash_frontier::CrashObservation;
+pub(crate) use crate::process::support::checkpoint_crash::recovery_report::fresh_recovery;
+pub(crate) use {
+    crate::checkpoint_crash::evidence::snapshot::copy_directory,
+    crate::checkpoint_crash::evidence::snapshot::snapshot_directory,
+};
 
 pub(crate) struct RecoverySet {
     pub(crate) crash: CrashObservation,
@@ -50,7 +56,10 @@ pub(crate) fn run(crash: CrashObservation) -> RecoverySet {
         );
     }
     assert!(first.store_identity().is_some());
-    if matches!(first.outcome(), worth_store_recovery_runtime::RecoveryReportOutcome::Recovered) {
+    if matches!(
+        first.outcome(),
+        worth_store_recovery_runtime::RecoveryReportOutcome::Recovered
+    ) {
         assert!(first.root_generation().is_some());
     }
     assert_eq!(
@@ -79,7 +88,10 @@ pub(crate) fn run(crash: CrashObservation) -> RecoverySet {
         second.counters().cleanup_deferred(),
         "cleanup deferral counters drift at {stage:?}"
     );
-    if matches!(first.outcome(), worth_store_recovery_runtime::RecoveryReportOutcome::Recovered) {
+    if matches!(
+        first.outcome(),
+        worth_store_recovery_runtime::RecoveryReportOutcome::Recovered
+    ) {
         assert!(
             first.counters().peak_recovery_bytes() > 0,
             "recovered checkpoint did not report its admitted recovery memory at {stage:?}"
@@ -87,7 +99,8 @@ pub(crate) fn run(crash: CrashObservation) -> RecoverySet {
     }
     assert!(!matches!(
         first.outcome(),
-        worth_store_recovery_runtime::RecoveryReportOutcome::Refused | worth_store_recovery_runtime::RecoveryReportOutcome::PublicationIndeterminate
+        worth_store_recovery_runtime::RecoveryReportOutcome::Refused
+            | worth_store_recovery_runtime::RecoveryReportOutcome::PublicationIndeterminate
     ));
 
     RecoverySet {

@@ -4,17 +4,37 @@
 //! survive an abandoned runtime through production recovery.
 
 pub use {sha2::Digest, sha2::Sha256};
-pub use {worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::AnchoredRecordName, worth_store::physical_runtime::AnchoredRecordNameDenial, worth_store::physical_runtime::AnchoredRecordPublication, worth_store::physical_runtime::AnchoredRecordPublicationFailure, worth_store::physical_runtime::AnchoredRecordPublished, worth_store::physical_runtime::AnchoredRecordReadFailure, worth_store::physical_runtime::OrderedJournalPublication, worth_store::physical_runtime::ServingPhysicalRuntime, worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS, worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS};
+pub use {
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::AnchoredRecordName,
+    worth_store::physical_runtime::AnchoredRecordNameDenial,
+    worth_store::physical_runtime::AnchoredRecordPublication,
+    worth_store::physical_runtime::AnchoredRecordPublicationFailure,
+    worth_store::physical_runtime::AnchoredRecordPublished,
+    worth_store::physical_runtime::AnchoredRecordReadFailure,
+    worth_store::physical_runtime::OrderedJournalPublication,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+    worth_store::physical_runtime::RELATIONAL_BRANCH_TRANSITIONS,
+    worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS,
+};
 
-pub use {crate::production_entry::ordered_journals::canonical_journal_oracle::placement, crate::production_entry::ordered_journals::canonical_journal_oracle::serve};
-pub use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, crate::production_entry::anchored_records};
+pub use {
+    crate::production_entry::anchored_records,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
+pub use {
+    crate::production_entry::ordered_journals::canonical_journal_oracle::placement,
+    crate::production_entry::ordered_journals::canonical_journal_oracle::serve,
+};
 
 pub const CHECKPOINT: &str = "relational.checkpoint";
 pub const HOME: &str = "relational.home";
 pub const READ_LIMIT: u64 = 8 << 20;
 
 pub fn name(text: &str) -> AnchoredRecordName {
-    worth_store::physical_runtime::AnchoredRecordName::new(text).expect("a valid anchored record name")
+    worth_store::physical_runtime::AnchoredRecordName::new(text)
+        .expect("a valid anchored record name")
 }
 
 /// Deterministic bytes distinct per `seed`.
@@ -34,13 +54,16 @@ pub fn publish(
     serving
         .anchored_records()
         .expect("anchored record access")
-        .publish(worth_store::physical_runtime::AnchoredRecordPublication::new(
-            name,
-            expected_generation,
-            payload,
-            placement,
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-        ))
+        .publish(
+            worth_store::physical_runtime::AnchoredRecordPublication::new(
+                name,
+                expected_generation,
+                payload,
+                placement,
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
+            ),
+        )
 }
 
 /// The current generation and bytes of `name`; damage fails the test.
@@ -74,12 +97,15 @@ pub fn publish_journal_entry(
     serving
         .canonical_commits()
         .expect("journal access")
-        .publish(worth_store::physical_runtime::OrderedJournalPublication::new(
-            position,
-            journal_payload(position),
-            placement,
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
-        ))
+        .publish(
+            worth_store::physical_runtime::OrderedJournalPublication::new(
+                position,
+                journal_payload(position),
+                placement,
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
+            ),
+        )
         .expect("journal publication");
 }
 

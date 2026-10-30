@@ -1,7 +1,10 @@
-#[allow(unused_imports)] use crate::authority_projection_readmission_ui::*;
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::authority_projection_readmission_ui::*;
 
-use {worth_store_test_support::compiler_boundary::cargo_dependency_manifest, worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite};
+use {
+    worth_store_test_support::compiler_boundary::cargo_dependency_manifest,
+    worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite,
+};
 
 #[test]
 fn authority_projection_readmission_denies_lower_authority_inputs() {

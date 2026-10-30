@@ -1,20 +1,40 @@
-pub use {std::io::Write};
-pub use {std::path::Path};
+pub use std::io::Write;
+pub use std::path::Path;
 
-pub use {worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalWorkCapacity};
+pub use {
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalWorkCapacity,
+};
 
-pub use {crate::physical_record_journeys::maintenance_interference::append, crate::physical_record_journeys::maintenance_interference::append_copies, crate::physical_record_journeys::maintenance_interference::checkpoint, crate::physical_record_journeys::maintenance_interference::initialize, crate::physical_record_journeys::maintenance_interference::limits, crate::physical_record_journeys::maintenance_interference::placement, crate::physical_record_journeys::maintenance_interference::segment_files, crate::physical_record_journeys::maintenance_interference::segment_ids, crate::physical_record_journeys::maintenance_interference::RESIDENT_BYTES};
+pub use {
+    crate::physical_record_journeys::maintenance_interference::append,
+    crate::physical_record_journeys::maintenance_interference::append_copies,
+    crate::physical_record_journeys::maintenance_interference::checkpoint,
+    crate::physical_record_journeys::maintenance_interference::initialize,
+    crate::physical_record_journeys::maintenance_interference::limits,
+    crate::physical_record_journeys::maintenance_interference::placement,
+    crate::physical_record_journeys::maintenance_interference::segment_files,
+    crate::physical_record_journeys::maintenance_interference::segment_ids,
+    crate::physical_record_journeys::maintenance_interference::RESIDENT_BYTES,
+};
 
 pub fn canonical_child(root: &Path) {
     let expected = std::env::var(crate::child_process::LOCATOR_ENV)
         .expect("baseline generation")
         .parse::<u64>()
         .unwrap();
-    let (profile, request, _) = crate::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture();
-    let capacity = worth_store::physical_runtime::PhysicalWorkCapacity::new(8, 256, 32_768, 1024 * 1024, 64 * 1024 * 1024)
-        .unwrap()
-        .with_dispatch_permits(4)
-        .unwrap();
+    let (profile, request, _) =
+        crate::physical_record_journeys::physical_work::fixture::semantic_work::work_fixture();
+    let capacity = worth_store::physical_runtime::PhysicalWorkCapacity::new(
+        8,
+        256,
+        32_768,
+        1024 * 1024,
+        64 * 1024 * 1024,
+    )
+    .unwrap()
+    .with_dispatch_permits(4)
+    .unwrap();
     let (serving, gate, activation) =
         crate::physical_record_journeys::maintenance_interference::sync::reopen_with_file_sync_pause(root, profile.with_capacity(capacity));
     let generation = serving
@@ -23,7 +43,9 @@ pub fn canonical_child(root: &Path) {
         .unwrap()
         .root_generation();
     assert_eq!(generation, expected);
-    crate::physical_record_journeys::maintenance_interference::interleave::run_cold_extent(&serving, gate, activation, root, request, 100_000);
+    crate::physical_record_journeys::maintenance_interference::interleave::run_cold_extent(
+        &serving, gate, activation, root, request, 100_000,
+    );
     let peak = serving
         .certification_physical_residency()
         .counters()

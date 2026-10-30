@@ -1,6 +1,9 @@
-pub use {std::path::Path};
+pub use std::path::Path;
 
-pub use {worth_store::physical_runtime::PhysicalWorkProfileDeclaration, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub use {
+    worth_store::physical_runtime::PhysicalWorkProfileDeclaration,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
 pub fn serving_from_initialization_with_work_profile(
     root: &Path,

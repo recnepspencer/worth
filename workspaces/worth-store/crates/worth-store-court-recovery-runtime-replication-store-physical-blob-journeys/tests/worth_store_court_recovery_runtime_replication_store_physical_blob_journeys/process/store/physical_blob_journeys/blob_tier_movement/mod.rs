@@ -1,16 +1,17 @@
 //! Feature-only proof of the Store's real arena-segregated SourceCopy path.
 //! Public Hot/Cold admission stays sealed until C.8 accepts the epoch witness.
 
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_tier_movement::*;
-use {std::num::NonZeroU64, std::path::Path};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_tier_movement::*;
 
-use {worth_proof::TransitionOutcome};
-use {worth_signal::facade::TemporalDuration};
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobMovementFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::PhysicalExtentCopyPhase, worth_store::physical_runtime::PhysicalExtentCopyResolutionProgress, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::RecordAppendDenial, worth_store::physical_runtime::RecordAppendError};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_physical_format::arena_tier_at_epoch, worth_store_physical_format::BootstrapCatalog, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::PhysicalTierClass};
+use worth_store_physical_format::arena_tier_at_epoch;
 
-use {crate::physical_blob_journeys::blob_copy_observer::current_extent_route, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+use {
+    crate::physical_blob_journeys::blob_copy_observer::current_extent_route,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+};
 
 #[test]
 fn selected_chunk_crosses_hot_and_cold_arenas_without_half_moved_reads() {
@@ -19,7 +20,8 @@ fn selected_chunk_crosses_hot_and_cold_arenas_without_half_moved_reads() {
     let serving = serving_from_initialization(directory.path());
     let blobs = serving.blobs().unwrap();
     let scope = admitted_blob_scope("c11.blob.tier.selected");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
     let object = blobs.issue_object_id(limits).unwrap();
     let payload = (0..CHUNK)
         .map(|index| ((index * 19 + 7) % 251) as u8)
@@ -30,7 +32,8 @@ fn selected_chunk_crosses_hot_and_cold_arenas_without_half_moved_reads() {
         CHUNK as u64 + 1,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -46,12 +49,16 @@ fn selected_chunk_crosses_hot_and_cold_arenas_without_half_moved_reads() {
     assert!(selected_root_anchor(directory.path()).is_none());
     let pre_epoch_key = serving
         .record_submission()
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([160; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([160; 32]),
+        )
         .unwrap();
-    let pre_epoch_request = worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
-        pre_epoch_key,
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
-    );
+    let pre_epoch_request =
+        worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
+            pre_epoch_key,
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
+        );
     assert!(matches!(
         blobs.certification_begin_chunk_relocation_to_tier(
             initial_hold,
@@ -59,11 +66,16 @@ fn selected_chunk_crosses_hot_and_cold_arenas_without_half_moved_reads() {
             pre_epoch_request,
             worth_store_physical_format::PhysicalTierClass::Hot,
         ),
-        Err(worth_store::physical_runtime::BlobMovementFailure::Copy(worth_store::physical_runtime::RecordAppendError::Denied(
-            worth_store::physical_runtime::RecordAppendDenial::BlobMovementUnsupportedTier
-        )))
+        Err(worth_store::physical_runtime::BlobMovementFailure::Copy(
+            worth_store::physical_runtime::RecordAppendError::Denied(
+                worth_store::physical_runtime::RecordAppendDenial::BlobMovementUnsupportedTier
+            )
+        ))
     ));
-    let chunk_record = worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(&serving)
+    let chunk_record =
+        worth_store_testkit_store::physical_blob_journeys::blob_frontier::selected_blob_records(
+            &serving,
+        )
         .into_iter()
         .find(|(_, bytes)| {
             matches!(
@@ -75,7 +87,10 @@ fn selected_chunk_crosses_hot_and_cold_arenas_without_half_moved_reads() {
         .unwrap()
         .0;
     let first = current_extent_route(directory.path(), chunk_record);
-    assert_eq!(first.tier_class(), worth_store_physical_format::PhysicalTierClass::Primary);
+    assert_eq!(
+        first.tier_class(),
+        worth_store_physical_format::PhysicalTierClass::Primary
+    );
 
     let epoch = serving
         .certification_activate_tier_epoch(placement())
@@ -107,13 +122,16 @@ fn selected_chunk_crosses_hot_and_cold_arenas_without_half_moved_reads() {
             .unwrap();
         let key = serving
             .record_submission()
-            .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(
-                [161 + index as u8; 32],
-            ))
+            .issue_idempotency_key(
+                worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(
+                    [161 + index as u8; 32],
+                ),
+            )
             .unwrap();
         let request = worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
             key,
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
         );
         let mut movement = blobs
             .certification_begin_chunk_relocation_to_tier(hold, placement(), request, target)
@@ -130,7 +148,9 @@ fn selected_chunk_crosses_hot_and_cold_arenas_without_half_moved_reads() {
             });
         let mut observed_partial_copy = false;
         for _ in 0..512 {
-            if movement.progress().phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption {
+            if movement.progress().phase
+                == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+            {
                 break;
             }
             movement.advance().unwrap_or_else(|failure| {

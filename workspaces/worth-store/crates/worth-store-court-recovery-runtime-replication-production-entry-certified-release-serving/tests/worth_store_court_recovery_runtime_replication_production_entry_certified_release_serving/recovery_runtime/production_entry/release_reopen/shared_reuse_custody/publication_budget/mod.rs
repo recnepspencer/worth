@@ -1,13 +1,15 @@
 //! The genuine KiB64 publication boundary, before the longer C8 reuse journey.
 
-#[allow(unused_imports)] use crate::production_entry::release_reopen::shared_reuse_custody::publication_budget::*;
-use {std::num::NonZeroU64};
+#[allow(unused_imports)]
+use crate::production_entry::release_reopen::shared_reuse_custody::publication_budget::*;
 
-use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::LayoutRebuildFailure, worth_store::physical_runtime::PhysicalLayoutDenial, worth_store::physical_runtime::PhysicalLayoutMaintenanceFailure, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalRecordResidencyFailureReason, worth_store::physical_runtime::PhysicalResidencyRetryPosture, worth_store::physical_runtime::PublishedBlobGeneration};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
-
-use {worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope, crate::production_entry::release_reopen::shared_reuse_custody::read_exact, crate::production_entry::release_reopen::shared_reuse_custody::selected_marker, crate::production_entry::release_reopen::shared_reuse_custody::shared_format, crate::production_entry::release_reopen::shared_reuse_custody::world, crate::production_entry::release_reopen::shared_reuse_custody::CHUNK};
+use {
+    crate::production_entry::release_reopen::shared_reuse_custody::read_exact,
+    crate::production_entry::release_reopen::shared_reuse_custody::selected_marker,
+    crate::production_entry::release_reopen::shared_reuse_custody::shared_format,
+    crate::production_entry::release_reopen::shared_reuse_custody::CHUNK,
+    worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope,
+};
 
 #[test]
 fn ki_b64_original_and_reused_publications_are_indexed_and_readable() {

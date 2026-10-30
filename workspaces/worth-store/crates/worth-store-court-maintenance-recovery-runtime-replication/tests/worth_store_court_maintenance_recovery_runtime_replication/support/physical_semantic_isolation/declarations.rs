@@ -1,10 +1,38 @@
-pub(crate) use {worth_foundational::FoundationalBoundaryArtifactCategory, worth_foundational::FoundationalBoundaryArtifactRole};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_relational::facade::history::BranchId, worth_relational::facade::history::CommitId, worth_relational::facade::runtime::RelationalRuntimeBuilder, worth_relational::facade::snapshots::SnapshotId, worth_relational::facade::transactions::TransactionId, worth_relational::facade::visibility::RelationalStoreCorrelationReference, worth_relational::facade::visibility::RelationalStoreCorrelationReferenceKind};
-pub(crate) use {worth_store_authority::deny_lower_authority_source_readmission_as_current_authority, worth_store_authority::StoreAuthorityReadmissionDenial, worth_store_authority::StoreLowerAuthoritySource};
-pub(crate) use {worth_store_physical_isolation::correlate_semantic_visibility_with_physical_snapshot, worth_store_physical_isolation::deny_semantic_visibility_as_physical_stability, worth_store_physical_isolation::physical_epoch_vector_for_current_root, worth_store_physical_isolation::CurrentPhysicalRoot, worth_store_physical_isolation::PhysicalEpochDriftKind, worth_store_physical_isolation::PhysicalEpochVector, worth_store_physical_isolation::PhysicalOrderingContract, worth_store_physical_isolation::PhysicalReadStabilityAuthority, worth_store_physical_isolation::PhysicalSemanticBoundaryDenial, worth_store_physical_isolation::PhysicalSemanticBoundaryRoleEvidence, worth_store_physical_isolation::SemanticVisibilityReference};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use {
+    worth_foundational::FoundationalBoundaryArtifactCategory,
+    worth_foundational::FoundationalBoundaryArtifactRole,
+};
+pub(crate) use {
+    worth_relational::facade::history::BranchId, worth_relational::facade::history::CommitId,
+    worth_relational::facade::runtime::RelationalRuntimeBuilder,
+    worth_relational::facade::snapshots::SnapshotId,
+    worth_relational::facade::transactions::TransactionId,
+    worth_relational::facade::visibility::RelationalStoreCorrelationReference,
+    worth_relational::facade::visibility::RelationalStoreCorrelationReferenceKind,
+};
+pub(crate) use {
+    worth_store_authority::deny_lower_authority_source_readmission_as_current_authority,
+    worth_store_authority::StoreAuthorityReadmissionDenial,
+    worth_store_authority::StoreLowerAuthoritySource,
+};
+pub(crate) use {
+    worth_store_physical_isolation::correlate_semantic_visibility_with_physical_snapshot,
+    worth_store_physical_isolation::deny_semantic_visibility_as_physical_stability,
+    worth_store_physical_isolation::physical_epoch_vector_for_current_root,
+    worth_store_physical_isolation::CurrentPhysicalRoot,
+    worth_store_physical_isolation::PhysicalEpochDriftKind,
+    worth_store_physical_isolation::PhysicalEpochVector,
+    worth_store_physical_isolation::PhysicalOrderingContract,
+    worth_store_physical_isolation::PhysicalReadStabilityAuthority,
+    worth_store_physical_isolation::PhysicalSemanticBoundaryDenial,
+    worth_store_physical_isolation::PhysicalSemanticBoundaryRoleEvidence,
+    worth_store_physical_isolation::SemanticVisibilityReference,
+};
 
-pub(crate) fn current_root_from_authority(authority: &PhysicalReadStabilityAuthority) -> CurrentPhysicalRoot {
+pub(crate) fn current_root_from_authority(
+    authority: &PhysicalReadStabilityAuthority,
+) -> CurrentPhysicalRoot {
     worth_store_physical_isolation::CurrentPhysicalRoot::from_physical_isolation_entry(
         authority.root_epoch_basis().current_root_basis(),
         worth_store_physical_isolation::PhysicalOrderingContract::root_swap_acquire_release(),
@@ -14,12 +42,30 @@ pub(crate) fn current_root_from_authority(authority: &PhysicalReadStabilityAutho
 
 pub(crate) fn semantic_visibility_references() -> Vec<SemanticVisibilityReference> {
     vec![
-        worth_store_physical_isolation::SemanticVisibilityReference::transaction("runtime-a", "tx-1"),
-        worth_store_physical_isolation::SemanticVisibilityReference::branch("runtime-a", "branch/main"),
-        worth_store_physical_isolation::SemanticVisibilityReference::relational_snapshot("runtime-a", "snapshot-1"),
-        worth_store_physical_isolation::SemanticVisibilityReference::projection("runtime-a", "projection/a"),
-        worth_store_physical_isolation::SemanticVisibilityReference::current_basis("runtime-a", "current"),
-        worth_store_physical_isolation::SemanticVisibilityReference::commit("runtime-a", "commit-1"),
+        worth_store_physical_isolation::SemanticVisibilityReference::transaction(
+            "runtime-a",
+            "tx-1",
+        ),
+        worth_store_physical_isolation::SemanticVisibilityReference::branch(
+            "runtime-a",
+            "branch/main",
+        ),
+        worth_store_physical_isolation::SemanticVisibilityReference::relational_snapshot(
+            "runtime-a",
+            "snapshot-1",
+        ),
+        worth_store_physical_isolation::SemanticVisibilityReference::projection(
+            "runtime-a",
+            "projection/a",
+        ),
+        worth_store_physical_isolation::SemanticVisibilityReference::current_basis(
+            "runtime-a",
+            "current",
+        ),
+        worth_store_physical_isolation::SemanticVisibilityReference::commit(
+            "runtime-a",
+            "commit-1",
+        ),
     ]
 }
 

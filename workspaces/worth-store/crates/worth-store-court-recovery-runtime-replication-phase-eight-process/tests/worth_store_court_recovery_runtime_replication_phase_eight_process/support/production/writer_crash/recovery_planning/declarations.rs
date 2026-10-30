@@ -1,6 +1,14 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration, worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryOpenRequest, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority, worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration, worth_store_recovery_runtime::PlannedPhysicalRecovery};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration,
+    worth_store_recovery_runtime::PhysicalRecoveryLimits,
+    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority,
+    worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration,
+    worth_store_recovery_runtime::PlannedPhysicalRecovery,
+};
 
 pub(crate) fn plan_with_memory(
     root: &Path,
@@ -13,7 +21,8 @@ pub(crate) fn plan_with_limits(
     root: &Path,
     limits: PhysicalRecoveryLimits,
 ) -> Result<PlannedPhysicalRecovery, PhysicalRecoveryOutcome> {
-    let configuration = worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current();
+    let configuration =
+        worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current();
     let authority = worth_store_recovery_runtime::PhysicalRecoveryPlatformAuthority::acquire(
         root.to_path_buf(),
         configuration.clone(),

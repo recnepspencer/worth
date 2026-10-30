@@ -1,12 +1,10 @@
-
-
-#[allow(unused_imports)] use crate::phase_three_manifest_denials::*;
-use {crate::phase_three_manifest_denials::phase_three_support::synthetic_topology::publish_synthetic_chained_genesis, crate::phase_three_manifest_denials::phase_three_support::synthetic_topology::publish_synthetic_nonempty_genesis, crate::phase_three_manifest_denials::phase_three_support::synthetic_topology::publish_synthetic_paired_genesis};
-use {std::path::Path, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits, worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked, worth_store_testkit_recovery_runtime::phase_three_support::initialize_store, worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration};
-use {worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily};
-use {worth_store_physical_integrity::PhysicalDamageCause, worth_store_physical_integrity::PhysicalIntegrityRejection};
-use {worth_store_recovery_physics::PhysicalPageFactDenial};
-use {worth_store_recovery_runtime::PhysicalManifestObservationDenial, worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryIntegrityObservationOutcome, worth_store_recovery_runtime::PhysicalRecoveryIntegrityRejection, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial, worth_store_recovery_runtime::PhysicalRecoverySourceDenial};
+#[allow(unused_imports)]
+use crate::phase_three_manifest_denials::*;
+use worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked;
+use {
+    crate::phase_three_manifest_denials::phase_three_support::synthetic_topology::publish_synthetic_chained_genesis,
+    crate::phase_three_manifest_denials::phase_three_support::synthetic_topology::publish_synthetic_paired_genesis,
+};
 
 /// The verified manifest's record count is charged to the caller's entry
 /// budget before any routing block is read: a count past the budget is the
@@ -59,7 +57,9 @@ fn a_chain_short_of_its_record_count_within_the_budget_is_damage_not_a_limit() {
     );
     assert_eq!(blocked.cause().limit(), None);
     assert!(blocked.evidence().source_denials.contains(
-        &worth_store_recovery_runtime::PhysicalRecoverySourceDenial::ManifestFacts(worth_store_recovery_physics::PhysicalPageFactDenial::RecordCountMismatch)
+        &worth_store_recovery_runtime::PhysicalRecoverySourceDenial::ManifestFacts(
+            worth_store_recovery_physics::PhysicalPageFactDenial::RecordCountMismatch
+        )
     ));
 }
 

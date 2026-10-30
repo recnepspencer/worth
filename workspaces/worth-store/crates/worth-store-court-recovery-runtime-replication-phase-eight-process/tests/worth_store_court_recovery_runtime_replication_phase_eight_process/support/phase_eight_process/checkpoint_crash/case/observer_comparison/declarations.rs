@@ -1,9 +1,9 @@
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportOutcome};
+pub(crate) use worth_store_recovery_runtime::RecoveryReportOutcome;
 
-pub(crate) use {crate::phase_eight_process::comparison, crate::history};
-pub(crate) use {crate::checkpoint_crash::evidence::snapshot::snapshot_directory};
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::process::observer_report::fresh_observer};
-pub(crate) use {crate::phase_eight_process::checkpoint_crash::case::independent_recoveries::RecoverySet};
+pub(crate) use crate::checkpoint_crash::evidence::snapshot::snapshot_directory;
+pub(crate) use crate::phase_eight_process::checkpoint_crash::case::independent_recoveries::RecoverySet;
+pub(crate) use crate::process::support::checkpoint_crash::observer_report::fresh_observer;
+pub(crate) use {crate::history, crate::phase_eight_process::comparison};
 
 pub(crate) fn compare(recoveries: &RecoverySet) {
     let crash = &recoveries.crash;
@@ -62,14 +62,20 @@ pub(crate) fn compare(recoveries: &RecoverySet) {
         first_history, second_history,
         "recovery roots diverged at {stage:?}"
     );
-    if matches!(recoveries.first.outcome(), worth_store_recovery_runtime::RecoveryReportOutcome::Recovered) {
+    if matches!(
+        recoveries.first.outcome(),
+        worth_store_recovery_runtime::RecoveryReportOutcome::Recovered
+    ) {
         assert_eq!(
             recoveries.first.root_generation(),
             first_history.current_root_generation(),
             "report root generation did not match persisted selector at {stage:?}"
         );
     }
-    if matches!(crash.expected_outcome, worth_store_recovery_runtime::RecoveryReportOutcome::Blocked) {
+    if matches!(
+        crash.expected_outcome,
+        worth_store_recovery_runtime::RecoveryReportOutcome::Blocked
+    ) {
         assert_eq!(
             snapshot_directory(&recoveries.first_root),
             crash.effect_snapshot,
@@ -85,10 +91,13 @@ pub(crate) fn compare(recoveries: &RecoverySet) {
     .unwrap_or_else(|disagreement| {
         panic!("runtime and observer evidence diverged at {stage:?}: {disagreement:?}")
     });
-    crate::phase_eight_process::comparison::compare_independent_physical_evidence(&observer, &independent_observer)
-        .unwrap_or_else(|disagreement| {
-            panic!("independent physical observer evidence diverged at {stage:?}: {disagreement:?}")
-        });
+    crate::phase_eight_process::comparison::compare_independent_physical_evidence(
+        &observer,
+        &independent_observer,
+    )
+    .unwrap_or_else(|disagreement| {
+        panic!("independent physical observer evidence diverged at {stage:?}: {disagreement:?}")
+    });
     assert_eq!(
         snapshot_directory(&recoveries.first_root),
         snapshot_directory(&recoveries.second_root),

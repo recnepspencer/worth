@@ -1,21 +1,7 @@
 //! A certified Batch/Accumulator checkpoint is the starting point for two
 //! completed postcheckpoint V3 releases and one final killed V3 descriptor.
 
-use std::fs;
 use worth_store_physical_format::release_checkpoint_batch_records_digest_v1;
-use {
-    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
-    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
-    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::WorthStoreRecovery,
-};
 
 #[test]
 fn selected_batch_base_with_two_completed_and_one_pending_v3_reopens() {

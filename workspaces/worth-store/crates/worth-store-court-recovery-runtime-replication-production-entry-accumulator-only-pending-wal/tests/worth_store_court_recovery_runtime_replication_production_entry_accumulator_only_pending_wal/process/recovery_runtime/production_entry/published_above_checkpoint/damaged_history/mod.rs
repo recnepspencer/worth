@@ -8,23 +8,7 @@
 
 #[allow(unused_imports)]
 use crate::production_entry::published_above_checkpoint::damaged_history::*;
-use std::fs;
-use std::path::PathBuf;
-use worth_store_physical_format::RecordArtifactFile;
 use worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::{Tail, Workload};
-use {
-    crate::production_entry::published_above_checkpoint, std::path::Path,
-    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
-    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
-    worth_store_recovery_runtime::PhysicalRecoveryOpenRequest,
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::PhysicalRecoveryPageAdmissionDenial,
-    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
-    worth_store_recovery_runtime::WorthStoreRecovery,
-};
 
 #[test]
 fn an_oversized_root_or_routing_block_of_the_walked_history_is_damage_not_a_limit() {
@@ -122,6 +106,5 @@ fn an_oversized_routing_block_of_the_selected_roots_is_damage_not_a_limit() {
     world.assert_objects_read_back(&serving);
     serving.close();
 }
-#[cfg(all())]
 #[path = "ceilings/mod.rs"]
 pub(crate) mod ceilings;

@@ -1,12 +1,50 @@
-pub(crate) use {worth_foundational::aspects, worth_foundational::AspectContract, worth_foundational::AspectKey, worth_foundational::AspectValue, worth_foundational::InternedString, worth_foundational::ScalarAspectType};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::stability::LogicalDecodeSecurityScopeEntry, worth_store::physical_runtime::stability::PhysicalByteGuardScope, worth_store::physical_runtime::stability::StableReadSecurityScopePropagation, worth_store::physical_runtime::stability::StableReadSecurityScopePropagationInput};
-pub(crate) use {worth_store_aspect_native::StoreAspectAuthorityInput, worth_store_aspect_native::StoreAspectBoundaryFact, worth_store_aspect_native::StoreAspectIdentity, worth_store_aspect_native::StorePhysicalBoundaryWitness};
-pub(crate) use {worth_store_authority::require_current_store_authority, worth_store_authority::StoreCurrentAuthorityWitness};
-pub(crate) use {worth_store_contracts::StorePhysicalAuthorityWitness, worth_store_contracts::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE};
-pub(crate) use {worth_store_physical_format::PhysicalBinaryEncodingWitness, worth_store_physical_format::PhysicalDecodedHeader, worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalGenerationOwner, worth_store_physical_format::PhysicalHeaderAuthority, worth_store_physical_format::PhysicalHeaderDecodeWitness, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalPageKind, worth_store_physical_format::PhysicalRecordSlot, worth_store_physical_format::PhysicalSecurityMetadataEnvelope, worth_store_physical_format::PhysicalSegmentId, worth_store_physical_format::SegmentPageManifestEntry};
-pub(crate) use {worth_store_physical_isolation::StablePhysicalReadHandle};
-pub(crate) use {worth_store_security::admit_store_security_scope, worth_store_security::StoreCustodyPosture, worth_store_security::StoreKeyVersionPosture, worth_store_security::StoreLegacySecurityPosture, worth_store_security::StoreSecurityMetadata, worth_store_security::StoreSecurityScopeAdmissionRequest};
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store_physical_isolation::StablePhysicalReadHandle;
+pub(crate) use {
+    worth_foundational::aspects, worth_foundational::AspectContract, worth_foundational::AspectKey,
+    worth_foundational::AspectValue, worth_foundational::InternedString,
+    worth_foundational::ScalarAspectType,
+};
+pub(crate) use {
+    worth_store::physical_runtime::stability::LogicalDecodeSecurityScopeEntry,
+    worth_store::physical_runtime::stability::PhysicalByteGuardScope,
+    worth_store::physical_runtime::stability::StableReadSecurityScopePropagation,
+    worth_store::physical_runtime::stability::StableReadSecurityScopePropagationInput,
+};
+pub(crate) use {
+    worth_store_aspect_native::StoreAspectAuthorityInput,
+    worth_store_aspect_native::StoreAspectBoundaryFact,
+    worth_store_aspect_native::StoreAspectIdentity,
+    worth_store_aspect_native::StorePhysicalBoundaryWitness,
+};
+pub(crate) use {
+    worth_store_authority::require_current_store_authority,
+    worth_store_authority::StoreCurrentAuthorityWitness,
+};
+pub(crate) use {
+    worth_store_contracts::StorePhysicalAuthorityWitness,
+    worth_store_contracts::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
+};
+pub(crate) use {
+    worth_store_physical_format::PhysicalBinaryEncodingWitness,
+    worth_store_physical_format::PhysicalDecodedHeader,
+    worth_store_physical_format::PhysicalGeneration,
+    worth_store_physical_format::PhysicalGenerationAuthority,
+    worth_store_physical_format::PhysicalGenerationOwner,
+    worth_store_physical_format::PhysicalHeaderAuthority,
+    worth_store_physical_format::PhysicalHeaderDecodeWitness,
+    worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalPageKind,
+    worth_store_physical_format::PhysicalRecordSlot,
+    worth_store_physical_format::PhysicalSecurityMetadataEnvelope,
+    worth_store_physical_format::PhysicalSegmentId,
+    worth_store_physical_format::SegmentPageManifestEntry,
+};
+pub(crate) use {
+    worth_store_security::admit_store_security_scope, worth_store_security::StoreCustodyPosture,
+    worth_store_security::StoreKeyVersionPosture, worth_store_security::StoreLegacySecurityPosture,
+    worth_store_security::StoreSecurityMetadata,
+    worth_store_security::StoreSecurityScopeAdmissionRequest,
+};
 
 pub(crate) fn logical_decode_entry_for_handle(
     handle: &StablePhysicalReadHandle,
@@ -28,14 +66,15 @@ pub(crate) fn logical_decode_entry_for_handle_with_carrier_generation(
     identity: &str,
 ) -> LogicalDecodeSecurityScopeEntry {
     let owner = guard_scope.reference().owner();
-    let carrier_owner = worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
-        .slot_cell(
-            owner.segment_id().unwrap(),
-            owner.page_id().unwrap(),
-            owner.slot().unwrap(),
-        )
-        .with_slot_generation(generation(carrier_generation))
-        .owner();
+    let carrier_owner =
+        worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
+            .slot_cell(
+                owner.segment_id().unwrap(),
+                owner.page_id().unwrap(),
+                owner.slot().unwrap(),
+            )
+            .with_slot_generation(generation(carrier_generation))
+            .owner();
     logical_decode_entry_for_sources(handle, guard_scope, carrier_owner, carrier_owner, identity)
 }
 
@@ -48,25 +87,33 @@ pub(crate) fn logical_decode_entry_for_sources(
 ) -> LogicalDecodeSecurityScopeEntry {
     let metadata = platform_page_metadata(identity);
     let page_decode = decoded_page_header(page_owner);
-    let worth_store_physical_format::PhysicalDecodedHeader::Page(header) = page_decode.header() else {
+    let worth_store_physical_format::PhysicalDecodedHeader::Page(header) = page_decode.header()
+    else {
         panic!("page header");
     };
-    let page = worth_store_physical_format::PhysicalSecurityMetadataEnvelope::page_header(header, metadata);
-    let manifest = worth_store_physical_format::PhysicalSecurityMetadataEnvelope::segment_page_manifest_entry(
-        segment_page_entry(manifest_owner),
-        metadata,
+    let page = worth_store_physical_format::PhysicalSecurityMetadataEnvelope::page_header(
+        header, metadata,
     );
-    let input = worth_store::physical_runtime::stability::StableReadSecurityScopePropagationInput::new(
-        handle,
-        guard_scope,
-        &page,
-        page_decode,
-        &manifest,
-    );
-    let propagation = match worth_store::physical_runtime::stability::StableReadSecurityScopePropagation::protect(input) {
-        worth_proof::TransitionOutcome::Success(propagation) => propagation,
-        other => panic!("stable-read security scope should propagate: {other:?}"),
-    };
+    let manifest =
+        worth_store_physical_format::PhysicalSecurityMetadataEnvelope::segment_page_manifest_entry(
+            segment_page_entry(manifest_owner),
+            metadata,
+        );
+    let input =
+        worth_store::physical_runtime::stability::StableReadSecurityScopePropagationInput::new(
+            handle,
+            guard_scope,
+            &page,
+            page_decode,
+            &manifest,
+        );
+    let propagation =
+        match worth_store::physical_runtime::stability::StableReadSecurityScopePropagation::protect(
+            input,
+        ) {
+            worth_proof::TransitionOutcome::Success(propagation) => propagation,
+            other => panic!("stable-read security scope should propagate: {other:?}"),
+        };
     let observed = match propagation.observe_after_root_check(handle.plan().root()) {
         worth_proof::TransitionOutcome::Success(observed) => observed,
         other => panic!("stable-read security scope should observe root: {other:?}"),
@@ -94,31 +141,43 @@ pub(crate) fn platform_page_metadata(identity: &str) -> StoreSecurityMetadata {
 }
 
 pub(crate) fn decoded_page_header(owner: PhysicalGenerationOwner) -> PhysicalHeaderDecodeWitness {
-    let cell = worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
-        .page_cell(owner.segment_id().unwrap(), owner.page_id().unwrap())
-        .with_page_generation(owner.generation());
-    let authority = worth_store_physical_format::PhysicalHeaderAuthority::for_canonical_physical_format(
-        worth_store_physical_format::PhysicalBinaryEncodingWitness::physical_format_canonical().unwrap(),
-    );
+    let cell =
+        worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
+            .page_cell(owner.segment_id().unwrap(), owner.page_id().unwrap())
+            .with_page_generation(owner.generation());
+    let authority =
+        worth_store_physical_format::PhysicalHeaderAuthority::for_canonical_physical_format(
+            worth_store_physical_format::PhysicalBinaryEncodingWitness::physical_format_canonical()
+                .unwrap(),
+        );
     let payload = b"page";
     let mut encoded = authority
-        .encode_page_header(cell, worth_store_physical_format::PhysicalPageKind::DataPage, payload.len() as u32)
+        .encode_page_header(
+            cell,
+            worth_store_physical_format::PhysicalPageKind::DataPage,
+            payload.len() as u32,
+        )
         .to_vec();
     encoded.extend_from_slice(payload);
     let report = authority
-        .decode_page_header(cell, &encoded, worth_store_physical_format::PhysicalPageKind::DataPage)
+        .decode_page_header(
+            cell,
+            &encoded,
+            worth_store_physical_format::PhysicalPageKind::DataPage,
+        )
         .unwrap();
     report.witness()
 }
 
 pub(crate) fn segment_page_entry(owner: PhysicalGenerationOwner) -> SegmentPageManifestEntry {
-    let cell = worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
-        .slot_cell(
-            owner.segment_id().unwrap(),
-            owner.page_id().unwrap(),
-            owner.slot().unwrap(),
-        )
-        .with_slot_generation(owner.generation());
+    let cell =
+        worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
+            .slot_cell(
+                owner.segment_id().unwrap(),
+                owner.page_id().unwrap(),
+                owner.slot().unwrap(),
+            )
+            .with_slot_generation(owner.generation());
     worth_store_physical_format::SegmentPageManifestEntry::new(cell)
 }
 
@@ -139,7 +198,10 @@ pub(crate) fn boundary_fact(identity_key: &str, value: &str) -> StoreAspectBound
 
     worth_store_aspect_native::StoreAspectBoundaryFact::from_admitted_state(
         worth_store_aspect_native::StoreAspectIdentity::from_aspect_key(key),
-        worth_store_aspect_native::StoreAspectAuthorityInput::new(admitted_state, physical_witness()),
+        worth_store_aspect_native::StoreAspectAuthorityInput::new(
+            admitted_state,
+            physical_witness(),
+        ),
     )
     .expect("Store boundary fact should admit matching identity")
 }
@@ -164,8 +226,9 @@ pub(crate) fn validated_scalar_value(
     match aspects()
         .validate()
         .against(contract)
-        .value(worth_foundational::AspectValue::String(worth_foundational::InternedString::from(raw_value)))
-    {
+        .value(worth_foundational::AspectValue::String(
+            worth_foundational::InternedString::from(raw_value),
+        )) {
         worth_proof::TransitionOutcome::Success(value) => value,
         outcome => panic!("validation should succeed: {outcome:?}"),
     }

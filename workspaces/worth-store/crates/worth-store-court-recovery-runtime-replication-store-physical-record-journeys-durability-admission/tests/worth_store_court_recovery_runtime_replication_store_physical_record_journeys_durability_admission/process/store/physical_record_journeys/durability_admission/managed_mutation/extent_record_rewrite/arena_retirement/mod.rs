@@ -1,8 +1,6 @@
 #[allow(unused_imports)] use crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::arena_retirement::*;
-use {worth_store_testkit_store::durability_admission::independent_wal_oracle::copy_intent::produced_copy_intents, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetiredKind, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetirementAction};
-use {std::path::Path, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::ServingPhysicalRuntime, crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::arena_retirement_crash, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route, crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::evacuation, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::read_record, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::request};
-use {worth_store::physical_runtime::ArenaEvacuationThreshold, worth_store::physical_runtime::ExtentArenaCapacity, worth_store::physical_runtime::PhysicalArenaEvacuationPreparationOutcome, worth_store::physical_runtime::PhysicalExtentCopyPhase, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordPlacementPolicy};
-use {worth_store_physical_format::RecordArtifactFile};
+use {worth_store_testkit_store::durability_admission::independent_wal_oracle::copy_intent::produced_copy_intents, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads};
+use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::request};
 
 #[test]
 fn selected_copy_releases_its_entire_source_arena() {
@@ -10,20 +8,26 @@ fn selected_copy_releases_its_entire_source_arena() {
     let root = parent.path().join("store");
     let (format, _, access) = configuration();
     let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
-        .arena_capacity(worth_store::physical_runtime::ExtentArenaCapacity::bytes(64 << 20).unwrap())
-        .arena_evacuation(worth_store::physical_runtime::ArenaEvacuationThreshold::percent(99).unwrap())
+        .arena_capacity(
+            worth_store::physical_runtime::ExtentArenaCapacity::bytes(64 << 20).unwrap(),
+        )
+        .arena_evacuation(
+            worth_store::physical_runtime::ArenaEvacuationThreshold::percent(99).unwrap(),
+        )
         .admit(format)
         .unwrap();
     let media = worth_store_testkit_store::physical_record_journeys::media(&root);
     let durability = crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::evacuation::fill_durability(&media);
     let serving = worth_store_testkit_store::physical_record_journeys::success(
-        media.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
-            format, placement, access, durability,
-        )),
+        media.initialize_record_store(
+            worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                format, placement, access, durability,
+            ),
+        ),
     );
-    let arena = root
-        .join("families/records/arenas")
-        .join(worth_store_physical_format::RecordArtifactFile::ExtentArena { arena: 1 }.file_name());
+    let arena = root.join("families/records/arenas").join(
+        worth_store_physical_format::RecordArtifactFile::ExtentArena { arena: 1 }.file_name(),
+    );
     let payload = vec![91; 40_000];
     let append = completed(prepare(&serving, placement, [21; 32], &payload).execute());
     let identity = append.persisted_records()[0];
@@ -36,7 +40,9 @@ fn selected_copy_releases_its_entire_source_arena() {
     let submission = serving.record_submission();
     let before = serving.physical_work_counters();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([22; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([22; 32]),
+        )
         .unwrap();
     let Ok(mut progress) = submission
         .certification_begin_selected_extent_copy(placement, request(key), identity)
@@ -46,16 +52,23 @@ fn selected_copy_releases_its_entire_source_arena() {
     };
     let mut foreground_progress = false;
     for _ in 0..1000 {
-        if progress.phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption {
+        if progress.phase
+            == worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+        {
             break;
         }
-        if progress.phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::Copying && !foreground_progress {
+        if progress.phase == worth_store::physical_runtime::PhysicalExtentCopyPhase::Copying
+            && !foreground_progress
+        {
             completed(prepare(&serving, placement, [24; 32], &[17; 4096]).execute());
             foreground_progress = true;
         }
         progress = submission.advance_extent_copy().unwrap();
     }
-    assert_eq!(progress.phase, worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption);
+    assert_eq!(
+        progress.phase,
+        worth_store::physical_runtime::PhysicalExtentCopyPhase::ReadyForAdoption
+    );
     assert!(
         foreground_progress,
         "ordinary foreground publication advances while copying"
@@ -86,10 +99,15 @@ fn selected_copy_releases_its_entire_source_arena() {
     let session = reader
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
-    assert_eq!(worth_store_testkit_store::physical_record_journeys::read_record(session, payload.len()).0, payload);
+    assert_eq!(
+        worth_store_testkit_store::physical_record_journeys::read_record(session, payload.len()).0,
+        payload
+    );
     drop(reader);
     assert!(arena.exists());
     let checkpoint = crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::evacuation::copy_checkpoint(&serving, 1);
@@ -154,7 +172,9 @@ fn selected_copy_releases_its_entire_source_arena() {
     let serving = reopen_with_copy_policy(&root);
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([23; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([23; 32]),
+        )
         .unwrap();
     let outcome = submission
         .prepare_arena_evacuation(placement, request(key))
@@ -177,9 +197,14 @@ fn selected_copy_releases_its_entire_source_arena() {
     let session = reader
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(payload.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
-    assert_eq!(worth_store_testkit_store::physical_record_journeys::read_record(session, payload.len()).0, payload);
+    assert_eq!(
+        worth_store_testkit_store::physical_record_journeys::read_record(session, payload.len()).0,
+        payload
+    );
     reopened.close();
 }

@@ -1,9 +1,19 @@
-pub use {worth_foundational::performance, worth_foundational::FoundationalPerformanceAccessPatternPosture, worth_foundational::FoundationalPerformanceBoundary, worth_foundational::FoundationalPerformanceBreadthLocalityPosture, worth_foundational::FoundationalPerformanceBudgetKind, worth_foundational::FoundationalPerformanceEvidenceStrength, worth_foundational::FoundationalPerformanceExecutionTemperature, worth_foundational::FoundationalPerformanceFallbackDebtPosture, worth_foundational::FoundationalPerformanceFreshnessRetentionPosture, worth_foundational::FoundationalPerformanceWorkClass, worth_foundational::FoundationalPolicyAdmissionReceipt};
-pub use {worth_store_io_scheduler::BackgroundResourceBudget};
+pub use worth_store_io_scheduler::BackgroundResourceBudget;
+pub use {
+    worth_foundational::performance,
+    worth_foundational::FoundationalPerformanceAccessPatternPosture,
+    worth_foundational::FoundationalPerformanceBoundary,
+    worth_foundational::FoundationalPerformanceBreadthLocalityPosture,
+    worth_foundational::FoundationalPerformanceBudgetKind,
+    worth_foundational::FoundationalPerformanceEvidenceStrength,
+    worth_foundational::FoundationalPerformanceExecutionTemperature,
+    worth_foundational::FoundationalPerformanceFallbackDebtPosture,
+    worth_foundational::FoundationalPerformanceFreshnessRetentionPosture,
+    worth_foundational::FoundationalPerformanceWorkClass,
+    worth_foundational::FoundationalPolicyAdmissionReceipt,
+};
 
-pub fn policy_receipt(
-    budget: BackgroundResourceBudget,
-) -> FoundationalPolicyAdmissionReceipt {
+pub fn policy_receipt(budget: BackgroundResourceBudget) -> FoundationalPolicyAdmissionReceipt {
     policy_receipt_with_breadth_delta(budget, 0)
 }
 
@@ -49,11 +59,21 @@ pub fn policy_receipt_with_breadth_posture(
         .claim()
         .policy_admission()
         .boundary(worth_foundational::FoundationalPerformanceBoundary::AuthoritativeExecution)
-        .evidence_strength(worth_foundational::FoundationalPerformanceEvidenceStrength::RuntimePolicyAdmission)
-        .breadth_locality(worth_foundational::FoundationalPerformanceBreadthLocalityPosture::DeltaBound)
-        .access_pattern(worth_foundational::FoundationalPerformanceAccessPatternPosture::PointLookup)
-        .execution_temperature(worth_foundational::FoundationalPerformanceExecutionTemperature::HotPath)
-        .freshness_retention(worth_foundational::FoundationalPerformanceFreshnessRetentionPosture::ExactBasisCurrent)
+        .evidence_strength(
+            worth_foundational::FoundationalPerformanceEvidenceStrength::RuntimePolicyAdmission,
+        )
+        .breadth_locality(
+            worth_foundational::FoundationalPerformanceBreadthLocalityPosture::DeltaBound,
+        )
+        .access_pattern(
+            worth_foundational::FoundationalPerformanceAccessPatternPosture::PointLookup,
+        )
+        .execution_temperature(
+            worth_foundational::FoundationalPerformanceExecutionTemperature::HotPath,
+        )
+        .freshness_retention(
+            worth_foundational::FoundationalPerformanceFreshnessRetentionPosture::ExactBasisCurrent,
+        )
         .fallback_debt(worth_foundational::FoundationalPerformanceFallbackDebtPosture::Verified)
         .include_work(work_class)
         .exclude_work(worth_foundational::FoundationalPerformanceWorkClass::SupportReportAssembly)
@@ -84,7 +104,8 @@ pub fn policy_receipt_with_breadth_posture(
         if units == 0 {
             receipt
         } else {
-            let admitted = if exhaust_breadth && kind == worth_foundational::FoundationalPerformanceBudgetKind::Breadth
+            let admitted = if exhaust_breadth
+                && kind == worth_foundational::FoundationalPerformanceBudgetKind::Breadth
             {
                 0
             } else {

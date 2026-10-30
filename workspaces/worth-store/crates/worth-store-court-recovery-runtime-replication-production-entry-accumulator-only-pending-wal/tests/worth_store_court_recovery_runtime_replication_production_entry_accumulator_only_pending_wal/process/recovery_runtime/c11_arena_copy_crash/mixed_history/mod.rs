@@ -1,12 +1,15 @@
-#[allow(unused_imports)] use crate::c11_arena_copy_crash::mixed_history::*;
-use {std::process::Command, std::time::Duration, worth_store_testkit_recovery_runtime::support::EXTENT_BYTES, std::time::Instant, std::path::Path, std::path::PathBuf, worth_store_physical_format::PersistedRecordIdentity, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff, worth_store::physical_runtime::ServingPhysicalRuntime, std::process::Stdio, worth_store_testkit_recovery_runtime::support::configuration, worth_store_testkit_recovery_runtime::support::generation, crate::c11_arena_copy_crash::kill_after_final_wal, crate::c11_arena_copy_crash::load_identity, worth_store_testkit_recovery_runtime::support::observe_arena_in_separate_process, crate::c11_arena_copy_crash::observation::observe_copy_media, worth_store_testkit_recovery_runtime::support::open, worth_store_testkit_recovery_runtime::support::read_record, crate::c11_arena_copy_crash::recover, worth_store_testkit_recovery_runtime::support::scan, crate::c11_arena_copy_crash::selected_extent, std::thread};
-use {std::num::NonZeroU64};
-use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint, worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReadOpenFailure, worth_store::physical_runtime::LayoutRebuildLimits, worth_store::physical_runtime::PhysicalLayoutDenial, worth_store::physical_runtime::RecordCountLimit, worth_store::physical_runtime::RecordScanOutcome, worth_store::physical_runtime::RecordScanRequest};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_contracts::DurableArtifactFamilyId};
-
-
-use {crate::copy_frame};
+#[allow(unused_imports)]
+use crate::c11_arena_copy_crash::mixed_history::*;
+use {
+    crate::c11_arena_copy_crash::kill_after_final_wal, crate::c11_arena_copy_crash::load_identity,
+    crate::c11_arena_copy_crash::observation::observe_copy_media,
+    crate::c11_arena_copy_crash::recover, crate::c11_arena_copy_crash::selected_extent,
+    worth_store_testkit_recovery_runtime::support::configuration,
+    worth_store_testkit_recovery_runtime::support::generation,
+    worth_store_testkit_recovery_runtime::support::observe_arena_in_separate_process,
+    worth_store_testkit_recovery_runtime::support::open,
+    worth_store_testkit_recovery_runtime::support::EXTENT_BYTES,
+};
 
 #[test]
 fn selected_current_source_copy_and_blob_generation_recover_together() {
@@ -72,17 +75,21 @@ fn selected_current_source_copy_and_blob_generation_recover_together() {
     let serving = open(&root);
     assert_eq!(read_copied_record(&serving, record), vec![93; EXTENT_BYTES]);
     let scope = crate::mixed_history::blob_scope::admitted_blob_scope();
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(1024).unwrap());
+    let limits = worth_store::physical_runtime::BlobReadLimits::new(
+        std::num::NonZeroU64::new(1024).unwrap(),
+    );
     let blobs = serving.blobs().unwrap();
     let latest = serving
         .certification_selected_latest_blob_publication()
         .unwrap()
         .expect("C8 must restore the selected blob generation publication");
     let stale_latest = match blobs.resolve_publication(object, 1, &scope, limits) {
-        Err(worth_store::physical_runtime::BlobReadOpenFailure::Layout(worth_store::physical_runtime::PhysicalLayoutDenial::IndexStaleRequiresRebuild {
-            latest,
-            indexed: None,
-        })) => latest,
+        Err(worth_store::physical_runtime::BlobReadOpenFailure::Layout(
+            worth_store::physical_runtime::PhysicalLayoutDenial::IndexStaleRequiresRebuild {
+                latest,
+                indexed: None,
+            },
+        )) => latest,
         other => panic!("recovered publication must precede derived-index rebuild: {other:?}"),
     };
     assert_eq!(stale_latest, latest);
@@ -96,7 +103,8 @@ fn selected_current_source_copy_and_blob_generation_recover_together() {
                 std::num::NonZeroU64::new(1024).unwrap(),
             ),
             configuration().1,
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                .unwrap(),
         )
         .expect("Store must rebuild the derived catalog from selected publication authority");
     assert_eq!(rebuilt.source(), latest);
@@ -143,7 +151,9 @@ fn blob_child() {
     let root = directory.join("store");
     let serving = open(&root);
     let scope = crate::mixed_history::blob_scope::admitted_blob_scope();
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(1024).unwrap());
+    let limits = worth_store::physical_runtime::BlobReadLimits::new(
+        std::num::NonZeroU64::new(1024).unwrap(),
+    );
     let blobs = serving.blobs().unwrap();
     let object = blobs.issue_object_id(limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
@@ -152,7 +162,8 @@ fn blob_child() {
         CHUNK_BYTES as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(1024).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs

@@ -4,23 +4,8 @@
 //! and a bounded real redo prefix. Three recoveries, continuation and fresh
 //! identity allocation must then agree with the same memory-only reference.
 
-#[allow(unused_imports)] use crate::recovery_interruption::*;
-use {std::fs};
-use {std::ffi::OsString, std::num::NonZeroU64, std::path::PathBuf};
-
-use {worth_execution::ExecutionRequest};
-use {worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam};
-use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-use {worth_store::physical_runtime::production::PhysicalCheckpointStep};
-use {worth_store::physical_runtime::PhysicalRecoveryProcessYieldpoint, worth_store::physical_runtime::PhysicalRecoveryYieldpointStage as Stage};
-use {worth_store_relational::RelationalStoreCertificationProfile, worth_store_relational::RelationalStoreHome, worth_store_relational::RelationalStoreHomeRequest};
-
-use {crate::crash_oracle::assert_continues, crate::crash_oracle::assert_recovered, crate::crash_oracle::InFlight};
-use {crate::durable_run::assert_holds, crate::durable_run::open, crate::durable_run::recorded_schema};
-use {crate::killed_child, crate::killed_child::ChildEnd};
-use {crate::process_kill, crate::process_kill::Stop, crate::process_kill::SEED};
-use {crate::schema_transition};
-use {crate::workload};
+#[allow(unused_imports)]
+use crate::recovery_interruption::*;
 
 #[test]
 fn a_recovery_killed_at_each_of_its_stages_recovers_the_same_home_three_times() {
@@ -29,12 +14,18 @@ fn a_recovery_killed_at_each_of_its_stages_recovers_the_same_home_three_times() 
     let execution = worth_execution::ExecutionRequest::serial(&request);
     for stage in STAGES {
         assert_eq!(STAGES[asserted_stage_index(stage)], stage);
-        if matches!(stage, worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::CleanupFreshnessRead | worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::CleanupRemoval) {
+        if matches!(
+            stage,
+            worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::CleanupFreshnessRead
+                | worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::CleanupRemoval
+        ) {
             // A checkpoint published before the serving runtime reclaims WAL
             // leaves real whole covered segments for recovery to remove.
             let bytes = std::num::NonZeroU64::new(512 << 10).unwrap();
-            worth_store_relational::RelationalStoreCertificationProfile::with_wal_segment_bytes(bytes)
-                .run(|| prove_stage(stage, &script, &execution, Some(bytes)));
+            worth_store_relational::RelationalStoreCertificationProfile::with_wal_segment_bytes(
+                bytes,
+            )
+            .run(|| prove_stage(stage, &script, &execution, Some(bytes)));
         } else {
             prove_stage(stage, &script, &execution, None);
         }

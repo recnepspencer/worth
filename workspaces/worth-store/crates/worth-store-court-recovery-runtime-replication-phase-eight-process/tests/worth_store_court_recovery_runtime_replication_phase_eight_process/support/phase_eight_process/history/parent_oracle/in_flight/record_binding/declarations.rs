@@ -1,13 +1,12 @@
-pub(crate) use {std::collections::BTreeMap};
+pub(crate) use std::collections::BTreeMap;
 
 pub(crate) use {sha2::Digest, sha2::Sha256};
 
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::canonical_membership::ExpectedCanonicalRecord};
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity};
+pub(crate) use crate::phase_eight_process::history::parent_oracle::canonical_membership::ExpectedCanonicalRecord;
+pub(crate) use crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity;
 
 pub(crate) const REDO_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
 pub(crate) const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v16";
-
 
 pub(crate) use {crate::phase_eight_process::history::parent_oracle::in_flight::record_binding::operation::inspect_operation};
 
@@ -39,7 +38,8 @@ pub(crate) fn require_bound_record(
     payload: &[u8],
     expected_redo_digest: Option<&[u8; 32]>,
 ) -> Result<(), String> {
-    let selected = crate::phase_eight_process::history::parent_oracle::selected_basis::select(files)?;
+    let selected =
+        crate::phase_eight_process::history::parent_oracle::selected_basis::select(files)?;
     let mut matches = 0;
     for (_, bytes) in selected {
         if bytes.starts_with(b"WORTHWAL") {
@@ -74,29 +74,43 @@ pub(crate) fn scan_wal(
             .ok_or_else(|| "parent oracle found an invalid WAL payload length".to_owned())?;
         let total = crate::history::parent_oracle::in_flight::WAL_HEADER_BYTES
             .checked_add(payload_bytes)
-            .and_then(|value| value.checked_add(crate::history::parent_oracle::in_flight::WAL_FOOTER_BYTES))
+            .and_then(|value| {
+                value.checked_add(crate::history::parent_oracle::in_flight::WAL_FOOTER_BYTES)
+            })
             .ok_or_else(|| "parent oracle WAL frame length overflowed".to_owned())?;
         let frame = bytes
             .get(offset..offset + total)
             .ok_or_else(|| "parent oracle found a truncated WAL frame".to_owned())?;
-        let frame_payload =
-            &frame[crate::history::parent_oracle::in_flight::WAL_HEADER_BYTES..crate::history::parent_oracle::in_flight::WAL_HEADER_BYTES + payload_bytes];
+        let frame_payload = &frame[crate::history::parent_oracle::in_flight::WAL_HEADER_BYTES
+            ..crate::history::parent_oracle::in_flight::WAL_HEADER_BYTES + payload_bytes];
         if sha2::Sha256::digest(frame_payload)[..] != header[84..116]
-            || sha2::Sha256::digest(&frame[..crate::history::parent_oracle::in_flight::WAL_HEADER_BYTES + payload_bytes])[..]
-                != frame[crate::history::parent_oracle::in_flight::WAL_HEADER_BYTES + payload_bytes..]
+            || sha2::Sha256::digest(
+                &frame
+                    [..crate::history::parent_oracle::in_flight::WAL_HEADER_BYTES + payload_bytes],
+            )[..]
+                != frame
+                    [crate::history::parent_oracle::in_flight::WAL_HEADER_BYTES + payload_bytes..]
         {
             return Err("parent oracle rejected a WAL frame checksum".to_owned());
         }
-        let (binding, remaining) = crate::history::parent_oracle::in_flight::take_field(frame_payload)?;
+        let (binding, remaining) =
+            crate::history::parent_oracle::in_flight::take_field(frame_payload)?;
         let (redo, remaining) = crate::history::parent_oracle::in_flight::take_field(remaining)?;
         if !remaining.is_empty() {
             return Err("parent oracle found trailing WAL member payload".to_owned());
         }
-        if crate::history::parent_oracle::in_flight::binding_matches(binding, idempotency, Some(redo))
-            && redo_contains_record(redo, record, payload)?
+        if crate::history::parent_oracle::in_flight::binding_matches(
+            binding,
+            idempotency,
+            Some(redo),
+        ) && redo_contains_record(redo, record, payload)?
             && expected_redo_digest.is_none_or(|expected| {
-                crate::history::parent_oracle::in_flight::binding_redo_digest(binding, idempotency, Some(redo))
-                    .is_some_and(|observed| observed == *expected)
+                crate::history::parent_oracle::in_flight::binding_redo_digest(
+                    binding,
+                    idempotency,
+                    Some(redo),
+                )
+                .is_some_and(|observed| observed == *expected)
             })
         {
             matches += 1;

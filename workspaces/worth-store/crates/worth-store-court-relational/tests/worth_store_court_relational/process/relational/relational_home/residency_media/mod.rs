@@ -1,14 +1,13 @@
 //! Ordinary home reads distinguish unavailable members from absent records.
-#[allow(unused_imports)] use crate::residency_media::*;
-use {crate::durable_run, crate::open_refusals, crate::residency_fixture::Fixture, crate::selected_checkpoint, crate::workload};
-use {worth_execution::ExecutionRequest};
-use {worth_relational::facade::mvcc::RelationalTransactionIntent, worth_relational::facade::mvcc::RelationalTransactionReadDenial, worth_relational::facade::storage::RelationalStorageSubject, worth_relational::facade::storage::RelationalStorageUnavailableCause, worth_relational::facade::transactions::RecordRef};
-use {worth_store::physical_runtime::AnchoredRecordMember, worth_store::physical_runtime::AnchoredRecordName, worth_store::physical_runtime::AnchoredRecordPublication, worth_store::physical_runtime::AnchoredRecordsDenial, worth_store::physical_runtime::PhysicalMutationDeadline};
-use {worth_store_relational::RelationalStoreHome};
+#[allow(unused_imports)]
+use crate::residency_media::*;
 
 #[test]
 fn missing_and_stale_member_locators_damage_only_their_region_and_never_answer_empty() {
-    for fault in [crate::residency_media::DirectoryFault::Missing, crate::residency_media::DirectoryFault::Stale] {
+    for fault in [
+        crate::residency_media::DirectoryFault::Missing,
+        crate::residency_media::DirectoryFault::Stale,
+    ] {
         let host = crate::workload::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let fixture = crate::residency_fixture::Fixture::new(&execution);
@@ -29,7 +28,10 @@ fn missing_and_stale_member_locators_damage_only_their_region_and_never_answer_e
         let home = crate::durable_run::open(&location, &execution).unwrap();
         assert_eq!(home.cold_storage_reads().member_reads, 0);
         let records = home.certification_serving().anchored_records().unwrap();
-        let anchor = worth_store::physical_runtime::AnchoredRecordName::new(crate::selected_checkpoint::ANCHOR).unwrap();
+        let anchor = worth_store::physical_runtime::AnchoredRecordName::new(
+            crate::selected_checkpoint::ANCHOR,
+        )
+        .unwrap();
         let selected = records.read(anchor, 1 << 30).unwrap().unwrap();
         let (target, bytes) = region_head(&home);
         let publish = |members| {
@@ -50,7 +52,11 @@ fn missing_and_stale_member_locators_damage_only_their_region_and_never_answer_e
             .members()
             .iter()
             .filter(|member| **member != target)
-            .map(|locator| worth_store::physical_runtime::AnchoredRecordMember::Carried { locator: *locator })
+            .map(
+                |locator| worth_store::physical_runtime::AnchoredRecordMember::Carried {
+                    locator: *locator,
+                },
+            )
             .collect::<Vec<_>>();
         if let Some(stale) = stale {
             // An actual earlier head from this partition cannot answer a
@@ -64,12 +70,17 @@ fn missing_and_stale_member_locators_damage_only_their_region_and_never_answer_e
         }
         publish(members);
         let failure = read(&home, &fixture.records[0], &execution).unwrap_err();
-        let worth_relational::facade::mvcc::RelationalTransactionReadDenial::StorageUnavailable(unavailable) = failure else {
+        let worth_relational::facade::mvcc::RelationalTransactionReadDenial::StorageUnavailable(
+            unavailable,
+        ) = failure
+        else {
             panic!("{failure:?}")
         };
         assert_eq!(
             unavailable.subject,
-            worth_relational::facade::storage::RelationalStorageSubject::Region(worth_relational::facade::identity::PartitionId(1))
+            worth_relational::facade::storage::RelationalStorageSubject::Region(
+                worth_relational::facade::identity::PartitionId(1)
+            )
         );
         assert_eq!(
             unavailable.cause,
@@ -102,7 +113,9 @@ fn missing_and_stale_member_locators_damage_only_their_region_and_never_answer_e
                         bytes: bytes.clone(),
                     }
                 } else {
-                    worth_store::physical_runtime::AnchoredRecordMember::Carried { locator: *locator }
+                    worth_store::physical_runtime::AnchoredRecordMember::Carried {
+                        locator: *locator,
+                    }
                 }
             })
             .collect();
@@ -134,7 +147,9 @@ fn a_damaged_member_in_store_files_is_a_sticky_typed_refusal_after_reopen() {
         .page_size()
         .bytes();
     let records = home.certification_serving().anchored_records().unwrap();
-    let anchor = worth_store::physical_runtime::AnchoredRecordName::new(crate::selected_checkpoint::ANCHOR).unwrap();
+    let anchor =
+        worth_store::physical_runtime::AnchoredRecordName::new(crate::selected_checkpoint::ANCHOR)
+            .unwrap();
     let selected = records.read(anchor, 1 << 30).unwrap().unwrap();
     assert!(
         selected
@@ -157,7 +172,9 @@ fn a_damaged_member_in_store_files_is_a_sticky_typed_refusal_after_reopen() {
             .unwrap()
             .map(|entry| entry.unwrap().path())
             .filter(|path| path.file_name().unwrap() != "wal")
-            .map(|path| crate::open_refusals::flip_after(&path, pattern, pattern.len() - 1, &|_| true))
+            .map(|path| {
+                crate::open_refusals::flip_after(&path, pattern, pattern.len() - 1, &|_| true)
+            })
             .sum()
     };
     let flipped = flip_data(&bytes);
@@ -168,12 +185,17 @@ fn a_damaged_member_in_store_files_is_a_sticky_typed_refusal_after_reopen() {
     let home = crate::durable_run::open(&location, &execution).unwrap();
     assert_eq!(home.cold_storage_reads().member_reads, 0);
     let first = read(&home, &fixture.records[0], &execution).unwrap_err();
-    let worth_relational::facade::mvcc::RelationalTransactionReadDenial::StorageUnavailable(failure) = first else {
+    let worth_relational::facade::mvcc::RelationalTransactionReadDenial::StorageUnavailable(
+        failure,
+    ) = first
+    else {
         panic!("{first:?}")
     };
     assert_eq!(
         failure.subject,
-        worth_relational::facade::storage::RelationalStorageSubject::Region(worth_relational::facade::identity::PartitionId(1))
+        worth_relational::facade::storage::RelationalStorageSubject::Region(
+            worth_relational::facade::identity::PartitionId(1)
+        )
     );
     assert!(
         matches!(
@@ -197,12 +219,17 @@ fn a_damaged_member_in_store_files_is_a_sticky_typed_refusal_after_reopen() {
         Err(worth_store::physical_runtime::AnchoredRecordsDenial::ServingRequiresInspection)
     ));
     let other = read(&home, &fixture.records[23], &execution).unwrap_err();
-    let worth_relational::facade::mvcc::RelationalTransactionReadDenial::StorageUnavailable(unavailable) = &other else {
+    let worth_relational::facade::mvcc::RelationalTransactionReadDenial::StorageUnavailable(
+        unavailable,
+    ) = &other
+    else {
         panic!("{other:?}")
     };
     assert_eq!(
         unavailable.subject,
-        worth_relational::facade::storage::RelationalStorageSubject::Region(worth_relational::facade::identity::PartitionId(24))
+        worth_relational::facade::storage::RelationalStorageSubject::Region(
+            worth_relational::facade::identity::PartitionId(24)
+        )
     );
     assert_eq!(
         unavailable.cause,

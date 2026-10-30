@@ -1632,7 +1632,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-store-court-recovery-runtime"
+name = "worth-store-court-recovery-runtime-replication"
 version = "0.1.0"
 dependencies = [
  "trybuild",
@@ -1859,7 +1859,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-store-court-store-entry"
+name = "worth-store-court-store"
 version = "0.1.0"
 dependencies = [
  "stats_alloc",
@@ -1869,7 +1869,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-store-court-store-physical-blob-journeys"
+name = "worth-store-court-store-replication"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "worth-foundational",
+ "worth-proof",
+ "worth-signal",
+ "worth-store",
+ "worth-store-io-scheduler",
+ "worth-store-offline-verifier",
+ "worth-store-physical-backend",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-store",
+]
+
+[[package]]
+name = "worth-store-court-store-replication-physical-blob-journeys"
 version = "0.1.0"
 dependencies = [
  "serde_json",
@@ -1895,7 +1916,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-store-court-store-physical-record-journeys-durability-admission"
+name = "worth-store-court-store-replication-physical-record-journeys-durability-admission"
 version = "0.1.0"
 dependencies = [
  "sha2",
@@ -1916,7 +1937,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-store-court-store-physical-record-journeys-physical-work"
+name = "worth-store-court-store-replication-physical-record-journeys-physical-work"
 version = "0.1.0"
 dependencies = [
  "sha2",
@@ -1933,27 +1954,6 @@ dependencies = [
  "worth-store-physical-format",
  "worth-store-physical-integrity",
  "worth-store-security",
- "worth-store-testkit-executables",
- "worth-store-testkit-store",
-]
-
-[[package]]
-name = "worth-store-court-store-replication"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "worth-foundational",
- "worth-proof",
- "worth-signal",
- "worth-store",
- "worth-store-io-scheduler",
- "worth-store-offline-verifier",
- "worth-store-physical-backend",
- "worth-store-physical-format",
- "worth-store-physical-integrity",
  "worth-store-testkit-executables",
  "worth-store-testkit-store",
 ]

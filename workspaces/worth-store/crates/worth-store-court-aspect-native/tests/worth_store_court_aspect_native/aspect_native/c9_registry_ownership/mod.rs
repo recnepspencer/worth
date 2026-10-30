@@ -2,10 +2,7 @@ use std::collections::HashSet;
 
 use worth_store_aspect_native::{
     canonical_basis_source_owner_for_family, certify_canonical_basis_field_role,
-    certify_canonical_basis_source, StoreCanonicalBasisFamily as Family,
-    StoreCanonicalBasisFieldRole as Field, StoreCanonicalBasisLane as Lane,
-    StoreCanonicalBasisSourceDenial as Denial, StoreCanonicalBasisSourceKind as Source,
-    STORE_CANONICAL_BASIS_SOURCE_OWNERS,
+    certify_canonical_basis_source, STORE_CANONICAL_BASIS_SOURCE_OWNERS,
 };
 
 #[test]

@@ -1,4 +1,8 @@
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::in_flight::record_binding::projection_contains_record, crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity, crate::phase_eight_process::history::parent_oracle::in_flight::record_binding::CURRENT_PROJECTION_DOMAIN};
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity,
+    crate::phase_eight_process::history::parent_oracle::in_flight::record_binding::projection_contains_record,
+    crate::phase_eight_process::history::parent_oracle::in_flight::record_binding::CURRENT_PROJECTION_DOMAIN,
+};
 
 pub(crate) fn record() -> RecordIdentity {
     RecordIdentity {

@@ -4,9 +4,28 @@
 
 pub(crate) use {std::fs, std::num::NonZeroU64, std::path::Path};
 
+pub(crate) use worth_store_recovery_physics::decode_physical_redo_records;
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::decode_data_frame_page_lsn, worth_store_physical_format::decode_extent_chunk, worth_store_physical_format::encode_data_frame_page_lsn, worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::BlobAbandonmentReasonV1, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::BlobSessionAbandonedV1, worth_store_physical_format::DurableFrameKind, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::DurableRootSelector, worth_store_physical_format::PersistedBlobSemanticRecordBinding, worth_store_physical_format::PersistedPhysicalDataFrameSubject, worth_store_physical_format::PersistedPhysicalRecoveryFrame, worth_store_physical_format::PersistedPhysicalRecoveryOperation, worth_store_physical_format::PersistedPhysicalRecoveryProjection, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::PhysicalRecoveryProjectionDecodeLimits, worth_store_physical_format::RecordArtifactFile};
-pub(crate) use {worth_store_recovery_physics::decode_physical_redo_records};
+pub(crate) use {
+    worth_store_physical_format::decode_blob_record,
+    worth_store_physical_format::decode_data_frame_page_lsn,
+    worth_store_physical_format::decode_extent_chunk,
+    worth_store_physical_format::encode_data_frame_page_lsn,
+    worth_store_physical_format::encode_extent_chunk,
+    worth_store_physical_format::BlobAbandonmentReasonV1,
+    worth_store_physical_format::BlobRecordV1, worth_store_physical_format::BlobSessionAbandonedV1,
+    worth_store_physical_format::DurableFrameKind,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::DurableRootSelector,
+    worth_store_physical_format::PersistedBlobSemanticRecordBinding,
+    worth_store_physical_format::PersistedPhysicalDataFrameSubject,
+    worth_store_physical_format::PersistedPhysicalRecoveryFrame,
+    worth_store_physical_format::PersistedPhysicalRecoveryOperation,
+    worth_store_physical_format::PersistedPhysicalRecoveryProjection,
+    worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    worth_store_physical_format::PhysicalRecoveryProjectionDecodeLimits,
+    worth_store_physical_format::RecordArtifactFile,
+};
 pub(crate) use {worth_store_wal::LogSequenceNumber, worth_store_wal::WalLsnRange};
 
 pub(crate) const WAL_HEADER: usize = 116;
@@ -93,24 +112,28 @@ pub(crate) fn rewrite_expiry_frame(
     if !cursor.is_empty() {
         return None;
     }
-    let projection = worth_store_physical_format::PersistedPhysicalRecoveryProjection::decode_frames(
-        encoded_projection,
-        PhysicalRecoveryProjectionDecodeLimits {
-            frames: 16,
-            record_identities: 16,
-            placements: 16,
-            segment_updates: 16,
-            manifests: 16,
-            total_entries: 64,
-            inline_allocations: 16,
-        },
-    )
-    .ok()?;
-    let worth_store_physical_format::PersistedPhysicalRecoveryOperation::SessionAbandoned(semantic) = projection.operation()
+    let projection =
+        worth_store_physical_format::PersistedPhysicalRecoveryProjection::decode_frames(
+            encoded_projection,
+            PhysicalRecoveryProjectionDecodeLimits {
+                frames: 16,
+                record_identities: 16,
+                placements: 16,
+                segment_updates: 16,
+                manifests: 16,
+                total_entries: 64,
+                inline_allocations: 16,
+            },
+        )
+        .ok()?;
+    let worth_store_physical_format::PersistedPhysicalRecoveryOperation::SessionAbandoned(semantic) =
+        projection.operation()
     else {
         return None;
     };
-    let worth_store_physical_format::BlobRecordV1::SessionAbandoned(old) = decode_blob_record(old_control).ok()? else {
+    let worth_store_physical_format::BlobRecordV1::SessionAbandoned(old) =
+        decode_blob_record(old_control).ok()?
+    else {
         return None;
     };
     let worth_store_physical_format::BlobAbandonmentReasonV1::CheckpointExpired {
@@ -136,7 +159,9 @@ pub(crate) fn rewrite_expiry_frame(
     let [old_frame] = old_frames else {
         panic!("terminal publication writes one exact extent frame");
     };
-    let worth_store_physical_format::PersistedPhysicalDataFrameSubject::ExtentChunk(coordinate) = old_frame.subject() else {
+    let worth_store_physical_format::PersistedPhysicalDataFrameSubject::ExtentChunk(coordinate) =
+        old_frame.subject()
+    else {
         panic!("Store blob controls are extent-resident");
     };
     let (old_payload, frame_format) = decode_extent_chunk(old_frame.bytes(), coordinate).unwrap();
@@ -152,9 +177,18 @@ pub(crate) fn rewrite_expiry_frame(
         old_target_digest,
         sha2::Sha256::digest(old_frame.bytes()).as_slice()
     );
-    let lsn = decode_data_frame_page_lsn(old_frame.bytes(), worth_store_physical_format::DurableFrameKind::Extent).unwrap();
+    let lsn = decode_data_frame_page_lsn(
+        old_frame.bytes(),
+        worth_store_physical_format::DurableFrameKind::Extent,
+    )
+    .unwrap();
     let mut frame_bytes = encode_extent_chunk(format, coordinate, &new_control).unwrap();
-    encode_data_frame_page_lsn(&mut frame_bytes, worth_store_physical_format::DurableFrameKind::Extent, lsn).unwrap();
+    encode_data_frame_page_lsn(
+        &mut frame_bytes,
+        worth_store_physical_format::DurableFrameKind::Extent,
+        lsn,
+    )
+    .unwrap();
     assert_eq!(frame_bytes.len(), old_frame.bytes().len());
     let replacement_frame = worth_store_physical_format::PersistedPhysicalRecoveryFrame::new(
         old_frame.subject(),
@@ -168,17 +202,20 @@ pub(crate) fn rewrite_expiry_frame(
         semantic.candidate_root_generation(),
     )
     .unwrap();
-    let replacement_projection = worth_store_physical_format::PersistedPhysicalRecoveryProjection::new_with_operation(
-        projection.source_root_generation(),
-        projection.root_state().clone(),
-        projection.record_identities().to_vec(),
-        vec![replacement_frame],
-        projection.placements().to_vec(),
-        projection.segment_updates().to_vec(),
-        projection.manifests().to_vec(),
-        worth_store_physical_format::PersistedPhysicalRecoveryOperation::SessionAbandoned(replacement_binding),
-    )
-    .expect("same production coordinates admit the resealed frame");
+    let replacement_projection =
+        worth_store_physical_format::PersistedPhysicalRecoveryProjection::new_with_operation(
+            projection.source_root_generation(),
+            projection.root_state().clone(),
+            projection.record_identities().to_vec(),
+            vec![replacement_frame],
+            projection.placements().to_vec(),
+            projection.segment_updates().to_vec(),
+            projection.manifests().to_vec(),
+            worth_store_physical_format::PersistedPhysicalRecoveryOperation::SessionAbandoned(
+                replacement_binding,
+            ),
+        )
+        .expect("same production coordinates admit the resealed frame");
     let mut changed_redo = Vec::with_capacity(redo.len());
     write_field(&mut changed_redo, REDO_DOMAIN);
     changed_redo.extend_from_slice(&1_u64.to_le_bytes());
@@ -234,7 +271,10 @@ pub(crate) fn rewrite_expiry_frame(
 pub(crate) fn selected_format(root: &Path) -> PhysicalRecordFormatDeclaration {
     let records = root.join("families/records");
     let selector = worth_store_physical_format::DurableRootSelector::decode(
-        &std::fs::read(records.join(worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name())).unwrap(),
+        &std::fs::read(records.join(
+            worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name(),
+        ))
+        .unwrap(),
     )
     .expect("selected root selector");
     let root_bytes = std::fs::read(
@@ -246,8 +286,9 @@ pub(crate) fn selected_format(root: &Path) -> PhysicalRecordFormatDeclaration {
         ),
     )
     .unwrap();
-    let (manifest, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(&root_bytes, u16::MAX)
-        .expect("addressed selected root manifest");
+    let (manifest, format) =
+        worth_store_physical_format::DurablePhysicalRootManifest::decode(&root_bytes, u16::MAX)
+            .expect("addressed selected root manifest");
     assert_eq!(manifest.generation(), selector.root_generation());
     assert_eq!(format, selector.format());
     assert_eq!(manifest.encode(format), root_bytes);

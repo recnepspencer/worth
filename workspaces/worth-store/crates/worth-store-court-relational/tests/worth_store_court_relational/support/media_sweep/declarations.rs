@@ -14,21 +14,20 @@
 //! the first commit on a durably forked branch, the schema-transition commit,
 //! and a checkpoint that replaces a selected one; two seeds each.
 
-pub(crate) use {std::num::NonZeroU64};
+pub(crate) use std::num::NonZeroU64;
+pub(crate) use std::sync::Mutex;
 pub(crate) use {std::panic, std::panic::AssertUnwindSafe};
 pub(crate) use {std::sync::atomic::AtomicUsize, std::sync::atomic::Ordering};
-pub(crate) use {std::sync::Mutex};
 
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_store::physical_runtime::certification::MediaOperationRole};
+pub(crate) use worth_execution::ExecutionRequest;
+pub(crate) use worth_store::physical_runtime::certification::MediaOperationRole;
 
+pub(crate) use crate::media_faults;
 pub(crate) use {crate::durable_run::apply, crate::durable_run::served_schema};
 pub(crate) use {crate::media_case::run_case, crate::media_case::Ended, crate::media_case::Target};
-pub(crate) use {crate::media_faults};
 pub(crate) use {crate::workload, crate::workload::Script, crate::workload::Step};
 
-
-pub(crate) use {crate::media_sweep::prepared_sweep_home::PreparedSweepHome};
+pub(crate) use crate::media_sweep::prepared_sweep_home::PreparedSweepHome;
 
 pub(crate) const SEEDS: [u64; 2] = [0x5eed_0301, 0x5eed_0302];
 pub(crate) const COMMITS: usize = 9;
@@ -62,8 +61,12 @@ impl Tally {
             crate::media_case::Ended::Skipped => self.skipped += 1,
             crate::media_case::Ended::Acknowledged => self.acknowledged += 1,
             crate::media_case::Ended::Refused => self.refused += 1,
-            crate::media_case::Ended::Unresolved { recovered: false } => self.unresolved_absent += 1,
-            crate::media_case::Ended::Unresolved { recovered: true } => self.unresolved_recovered += 1,
+            crate::media_case::Ended::Unresolved { recovered: false } => {
+                self.unresolved_absent += 1
+            }
+            crate::media_case::Ended::Unresolved { recovered: true } => {
+                self.unresolved_recovered += 1
+            }
         }
         if !matches!(ended, crate::media_case::Ended::Skipped) {
             self.cases += 1;
@@ -103,8 +106,14 @@ impl SeedSweep {
 
     /// Compare the original fresh-prefix schedule with the restored prefix's
     /// complete role/ordinal matrix before scheduling either directive.
-    pub(crate) fn measure(&self, execution: &ExecutionRequest<'_, '_>) -> Vec<(MediaOperationRole, u64)> {
-        let mut prepared = crate::media_sweep::prepared_sweep_home::PreparedSweepHome::prepare(self.prefix(), execution);
+    pub(crate) fn measure(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Vec<(MediaOperationRole, u64)> {
+        let mut prepared = crate::media_sweep::prepared_sweep_home::PreparedSweepHome::prepare(
+            self.prefix(),
+            execution,
+        );
         let before = self.measure_at(prepared.location(), execution);
         prepared.restore();
         let after = self.measure_at(prepared.location(), execution);
@@ -176,7 +185,10 @@ pub(crate) fn sweep(select: impl Fn(&Script) -> Target) {
         for &(role, count) in &counts {
             for nth in 1..=count {
                 for directive in crate::media_faults::directives() {
-                    cases.push((index, (role, std::num::NonZeroU64::new(nth).unwrap(), directive)));
+                    cases.push((
+                        index,
+                        (role, std::num::NonZeroU64::new(nth).unwrap(), directive),
+                    ));
                 }
             }
         }
@@ -185,7 +197,12 @@ pub(crate) fn sweep(select: impl Fn(&Script) -> Target) {
     let next = std::sync::atomic::AtomicUsize::new(0);
     let workers = worker_count();
     let failures = std::sync::Mutex::new(Vec::new());
-    let tallies = std::sync::Mutex::new(seeds.iter().map(|_| crate::media_sweep::Tally::default()).collect::<Vec<_>>());
+    let tallies = std::sync::Mutex::new(
+        seeds
+            .iter()
+            .map(|_| crate::media_sweep::Tally::default())
+            .collect::<Vec<_>>(),
+    );
     std::thread::scope(|scope| {
         for _ in 0..workers {
             scope.spawn(|| {
@@ -193,7 +210,9 @@ pub(crate) fn sweep(select: impl Fn(&Script) -> Target) {
                 let execution = worth_execution::ExecutionRequest::serial(&request);
                 let mut prepared: Vec<Option<PreparedSweepHome>> =
                     seeds.iter().map(|_| None).collect();
-                while let Some((index, fault)) = cases.get(next.fetch_add(1, std::sync::atomic::Ordering::Relaxed)) {
+                while let Some((index, fault)) =
+                    cases.get(next.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
+                {
                     let sweep = &seeds[*index];
                     let case = format!(
                         "seed {:#x} step {} {:?}#{} {:?}",
@@ -214,7 +233,10 @@ pub(crate) fn sweep(select: impl Fn(&Script) -> Target) {
                             return crate::media_case::Ended::Skipped;
                         };
                         let prepared = prepared[*index].get_or_insert_with(|| {
-                            crate::media_sweep::prepared_sweep_home::PreparedSweepHome::prepare(sweep.prefix(), &execution)
+                            crate::media_sweep::prepared_sweep_home::PreparedSweepHome::prepare(
+                                sweep.prefix(),
+                                &execution,
+                            )
                         });
                         prepared.restore();
                         run_case(
@@ -266,7 +288,11 @@ pub(crate) fn sweep(select: impl Fn(&Script) -> Target) {
 }
 
 pub(crate) fn first_commit(script: &Script) -> Target {
-    let index = script.steps.iter().position(crate::workload::Step::is_commit).unwrap();
+    let index = script
+        .steps
+        .iter()
+        .position(crate::workload::Step::is_commit)
+        .unwrap();
     crate::media_case::Target::Commit(index)
 }
 

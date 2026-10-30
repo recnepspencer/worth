@@ -1,20 +1,20 @@
-#[allow(unused_imports)] use crate::physical_blob_journeys::blob_corruption_localization::*;
-use {std::fs, std::num::NonZeroU64, std::path::Path, std::time::Duration};
+#[allow(unused_imports)]
+use crate::physical_blob_journeys::blob_corruption_localization::*;
 
-use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::LayoutRebuildFailure, worth_store::physical_runtime::LayoutRebuildLimits, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress, worth_store::physical_runtime::ManagedPhysicalIntegrityScrubRequest, worth_store::physical_runtime::PhysicalIndexPointKey, worth_store::physical_runtime::PhysicalIntegrityScrubDeferral, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalWorkCounterStage, worth_store::physical_runtime::PhysicalWorkOperationFamily, worth_store::physical_runtime::PhysicalWorkPressureClass, worth_store::physical_runtime::PublishedBlobGeneration, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadWorkDenial};
-use {worth_store_blob_chunks::BlobChunkSize};
-use {worth_store_contracts::DurableArtifactFamilyId};
-use {worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration, worth_store_io_scheduler::foreground_reservation::ForegroundLatencyEnvelope, worth_store_io_scheduler::foreground_reservation::ForegroundResourceBudget, worth_store_io_scheduler::foreground_reservation::QueueSlot};
-use {worth_store_physical_format::BlobRecordDenial};
-use {worth_store_physical_integrity::PhysicalIntegrityObservationOutcome, worth_store_physical_integrity::PhysicalIntegrityRejection};
-
-use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization, worth_store_testkit_store::fixture::serving_from_open};
+use {
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+    worth_store_testkit_store::fixture::serving_from_open,
+};
 
 #[test]
 fn damaged_middle_chunk_localizes_without_poisoning_other_ranges() {
     let directory = tempfile::tempdir().unwrap();
     let scope = admitted_blob_scope("c11.blob.chunk.corruption.scope");
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(512).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(512).unwrap());
     let (published, object) = {
         let serving = serving_from_initialization(directory.path());
         let blobs = serving.blobs().unwrap();
@@ -25,7 +25,8 @@ fn damaged_middle_chunk_localizes_without_poisoning_other_ranges() {
             (3 * CHUNK_BYTES) as u64,
             &scope,
             worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(64).unwrap(),
-            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+            worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+                .unwrap(),
         )
         .unwrap();
         let mut ingest = blobs
@@ -52,7 +53,10 @@ fn damaged_middle_chunk_localizes_without_poisoning_other_ranges() {
         1,
         "only the middle chunk is damaged: {report}"
     );
-    let offline_selected = crate::physical_blob_journeys::blob_corruption_localization::comparison::observe_selected(directory.path());
+    let offline_selected =
+        crate::physical_blob_journeys::blob_corruption_localization::comparison::observe_selected(
+            directory.path(),
+        );
     let serving = serving_from_open(directory.path());
     let blobs = serving.blobs().unwrap();
     let resolved = blobs
@@ -105,8 +109,11 @@ fn damaged_middle_chunk_localizes_without_poisoning_other_ranges() {
         read_one_byte(&blobs, resolved, &scope, (2 * CHUNK_BYTES) as u64, limits),
         0x33
     );
-    let catalog_key =
-        worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence()).unwrap();
+    let catalog_key = worth_store::physical_runtime::PhysicalIndexPointKey::blob_catalog(
+        object,
+        published.generation().sequence(),
+    )
+    .unwrap();
     let before_rebuild = serving
         .layouts()
         .unwrap()
@@ -122,14 +129,17 @@ fn damaged_middle_chunk_localizes_without_poisoning_other_ranges() {
             std::num::NonZeroU64::new(1_000).unwrap(),
         ),
         placement(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     assert!(
         matches!(
             rebuild,
-            Err(worth_store::physical_runtime::LayoutRebuildFailure::MalformedSelectedBlob(
-                worth_store_physical_format::BlobRecordDenial::IntegrityMismatch
-            ))
+            Err(
+                worth_store::physical_runtime::LayoutRebuildFailure::MalformedSelectedBlob(
+                    worth_store_physical_format::BlobRecordDenial::IntegrityMismatch
+                )
+            )
         ),
         "authoritative damaged chunk must block derived rebuild before root effects: {rebuild:?}"
     );
@@ -199,7 +209,10 @@ fn damaged_middle_chunk_localizes_without_poisoning_other_ranges() {
     assert_eq!(scrub.counters().completed_windows, 0);
     assert_eq!(scrub.counters().acquired_bytes, 0);
     drop(held);
-    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(window) = scrub.next_window() else {
+    let worth_store::physical_runtime::ManagedPhysicalIntegrityScrubProgress::WindowInspected(
+        window,
+    ) = scrub.next_window()
+    else {
         panic!("selected chunk scrub must inspect one bounded window")
     };
     let after = serving.physical_work_counters();
@@ -245,5 +258,11 @@ fn damaged_middle_chunk_localizes_without_poisoning_other_ranges() {
     assert_eq!(window.counters.damaged_windows, 1);
 
     drop(scrub);
-    crate::physical_blob_journeys::blob_corruption_localization::comparison::assert_selected_join(&serving, target, selected_root, record, &offline_selected);
+    crate::physical_blob_journeys::blob_corruption_localization::comparison::assert_selected_join(
+        &serving,
+        target,
+        selected_root,
+        record,
+        &offline_selected,
+    );
 }

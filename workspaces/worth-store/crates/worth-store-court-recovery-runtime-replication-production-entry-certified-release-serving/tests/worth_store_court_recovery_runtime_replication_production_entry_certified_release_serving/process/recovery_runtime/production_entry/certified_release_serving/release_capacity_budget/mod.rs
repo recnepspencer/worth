@@ -2,30 +2,6 @@
 
 #[allow(unused_imports)]
 use crate::production_entry::certified_release_serving::release_capacity_budget::*;
-use {std::fs, std::num::NonZeroU64, std::path::PathBuf};
-use {
-    std::num::NonZeroU16, std::path::Path, worth_proof::AdmittedBlobReleaseProof,
-    worth_store::physical_runtime::BlobReclaimDisposition,
-    worth_store::physical_runtime::BlobReclaimLimits,
-    worth_store::physical_runtime::BlobReclaimRequest,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::run_world,
-    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::Mutation,
-    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
-};
-use {
-    worth_store::physical_runtime::BlobReclaimFailure,
-    worth_store::physical_runtime::PhysicalOperationAllocationScope,
-    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
-    worth_store::physical_runtime::PhysicalRecoveryRejoinResidentDenial,
-};
-use {
-    worth_store_physical_format::ReleaseCustodyHeadEntryV1,
-    worth_store_physical_format::ReleaseCustodyHeadKeyV1,
-    worth_store_physical_format::BLOB_CONTROL_FRAME_MAX_BYTES,
-    worth_store_physical_format::CHECKPOINT_CERTIFICATE_RECORD_OVERHEAD_BYTES,
-    worth_store_physical_format::MAX_CHECKPOINT_BINDING_RECORD_BYTES,
-};
 
 #[test]
 fn one_head_recovery_scope_rejects_before_manifest_wal_or_root_effect() {
@@ -118,21 +94,15 @@ fn sufficient_recovery_scope_drops_then_checkpoints_and_reopens_with_recovery_se
         .join()
         .expect("release capacity worker did not panic");
 }
-#[cfg(all())]
 #[path = "checkpoint_funding/mod.rs"]
 pub(crate) mod checkpoint_funding;
-#[cfg(all())]
 #[path = "checkpoint_overlap/mod.rs"]
 pub(crate) mod checkpoint_overlap;
-#[cfg(all())]
 #[path = "checkpoint_read_funding/mod.rs"]
 pub(crate) mod checkpoint_read_funding;
-#[cfg(all())]
 #[path = "live_admission/mod.rs"]
 pub(crate) mod live_admission;
-#[cfg(all())]
 #[path = "recovery_pool_handoff/mod.rs"]
 pub(crate) mod recovery_pool_handoff;
-#[cfg(all())]
 #[path = "source_read_funding/mod.rs"]
 pub(crate) mod source_read_funding;

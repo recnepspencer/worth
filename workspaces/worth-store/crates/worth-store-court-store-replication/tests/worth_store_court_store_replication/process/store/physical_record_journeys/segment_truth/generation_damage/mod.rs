@@ -1,4 +1,8 @@
-use {worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadDenial, worth_store::physical_runtime::RecordReadLimits, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::durable_publication, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn checksum_valid_zero_generation_in_an_unrelated_slot_is_artifact_damage() {
@@ -6,13 +10,22 @@ fn checksum_valid_zero_generation_in_an_unrelated_slot_is_artifact_damage() {
     let root = parent.path().join("zero-unrelated-slot-generation");
     let (format, placement, access) = configuration();
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let published = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("zero-unrelated-slot-generation", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"target".as_slice(), b"unrelated".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "zero-unrelated-slot-generation",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+            b"target".as_slice(),
+            b"unrelated".as_slice(),
+        ])
+        .unwrap(),
     );
     let target = published.settled_members()[0].record_id(0).unwrap();
     serving.close();
@@ -21,7 +34,8 @@ fn checksum_valid_zero_generation_in_an_unrelated_slot_is_artifact_damage() {
         root.join("families/records/segments/segment-0000000000000001-0000000000000001.pages");
     let mut bytes = std::fs::read(&page).unwrap();
     let second_slot_generation = 96..104;
-    worth_store_testkit_store::durable_frame_oracle::payload_mut(&mut bytes)[second_slot_generation]
+    worth_store_testkit_store::durable_frame_oracle::payload_mut(&mut bytes)
+        [second_slot_generation]
         .copy_from_slice(&0_u64.to_le_bytes());
     worth_store_testkit_store::durable_frame_oracle::reseal(&mut bytes);
     std::fs::write(page, bytes).unwrap();
@@ -31,12 +45,17 @@ fn checksum_valid_zero_generation_in_an_unrelated_slot_is_artifact_damage() {
     }));
     let error = match reopened.records().expect("read protection admission").open(
         target,
-        worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(32).unwrap()),
+        worth_store::physical_runtime::RecordReadLimits::new(
+            worth_store::physical_runtime::RecordByteLimit::new(32).unwrap(),
+        ),
     ) {
         Err(error) => error,
         Ok(_) => panic!("zero generation in another slot cannot admit the clean page"),
     };
-    assert_eq!(error.denial(), worth_store::physical_runtime::RecordReadDenial::ArtifactDamaged);
+    assert_eq!(
+        error.denial(),
+        worth_store::physical_runtime::RecordReadDenial::ArtifactDamaged
+    );
     assert_eq!(error.observation().generation_checks(), 2);
     assert_eq!(error.observation().generation_rejections(), 0);
     reopened.abort();
@@ -48,13 +67,19 @@ fn checksum_valid_zero_page_generation_is_artifact_damage() {
     let root = parent.path().join("zero-page-generation");
     let (format, placement, access) = configuration();
     let serving = success(initialize_record_store!(media(&root), |durability| {
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )
     }));
     let published = worth_store_testkit_store::durable_publication::root::publish_single(
         &serving,
         placement,
-        worth_store_testkit_store::durable_publication::material::certification_material("zero-page-generation", 1),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"target".as_slice()]).unwrap(),
+        worth_store_testkit_store::durable_publication::material::certification_material(
+            "zero-page-generation",
+            1,
+        ),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"target".as_slice()])
+            .unwrap(),
     );
     let target = published.settled_members()[0].record_id(0).unwrap();
     serving.close();
@@ -71,12 +96,17 @@ fn checksum_valid_zero_page_generation_is_artifact_damage() {
     }));
     let error = match reopened.records().expect("read protection admission").open(
         target,
-        worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(32).unwrap()),
+        worth_store::physical_runtime::RecordReadLimits::new(
+            worth_store::physical_runtime::RecordByteLimit::new(32).unwrap(),
+        ),
     ) {
         Err(error) => error,
         Ok(_) => panic!("zero page generation cannot admit the clean page"),
     };
-    assert_eq!(error.denial(), worth_store::physical_runtime::RecordReadDenial::ArtifactDamaged);
+    assert_eq!(
+        error.denial(),
+        worth_store::physical_runtime::RecordReadDenial::ArtifactDamaged
+    );
     assert_eq!(error.observation().generation_checks(), 2);
     assert_eq!(error.observation().generation_rejections(), 0);
     reopened.abort();
@@ -92,13 +122,19 @@ fn checksum_valid_zero_page_owner_identities_are_artifact_damage() {
         let root = parent.path().join(format!("zero-{name}-identity"));
         let (format, placement, access) = configuration();
         let serving = success(initialize_record_store!(media(&root), |durability| {
-            worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement, access, durability)
+            worth_store::physical_runtime::PhysicalRecordInitialization::new(
+                format, placement, access, durability,
+            )
         }));
         let published = worth_store_testkit_store::durable_publication::root::publish_single(
             &serving,
             placement,
-            worth_store_testkit_store::durable_publication::material::certification_material(certification, 1),
-            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"target".as_slice()]).unwrap(),
+            worth_store_testkit_store::durable_publication::material::certification_material(
+                certification,
+                1,
+            ),
+            worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"target".as_slice()])
+                .unwrap(),
         );
         let target = published.settled_members()[0].record_id(0).unwrap();
         serving.close();
@@ -115,12 +151,17 @@ fn checksum_valid_zero_page_owner_identities_are_artifact_damage() {
         }));
         let error = match reopened.records().expect("read protection admission").open(
             target,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(32).unwrap(),
+            ),
         ) {
             Err(error) => error,
             Ok(_) => panic!("zero {name} identity cannot admit the clean page"),
         };
-        assert_eq!(error.denial(), worth_store::physical_runtime::RecordReadDenial::ArtifactDamaged);
+        assert_eq!(
+            error.denial(),
+            worth_store::physical_runtime::RecordReadDenial::ArtifactDamaged
+        );
         assert_eq!(error.observation().generation_checks(), 2);
         assert_eq!(error.observation().generation_rejections(), 0);
         reopened.abort();

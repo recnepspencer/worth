@@ -1,14 +1,37 @@
 //! Two different published blob generations must not be forced into one V3
 //! predecessor chain by the Store-wide release accumulator.
 
-pub use {worth_proof::AdmittedBlobReleaseProof, worth_store::physical_runtime::BlobCheckpointLimit, worth_store_blob_chunks::BlobChunkSize, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobIngestFailure, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimLimits, worth_store::physical_runtime::BlobReclaimRequest, std::num::NonZeroU16, std::num::NonZeroU64, worth_store_physical_format::PersistedRecordIdentity, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_store_physical_format::ReleaseCheckpointAccumulatorV2, worth_proof::TransitionOutcome, crate::production_entry::blob_scope_admission::admitted_blob_scope, crate::production_entry::release_reopen::released_world, crate::release_reopen::selected_head_oracle, crate::production_entry::release_reopen::selected_release_certificates, crate::production_entry::release_reopen::two_batch};
+pub use {
+    crate::production_entry::blob_scope_admission::admitted_blob_scope,
+    crate::production_entry::release_reopen::released_world,
+    crate::production_entry::release_reopen::selected_release_certificates,
+    crate::production_entry::release_reopen::two_batch,
+    crate::release_reopen::selected_head_oracle, std::num::NonZeroU16, std::num::NonZeroU64,
+    worth_proof::AdmittedBlobReleaseProof, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobIngestFailure,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimLimits,
+    worth_store::physical_runtime::BlobReclaimRequest,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store_blob_chunks::BlobChunkSize, worth_store_physical_format::PersistedRecordIdentity,
+    worth_store_physical_format::ReleaseCheckpointAccumulatorV2,
+    worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld,
+};
 
 pub fn run(carryforward: bool) {
     let (world, accumulator) = world();
     if carryforward {
         let checkpoint = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
             worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x76; 32]),
-            worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+                .unwrap(),
         );
         let worth_proof::TransitionOutcome::Success(handle) =
             world.serving().checkpoints().start(checkpoint).into_raw()
@@ -52,12 +75,15 @@ pub fn release_second_object(
     worth_store_physical_format::ReleaseCustodyHeadKeyV1,
 ) {
     const CHUNK: usize = 64 << 10;
-    let first_heads =
-        crate::release_reopen::selected_head_oracle::selected_heads(world.retained_root().path(), first_accumulator);
+    let first_heads = crate::release_reopen::selected_head_oracle::selected_heads(
+        world.retained_root().path(),
+        first_accumulator,
+    );
     assert_eq!(first_heads.len(), 1);
     let scope = admitted_blob_scope("c11.recovery.release.second-generation");
     let blobs = world.serving().blobs().expect("blob owner");
-    let read_limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
+    let read_limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(256).unwrap());
     let object = blobs
         .issue_object_id(read_limits)
         .expect("second object identity");
@@ -67,7 +93,8 @@ pub fn release_second_object(
         (2 * CHUNK) as u64,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(16).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
     )
     .unwrap();
     let mut ingest = blobs
@@ -80,9 +107,11 @@ pub fn release_second_object(
         .push(&vec![0x65; CHUNK])
         .expect("second generation trailing chunk");
     let published = match ingest.finish() {
-        Ok(published) | Err(worth_store::physical_runtime::BlobIngestFailure::PublishedIndexPending { published, .. }) => {
-            published
-        }
+        Ok(published)
+        | Err(worth_store::physical_runtime::BlobIngestFailure::PublishedIndexPending {
+            published,
+            ..
+        }) => published,
         Err(failure) => panic!("second publication failed: {failure:?}"),
     };
     let marker = world
@@ -105,7 +134,8 @@ pub fn release_second_object(
     let request = worth_store::physical_runtime::BlobReclaimRequest::released(
         proof,
         world.placement(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+            .unwrap(),
         worth_store::physical_runtime::BlobReclaimLimits::new(
             std::num::NonZeroU64::new(1024).unwrap(),
             std::num::NonZeroU64::new(64 << 20).unwrap(),
@@ -121,7 +151,10 @@ pub fn release_second_object(
         .expect("second published generation release")
         .wait()
         .expect("second generation release completed");
-    assert_eq!(second.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        second.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert!(second.dropped_records().contains(&record));
     let (batches, accumulator) = selected_release_certificates(world);
     assert_eq!(batches.len(), 1);
@@ -134,7 +167,10 @@ pub fn release_second_object(
         accumulator.base().prior_cumulative_dropped(),
         first_accumulator.base().cumulative_dropped()
     );
-    let heads = crate::release_reopen::selected_head_oracle::selected_heads(world.retained_root().path(), accumulator);
+    let heads = crate::release_reopen::selected_head_oracle::selected_heads(
+        world.retained_root().path(),
+        accumulator,
+    );
     assert_eq!(heads.len(), 2);
     assert_ne!(heads[0].key(), heads[1].key());
     assert!(heads.contains(&first_heads[0]));

@@ -1,11 +1,16 @@
+pub(crate) use std::path::Path;
 pub(crate) use {std::collections::BTreeMap, std::collections::BTreeSet};
-pub(crate) use {std::path::Path};
 
+pub(crate) use worth_store_physical_format::PHYSICAL_MUTATION_BINDING_COMPACTION_RECORD_DOMAIN;
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store_physical_format::PHYSICAL_MUTATION_BINDING_COMPACTION_RECORD_DOMAIN};
 
-pub(crate) use {crate::phase_eight_process::history::artifacts, crate::phase_eight_process::history::schedule};
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::selected_basis::select as select_recovery_basis, crate::phase_eight_process::history::parent_oracle::canonical_membership::ExpectedCanonicalRecord};
+pub(crate) use {
+    crate::phase_eight_process::history::artifacts, crate::phase_eight_process::history::schedule,
+};
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::canonical_membership::ExpectedCanonicalRecord,
+    crate::phase_eight_process::history::parent_oracle::selected_basis::select as select_recovery_basis,
+};
 
 pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WCP7REC\0";
 pub(crate) const TERMINAL_STATE: u8 = 3;
@@ -51,7 +56,9 @@ pub(crate) fn bind(
         .canonicalize()
         .map_err(|error| format!("canonicalize submitted-operation root: {error}"))?;
     let mut files = Vec::new();
-    crate::phase_eight_process::history::artifacts::collect_files(&canonical, &canonical, &mut files)?;
+    crate::phase_eight_process::history::artifacts::collect_files(
+        &canonical, &canonical, &mut files,
+    )?;
     let selected = select_recovery_basis(&files)?;
     let checkpoint = selected
         .iter()
@@ -70,7 +77,10 @@ pub(crate) fn bind(
         .enumerate()
         .map(|(ordinal, payload)| {
             (
-                crate::phase_eight_process::history::schedule::mutation_material(seed, ordinal as u64),
+                crate::phase_eight_process::history::schedule::mutation_material(
+                    seed,
+                    ordinal as u64,
+                ),
                 payload.clone(),
             )
         })
@@ -82,7 +92,10 @@ pub(crate) fn bind(
     let mut no_effect = None;
 
     for record in terminal_records {
-        let mut cursor = crate::phase_eight_process::history::parent_oracle::operation_binding::Cursor::new(record);
+        let mut cursor =
+            crate::phase_eight_process::history::parent_oracle::operation_binding::Cursor::new(
+                record,
+            );
         cursor.require_field(PHYSICAL_MUTATION_BINDING_COMPACTION_RECORD_DOMAIN)?;
         if cursor.byte()? != TERMINAL_STATE {
             continue;
@@ -197,7 +210,8 @@ pub(crate) struct AttemptBinding {
 }
 
 pub(crate) fn parse_attempt(bytes: &[u8]) -> Result<AttemptBinding, String> {
-    let mut cursor = crate::phase_eight_process::history::parent_oracle::operation_binding::Cursor::new(bytes);
+    let mut cursor =
+        crate::phase_eight_process::history::parent_oracle::operation_binding::Cursor::new(bytes);
     cursor.require_field(ATTEMPT_DOMAIN)?;
     let basis = parse_basis(&mut cursor)?;
     cursor.field()?;

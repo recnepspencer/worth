@@ -10,9 +10,7 @@ pub(crate) mod persisted_fates;
 #[allow(dead_code, unused_imports)]
 #[path = "physical_history/mod.rs"]
 pub(crate) mod physical_history;
-#[allow(dead_code, unused_imports)]
-#[path = "process/mod.rs"]
-pub(crate) mod process;
+
 #[allow(dead_code, unused_imports)]
 #[path = "raw_in_flight/mod.rs"]
 pub(crate) mod raw_in_flight;

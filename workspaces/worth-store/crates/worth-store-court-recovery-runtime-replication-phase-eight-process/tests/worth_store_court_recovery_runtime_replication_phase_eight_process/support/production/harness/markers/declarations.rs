@@ -1,4 +1,4 @@
-pub(crate) use {std::process::Output};
+pub(crate) use std::process::Output;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct RecoveryRuntimeMarker {

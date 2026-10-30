@@ -1,4 +1,4 @@
-pub use {std::path::Path};
+pub use std::path::Path;
 
 /// Sorted names of every published record segment page artifact.
 pub fn segment_names(root: &Path) -> Vec<String> {

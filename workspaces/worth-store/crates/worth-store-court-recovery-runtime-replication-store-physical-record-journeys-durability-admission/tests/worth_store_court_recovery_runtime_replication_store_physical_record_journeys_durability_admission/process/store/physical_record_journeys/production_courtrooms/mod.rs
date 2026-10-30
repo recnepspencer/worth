@@ -1,6 +1,18 @@
-use {worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_courtroom_reopener, worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_courtroom_writer};
-use {crate::courtroom_evidence_support::hex, crate::courtroom_evidence_support::inline_placement, crate::courtroom_evidence_support::locator_identities, crate::courtroom_evidence_support::offline_completion, crate::courtroom_evidence_support::placement_identities, crate::courtroom_evidence_support::publication_barriers, crate::courtroom_evidence_support::reopener_completion, crate::courtroom_evidence_support::segment_files, crate::courtroom_evidence_support::segment_page_bytes, crate::courtroom_evidence_support::writer_completion};
-use {worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence};
+use {
+    crate::courtroom_evidence_support::hex, crate::courtroom_evidence_support::inline_placement,
+    crate::courtroom_evidence_support::locator_identities,
+    crate::courtroom_evidence_support::offline_completion,
+    crate::courtroom_evidence_support::placement_identities,
+    crate::courtroom_evidence_support::publication_barriers,
+    crate::courtroom_evidence_support::reopener_completion,
+    crate::courtroom_evidence_support::segment_files,
+    crate::courtroom_evidence_support::segment_page_bytes,
+    crate::courtroom_evidence_support::writer_completion,
+};
+use {
+    worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_courtroom_reopener,
+    worth_store_testkit_store::physical_record_journeys::child_process::invocation::run_courtroom_writer,
+};
 
 #[test]
 fn record_world_survives_fresh_processes() {
@@ -10,7 +22,11 @@ fn record_world_survives_fresh_processes() {
     let oracle_path = parent.path().join("sealed-workload.csv");
     let oracle = crate::courtroom_oracle::seal(&oracle_path);
     let writer_stdout = run_courtroom_writer(&root, &locators, &oracle_path);
-    let writer = worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence::parse_child(&writer_stdout, "writer");
+    let writer =
+        worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence::parse_child(
+            &writer_stdout,
+            "writer",
+        );
     let writer_completion = writer_completion(&writer_stdout);
     let oracle_payload_digest = crate::courtroom_oracle::payload_digest(&locators, &oracle);
     let oracle_point_digest = crate::courtroom_oracle::point_digest(&locators, &oracle);
@@ -22,7 +38,11 @@ fn record_world_survives_fresh_processes() {
     );
 
     let reopener_stdout = run_courtroom_reopener(&root, &locators);
-    let reopener = worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence::parse_child(&reopener_stdout, "reopener");
+    let reopener =
+        worth_store_testkit_store::scenario_process_evidence::ScenarioProcessEvidence::parse_child(
+            &reopener_stdout,
+            "reopener",
+        );
     let reopened = reopener_completion(&reopener_stdout);
 
     let observer_stdout = crate::observer::run(&root);

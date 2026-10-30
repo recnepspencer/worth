@@ -1,12 +1,28 @@
 pub use {std::sync::mpsc, std::sync::mpsc::TryRecvError};
 pub use {std::time::Duration, std::time::Instant};
 
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_signal::facade::TemporalDuration};
-pub use {worth_store::physical_runtime::certification::CertificationPhysicalRecordSubmission};
-pub use {worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint, worth_store::physical_runtime::certification::CertificationPhysicalExecutionPauseGate};
-pub use {worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::CompletedPhysicalCheckpoint, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointHandle, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointProgressPhase, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome, worth_store::physical_runtime::PhysicalWalReclamationObservation, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub use {worth_store_physical_format::PhysicalCheckpointSource};
+pub use worth_proof::TransitionOutcome;
+pub use worth_signal::facade::TemporalDuration;
+pub use worth_store::physical_runtime::certification::CertificationPhysicalRecordSubmission;
+pub use worth_store_physical_format::PhysicalCheckpointSource;
+pub use {
+    worth_store::physical_runtime::certification::CertificationPhysicalExecutionCheckpoint,
+    worth_store::physical_runtime::certification::CertificationPhysicalExecutionPauseGate,
+};
+pub use {
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::CompletedPhysicalCheckpoint,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointHandle,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointProgressPhase,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalWalGroupBarrierOutcome,
+    worth_store::physical_runtime::PhysicalWalReclamationObservation,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
 pub use {crate::physical_record_journeys::configuration, crate::physical_record_journeys::durability_with_wal_policy, crate::physical_record_journeys::media, crate::physical_record_journeys::success};
 pub use {crate::physical_record_journeys::durability_admission::checkpoint_lifecycle::pause_checkpoint_at_phase};
@@ -19,11 +35,11 @@ pub fn rotation_world(
     let media_owner = media(store_root);
     let durability = durability_with_wal_policy(&media_owner, wal_policy(6));
     let (format, placement, access) = configuration();
-    let serving = success(
-        media_owner.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
+    let serving = success(media_owner.initialize_record_store(
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
             format, placement, access, durability,
-        )),
-    );
+        ),
+    ));
     (serving, placement)
 }
 
@@ -94,7 +110,9 @@ pub fn release_foreground_arrivals(
     loop {
         match completion.try_recv() {
             Ok(()) => return,
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => panic!("retained-tail worker disconnected"),
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                panic!("retained-tail worker disconnected")
+            }
             Err(std::sync::mpsc::TryRecvError::Empty) => {}
         }
         if gate.arrival_count() > next_arrival {
@@ -214,7 +232,10 @@ pub fn finish_checkpoint_cutover(
     let replace = gate.release_arrival(publication_arrival).unwrap();
     assert!(replace.await_resumption());
     assert!(gate.await_arrivals(publication_arrival + 2));
-    assert!(matches!(foreground.try_recv(), Err(std::sync::mpsc::TryRecvError::Empty)));
+    assert!(matches!(
+        foreground.try_recv(),
+        Err(std::sync::mpsc::TryRecvError::Empty)
+    ));
     let namespace = gate.release_arrival(publication_arrival + 1).unwrap();
     assert!(namespace.await_resumption());
     completed_checkpoint(handle)
@@ -237,6 +258,8 @@ pub fn completed_checkpoint(handle: PhysicalCheckpointHandle) -> CompletedPhysic
 pub fn checkpoint_request() -> PhysicalCheckpointRequest {
     worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([0x73; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::at(worth_signal::facade::TemporalDuration::temporal_duration(10_000).unwrap()),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::at(
+            worth_signal::facade::TemporalDuration::temporal_duration(10_000).unwrap(),
+        ),
     )
 }

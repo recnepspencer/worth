@@ -3,25 +3,8 @@
 //! new checkpoint, so recovery must admit the pending batch from the same
 //! checkpoint and ordered history, and then rejoin it as completed history.
 
-use std::fs;
 #[allow(unused_imports)]
 use worth_store_testkit_recovery_runtime::production_entry::pending_successor_above_history::*;
-use worth_store_testkit_recovery_runtime::production_entry::pending_wal_world::PendingWalWorld;
-use {
-    worth_proof::TransitionOutcome, worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store_testkit_recovery_runtime::production_entry::certified_release_serving,
-    worth_store_testkit_recovery_runtime::production_entry::pending_wal_world,
-    worth_store_testkit_recovery_runtime::production_entry::release_reopen,
-};
-use {
-    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
-    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-    worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
-    worth_store_recovery_runtime::WorthStoreRecovery,
-};
 
 /// The checkpoint heads the first object. Its second batch and a first
 /// release of another object complete above the checkpoint; the first

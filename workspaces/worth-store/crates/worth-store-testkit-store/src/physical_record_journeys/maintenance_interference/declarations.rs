@@ -1,34 +1,47 @@
+pub use crate::physical_record_journeys::maintenance_interference::canonical::canonical_child;
+pub use crate::physical_record_journeys::maintenance_interference::reopen::serving_child;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-pub use {crate::physical_record_journeys::maintenance_interference::canonical::canonical_child};
-pub use {crate::physical_record_journeys::maintenance_interference::reopen::serving_child};
-
-pub use {std::collections::BTreeSet};
+pub use std::collections::BTreeSet;
+pub use std::path::Path;
 pub use {std::num::NonZeroU32, std::num::NonZeroU64};
-pub use {std::path::Path};
 
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalOperationAllocationScope, worth_store::physical_runtime::PhysicalReadProtectionPolicy, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PhysicalRecordResidencyPolicy, worth_store::physical_runtime::PhysicalSpeculativeWorkKind, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::SegmentPageCount, worth_store::physical_runtime::ServingPhysicalRuntime, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
+pub use worth_proof::TransitionOutcome;
+pub use {
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::PhysicalMutationOutcome,
+    worth_store::physical_runtime::PhysicalMutationPreparationSuccess,
+    worth_store::physical_runtime::PhysicalMutationRequest,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope,
+    worth_store::physical_runtime::PhysicalReadProtectionPolicy,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordId,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::PhysicalRecordResidencyPolicy,
+    worth_store::physical_runtime::PhysicalSpeculativeWorkKind,
+    worth_store::physical_runtime::PhysicalWalPolicy,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::RecordByteLimit,
+    worth_store::physical_runtime::RecordReadLimits,
+    worth_store::physical_runtime::SegmentPageCount,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+    worth_store::physical_runtime::WalSegmentByteLimit,
+    worth_store::physical_runtime::WalSegmentInventoryLimit,
+};
 
 pub fn limits() -> RecordReadLimits {
-    worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(64).unwrap())
+    worth_store::physical_runtime::RecordReadLimits::new(
+        worth_store::physical_runtime::RecordByteLimit::new(64).unwrap(),
+    )
 }
 
 pub fn placement_for(
@@ -42,9 +55,13 @@ pub fn placement_for(
 }
 
 pub fn placement() -> worth_store::physical_runtime::AdmittedRecordPlacementPolicy {
-    placement_for(worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
-    ))
+    placement_for(
+        worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
+            worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+                .admit()
+                .unwrap(),
+        ),
+    )
 }
 
 pub fn residency(
@@ -68,8 +85,8 @@ pub fn residency_budget(
     pinned_frames: u32,
     dirty_frames: u32,
 ) -> AdmittedPhysicalRecordResidencyPolicy {
-    use {worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope};
-    use {worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation};
+    use worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope;
+    use worth_store::physical_runtime::PhysicalSpeculativeWorkKind as Speculation;
     let checkpoint = 16 * 1024 * 1024;
     let scratch = checkpoint + 1024 * 1024;
     let metadata = 1024 * 1024;
@@ -101,7 +118,9 @@ pub fn residency_budget(
 
 pub fn initialize(root: &Path) -> ServingPhysicalRuntime {
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
     assert_eq!(format.declaration().page_size().bytes(), 16 * 1024);
     initialize_with_protection(
@@ -117,7 +136,9 @@ pub fn initialize_protection(
     protection: PhysicalReadProtectionPolicy,
 ) -> ServingPhysicalRuntime {
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
     initialize_with_protection(root, format, RESIDENT_BYTES, protection)
 }
@@ -151,19 +172,29 @@ pub fn initialize_with_wal(
     protection: PhysicalReadProtectionPolicy,
     wal_bytes: u64,
 ) -> ServingPhysicalRuntime {
-    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .admit(format)
+        .unwrap();
     let media = crate::physical_record_journeys::media(root);
     let durability = crate::physical_record_journeys::durability_with_wal_policy(
         &media,
         worth_store::physical_runtime::PhysicalWalPolicy::segmented(
-            worth_store::physical_runtime::WalSegmentByteLimit::new(std::num::NonZeroU64::new(wal_bytes).unwrap()),
-            worth_store::physical_runtime::WalSegmentInventoryLimit::new(std::num::NonZeroU32::new(64).unwrap()),
+            worth_store::physical_runtime::WalSegmentByteLimit::new(
+                std::num::NonZeroU64::new(wal_bytes).unwrap(),
+            ),
+            worth_store::physical_runtime::WalSegmentInventoryLimit::new(
+                std::num::NonZeroU32::new(64).unwrap(),
+            ),
         ),
     );
-    let initialization =
-        worth_store::physical_runtime::PhysicalRecordInitialization::new(format, placement_for(format), access, durability)
-            .with_residency_policy(residency(format, resident))
-            .with_read_protection_policy(protection);
+    let initialization = worth_store::physical_runtime::PhysicalRecordInitialization::new(
+        format,
+        placement_for(format),
+        access,
+        durability,
+    )
+    .with_residency_policy(residency(format, resident))
+    .with_read_protection_policy(protection);
     crate::physical_record_journeys::success(media.initialize_record_store(initialization))
 }
 
@@ -177,7 +208,9 @@ pub fn append(
     material[..8].copy_from_slice(&ordinal.to_le_bytes());
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material),
+        )
         .unwrap();
     let prepared = match submission
         .prepare_durable_append(
@@ -185,20 +218,31 @@ pub fn append(
             policy,
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
             ),
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
+        worth_proof::TransitionOutcome::Success(_) => {
+            panic!("append {ordinal} did not stay prepared")
         }
-        worth_proof::TransitionOutcome::Success(_) => panic!("append {ordinal} did not stay prepared"),
-        worth_proof::TransitionOutcome::Denied(denial) => panic!("append {ordinal} denied: {denial:?}"),
-        worth_proof::TransitionOutcome::Deferred(deferred) => panic!("append {ordinal} deferred: {deferred:?}"),
+        worth_proof::TransitionOutcome::Denied(denial) => {
+            panic!("append {ordinal} denied: {denial:?}")
+        }
+        worth_proof::TransitionOutcome::Deferred(deferred) => {
+            panic!("append {ordinal} deferred: {deferred:?}")
+        }
         worth_proof::TransitionOutcome::Stale(stale) => panic!("append {ordinal} stale: {stale:?}"),
-        worth_proof::TransitionOutcome::RebindRequired(rebind) => panic!("append {ordinal} rebind: {rebind:?}"),
-        worth_proof::TransitionOutcome::Failed(failure) => panic!("append {ordinal} failed: {failure:?}"),
+        worth_proof::TransitionOutcome::RebindRequired(rebind) => {
+            panic!("append {ordinal} rebind: {rebind:?}")
+        }
+        worth_proof::TransitionOutcome::Failed(failure) => {
+            panic!("append {ordinal} failed: {failure:?}")
+        }
     };
     match prepared.execute() {
         worth_store::physical_runtime::PhysicalMutationOutcome::Completed(done) => {
@@ -230,7 +274,9 @@ pub fn append_copies(
     material[..8].copy_from_slice(&ordinal.to_le_bytes());
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new(material),
+        )
         .unwrap();
     let prepared = match submission
         .prepare_durable_append(
@@ -238,20 +284,31 @@ pub fn append_copies(
             policy,
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
             ),
         )
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
+        worth_proof::TransitionOutcome::Success(
+            worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+        ) => prepared,
+        worth_proof::TransitionOutcome::Success(_) => {
+            panic!("append {ordinal} did not stay prepared")
         }
-        worth_proof::TransitionOutcome::Success(_) => panic!("append {ordinal} did not stay prepared"),
-        worth_proof::TransitionOutcome::Denied(denial) => panic!("append {ordinal} denied: {denial:?}"),
-        worth_proof::TransitionOutcome::Deferred(deferred) => panic!("append {ordinal} deferred: {deferred:?}"),
+        worth_proof::TransitionOutcome::Denied(denial) => {
+            panic!("append {ordinal} denied: {denial:?}")
+        }
+        worth_proof::TransitionOutcome::Deferred(deferred) => {
+            panic!("append {ordinal} deferred: {deferred:?}")
+        }
         worth_proof::TransitionOutcome::Stale(stale) => panic!("append {ordinal} stale: {stale:?}"),
-        worth_proof::TransitionOutcome::RebindRequired(rebind) => panic!("append {ordinal} rebind: {rebind:?}"),
-        worth_proof::TransitionOutcome::Failed(failure) => panic!("append {ordinal} failed: {failure:?}"),
+        worth_proof::TransitionOutcome::RebindRequired(rebind) => {
+            panic!("append {ordinal} rebind: {rebind:?}")
+        }
+        worth_proof::TransitionOutcome::Failed(failure) => {
+            panic!("append {ordinal} failed: {failure:?}")
+        }
     };
     match prepared.execute() {
         worth_store::physical_runtime::PhysicalMutationOutcome::Completed(done) => {
@@ -292,7 +349,8 @@ pub fn checkpoint(serving: &ServingPhysicalRuntime, ordinal: u64) {
     key[..8].copy_from_slice(&ordinal.to_le_bytes());
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new(key),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
     let handle = match serving.checkpoints().start(request).into_raw() {
         worth_proof::TransitionOutcome::Success(handle) => handle,

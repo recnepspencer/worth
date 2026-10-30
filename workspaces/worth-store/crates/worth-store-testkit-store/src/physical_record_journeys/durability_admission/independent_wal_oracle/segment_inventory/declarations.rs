@@ -1,4 +1,4 @@
-pub use {std::path::Path};
+pub use std::path::Path;
 
 pub use {sha2::Digest, sha2::Sha256};
 
@@ -198,7 +198,9 @@ pub struct IndependentFrameHeader {
     pub payload_bytes: u64,
 }
 
-pub fn decode_header(header: &[u8]) -> Result<IndependentFrameHeader, IndependentWalInventoryDenial> {
+pub fn decode_header(
+    header: &[u8],
+) -> Result<IndependentFrameHeader, IndependentWalInventoryDenial> {
     if header.get(..8) != Some(MAGIC.as_slice())
         || read_u16(header, 8)? != VERSION
         || usize::from(read_u16(header, 10)?) != HEADER_BYTES

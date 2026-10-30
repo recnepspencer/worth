@@ -1,10 +1,20 @@
 pub(crate) use {std::fs, std::num::NonZeroU64, std::path::Path};
 
+pub(crate) use worth_store_blob_chunks::BlobChunkSize;
 pub(crate) use {sha2::Digest, sha2::Sha256};
-pub(crate) use {worth_store::physical_runtime::BlobCheckpointLimit, worth_store::physical_runtime::BlobIngestDeclaration, worth_store::physical_runtime::BlobReadLimits, worth_store::physical_runtime::PhysicalMutationDeadline};
-pub(crate) use {worth_store_blob_chunks::BlobChunkSize};
+pub(crate) use {
+    worth_store::physical_runtime::BlobCheckpointLimit,
+    worth_store::physical_runtime::BlobIngestDeclaration,
+    worth_store::physical_runtime::BlobReadLimits,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+};
 
-pub(crate) use {crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named, worth_store_testkit_store::fixture::admitted_blob_scope, worth_store_testkit_store::fixture::placement, worth_store_testkit_store::fixture::serving_from_initialization};
+pub(crate) use {
+    crate::physical_blob_journeys::blob_ingest_process::observe_closed_store_named,
+    worth_store_testkit_store::fixture::admitted_blob_scope,
+    worth_store_testkit_store::fixture::placement,
+    worth_store_testkit_store::fixture::serving_from_initialization,
+};
 
 pub(crate) const C5_HEADER: usize = 48;
 pub(crate) const C5_EXTENT_METADATA: usize = 64;
@@ -14,7 +24,8 @@ pub(crate) const C11_CHUNK_CLAIM: usize = 80;
 pub(crate) fn write_two_byte_blob(root: &Path) {
     let serving = serving_from_initialization(root);
     let blobs = serving.blobs().unwrap();
-    let limits = worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(512).unwrap());
+    let limits =
+        worth_store::physical_runtime::BlobReadLimits::new(std::num::NonZeroU64::new(512).unwrap());
     let scope = admitted_blob_scope("c11.blob.occurrence.corruption.scope");
     let object = blobs.issue_object_id(limits).unwrap();
     let declaration = worth_store::physical_runtime::BlobIngestDeclaration::new(
@@ -23,7 +34,8 @@ pub(crate) fn write_two_byte_blob(root: &Path) {
         2,
         &scope,
         worth_store::physical_runtime::BlobCheckpointLimit::bounded_horizon(64).unwrap(),
-        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000).unwrap(),
+        worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(120_000)
+            .unwrap(),
     )
     .unwrap();
     let mut session = blobs
@@ -35,7 +47,10 @@ pub(crate) fn write_two_byte_blob(root: &Path) {
     serving.close();
 }
 
-pub(crate) fn blob_rows<'a>(report: &'a serde_json::Value, family: &str) -> Vec<&'a serde_json::Value> {
+pub(crate) fn blob_rows<'a>(
+    report: &'a serde_json::Value,
+    family: &str,
+) -> Vec<&'a serde_json::Value> {
     report["artifacts"]
         .as_array()
         .unwrap()

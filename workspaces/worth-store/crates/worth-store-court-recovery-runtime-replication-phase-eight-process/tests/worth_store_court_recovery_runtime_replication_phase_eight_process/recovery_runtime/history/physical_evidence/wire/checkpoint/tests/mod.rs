@@ -1,6 +1,5 @@
 #[allow(unused_imports)]
 use crate::phase_eight_process::history::parent_oracle::wire::checkpoint::tests::*;
-use {sha2::Digest, sha2::Sha256};
 
 use {
     crate::phase_eight_process::history::parent_oracle::wire::checkpoint::crc32c,

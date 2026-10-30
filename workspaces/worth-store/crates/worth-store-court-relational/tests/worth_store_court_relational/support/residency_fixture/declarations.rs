@@ -1,7 +1,13 @@
 //! A partitioned, history-bearing script executed by the oracle's memory runtime.
+pub(crate) use worth_execution::ExecutionRequest;
 pub(crate) use {crate::batches, crate::schema_transition, crate::workload};
-pub(crate) use {worth_execution::ExecutionRequest};
-pub(crate) use {worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId, worth_relational::facade::runtime::RelationalRuntime, worth_relational::facade::transactions::CreateIntent, worth_relational::facade::transactions::MutationIntent, worth_relational::facade::transactions::RecordRef};
+pub(crate) use {
+    worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId,
+    worth_relational::facade::runtime::RelationalRuntime,
+    worth_relational::facade::transactions::CreateIntent,
+    worth_relational::facade::transactions::MutationIntent,
+    worth_relational::facade::transactions::RecordRef,
+};
 
 pub(crate) struct Fixture {
     pub(crate) reference: RelationalRuntime,
@@ -19,11 +25,15 @@ impl Fixture {
         let mut records = Vec::new();
         for partition in 1..=24 {
             let mut batch = crate::batches::create(partition as usize);
-            let worth_relational::facade::transactions::MutationIntent::Create(worth_relational::facade::transactions::CreateIntent::Entity(spec)) = &mut batch.intents[0] else {
+            let worth_relational::facade::transactions::MutationIntent::Create(
+                worth_relational::facade::transactions::CreateIntent::Entity(spec),
+            ) = &mut batch.intents[0]
+            else {
                 panic!("entity fixture")
             };
             spec.partition_id = PartitionId(partition);
-            let outcome = crate::workload::commit(&reference, execution, &branch, batch.clone()).unwrap();
+            let outcome =
+                crate::workload::commit(&reference, execution, &branch, batch.clone()).unwrap();
             records.extend(outcome.changed_records.iter().cloned());
             steps.push(crate::workload::Step::Commit {
                 branch: branch.clone(),
@@ -32,7 +42,8 @@ impl Fixture {
         }
         for round in 0..3 {
             for record in &records {
-                let worth_relational::facade::transactions::RecordRef::Entity(entity) = *record else {
+                let worth_relational::facade::transactions::RecordRef::Entity(entity) = *record
+                else {
                     panic!("entity fixture")
                 };
                 let batch = crate::batches::update(
@@ -70,7 +81,10 @@ impl Fixture {
         );
         let point = &self.records[..1];
         let expected_point = crate::workload::states_of(&self.reference, point);
-        assert_eq!(crate::workload::states_of(home.runtime(), point), expected_point);
+        assert_eq!(
+            crate::workload::states_of(home.runtime(), point),
+            expected_point
+        );
         let partial = home.cold_storage_reads();
         assert_eq!(
             partial.commit_reads, reopened.commit_reads,

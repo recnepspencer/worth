@@ -5,12 +5,19 @@
 //! sound, and no block says otherwise. Every read is charged to the limit:
 //! the recovery that fits reports reading what the last refusal reached.
 
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store_recovery_runtime::PhysicalRecoveryBlock, worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial, worth_store_recovery_runtime::WorthStoreRecovery};
+pub(crate) use {
+    worth_store_recovery_runtime::PhysicalRecoveryBlock,
+    worth_store_recovery_runtime::PhysicalRecoveryBlockKind,
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
-pub(crate) use {crate::c10_phase_five_mixed_tail::c10_crash_evidence::ordinary_limits_observing};
-pub(crate) use {worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits};
+pub(crate) use crate::c10_phase_five_mixed_tail::c10_crash_evidence::ordinary_limits_observing;
+pub(crate) use worth_store_testkit_recovery_runtime::phase_three_support::recovery_request_with_limits;
 
 /// How far the sweep moves past a block that names no count its read reached.
 pub(crate) const STRIDE: u64 = 512;
@@ -52,7 +59,8 @@ pub(crate) fn completion_blocks_under_every_observation_limit(stage: &str, root:
         };
         let limit = blocked.cause().limit();
         let named = limit.is_some_and(|limit| {
-            limit.dimension() == worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ObservationBytes
+            limit.dimension()
+                == worth_store_recovery_runtime::PhysicalRecoveryLimitDimension::ObservationBytes
                 && limit.admitted() == admitted
                 && limit.observed() > admitted
         });
@@ -80,10 +88,13 @@ pub(crate) fn completion_blocks_under_every_observation_limit(stage: &str, root:
 /// which names its denial.
 pub(crate) fn completion_reported(blocked: &PhysicalRecoveryBlock) -> bool {
     let evidence = blocked.evidence();
-    let inventory = blocked.cause().phase() == worth_store_recovery_runtime::PhysicalRecoveryBlockKind::PageAdmission
+    let inventory = blocked.cause().phase()
+        == worth_store_recovery_runtime::PhysicalRecoveryBlockKind::PageAdmission
         && !matches!(
             evidence.planning_denial,
-            Some(worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::SuccessorCandidate(_))
+            Some(
+                worth_store_recovery_runtime::PhysicalRecoveryPlanningDenial::SuccessorCandidate(_)
+            )
         );
     evidence.planning_counters.is_some() && !inventory
 }

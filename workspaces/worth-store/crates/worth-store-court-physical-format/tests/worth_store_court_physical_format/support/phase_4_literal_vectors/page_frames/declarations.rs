@@ -3,7 +3,7 @@ pub(crate) use worth_store_physical_format::integrity_declarations::{
     PhysicalIntegrityArtifactFamily, PhysicalIntegrityCoverageBoundary,
 };
 
-pub(crate) use crate::phase_4_literal_vectors::oracle::{
+pub(crate) use crate::oracle::support::literal_vectors::{
     assert_declaration, assert_literal_vector, DeclarationChecksumExpectation, LiteralChecksum,
     LiteralChecksumExpectation, LiteralVector,
 };
@@ -47,7 +47,7 @@ pub(crate) fn verify() {
     for (case, (_, bytes)) in cases().iter().zip(reader_vectors()) {
         let ranges = [(0, 44), (48, bytes.len())];
         let checksums = [LiteralChecksumExpectation {
-            checksum: crate::phase_4_literal_vectors::oracle::LiteralChecksum::Crc32c(
+            checksum: crate::oracle::support::literal_vectors::LiteralChecksum::Crc32c(
                 case.checksum,
             ),
             ranges: &ranges,

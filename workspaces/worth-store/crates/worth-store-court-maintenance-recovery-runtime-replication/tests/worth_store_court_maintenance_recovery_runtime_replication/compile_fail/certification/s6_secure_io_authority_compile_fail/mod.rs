@@ -1,7 +1,10 @@
-#[allow(unused_imports)] use crate::s6_secure_io_authority_compile_fail::*;
-use {std::path::Path};
+#[allow(unused_imports)]
+use crate::s6_secure_io_authority_compile_fail::*;
 
-use {worth_store_test_support::compiler_boundary::cargo_dependency_manifest, worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite};
+use {
+    worth_store_test_support::compiler_boundary::cargo_dependency_manifest,
+    worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite,
+};
 
 #[test]
 fn io_qos_secure_io_authority_rejects_lower_authority_sources() {

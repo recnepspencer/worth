@@ -1,6 +1,5 @@
-#[allow(unused_imports)] use crate::clean_authority::*;
-use {worth_store_buffer_pool::PhysicalFrameKey, worth_store_buffer_pool::PhysicalOperationAllocationScope, worth_store_buffer_pool::PhysicalResidencyDenial, worth_store_buffer_pool::PhysicalResidencyLimits, worth_store_buffer_pool::PhysicalResidencyPool, worth_store_buffer_pool::PhysicalResidencyPoolOwner, worth_store_buffer_pool::PhysicalSpeculativeWorkKind};
-use {worth_store_physical_format::store_namespace::ProposedStoreIdentity, worth_store_physical_format::store_namespace::StableStoreIdentity, worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord, worth_store_physical_format::store_namespace::StoreNamespaceVersion, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+#[allow(unused_imports)]
+use crate::clean_authority::*;
 
 #[test]
 fn owner_capabilities_clean_candidate_and_writeback_transitions() {

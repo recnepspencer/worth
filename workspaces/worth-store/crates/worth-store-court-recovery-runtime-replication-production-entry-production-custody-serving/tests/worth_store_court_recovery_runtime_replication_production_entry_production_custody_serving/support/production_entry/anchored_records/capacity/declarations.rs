@@ -4,18 +4,23 @@ pub(crate) use {worth_store::physical_runtime::PhysicalMutationIdempotencyMateri
 pub(crate) fn rewrite(serving: &ServingPhysicalRuntime, placement: AdmittedRecordPlacementPolicy) {
     let submission = serving.record_submission();
     let key = submission
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x52; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([0x52; 32]),
+        )
         .unwrap();
     let result = submission
         .rewrite_selected_inline_segment(
             placement,
             worth_store::physical_runtime::PhysicalMutationRequest::platform_durable(
                 key,
-                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                worth_store::physical_runtime::PhysicalMutationDeadline::after_milliseconds(30_000)
+                    .unwrap(),
             ),
         )
         .into_raw();
-    let worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared)) = result
+    let worth_proof::TransitionOutcome::Success(
+        worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(prepared),
+    ) = result
     else {
         panic!("maintenance must prepare");
     };

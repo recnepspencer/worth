@@ -3,10 +3,30 @@
 //! and the surviving source stays readable through ordinary catalog reads
 //! before and after a checkpoint and fresh C8 reopen.
 
-pub(crate) use {worth_store::physical_runtime::BlobReclaimDeferral, worth_store::physical_runtime::BlobReclaimDisposition, worth_store::physical_runtime::BlobReclaimFailure, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld;
+pub(crate) use {
+    worth_store::physical_runtime::BlobReclaimDeferral,
+    worth_store::physical_runtime::BlobReclaimDisposition,
+    worth_store::physical_runtime::BlobReclaimFailure,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope, crate::production_entry::release_reopen::shared_reuse_custody::assert_absent, crate::production_entry::release_reopen::shared_reuse_custody::assert_retired, crate::production_entry::release_reopen::shared_reuse_custody::checkpoint, crate::production_entry::release_reopen::shared_reuse_custody::fresh_process, crate::production_entry::release_reopen::shared_reuse_custody::read_exact, crate::production_entry::release_reopen::shared_reuse_custody::recover_serving, crate::production_entry::release_reopen::shared_reuse_custody::release, crate::production_entry::release_reopen::shared_reuse_custody::release_request, crate::production_entry::release_reopen::shared_reuse_custody::selected_marker, crate::production_entry::release_reopen::shared_reuse_custody::shared_format, crate::production_entry::release_reopen::shared_reuse_custody::world, worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope, crate::production_entry::release_reopen::shared_reuse_custody::SCOPE_NAME};
+pub(crate) use {
+    crate::production_entry::release_reopen::shared_reuse_custody::assert_absent,
+    crate::production_entry::release_reopen::shared_reuse_custody::assert_retired,
+    crate::production_entry::release_reopen::shared_reuse_custody::checkpoint,
+    crate::production_entry::release_reopen::shared_reuse_custody::fresh_process,
+    crate::production_entry::release_reopen::shared_reuse_custody::read_exact,
+    crate::production_entry::release_reopen::shared_reuse_custody::recover_serving,
+    crate::production_entry::release_reopen::shared_reuse_custody::release,
+    crate::production_entry::release_reopen::shared_reuse_custody::release_request,
+    crate::production_entry::release_reopen::shared_reuse_custody::selected_marker,
+    crate::production_entry::release_reopen::shared_reuse_custody::shared_format,
+    crate::production_entry::release_reopen::shared_reuse_custody::world,
+    crate::production_entry::release_reopen::shared_reuse_custody::SCOPE_NAME,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope,
+    worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope,
+};
 
 pub(crate) fn run() {
     let format = shared_format();
@@ -19,10 +39,16 @@ pub(crate) fn run() {
     .expect("genuine shared-reuse recovery world");
     let scope = admitted_blob_scope(SCOPE_NAME);
     let payload = crate::production_entry::release_reopen::shared_reuse_custody::world::payload();
-    let original = crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(&world, &scope, &payload);
+    let original =
+        crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(
+            &world, &scope, &payload,
+        );
     let original_marker = selected_marker(world.serving());
     checkpoint(world.serving(), [0xe1; 32]);
-    let destination = crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(&world, &scope, &payload);
+    let destination =
+        crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(
+            &world, &scope, &payload,
+        );
     let destination_marker = selected_marker(world.serving());
     assert_eq!(
         read_exact(world.serving(), &scope, destination, &payload),
@@ -54,7 +80,10 @@ pub(crate) fn run() {
         destination_marker,
     );
     assert_retired(&first);
-    assert_eq!(first.disposition(), worth_store::physical_runtime::BlobReclaimDisposition::Dropped);
+    assert_eq!(
+        first.disposition(),
+        worth_store::physical_runtime::BlobReclaimDisposition::Dropped
+    );
     assert!(first
         .dropped_records()
         .contains(&destination_marker.record()));
@@ -67,7 +96,9 @@ pub(crate) fn run() {
     let producer_policy = world.serving().residency_observation().admitted_policy();
     let recovery_bytes = producer_policy
         .operation_bytes()
-        .min(producer_policy.scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery));
+        .min(producer_policy.scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery,
+        ));
     let retained = world.retained_root();
     let root = retained.path().to_path_buf();
     drop(world);
@@ -88,7 +119,9 @@ pub(crate) fn run() {
     let growth = serving.certification_charged_growth_bytes();
     let repeated = release(
         &serving,
-        crate::production_entry::release_reopen::shared_reuse_custody::world::shared_placement(format),
+        crate::production_entry::release_reopen::shared_reuse_custody::world::shared_placement(
+            format,
+        ),
         destination,
         destination_marker,
     );
@@ -102,7 +135,9 @@ pub(crate) fn run() {
 
     let source = release(
         &serving,
-        crate::production_entry::release_reopen::shared_reuse_custody::world::shared_placement(format),
+        crate::production_entry::release_reopen::shared_reuse_custody::world::shared_placement(
+            format,
+        ),
         original,
         original_marker,
     );

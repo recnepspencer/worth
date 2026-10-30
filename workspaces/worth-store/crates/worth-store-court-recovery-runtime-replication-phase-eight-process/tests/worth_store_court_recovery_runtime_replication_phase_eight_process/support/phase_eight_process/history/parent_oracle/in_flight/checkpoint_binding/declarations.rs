@@ -1,4 +1,4 @@
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity};
+pub(crate) use crate::phase_eight_process::history::parent_oracle::canonical_membership_placement::RecordIdentity;
 
 /// Count completed checkpoint terminal records that bind the operation to the
 /// expected physical record. The checkpoint wire stores record identities,
@@ -27,7 +27,8 @@ pub(crate) fn scan_identity(bytes: &[u8], identity: &[u8]) -> Result<bool, Strin
     let bindings = crate::phase_eight_process::history::parent_oracle::wire::validated_checkpoint_binding_payloads(bytes)
         .ok_or_else(|| "semantic checkpoint oracle rejected checkpoint".to_owned())?;
     for payload in bindings {
-        found_identity |= crate::history::parent_oracle::in_flight::binding_record_matches(payload, identity);
+        found_identity |=
+            crate::history::parent_oracle::in_flight::binding_record_matches(payload, identity);
     }
     Ok(found_identity)
 }
@@ -38,14 +39,19 @@ pub(crate) fn completed_binding_redo_digest(
     expected_record: RecordIdentity,
 ) -> Option<[u8; 32]> {
     let mut cursor = crate::history::parent_oracle::in_flight::Cursor::new(bytes);
-    if cursor.field() != Some(crate::history::parent_oracle::in_flight::COMPACTION_DOMAIN) || cursor.byte() != Some(3) {
+    if cursor.field() != Some(crate::history::parent_oracle::in_flight::COMPACTION_DOMAIN)
+        || cursor.byte() != Some(3)
+    {
         return None;
     }
-    if !crate::history::parent_oracle::in_flight::basis_matches(&mut cursor, identity) || cursor.byte() != Some(2) {
+    if !crate::history::parent_oracle::in_flight::basis_matches(&mut cursor, identity)
+        || cursor.byte() != Some(2)
+    {
         return None;
     }
     let binding = cursor.field()?;
-    let binding_redo_digest = crate::history::parent_oracle::in_flight::binding_redo_digest(binding, identity, None)?;
+    let binding_redo_digest =
+        crate::history::parent_oracle::in_flight::binding_redo_digest(binding, identity, None)?;
     if cursor.u32().is_none() || cursor.u64().is_none() {
         return None;
     }

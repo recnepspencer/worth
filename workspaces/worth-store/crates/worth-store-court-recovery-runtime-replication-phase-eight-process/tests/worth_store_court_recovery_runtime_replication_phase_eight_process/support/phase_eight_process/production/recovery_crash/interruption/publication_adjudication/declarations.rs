@@ -1,9 +1,13 @@
-pub(crate) use {std::path::Path};
+pub(crate) use std::path::Path;
 
-pub(crate) use {worth_store_offline_verifier::RecoveryObserverReport};
-pub(crate) use {worth_store_recovery_runtime::RecoveryReportDenialCause, worth_store_recovery_runtime::RecoveryReportEnvelope, worth_store_recovery_runtime::RecoveryReportOutcome};
+pub(crate) use worth_store_offline_verifier::RecoveryObserverReport;
+pub(crate) use {
+    worth_store_recovery_runtime::RecoveryReportDenialCause,
+    worth_store_recovery_runtime::RecoveryReportEnvelope,
+    worth_store_recovery_runtime::RecoveryReportOutcome,
+};
 
-pub(crate) use {crate::phase_eight_process::comparison, crate::history};
+pub(crate) use {crate::history, crate::phase_eight_process::comparison};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RawPublicationPosture {

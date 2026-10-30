@@ -1,5 +1,20 @@
-pub(crate) use {worth_store_buffer_pool::PhysicalFrameKey, worth_store_buffer_pool::PhysicalOperationAllocationScope, worth_store_buffer_pool::PhysicalResidencyDenial, worth_store_buffer_pool::PhysicalResidencyLimits, worth_store_buffer_pool::PhysicalResidencyPool, worth_store_buffer_pool::PhysicalResidencyPoolOwner, worth_store_buffer_pool::PhysicalSpeculativeWorkKind};
-pub(crate) use {worth_store_physical_format::store_namespace::ProposedStoreIdentity, worth_store_physical_format::store_namespace::StableStoreIdentity, worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord, worth_store_physical_format::store_namespace::StoreNamespaceVersion, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+pub(crate) use {
+    worth_store_buffer_pool::PhysicalFrameKey,
+    worth_store_buffer_pool::PhysicalOperationAllocationScope,
+    worth_store_buffer_pool::PhysicalResidencyDenial,
+    worth_store_buffer_pool::PhysicalResidencyLimits,
+    worth_store_buffer_pool::PhysicalResidencyPool,
+    worth_store_buffer_pool::PhysicalResidencyPoolOwner,
+    worth_store_buffer_pool::PhysicalSpeculativeWorkKind,
+};
+pub(crate) use {
+    worth_store_physical_format::store_namespace::ProposedStoreIdentity,
+    worth_store_physical_format::store_namespace::StableStoreIdentity,
+    worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord,
+    worth_store_physical_format::store_namespace::StoreNamespaceVersion,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
 pub(crate) fn owned_pool(
     identity_byte: u8,
@@ -8,17 +23,22 @@ pub(crate) fn owned_pool(
     worth_store_buffer_pool::CandidateFrameCleanAuthority,
     worth_store_buffer_pool::FrameWritebackCleanAuthority,
 ) {
-    worth_store_buffer_pool::PhysicalResidencyPoolOwner::open(store(identity_byte), residency_limits())
-        .unwrap()
-        .into_parts()
+    worth_store_buffer_pool::PhysicalResidencyPoolOwner::open(
+        store(identity_byte),
+        residency_limits(),
+    )
+    .unwrap()
+    .into_parts()
 }
 
 pub(crate) fn foreground_write(
     pool: &PhysicalResidencyPool,
 ) -> worth_store_buffer_pool::ForegroundWriteAllocationGrant {
     pool.begin_foreground_write_operation(
-        worth_store_buffer_pool::PhysicalResidencyPool::candidate_batch_operation_bytes(std::num::NonZeroUsize::MIN)
-            .unwrap(),
+        worth_store_buffer_pool::PhysicalResidencyPool::candidate_batch_operation_bytes(
+            std::num::NonZeroUsize::MIN,
+        )
+        .unwrap(),
     )
     .unwrap()
 }
@@ -37,14 +57,18 @@ pub(crate) fn frame_key(store: StableStoreIdentity, ordinal: u64) -> PhysicalFra
     let artifact = worth_store_physical_format::RecordArtifactFile::RootManifest {
         generation: ordinal,
     };
-    let coordinate = worth_store_physical_format::RecordFrameCoordinate::new(artifact, 0, 8).unwrap();
+    let coordinate =
+        worth_store_physical_format::RecordFrameCoordinate::new(artifact, 0, 8).unwrap();
     worth_store_buffer_pool::PhysicalFrameKey::new(store, coordinate)
 }
 
 pub(crate) fn store(identity_byte: u8) -> StableStoreIdentity {
     worth_store_physical_format::store_namespace::StoreNamespaceIdentityRecord::new(
         worth_store_physical_format::store_namespace::StoreNamespaceVersion::CURRENT,
-        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes([identity_byte; 16]).unwrap(),
+        worth_store_physical_format::store_namespace::ProposedStoreIdentity::from_nonzero_bytes(
+            [identity_byte; 16],
+        )
+        .unwrap(),
     )
     .published_identity()
 }
@@ -52,8 +76,10 @@ pub(crate) fn store(identity_byte: u8) -> StableStoreIdentity {
 pub(crate) fn residency_limits() -> PhysicalResidencyLimits {
     let bytes = std::num::NonZeroU64::new(4096).unwrap();
     let candidate_operation =
-        worth_store_buffer_pool::PhysicalResidencyPool::candidate_batch_operation_bytes(std::num::NonZeroUsize::MIN)
-            .unwrap();
+        worth_store_buffer_pool::PhysicalResidencyPool::candidate_batch_operation_bytes(
+            std::num::NonZeroUsize::MIN,
+        )
+        .unwrap();
     let operation = std::num::NonZeroU64::new(candidate_operation.get() + 8).unwrap();
     let frames = std::num::NonZeroU32::new(4).unwrap();
     let mut limits = worth_store_buffer_pool::PhysicalResidencyLimits::builder()

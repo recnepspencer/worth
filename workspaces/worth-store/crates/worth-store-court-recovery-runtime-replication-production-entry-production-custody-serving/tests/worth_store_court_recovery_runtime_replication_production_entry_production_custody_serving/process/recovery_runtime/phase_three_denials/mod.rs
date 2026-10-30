@@ -1,12 +1,16 @@
+#[allow(unused_imports)]
+use crate::phase_three_denials::*;
 
-
-#[allow(unused_imports)] use crate::phase_three_denials::*;
-use {std::num::NonZeroU64};
-
-use {std::path::Path, worth_store_physical_format::RootSelectorIdentity, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery, worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery_with_limits, worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked, worth_store_testkit_recovery_runtime::phase_three_support::initialize_store, worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration, worth_store_testkit_recovery_runtime::phase_three_support::limits, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_checkpoint, worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis};
-use {worth_store_physical_format::CheckpointBindingCompactionHeader, worth_store_physical_format::CheckpointDirtyFrameBasis, worth_store_physical_format::CheckpointRootBasis, worth_store_physical_format::CheckpointStreamEncoder, worth_store_physical_format::CheckpointWalSourceRange, worth_store_physical_format::DurableRootSelector, worth_store_physical_format::PhysicalCheckpointIdentity, worth_store_physical_format::PhysicalCheckpointSource, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate, worth_store_physical_format::RootSelectorRole, worth_store_physical_format::ROOT_SELECTOR_BYTES};
-use {worth_store_recovery_physics::PhysicalRootCandidateDenial, worth_store_recovery_physics::PhysicalRootSelectionDenial, worth_store_recovery_physics::SelectedPhysicalWalTailDenial};
-use {worth_store_recovery_runtime::PhysicalRecoveryBlock, worth_store_recovery_runtime::PhysicalRecoveryBlockKind, worth_store_recovery_runtime::PhysicalRecoveryCheckpointIntegrityDenial, worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryLimits, worth_store_recovery_runtime::PhysicalRecoveryRootProtocolArtifact, worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial, worth_store_recovery_runtime::PhysicalRecoverySourceDenial};
+use worth_store_physical_format::ROOT_SELECTOR_BYTES;
+use {
+    worth_store_testkit_recovery_runtime::phase_three_support::admitted_recovery,
+    worth_store_testkit_recovery_runtime::phase_three_support::expect_blocked,
+    worth_store_testkit_recovery_runtime::phase_three_support::initialize_store,
+    worth_store_testkit_recovery_runtime::phase_three_support::limit_declaration,
+    worth_store_testkit_recovery_runtime::phase_three_support::limits,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_checkpoint,
+    worth_store_testkit_recovery_runtime::phase_three_support::publish_synthetic_genesis,
+};
 
 #[test]
 fn foreign_store_selector_is_rejected_through_the_persisted_boundary() {
@@ -79,8 +83,10 @@ fn foreign_store_selector_is_rejected_through_the_persisted_boundary() {
 #[test]
 fn torn_current_retains_unlinked_previous_selection_cause() {
     let blocked = root_case("unlinked-previous", |root| {
-        let current =
-            worth_store_physical_format::DurableRootSelector::decode(&std::fs::read(current_selector(root)).unwrap()).unwrap();
+        let current = worth_store_physical_format::DurableRootSelector::decode(
+            &std::fs::read(current_selector(root)).unwrap(),
+        )
+        .unwrap();
         let previous = worth_store_physical_format::DurableRootSelector::new(
             current.store_identity(),
             current.format(),
@@ -157,7 +163,8 @@ fn checkpoint_denials_retain_truncation_integrity_and_count_causes() {
 
     let mut declaration = limit_declaration(2, 8, 8 * 1024);
     declaration.dirty_frames = 1;
-    let count_limits = worth_store_recovery_runtime::PhysicalRecoveryLimits::admit(declaration).unwrap();
+    let count_limits =
+        worth_store_recovery_runtime::PhysicalRecoveryLimits::admit(declaration).unwrap();
     let count = checkpoint_case("record-count", count_limits, |path, store| {
         write_checkpoint_with_two_dirty_records(path, store);
     });
@@ -225,7 +232,9 @@ fn corrupt_wal_counts_scanned_separately_from_valid_and_retains_identity() {
         .source_denials
         .iter()
         .find_map(|denial| match denial {
-            worth_store_recovery_runtime::PhysicalRecoverySourceDenial::WalIntegrity(corruption) => Some(corruption),
+            worth_store_recovery_runtime::PhysicalRecoverySourceDenial::WalIntegrity(
+                corruption,
+            ) => Some(corruption),
             _ => None,
         })
         .expect("corrupt canonical WAL must retain typed artifact evidence");
@@ -273,6 +282,8 @@ fn wal_gap_retains_the_exact_continuity_denial_and_frontier() {
         .iter()
         .any(|denial| matches!(
             denial,
-            worth_store_recovery_runtime::PhysicalRecoverySourceDenial::WalTail(worth_store_recovery_physics::SelectedPhysicalWalTailDenial::SegmentGap)
+            worth_store_recovery_runtime::PhysicalRecoverySourceDenial::WalTail(
+                worth_store_recovery_physics::SelectedPhysicalWalTailDenial::SegmentGap
+            )
         )));
 }

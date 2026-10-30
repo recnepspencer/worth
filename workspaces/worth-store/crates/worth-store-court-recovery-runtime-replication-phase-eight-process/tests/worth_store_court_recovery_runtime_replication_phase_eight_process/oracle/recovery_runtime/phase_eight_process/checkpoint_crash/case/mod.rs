@@ -1,2 +1,2 @@
-#[path = "oracle/mod.rs"]
-pub(crate) mod oracle;
+#[path = "reference_checks/mod.rs"]
+pub(crate) mod reference_checks;

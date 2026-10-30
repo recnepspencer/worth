@@ -3,14 +3,31 @@
 
 pub(crate) use {std::fs, std::path::Path};
 
-pub(crate) use {worth_store_physical_format::BlobRecordKind, worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurableExtentRecordPlacement, worth_store_physical_format::DurableFreeSpaceManifestHeader, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::DurableRootSelector, worth_store_physical_format::ExtentArenaRange, worth_store_physical_format::PersistedRecordIdentity, worth_store_physical_format::PhysicalFreeSpaceMembershipBlock, worth_store_physical_format::PhysicalRecordFormatDeclaration, worth_store_physical_format::PhysicalRootRoutingBlock, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::SelectedRecordContentClass};
+pub(crate) use {
+    worth_store_physical_format::BlobRecordKind,
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DurableExtentRecordPlacement,
+    worth_store_physical_format::DurableFreeSpaceManifestHeader,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::DurableRootSelector,
+    worth_store_physical_format::ExtentArenaRange,
+    worth_store_physical_format::PersistedRecordIdentity,
+    worth_store_physical_format::PhysicalFreeSpaceMembershipBlock,
+    worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    worth_store_physical_format::PhysicalRootRoutingBlock,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::SelectedRecordContentClass,
+};
 
 pub(crate) fn selected_root(
     root: &Path,
 ) -> (DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration) {
     let records = root.join("families/records");
     let selector = worth_store_physical_format::DurableRootSelector::decode(
-        &std::fs::read(records.join(worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name())).unwrap(),
+        &std::fs::read(records.join(
+            worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name(),
+        ))
+        .unwrap(),
     )
     .unwrap();
     let bytes = std::fs::read(
@@ -22,7 +39,8 @@ pub(crate) fn selected_root(
         ),
     )
     .unwrap();
-    let (manifest, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(&bytes, u16::MAX).unwrap();
+    let (manifest, format) =
+        worth_store_physical_format::DurablePhysicalRootManifest::decode(&bytes, u16::MAX).unwrap();
     assert_eq!(format, selector.format());
     assert_eq!(manifest.generation(), selector.root_generation());
     assert_eq!(manifest.encode(format), bytes);
@@ -42,23 +60,32 @@ pub(crate) fn selected_publication_extent(
             }
             .file_name(),
         );
-        let (block, _) =
-            worth_store_physical_format::PhysicalRootRoutingBlock::decode(&std::fs::read(path).unwrap(), manifest.node_capacity())
-                .unwrap();
+        let (block, _) = worth_store_physical_format::PhysicalRootRoutingBlock::decode(
+            &std::fs::read(path).unwrap(),
+            manifest.node_capacity(),
+        )
+        .unwrap();
         match block {
             worth_store_physical_format::PhysicalRootRoutingBlock::Leaf { entries, .. } => {
                 for placement in entries {
                     if placement.content_class()
-                        == worth_store_physical_format::SelectedRecordContentClass::Blob(worth_store_physical_format::BlobRecordKind::GenerationPublished)
+                        == worth_store_physical_format::SelectedRecordContentClass::Blob(
+                            worth_store_physical_format::BlobRecordKind::GenerationPublished,
+                        )
                     {
-                        let worth_store_physical_format::CurrentPhysicalRecordPlacement::Extent(extent) = placement else {
+                        let worth_store_physical_format::CurrentPhysicalRecordPlacement::Extent(
+                            extent,
+                        ) = placement
+                        else {
                             panic!("released publication must occupy a native extent")
                         };
                         return (placement.record(), extent);
                     }
                 }
             }
-            worth_store_physical_format::PhysicalRootRoutingBlock::Branch { children, .. } => pending.extend(children),
+            worth_store_physical_format::PhysicalRootRoutingBlock::Branch { children, .. } => {
+                pending.extend(children)
+            }
         }
     }
     panic!("released publication missing from selected pre-redo root")
@@ -78,12 +105,18 @@ pub(crate) fn selected_placements(
             }
             .file_name(),
         );
-        let (block, _) =
-            worth_store_physical_format::PhysicalRootRoutingBlock::decode(&std::fs::read(path).unwrap(), manifest.node_capacity())
-                .unwrap();
+        let (block, _) = worth_store_physical_format::PhysicalRootRoutingBlock::decode(
+            &std::fs::read(path).unwrap(),
+            manifest.node_capacity(),
+        )
+        .unwrap();
         match block {
-            worth_store_physical_format::PhysicalRootRoutingBlock::Leaf { entries, .. } => placements.extend(entries),
-            worth_store_physical_format::PhysicalRootRoutingBlock::Branch { children, .. } => pending.extend(children),
+            worth_store_physical_format::PhysicalRootRoutingBlock::Leaf { entries, .. } => {
+                placements.extend(entries)
+            }
+            worth_store_physical_format::PhysicalRootRoutingBlock::Branch { children, .. } => {
+                pending.extend(children)
+            }
         }
     }
     placements.sort_unstable_by_key(|placement| placement.record());
@@ -131,7 +164,9 @@ pub(crate) fn range_published_free(
         )
         .unwrap();
         match block {
-            worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::Leaf { entries, .. } => {
+            worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::Leaf {
+                entries, ..
+            } => {
                 if entries.iter().any(|entry| {
                     entry.generation() > source_generation
                         && entry.generation() <= manifest.generation()
@@ -144,7 +179,10 @@ pub(crate) fn range_published_free(
                     return true;
                 }
             }
-            worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::Branch { children, .. } => pending.extend(children),
+            worth_store_physical_format::PhysicalFreeSpaceMembershipBlock::Branch {
+                children,
+                ..
+            } => pending.extend(children),
         }
     }
     false

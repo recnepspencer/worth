@@ -2,9 +2,17 @@
 //! where that costs too much, every limit near a boundary and a stride
 //! elsewhere.
 
-pub use {std::collections::BTreeMap};
+pub use std::collections::BTreeMap;
 
-pub use {crate::production_entry::published_above_checkpoint::limit_sweep::Blocked, crate::production_entry::published_above_checkpoint::limit_sweep::worlds::Killed, crate::production_entry::published_above_checkpoint::limit_sweep::SUFFICIENT_ENTRIES, crate::production_entry::published_above_checkpoint::limit_sweep::Swept, crate::production_entry::published_above_checkpoint::limit_sweep::entries, crate::production_entry::published_above_checkpoint::limit_sweep::paged, crate::production_entry::published_above_checkpoint::limit_sweep::reached};
+pub use {
+    crate::production_entry::published_above_checkpoint::limit_sweep::entries,
+    crate::production_entry::published_above_checkpoint::limit_sweep::paged,
+    crate::production_entry::published_above_checkpoint::limit_sweep::reached,
+    crate::production_entry::published_above_checkpoint::limit_sweep::worlds::Killed,
+    crate::production_entry::published_above_checkpoint::limit_sweep::Blocked,
+    crate::production_entry::published_above_checkpoint::limit_sweep::Swept,
+    crate::production_entry::published_above_checkpoint::limit_sweep::SUFFICIENT_ENTRIES,
+};
 
 /// How close below a boundary a strided sweep visits every limit.
 pub const NEAR: u64 = 64;

@@ -1,34 +1,7 @@
 #[allow(unused_imports)]
 use crate::physical_blob_journeys::blob_reclaim_released::*;
-use {std::num::NonZeroU16, std::num::NonZeroU64};
 
-use worth_proof::AdmittedBlobReleaseProof;
-use worth_proof::TransitionOutcome;
-use worth_store_blob_chunks::BlobChunkSize;
-use {
-    worth_store::physical_runtime::AdmittedBlobScope,
-    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
-    worth_store::physical_runtime::BlobCheckpointLimit,
-    worth_store::physical_runtime::BlobIngestDeclaration,
-    worth_store::physical_runtime::BlobReadLimits,
-    worth_store::physical_runtime::BlobReclaimDeferral,
-    worth_store::physical_runtime::BlobReclaimDisposition,
-    worth_store::physical_runtime::BlobReclaimFailure,
-    worth_store::physical_runtime::BlobReclaimLimits,
-    worth_store::physical_runtime::BlobReclaimRequest,
-    worth_store::physical_runtime::ManifestEntryCapacity,
-    worth_store::physical_runtime::PhysicalCheckpointDeadline,
-    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
-    worth_store::physical_runtime::PhysicalCheckpointOutcome,
-    worth_store::physical_runtime::PhysicalCheckpointRequest,
-    worth_store::physical_runtime::PhysicalMutationDeadline,
-    worth_store::physical_runtime::PhysicalPageSizeClass,
-    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
-    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
-    worth_store::physical_runtime::PublishedBlobGeneration,
-    worth_store::physical_runtime::ServingPhysicalRuntime,
-};
-use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::BlobRecordV1};
+use worth_store_physical_format::decode_blob_record;
 
 use {
     crate::physical_blob_journeys::blob_ingest_process::observed_without_damage,

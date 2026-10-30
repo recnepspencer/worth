@@ -13,9 +13,12 @@ pub(crate) fn recovery_policy_with_scope(
     usable_recovery: u64,
 ) -> AdmittedPhysicalRecordResidencyPolicy {
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
-    let canonical = worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy::canonical(format);
+    let canonical =
+        worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy::canonical(format);
     let bytes = |value| std::num::NonZeroU64::new(value).unwrap();
     let count = |value| std::num::NonZeroU32::new(value).unwrap();
     const PROGRESS_HEADROOM: u64 = 64 << 10;
@@ -39,14 +42,19 @@ pub(crate) fn recovery_policy_with_scope(
         worth_store::physical_runtime::PhysicalOperationAllocationScope::Verification,
         worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob,
     ] {
-        let maximum = if scope == worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery {
-            PROGRESS_HEADROOM + usable_recovery
-        } else {
-            canonical.scope_bytes(scope)
-        };
+        let maximum =
+            if scope == worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery {
+                PROGRESS_HEADROOM + usable_recovery
+            } else {
+                canonical.scope_bytes(scope)
+            };
         builder = builder.scope_bytes(scope, bytes(maximum));
     }
-    for kind in [worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead, worth_store::physical_runtime::PhysicalSpeculativeWorkKind::Prefetch, worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind] {
+    for kind in [
+        worth_store::physical_runtime::PhysicalSpeculativeWorkKind::ReadAhead,
+        worth_store::physical_runtime::PhysicalSpeculativeWorkKind::Prefetch,
+        worth_store::physical_runtime::PhysicalSpeculativeWorkKind::WriteBehind,
+    ] {
         builder = builder.speculative_frames(kind, count(canonical.speculative_frames(kind)));
     }
     builder

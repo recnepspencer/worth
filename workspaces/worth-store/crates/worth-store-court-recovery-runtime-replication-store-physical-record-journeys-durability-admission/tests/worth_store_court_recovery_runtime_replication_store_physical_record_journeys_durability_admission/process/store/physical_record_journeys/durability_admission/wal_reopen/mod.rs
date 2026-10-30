@@ -1,18 +1,12 @@
-#[allow(unused_imports)] use worth_store_testkit_store::physical_record_journeys::durability_admission::wal_reopen::*;
-use {std::num::NonZeroU32, std::num::NonZeroU64};
-use {std::path::Path};
+#[allow(unused_imports)]
+use worth_store_testkit_store::physical_record_journeys::durability_admission::wal_reopen::*;
 
-use {sha2::Digest, sha2::Sha256};
-use {worth_proof::NonEmpty, worth_proof::TransitionOutcome};
-use {worth_store::physical_runtime::PhysicalDurabilityStateReopenFailure, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalSignalConstructionFailure, worth_store::physical_runtime::PhysicalWalGroupAppendOutcome, worth_store::physical_runtime::PhysicalWalOpenFailure, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::RecordBootstrapFailure, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
-use {worth_store_physical_backend::MediaOperationRole};
-use {worth_store_wal::WalArtifactStoreDenial, worth_store_wal::WalTopologyDenialKind};
-
-use {worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy, worth_store_testkit_store::physical_record_journeys::media, worth_store_testkit_store::physical_record_journeys::success};
-use {worth_store_testkit_store::physical_record_journeys::durability_admission::wal_append::prepared};
-
-
-
+use {
+    worth_store_testkit_store::physical_record_journeys::configuration,
+    worth_store_testkit_store::physical_record_journeys::durability_with_wal_policy,
+    worth_store_testkit_store::physical_record_journeys::media,
+    worth_store_testkit_store::physical_record_journeys::success,
+};
 
 #[test]
 fn hostile_wal_inventories_fail_with_the_exact_reopen_denial() {
@@ -81,7 +75,9 @@ fn noncontiguous_empty_tail_is_rejected_without_cleanup() {
 
     assert_eq!(
         reopen_failure(&store_root, wal_policy(SEGMENT_BYTES, 4)),
-        worth_store::physical_runtime::PhysicalWalOpenFailure::Topology(worth_store_wal::WalTopologyDenialKind::NonContiguousSegment),
+        worth_store::physical_runtime::PhysicalWalOpenFailure::Topology(
+            worth_store_wal::WalTopologyDenialKind::NonContiguousSegment
+        ),
     );
     assert!(noncontiguous.exists());
 }
@@ -96,16 +92,19 @@ fn oversized_first_segment_is_rejected_before_its_payload_is_read() {
     let before_empty = empty_observer.media_counters();
     let (format, _, access) = configuration();
     let empty_durability = durability_with_wal_policy(&empty_media, wal_policy(SEGMENT_BYTES, 3));
-    success(empty_media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(
-        format,
-        access,
-        empty_durability,
-    )))
+    success(
+        empty_media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(
+            format,
+            access,
+            empty_durability,
+        )),
+    )
     .close();
     let empty_reads = empty_observer
         .media_counters()
         .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-        - before_empty.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead);
+        - before_empty
+            .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead);
 
     let oversized_parent = tempfile::tempdir().unwrap();
     let oversized_root = oversized_parent.path().join("store");
@@ -124,12 +123,16 @@ fn oversized_first_segment_is_rejected_before_its_payload_is_read() {
     );
     assert_eq!(
         failure,
-        worth_store::physical_runtime::PhysicalWalOpenFailure::SegmentByteLimitExceeded { admitted, observed },
+        worth_store::physical_runtime::PhysicalWalOpenFailure::SegmentByteLimitExceeded {
+            admitted,
+            observed
+        },
     );
     let oversized_reads = oversized_observer
         .media_counters()
         .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead)
-        - before_oversized.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead);
+        - before_oversized
+            .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedRead);
     assert_eq!(
         oversized_reads, empty_reads,
         "oversized WAL rejection must add no payload read to ordinary bootstrap I/O",

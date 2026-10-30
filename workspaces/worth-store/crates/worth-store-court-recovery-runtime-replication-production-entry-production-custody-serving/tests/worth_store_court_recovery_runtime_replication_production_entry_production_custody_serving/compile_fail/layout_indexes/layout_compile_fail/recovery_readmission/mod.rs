@@ -1,5 +1,3 @@
-use {crate::compile_fail_support};
-
 #[test]
 fn recovery_imports_cannot_mint_readmission_authority() {
     crate::compile_fail_support::assert_compile_fails_in_ui_dir(

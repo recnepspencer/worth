@@ -1,21 +1,22 @@
-use {std::io::Seek, std::io::SeekFrom, std::io::Write};
+use {std::io::Seek, std::io::Write};
 
-use {worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::RecordServingTerminalPosture, worth_store::physical_runtime::RecordStreamFailureKind};
-
-use {worth_store_testkit_store::durable_publication::root::publish_single};
-use {worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture};
+use worth_store_testkit_store::durable_publication::root::publish_single;
 
 #[test]
 fn later_extent_damage_through_a_view_stays_local_and_releases_read_authority() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("damaged-view");
     let (serving, placement) = worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::initialize(&root);
-    let expected = worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::payload(40_000);
+    let expected =
+        worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::payload(
+            40_000,
+        );
     let publication = publish_single(
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([173; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
     );
     let operation_bytes_before_read = serving
         .residency_observation()
@@ -24,12 +25,14 @@ fn later_extent_damage_through_a_view_stays_local_and_releases_read_authority() 
     let record = publication.settled_members()[0].record_id(0).unwrap();
     let extent = root.join("families/records/arenas/arena-0000000000000001.data");
     let arena = std::fs::read(&extent).unwrap();
-    let second_chunk = worth_store_testkit_store::durable_frame_oracle::first_arena_chunk_offset(&arena, 1);
+    let second_chunk =
+        worth_store_testkit_store::durable_frame_oracle::first_arena_chunk_offset(&arena, 1);
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .open(extent)
         .unwrap();
-    file.seek(std::io::SeekFrom::Start(second_chunk + 120)).unwrap();
+    file.seek(std::io::SeekFrom::Start(second_chunk + 120))
+        .unwrap();
     file.write_all(&[0xa5]).unwrap();
     file.sync_all().unwrap();
     assert!(
@@ -43,7 +46,9 @@ fn later_extent_damage_through_a_view_stays_local_and_releases_read_authority() 
         .expect("read protection admission")
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
 
@@ -86,7 +91,10 @@ fn later_extent_damage_through_a_view_stays_local_and_releases_read_authority() 
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([213; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([b"served after local damage".as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([
+            b"served after local damage".as_slice(),
+        ])
+        .unwrap(),
     );
     assert_eq!(
         serving.abort().records().posture(),
@@ -104,7 +112,8 @@ fn cancelling_after_a_view_reports_unread_bytes_and_releases_the_held_frame() {
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([173; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
     );
     let operation_bytes_before_read = serving
         .residency_observation()
@@ -116,7 +125,9 @@ fn cancelling_after_a_view_reports_unread_bytes_and_releases_the_held_frame() {
         .expect("read protection admission")
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
 
@@ -164,7 +175,8 @@ fn abort_during_extent_read_reports_runtime_release_without_accusing_bytes() {
         &serving,
         placement,
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([174; 32]),
-        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+        worth_store::physical_runtime::RecordAppendBatch::try_from_iter([expected.as_slice()])
+            .unwrap(),
     );
     let record = publication.settled_members()[0].record_id(0).unwrap();
     let mut session = serving
@@ -172,7 +184,9 @@ fn abort_during_extent_read_reports_runtime_release_without_accusing_bytes() {
         .expect("read protection admission")
         .open(
             record,
-            worth_store::physical_runtime::RecordReadLimits::new(worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap()),
+            worth_store::physical_runtime::RecordReadLimits::new(
+                worth_store::physical_runtime::RecordByteLimit::new(expected.len() as u32).unwrap(),
+            ),
         )
         .unwrap();
 
@@ -185,7 +199,10 @@ fn abort_during_extent_read_reports_runtime_release_without_accusing_bytes() {
         Ok(_) => panic!("an aborted runtime must stop the next extent read"),
     };
 
-    assert_eq!(failure.kind(), worth_store::physical_runtime::RecordStreamFailureKind::RuntimeReleased);
+    assert_eq!(
+        failure.kind(),
+        worth_store::physical_runtime::RecordStreamFailureKind::RuntimeReleased
+    );
     assert_eq!(
         failure.completed_range(),
         0..worth_store_testkit_store::physical_record_journeys::record_chunk_views::fixture::CHUNK_PAYLOAD_BYTES as u64

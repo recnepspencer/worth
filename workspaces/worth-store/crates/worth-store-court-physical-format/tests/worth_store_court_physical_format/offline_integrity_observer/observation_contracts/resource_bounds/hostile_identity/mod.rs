@@ -1,11 +1,7 @@
 use {
     crate::resource_bounds::bounded_request, crate::resource_bounds::limits,
     crate::resource_bounds::store_snapshot, crate::support::fixtures::clean_store,
-    worth_foundational::PhysicalArtifactFamily,
     worth_store_offline_integrity_observer::observe_store,
-    worth_store_offline_integrity_observer::OfflineArtifactDuplicateEvidence,
-    worth_store_offline_integrity_observer::OfflineArtifactFamily,
-    worth_store_offline_integrity_observer::OfflineIntegrityOutcome,
 };
 
 #[test]

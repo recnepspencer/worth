@@ -1,14 +1,11 @@
 //! Concurrent, independently bounded pipe collection for real process subjects.
-pub use {std::io::Read};
-pub use {std::thread::JoinHandle};
+pub use std::io::Read;
+pub use std::thread::JoinHandle;
 
 pub const MAXIMUM_PIPE_BYTES: usize = 4 * 1024 * 1024;
 pub type Capture = JoinHandle<Result<Vec<u8>, String>>;
 
-pub fn start(
-    pipe: Option<impl Read + Send + 'static>,
-    label: &'static str,
-) -> Option<Capture> {
+pub fn start(pipe: Option<impl Read + Send + 'static>, label: &'static str) -> Option<Capture> {
     pipe.map(|pipe| {
         std::thread::spawn(move || {
             let mut bytes = Vec::new();

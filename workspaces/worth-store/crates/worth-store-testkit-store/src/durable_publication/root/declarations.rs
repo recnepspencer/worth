@@ -1,4 +1,11 @@
-pub use {worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::CompletedPhysicalRootPublication, worth_store::physical_runtime::PhysicalManifestCapacityTransition, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::RecordAppendBatch, worth_store::physical_runtime::ServingPhysicalRuntime};
+pub use {
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::CompletedPhysicalRootPublication,
+    worth_store::physical_runtime::PhysicalManifestCapacityTransition,
+    worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial,
+    worth_store::physical_runtime::RecordAppendBatch,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
 pub fn publish_single(
     serving: &ServingPhysicalRuntime,

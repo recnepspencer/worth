@@ -1,7 +1,5 @@
-#[allow(unused_imports)] use crate::blob_harness_public_boundary_compile_fail::*;
-use {std::path::Path};
-
-use {worth_store_test_support::compiler_boundary::cargo_dependency_manifest, worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite};
+#[allow(unused_imports)]
+use crate::blob_harness_public_boundary_compile_fail::*;
 
 #[test]
 fn blob_harness_envelope_raw_constructor_is_not_public() {

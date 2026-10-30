@@ -1,8 +1,11 @@
-use {tempfile::tempdir};
-use {worth_store::physical_runtime::PhysicalExecutorCommand};
-use {worth_store_physical_backend::MediaFaultDirective, worth_store_physical_backend::MediaOperationRole};
+use tempfile::tempdir;
 
-use {worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write, worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault_at, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_mutation_fixture, worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile};
+use {
+    worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fault_fixture::serving_from_open_with_positioned_write_fault_at,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::mutation_pair::disjoint_mutation_fixture,
+    worth_store_testkit_store::physical_record_journeys::physical_work::fixture::runtime::serving_from_initialization_with_work_profile,
+};
 
 #[test]
 fn later_batch_panic_retains_earlier_settlement_without_repeating_media() {
@@ -24,8 +27,16 @@ fn later_batch_panic_retains_earlier_settlement_without_repeating_media() {
     let first_identity = first.intent().identity();
     let second = admitted_write(&serving, second_request);
     let commands = vec![
-        worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(first, b"first001".as_slice()).unwrap(),
-        worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(second, b"second02".as_slice()).unwrap(),
+        worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+            first,
+            b"first001".as_slice(),
+        )
+        .unwrap(),
+        worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(
+            second,
+            b"second02".as_slice(),
+        )
+        .unwrap(),
     ]
     .into_boxed_slice();
     let before = serving.media_counters();
@@ -41,7 +52,8 @@ fn later_batch_panic_retains_earlier_settlement_without_repeating_media() {
         serving
             .media_counters()
             .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite)
-            - before.attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
+            - before
+                .attempts_for(worth_store_physical_backend::MediaOperationRole::PositionedWrite),
         2
     );
     assert_eq!(

@@ -1,13 +1,69 @@
 pub use {std::num::NonZeroU32, std::num::NonZeroU64, std::path::Path};
 
-pub use {worth_foundational::aspects, worth_foundational::AspectValue, worth_foundational::ContractValidationInput, worth_foundational::InternedString, worth_foundational::ScalarAspectType};
-pub use {worth_proof::TransitionOutcome};
-pub use {worth_store::aspect_native::StoreAspectAuthorityInput, worth_store::aspect_native::StoreAspectBoundaryFact, worth_store::aspect_native::StoreAspectIdentity, worth_store::aspect_native::StorePhysicalAuthorityWitness, worth_store::aspect_native::StorePhysicalBoundaryWitness, worth_store::aspect_native::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE};
-pub use {worth_store::physical_runtime::AdmittedBlobScope, worth_store::physical_runtime::AdmittedPhysicalDurabilityPolicy, worth_store::physical_runtime::AdmittedPhysicalRecordFormat, worth_store::physical_runtime::AdmittedRecordAccessPolicy, worth_store::physical_runtime::AdmittedRecordPlacementPolicy, worth_store::physical_runtime::CheckpointMemoryLimit, worth_store::physical_runtime::FilesystemMediaAdmission, worth_store::physical_runtime::GroupCommitDelay, worth_store::physical_runtime::GroupCommitLimit, worth_store::physical_runtime::IdempotencyRetentionGenerations, worth_store::physical_runtime::LiveIdempotencyBindingLimit, worth_store::physical_runtime::ManifestEntryCapacity, worth_store::physical_runtime::MediaOwnedPhysicalRuntime, worth_store::physical_runtime::PendingUnresolvedMutationLimit, worth_store::physical_runtime::PhysicalCheckpointPolicy, worth_store::physical_runtime::PhysicalDurabilityDeclaration, worth_store::physical_runtime::PhysicalDurabilityStateReopenFailure, worth_store::physical_runtime::PhysicalIdempotencyPolicy, worth_store::physical_runtime::PhysicalRecordAccessPolicy, worth_store::physical_runtime::PhysicalRecordFormatDeclaration, worth_store::physical_runtime::PhysicalRecordInitialization, worth_store::physical_runtime::PhysicalRecordOpen, worth_store::physical_runtime::PhysicalRecordPlacementPolicy, worth_store::physical_runtime::PhysicalRuntimeAdmission, worth_store::physical_runtime::PhysicalSignalConstructionFailure, worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalWalPolicy, worth_store::physical_runtime::RecordBootstrapDenial, worth_store::physical_runtime::RecordBootstrapFailure, worth_store::physical_runtime::RecordServingAdmissionOutcome, worth_store::physical_runtime::RecordStoreInitializationDenial, worth_store::physical_runtime::RecordStoreOpenDenial, worth_store::physical_runtime::RetainedWalTailLimit, worth_store::physical_runtime::ServingPhysicalRuntime, worth_store::physical_runtime::WalSegmentByteLimit, worth_store::physical_runtime::WalSegmentInventoryLimit};
-pub use {worth_store_authority::require_current_store_authority};
-pub use {worth_store_contracts::ROADMAP_2_REPLAY_PHYSICAL_BOUNDARY};
-pub use {worth_store_physical_backend::FilesystemAccessPosture};
-pub use {worth_store_security::admit_store_security_scope, worth_store_security::StoreAuthenticityRequirement, worth_store_security::StoreAuthenticityRequirementClass, worth_store_security::StoreCustodyPosture, worth_store_security::StoreKeyScope, worth_store_security::StoreKeyVersionPosture, worth_store_security::StoreSecurityScopeAdmissionExpectation, worth_store_security::StoreSecurityScopeAdmissionRequest, worth_store_security::StoreTenantScope};
+pub use worth_proof::TransitionOutcome;
+pub use worth_store_authority::require_current_store_authority;
+pub use worth_store_contracts::ROADMAP_2_REPLAY_PHYSICAL_BOUNDARY;
+pub use worth_store_physical_backend::FilesystemAccessPosture;
+pub use {
+    worth_foundational::aspects, worth_foundational::AspectValue,
+    worth_foundational::ContractValidationInput, worth_foundational::InternedString,
+    worth_foundational::ScalarAspectType,
+};
+pub use {
+    worth_store::aspect_native::StoreAspectAuthorityInput,
+    worth_store::aspect_native::StoreAspectBoundaryFact,
+    worth_store::aspect_native::StoreAspectIdentity,
+    worth_store::aspect_native::StorePhysicalAuthorityWitness,
+    worth_store::aspect_native::StorePhysicalBoundaryWitness,
+    worth_store::aspect_native::ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
+};
+pub use {
+    worth_store::physical_runtime::AdmittedBlobScope,
+    worth_store::physical_runtime::AdmittedPhysicalDurabilityPolicy,
+    worth_store::physical_runtime::AdmittedPhysicalRecordFormat,
+    worth_store::physical_runtime::AdmittedRecordAccessPolicy,
+    worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    worth_store::physical_runtime::CheckpointMemoryLimit,
+    worth_store::physical_runtime::FilesystemMediaAdmission,
+    worth_store::physical_runtime::GroupCommitDelay,
+    worth_store::physical_runtime::GroupCommitLimit,
+    worth_store::physical_runtime::IdempotencyRetentionGenerations,
+    worth_store::physical_runtime::LiveIdempotencyBindingLimit,
+    worth_store::physical_runtime::ManifestEntryCapacity,
+    worth_store::physical_runtime::MediaOwnedPhysicalRuntime,
+    worth_store::physical_runtime::PendingUnresolvedMutationLimit,
+    worth_store::physical_runtime::PhysicalCheckpointPolicy,
+    worth_store::physical_runtime::PhysicalDurabilityDeclaration,
+    worth_store::physical_runtime::PhysicalDurabilityStateReopenFailure,
+    worth_store::physical_runtime::PhysicalIdempotencyPolicy,
+    worth_store::physical_runtime::PhysicalRecordAccessPolicy,
+    worth_store::physical_runtime::PhysicalRecordFormatDeclaration,
+    worth_store::physical_runtime::PhysicalRecordInitialization,
+    worth_store::physical_runtime::PhysicalRecordOpen,
+    worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
+    worth_store::physical_runtime::PhysicalRuntimeAdmission,
+    worth_store::physical_runtime::PhysicalSignalConstructionFailure,
+    worth_store::physical_runtime::PhysicalStore, worth_store::physical_runtime::PhysicalWalPolicy,
+    worth_store::physical_runtime::RecordBootstrapDenial,
+    worth_store::physical_runtime::RecordBootstrapFailure,
+    worth_store::physical_runtime::RecordServingAdmissionOutcome,
+    worth_store::physical_runtime::RecordStoreInitializationDenial,
+    worth_store::physical_runtime::RecordStoreOpenDenial,
+    worth_store::physical_runtime::RetainedWalTailLimit,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+    worth_store::physical_runtime::WalSegmentByteLimit,
+    worth_store::physical_runtime::WalSegmentInventoryLimit,
+};
+pub use {
+    worth_store_security::admit_store_security_scope,
+    worth_store_security::StoreAuthenticityRequirement,
+    worth_store_security::StoreAuthenticityRequirementClass,
+    worth_store_security::StoreCustodyPosture, worth_store_security::StoreKeyScope,
+    worth_store_security::StoreKeyVersionPosture,
+    worth_store_security::StoreSecurityScopeAdmissionExpectation,
+    worth_store_security::StoreSecurityScopeAdmissionRequest,
+    worth_store_security::StoreTenantScope,
+};
 
 pub fn configuration() -> (
     AdmittedPhysicalRecordFormat,
@@ -15,13 +71,17 @@ pub fn configuration() -> (
     AdmittedRecordAccessPolicy,
 ) {
     let format = worth_store::physical_runtime::AdmittedPhysicalRecordFormat::admit(
-        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
+        worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
     );
     let placement = worth_store::physical_runtime::PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(worth_store::physical_runtime::ManifestEntryCapacity::new(64).unwrap())
         .admit(format)
         .unwrap();
-    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .admit(format)
+        .unwrap();
     (format, placement, access)
 }
 
@@ -47,13 +107,15 @@ pub fn serving_from_initialization_with_format_and_placement(
     placement: AdmittedRecordPlacementPolicy,
 ) -> ServingPhysicalRuntime {
     let media = media(root);
-    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .admit(format)
+        .unwrap();
     let durability = durability(&media);
-    success(
-        media.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
+    success(media.initialize_record_store(
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
             format, placement, access, durability,
-        )),
-    )
+        ),
+    ))
 }
 
 pub fn serving_from_initialization_with_placement_and_tail(
@@ -64,11 +126,11 @@ pub fn serving_from_initialization_with_placement_and_tail(
     let (format, _, access) = configuration();
     let media = media(root);
     let durability = durability_with_limits(&media, 16 * 1024 * 1024, retained_wal_tail_bytes);
-    success(
-        media.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
+    success(media.initialize_record_store(
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
             format, placement, access, durability,
-        )),
-    )
+        ),
+    ))
 }
 
 pub fn serving_from_initialization_with_wal_segment_bytes(
@@ -78,18 +140,22 @@ pub fn serving_from_initialization_with_wal_segment_bytes(
     let (format, placement, access) = configuration();
     let media = media(root);
     let durability = durability_with_wal_segment_bytes(&media, segment_bytes);
-    success(
-        media.initialize_record_store(worth_store::physical_runtime::PhysicalRecordInitialization::new(
+    success(media.initialize_record_store(
+        worth_store::physical_runtime::PhysicalRecordInitialization::new(
             format, placement, access, durability,
-        )),
-    )
+        ),
+    ))
 }
 
 pub fn serving_from_open(root: &Path) -> ServingPhysicalRuntime {
     let (format, _, access) = configuration();
     let media = media(root);
     let durability = durability(&media);
-    success(media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)))
+    success(
+        media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(
+            format, access, durability,
+        )),
+    )
 }
 
 pub fn assert_released_open_requires_recovered_custody(
@@ -97,10 +163,14 @@ pub fn assert_released_open_requires_recovered_custody(
     format: AdmittedPhysicalRecordFormat,
 ) {
     let media = media(root);
-    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    let access = worth_store::physical_runtime::PhysicalRecordAccessPolicy::builder()
+        .admit(format)
+        .unwrap();
     let durability = durability(&media);
     let worth_proof::TransitionOutcome::Denied(denial) = media
-        .open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability))
+        .open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(
+            format, access, durability,
+        ))
         .into_raw()
     else {
         panic!("selected release-head root must deny Serving without C8 custody")
@@ -119,7 +189,9 @@ pub fn assert_anchored_open_requires_recovered_custody(root: &Path) {
     let media = media(root);
     let durability = durability(&media);
     let worth_proof::TransitionOutcome::Failed(inspection) = media
-        .open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability))
+        .open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(
+            format, access, durability,
+        ))
         .into_raw()
     else {
         panic!("an anchored root without admissible clean custody must not serve")
@@ -145,7 +217,11 @@ pub fn serving_from_open_with_retained_wal_tail(
     let (format, _, access) = configuration();
     let media = media(root);
     let durability = durability_with_limits(&media, 16 * 1024 * 1024, retained_wal_tail_bytes);
-    success(media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)))
+    success(
+        media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(
+            format, access, durability,
+        )),
+    )
 }
 
 pub fn serving_from_open_with_wal_segment_bytes(
@@ -155,17 +231,22 @@ pub fn serving_from_open_with_wal_segment_bytes(
     let (format, _, access) = configuration();
     let media = media(root);
     let durability = durability_with_wal_segment_bytes(&media, segment_bytes);
-    success(media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(format, access, durability)))
+    success(
+        media.open_record_store(worth_store::physical_runtime::PhysicalRecordOpen::new(
+            format, access, durability,
+        )),
+    )
 }
 
 pub fn admitted_blob_scope(identity_key: &str) -> AdmittedBlobScope {
-    let witness = worth_store::aspect_native::StorePhysicalBoundaryWitness::from_physical_authority(
-        worth_store::aspect_native::StorePhysicalAuthorityWitness::for_aspect_native_boundary(
-            ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
+    let witness =
+        worth_store::aspect_native::StorePhysicalBoundaryWitness::from_physical_authority(
+            worth_store::aspect_native::StorePhysicalAuthorityWitness::for_aspect_native_boundary(
+                ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
+            )
+            .unwrap(),
         )
-        .unwrap(),
-    )
-    .unwrap();
+        .unwrap();
     admitted_blob_scope_with_witness(identity_key, witness)
 }
 
@@ -192,16 +273,14 @@ pub fn admitted_blob_scope_with_witness(
         .identified_by(aspects().vocabulary().identity(1))
         .at_revision(aspects().vocabulary().revision(1))
         .scalar(worth_foundational::ScalarAspectType::String);
-    let validated =
-        match aspects()
-            .validate()
-            .against(&contract)
-            .value(worth_foundational::ContractValidationInput::from(worth_foundational::AspectValue::String(
-                worth_foundational::InternedString::from("blob-authority"),
-            ))) {
-            worth_proof::TransitionOutcome::Success(value) => value,
-            outcome => panic!("blob authority value must validate: {outcome:?}"),
-        };
+    let validated = match aspects().validate().against(&contract).value(
+        worth_foundational::ContractValidationInput::from(worth_foundational::AspectValue::String(
+            worth_foundational::InternedString::from("blob-authority"),
+        )),
+    ) {
+        worth_proof::TransitionOutcome::Success(value) => value,
+        outcome => panic!("blob authority value must validate: {outcome:?}"),
+    };
     let state = match aspects().authoritative_state().admit([validated]) {
         worth_proof::TransitionOutcome::Success(state) => state,
         outcome => panic!("blob authority state must admit: {outcome:?}"),
@@ -218,8 +297,12 @@ pub fn admitted_blob_scope_with_witness(
         worth_store_security::StoreAuthenticityRequirementClass::AuthenticatedBlobChunk,
     );
     let custody = worth_store_security::StoreCustodyPosture::InternalStoreCustody;
-    let expectation =
-        worth_store_security::StoreSecurityScopeAdmissionExpectation::new(key_scope, tenant_scope, authenticity, custody);
+    let expectation = worth_store_security::StoreSecurityScopeAdmissionExpectation::new(
+        key_scope,
+        tenant_scope,
+        authenticity,
+        custody,
+    );
     let request = worth_store_security::StoreSecurityScopeAdmissionRequest::new(
         &authority,
         key_scope,
@@ -237,59 +320,20 @@ pub fn admitted_blob_scope_with_witness(
 }
 
 pub fn media(root: &Path) -> MediaOwnedPhysicalRuntime {
-    let runtime = worth_store::physical_runtime::PhysicalStore::admit(worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).unwrap()).unwrap();
+    let runtime = worth_store::physical_runtime::PhysicalStore::admit(
+        worth_store::physical_runtime::PhysicalRuntimeAdmission::new(root).unwrap(),
+    )
+    .unwrap();
     match runtime
-        .try_admit_filesystem_media(worth_store::physical_runtime::FilesystemMediaAdmission::production(
-            worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount,
-        ))
+        .try_admit_filesystem_media(
+            worth_store::physical_runtime::FilesystemMediaAdmission::production(
+                worth_store_physical_backend::FilesystemAccessPosture::CoordinatedServiceAccount,
+            ),
+        )
         .into_raw()
     {
         worth_proof::TransitionOutcome::Success(media) => media,
         _ => panic!("blob journey media must admit"),
-    }
-}
-
-pub fn durability(media: &MediaOwnedPhysicalRuntime) -> AdmittedPhysicalDurabilityPolicy {
-    durability_with_wal_segment_bytes(media, 16 * 1024 * 1024)
-}
-
-pub fn durability_with_wal_segment_bytes(
-    media: &MediaOwnedPhysicalRuntime,
-    segment_bytes: u64,
-) -> AdmittedPhysicalDurabilityPolicy {
-    durability_with_limits(media, segment_bytes, 64 * 1024 * 1024)
-}
-
-pub fn durability_with_limits(
-    media: &MediaOwnedPhysicalRuntime,
-    segment_bytes: u64,
-    retained_wal_tail_bytes: u64,
-) -> AdmittedPhysicalDurabilityPolicy {
-    let basis = media.physical_durability_admission_basis().unwrap();
-    let wal = worth_store::physical_runtime::PhysicalWalPolicy::segmented(
-        worth_store::physical_runtime::WalSegmentByteLimit::new(std::num::NonZeroU64::new(segment_bytes).unwrap()),
-        worth_store::physical_runtime::WalSegmentInventoryLimit::new(std::num::NonZeroU32::new(1_024).unwrap()),
-    );
-    match worth_store::physical_runtime::PhysicalDurabilityDeclaration::builder()
-        .group_commit(
-            worth_store::physical_runtime::GroupCommitLimit::new(std::num::NonZeroU32::new(32).unwrap()),
-            worth_store::physical_runtime::GroupCommitDelay::new(std::num::NonZeroU64::new(1).unwrap()),
-        )
-        .wal(wal)
-        .idempotency(worth_store::physical_runtime::PhysicalIdempotencyPolicy::new(
-            worth_store::physical_runtime::IdempotencyRetentionGenerations::new(std::num::NonZeroU64::new(4).unwrap()),
-            worth_store::physical_runtime::PendingUnresolvedMutationLimit::new(std::num::NonZeroU32::new(1_024).unwrap()),
-            worth_store::physical_runtime::LiveIdempotencyBindingLimit::new(std::num::NonZeroU32::new(4_096).unwrap()),
-        ))
-        .checkpoint(worth_store::physical_runtime::PhysicalCheckpointPolicy::fuzzy(
-            worth_store::physical_runtime::CheckpointMemoryLimit::new(std::num::NonZeroU64::new(16 * 1024 * 1024).unwrap()),
-            worth_store::physical_runtime::RetainedWalTailLimit::new(std::num::NonZeroU64::new(retained_wal_tail_bytes).unwrap()),
-        ))
-        .admit(basis)
-        .into_raw()
-    {
-        worth_proof::TransitionOutcome::Success(policy) => policy,
-        _ => panic!("blob journey durability must admit"),
     }
 }
 
@@ -336,3 +380,7 @@ where
         }
     }
 }
+
+#[path = "declarations/durability_policy.rs"]
+mod durability_policy;
+pub use durability_policy::*;

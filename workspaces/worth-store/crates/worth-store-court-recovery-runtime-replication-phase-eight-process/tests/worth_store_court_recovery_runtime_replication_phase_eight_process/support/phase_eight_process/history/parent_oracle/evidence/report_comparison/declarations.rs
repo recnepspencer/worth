@@ -1,8 +1,8 @@
 //! Exact semantic report comparison and its first typed difference.
 
-pub(crate) use {worth_store_offline_verifier::RecoveryObserverReport};
+pub(crate) use worth_store_offline_verifier::RecoveryObserverReport;
 
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::evidence::ParentPhysicalEvidence};
+pub(crate) use crate::phase_eight_process::history::parent_oracle::evidence::ParentPhysicalEvidence;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ParentSemanticField {

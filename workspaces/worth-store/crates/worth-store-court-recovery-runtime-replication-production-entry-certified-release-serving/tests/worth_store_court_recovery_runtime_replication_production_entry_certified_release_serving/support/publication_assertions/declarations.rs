@@ -1,4 +1,7 @@
-pub(crate) use {worth_store_recovery_runtime::PlannedPhysicalRecovery, worth_store_recovery_runtime::RecoveryPublicationAction};
+pub(crate) use {
+    worth_store_recovery_runtime::PlannedPhysicalRecovery,
+    worth_store_recovery_runtime::RecoveryPublicationAction,
+};
 
 pub(crate) fn assert_exact_publication_plan(planned: &PlannedPhysicalRecovery) {
     let publication = planned.publication_plan();

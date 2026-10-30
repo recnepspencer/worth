@@ -3,10 +3,22 @@
 //! new checkpoint, so recovery must admit the pending batch from the same
 //! checkpoint and ordered history, and then rejoin it as completed history.
 
-pub use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_proof::TransitionOutcome, crate::production_entry::certified_release_serving, crate::production_entry::pending_wal_world, crate::production_entry::release_reopen};
-pub use {crate::production_entry::pending_wal_world::PendingWalWorld};
-pub use {std::fs};
-pub use {worth_store_recovery_runtime::PhysicalRecoveryLimitDimension, worth_store_recovery_runtime::PhysicalRecoveryOutcome, worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff, worth_store_recovery_runtime::WorthStoreRecovery};
+pub use crate::production_entry::pending_wal_world::PendingWalWorld;
+pub use std::fs;
+pub use {
+    crate::production_entry::certified_release_serving, crate::production_entry::pending_wal_world,
+    crate::production_entry::release_reopen, worth_proof::TransitionOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointDeadline,
+    worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey,
+    worth_store::physical_runtime::PhysicalCheckpointOutcome,
+    worth_store::physical_runtime::PhysicalCheckpointRequest,
+};
+pub use {
+    worth_store_recovery_runtime::PhysicalRecoveryLimitDimension,
+    worth_store_recovery_runtime::PhysicalRecoveryOutcome,
+    worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
+    worth_store_recovery_runtime::WorthStoreRecovery,
+};
 
 /// What the first reopen of the frontier world needs. Fixed: about 140 root
 /// steps stand above its checkpoint, and each is charged what its member
@@ -29,7 +41,9 @@ pub fn recover(world: &PendingWalWorld, stage: &str) -> RecoveredPhysicalRuntime
             block.evidence().planning_denial,
             block.recovery_effects()
         ),
-        worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(failure) => panic!(
+        worth_store_recovery_runtime::PhysicalRecoveryOutcome::PublicationIndeterminate(
+            failure,
+        ) => panic!(
             "{stage} indeterminate: handoff={:?}; reopen={:?}; effects={}",
             failure.handoff_failure(),
             failure.reopen_failure(),
@@ -51,7 +65,8 @@ pub fn assert_needs_exactly(world: &PendingWalWorld, need: u64, stage: &str) {
             ),
         )
     };
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) = recover(need - 1) else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Blocked(blocked) = recover(need - 1)
+    else {
         panic!("{stage}: {} entries must block", need - 1)
     };
     assert_eq!(blocked.recovery_effects(), 0);
@@ -69,7 +84,8 @@ pub fn assert_needs_exactly(world: &PendingWalWorld, need: u64, stage: &str) {
         "{stage}: denial={:?}",
         blocked.evidence().planning_denial,
     );
-    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = recover(need) else {
+    let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) = recover(need)
+    else {
         panic!("{stage}: {need} entries must recover")
     };
     drop(handoff);
@@ -99,9 +115,12 @@ pub fn checkpoint_heads(
     );
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new(key),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000).unwrap(),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::after_milliseconds(30_000)
+            .unwrap(),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("{stage}: head-bearing checkpoint must admit")
     };
     assert!(matches!(
@@ -110,7 +129,10 @@ pub fn checkpoint_heads(
     ));
     serving.close();
     let checkpoint = std::fs::read(root.join("families/checkpoint.current")).unwrap();
-    let (_, accumulator) = crate::production_entry::release_reopen::selected_release_certificates_from_bytes(&checkpoint);
+    let (_, accumulator) =
+        crate::production_entry::release_reopen::selected_release_certificates_from_bytes(
+            &checkpoint,
+        );
     crate::release_reopen::selected_head_oracle::selected_heads(root, accumulator)
 }
 
@@ -137,7 +159,9 @@ pub fn assert_pending_then_completed(world: &PendingWalWorld, stage: &str) {
         .into_core()
         .certification_release_media_into_checkpoint_custody()
         .expect("Store must seal the completed successor");
-    crate::production_entry::certified_release_serving::open_serving_with_seal_without_checkpoint(root, seal);
+    crate::production_entry::certified_release_serving::open_serving_with_seal_without_checkpoint(
+        root, seal,
+    );
 }
 
 pub fn ordered_release_above_a_head_checkpoint() -> PendingWalWorld {

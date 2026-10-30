@@ -1,23 +1,8 @@
 #[allow(unused_imports)] use worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::*;
-use {std::path::Path};
 
-use {worth_signal::facade::TemporalDuration};
-use {worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::PhysicalMutationPreparationSuccess, worth_store::physical_runtime::PhysicalMutationRequest, worth_store::physical_runtime::PhysicalRecordId, worth_store::physical_runtime::PhysicalRetirementDenial, worth_store::physical_runtime::RecordByteLimit, worth_store::physical_runtime::RecordReadLimits, worth_store::physical_runtime::ServingPhysicalRuntime};
-use {worth_store_physical_backend::MediaOperationRole};
-
-use {worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::rewrite_redo::produced_rewrite_payloads, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetiredKind, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::IndependentRetirementAction};
-use {worth_store::physical_runtime::PhysicalMutationProvenNoEffectCause, worth_store::physical_runtime::PreparedPhysicalMutation, worth_proof::TransitionOutcome, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
-use {worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route, worth_store_testkit_store::physical_record_journeys::manifest_fixture::IndependentExtentRoute};
-
-
-
-
-
-
-
-
-
-
+use {worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::retirement_redo::produced_retirement_payloads, worth_store_testkit_store::physical_record_journeys::durability_admission::independent_wal_oracle::rewrite_redo::produced_rewrite_payloads};
+use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+use worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route;
 
 use {worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::extent_frame_fixture::arena_file, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::extent_frame_fixture::arena_range_bytes, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::extent_frame_fixture::extent_payload};
 #[test]
@@ -98,7 +83,7 @@ fn extent_rewrite_preserves_identity_and_bytes_then_retires_the_source_generatio
             roots[1]
         )))
         .unwrap();
-        use {sha2::Digest};
+        use sha2::Digest;
         let digest: [u8; 32] = sha2::Sha256::digest(bytes).into();
         assert_eq!(retirement.release_digest, Some(digest));
         assert!(retirement.metadata_bytes > 0);
@@ -307,7 +292,9 @@ fn an_inline_record_is_not_an_extent_rewrite_source() {
     let record = appended.into_acknowledgment().record_ids().next().unwrap();
     let key = serving
         .record_submission()
-        .issue_idempotency_key(worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([66; 32]))
+        .issue_idempotency_key(
+            worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([66; 32]),
+        )
         .unwrap();
     let outcome = serving
         .record_submission()
@@ -316,7 +303,9 @@ fn an_inline_record_is_not_an_extent_rewrite_source() {
     assert!(
         !matches!(
             outcome,
-            worth_proof::TransitionOutcome::Success(worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(_))
+            worth_proof::TransitionOutcome::Success(
+                worth_store::physical_runtime::PhysicalMutationPreparationSuccess::Prepared(_)
+            )
         ),
         "an inline record must not prepare an extent rewrite"
     );

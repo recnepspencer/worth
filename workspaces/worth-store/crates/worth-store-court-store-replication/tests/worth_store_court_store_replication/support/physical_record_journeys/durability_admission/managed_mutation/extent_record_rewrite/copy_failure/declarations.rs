@@ -6,12 +6,18 @@ pub(crate) fn checkpoint_copy_cancellation(
 ) -> worth_store::physical_runtime::CompletedPhysicalCheckpoint {
     let request = worth_store::physical_runtime::PhysicalCheckpointRequest::fuzzy(
         worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey::new([234; 32]),
-        worth_store::physical_runtime::PhysicalCheckpointDeadline::at(worth_signal::facade::TemporalDuration::temporal_duration(30_000).unwrap()),
+        worth_store::physical_runtime::PhysicalCheckpointDeadline::at(
+            worth_signal::facade::TemporalDuration::temporal_duration(30_000).unwrap(),
+        ),
     );
-    let worth_proof::TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
+    let worth_proof::TransitionOutcome::Success(handle) =
+        serving.checkpoints().start(request).into_raw()
+    else {
         panic!("copy cancellation checkpoint must admit");
     };
-    let worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(checkpoint) = handle.wait() else {
+    let worth_store::physical_runtime::PhysicalCheckpointOutcome::Completed(checkpoint) =
+        handle.wait()
+    else {
         panic!("copy cancellation checkpoint must complete");
     };
     checkpoint

@@ -1,9 +1,27 @@
-pub(crate) use {worth_foundational::FoundationalPerformanceWorkClass};
-pub(crate) use {worth_proof::TransitionOutcome};
-pub(crate) use {worth_store::physical_runtime::PhysicalExecutorCommand, worth_store::physical_runtime::PhysicalMutationWorkRequest, worth_store::physical_runtime::PhysicalReadWorkRequest, worth_store::physical_runtime::PhysicalSchedulerDemand, worth_store::physical_runtime::PhysicalSchedulerDenial, worth_store::physical_runtime::PhysicalSignalSettlementOutcome, worth_store::physical_runtime::PhysicalWorkEffectFate, worth_store::physical_runtime::PhysicalWorkReadiness, worth_store::physical_runtime::PhysicalWorkRecoveryDisposition, worth_store::physical_runtime::PhysicalWorkRetryScheduleOutcome, worth_store::physical_runtime::PhysicalWritebackExecution, worth_store::physical_runtime::ReadyPhysicalWork, worth_store::physical_runtime::ResourceAdmittedPhysicalWork, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_io_scheduler::QueueExecutionAdmissionDenial};
-pub(crate) use {worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement};
-pub(crate) use {worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::RecordFrameCoordinate};
+pub(crate) use worth_foundational::FoundationalPerformanceWorkClass;
+pub(crate) use worth_proof::TransitionOutcome;
+pub(crate) use worth_store_io_scheduler::QueueExecutionAdmissionDenial;
+pub(crate) use worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalExecutorCommand,
+    worth_store::physical_runtime::PhysicalMutationWorkRequest,
+    worth_store::physical_runtime::PhysicalReadWorkRequest,
+    worth_store::physical_runtime::PhysicalSchedulerDemand,
+    worth_store::physical_runtime::PhysicalSchedulerDenial,
+    worth_store::physical_runtime::PhysicalSignalSettlementOutcome,
+    worth_store::physical_runtime::PhysicalWorkEffectFate,
+    worth_store::physical_runtime::PhysicalWorkReadiness,
+    worth_store::physical_runtime::PhysicalWorkRecoveryDisposition,
+    worth_store::physical_runtime::PhysicalWorkRetryScheduleOutcome,
+    worth_store::physical_runtime::PhysicalWritebackExecution,
+    worth_store::physical_runtime::ReadyPhysicalWork,
+    worth_store::physical_runtime::ResourceAdmittedPhysicalWork,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
+pub(crate) use {
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::RecordFrameCoordinate,
+};
 
 pub(crate) fn ready_read(
     serving: &ServingPhysicalRuntime,
@@ -109,7 +127,9 @@ pub(crate) fn retry_write_after_clock_wake(
     let admitted = admit_write(serving, ready);
     let consumer = admitted.consumer_handle();
     let identity = admitted.intent().identity();
-    let command = worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, payload).unwrap();
+    let command =
+        worth_store::physical_runtime::PhysicalExecutorCommand::exact_write(admitted, payload)
+            .unwrap();
     let outcome = serving.execute_physical_work(command).unwrap();
     assert_eq!(
         outcome.settled().evidence().fate(),
@@ -159,8 +179,12 @@ pub(crate) fn execute_exact_writeback(
     _request: PhysicalMutationWorkRequest,
     bytes: Vec<u8>,
 ) -> worth_store::physical_runtime::PhysicalWorkIdentity {
-    let coordinate =
-        worth_store_physical_format::RecordFrameCoordinate::new(worth_store_physical_format::RecordArtifactFile::BootstrapCatalog, 8, 8).unwrap();
+    let coordinate = worth_store_physical_format::RecordFrameCoordinate::new(
+        worth_store_physical_format::RecordArtifactFile::BootstrapCatalog,
+        8,
+        8,
+    )
+    .unwrap();
     let residency = serving.certification_physical_residency();
     let lease = residency.pin_exact(coordinate).unwrap();
     let dirty = residency
@@ -194,7 +218,10 @@ pub(crate) fn execute_exact_writeback(
         outcome.recovery(),
         worth_store::physical_runtime::PhysicalWorkRecoveryDisposition::ContinueSettlement
     );
-    assert_eq!(outcome.signal(), worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed);
+    assert_eq!(
+        outcome.signal(),
+        worth_store::physical_runtime::PhysicalSignalSettlementOutcome::Committed
+    );
     assert_eq!(residency.counters().dirty_frames(), 0);
     identity
 }
@@ -203,7 +230,10 @@ pub(crate) fn admit_write(
     serving: &ServingPhysicalRuntime,
     ready: ReadyPhysicalWork,
 ) -> ResourceAdmittedPhysicalWork {
-    let demand = worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::write_demand(serving, ready);
+    let demand =
+        worth_store_testkit_store::physical_record_journeys::physical_work::scheduler::write_demand(
+            serving, ready,
+        );
     let work = demand.queue_work();
     let backend_requirement = work.backend_requirement();
     let requested_budget = work.requested_budget();
@@ -215,7 +245,9 @@ pub(crate) fn admit_write(
         .admit_physical_scheduler_demand(
             demand,
             &backend,
-            worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt(requested_budget),
+            worth_store_testkit_store::physical_work::scheduler::policy_evidence::policy_receipt(
+                requested_budget,
+            ),
         )
         .unwrap()
 }

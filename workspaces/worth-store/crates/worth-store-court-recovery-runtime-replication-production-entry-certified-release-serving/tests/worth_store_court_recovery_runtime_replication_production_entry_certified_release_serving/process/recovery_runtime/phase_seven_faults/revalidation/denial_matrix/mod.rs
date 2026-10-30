@@ -3,11 +3,18 @@
 //! row changes the candidate before `finish`. Nothing is restored, so the
 //! candidate surviving proves cleanup did not delete it.
 
-use {worth_store::physical_runtime::PhysicalRecoveryCleanupRemovalDenialKind, worth_store::physical_runtime::RecoveryCleanupArtifactRevalidationDenial, worth_store::physical_runtime::RecoveryCleanupRemovalDenialCause};
-use {worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence};
-
-use {crate::revalidation::window::append_byte, crate::revalidation::window::checkpoint_path, crate::revalidation::window::deferred_cleanup, crate::revalidation::window::finish_changed_before_revalidation, crate::revalidation::window::flip_first_byte, crate::revalidation::window::rejoin_denied};
-use {crate::phase_seven_faults::world::cleanup_world, crate::phase_seven_faults::revalidation::current_checkpoint_bytes, crate::phase_seven_faults::world::empty_fault_schedule, crate::phase_seven_faults::world::reopen_with_schedule};
+use {
+    crate::phase_seven_faults::revalidation::current_checkpoint_bytes,
+    crate::phase_seven_faults::world::cleanup_world,
+    crate::phase_seven_faults::world::empty_fault_schedule,
+    crate::phase_seven_faults::world::reopen_with_schedule,
+};
+use {
+    crate::revalidation::window::append_byte, crate::revalidation::window::checkpoint_path,
+    crate::revalidation::window::deferred_cleanup,
+    crate::revalidation::window::finish_changed_before_revalidation,
+    crate::revalidation::window::flip_first_byte, crate::revalidation::window::rejoin_denied,
+};
 
 #[test]
 fn missing_checkpoint_retains_the_exact_failed_first_read() {
@@ -19,7 +26,10 @@ fn missing_checkpoint_retains_the_exact_failed_first_read() {
         std::fs::remove_file(checkpoint).unwrap();
     }));
     let evidence = deferred_cleanup(&indeterminate);
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect {
+        denial,
+        ..
+    }] = evidence.deferrals()
     else {
         panic!("one exact checkpoint read failure")
     };
@@ -51,7 +61,10 @@ fn oversized_checkpoint_retains_the_exact_length_mismatch() {
         append_byte(&checkpoint)
     }));
     let evidence = deferred_cleanup(&indeterminate);
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect {
+        denial,
+        ..
+    }] = evidence.deferrals()
     else {
         panic!("one exact checkpoint length mismatch")
     };
@@ -86,7 +99,10 @@ fn malformed_checkpoint_retains_the_exact_digest_denial() {
         flip_first_byte(&checkpoint)
     }));
     let evidence = deferred_cleanup(&indeterminate);
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect {
+        denial,
+        ..
+    }] = evidence.deferrals()
     else {
         panic!("one exact checkpoint digest denial")
     };
@@ -117,7 +133,10 @@ fn oversized_wal_retains_the_checkpoint_prefix_and_wal_length_mismatch() {
     append_byte(&candidate);
     let indeterminate = rejoin_denied(reopened.finish());
     let evidence = deferred_cleanup(&indeterminate);
-    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
+    let [worth_store_recovery_runtime::RecoveryCleanupDeferralEvidence::DeniedBeforeEffect {
+        denial,
+        ..
+    }] = evidence.deferrals()
     else {
         panic!("one exact WAL length mismatch")
     };

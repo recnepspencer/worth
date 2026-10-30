@@ -1,12 +1,21 @@
 pub(crate) use {sha2::Digest, sha2::Sha256};
 
-pub(crate) use {crate::phase_eight_process::history::parent_oracle::wire::checkpoint::crc32c, crate::phase_eight_process::history::parent_oracle::wire::checkpoint::observe_checkpoint, crate::phase_eight_process::history::parent_oracle::wire::checkpoint::validated_binding_payloads, crate::phase_eight_process::history::parent_oracle::wire::checkpoint::CHECKPOINT_PREFIX_BYTES};
+pub(crate) use {
+    crate::phase_eight_process::history::parent_oracle::wire::checkpoint::crc32c,
+    crate::phase_eight_process::history::parent_oracle::wire::checkpoint::observe_checkpoint,
+    crate::phase_eight_process::history::parent_oracle::wire::checkpoint::validated_binding_payloads,
+    crate::phase_eight_process::history::parent_oracle::wire::checkpoint::CHECKPOINT_PREFIX_BYTES,
+};
 
 pub(crate) fn stream(schema: u8, certificate_kinds: &[u8]) -> Vec<u8> {
     stream_with_binding(schema, certificate_kinds, None)
 }
 
-pub(crate) fn stream_with_binding(schema: u8, certificate_kinds: &[u8], binding: Option<&[u8]>) -> Vec<u8> {
+pub(crate) fn stream_with_binding(
+    schema: u8,
+    certificate_kinds: &[u8],
+    binding: Option<&[u8]>,
+) -> Vec<u8> {
     let mut header = [0_u8; 144];
     header[..16].fill(3);
     header[16..24].copy_from_slice(&1_u64.to_le_bytes());

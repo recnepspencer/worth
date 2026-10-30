@@ -1,8 +1,15 @@
-use {worth_store_branch_deltas::branch_semantic_authority, worth_store_branch_deltas::reject_branch_delta_read_plan, worth_store_branch_deltas::BranchDeltaLayerId, worth_store_branch_deltas::BranchDeltaLayoutAccessDenialKind, worth_store_branch_deltas::BranchDeltaReadPlan, worth_store_branch_deltas::BranchDeltaReadRequest};
+use {
+    worth_store_branch_deltas::branch_semantic_authority,
+    worth_store_branch_deltas::reject_branch_delta_read_plan,
+    worth_store_branch_deltas::BranchDeltaLayerId,
+};
 
 #[test]
 fn branch_delta_family_binds_layers_to_admitted_lineage_support() {
-    let request = worth_store_branch_deltas::BranchDeltaReadRequest::new(BranchDeltaLayerId(7), "main/feature-a");
+    let request = worth_store_branch_deltas::BranchDeltaReadRequest::new(
+        BranchDeltaLayerId(7),
+        "main/feature-a",
+    );
     let plan = worth_store_branch_deltas::BranchDeltaReadPlan::new(request, 24);
     let witness = branch_semantic_authority().admit_same_branch_descendant("main/feature-a");
 

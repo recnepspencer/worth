@@ -1,8 +1,15 @@
 pub(crate) use {std::path::Path, std::path::PathBuf};
 
-pub(crate) use {worth_store_test_support::compiler_boundary::cargo_dependency_manifest, worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite};
+pub(crate) use {
+    worth_store_test_support::compiler_boundary::cargo_dependency_manifest,
+    worth_store_test_support::compiler_boundary::run_cargo_ui_fixture_suite,
+};
 
-pub(crate) fn assert_compile_fails(fixture_name: &str, expected_stderr: &[&str], extern_crates: &[&str]) {
+pub(crate) fn assert_compile_fails(
+    fixture_name: &str,
+    expected_stderr: &[&str],
+    extern_crates: &[&str],
+) {
     assert_compile_fails_in_ui_dir("foundations", fixture_name, expected_stderr, extern_crates);
 }
 
@@ -45,7 +52,10 @@ pub(crate) struct DependencyDeclaration {
     pub(crate) features: Vec<&'static str>,
 }
 
-pub(crate) fn dependency_declarations(root: &Path, extern_crates: &[&str]) -> Vec<DependencyDeclaration> {
+pub(crate) fn dependency_declarations(
+    root: &Path,
+    extern_crates: &[&str],
+) -> Vec<DependencyDeclaration> {
     let mut names = std::collections::BTreeSet::from(["worth_store_layout_indexes"]);
     names.extend(extern_crates.iter().copied());
     names
@@ -79,8 +89,11 @@ pub(crate) fn dependency(root: &Path, rust_name: &str) -> DependencyDeclaration 
 }
 
 pub(crate) fn store_workspace_root() -> &'static Path {
-    std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-store-layout-indexes"))
-        .ancestors()
-        .nth(2)
-        .expect("layout-indexes crate lives under the Store workspace")
+    std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../worth-store-layout-indexes"
+    ))
+    .ancestors()
+    .nth(2)
+    .expect("layout-indexes crate lives under the Store workspace")
 }

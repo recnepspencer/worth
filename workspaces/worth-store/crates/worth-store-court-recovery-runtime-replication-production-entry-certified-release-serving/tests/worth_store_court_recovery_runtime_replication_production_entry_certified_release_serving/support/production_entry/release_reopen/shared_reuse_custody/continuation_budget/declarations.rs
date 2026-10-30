@@ -2,11 +2,23 @@
 
 pub(crate) use {std::cell::Cell, std::num::NonZeroU64};
 
-pub(crate) use {worth_store::physical_runtime::certification::MediaOperationRole};
-pub(crate) use {worth_store::physical_runtime::PhysicalLayoutMaintenanceFailure, worth_store::physical_runtime::PhysicalMutationDeadline, worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope, worth_store::physical_runtime::PhysicalRecordResidencyFailureReason, worth_store::physical_runtime::PhysicalResidencyRetryPosture, worth_store::physical_runtime::ServingPhysicalRuntime};
-pub(crate) use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld};
+pub(crate) use worth_store::physical_runtime::certification::MediaOperationRole;
+pub(crate) use worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld;
+pub(crate) use {
+    worth_store::physical_runtime::PhysicalLayoutMaintenanceFailure,
+    worth_store::physical_runtime::PhysicalMutationDeadline,
+    worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope,
+    worth_store::physical_runtime::PhysicalRecordResidencyFailureReason,
+    worth_store::physical_runtime::PhysicalResidencyRetryPosture,
+    worth_store::physical_runtime::ServingPhysicalRuntime,
+};
 
-pub(crate) use {worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope, crate::production_entry::release_reopen::shared_reuse_custody::selected_marker, crate::production_entry::release_reopen::shared_reuse_custody::shared_format, crate::production_entry::release_reopen::shared_reuse_custody::world};
+pub(crate) use {
+    crate::production_entry::release_reopen::shared_reuse_custody::selected_marker,
+    crate::production_entry::release_reopen::shared_reuse_custody::shared_format,
+    crate::production_entry::release_reopen::shared_reuse_custody::world,
+    worth_store_testkit_recovery_runtime::production_entry::blob_scope_admission::admitted_blob_scope,
+};
 
 pub(crate) const MAINTENANCE_BYTES: u64 = 8 << 20;
 // This is the documented retained-owner envelope, not an allocator census:
@@ -25,13 +37,20 @@ pub(crate) fn run() {
     let scope = admitted_blob_scope("c11.cow.continuation.backing");
     let payload = crate::production_entry::release_reopen::shared_reuse_custody::world::payload();
     let sources = std::array::from_fn(|_| {
-        crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(&world, &scope, &payload);
+        crate::production_entry::release_reopen::shared_reuse_custody::world::publish_one(
+            &world, &scope, &payload,
+        );
         selected_marker(world.serving())
     });
     let serving = world.serving();
     let policy = serving.residency_observation().admitted_policy();
     assert_eq!(policy.operation_bytes(), 32 << 20);
-    assert_eq!(policy.scope_bytes(worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance), MAINTENANCE_BYTES);
+    assert_eq!(
+        policy.scope_bytes(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance
+        ),
+        MAINTENANCE_BYTES
+    );
     assert_eq!(maintenance_bytes(serving), 0);
     let denied_before = std::cell::Cell::new(None);
     let failure = serving
@@ -55,7 +74,9 @@ pub(crate) fn run() {
         )
         .expect_err("third insertion must grow its replacement backing");
     let allocation = match failure {
-        worth_store::physical_runtime::PhysicalLayoutMaintenanceFailure::WriterAllocation(allocation) => allocation,
+        worth_store::physical_runtime::PhysicalLayoutMaintenanceFailure::WriterAllocation(
+            allocation,
+        ) => allocation,
         other => panic!("exact pre-COW growth cause required: {other:?}"),
     };
     assert_eq!(
@@ -63,7 +84,10 @@ pub(crate) fn run() {
         worth_store::physical_runtime::PhysicalRecordResidencyFailureReason::PhysicalPressure
     );
     let pressure = allocation.pressure().expect("typed continuation pressure");
-    assert_eq!(pressure.scope(), worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance);
+    assert_eq!(
+        pressure.scope(),
+        worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance
+    );
     assert_eq!(pressure.requested(), GROWTH_BYTES);
     assert_eq!(pressure.admitted(), MAINTENANCE_BYTES - 1);
     assert_eq!(pressure.limit(), MAINTENANCE_BYTES);
@@ -106,7 +130,9 @@ pub(crate) fn maintenance_bytes(serving: &ServingPhysicalRuntime) -> u64 {
     serving
         .residency_observation()
         .counters()
-        .active_operation_bytes_for(worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance)
+        .active_operation_bytes_for(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Maintenance,
+        )
 }
 
 pub(crate) fn generation(serving: &ServingPhysicalRuntime) -> u64 {
@@ -128,7 +154,11 @@ pub(crate) fn media_writes(serving: &ServingPhysicalRuntime) -> (u64, u64, u64, 
     (
         media.append_attempts(),
         media.positioned_write_attempts(),
-        media.completed_bytes_for(worth_store::physical_runtime::certification::MediaOperationRole::Append),
-        media.completed_bytes_for(worth_store::physical_runtime::certification::MediaOperationRole::PositionedWrite),
+        media.completed_bytes_for(
+            worth_store::physical_runtime::certification::MediaOperationRole::Append,
+        ),
+        media.completed_bytes_for(
+            worth_store::physical_runtime::certification::MediaOperationRole::PositionedWrite,
+        ),
     )
 }

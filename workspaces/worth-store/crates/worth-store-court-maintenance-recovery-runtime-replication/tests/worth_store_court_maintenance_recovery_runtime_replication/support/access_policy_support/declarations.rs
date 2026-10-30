@@ -1,7 +1,29 @@
-pub(crate) use {worth_store_certification::S6AccessPolicyEvidenceRow};
-pub(crate) use {worth_store_physical_backend::AccessPolicyAdmission, worth_store_physical_backend::AccessPolicyBufferLifecycle, worth_store_physical_backend::AccessPolicyExecutionObservation, worth_store_physical_backend::AccessPolicyExecutionRequest, worth_store_physical_backend::AccessPolicyExecutionSession, worth_store_physical_backend::AccessPolicyRequest, worth_store_physical_backend::AccessPolicySecurityScope, worth_store_physical_backend::AdmittedAccessPolicy, worth_store_physical_backend::MixedAccessTransition, worth_store_physical_backend::PageCachePolicyProof, worth_store_physical_backend::PhysicalStoreAccessPolicyExecutor, worth_store_physical_backend::StoreAccessMode, worth_store_physical_backend::StoreAccessPolicyProofAuthority, worth_store_physical_backend::StoreOwnedAccessPolicyExecution};
-pub(crate) use {worth_store_physical_format::PhysicalGeneration, worth_store_physical_format::PhysicalGenerationAuthority, worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalRecordSlot, worth_store_physical_format::PhysicalReference, worth_store_physical_format::PhysicalReferenceAuthority, worth_store_physical_format::PhysicalSegmentId};
-pub(crate) use {worth_store_security::admitted_store_internal_security_scope_for_io_qos_test};
+pub(crate) use worth_store_certification::S6AccessPolicyEvidenceRow;
+pub(crate) use worth_store_security::admitted_store_internal_security_scope_for_io_qos_test;
+pub(crate) use {
+    worth_store_physical_backend::AccessPolicyAdmission,
+    worth_store_physical_backend::AccessPolicyBufferLifecycle,
+    worth_store_physical_backend::AccessPolicyExecutionObservation,
+    worth_store_physical_backend::AccessPolicyExecutionRequest,
+    worth_store_physical_backend::AccessPolicyExecutionSession,
+    worth_store_physical_backend::AccessPolicyRequest,
+    worth_store_physical_backend::AccessPolicySecurityScope,
+    worth_store_physical_backend::AdmittedAccessPolicy,
+    worth_store_physical_backend::MixedAccessTransition,
+    worth_store_physical_backend::PageCachePolicyProof,
+    worth_store_physical_backend::PhysicalStoreAccessPolicyExecutor,
+    worth_store_physical_backend::StoreAccessMode,
+    worth_store_physical_backend::StoreAccessPolicyProofAuthority,
+    worth_store_physical_backend::StoreOwnedAccessPolicyExecution,
+};
+pub(crate) use {
+    worth_store_physical_format::PhysicalGeneration,
+    worth_store_physical_format::PhysicalGenerationAuthority,
+    worth_store_physical_format::PhysicalPageId, worth_store_physical_format::PhysicalRecordSlot,
+    worth_store_physical_format::PhysicalReference,
+    worth_store_physical_format::PhysicalReferenceAuthority,
+    worth_store_physical_format::PhysicalSegmentId,
+};
 
 pub(crate) fn base_request(
     backend: &worth_store_physical_backend::AdmittedBackendCapabilityWitness,
@@ -28,7 +50,8 @@ pub(crate) fn executed_row(
     expected: ExpectedExecutionRequest,
     observation: AccessPolicyExecutionObservation,
 ) -> S6AccessPolicyEvidenceRow {
-    let mut executor = crate::access_policy_support::AssertingAccessBackend::new(expected, observation);
+    let mut executor =
+        crate::access_policy_support::AssertingAccessBackend::new(expected, observation);
     let receipt = worth_store_physical_backend::AccessPolicyExecutionSession::for_store_backend(
         &mut executor,
         worth_store_physical_backend::StoreOwnedAccessPolicyExecution::for_certification_test_authority(),
@@ -45,7 +68,8 @@ pub(crate) fn violation_row(
     observation: AccessPolicyExecutionObservation,
 ) -> S6AccessPolicyEvidenceRow {
     let mode = admitted.mode();
-    let mut executor = crate::access_policy_support::AssertingAccessBackend::new(expected, observation);
+    let mut executor =
+        crate::access_policy_support::AssertingAccessBackend::new(expected, observation);
     let violation = worth_store_physical_backend::AccessPolicyExecutionSession::for_store_backend(
         &mut executor,
         worth_store_physical_backend::StoreOwnedAccessPolicyExecution::for_certification_test_authority(),
@@ -61,7 +85,8 @@ pub(crate) fn mmap_request(
 ) -> AccessPolicyRequest {
     base_request(
         backend,
-        worth_store_physical_backend::AccessPolicyRequest::mmap_read().with_mmap_fault_posture(admitted_mmap_posture(backend)),
+        worth_store_physical_backend::AccessPolicyRequest::mmap_read()
+            .with_mmap_fault_posture(admitted_mmap_posture(backend)),
     )
 }
 
@@ -70,13 +95,16 @@ pub(crate) fn pinned_lifecycle() -> AccessPolicyBufferLifecycle {
 }
 
 pub(crate) fn test_reference() -> PhysicalReference {
-    let cell = worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
-        .slot_cell(
-            worth_store_physical_format::PhysicalSegmentId::from_raw(1).unwrap(),
-            worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap(),
-            worth_store_physical_format::PhysicalRecordSlot::from_raw(1).unwrap(),
-        )
-        .with_slot_generation(worth_store_physical_format::PhysicalGeneration::from_raw(1).unwrap());
+    let cell =
+        worth_store_physical_format::PhysicalGenerationAuthority::for_canonical_physical_format()
+            .slot_cell(
+                worth_store_physical_format::PhysicalSegmentId::from_raw(1).unwrap(),
+                worth_store_physical_format::PhysicalPageId::from_raw(1).unwrap(),
+                worth_store_physical_format::PhysicalRecordSlot::from_raw(1).unwrap(),
+            )
+            .with_slot_generation(
+                worth_store_physical_format::PhysicalGeneration::from_raw(1).unwrap(),
+            );
     worth_store_physical_format::PhysicalReferenceAuthority::for_canonical_physical_format()
         .admit_page_slot(cell)
         .reference()
@@ -100,7 +128,9 @@ pub(crate) fn admitted_mmap_posture(
 
 pub(crate) fn test_security_scope() -> AccessPolicySecurityScope {
     let admitted = admitted_store_internal_security_scope_for_io_qos_test();
-    worth_store_physical_backend::AccessPolicySecurityScope::from_current_store_scope(admitted.witnesses())
+    worth_store_physical_backend::AccessPolicySecurityScope::from_current_store_scope(
+        admitted.witnesses(),
+    )
 }
 
 #[derive(Clone, Copy)]
@@ -114,11 +144,21 @@ pub(crate) struct ExpectedExecutionRequest {
 
 impl ExpectedExecutionRequest {
     pub(crate) fn buffered() -> Self {
-        Self::new(worth_store_physical_backend::StoreAccessMode::Buffered, None, false, false)
+        Self::new(
+            worth_store_physical_backend::StoreAccessMode::Buffered,
+            None,
+            false,
+            false,
+        )
     }
 
     pub(crate) fn mmap() -> Self {
-        Self::new(worth_store_physical_backend::StoreAccessMode::Mmap, None, false, true)
+        Self::new(
+            worth_store_physical_backend::StoreAccessMode::Mmap,
+            None,
+            false,
+            true,
+        )
     }
 
     pub(crate) fn new(

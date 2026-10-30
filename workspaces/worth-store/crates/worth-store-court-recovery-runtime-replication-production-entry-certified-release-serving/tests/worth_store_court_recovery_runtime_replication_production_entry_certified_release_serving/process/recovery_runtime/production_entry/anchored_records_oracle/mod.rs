@@ -9,15 +9,8 @@
 //! publication's name refuses as unresolved until reopen; the journal beside it is
 //! unchanged; the new value then publishes; and a second recovery agrees.
 
-#[allow(unused_imports)] use crate::production_entry::anchored_records_oracle::*;
-use {std::num::NonZeroU64};
-
-use {worth_store::physical_runtime::certification::MediaFaultDirective, worth_store::physical_runtime::certification::MediaOperationRole};
-use {worth_store::physical_runtime::AnchoredRecordPublicationFailure, worth_store::physical_runtime::AnchoredRecordPublished, worth_store::physical_runtime::ServingPhysicalRuntime};
-
-use {worth_store_testkit_recovery_runtime::production_entry::anchored_records::assert_journal, worth_store_testkit_recovery_runtime::production_entry::anchored_records::current, worth_store_testkit_recovery_runtime::production_entry::anchored_records::name, worth_store_testkit_recovery_runtime::production_entry::anchored_records::publish, worth_store_testkit_recovery_runtime::production_entry::anchored_records::publish_journal_entry, worth_store_testkit_recovery_runtime::production_entry::anchored_records::value, worth_store_testkit_recovery_runtime::production_entry::anchored_records::CHECKPOINT};
-use {worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::open_with_faults, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::placement, worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve};
-use {worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld, worth_store_testkit_recovery_runtime::production_entry::anchored_records};
+#[allow(unused_imports)]
+use crate::production_entry::anchored_records_oracle::*;
 
 #[test]
 fn every_media_operation_of_an_anchored_publication_recovers_to_the_old_or_new_value() {

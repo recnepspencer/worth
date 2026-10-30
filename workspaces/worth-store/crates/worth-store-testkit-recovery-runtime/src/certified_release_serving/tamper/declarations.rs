@@ -1,7 +1,22 @@
+pub use std::path::Path;
 pub use {std::io::Read, std::io::Seek, std::io::SeekFrom, std::io::Write};
-pub use {std::path::Path};
 
-pub use {worth_store_physical_format::decode_blob_record, worth_store_physical_format::decode_extent_chunk, worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::BlobRecordV1, worth_store_physical_format::CurrentPhysicalRecordPlacement, worth_store_physical_format::DurableExtentManifest, worth_store_physical_format::DurablePhysicalRootManifest, worth_store_physical_format::DurableRootSelector, worth_store_physical_format::ExtentArenaFrameLayout, worth_store_physical_format::ExtentChunkCoordinate, worth_store_physical_format::OriginalDropReservedV1, worth_store_physical_format::RecordArtifactFile, worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES, worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES, worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES};
+pub use {
+    worth_store_physical_format::decode_blob_record,
+    worth_store_physical_format::decode_extent_chunk,
+    worth_store_physical_format::encode_extent_chunk, worth_store_physical_format::BlobRecordV1,
+    worth_store_physical_format::CurrentPhysicalRecordPlacement,
+    worth_store_physical_format::DurableExtentManifest,
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    worth_store_physical_format::DurableRootSelector,
+    worth_store_physical_format::ExtentArenaFrameLayout,
+    worth_store_physical_format::ExtentChunkCoordinate,
+    worth_store_physical_format::OriginalDropReservedV1,
+    worth_store_physical_format::RecordArtifactFile,
+    worth_store_physical_format::DURABLE_EXTENT_FRAME_HEADER_BYTES,
+    worth_store_physical_format::EXTENT_ARENA_MANIFEST_FRAME_BYTES,
+    worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES,
+};
 
 pub fn alter_selected_checkpoint(path: &Path) {
     let mut bytes = std::fs::read(path).expect("selected checkpoint");
@@ -26,7 +41,10 @@ pub fn alter_selected_file(directory: &Path, selected: impl Fn(&str) -> bool) {
 pub fn alter_selected_routing_root(root: &Path) {
     let records = root.join("families/records");
     let selector = worth_store_physical_format::DurableRootSelector::decode(
-        &std::fs::read(records.join(worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name())).unwrap(),
+        &std::fs::read(records.join(
+            worth_store_physical_format::RecordArtifactFile::CurrentRootSelector.file_name(),
+        ))
+        .unwrap(),
     )
     .expect("selected current root selector");
     let roots = records.join("roots");
@@ -36,9 +54,11 @@ pub fn alter_selected_routing_root(root: &Path) {
         }
         .file_name(),
     );
-    let (manifest, format) =
-        worth_store_physical_format::DurablePhysicalRootManifest::decode(&std::fs::read(manifest).unwrap(), u16::MAX)
-            .expect("selected current root manifest");
+    let (manifest, format) = worth_store_physical_format::DurablePhysicalRootManifest::decode(
+        &std::fs::read(manifest).unwrap(),
+        u16::MAX,
+    )
+    .expect("selected current root manifest");
     assert_eq!(format, selector.format());
     let selected = manifest
         .routing_root()
@@ -116,7 +136,8 @@ pub fn substitute_selected_reservation(root: &Path, route: CurrentPhysicalRecord
         .unwrap();
     let mut manifest_bytes = [0; EXTENT_ARENA_MANIFEST_FRAME_BYTES];
     file.read_exact(&mut manifest_bytes).unwrap();
-    let (manifest, format) = worth_store_physical_format::DurableExtentManifest::decode(&manifest_bytes).unwrap();
+    let (manifest, format) =
+        worth_store_physical_format::DurableExtentManifest::decode(&manifest_bytes).unwrap();
     assert_eq!(manifest.record(), extent.record());
     assert_eq!(manifest.extent_cell(), extent.extent_cell());
     assert_eq!(
@@ -124,7 +145,9 @@ pub fn substitute_selected_reservation(root: &Path, route: CurrentPhysicalRecord
         1,
         "reservation is one bounded chunk"
     );
-    let layout = worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment()).unwrap();
+    let layout =
+        worth_store_physical_format::ExtentArenaFrameLayout::new(format, manifest.alignment())
+            .unwrap();
     let coordinate = worth_store_physical_format::ExtentChunkCoordinate::new(
         extent.record(),
         extent.extent_cell(),
@@ -142,7 +165,9 @@ pub fn substitute_selected_reservation(root: &Path, route: CurrentPhysicalRecord
     file.read_exact(&mut original_frame).unwrap();
     let (payload, original_format) = decode_extent_chunk(&original_frame, coordinate).unwrap();
     assert_eq!(original_format, format);
-    let worth_store_physical_format::BlobRecordV1::OriginalDropReserved(original) = decode_blob_record(payload).unwrap() else {
+    let worth_store_physical_format::BlobRecordV1::OriginalDropReserved(original) =
+        decode_blob_record(payload).unwrap()
+    else {
         panic!("selected control is the original drop reservation")
     };
     let mut changed_basis = original.source_basis_digest();

@@ -1,8 +1,0 @@
-error[E0599]: no method named `admit` found for struct `PhysicalDurabilityDeclarationBuilder<physical_runtime::durability::admission::policy::GroupConfigured, physical_runtime::durability::admission::policy::WalMissing, physical_runtime::durability::admission::policy::IdempotencyMissing, physical_runtime::durability::admission::policy::CheckpointMissing>` in the current scope
-  --> tests/worth_store_court_store_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/incomplete_durability_policy_cannot_admit.rs:13:24
-   |
-13 |     let _ = incomplete.admit(basis);
-   |                        ^^^^^ method not found in `PhysicalDurabilityDeclarationBuilder<physical_runtime::durability::admission::policy::GroupConfigured, physical_runtime::durability::admission::policy::WalMissing, physical_runtime::durability::admission::policy::IdempotencyMissing, physical_runtime::durability::admission::policy::CheckpointMissing>`
-   |
-   = note: the method was found for
-           - `PhysicalDurabilityDeclarationBuilder<physical_runtime::durability::admission::policy::GroupConfigured, physical_runtime::durability::admission::policy::WalConfigured, physical_runtime::durability::admission::policy::IdempotencyConfigured, physical_runtime::durability::admission::policy::CheckpointConfigured>`

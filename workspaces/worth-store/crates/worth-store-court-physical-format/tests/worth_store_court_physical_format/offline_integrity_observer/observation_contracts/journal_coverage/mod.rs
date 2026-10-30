@@ -3,12 +3,7 @@ use crate::{
     phase_4_literal_vectors::pending_operation, phase_4_literal_vectors::wal_range,
     store_offline_integrity_observer_support::request, support::fixtures::clean_store,
 };
-use worth_foundational::{PhysicalArtifactFamily as Family, PhysicalByteRange};
-use worth_store_offline_integrity_observer::{
-    observe_store, OfflineIndeterminatePhysicalReason as Indeterminate,
-    OfflineIntegrityOutcome as Outcome, OfflinePhysicalDamageCause as Cause,
-    OfflineUnknownPhysicalReason as Unknown,
-};
+use worth_store_offline_integrity_observer::observe_store;
 
 #[test]
 fn namespace_truncation_and_absence_preserve_declared_seventy_two_byte_scope() {

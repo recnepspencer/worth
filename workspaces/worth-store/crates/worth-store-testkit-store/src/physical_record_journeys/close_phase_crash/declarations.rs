@@ -1,6 +1,6 @@
 pub use {std::io::Write, std::path::Path, std::process::ExitStatus};
 
-pub use {worth_store::physical_runtime::PhysicalStoreClosePhase};
+pub use worth_store::physical_runtime::PhysicalStoreClosePhase;
 
 pub const PHASE_ENV: &str = "WORTH_STORE_C5_CLOSE_DEATH_PHASE";
 
@@ -22,10 +22,13 @@ pub fn reopener(root: &Path) {
 }
 
 pub fn kill_writer_at(root: &Path, phase: PhysicalStoreClosePhase) -> String {
-    let output = crate::physical_record_journeys::child_process::invocation::child_command("close_phase_writer", root)
-        .env(PHASE_ENV, format!("{phase:?}"))
-        .output()
-        .unwrap();
+    let output = crate::physical_record_journeys::child_process::invocation::child_command(
+        "close_phase_writer",
+        root,
+    )
+    .env(PHASE_ENV, format!("{phase:?}"))
+    .output()
+    .unwrap();
     assert_expected_death(output.status);
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(
@@ -67,12 +70,22 @@ pub fn exit_when_reached(
 
 pub const fn phase_name(phase: PhysicalStoreClosePhase) -> &'static str {
     match phase {
-        worth_store::physical_runtime::PhysicalStoreClosePhase::CheckpointDrained => "CheckpointDrained",
-        worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped => "AdmissionStopped",
-        worth_store::physical_runtime::PhysicalStoreClosePhase::SafeCancellationComplete => "SafeCancellationComplete",
-        worth_store::physical_runtime::PhysicalStoreClosePhase::DispatchSettlementComplete => "DispatchSettlementComplete",
+        worth_store::physical_runtime::PhysicalStoreClosePhase::CheckpointDrained => {
+            "CheckpointDrained"
+        }
+        worth_store::physical_runtime::PhysicalStoreClosePhase::AdmissionStopped => {
+            "AdmissionStopped"
+        }
+        worth_store::physical_runtime::PhysicalStoreClosePhase::SafeCancellationComplete => {
+            "SafeCancellationComplete"
+        }
+        worth_store::physical_runtime::PhysicalStoreClosePhase::DispatchSettlementComplete => {
+            "DispatchSettlementComplete"
+        }
         worth_store::physical_runtime::PhysicalStoreClosePhase::SignalDisposed => "SignalDisposed",
-        worth_store::physical_runtime::PhysicalStoreClosePhase::ResidencyClosed => "ResidencyClosed",
+        worth_store::physical_runtime::PhysicalStoreClosePhase::ResidencyClosed => {
+            "ResidencyClosed"
+        }
         worth_store::physical_runtime::PhysicalStoreClosePhase::MediaReleased => "MediaReleased",
     }
 }
