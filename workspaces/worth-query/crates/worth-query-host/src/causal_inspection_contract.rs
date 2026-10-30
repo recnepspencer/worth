@@ -49,3 +49,19 @@
 //!     }
 //! }
 //! ```
+
+//! The ordinary inspection namespace cannot reopen the retained engine audience.
+//! ```compile_fail,E0432
+//! use worth_query_host::facade::causal_inspection::CausalInspection;
+//! ```
+//! ```compile_fail,E0432
+//! use worth_query_host::facade::causal_inspection::ScopedInspectionBasis;
+//! ```
+//!
+//! Admitted conditional history views have no public constructor.
+//! ```compile_fail,E0451
+//! use worth_query_host::facade::causal_inspection::WorthQueryMaterializedConditionalHistory;
+//! fn cannot_mint_history() -> WorthQueryMaterializedConditionalHistory {
+//!     WorthQueryMaterializedConditionalHistory { original:panic!(), detail:panic!() }
+//! }
+//! ```

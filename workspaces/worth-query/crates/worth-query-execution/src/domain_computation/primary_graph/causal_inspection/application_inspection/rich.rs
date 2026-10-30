@@ -35,6 +35,15 @@ impl WorthQueryApplicationMaterializationRequest {
             conditional_history: false,
         }
     }
+    /// Select only the original source's canonical effects, without an unrelated family.
+    pub const fn source_effects() -> Self {
+        Self {
+            families: 0,
+            source_effects: true,
+            producer_evidence: false,
+            conditional_history: false,
+        }
+    }
     /// Select only optional conditional history; connected mode still requires both diagnostics.
     pub const fn conditional_history() -> Self {
         Self {

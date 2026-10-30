@@ -3,6 +3,14 @@
 Application code imports `worth-query-decl` and `worth-query-host`. Start with the
 [ordinary application front door](../foundations/ordinary-application-front-door.md).
 
+The supported workflow is compiled through the
+[Decl/Host consumer fixture](../../../worth-query-host/tests/application_runtime_surface/inspection.rs)
+and its [rich signature/lifetime checks](../../../worth-query-host/tests/application_runtime_surface/inspection/rich.rs).
+The [installed source/producer journey](../../../worth-query-certification/examples/application_correction_support/causal_inspection/output_equivalence/history.rs)
+qualifies Equivalent and Changed output, original values, owner loss, cancellation
+and release in the same application. No Bridge, Signal, Relational or replay
+handle is an application requirement.
+
 ## What This Feature Is
 
 Inspect an actual completed query observation or performed source receipt through
@@ -592,16 +600,16 @@ are inspected. Revoking either subject refuses a new rich request. Cancellation
 after both private bodies are prepared prevents publication, preserves committed
 business state and releases fresh request funding. Source-only richness uses the
 same source effect owner through the separate request described below. Optional history availability and owner loss use the separate facet below;
-broader consumer qualification remains Phase 9.11.
+the integrated consumer fixture above qualifies the public handoff.
 
 
 ## Rich source-only inspection
 
 A performed source can materialize its canonical effects without supplying any
-completed query observation. Reuse the explicit materialization request with its
-source-effects facet selected:
+completed query observation. Select only its canonical source effects:
 
 ```rust,ignore
+let detail = WorthQueryApplicationMaterializationRequest::source_effects();
 let rich = fresh.inspect_source::<SourceDisclosure>(&original_source)
     .why_performed().materialize(detail)
     .execute_governed(current_source_metadata, current_source_diagnostic)?;
@@ -639,8 +647,8 @@ Owner/family references come from the actual admitted Source reporting envelope.
 The existing Host doctest lane checks the admitted signature, absence of a
 capability-free execution method, and private success construction. Optional
 conditional history is unavailable in source-only mode. Generic Signal forensic
-materialization remains outside the selected observation modes; integrated
-consumer handoff remains Phase 9.11.
+materialization remains outside the selected observation modes. The integrated
+consumer handoff uses the compiled fixtures linked above.
 
 
 ## Original evidence availability

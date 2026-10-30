@@ -1,7 +1,7 @@
 //! Host forwards the original observation and fresh request to Execution.
 use super::*;
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
-use worth_query_execution::facade::causal_inspection::{
+use worth_query_execution::facade::application_inspection::{
     WorthQueryApplicationInspectionRequest, WorthQueryApplicationQueryObservation,
 };
 

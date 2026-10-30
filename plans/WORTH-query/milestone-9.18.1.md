@@ -2,7 +2,7 @@
 
 > **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 accepted on 2026-10-27.
 > Phases 7 and 11 accepted on 2026-10-26; Phases 8 and 10 accepted on 2026-10-27.
-> Phase 9 remains unfinished; capability subphases 9.1-9.11 track its progress.
+> Phase 9 and capability subphases 9.1-9.11 accepted on 2026-10-30 in their qualified scopes.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
 > Phases 13–14 and 19 are complete. Phases 16–18 remain unfinished.
@@ -1357,6 +1357,8 @@ from external-input capture, temporal operations and authenticated inbound effec
 
 ## Phase 9: Causal Inspection From Ordinary Application Receipts
 
+**Status: complete in the qualified scopes of 9.1-9.11; accepted 2026-10-30.**
+
 **Depends on:** existing application receipts, scoped inspection and the retained
 Bridge/Signal/Relational evidence owners. Use Phase 8 evidence when inspecting an
 async resource; ordinary query/source inspection does not depend on Phase 8 or
@@ -1369,26 +1371,26 @@ preserves its requirements and authority model; it does not renumber later
 phases, add a new milestone or turn a bounded implementation into whole-phase
 acceptance. **Complete** means the named bounded capability already has reviewed
 implementation and passing evidence. Carry that evidence within its actual
-scope. Mostly complete and in-progress work still needs the named closure.
+scope. All subphases below have completed their named closure and integrated review.
 
-| Subphase | Capability | Current disposition | Remaining closure |
+| Subphase | Capability | Current disposition | Integration/closure evidence |
 | --- | --- | --- | --- |
-| 9.1 | Original observation custody and fresh reference reports | Complete in the qualified public scope | Integrated regression protection in 9.11 |
-| 9.2 | Paired original-result comparison | Complete for qualified one-shot shapes | Integrated regression protection in 9.11 |
-| 9.3 | Performed-source inspection and genuine producer connections | Complete for qualified present-field paths | Stronger shape coverage belongs to 9.5-9.7 |
-| 9.4 | Independent source/query bindings and permissions | Complete; qualified `21674b9dac` | Integrated regression protection in 9.11 |
-| 9.5 | Canonical field absence and mandatory currentness proof | Complete; qualified `70812eb0c3` | Stronger whole-aspect/scalar journeys belong to 9.6-9.7 |
-| 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Integrated regression protection in 9.11 |
-| 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | 9.8 suppression evidence |
-| 9.8 | Genuine equivalent-output suppression explanations | Complete for qualified exact-u64 performed evaluation, Stable/restored contrasts and Native non-compute protection | 9.9 optional rich materialization |
+| 9.1 | Original observation custody and fresh reference reports | Complete in the qualified public scope | Qualified 9.11 integration |
+| 9.2 | Paired original-result comparison | Complete for qualified one-shot shapes | Qualified 9.11 integration |
+| 9.3 | Performed-source inspection and genuine producer connections | Complete for qualified present-field paths | Extended shape coverage qualified in 9.5-9.7 |
+| 9.4 | Independent source/query bindings and permissions | Complete; qualified `21674b9dac` | Qualified 9.11 integration |
+| 9.5 | Canonical field absence and mandatory currentness proof | Complete; qualified `70812eb0c3` | Whole-aspect/scalar journeys qualified in 9.6-9.7 |
+| 9.6 | Optional whole-aspect removal and parent-optional reads | Complete | Qualified 9.11 integration |
+| 9.7 | Remaining connection shapes and lifecycle cases | Complete; bounded Scalar, distinct-subject and retired-original journeys qualified | Qualified suppression and 9.11 integration |
+| 9.8 | Genuine equivalent-output suppression explanations | Complete for qualified exact-u64 performed evaluation, Stable/restored contrasts and Native non-compute protection | Qualified rich and 9.11 integration |
 | 9.9 | Optional rich materialization | Complete for original-query, connected creation/evaluation and source-only rich modes | Freshly admitted, demand-driven views from existing evidence owners |
-| 9.10 | Evidence availability, expiry and retention lifecycle | Complete for qualified Native evidence modes | Integrated regression protection in 9.11 |
-| 9.11 | Integrated application qualification and consumer handoff | Open | Coherent public capability, executable guidance and phase acceptance |
+| 9.10 | Evidence availability, expiry and retention lifecycle | Complete for qualified Native evidence modes | Qualified 9.11 integration |
+| 9.11 | Integrated application qualification and consumer handoff | Complete; independent final QA accepted | Compiled Decl/Host consumer, integrated producer journey and executable guidance |
 
 The table is the current capability summary, not an execution journal. A
 regression in a later change blocks that change through the affected tests;
-it does not reopen an earlier completed portfolio. Phase 9 remains unfinished
-until all required subphases and the final 9.11 integration are complete.
+it does not reopen an earlier completed portfolio. All required subphases and
+the final 9.11 integration are qualified; parent Phase 9 is complete in those scopes.
 
 #### Phase 9.1: Original Observation Custody And Fresh Reference Reports
 
@@ -1754,7 +1756,7 @@ reclassified into this facet. Parent Phase 9 remains open for 9.11.
 
 #### Phase 9.11: Integrated Application Qualification And Consumer Handoff
 
-**Status: open. Depends on: completed 9.1-9.10.** Qualify one coherent ordinary
+**Status: complete; independent final QA accepted. Depends on: completed 9.1-9.10.** Qualify one coherent ordinary
 Decl/Host capability with actual query/source receipts, fresh admission,
 producer/suppression evidence, optional materialization and availability/release.
 Remove displaced older orchestration at its real consumer boundary; no second
@@ -1767,6 +1769,34 @@ is not. Phases 16-17 and 9.19's private index cutover remain separate.
 Carry adequate evidence; run changed-boundary courts and required final checks
 on the integrated candidate rather than replaying all historical portfolios
 after each edit. Final capability/consumer review closes the parent Phase 9.
+
+Qualified integrated consumer handoff (2026-10-30): the existing Host runtime
+surface fixture now declares its identity/grant/query members as one actual
+contribution and installs through public Host in_memory construction, explicit
+resources and the genuine build identity. Root and child modules use only Decl
+and Host; the internal resource factory and its obsolete caller allowance are
+removed. Public rich query, independently disclosed connected history and owned
+source-only signatures compile without raw evidence constructors. The runtime
+court acquires a real retained query projection, closes its result and first
+holder, inspects the sibling through fresh ordinary admission, then releases it.
+Publication imports the narrow application_inspection contract. Source-only DX
+selects source_effects() directly, with existing admission/owner semantics.
+The integrated parity/history model carries actual source2 -> source4 Equivalent
+-> source5 Changed, original query/source effects, independent permissions,
+rich producer/history detail, real owner eviction, earlier readonly snapshots,
+cancellation, revocation and cleanup. Existing hostile grouped cases retain the
+bounded Scalar, optional-aspect, distinct-subject, retired/generation and restored
+contrasts; no duplicated runtime or speculative CAD feature was added.
+Final evidence: 62 focused correction tests, 4 Decl/Host consumer runtime tests,
+and 6 Host rustdoc checks pass. The 23 Query owner and 18 Native owner courts from
+the preceding qualified handoffs are carried within their unchanged scope.
+Boundary/context, 400-line caps, function review, diff checks and 327 local
+consumer-document links pass. Public guidance links the actual compiled consumer
+and integrated producer journey, distinguishes typed loss from request failure,
+and preserves the separately authorized legacy receipt audience. Independent
+QA-loop, QA-tests and code-quality QA clear 9.11 and parent Phase 9 in the stated
+qualified modes. Durable archives/generic forensic reconstruction and later
+milestone phases remain separate; no new restart or universal-shape promise is made.
 
 #### Shared Ownership And Destination
 

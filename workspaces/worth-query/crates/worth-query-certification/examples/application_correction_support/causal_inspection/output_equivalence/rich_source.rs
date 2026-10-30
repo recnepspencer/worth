@@ -7,13 +7,11 @@ use worth_query_host::facade::{
     primary_graph::*, runtime::*,
 };
 fn detail() -> WorthQueryApplicationMaterializationRequest {
-    WorthQueryApplicationMaterializationRequest::family(
-        WorthQueryApplicationEvidenceFamily::QueryInspection,
-    )
-    .with_family(WorthQueryApplicationEvidenceFamily::SignalEvaluation)
-    .with_source_effects()
-    .with_conditional_history()
-    .with_producer_evidence()
+    WorthQueryApplicationMaterializationRequest::source_effects()
+        .with_family(WorthQueryApplicationEvidenceFamily::QueryInspection)
+        .with_family(WorthQueryApplicationEvidenceFamily::SignalEvaluation)
+        .with_conditional_history()
+        .with_producer_evidence()
 }
 fn assert_original(report: &WorthQueryMaterializedPerformedSourceInspection) {
     use WorthQueryMaterializedFamilyOutcome as Outcome;

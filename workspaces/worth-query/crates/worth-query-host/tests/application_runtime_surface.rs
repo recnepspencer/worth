@@ -1,32 +1,34 @@
-use worth_query_declaration::facade::application_schema::{
+use worth_query_decl::facade::application_schema::{
     StringApplicationValueBinding, U64ApplicationValueBinding,
 };
-use worth_query_declaration::{
-    worth_query_application_schema, worth_query_aspect, worth_query_entity, worth_query_field,
-    worth_query_principal_binding, worth_query_relation,
-};
-use worth_query_host::facade::admission::authenticated_principal::{
-    WorthQueryCancellationSource, WorthQueryRequestScope,
-};
-use worth_query_host::facade::declaration::authentication::{
+use worth_query_decl::facade::authentication::{
     WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
     WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
-use worth_query_host::facade::domain::{
-    WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
-    WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
+use worth_query_decl::facade::{
+    worth_query_application, worth_query_application_contribution, worth_query_aspect,
+    worth_query_entity, worth_query_field, worth_query_principal_binding, worth_query_relation,
+};
+use worth_query_host::facade::admission::authenticated_principal::{
+    WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 use worth_query_host::facade::primary_graph::WorthQueryApplicationPrincipalKey;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
     WorthQueryPrincipalResolutionMode,
 };
-use worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller;
+use worth_query_host::facade::{application_installation::*, runtime::*};
 
-worth_query_application_schema! {
-    pub schema HostIdentitySchema {
-        owner: host_identity_test,
+worth_query_application! {
+    pub HostIdentitySchema {
+        owner: "host_identity_test",
         version: (1, 0),
+        contributions: [HostIdentitySurface],
+    }
+}
+worth_query_application_contribution! {
+    pub contribution HostIdentitySurface in HostIdentitySchema {
+        identity: "worth.query.host.identity-inspection.surface.v1",
         members: |schema| {
             inspection_capability::install(schema)
                 .entity(ExternalMapping::reference())
@@ -52,6 +54,20 @@ worth_query_application_schema! {
                 .application_query_binding::<comparison_model::GovernedAccountReadBinding>()
                 .application_query_inspection(comparison_model::inspection_definition())
         }
+    }
+}
+impl
+    worth_query_host::facade::application_contribution::WorthQueryApplicationContribution<
+        HostIdentitySchema,
+    > for HostIdentitySurface
+{
+    type Configuration = ();
+    fn configure(
+        (): (),
+        _setup: &mut worth_query_host::facade::application_contribution::WorthQueryApplicationContributionSetup<'_, HostIdentitySchema>,
+    ) -> Result<(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial>
+    {
+        Ok(())
     }
 }
 
@@ -94,90 +110,85 @@ fn installed_application(
 ) -> worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
     HostIdentitySchema,
 > {
-    let policy = worth_foundational::ExecutionRequestPolicy::new(
-        worth_foundational::ExecutionPosture::Serial,
-        worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(
-            std::num::NonZeroUsize::MIN,
-            None,
-            Some(8_000_000),
-        ),
-    );
-    let application =
-        worth_query_host::facade::application_contribution::with_bootstrap_advancement(
-            policy,
-            |phase| {
-                let declaration = HostIdentitySchema::declaration().unwrap();
-                let package = WorthQueryPortableDomainPackage::new(
-                    WorthQueryPortableDomainIdentity::new("host_identity_test", 1, 0),
-                )
-                .application_schema(declaration.clone())
-                .validate()
-                .unwrap();
-                let admitted =
-                    WorthQueryInstallationAdmissionProfile::new("host-support", "host-config")
-                        .admit(package)
-                        .unwrap();
-                let installation = WorthQueryExecutionRuntimeInstaller::new()
-                    .install(WorthQueryInstallationGeneration::initial(), [admitted])
-                    .unwrap();
-                let (runtime, authority) = installation.into_parts();
-                let schema = runtime
-                    .installed_packages()
-                    .bind_application_schema(declaration)
-                    .unwrap();
-                let binding = schema
-                    .principal_binding(IdentityBinding::reference())
-                    .unwrap();
-                let mut graph = authority
-                .prepare_primary_graph(
-                    &phase,
-                    &runtime,
-                    &schema,
-                    worth_query_execution::facade::integration::product_world_resources_for_test(
-                        1_024,
-                    ),
-                )
-                .unwrap();
-                graph
-                    .bind_principal(
-                        &binding,
-                        WorthQueryApplicationPrincipalKey::new("host-principal").unwrap(),
-                        1_u64,
-                        WorthQueryExternalPrincipalIdentity::new(
-                            "https://issuer.example",
-                            "subject",
-                        )
-                        .unwrap(),
-                        WorthQueryPrincipalMappingStatus::Enabled,
-                    )
-                    .unwrap();
-                graph
-                    .bind_entity(
-                        WorthQueryApplicationEntitySeed::new(
-                            Account::reference(),
-                            WorthQueryApplicationEntityKey::new("account-row").unwrap(),
-                        )
-                        .field(AccountNumber::reference(), "account-001".to_string()),
-                    )
-                    .unwrap();
-
-                inspection_capability::bind(&mut graph);
-                graph
-        .publish_application_runtime(
-            &phase,
-            runtime,
-            authority,
-            schema,
+    in_memory(
+        HostIdentitySchema::declaration().unwrap(),
+        ((),),
+        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
+        WorthQueryInMemoryApplicationLimits::new(
+            world_resources(),
+            WorthQueryApplicationQueryResourceProfile::new(
+                std::num::NonZeroUsize::new(128).unwrap(),
+            ),
             worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(
             ),
-        )
-        .unwrap()
-            },
-        )
-        .unwrap();
+        ),
+        |_phase, graph, schema| {
+            let binding = schema
+                .principal_binding(IdentityBinding::reference())
+                .unwrap();
+            graph
+                .bind_principal(
+                    &binding,
+                    WorthQueryApplicationPrincipalKey::new("host-principal").unwrap(),
+                    1_u64,
+                    WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject")
+                        .unwrap(),
+                    WorthQueryPrincipalMappingStatus::Enabled,
+                )
+                .unwrap();
+            graph
+                .bind_entity(
+                    WorthQueryApplicationEntitySeed::new(
+                        Account::reference(),
+                        WorthQueryApplicationEntityKey::new("account-row").unwrap(),
+                    )
+                    .field(AccountNumber::reference(), "account-001".to_string()),
+                )
+                .unwrap();
+            inspection_capability::bind(graph);
+            Ok(())
+        },
+    )
+    .unwrap()
+}
 
-    application
+fn world_resources() -> WorthQueryProductWorldResources {
+    WorthQueryProductWorldResources::install(
+        RuntimeWorldBudgetInstallation {
+            branches: RuntimeWorldBranchBudgetInstallation {
+                live_product_branches: 128,
+            },
+            history: RuntimeWorldHistoryBudgetInstallation {
+                retained_composite_commits: 1_024,
+                history_metadata_bytes: 16 * 1024 * 1024,
+            },
+            observations: RuntimeWorldObservationBudgetInstallation {
+                active_observations: 512,
+            },
+            publication: RuntimeWorldPublicationBudgetInstallation {
+                active_publication_attempts: 128,
+            },
+            recovery: RuntimeWorldRecoveryBudgetInstallation {
+                retained_product_unpublished_records: 128,
+                retained_partial_metadata_bytes: 16 * 1024 * 1024,
+            },
+            retention: RuntimeWorldRetentionBudgetInstallation {
+                unique_exact_component_pins: 1_024,
+                in_flight_pin_acquisition_reservations: 256,
+            },
+            custody: RuntimeWorldCustodyBudgetInstallation {
+                owner_created_component_custody_records: 256,
+            },
+        },
+        WorthQueryProductWorldClock::start(),
+        WorthQueryInvalidationResources::new(),
+        ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(8_000_000)),
+        ),
+    )
+    .unwrap()
 }
 
 #[test]
@@ -209,7 +220,7 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
                     AccountNumber::reference(),
                     "account-001".to_string(),
                     &request_scope,
-                    WorthQueryPrincipalResolutionMode::Certification,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
         })

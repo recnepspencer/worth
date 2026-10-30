@@ -115,7 +115,9 @@ pub mod runtime {
         LeaseDenial, LeaseRequest, MapKernelStop, MemoryLimitDenial, MemoryLimitLevel,
         WorkCeilingDenial,
     };
-    pub use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
+    pub use worth_foundational::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
     pub use worth_runtime_world::facade::{
         CompositeComponentChangePosture, CompositeSignalPublicationIdentity, NoEffectCause,
         ProductUnpublishedCause, RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,

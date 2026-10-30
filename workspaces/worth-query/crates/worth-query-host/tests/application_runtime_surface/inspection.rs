@@ -1,4 +1,6 @@
-//! Genuine ordinary receipt journey and both supported Decl/Host entrances.
+//! Genuine ordinary receipt journey and supported Decl/Host entrances.
+#[path = "inspection/rich.rs"]
+mod rich;
 use worth_query_decl::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_query::{ApplicationQueryBinding, ApplicationQueryScopeBinding},
@@ -114,4 +116,52 @@ fn ordinary_published_receipt_enters_fresh_host_inspection() {
     drop(denial);
     drop(result);
     assert_eq!(registry.observe().active(), before);
+}
+
+#[test]
+fn retained_public_projection_survives_result_and_sibling_close_through_two_facades() {
+    use super::{
+        inspection_authentication::authenticate,
+        inspection_model::{AccountRead, AccountReadBinding},
+    };
+    use worth_query_host::facade::{
+        admission::authenticated_principal::{
+            WorthQueryCancellationSource, WorthQueryRequestScope,
+        },
+        application_entry::WorthQueryApplicationRequestExt,
+        causal_inspection::{
+            WorthQueryInspectionRetainedEvidence as Retained, WorthQueryInspectionSupplierEvidence,
+        },
+    };
+    let application = super::installed_application();
+    let cancellation = WorthQueryCancellationSource::new();
+    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let principal = authenticate(application.installed_schema(), &scope);
+    let request = application.request(&principal, &scope);
+    let readers = application.application_query_basis_observer();
+    let baseline = readers.observe().active();
+    let result = request
+        .query(AccountRead("account-001".into()))
+        .retain_projection_for_inspection()
+        .execute()
+        .unwrap();
+    assert_eq!(result.rows(), &["account-001".to_owned()]);
+    let original = result.receipt().inspect().observation().unwrap().clone();
+    let sibling = original.clone();
+    drop(result);
+    original.close();
+    let report =
+        ordinary::<super::HostIdentitySchema, AccountReadBinding>(&request, &sibling).unwrap();
+    let availability = report.evidence_availability();
+    assert_eq!(availability.projection(), Retained::Retained);
+    assert_eq!(
+        availability.supplier(),
+        WorthQueryInspectionSupplierEvidence::NotRetained
+    );
+    assert_eq!(availability.native_observation(), Retained::NotRetained);
+    assert_eq!(availability.conditional_history(), None);
+    assert_eq!(readers.observe().active(), baseline);
+    report.close();
+    sibling.close();
+    assert_eq!(readers.observe().active(), baseline);
 }
