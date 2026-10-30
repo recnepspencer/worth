@@ -5749,7 +5749,7 @@ milestone, as defined by the governing 9.18 specification.
 
 ## Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-**Progress, 2026-10-29:** Phases 1–4 are accepted: actual-read observations,
+**Progress, 2026-10-30:** Phases 1–4 are accepted: actual-read observations,
 declared relation laws, complete Native walks/reachability/closure, declared
 query closure steps, stored orbits, persistent aggregate identity/lineage and
 qualified Proprietary history-reader and boundary-edit adoption. Phases 5–6 are
@@ -5801,8 +5801,13 @@ mandatory current Rust qualification. Index implementation and its dependent CAD
 locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
 Addendum 1 withdraws partitioned per-partition reuse as a gap and adds P1 Phase
 19 for consecutive source undo after verified correction/restoration.
-The retained scope has seventeen implementation phases; 9, 16, 17 and 18
+The retained scope has seventeen implementation phases; 9, 16 and 18
 remain unfinished.
+Phase 17 is complete at the public application boundary: versioned domain intent
+enters fresh governed READ and mutation admission, exact selected-source creation
+and actual-head adoption. Native attempt resolution preserves frozen input and
+effect-free cached retries; publication, delivery and cleanup retain their real
+owners through typed refusals and fresh-request continuation.
 
 ### Goal
 

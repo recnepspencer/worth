@@ -5,7 +5,7 @@
 > Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
 > transferred, not completed, to 9.19's managed-index and final CAD qualification.
-> Phases 13–14 and 19 are complete. Phases 16–18 remain unfinished.
+> Phases 13–14, 17 and 19 are complete. Phases 16 and 18 remain unfinished.
 > Addendum 1 defines correction-aware consecutive source undo.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
@@ -1836,7 +1836,7 @@ stand in for this acceptance.
 
 ## Phase 17: Proposal Acceptance Through Fresh Ordinary Requests
 
-**Status: unfinished; required. Priority: P3.**
+**Status: complete at the public application boundary. Priority: P3.**
 
 The public expected-source fork prerequisite is qualified. It consumes an
 admitted application selection, retains that exact source
@@ -1849,7 +1849,12 @@ expected-basis readmission is also a qualified public prerequisite:
 versioned comparison data re-enters the actual World/Native owners, including
 Native's separate exact-currentness check before application selection. The
 owner/application cases and current repository gates pass.
-The complete public stored-proposal acceptance journey remains unfinished.
+The compiled public application records and loads versioned typed intent, freshly
+admits independent READ and mutation authority, resolves original native attempt
+meaning before new execution, and adopts the actual model head under exact owner
+currentness. Registered frozen revisions retain their selected input; stale
+unregistered input and foreign occurrences refuse. Publication, result delivery
+and retirement failures retain their actual native recovery or cleanup owners.
 **Owner:** Query entry/basis admission and Native/World source-basis receivers;
 the public application fixture owns its domain intent and model selection.
 **Depends on:** ordinary governed application requests and existing source
