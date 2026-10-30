@@ -8,12 +8,15 @@ pub enum ManagedIndexMembership {
     /// Query visits the whole checked Source tree and applies its installed predicate.
     /// This explicit full traversal grants no pruning or narrowed influence.
     ExhaustiveSourceTree,
+    /// Query may prune a checked subtree using its qualified pure summary algebra.
+    CheckedSummarySourceTree,
 }
 impl ManagedIndexMembership {
     pub const fn canonical_token(self) -> &'static str {
         match self {
             Self::Candidates => "candidates",
             Self::ExhaustiveSourceTree => "exhaustive-source-tree-v1",
+            Self::CheckedSummarySourceTree => "checked-summary-source-tree-v1",
         }
     }
 }

@@ -16,3 +16,6 @@ mod prefix;
 mod query;
 mod rule;
 mod schema;
+
+const PREFIX_MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
+    worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;

@@ -1,4 +1,4 @@
-//! Explicit whole-Source traversal: no provider pruning premise is accepted.
+//! Query discharges the actual checked root through visits or qualified subtree summaries.
 use crate::domain_computation::primary_graph::application_query::managed_index::{
     SourceTree, WorthQueryManagedIndexControl as Control, WorthQueryManagedIndexSourceSlot as Slot,
     WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Denial,
@@ -8,10 +8,14 @@ pub(in crate::domain_computation::primary_graph) fn visit(
     tree: &SourceTree,
     root: Option<usize>,
     control: &Control<'_>,
-    apply: &mut dyn FnMut(Slot) -> Result<(), Denial>,
+    apply: &mut dyn FnMut(usize, Option<Slot>) -> Result<bool, Denial>,
 ) -> Result<(), Denial> {
+    if root != tree.root() {
+        return Err(control.refuse(Stop::IncompleteTraversal).into());
+    }
     let (mut previous, mut current) = (None, root);
     let (mut entered, mut sources, mut steps) = (0usize, 0usize, 0usize);
+    let mut pruned = false;
     let maximum_steps = tree
         .len()
         .checked_mul(3)
@@ -27,11 +31,13 @@ pub(in crate::domain_computation::primary_graph) fn visit(
         let [left, right] = region.children;
         let next = if previous == parent {
             entered += 1;
-            if let Some(slot) = region.source {
-                apply(slot)?;
-                sources += 1;
+            if apply(ordinal, region.source)? {
+                sources += usize::from(region.source.is_some());
+                left.or(right).or(parent)
+            } else {
+                pruned = true;
+                parent
             }
-            left.or(right).or(parent)
         } else if previous == left {
             right.or(parent)
         } else if previous == right {
@@ -42,7 +48,7 @@ pub(in crate::domain_computation::primary_graph) fn visit(
         previous = current;
         current = next;
     }
-    if entered != tree.len() || sources != tree.source_len() {
+    if !pruned && (entered != tree.len() || sources != tree.source_len()) {
         return Err(control.refuse(Stop::IncompleteTraversal).into());
     }
     control.poll().map_err(Into::into)

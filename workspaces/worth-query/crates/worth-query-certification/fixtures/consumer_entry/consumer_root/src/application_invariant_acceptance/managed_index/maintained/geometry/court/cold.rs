@@ -28,7 +28,7 @@ pub(super) fn cold_read(
     scope: &WorthQueryRequestScope,
     calls: &provider::Calls,
 ) {
-    let queries = calls.queries.load(Ordering::SeqCst);
+    let queries = calls.probe_validations.load(Ordering::SeqCst);
     let result = world
         .runtime()
         .request(principal, scope)
@@ -48,7 +48,7 @@ pub(super) fn cold_read(
         "{denial:?}"
     );
     assert_eq!(
-        calls.queries.load(Ordering::SeqCst),
+        calls.probe_validations.load(Ordering::SeqCst),
         queries,
         "cold denial precedes provider query"
     );

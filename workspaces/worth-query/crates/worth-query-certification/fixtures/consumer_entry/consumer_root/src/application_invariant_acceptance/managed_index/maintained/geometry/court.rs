@@ -23,6 +23,8 @@ mod cold;
 mod growth;
 mod rebuild;
 mod rewiring;
+mod summary;
+mod summary_locality;
 type Principal = WorthQueryAuthenticatedExternalPrincipal<Catalog>;
 fn find(directory: &str, x: i64) -> query::FindBoxes {
     query::FindBoxes {

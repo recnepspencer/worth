@@ -137,7 +137,7 @@ fn managed_index_structure_is_versioned_and_old_bytes_cannot_claim_source_covera
     // Literal v2 prefix: one-byte name/provider, version1, unsupported structure2.
     // No Source follows; the structural profile must refuse before reading it.
     assert_eq!(
-        try_decode_member(&[0, 48, 0, 2, 0, 0, 0, 1, b'I', 0, 0, 0, 1, b'P', 0, 0, 0, 1, 0, 2])
+        try_decode_member(&[0, 48, 0, 2, 0, 0, 0, 1, b'I', 0, 0, 0, 1, b'P', 0, 0, 0, 1, 0, 3])
             .unwrap_err()
             .kind(),
         Kind::UnsupportedRecordVariant
@@ -186,11 +186,29 @@ fn managed_index_membership_keeps_old_versions_conservative_and_requires_actual_
             }
         }
     }
-    // Literal v3 name/provider/version, BinarySourceTree and unknown membership2.
+    // Literal v3 name/provider/version, BinarySourceTree and unknown membership3.
+    let mut parts = definition().parts().clone();
+    parts.semantic_version = 3;
+    parts.structure = ApplicationManagedIndexSourceStructure::BinarySourceTree;
+    parts.membership = ApplicationManagedIndexMembership::CheckedSummarySourceTree;
+    let member = ApplicationSchemaMember::ManagedIndex {
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()),
+    };
+    assert_eq!(decode_member(&encode_member(&member)), member);
+    for version in [1, 2] {
+        parts.semantic_version = version;
+        if version == 1 {
+            parts.structure = ApplicationManagedIndexSourceStructure::Opaque;
+        }
+        assert_eq!(
+            ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()).validate(),
+            Err(ApplicationManagedIndexDefinitionDenial::UnsupportedMembership)
+        );
+    }
     // No Source bytes follow: reject the strategy before interpreting any payload.
     assert_eq!(
         try_decode_member(&[
-            0, 48, 0, 3, 0, 0, 0, 1, b'I', 0, 0, 0, 1, b'P', 0, 0, 0, 1, 0, 1, 0, 2
+            0, 48, 0, 3, 0, 0, 0, 1, b'I', 0, 0, 0, 1, b'P', 0, 0, 0, 1, 0, 1, 0, 3
         ])
         .unwrap_err()
         .kind(),

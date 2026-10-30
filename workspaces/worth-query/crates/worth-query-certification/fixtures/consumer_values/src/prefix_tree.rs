@@ -1,5 +1,5 @@
 //! A sorted, height-balanced prefix source; storage and source values stay borrowed.
-use crate::PrefixOrder;
+use crate::{PrefixOrder, PrefixSourceBounds};
 use std::cmp::Ordering;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -16,6 +16,7 @@ impl std::error::Error for PrefixIndexDenial {}
 #[derive(Clone, Copy, Debug)]
 pub struct PrefixNode<Id, Source = usize> {
     pub source: Source,
+    pub bounds: PrefixSourceBounds<Source>,
     pub left: Option<Id>,
     pub right: Option<Id>,
     pub height: u8,
@@ -102,7 +103,7 @@ fn remove<S: PrefixBuildStorage>(
             }
         },
     }
-    write_height(id, node, storage)?;
+    refresh_node(id, node, storage)?;
     balance(id, storage).map(Some)
 }
 
@@ -122,7 +123,7 @@ fn remove_minimum<S: PrefixBuildStorage>(
     };
     let (source, left) = remove_minimum(left, depth + 1, storage)?;
     node.left = left;
-    write_height(id, node, storage)?;
+    refresh_node(id, node, storage)?;
     Ok((source, Some(balance(id, storage)?)))
 }
 
@@ -139,6 +140,7 @@ fn insert<S: PrefixBuildStorage>(
     let Some(id) = root else {
         return storage.append(PrefixNode {
             source,
+            bounds: PrefixSourceBounds::point(source),
             left: None,
             right: None,
             height: 1,
@@ -150,7 +152,7 @@ fn insert<S: PrefixBuildStorage>(
         Ordering::Greater => node.right = Some(insert(node.right, source, depth + 1, storage)?),
         Ordering::Equal => return Err(storage.invalid()),
     }
-    write_height(id, node, storage)?;
+    refresh_node(id, node, storage)?;
     balance(id, storage)
 }
 
@@ -161,11 +163,21 @@ fn height<S: PrefixBuildStorage>(id: Option<S::Id>, storage: &mut S) -> Result<u
     }
 }
 
-fn write_height<S: PrefixBuildStorage>(
+fn refresh_node<S: PrefixBuildStorage>(
     id: S::Id,
     mut node: PrefixNode<S::Id, S::Source>,
     storage: &mut S,
 ) -> Result<(), S::Stop> {
+    node.bounds = PrefixSourceBounds {
+        lower: match node.left {
+            Some(id) => storage.read(id)?.bounds.lower,
+            None => node.source,
+        },
+        upper: match node.right {
+            Some(id) => storage.read(id)?.bounds.upper,
+            None => node.source,
+        },
+    };
     node.height = height(node.left, storage)?
         .max(height(node.right, storage)?)
         .checked_add(1)
@@ -182,7 +194,7 @@ fn balance<S: PrefixBuildStorage>(id: S::Id, storage: &mut S) -> Result<S::Id, S
         let child = storage.read(child_id)?;
         if height(child.left, storage)? < height(child.right, storage)? {
             node.left = Some(rotate_left(child_id, storage)?);
-            write_height(id, node, storage)?;
+            refresh_node(id, node, storage)?;
         }
         rotate_right(id, storage)
     } else if i16::from(right) - i16::from(left) > 1 {
@@ -190,7 +202,7 @@ fn balance<S: PrefixBuildStorage>(id: S::Id, storage: &mut S) -> Result<S::Id, S
         let child = storage.read(child_id)?;
         if height(child.right, storage)? < height(child.left, storage)? {
             node.right = Some(rotate_right(child_id, storage)?);
-            write_height(id, node, storage)?;
+            refresh_node(id, node, storage)?;
         }
         rotate_left(id, storage)
     } else {
@@ -203,9 +215,9 @@ fn rotate_left<S: PrefixBuildStorage>(id: S::Id, storage: &mut S) -> Result<S::I
     let pivot_id = node.right.ok_or_else(|| storage.invalid())?;
     let mut pivot = storage.read(pivot_id)?;
     node.right = pivot.left;
-    write_height(id, node, storage)?;
+    refresh_node(id, node, storage)?;
     pivot.left = Some(id);
-    write_height(pivot_id, pivot, storage)?;
+    refresh_node(pivot_id, pivot, storage)?;
     Ok(pivot_id)
 }
 
@@ -214,9 +226,9 @@ fn rotate_right<S: PrefixBuildStorage>(id: S::Id, storage: &mut S) -> Result<S::
     let pivot_id = node.left.ok_or_else(|| storage.invalid())?;
     let mut pivot = storage.read(pivot_id)?;
     node.left = pivot.right;
-    write_height(id, node, storage)?;
+    refresh_node(id, node, storage)?;
     pivot.right = Some(id);
-    write_height(pivot_id, pivot, storage)?;
+    refresh_node(pivot_id, pivot, storage)?;
     Ok(pivot_id)
 }
 

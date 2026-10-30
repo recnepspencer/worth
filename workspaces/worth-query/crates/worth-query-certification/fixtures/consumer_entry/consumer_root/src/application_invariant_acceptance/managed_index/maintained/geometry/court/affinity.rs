@@ -162,7 +162,7 @@ fn journey() {
     let before = (
         calls.builds.load(Ordering::SeqCst),
         calls.updates.load(Ordering::SeqCst),
-        calls.queries.load(Ordering::SeqCst),
+        calls.probe_validations.load(Ordering::SeqCst),
     );
     let denial = sibling.query(all("A")).rebuild_index(&index).unwrap_err();
     let WorthQueryApplicationRequestQueryDenial::ManagedIndex(denial) = denial else {
@@ -181,7 +181,7 @@ fn journey() {
         (
             calls.builds.load(Ordering::SeqCst),
             calls.updates.load(Ordering::SeqCst),
-            calls.queries.load(Ordering::SeqCst)
+            calls.probe_validations.load(Ordering::SeqCst)
         ),
         before
     );
@@ -191,7 +191,7 @@ fn journey() {
         .query(all("A"))
         .evict_index(&reused_index)
         .unwrap();
-    let queries = calls.queries.load(Ordering::SeqCst);
+    let queries = calls.probe_validations.load(Ordering::SeqCst);
     let cold = reused_request.query(all("A")).execute();
     let Err(WorthQueryApplicationRequestQueryDenial::ManagedIndex(denial)) = cold else {
         panic!("the reused selected image must become cold")
@@ -205,7 +205,7 @@ fn journey() {
         ),
         "{denial:?}"
     );
-    assert_eq!(calls.queries.load(Ordering::SeqCst), queries);
+    assert_eq!(calls.probe_validations.load(Ordering::SeqCst), queries);
     assert_eq!(
         values(request.query(all("A")).execute().unwrap().rows()),
         expected("A", 20, all("A").probe)

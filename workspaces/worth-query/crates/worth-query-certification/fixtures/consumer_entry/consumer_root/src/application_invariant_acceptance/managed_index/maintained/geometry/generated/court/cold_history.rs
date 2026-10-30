@@ -213,7 +213,7 @@ fn journey() {
             "fresh retained execution reads its genuine older endpoint, not current fallback"
         );
     }
-    let queries = calls.queries.load(Ordering::SeqCst);
+    let queries = calls.probe_validations.load(Ordering::SeqCst);
     let denial = pinned
         .query(all("A"))
         .execute()
@@ -227,7 +227,7 @@ fn journey() {
         WorthQueryManagedIndexDenialCause::Refused(WorthQueryManagedIndexRefusal::UnsupportedMode)
     ));
     assert_eq!(
-        calls.queries.load(Ordering::SeqCst),
+        calls.probe_validations.load(Ordering::SeqCst),
         queries,
         "unsupported retained managed mode refuses before provider query"
     );
@@ -241,7 +241,7 @@ fn cold_read(
     scope: &WorthQueryRequestScope,
     calls: &provider::Calls,
 ) {
-    let queries = calls.queries.load(Ordering::SeqCst);
+    let queries = calls.probe_validations.load(Ordering::SeqCst);
     let result = world
         .runtime()
         .request(principal, scope)
@@ -261,7 +261,7 @@ fn cold_read(
         "{denial:?}"
     );
     assert_eq!(
-        calls.queries.load(Ordering::SeqCst),
+        calls.probe_validations.load(Ordering::SeqCst),
         queries,
         "cold refusal precedes provider query"
     );

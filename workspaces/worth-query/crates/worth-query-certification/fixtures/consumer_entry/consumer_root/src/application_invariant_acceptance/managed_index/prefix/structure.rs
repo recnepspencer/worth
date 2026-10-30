@@ -13,7 +13,6 @@ pub(in super::super) enum Fault {
 
 pub(super) fn describe(
     calls: &Calls,
-    sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
     node: Node,
     control: &WorthQueryManagedIndexControl<'_>,
 ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
@@ -24,9 +23,16 @@ pub(super) fn describe(
         let fault = *calls.structure_fault.lock().unwrap();
         return Ok(match fault {
             Fault::OmitSource => WorthQueryManagedIndexNodeRegion::new(None, region.children()),
-            Fault::DuplicateSource => {
-                WorthQueryManagedIndexNodeRegion::new(Some(sources.at(0)?.0), region.children())
-            }
+            Fault::DuplicateSource => WorthQueryManagedIndexNodeRegion::new(
+                Some(
+                    calls
+                        .first_source
+                        .lock()
+                        .unwrap()
+                        .expect("the actual build observed its first genuine slot"),
+                ),
+                region.children(),
+            ),
             Fault::DuplicateChild => match region.children().into_iter().flatten().next() {
                 Some(child) => WorthQueryManagedIndexNodeRegion::new(
                     region.source(),
@@ -39,7 +45,7 @@ pub(super) fn describe(
     }
     #[cfg(not(test))]
     {
-        let _ = (calls, sources);
+        let _ = calls;
         Ok(region)
     }
 }
@@ -53,8 +59,10 @@ pub(super) fn cyclic_sources(
     let mut cycle = None;
     let mut previous = None;
     for slot in sources.slots() {
+        let slot = slot?;
         let id = nodes.push(Node {
-            source: slot?,
+            source: slot,
+            bounds: worth_query_consumer_values::PrefixSourceBounds::point(slot),
             left: None,
             right: None,
             height: 1,

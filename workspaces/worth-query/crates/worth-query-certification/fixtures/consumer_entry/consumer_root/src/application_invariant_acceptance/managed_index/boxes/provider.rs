@@ -21,17 +21,20 @@ impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
     const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
-        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
+        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;
 }
 // compiled-example: end
-pub type Node = BoxNode<WorthQueryManagedIndexNodeId>;
+pub type Node = BoxNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot>;
 pub type Stop = WorthQueryManagedIndexProviderStop<BoxIndexDenial>;
 #[derive(Default)]
 pub struct Calls {
+    #[cfg(test)]
+    pub corrupt_summary: std::sync::atomic::AtomicBool,
     capacity: AtomicUsize,
     builds: AtomicUsize,
     probe_validations: AtomicUsize,
     pub matched_sources: AtomicUsize,
+    pub summary_comparisons: AtomicUsize,
     // Consumer observation after a genuine BVH node enters framework storage.
     pub after_first_node: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     pub coordinates: Mutex<[(u32, u64, u32); 16]>,
@@ -49,14 +52,13 @@ pub struct Provider(pub Arc<Calls>);
 impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     fn decompose(
         &self,
-        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, BoxIndex>,
         node: Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
         control.checkpoint(1)?;
         Ok(match node.links {
             worth_query_consumer_values::BoxNodeLinks::Leaf { source } => {
-                WorthQueryManagedIndexNodeRegion::new(Some(sources.at(source)?.0), [None, None])
+                WorthQueryManagedIndexNodeRegion::new(Some(source), [None, None])
             }
             worth_query_consumer_values::BoxNodeLinks::Branch { left, right } => {
                 WorthQueryManagedIndexNodeRegion::new(None, [Some(left), Some(right)])
@@ -65,9 +67,57 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     }
 
     type Node = Node;
+    type Summary = Box2;
     type Denial = BoxIndexDenial;
     const IDENTITY: &'static str = BoxIndex::PROVIDER;
     const VERSION: u32 = BoxIndex::PROVIDER_VERSION;
+    fn source_summary(
+        &self,
+        _slot: WorthQueryManagedIndexSourceSlot,
+        row: WorthQueryManagedIndexSourceRow<'_, Catalog, BoxIndex>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, Stop> {
+        control.checkpoint(1)?;
+        let raw = row
+            .field(query::bounds())
+            .map_err(|_| Stop::Domain(BoxIndexDenial::InvalidTopology))?;
+        Box2::new(raw.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))
+    }
+    fn merge_summaries(
+        &self,
+        parts: [Option<Self::Summary>; 3],
+        _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, BoxIndex>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, Stop> {
+        control.checkpoint(3)?;
+        parts
+            .into_iter()
+            .flatten()
+            .reduce(Box2::union)
+            .ok_or(Stop::Domain(BoxIndexDenial::InvalidTopology))
+    }
+    fn node_summary(
+        &self,
+        node: Node,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, Stop> {
+        control.checkpoint(1)?;
+        Ok(node.bounds)
+    }
+    fn summary_may_match(
+        &self,
+        bounds: Self::Summary,
+        _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, BoxIndex>,
+        probe: &Coordinates,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<bool, Stop> {
+        self.0.summary_comparisons.fetch_add(1, Ordering::SeqCst);
+        control.checkpoint(4)?;
+        let probe =
+            Box2::new(probe.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))?;
+        Ok(bounds.overlaps(probe))
+    }
+
     fn node_capacity(
         &self,
         source_count: usize,
@@ -118,6 +168,33 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
                 Box2::new(raw.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))
             },
             |node| {
+                let mut node = Node {
+                    bounds: node.bounds,
+                    height: node.height,
+                    last_source: sources.at(node.last_source)?.0,
+                    links: match node.links {
+                        worth_query_consumer_values::BoxNodeLinks::Leaf { source } => {
+                            worth_query_consumer_values::BoxNodeLinks::Leaf {
+                                source: sources.at(source)?.0,
+                            }
+                        }
+                        worth_query_consumer_values::BoxNodeLinks::Branch { left, right } => {
+                            worth_query_consumer_values::BoxNodeLinks::Branch { left, right }
+                        }
+                    },
+                };
+                #[cfg(test)]
+                if self.0.corrupt_summary.load(Ordering::SeqCst)
+                    && matches!(
+                        node.links,
+                        worth_query_consumer_values::BoxNodeLinks::Leaf { .. }
+                    )
+                {
+                    node.bounds =
+                        Box2::new(Coordinates::new(10_000, 10_000, 10_001, 10_001).raw()).unwrap();
+                }
+                #[cfg(not(test))]
+                let _ = &mut node;
                 let id = nodes.push(node).map_err(Stop::Controlled)?;
                 if nodes.len() == 1 {
                     let observe = self.0.after_first_node.lock().unwrap().take();
@@ -163,6 +240,7 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
 pub struct IncompatibleVersion(pub Provider);
 impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for IncompatibleVersion {
     type Node = Node;
+    type Summary = Box2;
     type Denial = BoxIndexDenial;
     const IDENTITY: &'static str = BoxIndex::PROVIDER;
     const VERSION: u32 = 2;

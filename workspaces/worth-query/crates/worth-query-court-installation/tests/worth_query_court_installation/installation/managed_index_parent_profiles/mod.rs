@@ -227,4 +227,40 @@ fn installed_exhaustive_membership_binds_its_profile_without_changing_parent_mea
             .installed_query_binding::<queries::ParentBinding<Complete>>()
             .unwrap()
     ));
+    type Checked = model::ParentSchema<7>;
+    let checked = Checked::declaration().unwrap();
+    let normalized = checked
+        .erased()
+        .members()
+        .iter()
+        .cloned()
+        .map(|member| {
+            if let ApplicationSchemaMember::ManagedIndex { definition } = member {
+                let mut parts = definition.parts().clone();
+                parts.membership = ApplicationManagedIndexMembership::ExhaustiveSourceTree;
+                ApplicationSchemaMember::ManagedIndex {
+                    definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                        parts,
+                    ),
+                }
+            } else {
+                member
+            }
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(complete.erased().members(), normalized);
+    assert_ne!(complete.identity(), checked.identity());
+    let installed = bind::<7>().unwrap();
+    let index = installed
+        .installed_managed_index::<queries::ModelIndex<Checked>>()
+        .unwrap();
+    assert_eq!(
+        index.definition().parts().membership,
+        ApplicationManagedIndexMembership::CheckedSummarySourceTree
+    );
+    assert!(index.admits_parent(
+        &installed
+            .installed_query_binding::<queries::ParentBinding<Checked>>()
+            .unwrap()
+    ));
 }

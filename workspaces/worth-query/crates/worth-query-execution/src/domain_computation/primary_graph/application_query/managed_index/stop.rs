@@ -6,6 +6,9 @@ use worth_execution::{ExecutionRequestArrayDenial, WorkCeilingDenial};
 pub enum WorthQueryManagedIndexStop {
     MembershipUnavailable,
     IncompleteTraversal,
+    SummaryUnavailable,
+    SummaryMismatch,
+    ForeignSummarySource,
     Request(WorkCeilingDenial),
     Storage(ExecutionRequestArrayDenial),
     /// Original allocation/request refusal while retaining persistent Source material.

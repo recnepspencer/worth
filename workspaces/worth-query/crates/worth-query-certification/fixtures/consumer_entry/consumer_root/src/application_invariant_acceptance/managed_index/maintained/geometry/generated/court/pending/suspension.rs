@@ -38,13 +38,13 @@ pub(super) fn run(
                 .request(&principal, &scope)
                 .on_branch(world.current_world());
             assert_eq!(world.world_active_publication_attempts_for_test(), 1);
-            let queries = rules.provider.queries.load(Ordering::SeqCst);
+            let queries = rules.provider.probe_validations.load(Ordering::SeqCst);
             for directory in ["A", "B"] {
                 assert_activation_unavailable(request.query(all(directory)).execute());
                 assert_activation_unavailable(request.query(read_source(directory)).execute());
             }
             assert_eq!(
-                rules.provider.queries.load(Ordering::SeqCst),
+                rules.provider.probe_validations.load(Ordering::SeqCst),
                 queries,
                 "publication exclusion precedes Source/provider disclosure"
             );

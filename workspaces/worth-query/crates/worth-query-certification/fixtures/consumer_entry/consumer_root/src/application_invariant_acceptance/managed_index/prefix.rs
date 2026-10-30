@@ -14,6 +14,8 @@ use worth_query_host::facade::primary_graph::*;
 mod storage;
 #[path = "prefix/structure.rs"]
 pub(super) mod structure;
+#[path = "prefix/summary.rs"]
+mod summary;
 pub struct PrefixIndex;
 // compiled-example: begin
 impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
@@ -25,8 +27,9 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const PROVIDER_VERSION: u32 = 1;
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
-    const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
-        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
+    const MEMBERSHIP:
+        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
+        super::PREFIX_MEMBERSHIP;
 }
 // compiled-example: end
 pub type Node = PrefixNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot>;
@@ -34,8 +37,13 @@ pub type Stop = WorthQueryManagedIndexProviderStop<PrefixIndexDenial>;
 #[derive(Default)]
 pub struct Calls {
     #[cfg(test)]
+    pub summary_read_first: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) first_source: Mutex<Option<WorthQueryManagedIndexSourceSlot>>,
+    #[cfg(test)]
     pub(super) after_second_match: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     pub matched_sources: AtomicUsize,
+    pub summary_comparisons: AtomicUsize,
     #[cfg(test)]
     pub(super) structure_fault: Mutex<structure::Fault>,
     pub capacity: AtomicUsize,
@@ -60,16 +68,62 @@ pub struct Provider(pub Arc<Calls>);
 impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
     fn decompose(
         &self,
-        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
         node: Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
-        structure::describe(&self.0, sources, node, control)
+        structure::describe(&self.0, node, control)
     }
     type Node = Node;
+    type Summary =
+        worth_query_consumer_values::PrefixSourceBounds<WorthQueryManagedIndexSourceSlot>;
     type Denial = PrefixIndexDenial;
     const IDENTITY: &'static str = PrefixIndex::PROVIDER;
     const VERSION: u32 = PrefixIndex::PROVIDER_VERSION;
+    fn source_summary(
+        &self,
+        slot: WorthQueryManagedIndexSourceSlot,
+        _row: WorthQueryManagedIndexSourceRow<'_, Catalog, PrefixIndex>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, Stop> {
+        control.checkpoint(1)?;
+        Ok(worth_query_consumer_values::PrefixSourceBounds::point(slot))
+    }
+    fn merge_summaries(
+        &self,
+        parts: [Option<Self::Summary>; 3],
+        sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, PrefixIndex>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, Stop> {
+        #[cfg(test)]
+        if self.0.summary_read_first.load(Ordering::SeqCst) {
+            sources.get(
+                self.0
+                    .first_source
+                    .lock()
+                    .unwrap()
+                    .expect("the build observed a genuine slot"),
+            )?;
+        }
+        summary::merge(parts, sources, control)
+    }
+    fn node_summary(
+        &self,
+        node: Node,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, Stop> {
+        control.checkpoint(1)?;
+        Ok(node.bounds)
+    }
+    fn summary_may_match(
+        &self,
+        bounds: Self::Summary,
+        sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, PrefixIndex>,
+        probe: &query::Probe,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<bool, Stop> {
+        self.0.summary_comparisons.fetch_add(1, Ordering::SeqCst);
+        summary::may_match(bounds, sources, probe, control)
+    }
     fn node_capacity(
         &self,
         source_count: usize,
@@ -94,7 +148,12 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
             "the literal fixture observation is finite"
         );
         for (ordinal, slot) in sources.slots().enumerate() {
-            let row = sources.get(slot?)?;
+            let slot = slot?;
+            #[cfg(test)]
+            if ordinal == 0 {
+                *self.0.first_source.lock().unwrap() = Some(slot);
+            }
+            let row = sources.get(slot)?;
             let actual = row.entity_id();
             assert!(previous.is_none_or(|previous| previous < actual));
             previous = Some(actual);
@@ -200,6 +259,8 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
 pub struct IncompatibleVersion(pub Provider);
 impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for IncompatibleVersion {
     type Node = Node;
+    type Summary =
+        worth_query_consumer_values::PrefixSourceBounds<WorthQueryManagedIndexSourceSlot>;
     type Denial = PrefixIndexDenial;
     const IDENTITY: &'static str = PrefixIndex::PROVIDER;
     const VERSION: u32 = 2;

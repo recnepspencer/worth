@@ -9,5 +9,6 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryManagedIndexProviderFailure, WorthQueryManagedIndexProviderStop,
     WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceChange,
     WorthQueryManagedIndexSourceRow, WorthQueryManagedIndexSourceRows,
-    WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop, WorthQueryManagedIndexWorkDenial,
+    WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop,
+    WorthQueryManagedIndexSummarySources, WorthQueryManagedIndexWorkDenial,
 };

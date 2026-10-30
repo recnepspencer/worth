@@ -3,6 +3,9 @@ mod admission;
 mod capture;
 mod maps;
 mod region;
+mod summary;
+mod summary_frontier;
+mod summary_sources;
 mod transition;
 use super::{
     source_rows::{SourceImageView, WorthQueryManagedIndexSourceSlot as Slot},
@@ -12,16 +15,21 @@ use super::{
 use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
 pub use region::WorthQueryManagedIndexNodeRegion;
 use region::{Edit, Region};
+pub use summary_sources::WorthQueryManagedIndexSummarySources;
 use worth_execution::{ExecutionOrderedMap as Map, ExecutionRequest};
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct SourceTree {
+    root: Option<usize>,
     regions: Map<usize, Region>,
     parents: Map<usize, usize>,
     sources: Map<Slot, usize>,
     owner: WorthQueryGraphWorkSessionIdentity,
 }
 impl SourceTree {
+    pub(in crate::domain_computation::primary_graph) fn root(&self) -> Option<usize> {
+        self.root
+    }
     pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
         self.regions.len()
     }
@@ -49,6 +57,7 @@ impl SourceTree {
     }
     fn empty(owner: WorthQueryGraphWorkSessionIdentity) -> Self {
         Self {
+            root: None,
             regions: Map::default(),
             parents: Map::default(),
             sources: Map::default(),

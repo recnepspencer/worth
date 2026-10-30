@@ -44,6 +44,7 @@ pub(super) fn write(
         output.u16(match parts.membership {
             Membership::Candidates => 0,
             Membership::ExhaustiveSourceTree => 1,
+            Membership::CheckedSummarySourceTree => 2,
         })?;
     }
     query_binding_reference::write(output, &parts.source.binding)?;
@@ -98,6 +99,7 @@ pub(super) fn decode(
         match input.u16()? {
             0 => Membership::Candidates,
             1 => Membership::ExhaustiveSourceTree,
+            2 => Membership::CheckedSummarySourceTree,
             _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
         }
     };

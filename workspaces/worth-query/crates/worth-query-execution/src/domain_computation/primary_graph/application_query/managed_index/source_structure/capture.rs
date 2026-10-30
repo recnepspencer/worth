@@ -49,11 +49,7 @@ where
         let Some(node) = nodes.node_at_ordinal(ordinal, control)? else {
             return Ok(None);
         };
-        let region = provider_result(
-            execution,
-            control,
-            provider.decompose(source, *node, control),
-        )?;
+        let region = provider_result(execution, control, provider.decompose(*node, control))?;
         for child in region.children.into_iter().flatten() {
             nodes.get(child, control)?;
         }
@@ -78,9 +74,20 @@ where
         edits.elements(),
         control,
     )?;
-    if let Step::Warm { before, changes } = step {
+    if let Step::Warm { before, changes } = &step {
         tree.admit_delta(before, changes, execution, control)?;
     }
+    tree.root = nodes.root().map(|id| id.ordinal);
+    super::summary::qualify(
+        execution,
+        provider,
+        source,
+        nodes,
+        &tree,
+        &step,
+        edits.elements(),
+        control,
+    )?;
     source.check()?;
     Ok(Some(tree))
 }

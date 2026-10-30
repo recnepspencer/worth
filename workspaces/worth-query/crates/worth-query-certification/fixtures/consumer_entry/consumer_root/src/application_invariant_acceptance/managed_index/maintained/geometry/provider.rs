@@ -6,8 +6,7 @@ use std::sync::{
     Arc, Mutex,
 };
 use worth_query_consumer_values::{
-    insert_box_source, query_box_tree, remove_box_source, replace_box_source, Box2, BoxIndexDenial,
-    BoxNode,
+    insert_box_source, remove_box_source, replace_box_source, Box2, BoxIndexDenial, BoxNode,
 };
 use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::primary_graph::*;
@@ -23,15 +22,23 @@ impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     const PROVIDER_VERSION: u32 = 1;
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
+    const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;
 }
 pub type Node = BoxNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot>;
 pub type Stop = WorthQueryManagedIndexProviderStop<BoxIndexDenial>;
 #[derive(Default)]
 pub struct Calls {
+    #[cfg(test)]
+    pub preserve_root: std::sync::atomic::AtomicBool,
     pub builds: AtomicUsize,
     pub updates: AtomicUsize,
-    pub queries: AtomicUsize,
+    pub probe_validations: AtomicUsize,
+    pub matched_sources: AtomicUsize,
+    pub summary_comparisons: AtomicUsize,
+    /// Actual bounds acquisitions by pure tree construction/maintenance.
     pub source_bounds: AtomicUsize,
+    pub summary_sources: AtomicUsize,
     pub navigation: AtomicUsize,
     pub after_node_write: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     pub after_build_node_write: Mutex<Option<Box<dyn FnOnce() + Send>>>,
@@ -45,7 +52,9 @@ fn bounds(
     calls: &Calls,
 ) -> Result<Box2, Stop> {
     calls.source_bounds.fetch_add(1, Ordering::SeqCst);
-    let row = sources.get(slot)?;
+    row_bounds(sources.get(slot)?)
+}
+fn row_bounds(row: WorthQueryManagedIndexSourceRow<'_, Catalog, BoxIndex>) -> Result<Box2, Stop> {
     let a = row
         .one(query::start())
         .and_then(|row| row.field(query::start_region()))
@@ -62,7 +71,6 @@ fn bounds(
 impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     fn decompose(
         &self,
-        _sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, BoxIndex>,
         node: Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
@@ -78,9 +86,55 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     }
 
     type Node = Node;
+    type Summary = Box2;
     type Denial = BoxIndexDenial;
     const IDENTITY: &'static str = BoxIndex::PROVIDER;
     const VERSION: u32 = BoxIndex::PROVIDER_VERSION;
+    fn source_summary(
+        &self,
+        _slot: WorthQueryManagedIndexSourceSlot,
+        row: WorthQueryManagedIndexSourceRow<'_, Catalog, BoxIndex>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, Stop> {
+        control.checkpoint(1)?;
+        self.0.summary_sources.fetch_add(1, Ordering::SeqCst);
+        row_bounds(row)
+    }
+    fn merge_summaries(
+        &self,
+        parts: [Option<Self::Summary>; 3],
+        _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, BoxIndex>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, Stop> {
+        control.checkpoint(3)?;
+        parts
+            .into_iter()
+            .flatten()
+            .reduce(Box2::union)
+            .ok_or(Stop::Domain(BoxIndexDenial::InvalidTopology))
+    }
+    fn node_summary(
+        &self,
+        node: Node,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, Stop> {
+        control.checkpoint(1)?;
+        Ok(node.bounds)
+    }
+    fn summary_may_match(
+        &self,
+        bounds: Self::Summary,
+        _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, BoxIndex>,
+        probe: &Coordinates,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<bool, Stop> {
+        self.0.summary_comparisons.fetch_add(1, Ordering::SeqCst);
+        control.checkpoint(4)?;
+        let probe =
+            Box2::new(probe.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))?;
+        Ok(bounds.overlaps(probe))
+    }
+
     fn node_capacity(
         &self,
         count: usize,
@@ -129,6 +183,10 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
         self.0.updates.fetch_add(1, Ordering::SeqCst);
+        #[cfg(test)]
+        if self.0.preserve_root.load(Ordering::SeqCst) {
+            return Ok(root);
+        }
         for change in changes {
             let mut storage = storage::Edit {
                 nodes,
@@ -166,28 +224,26 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
         }
         Ok(root)
     }
-    fn query(
+    fn validate_probe(
         &self,
-        _sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, BoxIndex>,
-        nodes: &WorthQueryManagedIndexNodes<Node>,
         probe: &Coordinates,
-        candidates: &mut WorthQueryManagedIndexCandidateWriter<'_>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<(), Stop> {
-        self.0.queries.fetch_add(1, Ordering::SeqCst);
+        self.0.probe_validations.fetch_add(1, Ordering::SeqCst);
+        control.checkpoint(1)?;
+        Box2::new(probe.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))?;
+        Ok(())
+    }
+    fn matches_source(
+        &self,
+        row: WorthQueryManagedIndexSourceRow<'_, Catalog, BoxIndex>,
+        probe: &Coordinates,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<bool, Stop> {
+        self.0.matched_sources.fetch_add(1, Ordering::SeqCst);
+        control.checkpoint(4)?;
         let probe =
             Box2::new(probe.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))?;
-        query_box_tree(
-            nodes.root(),
-            nodes.len(),
-            probe,
-            |id| {
-                self.0.navigation.fetch_add(1, Ordering::SeqCst);
-                nodes.get(id, control).copied().map_err(Into::into)
-            },
-            |source| candidates.emit(source).map_err(Into::into),
-            |work| control.checkpoint(work).map_err(Into::into),
-            storage::invalid,
-        )
+        Ok(row_bounds(row)?.overlaps(probe))
     }
 }

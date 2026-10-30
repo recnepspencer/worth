@@ -15,7 +15,7 @@ pub(super) fn validate_definition(
     {
         return Err(Denial::UnsupportedSourceStructure);
     }
-    if parts.membership == super::ApplicationManagedIndexMembership::ExhaustiveSourceTree
+    if parts.membership != super::ApplicationManagedIndexMembership::Candidates
         && (parts.semantic_version < 3
             || parts.structure != super::ApplicationManagedIndexSourceStructure::BinarySourceTree)
     {

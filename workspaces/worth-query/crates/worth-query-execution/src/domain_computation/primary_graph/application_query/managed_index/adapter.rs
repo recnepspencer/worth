@@ -98,7 +98,8 @@ where
                     )
                 })?;
             let source = WorthQueryManagedIndexSourceRows::<S, I>::new(image, session, control);
-            let complete = I::MEMBERSHIP == worth_query_declaration::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
+            use worth_query_declaration::facade::application_query::ApplicationManagedIndexMembership as Membership;
+            let complete = I::MEMBERSHIP != Membership::Candidates;
             if complete {
                 provider_result(
                     execution,
@@ -116,17 +117,40 @@ where
                     tree,
                     nodes.nodes.root().map(|id| id.ordinal),
                     control,
-                    &mut |slot| {
-                        let row = source.get(slot)?;
-                        let matches = provider_result(
-                            execution,
-                            control,
-                            self.provider.matches_source(row, &probe, control),
-                        )?;
-                        if matches {
-                            candidates.emit(slot)?;
+                    &mut |ordinal, slot| {
+                        if I::MEMBERSHIP == Membership::CheckedSummarySourceTree {
+                            let node = nodes.nodes.node_at_ordinal(ordinal, control)?.ok_or_else(
+                                || control.refuse(WorthQueryManagedIndexStop::IncompleteTraversal),
+                            )?;
+                            let summary = provider_result(
+                                execution,
+                                control,
+                                self.provider.node_summary(*node, control),
+                            )?;
+                            let sources = WorthQueryManagedIndexSummarySources::new(
+                                tree, ordinal, &source, control,
+                            );
+                            if !provider_result(
+                                execution,
+                                control,
+                                self.provider
+                                    .summary_may_match(summary, &sources, &probe, control),
+                            )? {
+                                return Ok(false);
+                            }
                         }
-                        Ok(())
+                        if let Some(slot) = slot {
+                            let row = source.get(slot)?;
+                            let matches = provider_result(
+                                execution,
+                                control,
+                                self.provider.matches_source(row, &probe, control),
+                            )?;
+                            if matches {
+                                candidates.emit(slot)?;
+                            }
+                        }
+                        Ok(true)
                     },
                 )?;
             } else {

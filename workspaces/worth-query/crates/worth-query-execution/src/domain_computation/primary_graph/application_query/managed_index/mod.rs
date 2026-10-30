@@ -36,7 +36,9 @@ pub(in crate::domain_computation::primary_graph) use source::{
     ManagedSourceInstallation,
 };
 pub(in crate::domain_computation::primary_graph) use source_structure::SourceTree;
-pub use source_structure::WorthQueryManagedIndexNodeRegion;
+pub use source_structure::{
+    WorthQueryManagedIndexNodeRegion, WorthQueryManagedIndexSummarySources,
+};
 mod stop;
 
 pub use candidates::WorthQueryManagedIndexCandidateWriter;

@@ -159,6 +159,7 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
     let builds = calls.builds.load(Ordering::SeqCst);
     let updates = calls.updates.load(Ordering::SeqCst);
     let source_bounds = calls.source_bounds.load(Ordering::SeqCst);
+    let summary_sources = calls.summary_sources.load(Ordering::SeqCst);
     rules.records.lock().unwrap().clear();
     assert!(!rules.capture_complete_source.load(Ordering::SeqCst));
     let (refusal, refusal_work) = invoice(|| {
@@ -234,6 +235,11 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
         calls.source_bounds.load(Ordering::SeqCst),
         source_bounds + 8,
         "two changed occurrences per scope and edit, independent of the universe"
+    );
+    assert_eq!(
+        calls.summary_sources.load(Ordering::SeqCst),
+        summary_sources + 8,
+        "summary qualification revisits only the actual changed Source rows"
     );
     let records = rules.records.lock().unwrap();
     assert_eq!(

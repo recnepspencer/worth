@@ -12,6 +12,8 @@ mod provider;
 mod query;
 pub(super) mod seed;
 pub(super) mod status;
+#[cfg(test)]
+mod summary;
 use super::schema::{Catalog, Item};
 pub(super) use coordinates::Coordinates;
 pub(super) use field::ItemBounds;

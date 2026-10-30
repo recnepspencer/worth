@@ -4,6 +4,7 @@ use super::{
     WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeRegion,
     WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
     WorthQueryManagedIndexProviderStop, WorthQueryManagedIndexSourceRows,
+    WorthQueryManagedIndexSummarySources,
 };
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding,
@@ -41,9 +42,51 @@ where
     I: ApplicationManagedIndexBinding<S>,
 {
     type Node: Copy + Send + Sync + 'static;
+    type Summary: Copy + Eq + Send + Sync + 'static;
     type Denial: Copy + Eq + std::error::Error + Send + Sync + 'static;
     const IDENTITY: &'static str;
     const VERSION: u32;
+
+    fn source_summary(
+        &self,
+        _slot: super::WorthQueryManagedIndexSourceSlot,
+        _row: WorthQueryManagedIndexSourceRow<'_, S, I>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
+        Err(control
+            .refuse(super::WorthQueryManagedIndexStop::SummaryUnavailable)
+            .into())
+    }
+    fn merge_summaries(
+        &self,
+        _parts: [Option<Self::Summary>; 3],
+        _sources: &WorthQueryManagedIndexSummarySources<'_, '_, S, I>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
+        Err(control
+            .refuse(super::WorthQueryManagedIndexStop::SummaryUnavailable)
+            .into())
+    }
+    fn node_summary(
+        &self,
+        _node: Self::Node,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
+        Err(control
+            .refuse(super::WorthQueryManagedIndexStop::SummaryUnavailable)
+            .into())
+    }
+    fn summary_may_match(
+        &self,
+        _summary: Self::Summary,
+        _sources: &WorthQueryManagedIndexSummarySources<'_, '_, S, I>,
+        _probe: &WorthQueryManagedIndexProbeValue<S, I>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<bool, WorthQueryManagedIndexProviderStop<Self::Denial>> {
+        Err(control
+            .refuse(super::WorthQueryManagedIndexStop::SummaryUnavailable)
+            .into())
+    }
 
     /// Node count only. The runtime computes and admits the actual storage layout.
     fn node_capacity(
@@ -95,11 +138,11 @@ where
             .into())
     }
 
-    /// Describe the actual node's Source contribution and child coordinates.
+    /// Describe only the actual node's Source contribution and child coordinates.
+    /// Source-dependent interpretation cannot be reused after local node edits.
     /// BinarySourceTree roots are checked by Query; this is no query coverage assertion.
     fn decompose(
         &self,
-        _sources: &WorthQueryManagedIndexSourceRows<'_, S, I>,
         _node: Self::Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, WorthQueryManagedIndexProviderStop<Self::Denial>>

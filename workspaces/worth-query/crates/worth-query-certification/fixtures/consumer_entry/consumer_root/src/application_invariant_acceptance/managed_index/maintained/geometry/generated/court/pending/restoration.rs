@@ -38,11 +38,11 @@ pub(super) fn run(
                 .request(&principal, &scope)
                 .on_branch(world.current_world());
             assert_eq!(world.world_active_publication_attempts_for_test(), 1);
-            let queries = calls.queries.load(Ordering::SeqCst);
+            let queries = calls.probe_validations.load(Ordering::SeqCst);
             assert_activation_unavailable(request.query(all("A")).execute());
             assert_activation_unavailable(request.query(read_source("A")).execute());
             assert_eq!(
-                calls.queries.load(Ordering::SeqCst),
+                calls.probe_validations.load(Ordering::SeqCst),
                 queries,
                 "publication exclusion precedes any availability/root disclosure"
             );

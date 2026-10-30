@@ -1621,6 +1621,14 @@ and applies the provider's pure candidate predicate. It preserves complete
 conservative Source dependencies and ordinary disclosure. Checked pruning,
 retained predicate routing and the other Phase 3 obligations remain unfinished.
 
+The [checked-summary slice](milestone-9.19-phase3-checked-summary-plan.md) adds
+Node-only decomposition, region-confined Source reads, bottom-up cached-summary
+verification and Query-owned subtree pruning for maintained prefix and both box
+providers. Actual Source changes propagate through every affected ancestor even
+without a Node write. Independent small locality and hostile courts pass; the
+new profile still needs large-scale qualification. Retained predicate routing,
+tracked exact refinement and protected continuation/disclosure work remain open.
+
 **Owner:** Query access admission, managed dependencies and provider/domain refinement.
 **Depends on:** Phases 1–2 and existing installed capability/disclosure admission.
 **Result:** managed access returns complete admitted candidates and the evidence

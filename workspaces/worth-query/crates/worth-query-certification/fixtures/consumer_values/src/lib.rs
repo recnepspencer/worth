@@ -8,6 +8,8 @@ pub use box_tree::{
     BoxEditStorage, BoxIndexDenial, BoxNode, BoxNodeLinks,
 };
 mod prefix_order;
+mod prefix_summary;
+pub use prefix_summary::{join_prefix_bounds, prefix_bounds_may_match, PrefixSourceBounds};
 mod prefix_tree;
 pub use prefix_order::{compare_prefix_keys, prefix_order, PrefixOrder};
 pub use prefix_tree::{

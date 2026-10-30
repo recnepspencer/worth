@@ -5639,8 +5639,9 @@ managed-index reads and rebuilds remain unsupported; ordinary historical Source
 reads retain their existing contract.
 
 Declare `STRUCTURE = ApplicationManagedIndexSourceStructure::BinarySourceTree` and
-implement `decompose` to expose each node's own Source occurrence and binary
-children. Query checks exact Source membership, unique slots and parents,
+implement Node-only `decompose` to expose each node's stored genuine Source
+occurrence and binary children. Capture actual Source slots during build/update;
+`decompose` cannot consult a Source roster that changes independently of the Node. Query checks exact Source membership, unique slots and parents,
 connectivity and absence of cycles before retaining the root. Warm edits carry
 that correspondence using actual changed node coordinates and Native Source
 deltas. Opaque structure remains an explicit conservative profile. Definition v1
@@ -5654,16 +5655,40 @@ Query's complete traversal. Query validates the probe even for an empty Source,
 visits every checked region and applies the installed pure candidate predicate
 to each genuine Source row. It emits that row's slot itself and returns only
 after the complete walk and final controls succeed. An interrupted traversal
-refuses; it cannot return a partial or empty success. The prefix and small public
-box examples below use this profile. The provider's legacy `query` callback is
+refuses; it cannot return a partial or empty success. The explicit-rebuild prefix
+application below chooses this profile through its `PREFIX_MEMBERSHIP` constant. The provider's legacy `query` callback is
 unused on this path; candidate-only providers keep their existing contract.
 
 Exhaustive membership deliberately visits the whole Source and provides no
 locality or pruning claim. Candidate membership is distinct from exact domain
 refinement such as geometric contact, and grants no mutation eligibility.
-Source dependencies remain conservative. Checked summary pruning, tracked exact
-refinement and retained predicate routing remain unfinished Phase 3 work; no
-verified narrowed footprint is issued by this traversal.
+Source dependencies remain conservative.
+
+Providers keeping Candidates or ExhaustiveSourceTree may use `type Summary = ()`;
+their summary callbacks remain unused. For checked subtree pruning, choose
+`ApplicationManagedIndexMembership::CheckedSummarySourceTree`. The provider's
+`Summary` is `Copy + Eq`; `source_summary` describes the actual Source row,
+`merge_summaries` folds its own contribution and qualified children, and
+`node_summary` reads the cached value from the actual Node. Query recomputes and
+compares summaries bottom-up before retaining the root. Warm qualification follows
+actual Node writes and changed Native Source rows through every final ancestor,
+including a changed row for which the provider wrote no Node. A mismatch returns
+`SummaryMismatch` and preserves the predecessor.
+
+`merge_summaries` and `summary_may_match` receive
+`WorthQueryManagedIndexSummarySources`. Its only row lookup accepts a genuine slot
+inside the current checked region; a same-Source slot outside that subtree returns
+`ForeignSummarySource`. Summary semantics cannot depend on an unrelated region.
+The pure provider owns its enclosure and comparison algebra. Query uses that
+qualified summary premise to skip precisely its actual subtree, then applies
+`matches_source` to surviving genuine rows itself. The small box example and the
+maintained prefix/geometry compositions use this same strategy. Prefix summaries
+keep exact UTF-8 extrema; geometry summaries use the numerical owner's closed
+bounds and union, without Query-specific tolerances or field policy.
+
+Tracked exact refinement, retained predicate routing, same-image registration and
+protected continuation qualification remain unfinished Phase 3 work. No verified
+narrowed footprint is issued by either complete traversal strategy.
 
 Indexed results retain complete positive, empty and ordering dependencies from
 the original Source, including nonmatching rows. The ordinary `expect_source`
@@ -5709,8 +5734,9 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const PROVIDER_VERSION: u32 = 1;
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
-    const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
-        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
+    const MEMBERSHIP:
+        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
+        super::PREFIX_MEMBERSHIP;
 }
 ```
 
@@ -5726,7 +5752,7 @@ impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
     const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
-        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
+        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;
 }
 ```
 
@@ -5936,8 +5962,8 @@ edited vertex keeps degree two and the fixed probe keeps sparse output. Complete
 ordinary Source reads are checked against authored coordinates outside measured
 work. The recorded Phase 2 predecessor invoices include Source acquisition, reverse-scope discovery,
 provider updates, rules and publication. Cold setup is admitted and invoiced
-separately; unchanged warm roots are never rebuilt. The new BinarySourceTree
-admission adds structural work and is not yet requalified at this large scale. Retaining a one-shot response
+separately; unchanged warm roots are never rebuilt. The new checked Source-tree
+and summary admission are not yet requalified at this large scale. Retaining a one-shot response
 does not register a live predicate or qualify later retained-query routing.
 
 A branch created through `ForkExact` attaches the selected immutable managed

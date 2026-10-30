@@ -172,9 +172,9 @@ fn journey() {
         .suspend_current_generated_output::<producer::Producer>(&scope, source)
         .unwrap();
     assert_rules(&rules, scopes, true, 10);
-    let queries = provider.queries.load(Ordering::SeqCst);
+    let queries = provider.probe_validations.load(Ordering::SeqCst);
     assert_suspended(request.query(all("A")).execute());
-    assert_eq!(provider.queries.load(Ordering::SeqCst), queries);
+    assert_eq!(provider.probe_validations.load(Ordering::SeqCst), queries);
     assert_eq!(values(original.rows()), expected("A", 10));
     let suspended_position = request
         .retain_current_read()

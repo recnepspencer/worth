@@ -118,7 +118,7 @@ fn journey() {
         "retained read borrows its actual selected image"
     );
     request.query(all("A")).evict_index(&index).unwrap();
-    let queries = calls.queries.load(Ordering::SeqCst);
+    let queries = calls.probe_validations.load(Ordering::SeqCst);
     let Err(WorthQueryApplicationRequestQueryDenial::ManagedIndex(denial)) =
         request.query(all("A")).execute()
     else {
@@ -133,7 +133,7 @@ fn journey() {
         ),
         "{denial:?}"
     );
-    assert_eq!(calls.queries.load(Ordering::SeqCst), queries);
+    assert_eq!(calls.probe_validations.load(Ordering::SeqCst), queries);
     let head = request
         .retain_current_read()
         .unwrap()
