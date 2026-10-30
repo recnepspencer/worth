@@ -11,21 +11,25 @@ worth_query_capability_context!(pub ReadContext in Schema);
 worth_query_capability_provenance!(pub ReadProvenance in Schema);
 worth_query_ability!(pub ReadModels scoped_to Model,in Schema);
 worth_query_ability!(pub ReadProposals scoped_to Model,in Schema);
+worth_query_ability!(pub ReadResults scoped_to Model,in Schema);
 worth_query_ability!(pub ManageGrants scoped_to Grant,in Schema);
 worth_query_policy!(pub ModelReadPolicy in Schema);
 worth_query_policy!(pub ProposalReadPolicy in Schema);
+worth_query_policy!(pub ResultReadPolicy in Schema);
 worth_query_policy!(pub GrantManagementPolicy in Schema);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ReadKind {
     Model,
     Proposal,
+    Result,
 }
 impl ReadKind {
     pub fn code(self) -> u64 {
         match self {
             Self::Model => 1,
             Self::Proposal => 2,
+            Self::Result => 3,
         }
     }
 }
@@ -92,6 +96,13 @@ pub fn declare(
                 ReadProposals::reference(),
                 ProposalReadPolicy::reference(),
                 [read_path(ReadKind::Proposal)],
+            )
+            .ability(ReadResults::reference())
+            .policy(ResultReadPolicy::reference())
+            .ability_policy(
+                ReadResults::reference(),
+                ResultReadPolicy::reference(),
+                [read_path(ReadKind::Result)],
             )
             .ability(ManageGrants::reference())
             .policy(GrantManagementPolicy::reference())

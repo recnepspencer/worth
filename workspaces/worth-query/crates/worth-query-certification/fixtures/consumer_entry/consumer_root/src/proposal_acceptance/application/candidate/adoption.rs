@@ -13,18 +13,18 @@ pub struct AdoptionFailure<'host> {
     pub handoff: Option<WorthQueryAdvancementDenial>,
 }
 pub struct Adopted<'host> {
-    pub metadata: AdoptionMetadata,
-    pub proposal: StoredProposal,
-    pub completed: Vec<retention_action::Completion>,
-    pub previous: OwnedBranch<'host>,
-    pub handoff: Option<WorthQueryAdvancementDenial>,
+    metadata: AdoptionMetadata,
+    proposal: StoredProposal,
+    completed: Vec<retention_action::Completion>,
+    previous: OwnedBranch<'host>,
+    handoff: Option<WorthQueryAdvancementDenial>,
 }
 pub struct Performed {
-    pub metadata: AdoptionMetadata,
-    pub proposal: StoredProposal,
-    pub completed: Vec<retention_action::Completion>,
-    pub previous: Closed,
-    pub adoption_handoff: Option<WorthQueryAdvancementDenial>,
+    metadata: AdoptionMetadata,
+    proposal: StoredProposal,
+    completed: Vec<retention_action::Completion>,
+    previous: Closed,
+    adoption_handoff: Option<WorthQueryAdvancementDenial>,
 }
 pub struct PreviousCloseFailure<'host> {
     pub adopted: Adopted<'host>,
@@ -92,6 +92,21 @@ impl<'host> ReadyToAdopt<'host> {
     }
 }
 impl<'host> Adopted<'host> {
+    pub fn metadata(&self) -> &AdoptionMetadata {
+        &self.metadata
+    }
+    pub fn proposal(&self) -> &StoredProposal {
+        &self.proposal
+    }
+    pub fn completed(&self) -> &[retention_action::Completion] {
+        &self.completed
+    }
+    pub fn previous_branch(&self) -> WorthQueryProductBranch {
+        self.previous.branch()
+    }
+    pub fn handoff(&self) -> Option<&WorthQueryAdvancementDenial> {
+        self.handoff.as_ref()
+    }
     pub fn close_previous(
         self,
         caller: &Caller<'_>,
@@ -123,5 +138,10 @@ impl<'host> Adopted<'host> {
                 handoff: failure.handoff,
             }),
         }
+    }
+}
+impl Performed {
+    pub fn previous_close(&self) -> &Closed {
+        &self.previous
     }
 }

@@ -27,7 +27,7 @@ pub(super) fn issue(
         let grantee = writer
             .projected_entity(target)
             .map_err(HandlerExecutionDenial::new)?;
-        for kind in [ReadKind::Model, ReadKind::Proposal] {
+        for kind in [ReadKind::Model, ReadKind::Proposal, ReadKind::Result] {
             let key = access::grant_key(&input.name, principal_number, kind);
             let grant = writer
                 .create_entity_in_context(

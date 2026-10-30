@@ -76,6 +76,9 @@ fn model_and_proposal_reads_recheck_independent_live_grants_before_protected_com
         let branch = match kind {
             ReadKind::Model => model.branch(),
             ReadKind::Proposal => storage.branch(),
+            ReadKind::Result => {
+                unreachable!("this court enumerates only model and proposal policies")
+            }
         };
         let status = |readable| status::SetStatus {
             identity: access::grant_key("model-1", 2, kind),
@@ -112,6 +115,7 @@ fn model_and_proposal_reads_recheck_independent_live_grants_before_protected_com
                 read_denied(storage.load(&reviewer, &foreign).unwrap_err());
                 assert_eq!(model.read(&reviewer).unwrap().days, 7);
             }
+            ReadKind::Result => unreachable!("result disclosure has its own cached-result court"),
         }
         assert!(matches!(
             change(&host, &author, branch, status(true), 405).unwrap(),

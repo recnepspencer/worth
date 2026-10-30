@@ -1,7 +1,7 @@
 //! A single declared schema/program installs every ordinary application handler.
 use super::{
-    access, authentication::Actor, creation, mutation_access, recording, resources, retention,
-    schema::*,
+    access, attempts, authentication::Actor, creation, mutation_access, recording, resources,
+    retention, schema::*,
 };
 use worth_query_decl::facade::application_schema::ApplicationInvariantMarkerIdentity;
 use worth_query_decl::facade::{application_program::*, authentication::*};
@@ -45,6 +45,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .finish_action()
             .native_action::<recording::Binding>()
             .finish_action()
+            .native_action::<attempts::claim::Binding>()
+            .finish_action()
+            .native_action::<attempts::recording::Binding>()
+            .finish_action()
             .native_action::<access::status::Binding>()
             .finish_action()
             .native_action::<mutation_access::status::Binding>()
@@ -63,6 +67,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<creation::Binding, _>(creation::Handler)?;
         setup.handler::<recording::Binding, _>(recording::Handler)?;
+        setup.handler::<attempts::claim::Binding, _>(attempts::claim::Handler)?;
+        setup.handler::<attempts::recording::Binding, _>(attempts::recording::Handler)?;
         setup.handler::<access::status::Binding, _>(access::status::Handler)?;
         setup.handler::<mutation_access::status::Binding, _>(mutation_access::status::Handler)?;
         setup.invariant(retention::rule::MaximumRetention::reference(),

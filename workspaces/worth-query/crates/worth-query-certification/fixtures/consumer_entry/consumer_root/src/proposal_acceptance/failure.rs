@@ -20,6 +20,7 @@ pub enum Failure {
     MissingModel,
     MissingTarget,
     ModelMismatch,
+    StorageMismatch,
     ProposalUnavailable,
     AmbiguousProposal,
     ProposalOccurrenceChanged,

@@ -2546,6 +2546,44 @@ then retry that cleanup owner. A held reader can keep returning
 `WorldHistoryStillRetained`; keep the cleanup it returns until the reader is
 released and cleanup completes.
 
+#### Register attempts on a stable product
+
+Use an ordinary action on a separately owned, stable storage product to bind an
+attempt key to the complete selected input: proposal occurrence and revision,
+model, expected basis, and ordered typed edits. Reusing that native key resolves
+its original registration before another basis comparison. Changed parameters,
+targets, order or vector length receive ordinary `IdempotencyIntentDrift`.
+The native key includes its declared namespace and serialized caller key;
+the resolved principal and scope also bind the recorded intent. Reusing the same
+key from another principal therefore receives intent drift. A registration
+receipt proves registration; it supplies no model-adoption authority.
+
+The [compiled registration and result example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts.rs)
+uses a `LoadedProposal` to retain the originally selected domain data and its
+issuing storage product. It retains no read lease or permission. On each request,
+freshly admit proposal READ on that actual storage, current model READ, mutation
+authorization for the exact frozen edits, and result READ before filtering cached
+results. A different readable storage product cannot substitute for the issuer.
+The [storage-affinity and revocation cases](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts/disclosure.rs)
+show these checks with real grant transitions and cached results.
+
+#### Record an actual adoption result
+
+Keep canonical result data separate from the command that records it. In the
+example, the adoption owner has private construction and retains the original
+ordinary completion evidence. `RecordResult::from_adopted` checks that owner
+against the supplied claim reference and its full frozen proposal. Its command
+supports serialization for ordinary mutation identity, with no deserialization
+or construction from a stored result row. Fresh results retain their actual
+returned values; recovered completions remain explicitly recovered.
+
+The [ordinary result handler](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/attempts/recording/handler.rs)
+readmits actual claim membership and full-generation identity, observes caller correspondence
+and complete result absence before creating the record. This lets publication
+validate those facts, including competing writes. Its recording receipt proves
+that write. Read the result through its declared canonical codec and current
+governed result policy; a cached row grants no permission to execute or adopt.
+
 #### Capture complete original meaning
 
 Install a program and declare the exact typed action occurrence and its delivery.

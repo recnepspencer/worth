@@ -76,16 +76,16 @@ fn stored_edit_stages_under_a_fresh_caller_then_adopts_the_actual_model_head() {
         .adopt(&mut model, &reviewer)
         .unwrap_or_else(|failure| panic!("guarded actual-slot replacement: {:?}", failure.cause));
     assert_eq!(model.branch(), candidate);
-    assert_eq!(adopted.previous.branch(), source);
-    assert!(adopted.handoff.is_none());
+    assert_eq!(adopted.previous_branch(), source);
+    assert!(adopted.handoff().is_none());
     assert_eq!(model.read(&reviewer).unwrap().days, 3);
     assert_eq!(other.read(&reviewer).unwrap().days, 5);
-    let metadata = &adopted.metadata;
+    let metadata = adopted.metadata();
     assert_eq!(metadata.attempt, 704);
     assert_eq!(metadata.proposal.occurrence, reference.occurrence);
     assert_eq!(metadata.proposal.revision, reference.revision);
-    assert_eq!(adopted.completed.len(), 1);
-    match &adopted.completed[0] {
+    assert_eq!(adopted.completed().len(), 1);
+    match &adopted.completed()[0] {
         WorthQuerySourceCompletion::Fresh { result, .. } => assert_eq!(result.days, 3),
         WorthQuerySourceCompletion::Recovered { .. } => {
             panic!("first candidate execution is fresh")
@@ -94,7 +94,7 @@ fn stored_edit_stages_under_a_fresh_caller_then_adopts_the_actual_model_head() {
     let performed = adopted
         .close_previous(&reviewer)
         .unwrap_or_else(|failure| panic!("post-adoption source close: {:?}", failure.cause));
-    assert!(performed.previous.handoff.is_none());
+    assert!(performed.previous_close().handoff.is_none());
     assert_eq!(model.branch(), candidate);
     assert_eq!(model.read(&reviewer).unwrap().days, 3);
     drop(performed);

@@ -17,6 +17,14 @@ pub struct ModelReference {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, WorthValue)]
+pub struct ProposalReference {
+    pub key: String,
+    pub occurrence: Coordinates,
+    pub model: ModelReference,
+    pub revision: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, WorthValue)]
 pub struct TargetReference {
     pub label: String,
     pub occurrence: Coordinates,

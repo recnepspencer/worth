@@ -8,13 +8,15 @@ use super::{
 };
 use worth_query_host::facade::{application_entry::*, product::*};
 
-#[derive(Clone, Debug)]
-pub struct ProposalReference {
-    pub key: String,
-    pub occurrence: Coordinates,
-    pub model: ModelReference,
-    pub revision: u64,
-}
+mod admission;
+mod claims;
+mod frozen;
+mod results;
+pub use super::super::schema::data::ProposalReference;
+pub use admission::AdmissionFailure;
+pub use claims::{ClaimFailure, RegisteredClaim};
+pub use frozen::LoadedProposal;
+pub use results::ResultFailure;
 pub struct Storage<'host> {
     owner: OwnedBranch<'host>,
     model: ModelReference,

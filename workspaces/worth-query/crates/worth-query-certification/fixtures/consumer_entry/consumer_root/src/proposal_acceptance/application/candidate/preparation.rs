@@ -47,7 +47,7 @@ impl std::fmt::Debug for PreparationFailure<'_> {
         }
     }
 }
-pub(super) fn authorize(
+pub(in crate::proposal_acceptance::application) fn authorize(
     model: &Model<'_>,
     caller: &Caller<'_>,
     proposal: &StoredProposal,
@@ -87,10 +87,23 @@ impl<'host> Staging<'host> {
         reference: &ProposalReference,
         attempt: u64,
     ) -> Result<Self, PreparationFailure<'host>> {
+        let loaded = storage
+            .load_frozen(caller, reference)
+            .map_err(|cause| PreparationFailure::Before(PreparationRefusal::Request(cause)))?;
+        Self::prepare_frozen(model, storage, caller, &loaded, attempt)
+    }
+    pub fn prepare_frozen(
+        model: &Model<'host>,
+        storage: &Storage<'host>,
+        caller: &Caller<'_>,
+        loaded: &super::super::storage::LoadedProposal,
+        attempt: u64,
+    ) -> Result<Self, PreparationFailure<'host>> {
         let prepare = || -> Result<_, PreparationRefusal> {
-            let proposal = storage
-                .load(caller, reference)
+            storage
+                .admit_loaded_proposal(caller, loaded)
                 .map_err(PreparationRefusal::Request)?;
+            let proposal = loaded.proposal().clone();
             if proposal.format_version != 1 {
                 return Err(PreparationRefusal::UnsupportedVersion(
                     proposal.format_version,
@@ -109,7 +122,7 @@ impl<'host> Staging<'host> {
                 .try_reserve_exact(proposal.intents.len())
                 .map_err(PreparationRefusal::Reservation)?;
             let metadata = AdoptionMetadata {
-                proposal: reference.clone(),
+                proposal: loaded.reference().clone(),
                 attempt,
             };
             let model_metadata = metadata.clone();
