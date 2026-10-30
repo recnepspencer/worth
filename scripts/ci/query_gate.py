@@ -52,8 +52,10 @@ def clippy(*selection):
 
 def bash():
     # On Windows a bare `bash` can resolve to the WSL launcher.
-    git_bash = Path("C:/Program Files/Git/bin/bash.exe")
-    return str(git_bash) if git_bash.exists() else (shutil.which("bash") or "bash")
+    for candidate in ("C:/Program Files/Git/bin/bash.exe", "C:/Program Files/Git/usr/bin/bash.exe"):
+        if Path(candidate).exists():
+            return candidate
+    return shutil.which("bash") or "bash"
 
 # suite -> [(label, command)], one command at a time
 COMMAND_SUITES = {
