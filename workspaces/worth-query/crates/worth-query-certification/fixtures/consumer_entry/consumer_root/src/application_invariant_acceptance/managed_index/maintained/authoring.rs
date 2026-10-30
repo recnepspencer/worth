@@ -18,6 +18,10 @@ pub enum Edit {
         identity: String,
         name: String,
     },
+    RetireItem {
+        directory: String,
+        item: String,
+    },
     Share {
         directory: String,
         item: String,
@@ -38,6 +42,7 @@ worth_query_operation!(pub AuthorCatalog for Catalog, input InputBinding);
 worth_query_operation_reads!(AuthorCatalog => [Directory, DirectoryIdentity, Item, ItemIdentity, Contains]);
 worth_query_operation_creates!(AuthorCatalog => [Directory, Item]);
 worth_query_operation_links!(AuthorCatalog => [Contains]);
+worth_query_operation_deletes!(AuthorCatalog => [Item]);
 worth_query_operation_writes!(AuthorCatalog => [DirectoryIdentity, ItemIdentity, ItemName, ItemEnabled, bounds::ItemBounds]);
 
 fn scope(_: &Edit) -> String {
@@ -72,6 +77,7 @@ pub(super) fn declare(
         .operation_create(op, Directory::reference())
         .operation_create(op, Item::reference())
         .operation_link(op, Contains::reference())
+        .operation_delete(op, Item::reference())
         .operation_write(op, DirectoryIdentity::reference())
         .operation_write(op, ItemIdentity::reference())
         .operation_write(op, ItemName::reference())

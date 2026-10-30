@@ -11,7 +11,9 @@ impl OperationHandler<Catalog, Binding> for Handler {
         let result = (|| {
             let scope = match edit {
                 Edit::Directory { .. } => "catalog",
-                Edit::Item { directory, .. } | Edit::Share { directory, .. } => directory,
+                Edit::Item { directory, .. }
+                | Edit::Share { directory, .. }
+                | Edit::RetireItem { directory, .. } => directory,
             };
             let directory =
                 reader.resolve_entity(DirectoryIdentity::reference(), scope.to_owned())?;
@@ -20,7 +22,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 .require_decision_entity(&directory, Directory::reference())
                 .map_err(HandlerExecutionDenial::new)?;
             let directory = reader.mutation_target(&directory)?;
-            let item = if let Edit::Share { item, .. } = edit {
+            let item = if let Edit::Share { item, .. } | Edit::RetireItem { item, .. } = edit {
                 let item = reader.resolve_entity(ItemIdentity::reference(), item.clone())?;
                 reader
                     .reader()
@@ -101,6 +103,19 @@ impl OperationHandler<Catalog, Binding> for Handler {
                             &directory,
                             &created,
                         )
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
+                Edit::RetireItem { .. } => {
+                    let target = writer
+                        .projected_entity(
+                            decision
+                                .item
+                                .as_ref()
+                                .expect("retirement observes its actual item"),
+                        )
+                        .map_err(HandlerExecutionDenial::new)?;
+                    writer
+                        .delete_entity(Item::reference(), &target)
                         .map_err(HandlerExecutionDenial::new)?;
                 }
                 Edit::Share {

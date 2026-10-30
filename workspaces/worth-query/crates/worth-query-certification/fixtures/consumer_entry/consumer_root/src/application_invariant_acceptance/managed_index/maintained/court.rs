@@ -12,6 +12,7 @@ use worth_query_host::facade::{
 mod cancellation;
 mod decision_scope;
 mod membership;
+mod retirement;
 
 fn find(scope: &str, prefix: &str) -> query::FindPrefix {
     query::FindPrefix {
