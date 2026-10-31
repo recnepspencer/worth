@@ -193,7 +193,7 @@ impl<'a> EffectExecutionAuthority<'a> {
         super::super::settlement_repair::repair_pending_effect_settlement(self, commit_id)
     }
 
-    pub(crate) fn relational_runtime(&self) -> Option<&RelationalRuntime> {
+    pub(crate) fn relational_runtime(&mut self) -> Option<&RelationalRuntime> {
         self.relational
     }
 
