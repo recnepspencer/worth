@@ -16,6 +16,11 @@ pub(super) fn append(
     for (field, value) in parts.access.canonical_fields() {
         basis.text(format!("{prefix}.access.{field}"), value);
     }
+    basis.extend_embedded(
+        parts.metadata_disclosure.canonical_basis().basis(),
+        &format!("{prefix}.metadata-disclosure"),
+        worth_foundational::facade::CanonicalBasisEntryKind::Identity,
+    );
     basis.usize(format!("{prefix}.operation-count"), parts.operations.len());
     for (index, operation) in parts.operations.iter().enumerate() {
         basis.text(

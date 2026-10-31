@@ -12,13 +12,20 @@ use crate::{
     publication_boundary::WorthQueryProgramPublicationAccess,
 };
 use worth_query_declaration::facade::{
-    application_history::{ApplicationHistoryBinding, ApplicationHistoryModel},
+    application_history::{
+        ApplicationHistoryAccessBinding, ApplicationHistoryBinding, ApplicationHistoryModel,
+    },
     application_operation::{
         ApplicationMutationBinding, ApplicationMutationScopeBinding, NoApplicationMutationSource,
     },
-    application_schema::ApplicationSchema,
+    application_query::ApplicationQueryBinding,
+    application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
 };
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
+
+type Access<S, H> = ApplicationHistoryAccessBinding<S, H>;
+type Query<S, H> = <Access<S, H> as ApplicationQueryBinding<S>>::Query;
+type Rows<S, H> = <<Access<S, H> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
 #[must_use = "consume the reservation through actual adoption or explicit no-effect disposal"]
 pub struct WorthQueryDocumentHistoryReservation {
@@ -42,12 +49,24 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         access: &WorthQueryProgramPublicationAccess,
         installed: &WorthQueryInstalledDocumentHistory<S, H>,
         operation: WorthQueryDocumentHistoryOperation<'_, '_, S, M>,
+        metadata: crate::publication_boundary::document_history::WorthQueryDocumentHistoryRead<
+            '_,
+            S,
+            H,
+        >,
     ) -> Result<WorthQueryDocumentHistoryRecordPreparation, Denial>
     where
         M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
         M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
+        Rows<S, H>: crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+            S,
+            Query<S, H>,
+        >,
     {
         let runtime = self.application();
+        // Every fresh attempt lookup is metadata disclosure, even when the result
+        // will name a previously completed occurrence rather than execute again.
+        runtime.read_document_history_step(phase, access, self, metadata)?;
         let WorthQueryDocumentHistoryOperation {
             selected,
             admitted,

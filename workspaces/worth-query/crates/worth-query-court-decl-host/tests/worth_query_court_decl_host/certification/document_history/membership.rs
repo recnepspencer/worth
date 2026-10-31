@@ -170,3 +170,57 @@ fn history_definition_validation_rejects_malformed_portable_membership_with_a_va
         Ok(())
     );
 }
+
+#[test]
+fn metadata_meaning_rejects_missing_duplicate_and_foreign_facets_with_a_valid_twin() {
+    use worth_query_host::facade::declaration::{
+        application_history::{ApplicationHistoryDefinitionDenial as Denial, ErasedApplicationHistoryDefinition},
+        application_query::{ApplicationQueryDisclosureContract, WorthQueryPortableApplicationQueryDisclosureParts},
+    };
+    use worth_query_testkit_document_retention::facade::document_retention_model::document_history::GovernedRetentionHistory;
+    let host = publish_on_first_program();
+    let installed = host
+        .runtime()
+        .installed_schema()
+        .installed_history::<GovernedRetentionHistory>()
+        .unwrap();
+    let valid = installed.definition().parts().clone();
+    let contract = &valid.metadata_disclosure;
+    let mut missing = contract.rules().to_vec();
+    missing.pop();
+    let mut duplicate = contract.rules().to_vec();
+    duplicate.push(duplicate[0].clone());
+    for rules in [missing, duplicate] {
+        let mut bad = valid.clone();
+        bad.metadata_disclosure = ApplicationQueryDisclosureContract::from_untrusted_parts(
+            WorthQueryPortableApplicationQueryDisclosureParts {
+                posture: contract.posture(),
+                classification: contract.classification().to_owned(),
+                capability_name: contract.capability_name().map(str::to_owned),
+                capability_type: contract.capability_identity(),
+                rules,
+            },
+        );
+        assert_eq!(
+            ErasedApplicationHistoryDefinition::from_untrusted_parts(bad).validate(),
+            Err(Denial::InvalidMetadataDisclosure)
+        );
+    }
+    let mut foreign = host
+        .runtime()
+        .installed_schema()
+        .installed_history::<RetentionHistory>()
+        .unwrap()
+        .definition()
+        .parts()
+        .clone();
+    foreign.metadata_disclosure = contract.clone();
+    assert_eq!(
+        ErasedApplicationHistoryDefinition::from_untrusted_parts(foreign).validate(),
+        Err(Denial::InvalidMetadataDisclosure)
+    );
+    assert_eq!(
+        ErasedApplicationHistoryDefinition::from_untrusted_parts(valid).validate(),
+        Ok(())
+    );
+}

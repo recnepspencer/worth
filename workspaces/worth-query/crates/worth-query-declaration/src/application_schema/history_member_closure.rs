@@ -10,6 +10,16 @@ pub(super) fn validate(members: &[Member]) -> Result<(), Denial> {
         definition
             .validate()
             .map_err(|_| Denial::InvalidApplicationHistory)?;
+        let disclosure = &parts.metadata_disclosure;
+        if let (Some(name), Some(identity)) =
+            (disclosure.capability_name(), disclosure.capability_type())
+            && !members.iter().any(|member| {
+                matches!(member, Member::ApplicationCapability { contract }
+                if contract.name() == name && contract.capability_type() == identity)
+            })
+        {
+            return Err(Denial::MissingApplicationDocumentHistoryDependency);
+        }
         let access = parts.access.parts();
         if !members.iter().any(|member| {
             matches!(member,

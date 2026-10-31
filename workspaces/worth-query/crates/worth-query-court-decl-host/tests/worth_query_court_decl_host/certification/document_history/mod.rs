@@ -2,6 +2,7 @@
 mod assessment;
 mod attachment;
 mod membership;
+mod metadata;
 pub(crate) mod recording;
 
 use worth_query_host::facade::{

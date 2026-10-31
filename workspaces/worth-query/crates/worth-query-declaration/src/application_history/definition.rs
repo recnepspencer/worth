@@ -1,7 +1,9 @@
 use std::{collections::BTreeSet, marker::PhantomData};
 
 use crate::application_operation::{ApplicationMutationBinding, ApplicationMutationScopeBinding};
-use crate::application_query::ApplicationQueryBindingReference;
+use crate::application_query::{
+    ApplicationQueryBindingReference, ApplicationQueryDisclosureContract,
+};
 use crate::application_schema::ApplicationSchema;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -23,6 +25,7 @@ pub struct WorthQueryPortableApplicationHistoryParts {
     pub identity: String,
     pub history_type: WorthQueryPortableTypeIdentity,
     pub access: ApplicationQueryBindingReference,
+    pub metadata_disclosure: ApplicationQueryDisclosureContract,
     pub operations: Vec<ApplicationHistoryOperation>,
 }
 
@@ -35,6 +38,7 @@ pub struct ErasedApplicationHistoryDefinition {
 pub enum ApplicationHistoryDefinitionDenial {
     InvalidIdentity,
     InvalidAccess,
+    InvalidMetadataDisclosure,
     MissingOperations,
     InvalidOperation,
     DuplicateOperation,
@@ -55,6 +59,10 @@ impl ErasedApplicationHistoryDefinition {
         if !name_is_valid(&parts.identity) || !parts.history_type.is_valid() {
             return Err(Denial::InvalidIdentity);
         }
+        parts
+            .metadata_disclosure
+            .validate_history_metadata(&parts.history_type)
+            .map_err(|_| Denial::InvalidMetadataDisclosure)?;
         let access = parts.access.parts();
         if parts
             .access
@@ -106,7 +114,7 @@ pub struct ApplicationHistoryDefinition<Schema, History> {
 }
 
 impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> ApplicationHistoryDefinition<S, H> {
-    pub fn for_binding() -> Self {
+    pub fn for_binding(metadata_disclosure: ApplicationQueryDisclosureContract) -> Self {
         Self {
             erased: ErasedApplicationHistoryDefinition::from_untrusted_parts(
                 WorthQueryPortableApplicationHistoryParts {
@@ -116,6 +124,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> ApplicationHistoryDe
                         S,
                         ApplicationHistoryAccessBinding<S, H>,
                     >(),
+                    metadata_disclosure,
                     operations: Vec::new(),
                 },
             ),

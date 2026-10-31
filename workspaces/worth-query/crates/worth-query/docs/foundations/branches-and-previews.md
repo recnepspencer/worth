@@ -148,7 +148,9 @@ impl ApplicationHistoryBinding<DocumentRetentionSchema> for RetentionHistory {
     const IDENTITY: &'static str = "DocumentRetentionHistory";
 }
 let schema = schema.application_history(
-    ApplicationHistoryDefinition::<DocumentRetentionSchema, RetentionHistory>::for_binding()
+    ApplicationHistoryDefinition::<DocumentRetentionSchema, RetentionHistory>::for_binding(
+        ApplicationQueryDisclosureContract::public(),
+    )
         .operation::<SetRetentionBinding>("Set retention"),
 );
 ```
@@ -223,6 +225,27 @@ show two model heads, current reads, equal-value divergence and explicit close.
 The [compiled edit-assessment cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/assessment.rs)
 show ordinary action construction, model and membership refusals, fresh request
 authority, unchanged model values and disposal of both owners.
+
+### Read selected step metadata
+
+Declare metadata policy explicitly in `ApplicationHistoryDefinition::for_binding`.
+`ApplicationQueryDisclosureContract::public()` permits the public metadata entry.
+For a governed contract, cover each `ApplicationHistoryMetadataFacet` with an
+`ApplicationHistoryMetadataRef::<YourHistory>` rule under the declared capability.
+The [installed example](../../../worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs)
+uses the existing capability declaration and grant owner.
+
+`document.current_step(&request)` requires public metadata. Governed metadata
+uses `document.current_step_governed(&request, capability, operation, input)`.
+The model's ordinary READ, including its body and filters, must also succeed.
+Each call resolves current permission before looking up step metadata. A payload
+grant or a mutation grant cannot substitute for the metadata purpose.
+
+For fresh governed edit enrollment or an attempt retry, call
+`edit.advance_with_metadata(&request, capability, operation, input)`. On refusal,
+keep that returned edit and retry it with fresh authority. Once an occurrence
+has been delivered, its step descriptor remains owned descriptive evidence.
+See the [compiled metadata, retry and revocation cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/metadata.rs).
 
 ### Record an edit and retain its original outcome
 

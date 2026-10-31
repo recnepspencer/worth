@@ -27,6 +27,7 @@ mod creation_cleanup;
 mod discard;
 mod finish;
 mod handoff;
+mod metadata;
 mod progression;
 mod sealing;
 pub use finish::{WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome};

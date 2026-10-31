@@ -27,15 +27,29 @@ where
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
     pub(super) fn advance_admission(
+        self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> WorthQueryHistoryEditAdvance<Self> {
+        self.advance_admission_with(request, |_, _, read| Ok(read))
+    }
+
+    pub(super) fn advance_admission_with(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        metadata: impl for<'read> FnOnce(
+            &WorthQueryAdvancementPhase<'_>,
+            &worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+                S,
+            >,
+            WorthQueryDocumentHistoryRead<'read, S, H>,
+        ) -> Result<
+            WorthQueryDocumentHistoryRead<'read, S, H>,
+            WorthQueryDocumentHistoryDenial,
+        >,
     ) -> WorthQueryHistoryEditAdvance<Self> {
         let runtime = self.document.owner.application();
         let mut already = None;
         let result = runtime.with_application_advancement(request.scope, |phase| {
-            self.document
-                .read_in_advancement(&phase, request)
-                .map_err(WorthQueryHistoryEditDenial::History)?;
             let current = WorthQueryApplicationRequest {
                 application: runtime,
                 principal: request.principal,
@@ -55,32 +69,28 @@ where
                     cause,
                 ))
             })?;
-            let installed = runtime
-                .installed_schema()
-                .installed_history::<H>()
-                .map_err(|cause| {
-                    WorthQueryHistoryEditDenial::History(
-                        WorthQueryApplicationHistoryDenial::Installation(cause),
-                    )
-                })?;
-            match self
-                .document
-                .owner
-                .reserve_history_record::<I::Binding>(
+            let prepared_record =
+                crate::application_entry::history::metadata::with_metadata_read::<S, H, _>(
                     &phase,
-                    &program_publication_access(),
-                    &installed,
-                    WorthQueryDocumentHistoryOperation::new(
-                        &selected,
-                        &prepared.admission,
-                        prepared.idempotency,
-                    ),
+                    &current,
+                    self.document.access.clone(),
+                    |runtime, installed, read| {
+                        let read = metadata(&phase, runtime, read)?;
+                        self.document.owner.reserve_history_record::<I::Binding>(
+                            &phase,
+                            &program_publication_access(),
+                            installed,
+                            WorthQueryDocumentHistoryOperation::new(
+                                &selected,
+                                &prepared.admission,
+                                prepared.idempotency,
+                            ),
+                            read,
+                        )
+                    },
                 )
-                .map_err(|cause| {
-                    WorthQueryHistoryEditDenial::History(
-                        WorthQueryApplicationHistoryDenial::Document(cause),
-                    )
-                })? {
+                .map_err(WorthQueryHistoryEditDenial::History)?;
+            match prepared_record {
                 WorthQueryDocumentHistoryRecordPreparation::Reserved(reserved) => {
                     state.reservation = Some(reserved)
                 }

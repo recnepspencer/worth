@@ -30,7 +30,7 @@ pub struct WorthQueryAdmittedApplicationHistoryCapture<
     pub(in crate::domain_computation::primary_graph::application_query) plan:
         SubjectPlan<'a, Schema, History>,
     pub(in crate::domain_computation::primary_graph::application_query) metadata:
-        HistoryMetadataAdmission<History>,
+        HistoryMetadataAdmission,
     pub(in crate::domain_computation::primary_graph::application_query) limits:
         WorthQueryApplicationHistoryCaptureLimits,
 }

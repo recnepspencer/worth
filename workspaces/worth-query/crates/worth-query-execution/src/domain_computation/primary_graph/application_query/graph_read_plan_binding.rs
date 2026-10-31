@@ -62,6 +62,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
         super::admission::SelectedIssuedAccessRoot<'a, Schema, Principal, PrincipalIdentity, Scope>,
     >,
     pub(super) governance: super::disclosure::WorthQueryApplicationQueryGovernance,
+    pub(super) history_metadata: Option<super::history::HistoryMetadataAdmission>,
 }
 
 pub(super) struct WorthQueryAdmittedContinuationState {

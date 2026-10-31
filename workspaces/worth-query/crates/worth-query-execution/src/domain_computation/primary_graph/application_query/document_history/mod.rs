@@ -1,4 +1,5 @@
 //! A pending exact model capture leaves only after ordinary query completion.
+mod metadata;
 mod operation;
 mod pending;
 
@@ -49,6 +50,7 @@ pub struct WorthQueryDocumentHistoryRead<'a, S: ApplicationSchema, H: Applicatio
     binding: &'a WorthQueryInstalledApplicationQueryBinding<S, Access<S, H>>,
     external: &'a WorthQueryAuthenticatedExternalPrincipal<S>,
     plan: Plan<'a, S, H>,
+    metadata: Option<super::disclosure::WorthQueryPendingApplicationQueryGovernance>,
 }
 
 impl<'a, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
@@ -65,6 +67,7 @@ impl<'a, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             binding,
             external,
             plan,
+            metadata: None,
         }
     }
 

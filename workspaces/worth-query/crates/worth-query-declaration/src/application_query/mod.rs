@@ -74,10 +74,10 @@ pub use definition::{
 pub use dependency_equivalence::ApplicationQueryDependencyEquivalence;
 pub use derived_view::{ApplicationDerivedViewDefinition, ApplicationDerivedViewLimits};
 pub use disclosure_contract::{
-    ApplicationQueryDisclosureContract, ApplicationQueryDisclosurePosture,
-    ApplicationQueryDisclosureRule, ApplicationQueryDisclosureSelector,
-    ApplicationQueryInfluenceContract, ApplicationQueryObservableInfluence,
-    WorthQueryPortableApplicationQueryDisclosureParts,
+    ApplicationHistoryMetadataDisclosureDenial, ApplicationQueryDisclosureContract,
+    ApplicationQueryDisclosurePosture, ApplicationQueryDisclosureRule,
+    ApplicationQueryDisclosureSelector, ApplicationQueryInfluenceContract,
+    ApplicationQueryObservableInfluence, WorthQueryPortableApplicationQueryDisclosureParts,
 };
 pub use erased_definition::{
     ErasedApplicationQueryDefinition, WorthQueryPortableApplicationQueryParts,

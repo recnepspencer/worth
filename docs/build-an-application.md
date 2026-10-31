@@ -1867,7 +1867,12 @@ obligation (`Retired`). See
 
 To bind that head to one model, declare `ApplicationHistoryBinding` with the
 model's ordinary READ intent and register an `ApplicationHistoryDefinition` in
-its contribution. On the head's branch call
+its contribution. Pass an explicit metadata disclosure contract to
+`ApplicationHistoryDefinition::for_binding(..)`: use
+`ApplicationQueryDisclosureContract::public()` for public step metadata, or a
+governed contract covering the history's occurrence, ancestry and continuation
+facets. This policy is separate from payload READ and edit permission.
+On the head's branch call
 `request.attach_history::<Binding>(&phase, head, model_read)`. The returned
 document owns the slot; `document.read(&request)` freshly admits the original
 model READ. For an original retained no-output action,
@@ -1944,6 +1949,17 @@ owned heads. `Closing(owner)` retains unfinished disposal across multiple heads;
 retry `owner.retry(&phase)` after releasing blocking readers. A closing owner
 cannot read or edit the document. A successful close does not release history
 held independently by other consumers.
+
+Use `document.current_step(&request)` for public step metadata. For governed
+metadata, call `current_step_governed(&request, capability, operation, input)`
+with the declared metadata purpose. The ordinary model READ still executes its
+body and filters; payload permission alone cannot disclose a step. Each call
+checks the current metadata grant before looking up the journal.
+Fresh governed edit enrollment and attempt lookup use
+`edit.advance_with_metadata(&request, capability, operation, input)`; retain the
+returned edit on refusal. An authorized retry returns its original step without
+repeating the edit. See the [compiled metadata and retry journey](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/metadata.rs)
+and [metadata declarations](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs).
 
 To store the selected basis as application data, serialize
 `selected.describe_basis()` before releasing the selection. After loading that

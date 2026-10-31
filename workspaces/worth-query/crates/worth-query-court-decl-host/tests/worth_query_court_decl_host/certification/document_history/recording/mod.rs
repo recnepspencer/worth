@@ -38,13 +38,16 @@ type Action = ApplicationActionReference<
 type Edit<'a, H = RetentionHistory, P = RetentionProgramP0> =
     WorthQueryHistoryEdit<'a, DocumentRetentionSchema, H, SetRetentionIntent, P, Action>;
 
-pub(crate) fn begin<'a>(
+pub(crate) fn begin<'a, H>(
     host: &App,
-    document: Document<'a>,
+    document: Document<'a, H>,
     identity: &str,
     days: u64,
     key: u64,
-) -> Edit<'a> {
+) -> Edit<'a, H>
+where
+    H: ApplicationHistoryBinding<DocumentRetentionSchema, Access = DocumentRetentionRead>,
+{
     let scope = request_scope();
     let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
     document

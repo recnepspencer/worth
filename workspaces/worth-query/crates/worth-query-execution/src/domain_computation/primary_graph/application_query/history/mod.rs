@@ -19,6 +19,7 @@ mod session;
 mod storage;
 mod transition;
 
+pub(in crate::domain_computation::primary_graph::application_query) use admission::admit_metadata;
 pub(super) use admission::HistoryMetadataAdmission;
 pub use bounds::WorthQueryApplicationHistoryCaptureLimits;
 pub(super) use capture::prepare_capture;
