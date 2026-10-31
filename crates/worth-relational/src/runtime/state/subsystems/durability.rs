@@ -30,6 +30,9 @@ pub(crate) struct DurabilitySubsystem {
 }
 
 impl DurabilitySubsystem {
+    pub(crate) fn has_source_affinity(&self) -> bool {
+        self.medium.is_some() || self.transition_history.is_some() || self.cold_source.is_some()
+    }
     pub(crate) fn checkpoint_selection(&self) -> &RelationalCheckpointManifestSelection {
         &self.checkpoint_selection
     }

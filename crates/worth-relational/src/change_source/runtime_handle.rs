@@ -1,6 +1,11 @@
 use std::sync::{Arc, Mutex};
 mod lock_observation;
+mod memory_close;
 pub use lock_observation::RelationalRuntimeLockObservationForTest;
+pub use memory_close::{
+    RelationalMemoryClose, RelationalMemoryCloseDenial, RelationalMemoryCloseObservation,
+    RelationalMemoryCloseRefused, RetiredMemoryRelationalAllocation,
+};
 
 use crate::runtime::RelationalRuntime;
 

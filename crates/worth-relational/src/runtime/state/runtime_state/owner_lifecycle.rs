@@ -65,10 +65,16 @@ impl RelationalRuntimeOwner {
 
 impl RelationalRuntimeOwnerBinding {
     pub(super) fn stop_if_quiescent(&self) -> bool {
+        // The decisive flag/count operations share one SC order. A successful
+        // admission has increment < second-true-load < stop-false-store <
+        // zero-check; that check cannot miss the increment unless the actual
+        // operation already released it. Conversely a zero-check before the
+        // increment forces the second load to observe false and roll back.
+        // Release/Acquire on separate atomics permits both sides to miss.
         self.lifecycle
             .accepting_operations
-            .store(false, Ordering::Release);
-        if self.lifecycle.in_flight.load(Ordering::Acquire) == 0 {
+            .store(false, Ordering::SeqCst);
+        if self.lifecycle.in_flight.load(Ordering::SeqCst) == 0 {
             true
         } else {
             self.resume_admission();
@@ -90,7 +96,7 @@ impl RelationalRuntimeOwnerBinding {
     pub(in crate::runtime) fn close(&self) {
         self.lifecycle
             .accepting_operations
-            .store(false, Ordering::Release);
+            .store(false, Ordering::SeqCst);
         #[cfg(test)]
         self.acknowledge_test_close_start();
         let mut wait = self
@@ -98,7 +104,7 @@ impl RelationalRuntimeOwnerBinding {
             .close_wait
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        while self.lifecycle.in_flight.load(Ordering::Acquire) != 0 {
+        while self.lifecycle.in_flight.load(Ordering::SeqCst) != 0 {
             wait = self
                 .lifecycle
                 .close_ready
@@ -111,8 +117,8 @@ impl RelationalRuntimeOwnerBinding {
         if !self.lifecycle.accepting_operations.load(Ordering::Acquire) {
             return None;
         }
-        self.lifecycle.in_flight.fetch_add(1, Ordering::AcqRel);
-        if !self.lifecycle.accepting_operations.load(Ordering::Acquire) {
+        self.lifecycle.in_flight.fetch_add(1, Ordering::SeqCst);
+        if !self.lifecycle.accepting_operations.load(Ordering::SeqCst) {
             release_operation(&self.lifecycle);
             return None;
         }

@@ -36,6 +36,15 @@ struct PublishedSnapshotRegistration {
 }
 
 impl PublishedSnapshotHandleRegistry {
+    pub(super) fn try_empty(&self) -> Result<bool, ()> {
+        match self.entries.try_lock() {
+            Ok(value) => Ok(value.by_id.is_empty()),
+            Err(std::sync::TryLockError::Poisoned(error)) => {
+                Ok(error.into_inner().by_id.is_empty())
+            }
+            Err(std::sync::TryLockError::WouldBlock) => Err(()),
+        }
+    }
     pub(super) fn new() -> Self {
         Self {
             entries: Mutex::new(PublishedSnapshotHandleEntries::default()),

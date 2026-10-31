@@ -53,6 +53,13 @@ pub(crate) struct RelationalPendingSettlementReservation {
 }
 
 impl RelationalPublicationSettlementRegistry {
+    pub(super) fn try_empty(&self) -> Result<bool, ()> {
+        match self.records.try_lock() {
+            Ok(value) => Ok(value.is_empty()),
+            Err(std::sync::TryLockError::Poisoned(error)) => Ok(error.into_inner().is_empty()),
+            Err(std::sync::TryLockError::WouldBlock) => Err(()),
+        }
+    }
     pub(super) fn has_pending(&self) -> bool {
         !self.records().is_empty()
     }

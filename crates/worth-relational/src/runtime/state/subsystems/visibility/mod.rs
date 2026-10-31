@@ -26,6 +26,17 @@ pub(crate) struct VisibilitySubsystem {
 }
 
 impl VisibilitySubsystem {
+    pub(crate) fn try_memory_read_registrations_empty(&self) -> Result<bool, ()> {
+        if !self.handles.try_empty()? || self.published_snapshot_capacity.occupied_handles() != 0 {
+            return Ok(false);
+        }
+        Ok(self
+            .replay_retention
+            .try_read()
+            .ok_or(())?
+            .entries
+            .is_empty())
+    }
     pub(crate) fn snapshot_identity_binding(&self) -> std::sync::Arc<std::sync::atomic::AtomicU64> {
         self.handles.snapshot_identity_binding()
     }

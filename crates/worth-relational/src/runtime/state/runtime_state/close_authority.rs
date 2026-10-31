@@ -14,6 +14,7 @@ pub(in crate::runtime) struct RelationalRuntimeCloseAuthority {
     runtime_instance_id: u64,
     lifecycle: RelationalRuntimeOwnerBinding,
     publication: RelationalRuntimePublicationBinding,
+    business_complete: std::sync::atomic::AtomicBool,
 }
 
 impl RelationalRuntimeCloseAuthority {
@@ -35,6 +36,7 @@ impl RelationalRuntimeCloseAuthority {
             runtime_instance_id: _runtime_instance_id,
             lifecycle,
             publication,
+            business_complete: std::sync::atomic::AtomicBool::new(false),
         }
     }
 }
@@ -70,9 +72,22 @@ impl RelationalRuntimeCloseAuthority {
     ///
     /// [`RelationalRuntime`]: super::RelationalRuntime
     pub(super) fn close(&self) {
+        if self
+            .business_complete
+            .load(std::sync::atomic::Ordering::Acquire)
+        {
+            return;
+        }
         self.lifecycle.close();
         self.publication.close();
         #[cfg(test)]
         crate::indexes::purge_index_query_scratch_hints(self.runtime_instance_id);
+    }
+
+    /// Issued only by the authentic memory owner after actual quiescence and
+    /// obligation retirement. Heap destruction remains ordinary unbudgeted Drop.
+    pub(super) fn complete_memory_business(&self) {
+        self.business_complete
+            .store(true, std::sync::atomic::Ordering::Release);
     }
 }

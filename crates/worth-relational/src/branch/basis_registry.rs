@@ -76,6 +76,15 @@ pub(crate) struct RelationalBasisRegistryLease {
 }
 
 impl RelationalBranchBasisRegistry {
+    pub(crate) fn try_memory_empty(&self) -> Result<bool, ()> {
+        match self.retained.try_lock() {
+            Ok(value) => Ok(value.entries.is_empty()),
+            Err(std::sync::TryLockError::Poisoned(error)) => {
+                Ok(error.into_inner().entries.is_empty())
+            }
+            Err(std::sync::TryLockError::WouldBlock) => Err(()),
+        }
+    }
     pub(crate) fn with_metrics(metrics: Arc<RelationalBranchBasisRegistryMetrics>) -> Self {
         Self {
             retained: Arc::new(Mutex::new(RelationalRetainedBasisState::default())),

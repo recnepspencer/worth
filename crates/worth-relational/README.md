@@ -429,3 +429,29 @@ Materialized visibility caches may retain separate observations even after the
 original result and independent snapshot handles release. Native close then
 truthfully refuses `ReadCustodyRetained`; cache retirement remains a separate
 Native terminal-cleanup obligation.
+
+## Retire an immutable Memory runtime
+
+Platform lifecycle owners consume their actual `RelationalRuntimeHandle` with
+`into_memory_close`. Shared representations, aliased owners, admitted read copies
+and actual medium/cold/transition-source affinity refuse without losing the handle.
+Retain `RelationalMemoryClose` outside disposable callbacks and call its
+`advance(&original_request)` through `&mut` progress. Reversible preflight refuses
+retained candidates, accepted settlements and explicit snapshot/replay custody;
+repair them before retrying. `into_refused_handle` is an explicitly unbudgeted
+preseal restoration around the same runtime and original handle metadata.
+
+After sealing, no serving restoration exists. Each nonwaiting step retires one
+actual cached Exact/Historical observation or head obligation. Independent reads
+keep their own custody and cause a truthful refusal until released. An existing
+original-result cleanup task can advance through the phase's narrow forwarding
+method. Completion retires business obligations, retaining the authentic private
+root/cache allocations and their funding. `into_retired_memory` yields only an
+opaque nonserving allocation whose `reclaim` is explicitly unbudgeted.
+
+Incomplete phase Drop is also unbudgeted owner-loss abandonment and proves no
+successful close. Concrete Home progress must retain the phase across request
+stops and lost responses. This Native Memory contract grants no durable/cold Home
+close or arbitrary destructor deadline. Dense cache/head tables retain their
+existing allocation semantics; metadata footprint and worst-case O(1) cost are
+not claimed, and close never allocates/reserves/rehashes/shrinks those tables.

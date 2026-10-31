@@ -3,6 +3,7 @@ mod close_authority;
 mod codec_recovery_destination;
 mod configuration;
 mod core_access;
+mod memory_close;
 mod merge_authority;
 mod owner_lifecycle;
 mod partition_edition_access;

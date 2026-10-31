@@ -1,4 +1,7 @@
+use indexmap::IndexMap;
 use std::collections::{HashMap, VecDeque};
+mod memory_close;
+use memory_close::CachedSnapshotState;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, RwLock};
 
@@ -8,7 +11,7 @@ use crate::visibility::snapshot_states::{SnapshotState, VisibilitySnapshotStateK
 
 #[derive(Debug)]
 pub(crate) struct VisibilityCache {
-    pub(crate) states: RwLock<HashMap<VisibilitySnapshotStateKey, SnapshotState>>,
+    states: RwLock<IndexMap<VisibilitySnapshotStateKey, CachedSnapshotState>>,
     pub(crate) residency: RwLock<HashMap<VisibilitySnapshotStateKey, VisibilityResidency>>,
     branch_head_states: RwLock<HashMap<BranchId, VisibilitySnapshotStateKey>>,
     pub(crate) recent_policy: Mutex<DeterministicVersionWindowPolicy>,
@@ -29,7 +32,7 @@ pub(crate) struct VisibilityCacheCostCounters {
 impl VisibilityCache {
     pub(crate) fn new(config: &RelationalRuntimeConfig) -> Self {
         Self {
-            states: RwLock::new(HashMap::new()),
+            states: RwLock::new(IndexMap::new()),
             residency: RwLock::new(HashMap::new()),
             branch_head_states: RwLock::new(HashMap::new()),
             recent_policy: Mutex::new(DeterministicVersionWindowPolicy {
@@ -50,7 +53,7 @@ impl VisibilityCache {
             .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "recent visibility policy lock poisoned")
             .recent_version_window;
         Self {
-            states: RwLock::new(HashMap::new()),
+            states: RwLock::new(IndexMap::new()),
             residency: RwLock::new(HashMap::new()),
             branch_head_states: RwLock::new(HashMap::new()),
             recent_policy: Mutex::new(DeterministicVersionWindowPolicy {
@@ -155,7 +158,7 @@ impl VisibilityCache {
             .read()
             .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility state lock poisoned")
             .get(key)
-            .cloned()
+            .and_then(|entry| entry.state.as_ref()).cloned()
     }
 
     pub(crate) fn insert_state(&self, state: SnapshotState) {
@@ -163,14 +166,14 @@ impl VisibilityCache {
         self.states
             .write()
             .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility state lock poisoned")
-            .insert(key, state);
+            .insert(key, CachedSnapshotState::new(state));
     }
 
     pub(crate) fn remove_state(&self, key: &VisibilitySnapshotStateKey) {
         self.states
             .write()
             .expect(/* Proof: Visibility locks protect closed native maps/policy rows only; callbacks are owner-local reference-count updates, with no external code or I/O while a guard is held. */ "visibility state lock poisoned")
-            .remove(key);
+            .swap_remove(key);
     }
 
     pub(crate) fn residency(&self, key: &VisibilitySnapshotStateKey) -> VisibilityResidency {

@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 
@@ -7,7 +8,7 @@ use super::{RelationalBranchCellCheckpoint, RelationalBranchReferenceCell};
 
 #[derive(Debug, Default)]
 struct RelationalBranchRegistryState {
-    cells: HashMap<BranchId, RelationalBranchReferenceCell>,
+    cells: IndexMap<BranchId, RelationalBranchReferenceCell>,
     retired_names: HashSet<BranchId>,
     reserved_targets: HashSet<BranchId>,
 }
@@ -37,6 +38,32 @@ pub(crate) enum RelationalForkTargetReservationDenial {
 }
 
 impl RelationalBranchReferenceRegistry {
+    pub(crate) fn try_memory_targets_empty(&self) -> Result<bool, ()> {
+        let state = match self.state.try_read() {
+            Ok(value) => value,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+        };
+        Ok(state.reserved_targets.is_empty())
+    }
+
+    /// After actual lifecycle quiescence the dense cells cannot reorder. Keep
+    /// the original cells/root data while retiring one genuine head token.
+    pub(crate) fn try_retire_memory_head(&self, index: usize) -> Result<Option<bool>, ()> {
+        let state = match self.state.try_read() {
+            Ok(value) => value,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+        };
+        let Some((_, cell)) = state.cells.get_index(index) else {
+            return Ok(Some(true));
+        };
+        if !cell.basis_registry.try_memory_empty()? {
+            return Ok(None);
+        }
+        cell.head_retention().try_retire_memory_head()?;
+        Ok(Some(false))
+    }
     pub(crate) fn owns_reservation(&self, reservation: &RelationalForkTargetReservation) -> bool {
         self.same_owner(&reservation.registry)
     }
@@ -66,7 +93,7 @@ impl RelationalBranchReferenceRegistry {
         let branch_id = main.identity().branch_id().clone();
         Self {
             state: Arc::new(RwLock::new(RelationalBranchRegistryState {
-                cells: HashMap::from([(branch_id, main)]),
+                cells: IndexMap::from([(branch_id, main)]),
                 ..Default::default()
             })),
         }
@@ -83,7 +110,7 @@ impl RelationalBranchReferenceRegistry {
     }
 
     pub(crate) fn remove(&self, branch_id: &BranchId) -> Option<RelationalBranchReferenceCell> {
-        self.write().cells.remove(branch_id)
+        self.write().cells.swap_remove(branch_id)
     }
 
     pub(crate) fn contains(&self, branch_id: &BranchId) -> bool {

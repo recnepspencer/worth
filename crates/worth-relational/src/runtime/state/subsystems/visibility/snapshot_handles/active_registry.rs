@@ -23,6 +23,13 @@ pub(super) struct ActiveSnapshotHandleRegistry {
 }
 
 impl ActiveSnapshotHandleRegistry {
+    pub(super) fn try_empty(&self) -> Result<bool, ()> {
+        match self.handles.try_lock() {
+            Ok(value) => Ok(value.is_empty()),
+            Err(std::sync::TryLockError::Poisoned(error)) => Ok(error.into_inner().is_empty()),
+            Err(std::sync::TryLockError::WouldBlock) => Err(()),
+        }
+    }
     pub(super) fn new() -> Self {
         Self {
             handles: Mutex::new(HashMap::new()),

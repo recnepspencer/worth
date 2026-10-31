@@ -2,6 +2,8 @@ mod cost_counters;
 mod head_cell;
 mod head_obligation;
 mod head_retirement;
+mod historical_retirement;
+pub(crate) use historical_retirement::RelationalHistoricalObservationRetirement;
 mod index_liveness;
 mod lane;
 mod lease;

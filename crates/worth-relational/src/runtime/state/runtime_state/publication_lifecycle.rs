@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
+#[cfg(test)]
+mod memory_close_tests;
 
 /// Drop-governed publication authority owned directly by one runtime.
 #[derive(Debug)]
@@ -34,6 +36,24 @@ pub(crate) enum RelationalCandidateRegistrationDenial {
 }
 
 impl RelationalRuntimePublicationOwner {
+    /// Unlike ordinary close, this never reaps candidates or drains settlements.
+    /// A retained candidate owns real reservations, including after its expiry.
+    pub(super) fn try_has_memory_close_custody(&self) -> Result<bool, ()> {
+        let candidates = match self.binding.lifecycle.candidates.try_lock() {
+            Ok(value) => value,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+        };
+        if !candidates.is_empty() {
+            return Ok(true);
+        }
+        drop(candidates);
+        if !self.binding.lifecycle.settlements.try_empty()? {
+            return Ok(true);
+        }
+        let epoch = self.binding.lifecycle.companion.enter().map_err(|_| ())?;
+        Ok(epoch.has_live_close_client())
+    }
     pub(super) fn has_live_publication_custody(&self) -> bool {
         self.binding.reap_expired_candidates();
         !self

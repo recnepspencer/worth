@@ -54,6 +54,9 @@ pub(crate) struct RelationalRetainedHistoricalRoot {
 }
 
 impl RelationalRetainedHistoricalRoot {
+    pub(super) fn try_retire_observation(&mut self) -> bool {
+        self._obligation.try_retire()
+    }
     pub(crate) fn acquire(
         binding: &super::RelationalBranchRetentionBinding,
         root: Arc<RelationalBranchRoot>,

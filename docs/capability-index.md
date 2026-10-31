@@ -828,6 +828,16 @@ retain the task and original result across stops and lost responses. Independent
 readers survive. Generic final Drop and whole Native/Home teardown remain outside
 this request-bounded advancement contract.
 
+An owning platform lifecycle can consume its actual immutable Memory Native
+handle with `into_memory_close`, retaining the opaque phase outside callbacks
+and advancing it with the original request. Actual source/shared affinity,
+accepted work and explicit registrations refuse; sealed steps retire genuine
+cache observations and head tokens while independent readers retain custody.
+Completed private allocations expose only explicit unbudgeted reclamation;
+incomplete Drop is unbudgeted abandonment, never a successful close. This is no
+durable Home or arbitrary-destructor deadline guarantee. See
+[Memory Native retirement](../crates/worth-relational/README.md#retire-an-immutable-memory-runtime).
+
 ### Native record and aspect history pages
 
 The Relational owner provides a retained cursor inside one exact selected commit:

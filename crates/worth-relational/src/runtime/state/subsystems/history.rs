@@ -46,6 +46,8 @@ pub(crate) use history_ledger::HistoryLedger;
 mod history_preparation_binding;
 pub(crate) use history_head_versions::BranchHeadVersionIndexAuthority;
 pub(crate) use history_preparation_binding::RelationalPreparationHistory;
+#[path = "history_memory_close.rs"]
+mod history_memory_close;
 #[path = "history_publication.rs"]
 mod history_publication;
 #[path = "history_recovery.rs"]
