@@ -124,8 +124,7 @@ pub(crate) fn discover(
                 source.retain(size_of::<(EntityId, EntityId)>())?;
                 closure.scopes.entry(*scope).or_default().insert(row);
             }
-            source.retain(size_of::<DerivedRelationData>())?;
-            closure.support.push(data);
+            crate::derived_relation::support::push(source, &mut closure.support, data)?;
         }
     }
     new.checkpoint(0)?;
@@ -148,6 +147,9 @@ impl SourceRead for LifecycleSource<'_, '_> {
     }
     fn retain(&mut self, bytes: usize) -> Result<(), Denial> {
         self.0.retain(bytes)
+    }
+    fn check_scratch_peak(&mut self, bytes: usize) -> Result<(), Denial> {
+        self.0.check_scratch_peak(bytes)
     }
     fn entity_kind(&mut self, id: EntityId) -> Result<crate::identity::data::KindId, Denial> {
         match self.0.view.entity_kind(id) {

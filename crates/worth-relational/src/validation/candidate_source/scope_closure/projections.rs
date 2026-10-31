@@ -26,12 +26,7 @@ pub(super) fn pullback(
                 insert_row(new, rows, row)?;
             }
         }
-        if closure.support.is_empty() {
-            closure.support = affected.support;
-        } else {
-            reserve_support(new, &mut closure.support, affected.support.len())?;
-            closure.support.extend(affected.support);
-        }
+        crate::derived_relation::support::append(new, &mut closure.support, affected.support)?;
         // The generic lifecycle owner intentionally ignores unchanged kinds.
         // Projected scalar writes must independently reacquire the inverse
         // endpoint route on both images, including an empty inverse read.
@@ -57,8 +52,7 @@ pub(super) fn pullback(
                     let row = row.entity().ok_or(Definition::InvalidMemberDomain)?;
                     insert_row(source, rows, row.into())?;
                 }
-                reserve_support(source, &mut closure.support, 1)?;
-                closure.support.push(data);
+                crate::derived_relation::support::push(source, &mut closure.support, data)?;
             }
         }
     }
@@ -83,27 +77,6 @@ fn insert_row(
             .ok_or(Definition::WorkBudgetExceeded)?;
         source.retain(bytes)?;
         rows.insert(row);
-    }
-    Ok(())
-}
-fn reserve_support(
-    source: &mut LifecycleSource<'_, '_>,
-    support: &mut Vec<DerivedRelationData>,
-    additional: usize,
-) -> Result<(), Denial> {
-    let required = support
-        .len()
-        .checked_add(additional)
-        .ok_or(Definition::WorkBudgetExceeded)?;
-    if required > support.capacity() {
-        source.retain(
-            required
-                .checked_mul(size_of::<DerivedRelationData>())
-                .ok_or(Definition::WorkBudgetExceeded)?,
-        )?;
-        support.try_reserve_exact(additional).map_err(|_| {
-            Denial::Request(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
-        })?;
     }
     Ok(())
 }

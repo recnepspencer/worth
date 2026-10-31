@@ -242,8 +242,7 @@ pub(super) fn collect(
                             for member in data.endpoints() {
                                 insert_member(after, &mut roots, member.clone())?;
                             }
-                            after.retain(size_of::<super::super::DerivedRelationData>())?;
-                            support.push(data);
+                            super::super::support::push(after, &mut support, data)?;
                         }
                     } else {
                         insert_member(after, &mut roots, anchor.clone())?;

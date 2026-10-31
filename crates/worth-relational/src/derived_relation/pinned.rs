@@ -161,6 +161,26 @@ impl SourceRead for PinnedSource<'_, '_, '_, '_, '_> {
     fn retain(&mut self, bytes: usize) -> Result<(), Denial> {
         retain(&mut self.memory, &mut self.bytes, bytes as u64)
     }
+    fn check_scratch_peak(&mut self, bytes: usize) -> Result<(), Denial> {
+        self.execution
+            .check_live()
+            .map_err(|cause| Denial::Request(cause.into()))?;
+        self.checkpoint(0)?;
+        let peak = self
+            .bytes
+            .checked_add(bytes as u64)
+            .ok_or(Denial::Request(Cause::ChargedBytesOverflow))?;
+        if let Some(memory) = &mut self.memory {
+            if peak > memory.bytes() {
+                memory.resize(peak).map_err(|cause| {
+                    Denial::Request(crate::execution::denial::lease_denial(
+                        worth_execution::LeaseDenial::MemoryExhausted(cause),
+                    ))
+                })?;
+            }
+        }
+        Ok(())
+    }
     fn entity_kind(&mut self, id: EntityId) -> Result<KindId, Denial> {
         self.checkpoint(
             self.projection

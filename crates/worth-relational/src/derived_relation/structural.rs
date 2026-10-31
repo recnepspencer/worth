@@ -259,6 +259,12 @@ impl SourceRead for StructuralSource<'_, '_> {
             .claim_retained(bytes as u64)
             .map_err(Denial::Structural)
     }
+    fn check_scratch_peak(&mut self, bytes: usize) -> Result<(), Denial> {
+        self.view
+            .read_budget()
+            .check_scratch_peak(bytes as u64)
+            .map_err(Denial::Structural)
+    }
     fn entity_kind(&mut self, id: EntityId) -> Result<KindId, Denial> {
         if id.generation.is_zero() {
             return Err(DefinitionDenial::RecordUnavailable.into());

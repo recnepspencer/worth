@@ -11,6 +11,7 @@ pub(crate) mod evaluation;
 mod pinned;
 mod proof;
 mod source;
+pub(crate) mod support;
 pub use pinned::PinnedDerivedRelationRead;
 mod structural;
 pub use proof::{

@@ -75,6 +75,9 @@ impl super::SourceRead for ChangeSource<'_, '_> {
     fn retain(&mut self, bytes: usize) -> Result<(), Denial> {
         self.0.retain(bytes)
     }
+    fn check_scratch_peak(&mut self, bytes: usize) -> Result<(), Denial> {
+        self.0.check_scratch_peak(bytes)
+    }
     fn entity_kind(&mut self, id: super::EntityId) -> Result<super::KindId, Denial> {
         match self.0.view.entity_kind(id) {
             Ok(kind) => {

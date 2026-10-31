@@ -1632,6 +1632,17 @@ including actual membership and whole original SDK growth guards. Prefix-specifi
 large evidence, retained predicate routing, tracked exact refinement and protected
 continuation/disclosure work remain open.
 
+The [Source support-growth repair](milestone-9.19-support-growth-plan.md) funds
+actual outer-vector capacity throughout inverse affectedness, projection and
+final scope-closure support with geometric growth and temporary old/new overlap
+on the original payer. A real composed32/64 fanout preserves the exact authored
+Source roster and measures320,360/640,872 whole preparation bytes at provider
+entry. The unchanged growth guard rejects a controlled exact-growth/full-quote
+regression. Same-runtime refusal/cancellation retries and the existing negative
+support/proposal audience courts pass. This repair does not close the other
+[required audit repairs](milestone-9.19-performance-audit-fixes-plan.md), prefix
+large qualification or the remaining Phase3 work.
+
 The [recorded-coverage slice](milestone-9.19-phase3-recorded-coverage-plan.md)
 records and verifies actual visited/pruned cuts and their matched-slot bijection.
 Public and maintained selection receivers and Native invariant projections consume

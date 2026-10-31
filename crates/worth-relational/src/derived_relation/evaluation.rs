@@ -27,6 +27,7 @@ pub(crate) trait SourceRead {
     }
     fn checkpoint(&mut self, units: usize) -> Result<(), Denial>;
     fn retain(&mut self, bytes: usize) -> Result<(), Denial>;
+    fn check_scratch_peak(&mut self, bytes: usize) -> Result<(), Denial>;
     fn entity_kind(&mut self, id: EntityId) -> Result<KindId, Denial>;
     fn adjacency(&mut self, probe: Adjacency) -> Result<Vec<StructuralRelationRecord>, Denial>;
     fn reads(&self) -> DerivedRelationReads;

@@ -13,6 +13,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 use worth_relational::facade::{identity::*, runtime::*, symbols::ClientKey, transactions::*};
 #[path = "managed_source_work_account/participant.rs"]
 mod participant;
+mod support_growth;
 
 const EXTRA: u64 = 65_536;
 #[derive(Clone, Copy, Debug)]

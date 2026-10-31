@@ -98,6 +98,13 @@ impl<'borrow> CustomInvariantReadBudget<'borrow> {
             .ok_or_else(|| self.refusal(StructuralReadError::WorkBudgetExceeded))
     }
 
+    pub(crate) fn check_scratch_peak(&self, bytes: u64) -> Result<(), StructuralWalkDenialKind> {
+        self.checkpoint(0)?;
+        crate::validation::data::CustomInvariantLeaseBudget::check_scratch_peak(self.work, bytes)
+            .then_some(())
+            .ok_or_else(|| self.refusal(StructuralReadError::WorkBudgetExceeded))
+    }
+
     pub(crate) fn refusal(&self, error: StructuralReadError) -> StructuralWalkDenialKind {
         use super::CustomInvariantInterruption;
         match self.work.leased_stop() {
