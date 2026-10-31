@@ -1,16 +1,16 @@
 use super::bulk_mutation_telemetry::{telemetry_from_strategy_batch, BulkMutationPlanTelemetry};
 use super::rejection::invalid_merge_context;
+use crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan;
 use crate::commit_strategies::data::StrategyCommitArtifactBundle;
 use crate::mvcc::RelationalTransactionValidationInput;
 use crate::transactions::data::{
-    CommitPhaseTiming, MergeCommitMutationPlan, MergedCommitPlan, TransactionCommitError,
-    TransactionId,
+    CommitPhaseTiming, MergeCommitMutationPlan, TransactionCommitError, TransactionId,
 };
 use crate::validation::engine::InvariantExecutionResult;
 
 #[derive(Debug)]
 pub(super) enum CommitAuthorityInput {
-    Mutation(MergedCommitPlan),
+    Mutation(PreparedRelationalCommitPlan),
     Merge(MergeCommitMutationPlan),
 }
 
@@ -91,7 +91,7 @@ impl AuthoritativeCommitContext {
             .map(telemetry_from_strategy_batch)
             .or_else(|| {
                 super::bulk_mutation_telemetry::summarize_bulk_mutation_telemetry(
-                    &prepared.merged_plan,
+                    prepared.plan.view().commands(),
                     batch_count,
                 )
             });
@@ -103,7 +103,7 @@ impl AuthoritativeCommitContext {
             transaction_id,
             validation_input,
             phase_timing: prepared.phase_timing.clone(),
-            authority_input: CommitAuthorityInput::Mutation(prepared.merged_plan),
+            authority_input: CommitAuthorityInput::Mutation(prepared.plan),
             prepared_scope: Some(PreparedAuthorityScope {
                 selected_branch_state: prepared.selected_branch_state.clone(),
                 structural_summary: prepared.structural_summary,

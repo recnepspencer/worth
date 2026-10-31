@@ -126,6 +126,11 @@ impl RelationalPublicationPort {
         candidate: PreparedRelationalCommitCandidate,
         admission: Option<crate::durability::AdmittedRecoveredCodecPublication>,
     ) -> RelationalPublicationOutcome {
+        if self.medium.is_some() && candidate.requires_retained_selection_profile() {
+            return RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported,
+            );
+        }
         let custody = candidate.recovered_codec_publication_custody();
         let admitted = match (&custody, &admission) {
             (None, None) => true,

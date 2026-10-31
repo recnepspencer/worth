@@ -40,6 +40,8 @@ pub enum RecoveryFailureClass {
     CheckpointSizeOverflow,
     CheckpointAllocationUnavailable,
     CheckpointFrameSizeMismatch,
+    /// Retained entity selection requires its original live historical basis.
+    UnsupportedRetainedEntitySelectionReplay,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -224,6 +226,7 @@ impl DurabilityError {
             RecoveryFailureClass::CheckpointSizeOverflow
             | RecoveryFailureClass::CheckpointAllocationUnavailable
             | RecoveryFailureClass::UnsupportedRetainedForkReplay
+            | RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay
             | RecoveryFailureClass::CheckpointFrameSizeMismatch => None,
             _ => Some(SuggestedFix::RepairDurableStore),
         };
@@ -246,6 +249,7 @@ impl DurabilityError {
             | RecoveryFailureClass::MissingAuthoritativeParentClosure
             | RecoveryFailureClass::ReplayFailure
             | RecoveryFailureClass::UnsupportedRetainedForkReplay
+            | RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay
             | RecoveryFailureClass::SchemaMismatch
             | RecoveryFailureClass::DeclaredSchemaMismatch
             | RecoveryFailureClass::ProfileMismatch

@@ -1,7 +1,8 @@
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use std::collections::BTreeSet;
 
 use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent, MergedCommitPlan, MutationIntent, RelationMutationIntent,
+    CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
 };
 use crate::validation::data::{
     PlannedEntityCreate, PlannedRelationCreate, PlannedRelationEndpointUpdate, TouchedStructuralSet,
@@ -13,14 +14,14 @@ use super::affected_record_filter::{
 };
 
 mod claim_nested;
+mod incidence;
 mod metadata;
 use claim_nested::claim_intent_nested_allocations;
-use metadata::include_relation_metadata;
 
 pub(crate) fn collect_touched_structural_set(
     state_view: &InvariantStateView<'_>,
     before_image_view: Option<&InvariantStateView<'_>>,
-    merged_plan: Option<&MergedCommitPlan>,
+    semantic_plan: Option<RelationalSemanticPlan<'_>>,
     access: &crate::validation::data::CustomInvariantAccessContract,
     work: &super::CustomInvariantWorkMeter,
 ) -> TouchedStructuralSet {
@@ -61,8 +62,20 @@ pub(crate) fn collect_touched_structural_set(
         }
     }
 
-    if let Some(plan) = merged_plan {
-        for intent in &plan.merged_intents {
+    if let Some(plan) = semantic_plan {
+        if let Some(selection) = plan.selection()
+            && work.try_charge(1)
+        {
+            touched_partitions.insert(selection.entity().partition_id);
+            include_affected_entity(
+                &mut visible_entities,
+                selection.entity(),
+                state_view,
+                before_image_view,
+                access,
+            );
+        }
+        for intent in &plan.commands().merged_intents {
             if !work.try_charge(1) {
                 break;
             }
@@ -335,53 +348,15 @@ pub(crate) fn collect_touched_structural_set(
         }
     }
 
-    // Sparse relation overlays can omit endpoints from their touched entity
-    // slots. Retarget and delete overlays can also replace or hide the old
-    // endpoints. Seed both sides of the mutation boundary before adjacency
-    // expansion, without enumerating either state root.
-    let touched_relation_ids = visible_relations.iter().copied().collect::<Vec<_>>();
-    for relation_id in touched_relation_ids {
-        if !work.try_charge(1) {
-            break;
-        }
-        if let Some(metadata) = state_view.relation_metadata(relation_id) {
-            include_relation_metadata(&mut visible_entities, &mut touched_partitions, metadata);
-        }
-        if let Some(before_image) = before_image_view {
-            if !work.try_charge(1) {
-                break;
-            }
-            if let Some(metadata) = before_image.relation_metadata(relation_id) {
-                include_relation_metadata(&mut visible_entities, &mut touched_partitions, metadata);
-            }
-        }
-    }
-
-    let direct_visible_entities = visible_entities.clone();
-    let seed_entities = visible_entities.iter().copied().collect::<Vec<_>>();
-    for entity_id in seed_entities {
-        if !work.try_charge(1) {
-            break;
-        }
-        if state_view
-            .entity_metadata(entity_id)
-            .is_some_and(|metadata| !access.affects_entity(metadata.kind_id))
-        {
-            continue;
-        }
-        let raw = state_view
-            .relation_candidate_count(entity_id, true)
-            .saturating_add(state_view.relation_candidate_count(entity_id, false));
-        if !work.try_charge(raw.saturating_mul(3)) {
-            break;
-        }
-        for relation_id in state_view.all_relations_for_entity(entity_id) {
-            visible_relations.insert(relation_id);
-            if let Some(metadata) = state_view.relation_metadata(relation_id) {
-                include_relation_metadata(&mut visible_entities, &mut touched_partitions, metadata);
-            }
-        }
-    }
+    let direct_visible_entities = incidence::expand(
+        &mut visible_entities,
+        &mut visible_relations,
+        &mut touched_partitions,
+        state_view,
+        before_image_view,
+        access,
+        work,
+    );
 
     TouchedStructuralSet::new(
         direct_visible_entities

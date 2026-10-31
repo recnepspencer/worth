@@ -148,9 +148,16 @@ impl ValidatedRelationalProposal {
                 },
             );
         }
-        let validated_intents = &self.prepared.merged_plan.merged_intents;
+        let plan = self.prepared.plan.view();
+        let validated_intents = &plan.commands().merged_intents;
         let mut targets = Vec::new();
         let mut work = ValidatedMutationFootprintWork::default();
+        if let Some(selection) = plan.selection() {
+            targets.push(ValidatedFieldMutationTarget::WholeRecord {
+                record: RecordRef::Entity(selection.entity()),
+            });
+            work.record_materialized_targets(1);
+        }
         for intent in validated_intents {
             work.record_validated_intent();
             let materialized = targets_for_intent(intent);

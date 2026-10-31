@@ -5,7 +5,7 @@ use crate::authority::commit::preparation::proofs::kinds::PreparationProofKind;
 use crate::authority::commit::preparation::proofs::locality::PreparationLocalityProof;
 use crate::authority::commit::preparation::proofs::validity::PreparationProofValidity;
 use crate::authority::commit::preparation::reduction::keys::ValidationReductionKey;
-use crate::transactions::data::MergedCommitPlan;
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::validation::data::{
     CustomInvariantRegistration, InvariantRegistration, PreparedCustomInvariantExecution,
 };
@@ -70,7 +70,7 @@ pub(crate) struct InvariantWorkPacket<'runtime> {
     pub(crate) observation: &'runtime InvariantObservation<'runtime>,
     pub(crate) version_id: crate::identity::data::VersionId,
     pub(crate) current_version_id: crate::identity::data::VersionId,
-    pub(crate) merged_plan: Option<&'runtime MergedCommitPlan>,
+    pub(crate) semantic_plan: Option<RelationalSemanticPlan<'runtime>>,
     pub(crate) relation_integrity_scopes: Option<PreparedRelationIntegrityScopes>,
     pub(crate) current_version_minimum_index:
         Arc<std::sync::OnceLock<crate::validation::engine::evaluator::CurrentVersionMinimumIndex>>,

@@ -48,9 +48,10 @@ pub(crate) use canonical_commit_envelope::{
     CanonicalRequiredOutputOrigin,
 };
 pub use canonical_commit_envelope::{
-    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouch,
-    RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision, RelationalReplayRecord,
-    RelationalTouchAdjacencyDirection, ReplaySchemaVersion,
+    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, CanonicalRetainedEntitySelection,
+    RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
+    RelationalDescriptiveTouchPrecision, RelationalReplayRecord, RelationalTouchAdjacencyDirection,
+    ReplaySchemaVersion,
 };
 pub use canonical_record_allocation::RecordAllocationClass;
 pub(crate) use canonical_record_allocation::{CanonicalRecordAllocation, RecordAllocationOrigin};

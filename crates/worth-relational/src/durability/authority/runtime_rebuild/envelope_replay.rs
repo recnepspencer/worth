@@ -30,6 +30,15 @@ pub(super) fn replay_readmitted_envelope(
     recovered_roots: &mut RecoveredRootInventory,
 ) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
     let envelope = readmitted.envelope();
+    if matches!(
+        envelope.authority_kind,
+        CanonicalCommitAuthorityKind::RetainedEntitySelection(_)
+    ) {
+        return Err(DurabilityError::new(
+            RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay,
+            "retained entity selection cannot be reconstructed from a canonical tail without its original source custody",
+        ).into());
+    }
     for (_, text) in &envelope.symbol_texts.entries {
         restored
             .services

@@ -26,7 +26,7 @@ pub(super) fn prepare_merge_draft(
         execution,
         basis,
         &runtime.services.symbols,
-        &admitted.merged_plan().merged_intents,
+        &admitted.command_plan().merged_intents,
         Default::default(),
     )?;
     let (answer, round) = crate::storage::residency::probe_head(
@@ -87,7 +87,7 @@ fn prepare_symbol_round(
                 prepare_authoritative_working_state_scope_for_base(
                     round,
                     &selected,
-                    admitted.merged_plan(),
+                    admitted.command_plan(),
                     parent_count,
                     Some(input.footprint()),
                 );
@@ -96,7 +96,7 @@ fn prepare_symbol_round(
                 round,
                 &selected,
                 &working_state,
-                admitted.merged_plan(),
+                admitted.command_plan(),
                 input.schema_authority(),
                 &identity,
                 symbols,
@@ -113,7 +113,7 @@ fn prepare_symbol_round(
                 &selected,
                 mutation.state(),
                 identity.proposed_version_id(),
-                admitted.merged_plan(),
+                admitted.semantic_plan(),
                 Some(&identity),
                 mutation.aggregate_source(selected),
                 execution,
@@ -123,7 +123,7 @@ fn prepare_symbol_round(
                 &selected,
                 mutation.state(),
                 identity.proposed_version_id(),
-                admitted.merged_plan(),
+                admitted.semantic_plan(),
                 Some(&identity),
                 mutation.aggregate_source(selected),
                 execution,
@@ -134,13 +134,13 @@ fn prepare_symbol_round(
                 mutation.state(),
                 &mutation.outcome.created_entities,
                 identity.proposed_version_id(),
-                admitted.merged_plan(),
+                admitted.semantic_plan(),
                 Some(&identity),
                 mutation.aggregate_source(selected),
                 execution,
                 &control,
             )?;
-            mutation.prepare_aggregate(execution, round, selected, admitted.merged_plan())?;
+            mutation.prepare_aggregate(execution, round, selected, admitted.command_plan())?;
             Ok(AcceptedMergeDraft {
                 scope: PreparedAuthorityScope {
                     selected_branch_state: selected.selected().clone(),

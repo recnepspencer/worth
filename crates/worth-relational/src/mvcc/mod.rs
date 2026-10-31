@@ -1,5 +1,6 @@
 mod observation;
 pub(crate) mod publication;
+pub(crate) mod retained_entity_selection;
 mod transaction;
 #[cfg(test)]
 pub(crate) use transaction::split_contacts;
@@ -39,6 +40,10 @@ pub use publication::{
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
     RequiredOutputProducingImplementation, RequiredOutputPublication,
     RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
+};
+pub use retained_entity_selection::{
+    RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial,
+    RelationalRetainedEntitySelectionPreparationError,
 };
 pub(crate) use transaction::commit_plan::bulk_reservations_for_plan;
 pub(crate) use transaction::RelationalMaterializationTransactionMode;

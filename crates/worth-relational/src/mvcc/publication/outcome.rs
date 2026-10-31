@@ -211,6 +211,7 @@ pub enum RelationalPublicationDenial {
     /// The durable medium refused the commit before any durable effect; it
     /// was never installed.
     DurablePublicationRefused(crate::durability::medium::RelationalDurablePublicationRefusal),
+    RetainedEntitySelectionDurabilityUnsupported,
 }
 
 /// A bounded resource turned this publication attempt away without moving

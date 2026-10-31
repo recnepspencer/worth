@@ -793,6 +793,19 @@ source. Handle profile refusal and retain any partial effect owner through
 cleanup. See [Native retained forks](../crates/worth-relational/README.md#fork-an-actually-retained-root)
 and [World retained creation](../crates/worth-runtime-world/README.md#create-a-branch-from-retained-component-truth).
 
+### Select retained entity payload while preserving current surrounding truth
+
+Platform owners with a memory-only Native runtime can transfer a pristine
+current branch transaction, an actual retained basis and a full entity ID to
+`preparation_port().admit_retained_entity_selection`, then consume the selection
+with `prepare_retained_entity_selection`. Publish or discard the returned
+candidate through the existing owner. Other records and intervening history
+remain current; installed invariants still judge the proposed payload.
+Handle identity/schema/currentness refusals and retain application permission
+and model-scope admission separately. See
+[Native retained entity selection](../crates/worth-relational/README.md#select-a-retained-entity-payload-on-current-truth)
+for lifecycle and persistence limits.
+
 ### Graph-read admission in the default Query workspace
 
 `worth-query-admission::integration::review_graph_read_access(requirements, inventory)`

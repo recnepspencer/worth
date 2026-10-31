@@ -136,3 +136,52 @@ pub(crate) fn apply_mutation_draft(
         identities: PendingMutationIdentities { records, symbols },
     })
 }
+
+pub(crate) fn apply_retained_entity_selection_draft(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalPreparationRuntime,
+    selected_state: &SelectedRelationalBranchRead<'_>,
+    working_state: &WorkingState,
+    retained: &crate::authority::commit::semantic_plan::PreparedRetainedEntityPayload,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    identity: &crate::mvcc::RelationalMutationProposalIdentity,
+    mut symbols: PendingSymbolMeanings,
+) -> Result<AppliedMutationDraft, MutationApplyDenial> {
+    crate::aggregate_identity::guard::retained_entity_selection(
+        execution,
+        runtime.commit_work_budget.as_ref(),
+        schema.registry(),
+        retained.meaning.kind(),
+    )?;
+    let mut state = working_state.clone();
+    let mut records = runtime.record_identity.begin_allocations();
+    let config = crate::config::data::MutationConfig {
+        cascade_delete_policy: runtime.config.storage.cascade_delete_policy,
+        adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
+        cross_context_policy: runtime.config.storage.cross_context_policy,
+    };
+    let outcome = crate::authority::mutation::retained_entity_selection::apply(
+        &mut state,
+        retained,
+        identity.proposed_version_id(),
+        &config,
+        schema.registry(),
+        schema.aspect_plans(),
+        &mut symbols,
+        &mut records,
+        runtime.commit_work_budget.clone(),
+    )?;
+    let aggregate = crate::aggregate_identity::AggregateProposal::capture(
+        schema,
+        selected_state.selected(),
+        identity,
+        outcome.effect.clone(),
+        None,
+    );
+    Ok(AppliedMutationDraft {
+        state,
+        outcome,
+        aggregate,
+        identities: PendingMutationIdentities { records, symbols },
+    })
+}

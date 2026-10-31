@@ -142,8 +142,7 @@ impl RelationalCanonicalPublicationRoutes {
         let positioned = Arc::new(PositionedCanonicalCommit::admit(
             position_admission::CanonicalPositionAdmission::equivalent(&positioned, canonical)?,
         ));
-        let installs_version_route = positioned.envelope().authority_kind()
-            != crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
+        let installs_version_route = positioned.envelope().authority_kind().advances_version();
         envelope.bind_performed(&positioned, None);
         let route = Arc::new(CanonicalPublicationRoute {
             envelope,

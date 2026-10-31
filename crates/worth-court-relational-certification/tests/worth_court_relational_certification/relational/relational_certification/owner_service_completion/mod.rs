@@ -10,6 +10,7 @@ pub(crate) mod lifecycle_locality;
 pub(crate) mod owner_lifecycle_observation;
 #[path = "owner_loss/mod.rs"]
 pub(crate) mod owner_loss;
+pub(crate) mod retained_entity_selection;
 mod retained_fork;
 mod retained_storage;
 #[path = "service_properties/mod.rs"]

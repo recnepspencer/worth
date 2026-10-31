@@ -1,4 +1,5 @@
 mod read_condition;
+mod retained_selection;
 use std::cell::Cell;
 use std::marker::PhantomData;
 

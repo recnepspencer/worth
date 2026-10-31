@@ -7,6 +7,29 @@ use crate::transactions::data::{
 };
 use crate::validation::engine::state_view::InvariantStateView;
 
+/// Selection is not a metadata-owner grant, even when its old payload is genuine.
+pub(crate) fn retained_entity_selection(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    budget: Option<&crate::execution::RequestWorkBudget>,
+    registry: &RelationalSchemaRegistry,
+    kind: KindId,
+) -> Result<(), TransactionCommitError> {
+    super::funding::run(execution, budget, |work| {
+        for contract in registry
+            .relation_kinds
+            .values()
+            .filter_map(|entry| entry.relation_integrity.aggregate_identity.as_ref())
+        {
+            work.checkpoint(1)?;
+            if contract.metadata_kinds().contains(&kind) {
+                return work.invalid(super::preparation::PlanDenial::OrdinaryMetadataWrite);
+            }
+        }
+        Ok(GuardAdmission)
+    })
+    .map(|_| ())
+}
+
 pub(crate) fn ordinary_plan(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     budget: Option<&crate::execution::RequestWorkBudget>,
