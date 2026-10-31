@@ -151,9 +151,6 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
             _ => Err(self.control.refuse(Stop::ForeignSourceSlot)),
         }
     }
-    pub(super) fn owner(&self) -> WorthQueryGraphWorkSessionIdentity {
-        self.image.owner
-    }
     pub(super) fn image(&self) -> SourceImageView<'a> {
         self.image
     }

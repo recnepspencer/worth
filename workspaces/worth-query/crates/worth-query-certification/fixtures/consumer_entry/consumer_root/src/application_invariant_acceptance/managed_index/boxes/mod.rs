@@ -3,6 +3,8 @@ pub(super) mod access;
 #[cfg(test)]
 mod affinity;
 mod authority;
+#[cfg(test)]
+mod candidate_allocation;
 mod coordinates;
 mod field;
 mod geometry;

@@ -14,7 +14,7 @@ Required repairs and current evidence:
 1. **Verified and independently cleared:** [Support growth](milestone-9.19-support-growth-plan.md): geometric capacity growth throughout actual affected-expression,
    merge and scope-closure producers; original persistent capacity-delta and
    temporary old/new-overlap admission. Small real composed-fanout evidence.
-2. Candidate collection: output-sized accumulation for pruned non-maintained
+2. **Verified and independently cleared:** [Candidate collection](milestone-9.19-sparse-candidates-plan.md): output-sized accumulation for pruned non-maintained
    Sources too; sort/deduplicate only emitted candidates, preserve canonical order,
    bounds/duplicates and genuine slot ownership. Empty pruning does no N-bit sweep.
 3. Cold Source graph validation: single DFS/BFS with visitation state, preserving

@@ -42,6 +42,10 @@ pub struct Calls {
     pub(super) first_source: Mutex<Option<WorthQueryManagedIndexSourceSlot>>,
     #[cfg(test)]
     pub(super) after_second_match: Mutex<Option<Box<dyn FnOnce() + Send>>>,
+    #[cfg(test)]
+    pub(super) repeat_candidates: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) foreign_candidate: Mutex<Option<WorthQueryManagedIndexSourceSlot>>,
     pub matched_sources: AtomicUsize,
     pub summary_comparisons: AtomicUsize,
     #[cfg(test)]
@@ -232,6 +236,37 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
             }
         }
         Ok(root)
+    }
+    fn query(
+        &self,
+        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
+        _nodes: &WorthQueryManagedIndexNodes<Node>,
+        probe: &query::Probe,
+        candidates: &mut WorthQueryManagedIndexCandidateWriter<'_>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<(), Stop> {
+        self.validate_probe(probe, control)?;
+        assert!(candidates.is_empty());
+        #[cfg(test)]
+        if let Some(slot) = *self.0.foreign_candidate.lock().unwrap() {
+            candidates.emit(slot)?;
+        }
+        let mut count = 0;
+        for ordinal in (0..sources.len()).rev() {
+            let (slot, row) = sources.at(ordinal)?;
+            if self.matches_source(row, probe, control)? {
+                candidates.emit(slot)?;
+                #[cfg(test)]
+                if self.0.repeat_candidates.load(Ordering::SeqCst) {
+                    candidates.emit(slot)?;
+                    candidates.emit(slot)?;
+                }
+                count += 1;
+                assert_eq!(candidates.len(), count);
+            }
+        }
+        assert_eq!(candidates.is_empty(), count == 0);
+        Ok(())
     }
     fn validate_probe(
         &self,

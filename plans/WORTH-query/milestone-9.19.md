@@ -1643,6 +1643,17 @@ support/proposal audience courts pass. This repair does not close the other
 [required audit repairs](milestone-9.19-performance-audit-fixes-plan.md), prefix
 large qualification or the remaining Phase3 work.
 
+The [candidate collection repair](milestone-9.19-sparse-candidates-plan.md) uses
+one SDK-backed ordered selection map for maintained and completed Sources, with
+actual Source-slot validation and paid ordered probes. Empty pruned Completed
+Sources allocate no collection backing; the exact prior dense implementation
+fails an isolated physical-allocation guard at the real receiver callbacks.
+A genuine Candidates-profile consumer exercises reverse/repeated actual emits
+and foreign-Source refusal. Public managed-index47/47 and Candidates-profile9/9
+courts pass; these do not claim that all Source admission, coverage or disclosure
+work is output-sized. Cold cycle validation, prefix reuse/scale, batched directory
+updates, spatial grouping and churn remain required audit repairs.
+
 The [recorded-coverage slice](milestone-9.19-phase3-recorded-coverage-plan.md)
 records and verifies actual visited/pruned cuts and their matched-slot bijection.
 Public and maintained selection receivers and Native invariant projections consume

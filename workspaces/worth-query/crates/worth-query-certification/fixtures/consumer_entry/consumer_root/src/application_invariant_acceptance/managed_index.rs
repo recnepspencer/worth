@@ -5,7 +5,7 @@ mod expectations;
 mod host;
 mod journey;
 #[cfg(test)]
-mod lifecycle;
+pub(super) mod lifecycle;
 mod maintained;
 mod mutation;
 mod prefix;

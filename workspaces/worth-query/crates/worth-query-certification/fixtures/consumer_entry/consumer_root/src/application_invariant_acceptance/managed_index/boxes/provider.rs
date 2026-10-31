@@ -1,6 +1,6 @@
 //! The same controlled provider contract delegates bounds to the Query-free numerical owner.
+use super::super::schema::{Catalog, Item};
 use super::{coordinates::Coordinates, query};
-use crate::application_invariant_acceptance::managed_index::schema::{Catalog, Item};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc, Mutex,
@@ -33,6 +33,8 @@ pub struct Calls {
     pub corrupt_summary: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub cold_lookup: std::sync::atomic::AtomicBool,
+    pub before_candidates: Mutex<Option<Box<dyn FnOnce() + Send>>>,
+    pub first_summary: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     capacity: AtomicUsize,
     builds: AtomicUsize,
     probe_validations: AtomicUsize,
@@ -114,6 +116,10 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
         probe: &Coordinates,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, Stop> {
+        let observe = self.0.first_summary.lock().unwrap().take();
+        if let Some(observe) = observe {
+            observe();
+        }
         self.0.summary_comparisons.fetch_add(1, Ordering::SeqCst);
         control.checkpoint(4)?;
         let probe =
@@ -194,6 +200,10 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
         probe: &Coordinates,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<(), Stop> {
+        let observe = self.0.before_candidates.lock().unwrap().take();
+        if let Some(observe) = observe {
+            observe();
+        }
         self.0.probe_validations.fetch_add(1, Ordering::SeqCst);
         control.checkpoint(1)?;
         Box2::new(probe.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))?;
