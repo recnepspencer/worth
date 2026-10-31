@@ -1034,12 +1034,14 @@ its complete associated-effect inventory. Failed admission returns
 slot; `into_home` explicitly cleans up refused component custody and returns
 that Native-readmitted Home. Attached memory bootstrap, legacy publication and
 branch mutation doors refuse before effects.
-World lifecycle `close(request)` uses the caller's original request, nonwaiting
+World lifecycle `close(request, &actual_owner)` uses the caller's original request, nonwaiting
 admission, and the existing publication frontier. Before sealing, contention or
 interruption preserves Open. After sealing, the same retained task owns each
 extracted head, its populated history slot, retirement phases and report;
 interruption preserves Closing. Ordinary weak ports stay unavailable while the
-close-only weak port can retry that same task. Unresolved business, pending
+close-only weak port can retry that same task. Its authentic same-owner borrow
+keeps the actual root alive through return; a foreign owner is refused without
+weak upgrade or root cloning. Unresolved business, pending
 bootstrap and owner-created component retirement custody refuse before sealing.
 This minimum also refuses Directory custody without a qualified durable handoff;
 it does not claim full request-aware Home or Native snapshot cleanup.

@@ -161,10 +161,12 @@ impl CompositeSupplyChainCourt {
             (0, 0, 0),
             "teardown: no pending attempts"
         );
+        let policy = crate::test_execution_policy::serial_request();
+        let request = worth_execution::ExecutionRequest::serial(&policy);
         let report = self
             .world
             .lifecycle_port()
-            .close()
+            .close(&request, &self.world)
             .expect("teardown: close World");
         assert_eq!(
             report.outstanding_observations(),

@@ -99,16 +99,12 @@ fn reused_children() -> (
 #[test]
 fn close_retains_extracted_head_and_cursor_across_busy_stop_and_retry() {
     let (_fixture, owner, child) = reused_children();
-    let owner = std::sync::Arc::new(owner);
-    let service: std::sync::Arc<dyn crate::lifecycle::RuntimeWorldLifecycleService + Send + Sync> =
-        owner.clone();
-    let lifecycle =
-        crate::lifecycle::RuntimeWorldLifecyclePort::new(std::sync::Arc::downgrade(&service));
-    let observed: std::sync::Arc<
-        dyn crate::lifecycle::RuntimeWorldObservationService + Send + Sync,
-    > = owner.clone();
-    let observation =
-        crate::lifecycle::RuntimeWorldObservationPort::new(std::sync::Arc::downgrade(&observed));
+    let public_owner = crate::lifecycle::RuntimeWorldOwner {
+        root: std::sync::Arc::new(owner),
+    };
+    let owner = &public_owner.root;
+    let lifecycle = public_owner.lifecycle_port();
+    let observation = public_owner.observation_port();
     let cell = owner
         .state
         .branches
@@ -122,7 +118,7 @@ fn close_retains_extracted_head_and_cursor_across_busy_stop_and_retry() {
         crate::test_execution_policy::serial_request().with_cancellation(cancellation.token());
     let request = ExecutionRequest::serial(&policy);
     assert!(matches!(
-        lifecycle.close(&request),
+        lifecycle.close(&request, &public_owner),
         Err(crate::lifecycle::RuntimeWorldServiceDenial::Denied(
             Denial::Busy
         ))
@@ -146,7 +142,7 @@ fn close_retains_extracted_head_and_cursor_across_busy_stop_and_retry() {
     );
     cancellation.cancel();
     assert!(matches!(
-        lifecycle.close(&request),
+        lifecycle.close(&request, &public_owner),
         Err(crate::lifecycle::RuntimeWorldServiceDenial::Denied(
             Denial::Stopped(worth_execution::MapKernelStop::Cancelled)
         ))
@@ -157,7 +153,9 @@ fn close_retains_extracted_head_and_cursor_across_busy_stop_and_retry() {
     );
     drop(held);
     let retry = crate::test_execution_policy::serial_request();
-    let report = lifecycle.close(&ExecutionRequest::serial(&retry)).unwrap();
+    let report = lifecycle
+        .close(&ExecutionRequest::serial(&retry), &public_owner)
+        .unwrap();
     assert_eq!(report.released_product_head_pins(), 2);
     assert_eq!(
         owner.state.retention.active_component_obligation_count(),
@@ -169,7 +167,7 @@ fn close_retains_extracted_head_and_cursor_across_busy_stop_and_retry() {
     );
     assert_eq!(owner.lifecycle_observation(), Phase::Closed);
     assert!(matches!(
-        lifecycle.close(&request),
+        lifecycle.close(&request, &public_owner),
         Err(crate::lifecycle::RuntimeWorldServiceDenial::Denied(
             Denial::AlreadyClosed
         ))

@@ -92,15 +92,12 @@ fn public_performed_recovery_is_exclusive_and_history_has_real_pin_counts() {
         inspection.history_snapshot().unwrap().installed_commits(),
         2
     );
-    let lifecycle = owner.lifecycle_port();
     let upgraded = owner.root.clone();
     drop(owner);
     assert!(inspection.history_snapshot().is_err());
     assert!(matches!(
-        lifecycle.close(&execution),
-        Err(RuntimeWorldServiceDenial::Denied(
-            crate::lifecycle::RuntimeWorldCloseDenial::OwnerUnavailable
-        ))
+        upgraded.close(&execution),
+        Err(crate::lifecycle::RuntimeWorldCloseDenial::OwnerUnavailable)
     ));
     use crate::lifecycle::{RuntimeWorldLifecycleService, RuntimeWorldRecoveryService};
     assert!(matches!(

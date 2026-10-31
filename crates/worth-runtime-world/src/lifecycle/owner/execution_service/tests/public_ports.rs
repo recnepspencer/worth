@@ -186,9 +186,12 @@ fn public_close_denies_saved_ports_without_closing_components() {
     let observation = owner.observation_port();
     let report = owner
         .lifecycle_port()
-        .close(&worth_execution::ExecutionRequest::serial(
-            &crate::test_execution_policy::serial_request(),
-        ))
+        .close(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &owner,
+        )
         .unwrap();
     drop(report);
     assert!(observation

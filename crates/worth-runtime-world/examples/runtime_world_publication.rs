@@ -224,7 +224,18 @@ fn publication_workflow() {
         head.basis().relational_basis().admission_identity()
     ); // Cleanup did not roll back owner truth.
     drop((root, head));
-    let close = world.lifecycle_port().close().unwrap();
+    let close_policy = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let close = world
+        .lifecycle_port()
+        .close(
+            &worth_execution::ExecutionRequest::serial(&close_policy),
+            &world,
+        )
+        .unwrap();
     assert_eq!(close.outstanding_observations(), 0);
     assert!(close.retained_records().is_empty());
     drop((close, world, installed, bridge, reference));
