@@ -113,9 +113,10 @@ fn an_already_latched_request_stop_dominates_a_later_preparation_panic() {
     let lease = ExecutionResourceLease::serial(grant(2, None)).unwrap();
     let request = ExecutionRequest::leased(&lease);
     let observed = Cell::new(false);
+    let checkpoint = Cell::new(None);
     let outer = request.run_native_with_checkpoint(|context| {
         let result = request.prepare_native::<(), ()>(|_| {
-            assert_eq!(context.checkpoint(3), Err(MapKernelStop::WorkCeiling));
+            checkpoint.set(Some(context.checkpoint(3)));
             panic!("later panic cannot replace the original request stop");
         });
         assert_eq!(
@@ -126,6 +127,7 @@ fn an_already_latched_request_stop_dominates_a_later_preparation_panic() {
         observed.set(true);
     });
     assert!(observed.get());
+    assert_eq!(checkpoint.get(), Some(Err(MapKernelStop::WorkCeiling)));
     assert!(matches!(
         outer,
         Err(WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling))
