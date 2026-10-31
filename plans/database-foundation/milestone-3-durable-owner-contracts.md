@@ -279,7 +279,10 @@ Native Query schema. Multi-batch seeding produces aggregate Query publication
 facts not present in World genesis. Complete all actual seeds and indexes,
 then commit the record before World bootstrap. World genesis binds that
 record-containing Native basis; the record's bootstrap locator still names
-the actual final seed commit. Persist portable admitted schema/program meaning
+the actual terminal bootstrap commit, including a possible activation-only
+tail after all seed rows were already flushed. Carry that actual issuer-returned
+commit identity and build indexes at the same terminal basis; never reuse an
+older seed locator or guess the current head. Persist portable admitted schema/program meaning
 and descriptive aggregate counts. Portable meaning here is the actual admitted
 ApplicationHomeBinding: package/schema CanonicalDigestIds, selected program
 identity/revision and complete closed-roster identities/revisions. Compare it

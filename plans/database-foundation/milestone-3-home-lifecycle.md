@@ -147,6 +147,170 @@ cutover and honest fixtures, then run focused provider tests, relevant Native
 regressions, formatting, scoped line caps, boundary and context checks. Fresh
 independent source review must approve the coherent batch before integration.
 
+## Existing Query publication and service readmission
+
+This batch follows the real Store NoPendingOwnerAdmission gate specified in
+[Durable owner contracts](milestone-3-durable-owner-contracts.md). It reopens
+the same initialized filesystem Home without initializer, seed-supplier or
+business-handler replay. It supports zero actual retained World recovery
+custody and explicitly admits only the supported persisted Query families.
+Full recovered unpublished custody, original-receipt retry, automatic
+checkpointing, transitions and full D8/D9/D11 certification remain successors.
+
+The adversary has genuine Native history beyond the selected World root.
+Business reads must use the selected World Native basis; the latest-Native
+scan independently restores durable outcome identity frontiers. Native 9 /
+World 8 with unpublished custody remains an owning refusal before service.
+An empty new Query cache or completion counts cannot erase that custody.
+
+Freeze the following construction boundary:
+
+- `PreparedHomeNativeMeaning::finish_existing_home_native_readmission` consumes
+  the prepared schema/program meaning, original phase, actual Native runtime,
+  recovered authority and recovery outcome. It refuses pending codec state,
+  performs real `readmit_recovered_initial_schema_installation`, and uses
+  `IndexInstallationPosture::RequireRecovered`. Its result is
+  `ReadmittedExistingHomeNativeMeaning`, never a fresh initializer capability.
+- The existing-only source attachment returns
+  `PreparedExistingHomeQueryRuntime`, with no initializer or seed-publication
+  methods. Share private product-equivalent mechanics where appropriate,
+  without converting existing preparation to the public fresh preparation
+  type or introducing an ownership mode. Only fresh attachment creates
+  `WorthQueryProgramActivationSeed`.
+- Existing attachment consumes an actual selected `ProductBranchObservation`.
+  Both Home preflight and source preparation use its admitted relational
+  basis through the existing owner-proven basis bind. Add only the source-owner
+  `prepare_product_source_at_basis(execution, &AdmittedRelationalBranchBasis)`
+  operation. Remove current-head lookup from Directory Home attachment; keep
+  existing unrelated Memory construction behavior.
+
+The one new Native Query entity is `worth-query-bootstrap-publication`, aspect
+`bootstrap-publication`, contract revision 1. Required fields are
+`format-version: UInt64` (exactly 1), `binding: String`,
+`terminal-bootstrap-commit: UInt64`, and UInt64 counts for principal bindings, identity
+indexes, application equality indexes, policy entities and policy relations.
+The binding is exactly the admitted portable ApplicationHomeBinding described
+in the shared contract, encoded by Query's closed versioned codec with checked
+lengths, canonical digest rendering, canonical roster order and no trailing
+data. Bound decoding/allocation by the actual row and original execution
+resources. Reconstruct through ApplicationHomeBinding's validator and readmit
+against the actual installed meaning; do not copy Store's private descriptor
+codec or serialize live binding ordinals/generations/build UUIDs.
+
+Append this entity after the maximum actually lowered platform kind and its
+aspect after all existing platform, projected and aggregate reservations.
+Preserve existing IDs; workflow extends beyond inbound completion through
+workflow-first + 40, so inbound+1 is not free. Derive allocation from actual
+lowering/registry state rather than duplicating offset arithmetic. Missing or
+unknown-format records and incompatible recovered schemas return owned refusal;
+recordless Homes never regain initialization opportunity or migrate silently.
+
+After all genuine seed batches and index construction, the fresh Directory
+`publish_home_query_seed` path commits the completion record in one additional
+ordinary Native transaction BEFORE World genesis. Its final-seed locator is
+the actual terminal bootstrap commit; the record transaction is a distinct successor
+and World genesis binds that record-containing basis. Do not impose this
+extra publication on ordinary Memory bootstrap. A failed completion publication
+retains the actual prepared state and causes, without retrying accepted seed
+work or exposing a service/root missing completion.
+
+Terminal bootstrap includes initial program activation. When all seed rows
+were already flushed, activation can be the last actual commit after the
+previous seed. Carry its actual issuer-returned commit identity; do not reuse
+an older last-seed identity or look up a guessed current head. If final rows
+are pending their later actual commit is terminal; otherwise choose the actual
+activation commit when issued, then the last accepted seed only if neither
+new commit occurred. Build/admit indexes at this terminal basis and set the
+publication's bootstrap_commit_id accordingly. The shared private publisher
+may be corrected to carry this genuine terminal identity; ordinary Memory
+still gains no extra completion transaction. Include the all-rows-flushed
+activation-tail case in the multi-batch filesystem proof.
+
+At the selected World basis, require exactly one completion entity. Admit its
+format/binding and both its creation and terminal-bootstrap immutable Native receipts;
+the completion transaction's sole parent must be that terminal bootstrap commit on
+the expected branch. Read actual program activation at the SAME selected
+basis, admit its revision and install its real entity identity in the fresh
+activation cell. Then construct the Query publication with the NEW installed
+binding identity, original terminal bootstrap commit and descriptive aggregate counts.
+Do not use checkpoint `recover_publication`, whose one-commit census cannot
+recover multi-batch aggregate publication. No index registration or bootstrap
+publication occurs on reopen.
+
+Before service, read the actual latest-Native Query idempotency rows with the
+existing bounded entity scan and cumulative original request. Validate exact
+field/intent shape, unique keys, unique nonzero outcome identities, checked
+effect counts and actual immutable creation receipts. Extend the existing
+`application_attempt/idempotency/recorded_intent.rs` owner decoder rather than
+add another grammar. Restore each actual outcome through the existing identity
+frontier operation before any new outcome may be minted. Zero and MAX refuse;
+MAX-1 leaves the next mint honestly exhausted. A partially advanced allocator
+frontier grants no service. This is a bounded full recovery scan, with typed
+owned exhaustion, not resumable paging. Leave completed receipt caches empty;
+an old exact retry may return CommittedReceiptNotRetained without handler replay.
+
+Also scan and refuse persisted unsupported Native families: actual outbox,
+inbound completion and aftermath entity kinds, and all workflow entity/relation
+kinds. Derive the thirteen workflow entity and twenty-seven relation kinds
+from exhaustive actual `WorkflowLayoutFields` and nested output/input layouts,
+without `..`, offsets, name matching or a second registry. This includes
+persisted workflow definition rows because their publication lifecycle has not
+been readmitted. Compiled workflow declarations remain allowed. Existing live
+outbox/aftermath support is unchanged; this is a stricter cold-readmission
+posture. Ordinary application principal/capability truth, activation,
+completion and admitted idempotency rows remain supported.
+
+Destination topology, extending existing owners:
+
+```text
+primary_graph/schema_layout/bootstrap_publication.rs [create: completion schema]
+primary_graph/bootstrap/home_publication/
+  record.rs       [create: descriptive stored record]
+  codec.rs        [create: closed portable binding grammar]
+  publication.rs  [create: fresh ordinary Native completion commit]
+  readmission.rs  [create: selected-basis record/activation admission]
+primary_graph/application_installation/home_preparation/
+  native.rs, source.rs [revise: fresh-only construction]
+  existing.rs         [create: existing-only concrete carriers/orchestration]
+primary_graph/workflow/schema/home_readmission.rs [create: owner-derived kind inventory]
+worth-query-host/src/application_home/opening/
+  fresh.rs       [move: same fresh recipe]
+  existing.rs    [create: actual Store-origin existing recipe]
+  service.rs     [move: common real custody/transition completion]
+```
+
+Keep latest-Native idempotency admission under its existing Query attempt
+owner; do not mix it into the selected-basis completion codec. Add semantic
+children there as needed to preserve the 400-line limit. Commit known
+successor recovery populations under their actual Query owners, without
+creating empty placeholders now.
+
+Host branches only on actual Store origin/refusal and consumes its same Home,
+incarnation and lease. ProvenAbsent keeps the one fresh opportunity;
+ExistingArtifacts invokes the existing-only recipe; consumed initialization
+remains refused. Extend the existing owning refusal and failure-close routes
+for each real preparation state. Common completion requires zero actual World
+custody and consumes the Store no-pending carrier into the concrete existing
+CustodyReadmitted/TransitionSettled progression before exposing public service.
+Seal new intermediate factories to exact Host orchestration paths and named
+certification controls; ordinary applications still import only Decl and Host.
+
+The external Decl/Host court and existing application_home testkit must prove:
+real multi-batch seed/commit/close/same-directory reopen/read/new commit; no
+initializer or supplier replay; separate writer/reader processes and restored
+identity frontiers; old-key exact retry with unchanged value and truthful
+receipt-not-retained refusal; unchanged meaning with changed build UUID;
+owned missing/unsupported completion, foreign binding, missing recovered index,
+activation mismatch, original-request stop/exhaustion and retained-World
+refusals. Produce actual persisted rows for each refused family. Require
+mutation-sensitive observations for both selected-basis attachment consumers
+and the D17 scan. No process-local cache or fabricated authority can stand in
+for recovery. Keep all failure logs; run scoped courts, formatter, line caps,
+boundary/context and affected compilation once the coherent patch is ready.
+Update `docs/build-an-application.md`, `docs/capability-index.md` and the Host
+README with existing-open semantics, ownership on refusal, stricter persisted
+family posture and receipt limitation, checking examples against real exports.
+
 Baseline: `083ab6f50f`. The branch is `codex/m3-phase3-home`. The prior
 `codex/m3-production-host` branch and its requirements-tracing commit
 `1111d78663` remain preserved. This plan adopts that commit's distinction:
