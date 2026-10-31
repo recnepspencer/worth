@@ -202,7 +202,7 @@ product branch identity and incarnation. It sits in the owner's own artifact:
 - a Relational commit carries it in a Relational-owned, opaque, size-bounded
   caller-association field. The canonical envelope also records the original
   durable semantic result defined in Phase 4. Both are sealed during original
-  preparation, under canonical artifact v3 and native checkpoint CHK15;
+  preparation, under canonical artifact v3 and native checkpoint CHK16;
 - a Signal advance carries it in its advance artifact (Phase 5);
 - later owners follow the same pattern.
 
@@ -348,10 +348,32 @@ published as one root decision.
 - **Sections.** The manifest has one section per owner. Each section uses the
   owner's own checkpoint format, with content-addressed members as in
   Milestone 2 D4. The Relational manifest becomes the Relational section
-  without changing its format.
+  using its current canonical format and declared clean version cutover.
 - **Coverage and crashes.** Each section covers a position of its owner's
   journals, and recovery replays only the tails. A crash at any point of a
   checkpoint leaves either the previous or the new checkpoint selected.
+- **Exact Native component obligations.** Capture selects current branch cells
+  and live owner-issued `ExternalComponentBasis` obligations at one coherent
+  owner capture boundary. It retains their actual roots, schema authorities
+  and source custody through checkpoint selection. It does not inherit the
+  previous checkpoint's entire physical union or retain unrelated observations,
+  transactions or prepared candidates merely because they share a root.
+  Acquiring or releasing an external obligation concurrently with capture has
+  an owner-linearized result. A selected obligation remains protected after
+  its original lease is released. A later checkpoint may omit it when no
+  current cell or live external obligation requires it.
+- **Cross-owner capture cut.** Before Native section capture, World's existing
+  checkpoint owner freezes its exact root/open-custody snapshot and the actual
+  external Native component leases needed by that snapshot. Retain that same
+  snapshot and leases through Home manifest selection; encode the World section
+  from this cut. Later admitted World publications remain journal tails. No
+  owner mutex spans I/O, and a Native header snapshot alone never certifies a
+  coherent Home cut or permits World to add an uncaptured historical reference.
+- **No partial Home manifest.** Until World's checkpoint section is implemented,
+  an attached or unclaimed Home with actual committed World journal heads
+  refuses checkpoint with `WorldSectionRequired` before Native capture or
+  manifest publication. Absence of heads grants no World reconciliation proof.
+  Close reports this failed checkpoint and follows D11, retaining journal tails.
 - **Triggers.** The host checkpoints automatically:
   - when any journal's tail since the last checkpoint passes a threshold
     (count and bytes, with defaults in the host limits);
@@ -900,6 +922,78 @@ home.
 - corrections;
 - program adoption.
 
+**Unchanged initial components for the Relational-only lane.** A directory
+Home may compose an owner-proven initial Empty Signal root and an owner-proven
+Bridge baseline without enabling any Signal/Bridge mutation. Arbitrary authored
+Signal graphs, even if an operation would leave them unchanged, remain
+unsupported until Phase 5. Refuse an unsupported seed before the first durable
+World bootstrap or owner effect; successful live bootstrap cannot create a
+Home whose required component meaning is already unrecoverable.
+
+Signal owns a versioned `RecordedSignalInitialEmptyRoot` description and its
+admission. The sole `SignalOwnerPartition` to `SignalOwner` transfer can mint
+the private initial-root witness only after inspecting actual state: one
+original root, initial generation, no restore/snapshot/fork/retirement/merge
+history, no allocated/authored nodes or operators, no authored values or
+installed definition, and no accepted Signal movement. The witness remains
+bound to that exact owner/cell/incarnation and actual initial semantics.
+Existing owner admission and cell access guard later export/readmission;
+closed, replaced or advanced cells refuse. Do not add an operation counter,
+second registry or a caller-supplied emptiness flag. The folded `definition_basis`
+alone does not prove any of these facts.
+
+The recorded description has a required owner schema version and InitialEmpty
+tag with its owner-defined stable schema/visibility/definition commitments.
+Its meaning is the completely unmodified initial Empty root, not an old
+process's admitted descriptor or pointer. On reopen, Signal verifies this
+recorded contract against the actual newly composed initial owner and mints a
+fresh runtime-local admitted basis with real retention. Neither World nor
+Store rewrites an old graph/runtime ordinal or substitutes an arbitrary
+current basis. Data is descriptive until this owner admission succeeds.
+
+Bridge owns a versioned `RecordedRuntimeWorldBaseline` description and
+readmission through its existing correspondence admission owner. Export
+requires the actual admitted baseline with `dependency=None`, no installed
+correspondence meaning, and the actual registered Native source. Record the
+stable adapter semantic identity and baseline role/semantic commitments;
+process runtime keys and admission identities are not durable authority.
+Readmission requires the same private Store-composed Native owner, its actual
+registered source/profile, and Signal's newly owner-admitted InitialEmpty
+basis. Bridge compares stable meaning and issues fresh Bridge admission using
+those actual owners. A missing source, changed adapter/role, installed
+dependency, unsupported version or stale/foreign live owner refuses. There is
+no public raw Native/Bridge exposure, graph-ID rewrite, generic restore trait
+or caller-provided source/fate pairing.
+
+World records both owner descriptions in its original Branch artifact, bound
+to original product identity, program revision and exact Native predecessor.
+Use World artifact v3 with mandatory seed fields; earlier v1/v2 development
+frames refuse before effects, with no defaults or migration. Store privately
+sequences Native recovery, Signal seed admission, Bridge baseline admission,
+then World reconciliation. Original World identities, heads, attempts and
+custody are unchanged. General nonempty Signal/Bridge authored recovery
+remains Phase 5's owner artifact contract and does not reuse this Empty proof.
+
+Place Signal meaning/export at existing `branch/recorded_initial_root.rs`
+and owner witness/admission beneath `branch/owner_services/`; expose only its
+branch facade. Place Bridge recorded baseline beneath existing
+`correspondence/runtime_world_admission/`; expose its existing facade. World
+seed encoding/readmission stays under its `durability/` owner; filesystem
+composition stays in Store's existing `world_section/` stage. Create only
+populated responsibilities, with no generic seed registry or placeholder tree.
+
+The real kill/reopen Home journey uses an actually Empty Signal program. It
+must recover the same World head and original unpublished Native custody with
+new owner-admitted local component bases, release or continue, then reopen
+again without handler execution or effect republication. Nonempty and
+modified-then-empty Signal worlds, snapshots/forks, installed Bridge
+dependencies, altered adapter/role, missing seed fields and foreign live
+owners must fail before effects for the intended reason. Actual seed bases
+must retain/release owners honestly under Home close. Owner tests and public
+construction fences support, but do not replace, this filesystem proof.
+Signal/Bridge READMEs, capability index and the Home build guide describe the
+Empty-only supported lane and typed refusal of authored state until Phase 5.
+
 Meanwhile, the bank world, Server and Signal-dependent examples
 use memory-only homes or the interim checkpoint path, as the audit lists.
 
@@ -1003,9 +1097,26 @@ re-executing anything.
 
 *Relational association*
 
+- **Original occurrence backing.** Before Native effects, reserve the actual
+  occurrence frame's charged backing/capacity through existing
+  `ExecutionByteBuffer` under the original execution/allocation policy. Retain
+  that same buffer in the original `ActiveAttemptResources` beside its durable
+  OpenAttempt and independently issued World identities. Candidate-known
+  receipt/root data may inform admission; Native's actual position and artifact
+  digest are unavailable until publication and must never be predicted.
+  After actual Native settlement, fill and seal that same buffer from the
+  original positioned result and retained original successor basis using
+  Native's descriptive retained-component export. A later Native head advance
+  cannot rebind the occurrence. Do not replace stopped backing, request fresh
+  grants to revive it, issue replacement World identities, or substitute the
+  latest Native basis. Refusal/unwind retains original unpublished custody and
+  actual owner evidence. Publish the World occurrence durably before live CAS;
+  recovery uses distinct owner capability adoption, never a fabricated live
+  `CommitResult`.
+
 - The canonical envelope gains caller association and the original semantic
   result under artifact v3; both authoritative and embedded checkpoint
-  projections carry them. CHK15 requires association discovery in its existing
+  projections carry them. CHK16 requires association discovery in its existing
   commit directory. Earlier formats refuse before effects (clean cutover).
 
 **Native semantic result and recovery admission**
@@ -1113,6 +1224,65 @@ before Native preparation; it cannot predict a future Native commit ID.
 Descriptions never admit a basis. No path rewrites an old runtime ID or falls
 back to the latest root.
 
+**Checkpoint coverage of exact Native components**
+
+Every canonical `RelationalCheckpointRoot` carries required, nonempty
+`recorded_components: Vec<RelationalBranchBasisDescriptor>`. These are exact
+current-cell or external-component observations in Native's existing canonical
+runtime frame. Distinct observations may select the same immutable root;
+identical observations are deduplicated and encoded in canonical order. Each
+must agree with that root's actual commit descriptor and schema authority.
+
+The manifest separately carries required `retained_empty_components`. Each
+entry contains an exact Empty descriptor and `schema_carrier_digest`. Empty
+has no invented commit, position, artifact digest or canonical root target.
+The referenced schema carrier must exist and match its schema commitment.
+
+The root directory contains exactly current canonical heads plus canonical
+roots required by captured external-component obligations. Every current
+canonical head is present; every additional root has an exact recorded
+component. Missing fields, duplicate or conflicting observations, foreign
+frames, target/root/schema disagreement and unbacked extra roots refuse.
+Capture obtains external descriptors from the same actual observations that
+created their existing retention obligations. Root equality, weak-registry
+membership and copied caller descriptions cannot replace this provenance.
+Extend existing retention records and capture ownership; add no registry,
+control-journal publication or independent authority.
+
+Readmission admits the directory and current heads without loading historical
+retained artifact bodies. The existing recovered-root inventory combines
+checkpoint component headers, current images and actual tail replay
+observations. Historical entries retain exact admitted directory/source
+identity and schema commitments; decoding does not make them operational bases.
+Exact component admission selects the original header, verifies its complete
+source artifact against receipt, position, digest, association and
+root/schema/reference commitments, then materializes only the demanded
+immutable region directory through existing root readmission. Real observation
+and component pins are acquired before exposure. Refusals retain original
+evidence and acquired custody. Unselected historical bodies and region payloads
+stay cold. Checkpoint coverage neither proves settlement nor authorizes World
+adoption.
+
+Capture remains in `durability/authority/checkpoint_capture/`, with exact
+obligation selection in existing `history/retention/`. Required headers and
+validation remain in `durability/{data,log/native_checkpoint_codec}/`. Lazy
+checkpoint/tail inventory and selected materialization belong under existing
+`durability/authority/runtime_rebuild/`. Existing recorded-component/publication
+admission remains the sole capability producer. Native README and capability
+index explain this lifetime, selective admission and version cutover.
+
+The adversarial proof externally retains an exact canonical predecessor,
+advances Native without publishing World's occurrence, checkpoints, kills and
+reopens. It admits the original predecessor and successor with original
+semantics and real pins, releases or continues actual World custody, and
+reopens again. Repeat with an externally retained Empty predecessor. Deleting
+an unrelated historical body cannot prevent selected admission; missing or
+corrupt selected material must refuse. Altered component axes/schema/root/source,
+missing headers, latest-head substitution or checkpoint-as-settlement must
+fail. Releasing the last external obligation permits a subsequent checkpoint
+to omit that historical component. Owner tests support these boundaries but
+do not replace the real Home filesystem journey.
+
 Extend the existing `DurabilityRecoveryAuthority` with
 `recover_with_authority(execution, plan)`, issuing existing
 `RecoveredRelationalRuntimeAuthority` only after actual reconstruction. Extend
@@ -1167,7 +1337,7 @@ worth-relational/src/
   history/commit/index_entry.rs               # required discovery metadata
   history/data/canonical_commit_envelope/     # both existing projections
   durability/canonical_commit_artifact/       # v3 strict readmission
-  durability/log/native_checkpoint_codec/     # CHK15 strict directory/image
+  durability/log/native_checkpoint_codec/     # CHK16 strict directory/image
   durability/authority/recovery/
     recorded_component.rs                    # exact source-backed roots
     recovered_publication.rs                 # private capability custody/minter
@@ -1206,9 +1376,11 @@ does not load historical bodies; only owner admission grants the capability.
 Continuation/release then follows the existing durable-disposition-before-live
 protocol. Recovery itself publishes no occurrence or disposition.
 
-Artifact v3/CHK15 are a clean undeployed-format cutover: older versions refuse
-before effects; no missing-field default, reinterpretation, in-place repair or
-automatic reinitialization. Implement shared semantic production/versioning,
+Artifact v3/CHK16 are a clean undeployed-format cutover: older versions,
+including CHK15, refuse before effects; no missing-field default,
+reinterpretation, in-place repair or automatic reinitialization. Canonical
+artifact v3 remains unchanged by the exact-component checkpoint amendment.
+Implement shared semantic production/versioning,
 then exact source/historical admission, then World adoption, then the real
 filesystem journey within existing Phases 3-4.
 
