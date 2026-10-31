@@ -737,6 +737,34 @@
       ],
       "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
       "private_subject": "Controls the actual private close contract through Closing/Closed, retains the same Root after public-owner loss, and checks owner capacity while exercising the read-only getter. This distinguishes genuine memory from unavailable ownership without a new production close-state test door."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/branch/reference_test_fixture/owner_inputs.rs",
+      "test": "branch::reference_test_fixture::owner_inputs::RealReferenceFixture::relational_runtime",
+      "constructors": ["real_fixture", "real_fixture_with_relational_runtime", "worth_relational::facade::runtime::RelationalRuntimeApi::builder().build()"],
+      "audit": "Coordinator exact private-owner placement against reviewed World 6bce98ad1b, 2026-10-31; world_result_cleanup_consumer_source_review approved this immutable fixture accessor and the three named private cleanup units only.",
+      "private_subject": "Immutably borrows the actual fixture-owned private _relational_runtime Arc allocation to authenticate cleanup. This accessor creates no runtime, reconstructed identity, or authority; existing ExecutionRequest and SerialRequest root uses remain unchanged. The inventory names the accessor method, not an additional test or public factory audience."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/close/result_snapshots/tests.rs",
+      "test": "lifecycle::close::result_snapshots::tests::result_cleanup_initialization_stop_and_current_refusals_keep_original_custody",
+      "constructors": ["published", "crate::branch::reference_test_fixture::real_fixture", "RuntimeWorldOwner::builder", "crate::test_execution_policy::serial_request", "worth_execution::ExecutionRequest::serial", "worth_relational::facade::runtime::RelationalRuntimeApi::builder"],
+      "audit": "Coordinator exact private-owner placement against reviewed World 6bce98ad1b, 2026-10-31; only this named unit and its local published/drive support are admitted.",
+      "private_subject": "Inspects the actual owner lifecycle mutex, task.current.original Arc identity, retained observer, and unchanged cursor/counts across original stop and foreign-owner refusal, plus private malformed receipt-only Published classification. External placement would require new task/cursor/custody controls or weaken these private oracles. Public bootstrap/publication/close workflow is setup, not an additional source-court family."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/close/result_snapshots/tests.rs",
+      "test": "lifecycle::close::result_snapshots::tests::result_cleanup_lost_observer_rejoins_same_cell_and_observes_complete_before_late_stop",
+      "constructors": ["published", "crate::branch::reference_test_fixture::real_fixture", "RuntimeWorldOwner::builder", "crate::test_execution_policy::serial_request", "worth_execution::ExecutionRequest::serial", "RelationalBranchBasisPort::begin_commit_result_snapshot_cleanup"],
+      "audit": "Coordinator exact private-owner placement against reviewed World 6bce98ad1b, 2026-10-31; only this named unit and its local published/drive support are admitted.",
+      "private_subject": "Controls the original current-result Arc and absent observer, observes genuine original Native release-cell completion, same-cell rejoin, AlreadyReleased count, and immediate terminal state before late stop. No synthetic progress or public observer-loss door is introduced."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/history/catalog/result_snapshot_cleanup.rs",
+      "test": "history::catalog::result_snapshot_cleanup::tests::result_cleanup_cursor_refuses_catalog_busy_missing_and_unpopulated_reserved_slot",
+      "constructors": ["RuntimeWorldOwnerConstructionContract::new", "RuntimeWorldBudgets::without_policy_limits", "RuntimeWorldHistoryCatalogContract::installed", "CompositeHistoryCatalog::new", "RuntimeWorldOwnerConstructionContract::issuer_mut().composite_commit", "Arc::new(OnceLock::new())"],
+      "audit": "Coordinator exact private-owner placement against reviewed World 6bce98ad1b, 2026-10-31; explicit named private inventory is required although this unit adds no root baseline row.",
+      "private_subject": "Controls the actual catalog mutex, private ordered-ID index and entries map, intentionally unpopulated reservation then missing indexed entry, and unchanged original frontier/ID. The identity is genuinely owner-issued; intentionally incomplete custody is the negative subject. External placement would require public corruption controls or weaken the oracle."
     }
   ]
 }

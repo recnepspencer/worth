@@ -1320,7 +1320,7 @@
 {"source":"crates/worth-runtime-bridge/src/test_support/host_policy.rs","module":"file","roots":["SerialRequest"]},
 {"source":"crates/worth-runtime-world/src/basis/admission_tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime","RuntimeBridgeRelationalSource","SignalGraph"]},
 {"source":"crates/worth-runtime-world/src/branch/reference_test_fixture.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime","RuntimeBridgeRelationalSource","SignalGraph"]},
-{"source":"crates/worth-runtime-world/src/branch/reference_test_fixture/owner_inputs.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-runtime-world/src/branch/reference_test_fixture/owner_inputs.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime","SerialRequest"]},
 {"source":"crates/worth-runtime-world/src/branch/retirement_tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-runtime-world/src/branch/retirement_tests/creation_cancellation.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-runtime-world/src/branch/retirement_tests/fork_creation.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
@@ -3005,5 +3005,6 @@
 {"source":"crates/worth-runtime-world/src/lifecycle/owner_tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-runtime-world/src/lifecycle/owner_tests/admission_race.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-runtime-world/src/lifecycle/owner_tests/bootstrap_boundary.rs","module":"file","roots":["ExecutionRequest"]},
-{"source":"crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs","module":"file","roots":["ExecutionRequest"]}
+{"source":"crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-runtime-world/src/lifecycle/close/result_snapshots/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]}
 ]
