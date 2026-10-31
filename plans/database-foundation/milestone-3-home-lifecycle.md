@@ -92,9 +92,10 @@ worth-store-relational/src/
 Store's private `new(serving) -> Arc<Self>` uses `Arc::new_cyclic` and retains
 weak_self. The existing certification observer is supplied by private
 `new_with_commit_read_observer` before construction; remove its mutable
-postconstruction setter. Cut over all four existing construction sites in
-production attachment, certification observer attachment and the two private
-test modules. No public source extraction, new control, registry, worker,
+postconstruction setter. Cut over shared and unshared production attachment,
+both corresponding certification observer attachments and the two existing
+private test modules. The unshared Home attachments use the same cyclic source
+constructor and preconstruction observer injection. No public source extraction, new control, registry, worker,
 counter, scheduler, or ownership mode belongs in this prerequisite.
 
 The following exact three private tests are a narrow specification exception
