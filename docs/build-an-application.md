@@ -3911,7 +3911,8 @@ When final publication must follow cleanup, call the settled parent's
 complete settlement, original installed meaning and authentic runtime, beside
 actual native close evidence. Its immutable `settlement()` includes the genuine
 root correspondence even for `StableReused` with `root_receipt() == None`.
-No original demand, controls or extra source-basis lease survives no-source close.
+No original demand or controls survive no-source close. The closed read-tree
+carrier retains its original readonly source basis as provenance.
 
 Close validates original allocation/branch and fresh cleanup authority; stale
 sources or changed selected programs do not prevent disposal. Fixed refusal
@@ -3953,7 +3954,7 @@ terminally unavailable (`RetainedBasisUnavailable`). Matching action meaning
 does not repair that basis; the application must run a fresh operation.
 
 To present several closed carriers together, retain one observation and deliver
-every carrier at it with `deliver_current_at(&request.at(&observation), policy)`.
+every carrier at it with `deliver_current_at(&request.at(&observation))`.
 It exists on closed no-projection Fixed and closed no-source carriers. It runs
 the same native gate as `deliver_current` at that caller's observation:
 no-projection Fixed re-resolves its original installed action, no-source checks
@@ -3978,13 +3979,42 @@ observation. Read every displayed fact at that same observation.
 let observation = request.retain_current_read()?;
 let pinned = request.at(&observation);
 for carrier in &closed_no_projection_fixed {
-    carrier.deliver_current_at(&pinned, policy)?; // installed action + full lineage
+    carrier.deliver_current_at(&pinned)?; // installed action + full lineage
 }
 for carrier in &closed_trees {
-    carrier.deliver_current_at(&pinned, policy)?; // selected typed root + full lineage
+    carrier.deliver_current_at(&pinned)?; // selected typed root + full lineage
 }
 let membership = pinned.query(membership_read).execute()?; // facts at the same basis
 ```
+
+For a retained record of a closed read tree's complete qualification, use
+`closed_tree.qualify_at(&request.at(&observation))`. It checks the selected typed
+root, every original root and dependent settlement, and original discovery at
+that exact observation under a fresh request scope. The returned
+`WorthQueryCompletedReadOutputs` retains readonly source and output history.
+Its `source_commit()` identifies the original read admission, `root_output_commit()`
+describes the root's own settlement, and `output_commit()` identifies the exact
+common observation you supplied. Those commits can differ. A receiptless
+`StableReused` root is legal; the fact does not assert producer reexecution.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let observation = request.retain_current_read()?;
+let pinned = request.at(&observation);
+let qualified = closed_tree.qualify_at(&pinned)?;
+let rows = pinned.query(output_read).execute()?;
+assert_eq!(qualified.output_commit(), observation.selected_commit());
+```
+
+Qualification is retrospective. A later edit does not change an issued fact;
+qualifying at the later observation must check the original whole tree again.
+A still-current root cannot stand in for stale dependents or discovery. Retaining
+an older genuine observation lets you qualify at that historical basis explicitly.
+The fact grants no current permission and cannot select, query or publish.
+Qualification never advances a producer or reopens cleanup. Refusal preserves
+the same closed carrier. Drop the carrier, facts and observations when finished
+to release their readonly history before closing the runtime.
 
 A refusal for one carrier leaves every carrier closed and unchanged. Only a
 typed native `Superseded` (Fixed `Stale`, no-source `Currentness(Output(..))`

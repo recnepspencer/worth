@@ -74,7 +74,7 @@ where
 {
     match custody.close_native(&delivery.runtime, delivery.branch, request) {
         Ok(closed) => {
-            // Retire original demand/controls/extra basis and empty native carriers
+            // Retire original demand/controls and empty native carriers
             // while this SAME runtime is still alive in the delivery core.
             drop(custody);
             Ok(WorthQueryClosedProgramOutputDelivery { closed, delivery })

@@ -169,9 +169,11 @@ where
     {
         let ProgramOutputDeliveryCore {
             settlement,
+            source,
             branch,
             runtime,
         } = self.delivery;
+        drop(source);
         close(
             Core {
                 custody: self.custody,

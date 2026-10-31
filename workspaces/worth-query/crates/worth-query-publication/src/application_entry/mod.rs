@@ -31,6 +31,7 @@ pub use correction::{
     WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
 };
 mod demand;
+pub use worth_query_execution::facade::primary_graph::WorthQueryCompletedReadOutputs;
 mod denial;
 mod elevation_approval;
 mod elevation_close;

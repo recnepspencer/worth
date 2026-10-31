@@ -98,25 +98,21 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         {
             return Err(refused(Kind::ForeignSettlement).into());
         }
-        let execution = phase
-            .checked_execution_request_for(&self.application().product_runtime)
-            .map_err(|cause| refused(Kind::ExecutionRequest(cause.into())))?;
-        let memory=execution.reserve_retained_memory(std::mem::size_of::<WorthQueryCompletedRequiredOutputs>() as u64)
-            .map_err(|cause|refused(Kind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::advancement_denial(cause))))?;
-        let settlements = std::iter::once(root).chain(dependents);
-        match dependencies {
-            Some(dependencies) => {
-                self.require_current_required_set(phase, access, scope, settlements, dependencies)?
-            }
-            None => self.require_current_output_settlements(phase, settlements)?,
-        }
-        execution.check_live().map_err(|cause|refused(Kind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause)))))?;
+        let (output, memory) = self.qualify_completed_output_set(
+            phase,
+            access,
+            scope,
+            root,
+            dependents,
+            dependencies,
+            std::mem::size_of::<WorthQueryCompletedRequiredOutputs>() as u64,
+        )?;
         Ok(WorthQueryCompletedRequiredOutputs {
             source: fulfilled.source_commit().clone(),
             intent: source.idempotency_binding(),
             root: fulfilled.output_commit().clone(),
             posture: fulfilled.posture(),
-            output: self.retain_application_read(),
+            output,
             _memory: memory,
         })
     }

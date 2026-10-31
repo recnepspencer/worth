@@ -3,8 +3,11 @@ pub(in crate::domain_computation::primary_graph) use registry::LivePublicationHe
 pub(in crate::domain_computation::primary_graph) use registry::PublicationHeadSelection;
 pub(in crate::domain_computation::primary_graph) use registry::RunningSelectedExecution;
 mod completed_outputs;
+mod completed_read;
+mod completed_set;
 mod currentness;
 pub use completed_outputs::WorthQueryCompletedRequiredOutputs;
+pub use completed_read::WorthQueryCompletedReadOutputs;
 mod fulfilled_root;
 pub use fulfilled_root::WorthQueryFulfilledRequiredRoot;
 mod readiness_delivery;
