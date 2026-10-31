@@ -13,3 +13,4 @@ pub use failure_close::{
 pub use refusal::{HomeCustodyReadmissionDenial, WorthQueryApplicationHomeOpenRefused};
 pub use request::{WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest};
 pub use runtime::WorthQueryApplicationHome;
+pub use worth_store_application::ApplicationHomeCloseDenial::WorldCompositionRetained;

@@ -8,9 +8,16 @@ use std::{
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
-    application_contribution::with_bootstrap_advancement_from_request,
-    application_entry::WorthQueryApplicationRequestExt,
+    application_contribution::{
+        with_bootstrap_advancement_from_request, WorthQueryAdvancementDenial,
+        WorthQueryManagedComputationResourceDenial,
+    },
+    application_entry::{
+        WorthQueryApplicationRequestExt, WorthQueryApplicationRequestQueryDenialKind,
+    },
     application_installation::ApplicationBuildIdentity,
+    primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind,
+    WorldCompositionRetained,
 };
 use worth_query_testkit_host::facade::host::{
     application_home as fixture, application_runtime_surface as identity, checkpoint_capture,
@@ -54,9 +61,57 @@ fn fresh_directory_home_journey() {
             .expect("the actual Home World selects the seeded Native row");
         assert_eq!(result.rows(), &["account-001".to_owned()]);
     }
-    let closed = home
+    let mut retained_runtime = home.runtime().clone();
+    let refused = home
         .close(&execution)
-        .unwrap_or_else(|refused| panic!("actual owning close: {refused:?}"));
+        .err()
+        .expect("the actual retained Query runtime keeps Store's composition alive");
+    assert!(matches!(
+        refused.directory_denial(),
+        Some(WorldCompositionRetained)
+    ));
+    {
+        let cancellation = WorthQueryCancellationSource::new();
+        let scope = WorthQueryRequestScope::new(
+            Some(Instant::now() + Duration::from_secs(60)),
+            cancellation.token(),
+        );
+        let principal = identity::inspection_authentication::authenticate(
+            retained_runtime.runtime().installed_schema(),
+            &scope,
+        );
+        let denial = retained_runtime
+            .request(&principal, &scope)
+            .query(identity::inspection_model::AccountRead(
+                "account-001".to_owned(),
+            ))
+            .execute()
+            .err()
+            .expect("ordinary weak World execution stays inert after sealing");
+        assert!(
+            matches!(
+                denial.kind(),
+                WorthQueryApplicationRequestQueryDenialKind::ExecutionRequest(
+                    WorthQueryAdvancementDenial::Resource(
+                        WorthQueryManagedComputationResourceDenial::NoActiveExecutionScope
+                    )
+                )
+            ),
+            "{denial:?}"
+        );
+    }
+    let legacy_denial = retained_runtime
+        .close_conditional_runtime()
+        .err()
+        .expect("the retained Query clone never acquires Store lifecycle custody");
+    assert_eq!(
+        legacy_denial.kind(),
+        WorthQueryConditionalRuntimeInstallationDenialKind::ApplicationHomeOwnsLifecycle,
+    );
+    drop(retained_runtime);
+    let closed = refused
+        .try_close(&execution)
+        .unwrap_or_else(|refused| panic!("same owning recovery closes: {refused:?}"));
     assert!(closed.is_closed());
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
 }
