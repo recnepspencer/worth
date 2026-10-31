@@ -6,7 +6,9 @@ mod historical_state_building;
 mod pin_assembly;
 mod read_views;
 mod resolution;
+mod retirement;
 mod state;
+pub(crate) use retirement::VisibilitySnapshotBasisRetirement;
 
 pub(crate) use exact_state_building::build_visibility_state;
 pub(crate) use historical_basis::HistoricalVisibilityBasis;

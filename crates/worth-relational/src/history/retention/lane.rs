@@ -1,4 +1,5 @@
 mod acquisition;
+mod retirement;
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, Weak};
@@ -242,26 +243,41 @@ impl RelationalRetentionGuard {
             return super::RelationalBranchRetentionTerminalOutcome::OwnerUnavailable;
         };
         let mut state = lock_lane(&self.lane);
-        if let Some(record) = state.obligations.remove(&self.obligation_id) {
-            state.release_roots(&record.root_ids);
-            debug_assert_eq!(
-                /* Proof: RelationalRetentionGuard is non-Clone and owns one private obligation id. acquire inserts the exact root ids; consuming transfer updates the record and held roots together. release removes that id once under the lane Mutex and terminal prevents a second release. */
-                record.root_ids,
-                self.roots.iter().map(|root| root.id()).collect::<Vec<_>>()
+        state.release_obligation(self.obligation_id, &self.roots, &owner);
+        drop(state);
+        drop(std::mem::take(&mut self.roots));
+        super::RelationalBranchRetentionTerminalOutcome::Released
+    }
+}
+
+impl RelationalBranchRetentionLaneState {
+    fn release_obligation(
+        &mut self,
+        obligation_id: u64,
+        roots: &[Arc<RelationalBranchRoot>],
+        owner: &RelationalBranchRetentionOwnerInner,
+    ) {
+        if let Some(record) = self.obligations.remove(&obligation_id) {
+            self.release_roots(&record.root_ids);
+            debug_assert!(
+                /* Proof: Acquisition records the exact owned root occurrences; consuming transfer updates that same record and guard together under the lane mutex. Both release paths call this single removal authority once before disarming the guard. */
+                record.root_ids.len() == roots.len()
+                    && record
+                        .root_ids
+                        .iter()
+                        .zip(roots)
+                        .all(|(id, root)| *id == root.id())
             );
             if record.active_operation {
-                state.active_operations = state
+                self.active_operations = self
                     .active_operations
                     .checked_sub(1)
                     .expect(/* Proof: Each operation guard increments on construction and decrements once on Drop; guards cannot be copied or released twice. */ "active branch-operation accounting remains balanced");
             }
-            record_release(&mut state.counters, record.kind);
+            record_release(&mut self.counters, record.kind);
             owner.ordinary_counters.record_release(record.kind);
             release_live_obligation_capacity(&owner);
         }
-        drop(state);
-        drop(std::mem::take(&mut self.roots));
-        super::RelationalBranchRetentionTerminalOutcome::Released
     }
 }
 

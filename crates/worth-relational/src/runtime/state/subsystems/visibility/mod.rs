@@ -170,15 +170,16 @@ impl VisibilitySubsystem {
         self.handles.insert_published(snapshot_id, binding);
     }
 
-    pub(crate) fn remove_published_handle(
+    pub(crate) fn remove_published_handle(&self, snapshot_id: SnapshotId) -> Option<()> {
+        self.handles
+            .remove_published_accounted(snapshot_id, &self.published_snapshot_capacity)
+    }
+    pub(crate) fn try_remove_original_result(
         &self,
-        snapshot_id: SnapshotId,
-    ) -> Option<SnapshotHandleBinding> {
-        let removed = self.handles.remove_published(snapshot_id);
-        if removed.is_some() {
-            self.published_snapshot_capacity.release();
-        }
-        removed
+        original: &std::sync::Arc<PublishedSnapshotReleaseObservation>,
+    ) -> Result<Option<bool>, ()> {
+        self.handles
+            .try_remove_original(original, &self.published_snapshot_capacity)
     }
 
     pub(crate) fn published_release_observation(

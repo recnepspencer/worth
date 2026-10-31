@@ -15,6 +15,13 @@ pub struct RelationalBranchBasisPort {
 }
 
 impl RelationalBranchBasisPort {
+    /// Begin cleanup without observing another runtime or granting close authority.
+    pub fn begin_commit_result_snapshot_cleanup(
+        &self,
+        result: std::sync::Arc<crate::transactions::data::CommitResult>,
+    ) -> super::RelationalCommitResultSnapshotCleanup {
+        super::RelationalCommitResultSnapshotCleanup::new(self.owner.clone(), result)
+    }
     /// Release only this immutable native-issued result's original registration.
     pub fn release_commit_result_snapshot(
         &self,

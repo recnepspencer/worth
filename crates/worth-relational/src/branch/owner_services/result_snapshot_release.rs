@@ -16,12 +16,57 @@ pub enum RelationalCommitResultSnapshotReleaseDenial {
     Snapshot(RelationalSnapshotReleaseDenial),
     ResultBindingMismatch,
     RegistrationMismatch,
+    RetirementInterrupted,
 }
 pub(super) fn release(
     runtime: &RelationalRuntime,
     result: &CommitResult,
 ) -> Result<RelationalCommitResultSnapshotRelease, RelationalCommitResultSnapshotReleaseDenial> {
     use RelationalCommitResultSnapshotRelease as Outcome;
+    use RelationalCommitResultSnapshotReleaseDenial as Denial;
+    validate(runtime, result)?;
+    let handle = &result.snapshot;
+    let original = result.snapshot_release_observation();
+    match runtime
+        .visibility
+        .published_release_observation(handle.snapshot_id())
+    {
+        Some(current) if !std::sync::Arc::ptr_eq(&current, original) => {
+            return Err(Denial::RegistrationMismatch)
+        }
+        None if original.was_released() => {
+            if !original.finish_retirement_blocking() {
+                return Err(Denial::RetirementInterrupted);
+            }
+            return Ok(Outcome::AlreadyReleased {
+                snapshot_id: handle.snapshot_id(),
+            });
+        }
+        None => {
+            return Err(Denial::Snapshot(
+                RelationalSnapshotReleaseDenial::UnknownSnapshot,
+            ))
+        }
+        Some(_) => {}
+    }
+    match runtime.snapshots().release_snapshot(handle) {
+        Ok(receipt) => Ok(Outcome::Released(receipt)),
+        Err(RelationalSnapshotReleaseDenial::UnknownSnapshot) if original.was_released() => {
+            if !original.finish_retirement_blocking() {
+                return Err(Denial::RetirementInterrupted);
+            }
+            Ok(Outcome::AlreadyReleased {
+                snapshot_id: handle.snapshot_id(),
+            })
+        }
+        Err(cause) => Err(Denial::Snapshot(cause)),
+    }
+}
+
+pub(super) fn validate(
+    runtime: &RelationalRuntime,
+    result: &CommitResult,
+) -> Result<(), RelationalCommitResultSnapshotReleaseDenial> {
     use RelationalCommitResultSnapshotReleaseDenial as Denial;
     let handle = &result.snapshot;
     if handle.runtime_instance_id() != runtime.runtime_instance_id() {
@@ -43,32 +88,5 @@ pub(super) fn release(
     if !original.matches(handle) || !runtime.visibility.handles.owns_published_release(original) {
         return Err(Denial::RegistrationMismatch);
     }
-    match runtime
-        .visibility
-        .published_release_observation(handle.snapshot_id())
-    {
-        Some(current) if !std::sync::Arc::ptr_eq(&current, original) => {
-            return Err(Denial::RegistrationMismatch)
-        }
-        None if original.was_released() => {
-            return Ok(Outcome::AlreadyReleased {
-                snapshot_id: handle.snapshot_id(),
-            })
-        }
-        None => {
-            return Err(Denial::Snapshot(
-                RelationalSnapshotReleaseDenial::UnknownSnapshot,
-            ))
-        }
-        Some(_) => {}
-    }
-    match runtime.snapshots().release_snapshot(handle) {
-        Ok(receipt) => Ok(Outcome::Released(receipt)),
-        Err(RelationalSnapshotReleaseDenial::UnknownSnapshot) if original.was_released() => {
-            Ok(Outcome::AlreadyReleased {
-                snapshot_id: handle.snapshot_id(),
-            })
-        }
-        Err(cause) => Err(Denial::Snapshot(cause)),
-    }
+    Ok(())
 }

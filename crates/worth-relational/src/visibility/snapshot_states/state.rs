@@ -89,8 +89,8 @@ impl VisibilitySnapshotStateKey {
 #[derive(Clone, Debug)]
 pub(crate) struct VisibilitySnapshotBasis {
     key: VisibilitySnapshotStateKey,
-    root: Arc<RelationalBranchRoot>,
-    _retained_observation: Option<crate::mvcc::RelationalBranchObservation>,
+    pub(super) root: Arc<RelationalBranchRoot>,
+    pub(super) _retained_observation: Option<crate::mvcc::RelationalBranchObservation>,
 }
 
 impl VisibilitySnapshotBasis {

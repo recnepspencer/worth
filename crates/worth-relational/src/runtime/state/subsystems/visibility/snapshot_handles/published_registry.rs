@@ -1,4 +1,5 @@
 use super::published_release::PublishedSnapshotReleaseObservation;
+mod original_cleanup;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 
@@ -80,8 +81,20 @@ impl PublishedSnapshotHandleRegistry {
         );
     }
 
-    pub(super) fn remove(&self, snapshot_id: SnapshotId) -> Option<SnapshotHandleBinding> {
-        self.lock().remove(snapshot_id)
+    pub(super) fn remove(
+        &self,
+        snapshot_id: SnapshotId,
+        capacity: Option<&super::PublishedSnapshotCapacityOwner>,
+    ) -> Option<()> {
+        let mut entries = self.lock();
+        let registration = entries.remove(snapshot_id)?;
+        registration.release.install_removed(registration.binding);
+        if let Some(capacity) = capacity {
+            capacity.release();
+        }
+        drop(entries);
+        registration.release.finish_retirement_blocking();
+        Some(())
     }
 
     pub(super) fn release_observation(
@@ -162,11 +175,10 @@ impl PublishedSnapshotHandleRegistry {
 }
 
 impl PublishedSnapshotHandleEntries {
-    fn remove(&mut self, snapshot_id: SnapshotId) -> Option<SnapshotHandleBinding> {
+    fn remove(&mut self, snapshot_id: SnapshotId) -> Option<PublishedSnapshotRegistration> {
         self.key_lookups = self.key_lookups.saturating_add(1);
         let registration = self.by_id.remove(&snapshot_id)?;
-        registration.release.mark_released();
-        let binding = registration.binding;
+        let binding = &registration.binding;
         self.mutations = self.mutations.saturating_add(1);
         self.key_lookups = self.key_lookups.saturating_add(1);
         if self.by_version.get(&binding.version_id) == Some(&snapshot_id) {
@@ -174,6 +186,6 @@ impl PublishedSnapshotHandleEntries {
             self.mutations = self.mutations.saturating_add(1);
             self.by_version.remove(&binding.version_id);
         }
-        Some(binding)
+        Some(registration)
     }
 }

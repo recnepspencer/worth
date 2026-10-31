@@ -161,7 +161,7 @@ pub(crate) struct AdmittedRelationalBranchBasisInner {
     pub(crate) retention: crate::history::retention::RelationalObservationRetentionObligation,
     pub(crate) retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
     pub(crate) publication_cell: super::RelationalBranchPublicationCell,
-    pub(super) registry_lease: OnceLock<super::basis_registry::RelationalBasisRegistryLease>,
+    pub(crate) registry_lease: OnceLock<super::basis_registry::RelationalBasisRegistryLease>,
 }
 
 impl AdmittedRelationalBranchBasis {

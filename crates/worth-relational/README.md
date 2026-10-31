@@ -406,3 +406,26 @@ Result clones share that fact; dropping a result does not automatically release
 its snapshot. Only this original registration is released, and independently
 admitted reads remain retained. The observation cell holds a weak registry
 reference and adds no serialized semantic field or runtime ownership cycle.
+
+For request-bounded cleanup, call the same basis service's
+`begin_commit_result_snapshot_cleanup(Arc<CommitResult>)`, then consume the task
+with `advance(&original_request, &actual_native_owner)`. `Pending` and `Refused`
+return the owning task; `Complete` returns the original result Arc and release
+outcome. Keep the original result and pending task in the owning Home/World
+progress across stops and lost responses. Native checks owner tenure, exact
+runtime/registry/cell affinity and immutable result axes without constructing an
+admitted runtime copy. Source readmission never reissues an old published cell.
+
+Removal stores the actual binding in that original cell before unlocking and
+releases capacity once. Cooperative retirement then relinquishes its observation,
+retention-lane obligation and basis-registry lease with nonwaiting owner steps.
+Normal synchronous release and closeout join the same retirement. Completion
+requires actual retirement; interrupted destructive retirement refuses. Independent
+readers keep their own custody. While each step borrows the real owner, live heads
+or the existing retired-root inventory retain its roots; provider destruction is
+outside that path. Final task/result/owner Drop remains unbudgeted Rust destruction.
+This task supplies no whole-Home close, memory-close or Native-finish guarantee.
+Materialized visibility caches may retain separate observations even after the
+original result and independent snapshot handles release. Native close then
+truthfully refuses `ReadCustodyRetained`; cache retirement remains a separate
+Native terminal-cleanup obligation.

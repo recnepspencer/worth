@@ -7,6 +7,57 @@ use crate::tests::support::*;
 use worth_execution::ExecutionRequest;
 
 #[test]
+fn result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy() {
+    use crate::facade::branch::{
+        RelationalCommitResultSnapshotCleanupDenial as Denial,
+        RelationalCommitResultSnapshotCleanupProgress as Progress,
+    };
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let runtime = durable_runtime_with_test_schema();
+    let result = std::sync::Arc::new(create_entity_outcome(
+        execution,
+        &runtime,
+        "actual-admitted-copy",
+    ));
+    let operation = runtime.owner_binding().admit().unwrap();
+    let admitted = crate::runtime::RelationalRuntime::admitted(
+        runtime.state_binding().upgrade().unwrap(),
+        operation,
+    );
+    let task = runtime
+        .owner_component_services()
+        .basis_port()
+        .begin_commit_result_snapshot_cleanup(result.clone());
+    let Progress::Refused {
+        task,
+        cause: Denial::NotOwner,
+    } = task.advance(execution, &admitted)
+    else {
+        panic!("actual read-copy tenure is not the runtime owner")
+    };
+    assert!(!result.snapshot_release_observation().was_released());
+    drop(admitted);
+    let mut task = task;
+    let mut completed = false;
+    for _ in 0..8 {
+        match task.advance(execution, &runtime) {
+            Progress::Pending { task: next, .. } => task = next,
+            Progress::Complete {
+                result: returned, ..
+            } => {
+                assert!(std::sync::Arc::ptr_eq(&returned, &result));
+                completed = true;
+                break;
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+    assert!(completed);
+    runtime.prepare_close().unwrap().finish();
+}
+
+#[test]
 fn native_custody_correction_result_cleanup_is_explicit_idempotent_and_keeps_external_read() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);

@@ -1,4 +1,6 @@
 use std::sync::Arc;
+mod retirement;
+pub(crate) use retirement::RelationalObservationRetirement;
 
 use crate::branch::{
     AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisInner,

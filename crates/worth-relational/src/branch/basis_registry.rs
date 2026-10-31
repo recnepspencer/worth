@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
+#[cfg(test)]
+mod retirement_tests;
 
 use crate::history::data::BranchId;
 
@@ -65,11 +67,12 @@ struct RelationalRetainedBasisEntry {
 }
 
 #[derive(Debug)]
-pub(super) struct RelationalBasisRegistryLease {
+pub(crate) struct RelationalBasisRegistryLease {
     registry: Weak<Mutex<RelationalRetainedBasisState>>,
     metrics: Weak<RelationalBranchBasisRegistryMetrics>,
     key: RelationalRetainedBasisKey,
     registration_id: u64,
+    retired: bool,
 }
 
 impl RelationalBranchBasisRegistry {
@@ -124,6 +127,7 @@ impl RelationalBranchBasisRegistry {
             metrics: Arc::downgrade(&self.metrics),
             key: key.clone(),
             registration_id,
+            retired: false,
         };
         if let Err(uninstalled) = basis.inner.registry_lease.set(lease) {
             std::mem::forget(uninstalled);
@@ -198,23 +202,49 @@ impl RelationalBranchBasisRegistryMetrics {
 
 impl Drop for RelationalBasisRegistryLease {
     fn drop(&mut self) {
+        if self.retired {
+            return;
+        }
         let Some(registry) = self.registry.upgrade() else {
             return;
         };
         let mut retained = registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let Some(metrics) = self.metrics.upgrade() else {
-            return;
+        self.remove_original(&mut retained);
+    }
+}
+
+impl RelationalBasisRegistryLease {
+    pub(crate) fn try_retire(&mut self) -> bool {
+        use std::sync::TryLockError;
+        if self.retired {
+            return true;
+        }
+        let Some(registry) = self.registry.upgrade() else {
+            self.retired = true;
+            return true;
         };
-        metrics.record_lookup();
-        let matches_registration = retained
-            .entries
-            .get(&self.key)
-            .is_some_and(|entry| entry.registration_id == self.registration_id);
-        if matches_registration {
-            retained.entries.remove(&self.key);
-            metrics.record_remove();
+        let mut retained = match registry.try_lock() {
+            Ok(guard) => guard,
+            Err(TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(TryLockError::WouldBlock) => return false,
+        };
+        self.remove_original(&mut retained);
+        self.retired = true;
+        true
+    }
+    fn remove_original(&self, retained: &mut RelationalRetainedBasisState) {
+        if let Some(metrics) = self.metrics.upgrade() {
+            metrics.record_lookup();
+            if retained
+                .entries
+                .get(&self.key)
+                .is_some_and(|entry| entry.registration_id == self.registration_id)
+            {
+                retained.entries.remove(&self.key);
+                metrics.record_remove();
+            }
         }
     }
 }

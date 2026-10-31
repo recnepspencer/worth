@@ -26,6 +26,9 @@ pub(crate) struct RelationalObservationRetentionObligation {
 }
 
 impl RelationalObservationRetentionObligation {
+    pub(crate) fn try_retire(&mut self) -> bool {
+        self._guard.try_retire_observation()
+    }
     pub(crate) fn acquire(
         binding: &super::RelationalBranchRetentionBinding,
         root: Arc<RelationalBranchRoot>,

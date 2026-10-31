@@ -18,6 +18,8 @@ pub use crate::branch::{
     RelationalBranchReferenceState, RelationalBranchRootDescriptor, RelationalBranchTarget,
     RelationalBranchTransactionAdmissionPort, RelationalBranchTransition,
     RelationalBranchTransitionSequence, RelationalBranchTransitionStop, RelationalBranchVersion,
+    RelationalCommitResultSnapshotCleanup, RelationalCommitResultSnapshotCleanupDenial,
+    RelationalCommitResultSnapshotCleanupPending, RelationalCommitResultSnapshotCleanupProgress,
     RelationalCommitResultSnapshotRelease, RelationalCommitResultSnapshotReleaseDenial,
     RelationalEntityMaterialization, RelationalForkDenial, RelationalForkOutcome,
     RelationalForkPort, RelationalForkSourceAuthority, RelationalForkSourceAuthorityMarker,

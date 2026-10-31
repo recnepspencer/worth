@@ -197,11 +197,23 @@ impl SnapshotHandles {
         self.published.insert(snapshot_id, binding);
     }
 
-    pub(crate) fn remove_published(
+    #[cfg(test)]
+    pub(crate) fn remove_published(&self, snapshot_id: SnapshotId) -> Option<()> {
+        self.published.remove(snapshot_id, None)
+    }
+    pub(crate) fn remove_published_accounted(
         &self,
         snapshot_id: SnapshotId,
-    ) -> Option<SnapshotHandleBinding> {
-        self.published.remove(snapshot_id)
+        capacity: &PublishedSnapshotCapacityOwner,
+    ) -> Option<()> {
+        self.published.remove(snapshot_id, Some(capacity))
+    }
+    pub(crate) fn try_remove_original(
+        &self,
+        original: &Arc<PublishedSnapshotReleaseObservation>,
+        capacity: &PublishedSnapshotCapacityOwner,
+    ) -> Result<Option<bool>, ()> {
+        self.published.try_remove_original(original, capacity)
     }
 
     pub(crate) fn published_versions(&self) -> Vec<VersionId> {
@@ -228,8 +240,10 @@ impl SnapshotHandles {
         snapshot_id: SnapshotId,
     ) -> Option<PublishedSnapshotCloseout> {
         self.published
-            .retains_handle(snapshot_id)
-            .then(|| PublishedSnapshotCloseout::new(&self.published, capacity, snapshot_id))
+            .release_observation(snapshot_id)
+            .map(|original| {
+                PublishedSnapshotCloseout::new(&self.published, capacity, snapshot_id, original)
+            })
     }
 
     #[cfg(test)]

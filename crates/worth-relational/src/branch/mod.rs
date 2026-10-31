@@ -92,7 +92,9 @@ pub use materialization::{
 };
 pub use owner_services::{
     RelationalBranchBasisPort, RelationalBranchLifecyclePort,
-    RelationalBranchTransactionAdmissionPort, RelationalCommitResultSnapshotRelease,
+    RelationalBranchTransactionAdmissionPort, RelationalCommitResultSnapshotCleanup,
+    RelationalCommitResultSnapshotCleanupDenial, RelationalCommitResultSnapshotCleanupPending,
+    RelationalCommitResultSnapshotCleanupProgress, RelationalCommitResultSnapshotRelease,
     RelationalCommitResultSnapshotReleaseDenial, RelationalMaterializationPort,
     RelationalOwnerLifecycleObservation, RelationalOwnerServicePorts,
 };

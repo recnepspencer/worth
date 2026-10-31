@@ -1,7 +1,12 @@
 //! Assembly boundary for the concrete Relational owner-service bundle.
 
 mod basis_port;
+mod result_snapshot_cleanup;
 mod result_snapshot_release;
+pub use result_snapshot_cleanup::{
+    RelationalCommitResultSnapshotCleanup, RelationalCommitResultSnapshotCleanupDenial,
+    RelationalCommitResultSnapshotCleanupPending, RelationalCommitResultSnapshotCleanupProgress,
+};
 pub use result_snapshot_release::{
     RelationalCommitResultSnapshotRelease, RelationalCommitResultSnapshotReleaseDenial,
 };

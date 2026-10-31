@@ -818,6 +818,16 @@ actual released fact, not absence. Foreign, mismatched or unknown bindings refus
 independent reads survive and result Drop does not auto-release. See
 [original result snapshot cleanup](../crates/worth-relational/README.md#release-an-original-commit-result-snapshot).
 
+For request-bounded original-result retirement, that same service exposes
+`begin_commit_result_snapshot_cleanup(Arc<CommitResult>)`. Its owning task's
+`advance(request, &actual_native_owner)` checks real owner/cell affinity and
+returns owning pending/refused progress or the original result on completion.
+The original cell retains actual removed custody until observation/lane/registry
+retirement finishes; removal alone never means cleanup complete. Home/World must
+retain the task and original result across stops and lost responses. Independent
+readers survive. Generic final Drop and whole Native/Home teardown remain outside
+this request-bounded advancement contract.
+
 ### Native record and aspect history pages
 
 The Relational owner provides a retained cursor inside one exact selected commit:
