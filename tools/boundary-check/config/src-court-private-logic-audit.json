@@ -2,6 +2,19 @@
   "incoming": "f7aacfe3d3d8692df1efaf34e91f4cff94788140",
   "audits": [
     {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/home_preparation/world/tests.rs",
+      "test": "domain_computation::primary_graph::application_installation::home_preparation::world::tests::refused_home_world_attachment_retains_nonempty_provider_instances",
+      "constructors": [
+        "WorthQueryProductRuntime::install",
+        "prepare_home_program",
+        "WorthQueryExecutionInstallationAuthority::prepare_primary_graph_with_relational_runtime_and_invariants",
+        "worth_relational::facade::runtime::RelationalRuntimeApi::builder",
+        "managed_bridge::install_application_bridge"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against reviewed b28aba574d, 2026-10-31; only the named nonempty provider-catalog refusal unit and its observed runtime root are admitted.",
+      "private_subject": "The actual Home attachment preflight is exercised with a genuine Native/Bridge/memory World, then its private HomeWorldAttachmentCustody::Prepared payload and bootstrap.managed_indexes catalog are inspected. The cfg(test)-only configured_instances_for_test observer compares the actual configured executor Arc data pointers; the real provider Drop proves exactly-once release when that same retained preparation is dropped. External placement would require a new production catalog/failure-payload observer or weaken the ownership oracle. No public workflow or fixture-wide root exemption is added."
+    },
+    {
       "source": "crates/worth-relational/src/branch/root_physical_linkage_tests.rs",
       "test": "branch::root_physical_linkage_tests::equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody",
       "constructors": [

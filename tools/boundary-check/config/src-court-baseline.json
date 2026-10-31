@@ -2135,6 +2135,7 @@
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/advancement/tests.rs","module":"file","roots":["ExecutionMap","ExecutionRequest"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/advancement/tests/member_lineage.rs","module":"file","roots":["ExecutionMap"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement/certification_tests.rs","module":"file","roots":["ExecutionMap"]},
+{"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/home_preparation/world/tests.rs","module":"file","roots":["WorthQueryProductRuntime"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/demand/unavailable/custody_order.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/counted_read_stops.rs","module":"file","roots":["WorthQueryProgramApplicationRuntime"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/discard_fault.rs","module":"file","roots":["WorthQueryApplicationPreviewSession"]},
