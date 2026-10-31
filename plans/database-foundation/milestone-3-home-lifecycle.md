@@ -150,13 +150,27 @@ independent source review must approve the coherent batch before integration.
 
 ## Existing Query publication and service readmission
 
-This batch follows the real Store NoPendingOwnerAdmission gate specified in
+This batch follows actual Native index-catalog durability/readmission and the
+real Store NoPendingOwnerAdmission gate specified in
 [Durable owner contracts](milestone-3-durable-owner-contracts.md). It reopens
 the same initialized filesystem Home without initializer, seed-supplier or
 business-handler replay. It supports zero actual retained World recovery
 custody and explicitly admits only the supported persisted Query families.
 Full recovered unpublished custody, original-receipt retry, automatic
 checkpointing, transitions and full D8/D9/D11 certification remain successors.
+
+Native currently registers index definitions only in its live catalog and
+restores them only from Native checkpoints. Actual canonical Store artifacts
+use the authoritative projection, omitting derived index generations; their
+tails do not restore the full definition inventory. World-backed close may
+lawfully have no checkpoint and does not currently create a combined manifest.
+Thus RequireRecovered cannot yet admit a genuinely initialized tail-only Home.
+Before this batch's Source GO, freeze and implement Native-owned persistence
+and readmission of the existing catalog through its canonical durability path,
+including checkpoint-plus-tail recovery. Reuse the actual catalog owner and
+existing generation build/demand after definition admission. Neither Query
+Register on reopen, an independent definition vector/registry, nor checkpoint
+on close alone closes this crash/recovery boundary.
 
 The adversary has genuine Native history beyond the selected World root.
 Business reads must use the selected World Native basis; the latest-Native
