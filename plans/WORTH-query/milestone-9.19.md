@@ -1678,6 +1678,14 @@ UTF-8/tie/sparse delivery, both-root denial and fresh commit pass. Affected mana
 49/49 (excluding the two separately qualified large cases) and Candidates9/9 pass.
 The other audit repairs and later Phase 3 obligations remain open.
 
+The [directory batching slice](milestone-9.19-directory-batch-plan.md) seals one
+ordered union of touched paths instead of installing each page independently.
+Owner6/6 proves actual65/128 branch allocations for64/128 dense touched pages,
+sparse11, empty far growth0, unchanged backing and original partial-seal refusal
+with released grants. Affected managed49/49 and Candidates9/9 pass. This removes
+duplicate ancestor construction; historical-coordinate churn and spatial grouping
+remain required repairs. Independent qa-loop, qa-tests and code-quality-qa review clears this slice.
+
 The [recorded-coverage slice](milestone-9.19-phase3-recorded-coverage-plan.md)
 records and verifies actual visited/pruned cuts and their matched-slot bijection.
 Public and maintained selection receivers and Native invariant projections consume

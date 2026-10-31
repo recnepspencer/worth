@@ -635,6 +635,26 @@
       "test": "summary_membership_cache_hits_honor_original_stops_and_same_graph_retries",
       "audit": "Exact Query 9.19 bounded region-membership owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-summary-membership-cost-repair-plan.md.",
       "private_subject": "Numeric immutable parent relations and actual original SDK controls only; facts obtained by the real bounded helper, no fabricated SourceTree, Slot, Native identity or cached membership. Fixed4KiB scratch, distinct receiver/eviction behavior, actual miss/hit stops and same-graph fresh retry replace retired Ready/jump ownership claims."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
+      "test": "working_page_batch_seals_shared_directory_ancestors_once",
+      "audit": "Query 9.19 directory-batch private-owner placement ruling by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-directory-batch-plan.md.",
+      "private_subject": "Actual private PageEdit dense/sparse union-of-path allocation counts, original SDK seal invoices, untouched Arc cells, tombstones, empty growth and old/sibling isolation; no Source, graph identity or read authority synthesized."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
+      "test": "working_page_batch_refusal_preserves_predecessor_and_releases_partial_seal",
+      "audit": "Query 9.19 directory-batch private-owner placement ruling by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-directory-batch-plan.md.",
+      "private_subject": "Original SDK work refusal after actual partial PageEdit seal progress, unchanged predecessor/sibling, scratch-grant release and funded same-data fresh-request retry; no synthetic Source or publication authority."
     }
   ]
 }

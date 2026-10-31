@@ -97,40 +97,6 @@ impl<Node: Copy> NodePages<Node> {
         }
         Ok(None)
     }
-
-    fn install(
-        &mut self,
-        execution: &ExecutionRequest<'_, '_>,
-        page: usize,
-        replacement: Option<Arc<Directory<Node>>>,
-        control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<(), Stop> {
-        let mut root = self.root.clone();
-        let mut height = self.height;
-        while page >> height > 0 {
-            root = Some(retain(
-                execution,
-                Entry::Branch {
-                    left: root,
-                    right: None,
-                },
-                control,
-            )?);
-            height += 1;
-        }
-        let root = install(
-            execution,
-            root.as_deref(),
-            height,
-            page,
-            replacement,
-            control,
-        )?;
-        control.poll()?;
-        self.root = root;
-        self.height = height;
-        Ok(())
-    }
 }
 
 fn retain<Node>(
@@ -187,40 +153,6 @@ fn build<Node: Copy>(
         scratch,
         start + (1 << (height - 1)),
         height - 1,
-        control,
-    )?;
-    branch(execution, left, right, control)
-}
-
-fn install<Node: Copy>(
-    execution: &ExecutionRequest<'_, '_>,
-    previous: Option<&Directory<Node>>,
-    height: u32,
-    page: usize,
-    replacement: Option<Arc<Directory<Node>>>,
-    control: &WorthQueryManagedIndexControl<'_>,
-) -> Result<Option<Arc<Directory<Node>>>, Stop> {
-    control.checkpoint(1)?;
-    if height == 0 {
-        return Ok(replacement);
-    }
-    let (mut left, mut right) = previous
-        .map(|directory| match &directory.entry {
-            Entry::Branch { left, right } => (left.clone(), right.clone()),
-            Entry::Page(_) => unreachable!("private branch directory height"),
-        })
-        .unwrap_or_default();
-    let selected = if page & (1 << (height - 1)) == 0 {
-        &mut left
-    } else {
-        &mut right
-    };
-    *selected = install(
-        execution,
-        selected.as_deref(),
-        height - 1,
-        page,
-        replacement,
         control,
     )?;
     branch(execution, left, right, control)

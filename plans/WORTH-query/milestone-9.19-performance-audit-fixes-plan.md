@@ -29,8 +29,13 @@ Required repairs and current evidence:
    pass unchanged25%/50% whole original SDK guards; no universal depth bound is
    claimed. Source bound8192 and full cold validation remove fixture ceilings;
    sparse Parent cap16 remains. Affected managed49/49 and Candidates9/9 pass.
-5. Directory updates: batch touched pages so each shared directory ancestor copies
-   once, with original funding/controls and old-root/sibling isolation.
+5. **Verified and independently cleared:** [Directory batching](milestone-9.19-directory-batch-plan.md)
+   seals the ordered union of touched paths, copies every affected ancestor once,
+   preserves untouched cells and prunes empty far growth without discarded
+   wrappers. Owner6/6 proves actual dense65/128 and sparse11 branch allocations,
+   typed original partial-seal refusal, grant release and old/sibling isolation.
+   Affected managed49/49 and Candidates9/9 pass. Historical coordinate depth and
+   spatial grouping remain separate obligations.
 6. Spatial grouping: improve demonstrated poor grouping using ordinary spatial
    heuristics and qualify representative/adversarial distributions. No universal
    cheap-empty-query promise: not every spatial query/distribution can be selective.

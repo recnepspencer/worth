@@ -3,11 +3,14 @@ use super::*;
 use crate::domain_computation::primary_graph::access_strategy::ordered_storage as maps;
 use std::{cell::RefCell, rc::Rc};
 use worth_execution::ExecutionOrderedMap;
+mod seal;
 
 pub(in super::super::super) struct PageEdit<'a, Node> {
     base: NodePages<Node>,
     execution: ExecutionRequest<'a, 'a>,
     touched: ExecutionOrderedMap<usize, Rc<WorkingPage<'a, Node>>>,
+    #[cfg(test)]
+    sealed_branches: Rc<Cell<usize>>,
 }
 struct WorkingPage<'a, Node> {
     open: RefCell<OpenPage<'a, Node>>,
@@ -26,6 +29,8 @@ impl<'a, Node: Copy> PageEdit<'a, Node> {
             base,
             execution,
             touched: ExecutionOrderedMap::default(),
+            #[cfg(test)]
+            sealed_branches: Rc::new(Cell::new(0)),
         }
     }
     pub(in super::super) fn execution(&self) -> ExecutionRequest<'a, 'a> {
@@ -105,31 +110,34 @@ impl<'a, Node: Copy> PageEdit<'a, Node> {
         }))
     }
     pub(in super::super::super) fn seal(
-        mut self,
+        self,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<NodePages<Node>, Stop> {
+        control.poll()?;
+        if self.touched.is_empty() {
+            return Ok(self.base);
+        }
+        let mut height = self.base.height;
         for (key, page) in self.touched.iter() {
             control.checkpoint(1)?;
-            let (builder, occupied) = {
-                let mut open = page.open.borrow_mut();
-                (
-                    open.builder.take().expect("one consuming page seal"),
-                    open.occupied,
-                )
-            };
-            let values = builder
-                .seal()
-                .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
-            let replacement = if occupied == 0 {
-                None
-            } else {
-                Some(retain(&self.execution, Entry::Page(values), control)?)
-            };
-            self.base
-                .install(&self.execution, *key, replacement, control)?;
+            if page.open.borrow().occupied != 0 {
+                height = height.max(usize::BITS - key.leading_zeros());
+            }
         }
+        let root = seal::Batch {
+            pages: self
+                .touched
+                .iter()
+                .take_while(|(key, _)| **key >> height == 0)
+                .peekable(),
+            execution: self.execution,
+            control,
+            #[cfg(test)]
+            allocations: &self.sealed_branches,
+        }
+        .subtree(self.base, 0, height)?;
         control.poll()?;
-        Ok(self.base)
+        Ok(NodePages { root, height })
     }
 }
 
