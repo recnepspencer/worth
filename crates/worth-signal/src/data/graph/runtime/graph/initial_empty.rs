@@ -6,7 +6,6 @@ impl SignalGraph {
         self.initial_empty_origin
             && self.arena.nodes.is_empty()
             && self.arena.active_nodes == 0
-            && self.aspect_lowering_owner.is_none()
             && self.conditional_dependency_versions.is_empty()
             && self.authorization_policy_identities.len() == 0
     }
