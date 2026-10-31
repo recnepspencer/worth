@@ -81,7 +81,7 @@ impl UnrecoveredRelationalSection {
         placement: AdmittedRecordPlacementPolicy,
         checkpoint_selection: Arc<dyn RelationalCheckpointSelectionSource>,
     ) -> Result<Self, RelationalRuntimeConstructionDenial> {
-        let source = Arc::new(crate::cold_source::StoreColdSource::new(serving.clone()));
+        let source = crate::cold_source::StoreColdSource::new(serving.clone());
         Self::attach_with_source(definition, serving, placement, source, checkpoint_selection)
     }
     pub(super) fn attach_with_source(
