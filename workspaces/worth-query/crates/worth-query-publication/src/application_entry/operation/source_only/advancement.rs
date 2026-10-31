@@ -143,7 +143,8 @@ where
                 {
                     Resolution::AlreadyCommitted(_) => {}
                     Resolution::Unseen => return Ok(Step::Progress),
-                    resolution @ Resolution::IntentDrift => {
+                    resolution @ (Resolution::IntentDrift
+                    | Resolution::ProductPreparationPending(_)) => {
                         self.keyed_terminal = Some(resolution);
                         return Ok(Step::Terminal);
                     }

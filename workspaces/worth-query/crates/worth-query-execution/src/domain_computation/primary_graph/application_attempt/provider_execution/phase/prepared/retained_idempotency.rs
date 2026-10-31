@@ -45,6 +45,12 @@ where
             denial,
             DenialStage::DecisionReadSet,
         )),
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy))
+        | Ok(Err(IdempotencyDenial::PreparationBusy)) => {
+            Some(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::idempotency_preparation_busy(),
+            ))
+        }
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Absent)) => None,
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt))) => {
             let Ok(causality) = resolve_exact_committed_aftermath(aftermath_causality, &receipt)
@@ -72,6 +78,15 @@ where
             Some(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
             ))
+        }
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage })) => {
+            Some(
+                WorthQueryApplicationCommitOutcome::ProductPreparationPending(
+                    application
+                        .primary_provider
+                        .preparation_pending(&product, handle, stage),
+                ),
+            )
         }
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Unpublished)) => {
             Some(denied(DenialStage::Idempotency))

@@ -23,7 +23,7 @@ use crate::domain_computation::managed_run::WorthQueryRecoveryResourceTerminal;
 /// Constructed only by
 /// [`resolve_admitted_application_idempotency`](crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime::resolve_admitted_application_idempotency).
 /// Not `Clone`: a one-shot read result must not be replayable indefinitely.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct WorthQueryAdmittedIdempotencyRead {
     binding: WorthQueryApplicationIdempotencyBinding,
     resolution: WorthQueryApplicationIdempotencyResolution,

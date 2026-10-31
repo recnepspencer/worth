@@ -202,6 +202,8 @@ fn cause(
         | Decision::Suppressed(_)
         | Decision::Deferred(_)
         | Decision::OperationProductUnpublished(_, _)
+        | Decision::OperationPreparationPending(_, _)
+        | Decision::OperationPreparationRefused(_, _)
         | Decision::OperationCommitted(_)
         | Decision::OperationAlreadyCommitted(_) => None,
         Decision::OperationRetryable(_, cause) | Decision::OperationIndeterminate(_, cause) => {
@@ -322,6 +324,12 @@ fn terminal(
         WorthQueryRetainedConditionalDecision::OperationCleanupRequired(_, _)
         | WorthQueryRetainedConditionalDecision::OperationIndeterminate(_, _) => {
             WorthQueryConditionalExecutionTerminal::Indeterminate
+        }
+        WorthQueryRetainedConditionalDecision::OperationPreparationPending(_, _) => {
+            WorthQueryConditionalExecutionTerminal::Indeterminate
+        }
+        WorthQueryRetainedConditionalDecision::OperationPreparationRefused(_, _) => {
+            WorthQueryConditionalExecutionTerminal::Failed
         }
         WorthQueryRetainedConditionalDecision::OperationProductUnpublished(_, _) => {
             WorthQueryConditionalExecutionTerminal::ProductUnpublished

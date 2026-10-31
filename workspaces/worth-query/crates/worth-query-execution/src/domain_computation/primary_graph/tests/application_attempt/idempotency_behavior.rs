@@ -157,10 +157,10 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
                 .into_resolution()
         })
         .expect("the fixture read owns its installed host call");
-    assert_eq!(
+    assert!(matches!(
         resolution,
         WorthQueryApplicationIdempotencyResolution::IntentDrift
-    );
+    ));
 }
 
 #[test]

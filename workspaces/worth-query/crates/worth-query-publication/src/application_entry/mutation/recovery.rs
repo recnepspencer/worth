@@ -22,6 +22,9 @@ use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 /// read, publication or cleanup failure remain in the recovery outcome instead.
 #[derive(Debug)]
 pub enum WorthQueryApplicationRecoveryRequestDenial {
+    ProductPreparationPending(
+        worth_query_execution::facade::primary_graph::WorthQueryProductPreparationPending,
+    ),
     Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     Request(WorthQueryApplicationRequestMutationDenial),
     /// Workflow control and transition-bound requests need their workflow owner.

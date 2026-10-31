@@ -54,7 +54,7 @@ pub use relational_publication::{
 };
 pub(crate) use request_control::{
     prepare_conditional_publication, publish_conditional_definition,
-    WorthQueryPreparedProductPublication,
+    WorthQueryPreparedProductPublication, WorthQueryProductPublicationRequestControl,
 };
 
 pub(crate) use resources::test_product_world_resources_with_history_limit_for_test;

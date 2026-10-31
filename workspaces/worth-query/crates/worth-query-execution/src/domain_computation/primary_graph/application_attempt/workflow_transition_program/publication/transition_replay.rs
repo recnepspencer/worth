@@ -114,11 +114,14 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 admission,
                 idempotency.bind_workflow_transition(&probe_identity),
             )?;
-            if matches!(
-                probe.into_resolution(),
-                WorthQueryApplicationIdempotencyResolution::Unseen
-            ) {
-                return Ok(None);
+            match probe.into_resolution() {
+                WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
+                WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+                    )))
+                }
+                _ => {}
             }
         }
         let replays = replays.materialize();
@@ -141,6 +144,11 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         for (replay, resolution) in replays.iter().zip(resolutions) {
             match resolution.into_resolution() {
                 WorthQueryApplicationIdempotencyResolution::Unseen => {}
+                WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+                    )))
+                }
                 WorthQueryApplicationIdempotencyResolution::IntentDrift => drift = true,
                 WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
                     return Ok(Some(runtime.primary_provider.graph.with_runtime(
@@ -337,6 +345,11 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 } else {
                     None
                 }
+            }
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                Some(WorkflowProgressOutcome::Application(
+                    WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+                ))
             }
             WorthQueryApplicationIdempotencyResolution::IntentDrift => Some(
                 WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(

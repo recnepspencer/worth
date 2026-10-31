@@ -1,7 +1,5 @@
-//! Public Host inputs reuse the existing genuine identity/read fixture.
-use super::application_runtime_surface::{
-    self as identity, HostIdentitySchema, HostIdentitySurface,
-};
+//! A concrete declared native Home program with genuine principal and account seed.
+use super::application_runtime_surface as identity;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -17,20 +15,38 @@ use worth_query_host::facade::{
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
 
+pub mod balance_query;
+mod native_contribution;
+pub mod schema;
+use schema::HomeIdentitySchema;
+pub mod native_mutation;
+use native_contribution::HomeNativeSurface;
 pub struct HomeProgram;
+pub struct BalanceCompletion;
+impl ApplicationActionDelivery<HomeIdentitySchema, native_mutation::SetBalanceBinding>
+    for BalanceCompletion
+{
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "worth.query.host.home.balance-completion.v1";
+}
 struct IdentityFeature;
-impl ApplicationFeature<HostIdentitySchema> for IdentityFeature {
+impl ApplicationFeature<HomeIdentitySchema> for IdentityFeature {
     type Inputs = ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "worth.query.host.home-identity.feature.v1";
 }
-impl ApplicationProgramDefinition<HostIdentitySchema> for HomeProgram {
-    type Contributions = (HostIdentitySurface,);
+impl ApplicationProgramDefinition<HomeIdentitySchema> for HomeProgram {
+    type Contributions = (HomeNativeSurface,);
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.host.home-identity.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![ApplicationFeatureSpec::root::<HostIdentitySchema, IdentityFeature>().finish()]
+        vec![
+            ApplicationFeatureSpec::root::<HomeIdentitySchema, IdentityFeature>()
+                .action::<native_mutation::SetBalanceBinding, BalanceCompletion>()
+                .finish_action()
+                .finish(),
+        ]
     }
 }
 pub fn location() -> std::path::PathBuf {
@@ -40,17 +56,18 @@ pub fn request(
     location: std::path::PathBuf,
     build: ApplicationBuildIdentity,
     initialized: Arc<AtomicUsize>,
-) -> WorthQueryApplicationHomeRequest<'static, HostIdentitySchema, HomeProgram> {
-    let declaration = HostIdentitySchema::declaration().unwrap();
+    contacts: Arc<AtomicUsize>,
+) -> WorthQueryApplicationHomeRequest<'static, HomeIdentitySchema, HomeProgram> {
+    let declaration = HomeIdentitySchema::declaration().unwrap();
     WorthQueryApplicationHomeRequest::new(
         WorthQueryApplicationHomeLocation::Directory(location),
-        ApplicationProgramAuthoring::<HostIdentitySchema, HomeProgram>::begin()
+        ApplicationProgramAuthoring::<HomeIdentitySchema, HomeProgram>::begin()
             .with_schema(&declaration)
             .validated_program()
             .unwrap(),
         WorthQueryApplicationProgramRoster::new(),
         declaration,
-        ((),),
+        (contacts,),
         build,
         WorthQueryInMemoryApplicationLimits::new(
             identity::world_resources(),
@@ -59,7 +76,7 @@ pub fn request(
         ),
         move |_, graph, schema| {
             initialized.fetch_add(1, Ordering::SeqCst);
-            identity::seed_identity_graph(graph, schema)
+            schema::seed(graph, schema)
         },
     )
 }

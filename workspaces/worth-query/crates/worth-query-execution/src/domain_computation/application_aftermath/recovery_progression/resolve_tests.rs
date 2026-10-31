@@ -59,9 +59,9 @@ fn matching_admitted_idempotency_read_resolves() {
 
     let resolution =
         resolve_recovery_handle(handle, &authority, read).expect("matching read resolves");
-    assert_eq!(
+    assert!(matches!(
         resolution,
         WorthQueryApplicationIdempotencyResolution::Unseen
-    );
+    ));
     registry.assert_no_live_handles();
 }

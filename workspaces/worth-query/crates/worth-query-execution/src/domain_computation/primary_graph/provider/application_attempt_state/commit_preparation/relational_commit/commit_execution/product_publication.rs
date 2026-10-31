@@ -185,7 +185,7 @@ pub(super) fn publish(
     .map_err(|_| denied("product activation rejected combined publication"))?
 }
 
-fn prepare_lineage_slot(
+pub(super) fn prepare_lineage_slot(
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     planned: &worth_runtime_world::facade::PlannedProductReferenceSuccessor,

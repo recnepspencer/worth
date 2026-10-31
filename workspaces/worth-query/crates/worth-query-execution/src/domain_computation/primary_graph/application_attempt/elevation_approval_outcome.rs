@@ -231,6 +231,9 @@ pub enum WorthQueryElevationApprovalOutcome {
     ),
     /// Some owners moved, but the product head did not. Recover publication.
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     /// Nothing was written; the cause says why.
     NoEffect(
         super::WorthQueryApplicationNoEffect,
@@ -296,6 +299,12 @@ pub(in crate::domain_computation::primary_graph) fn approved_outcome(
         }
         WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
             WorthQueryElevationApprovalOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner) => {
+            WorthQueryElevationApprovalOutcome::ProductPreparationPending(owner)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationRefused(owner) => {
+            WorthQueryElevationApprovalOutcome::ProductPreparationRefused(owner)
         }
         WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
             WorthQueryElevationApprovalOutcome::NoEffect(no_effect, binding.into_requested())

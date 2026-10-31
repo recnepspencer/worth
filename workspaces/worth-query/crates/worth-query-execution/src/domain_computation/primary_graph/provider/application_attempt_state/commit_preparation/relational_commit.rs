@@ -67,3 +67,6 @@ pub(in crate::domain_computation::primary_graph::provider) fn publish_recovered(
 pub(in crate::domain_computation::primary_graph) use evidence_seal::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
+
+pub(in crate::domain_computation) use commit_execution::QueryPreparingApplicationCommit;
+pub(in crate::domain_computation::primary_graph::provider) use commit_execution::RetainedQueryDurablePreparation;

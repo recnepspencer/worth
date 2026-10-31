@@ -262,6 +262,8 @@ where
     };
     if matches!(&outcome, WorthQueryApplicationMutationOutcome::Commit(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_)
+        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductPreparationPending(_)
+        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductPreparationRefused(_)
 ))
         && let Some(preparation) = source.take_unpublished() {
             return WorthQueryApplicationPerformedMutationOutcome::Blocked(super::performed_source::WorthQueryBlockedProgramSource { _preparation: preparation, payload: demand, outcome });

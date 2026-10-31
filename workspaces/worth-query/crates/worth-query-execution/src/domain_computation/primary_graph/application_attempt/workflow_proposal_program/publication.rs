@@ -108,6 +108,11 @@ where
             .into_resolution();
         let outcome = match resolution {
             WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                WorkflowProposalOutcome::Application(
+                    WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+                )
+            }
             WorthQueryApplicationIdempotencyResolution::IntentDrift => {
                 WorkflowProposalOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                     super::super::WorthQueryApplicationCommitDenial::idempotency_intent_drift(),

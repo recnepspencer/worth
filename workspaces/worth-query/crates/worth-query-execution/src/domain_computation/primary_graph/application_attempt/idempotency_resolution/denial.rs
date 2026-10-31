@@ -9,6 +9,8 @@ use crate::domain_computation::primary_graph::{
 /// nothing took effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
+    /// The same subject is being prepared before an authentic World handle exists.
+    PreparationBusy,
     /// Execution refused to finish the pending publication used by this read.
     ExecutionDenied(
         Result<
@@ -77,6 +79,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
             | WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionIdentityExhausted
             | WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted
             | WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable
+            | WorthQueryApplicationIdempotencyResolutionDenialKind::PreparationBusy
             | WorthQueryApplicationIdempotencyResolutionDenialKind::RecordedIntentUnverifiable => None,
         }
     }
@@ -134,6 +137,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
             Provider::SnapshotIdentityExhausted => {
                 WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted
             }
+            Provider::PreparationBusy => WorthQueryApplicationIdempotencyResolutionDenialKind::PreparationBusy,
             Provider::Unavailable => {
                 WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable
             }

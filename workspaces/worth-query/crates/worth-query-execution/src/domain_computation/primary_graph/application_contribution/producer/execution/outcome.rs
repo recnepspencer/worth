@@ -220,6 +220,20 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             .with_custom_invariant_denial(commit_denial.custom_invariant_denial().cloned())
             .with_producer_requirement_denial(requirement))
         }
+        WorthQueryApplicationCommitOutcome::ProductPreparationPending(pending) => Err(denial(
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            identity.to_owned(),
+        )
+        .with_uncommitted(
+            graph::WorthQueryApplicationUncommitted::ProductPreparationPending(pending),
+        )),
+        WorthQueryApplicationCommitOutcome::ProductPreparationRefused(refused) => Err(denial(
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            identity.to_owned(),
+        )
+        .with_uncommitted(
+            graph::WorthQueryApplicationUncommitted::ProductPreparationRefused(refused),
+        )),
         WorthQueryApplicationCommitOutcome::ProductUnpublished(outcome) => Err(denial(
             WorthQueryOutputDemandDenialKind::ProducerUnavailable,
             identity.to_owned(),
@@ -274,7 +288,9 @@ fn refused_preflight(
         | WorthQueryApplicationCommitOutcome::TimedOut
         | WorthQueryApplicationCommitOutcome::Denied(_)
         | WorthQueryApplicationCommitOutcome::Aborted
-        | WorthQueryApplicationCommitOutcome::Indeterminate(_) => return None,
+        | WorthQueryApplicationCommitOutcome::Indeterminate(_)
+        | WorthQueryApplicationCommitOutcome::ProductPreparationPending(_)
+        | WorthQueryApplicationCommitOutcome::ProductPreparationRefused(_) => return None,
     };
     let kind = match stop {
         Stop::SelectedSourceMismatch => Some(WorthQueryOutputDemandDenialKind::PublicationStale),

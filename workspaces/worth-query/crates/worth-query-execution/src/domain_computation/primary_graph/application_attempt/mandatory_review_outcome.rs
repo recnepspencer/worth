@@ -125,6 +125,9 @@ pub enum WorthQueryMandatoryReviewOutcome {
     ),
     /// Some owners moved, but the product head did not. Recover publication.
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     /// Nothing was written; the cause says why.
     NoEffect(
         super::WorthQueryApplicationNoEffect,
@@ -197,6 +200,12 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
         }
         WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
             WorthQueryMandatoryReviewOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner) => {
+            WorthQueryMandatoryReviewOutcome::ProductPreparationPending(owner)
+        }
+        WorthQueryApplicationCommitOutcome::ProductPreparationRefused(owner) => {
+            WorthQueryMandatoryReviewOutcome::ProductPreparationRefused(owner)
         }
         WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
             WorthQueryMandatoryReviewOutcome::NoEffect(no_effect, binding.into_mandatory())

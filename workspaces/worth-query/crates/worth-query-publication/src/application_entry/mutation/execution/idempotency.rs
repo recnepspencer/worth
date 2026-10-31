@@ -67,6 +67,7 @@ where
             WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
                 WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt),
             ),
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => Some(WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductPreparationPending(owner))),
             WorthQueryApplicationIdempotencyResolution::IntentDrift => {
                 Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
             }

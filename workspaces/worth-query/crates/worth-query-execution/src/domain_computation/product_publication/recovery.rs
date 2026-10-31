@@ -28,6 +28,10 @@ impl WorthQueryProductUnpublishedRecovery {
         }
     }
 
+    pub(super) fn abandon_preparing_world(&self) -> Result<(), ()> {
+        self.disposition.abandon_preparing_world(&self.handle)
+    }
+
     pub fn record_handle(&self) -> &ProductUnpublishedRecoveryHandle {
         &self.handle
     }
@@ -84,8 +88,9 @@ impl From<RuntimeWorldRecoveryDenial> for WorthQueryProductUnpublishedRecoveryRe
 
 /// A refused recovery release, carrying the recovery record back unchanged.
 ///
-/// [`Self::denial`] says why; [`Self::into_recovery`] returns the record so the
-/// caller can retry.
+/// [`Self::denial`] says why; [`Self::into_recovery`] returns the same record.
+/// Follow its actual permitted actions. A live persistent open requires Home
+/// reopen; returning the record does not authorize live release or replay.
 #[derive(Debug)]
 pub struct WorthQueryProductUnpublishedRecoveryFailure {
     denial: WorthQueryProductUnpublishedRecoveryReleaseDenial,

@@ -173,6 +173,13 @@ where
         .provider()
         .resolve_application_idempotency(execution, &provider_session)
     {
+        Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy)
+        | Err(IdempotencyDenial::PreparationBusy) => {
+            candidate.discard();
+            WorthQueryProviderProgressionOutcome::Denied(
+                WorthQueryApplicationCommitDenial::idempotency_preparation_busy(),
+            )
+        }
         Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
             let control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(
                 authority.admission().publication_request(), allocation_policy,
@@ -201,6 +208,15 @@ where
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
+            )
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage }) => {
+            candidate.discard();
+            WorthQueryProviderProgressionOutcome::ProductPreparationPending(
+                authority
+                    .application()
+                    .primary_provider
+                    .preparation_pending(&authority.product.publication_binding(), handle, stage),
             )
         }
         Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {

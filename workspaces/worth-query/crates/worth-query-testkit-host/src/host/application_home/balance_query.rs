@@ -1,0 +1,111 @@
+//! Observe the actual ordinary Home mutation through the public query path.
+use super::schema::{
+    Account, AccountIdentity, AccountNumber, ExternalMapping, HomeIdentitySchema, IdentityBinding,
+    Principal,
+};
+use worth_query_decl::facade::{
+    application_query::{
+        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
+        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+        ApplicationQueryLaneEligibility, ApplicationQueryParameterSet,
+        ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
+    },
+    application_schema::{EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite},
+    worth_query_application_query, worth_query_portable_type, worth_query_query_binding,
+    worth_query_structured_value_binding,
+};
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
+    WorthQueryApplicationProjectionRow,
+};
+
+use super::native_mutation::Balance;
+pub struct AccountParameters;
+worth_query_structured_value_binding!(pub AccountParametersBinding for AccountParameters {
+    identity: "worth.query.host.home.balance.parameters.v1"
+});
+worth_query_structured_value_binding!(pub AccountResultBinding for u64 {
+    identity: "worth.query.host.home.balance.result.v1"
+});
+pub struct NumberSlot;
+worth_query_portable_type!(NumberSlot => "worth.query.host.home.balance.number-slot.v1");
+worth_query_application_query!(
+    pub AccountQuery for HomeIdentitySchema,
+    identity "HostHomeBalanceQuery",
+    parameters AccountParametersBinding,
+    result AccountResultBinding,
+    scope Account => "Account",
+    name "host_home_balance_query"
+);
+
+pub(super) fn number_result<Q>() -> ApplicationQueryResultFieldRef<
+    Q,
+    NumberSlot,
+    HomeIdentitySchema,
+    Account,
+    AccountIdentity,
+    Balance,
+    u64,
+    ReadWrite,
+    EqualityPredicate,
+    NoApplicationUnit,
+> {
+    ApplicationQueryResultFieldRef::new("balance", Balance::reference())
+}
+
+pub(super) fn definition(
+) -> ApplicationQueryDefinition<HomeIdentitySchema, AccountQuery, AccountParameters, u64, Account> {
+    let shape = ApplicationQueryResultShapeBuilder::<
+        HomeIdentitySchema,
+        AccountQuery,
+        Account,
+        u64,
+        AccountResultBinding,
+    >::new(Account::reference())
+    .field(number_result())
+    .build();
+    ApplicationQueryDefinitionBuilder::declare(AccountQuery::reference())
+        .root(Account::reference())
+        .scope(Account::reference())
+        .result_shape(shape)
+        .cardinality(ApplicationQueryCardinality::ExactlyOne)
+        .disclosure(ApplicationQueryDisclosureContract::public())
+        .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
+        .lanes(ApplicationQueryLaneEligibility::one_shot())
+        .public()
+        .build()
+        .unwrap()
+}
+
+impl WorthQueryApplicationProjection<HomeIdentitySchema, AccountQuery> for u64 {
+    fn project(
+        row: &WorthQueryApplicationProjectionRow<'_, HomeIdentitySchema, AccountQuery>,
+    ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
+        row.field(number_result())
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountRead(pub String);
+impl AccountRead {
+    fn into_number(self) -> String {
+        self.0
+    }
+}
+worth_query_structured_value_binding!(pub AccountReadInputBinding for AccountRead {
+    identity: "worth.query.host.home.balance.read-input.v1"
+});
+worth_query_query_binding!(
+    pub AccountReadBinding for AccountRead, schema HomeIdentitySchema,
+    identity "worth.query.host.home.balance.read-binding.v1",
+    input AccountReadInputBinding,
+    query AccountQuery,
+    parameters AccountParametersBinding => |_| ApplicationQueryParameterSet::new(),
+    result AccountResultBinding,
+    principal IdentityBinding, mapping ExternalMapping, principal_entity Principal,
+        principal_identity u64, identity_binding worth_query_decl::facade::application_schema::U64ApplicationValueBinding,
+    scope Account, AccountIdentity, AccountNumber, String, ReadOnly, NoApplicationUnit,
+    field AccountNumber::reference(),
+    value AccountRead::into_number,
+    limits results 1
+);

@@ -22,6 +22,8 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFaul
     PanickedPendingApplicationPublication,
     #[cfg(test)]
     TightIndexMaintenanceBudget,
+    #[cfg(test)]
+    DuplicateQueryPreparationSlot,
 }
 
 pub(in crate::domain_computation::primary_graph) trait WorthQueryPrimaryGraphFaultPort:
@@ -136,6 +138,8 @@ const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
         #[cfg(test)]
         WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget => 1 << 13,
+        #[cfg(test)]
+        WorthQueryPrimaryGraphFault::DuplicateQueryPreparationSlot => 1 << 14,
     }
 }
 

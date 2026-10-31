@@ -79,6 +79,7 @@ mod provider;
 pub(in crate::domain_computation) use application_attempt::retained_decision_facts::StorageControl;
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
 pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison;
+pub(in crate::domain_computation) use provider::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;
 mod component_selection;
 mod request_local;
@@ -195,3 +196,5 @@ pub(crate) mod causal_inspection;
 mod record_reservations;
 
 pub(in crate::domain_computation) mod source_disclosure;
+
+pub(in crate::domain_computation) use provider::QueryDurablePreparationGuard;

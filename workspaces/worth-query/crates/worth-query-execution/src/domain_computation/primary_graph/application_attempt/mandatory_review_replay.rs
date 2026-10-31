@@ -48,6 +48,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
                 WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt)
             }
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner)
+            }
             WorthQueryApplicationIdempotencyResolution::IntentDrift => {
                 WorthQueryApplicationCommitOutcome::Denied(
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),

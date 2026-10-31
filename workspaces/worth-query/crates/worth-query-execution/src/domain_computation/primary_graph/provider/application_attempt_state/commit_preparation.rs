@@ -120,3 +120,6 @@ fn commit_failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
 pub(in crate::domain_computation::primary_graph) use relational_commit::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
+
+pub(in crate::domain_computation) use relational_commit::QueryPreparingApplicationCommit;
+pub(in crate::domain_computation::primary_graph::provider) use relational_commit::RetainedQueryDurablePreparation;

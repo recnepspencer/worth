@@ -33,6 +33,7 @@ where
         .clone();
     let receipt = match resolution.into_resolution() {
         WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(receipt),
+        WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::ProductPreparationPending(owner)))),
         WorthQueryApplicationIdempotencyResolution::IntentDrift => return Ok(Some(
             WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::idempotency_intent_drift())))),

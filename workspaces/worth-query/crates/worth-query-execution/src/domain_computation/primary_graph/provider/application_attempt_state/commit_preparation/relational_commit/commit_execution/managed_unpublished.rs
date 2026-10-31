@@ -7,6 +7,7 @@ use super::WorthQueryPrimaryMutationWorkCounters;
 /// The provider's exact unpublished entry owns this until a fresh World
 /// successor performs or the recovery is explicitly retired.
 pub(in crate::domain_computation::primary_graph::provider) struct ManagedUnpublishedAttempt {
+    pub(super) _completion: Option<super::super::super::super::commit_completion::WorthQueryApplicationAttemptCompletion>,
     pub(super) publication_mode: ManagedUnpublishedPublicationMode,
     pub(super) attempt: WorthQueryPrimaryGraphApplicationAttempt,
     pub(super) work: WorthQueryPrimaryMutationWorkCounters,
@@ -124,6 +125,31 @@ impl ManagedUnpublishedAttempt {
         performed: worth_runtime_world::facade::PerformedCompositePublication,
         conditional_definition_generation: Option<u64>,
     ) -> super::WorthQueryCommittedApplicationSession {
+        self.complete_with_custody(
+            performed,
+            conditional_definition_generation,
+            super::PublishedSnapshotCustody::SettledReleased,
+        )
+    }
+
+    pub(super) fn complete_live(
+        self,
+        performed: worth_runtime_world::facade::PerformedCompositePublication,
+        conditional_definition_generation: Option<u64>,
+    ) -> super::WorthQueryCommittedApplicationSession {
+        self.complete_with_custody(
+            performed,
+            conditional_definition_generation,
+            super::PublishedSnapshotCustody::LiveOwned,
+        )
+    }
+
+    fn complete_with_custody(
+        self,
+        performed: worth_runtime_world::facade::PerformedCompositePublication,
+        conditional_definition_generation: Option<u64>,
+        snapshot_custody: super::PublishedSnapshotCustody,
+    ) -> super::WorthQueryCommittedApplicationSession {
         let product_publication = self
             .reserved_terminal
             .fill(performed.consume(), conditional_definition_generation);
@@ -147,7 +173,7 @@ impl ManagedUnpublishedAttempt {
             before: self.before.into_publication(),
             next_basis,
             committed,
-            published_snapshot_custody: super::PublishedSnapshotCustody::SettledReleased,
+            published_snapshot_custody: snapshot_custody,
             prepared_touched_records: Some(self.prepared_touched_records),
             product_publication,
             managed_views: self.managed_views,

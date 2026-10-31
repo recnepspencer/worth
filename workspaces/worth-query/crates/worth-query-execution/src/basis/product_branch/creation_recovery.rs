@@ -37,6 +37,7 @@ pub enum WorthQueryProductBranchCreationRecoveryNextAction {
     SettleOwnerEffects,
     ReleaseObligations,
     Inspect,
+    ReopenRequired,
     StartFreshCompositePublication,
     CloseOwner,
 }
@@ -66,7 +67,7 @@ impl WorthQueryProductBranchCreationRecoveryInspection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchRecoveryDenial {
-    DurableDispositionRequired,
+    ReopenRequired,
     RecoveredCustodyRequired,
     OwnerUnavailable,
     ForeignRecovery,
@@ -299,6 +300,7 @@ fn map_action(
             WorthQueryProductBranchCreationRecoveryNextAction::ReleaseObligations
         }
         Action::Inspect => WorthQueryProductBranchCreationRecoveryNextAction::Inspect,
+        Action::ReopenRequired => WorthQueryProductBranchCreationRecoveryNextAction::ReopenRequired,
         Action::StartFreshCompositePublication => {
             WorthQueryProductBranchCreationRecoveryNextAction::StartFreshCompositePublication
         }
@@ -314,9 +316,7 @@ pub(crate) fn map_recovery_denial(
         Denial::RecoveredCustodyRequired => {
             WorthQueryProductBranchRecoveryDenial::RecoveredCustodyRequired
         }
-        Denial::DurableDispositionRequired => {
-            WorthQueryProductBranchRecoveryDenial::DurableDispositionRequired
-        }
+        Denial::ReopenRequired => WorthQueryProductBranchRecoveryDenial::ReopenRequired,
         Denial::OwnerUnavailable(_) => WorthQueryProductBranchRecoveryDenial::OwnerUnavailable,
         Denial::ForeignHandle => WorthQueryProductBranchRecoveryDenial::ForeignRecovery,
         Denial::MissingRecord => WorthQueryProductBranchRecoveryDenial::Missing,

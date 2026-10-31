@@ -22,28 +22,34 @@ impl PreparedTouchedRecords {
 
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, WorthQueryProviderSessionCommitStop> {
+        Self::prepare_retained(candidate, allocation_policy)
+            .map_err(TouchedRecordsPreparationDenial::into_memory_stop)
+    }
+
+    pub(super) fn prepare_retained(
+        candidate: &PreparedRelationalCommitCandidate,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, TouchedRecordsPreparationDenial> {
         candidate
             .with_prepared_changed_records(|exact| {
                 let mut records = ExecutionArrayBuilder::allocate(exact.len(), allocation_policy)
-                    .map_err(allocation_denied)?;
+                    .map_err(TouchedRecordsPreparationDenial::Allocation)?;
                 for record in exact {
                     records
                         .push(WorthQueryTouchedRecordIdentity::from_commit_record(
                             record.clone(),
                         ))
-                        .map_err(allocation_denied)?;
+                        .map_err(TouchedRecordsPreparationDenial::Allocation)?;
                 }
                 Ok(Self {
-                    records: Arc::new(records.seal().map_err(allocation_denied)?),
+                    records: Arc::new(
+                        records
+                            .seal()
+                            .map_err(TouchedRecordsPreparationDenial::Allocation)?,
+                    ),
                 })
             })
-            .unwrap_or_else(|| {
-                Err(WorthQueryProviderSessionCommitStop::PreEffectDenied(
-                    super::failure(
-                        "native candidate no longer retains its prepared changed records",
-                    ),
-                ))
-            })
+            .unwrap_or_else(|| Err(TouchedRecordsPreparationDenial::ChangedRecordsUnavailable))
     }
 
     /// Publication already occurred. This only checks the native performed
@@ -68,12 +74,23 @@ impl PreparedTouchedRecords {
     }
 }
 
-fn allocation_denied(
-    denial: worth_execution::ExecutionAllocationDenial,
-) -> WorthQueryProviderSessionCommitStop {
-    WorthQueryProviderSessionCommitStop::PreEffectDenied(
-        crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(denial),
-    )
+pub(super) enum TouchedRecordsPreparationDenial {
+    Allocation(worth_execution::ExecutionAllocationDenial),
+    ChangedRecordsUnavailable,
+}
+impl TouchedRecordsPreparationDenial {
+    pub(super) fn into_memory_stop(self) -> WorthQueryProviderSessionCommitStop {
+        WorthQueryProviderSessionCommitStop::PreEffectDenied(match self {
+            Self::Allocation(cause) => {
+                crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(
+                    cause,
+                )
+            }
+            Self::ChangedRecordsUnavailable => {
+                super::failure("native candidate no longer retains its prepared changed records")
+            }
+        })
+    }
 }
 
 #[cfg(test)]

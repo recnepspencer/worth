@@ -154,6 +154,7 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     /// The key's recorded intent was written by an earlier encoding that
     /// cannot be checked against this request.
     IdempotencyIntentUnverifiable,
+    IdempotencyPreparationBusy,
     Identity,
     InputCapture,
     /// The handler ran and refused, or its projection, read attempt or
@@ -321,6 +322,7 @@ const fn idempotency_kind(
     use WorthQueryApplicationIdempotencyResolutionDenialKind as Resolution;
     use WorthQueryApplicationRequestMutationDenialKind as Request;
     match kind {
+        Resolution::PreparationBusy => Request::IdempotencyPreparationBusy,
         Resolution::ExecutionDenied(kind) => Request::IdempotencyExecutionDenied(kind),
         Resolution::Authorization(kind) => Request::Authorization(kind),
         Resolution::ForeignAdmission => Request::IdempotencyForeignAdmission,

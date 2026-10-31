@@ -13,10 +13,18 @@ use crate::domain_computation::{
 
 pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
     match outcome {
+        Progression::ProductPreparationPending(owner) => Outcome::ProductPreparationPending(owner),
+        Progression::ProductPreparationRefused(owner) => Outcome::ProductPreparationRefused(owner),
         Progression::ProductUnpublished(unpublished) => Outcome::ProductUnpublished(unpublished),
         Progression::ProductStale(stale) => Outcome::ProductStale(stale),
         Progression::NoEffect(no_effect) => Outcome::NoEffect(no_effect),
         Progression::Denied(denial) => match denial.kind() {
+            Kind::IdempotencyPreparationBusy => {
+                let Outcome::Indeterminate(evidence) = cleanup_indeterminate() else {
+                    unreachable!()
+                };
+                Outcome::Indeterminate(evidence.with_preparation_busy())
+            }
             Kind::StorageUnavailable(failure) => {
                 cleanup_execution_indeterminate(Ok(Session::StorageUnavailable(failure)))
             }

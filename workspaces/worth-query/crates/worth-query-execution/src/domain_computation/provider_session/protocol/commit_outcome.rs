@@ -8,6 +8,9 @@ use super::{
 pub enum WorthQuerySessionCommitOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
     Committed(WorthQueryClosedProviderSessionDisposition),
     CommitDenied(WorthQueryProviderSessionFailure),
@@ -25,7 +28,10 @@ impl WorthQuerySessionCommitOutcome {
             | Self::CommitDenied(_)
             | Self::CommitDeferred(_)
             | Self::CommitControlStopped(_) => WorthQueryProviderSessionRecoveryPosture::Closed,
-            Self::ProductUnpublished(_) | Self::CommitRecoveryRequired(_) => {
+            Self::ProductUnpublished(_)
+            | Self::ProductPreparationPending(_)
+            | Self::ProductPreparationRefused(_)
+            | Self::CommitRecoveryRequired(_) => {
                 WorthQueryProviderSessionRecoveryPosture::RecoveryRequired
             }
         }
@@ -38,6 +44,8 @@ impl WorthQuerySessionCommitOutcome {
             | Self::ProductStale(_)
             | Self::NoEffect(_)
             | Self::ProductUnpublished(_)
+            | Self::ProductPreparationPending(_)
+            | Self::ProductPreparationRefused(_)
             | Self::CommitDeferred(_)
             | Self::CommitControlStopped(_) => None,
         }

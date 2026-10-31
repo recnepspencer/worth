@@ -186,6 +186,10 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.aftermath_causality.as_ref()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn has_conditional_definition(&self) -> bool {
+        self.conditional_definition.is_some()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn take_conditional_definition(
         &mut self,
     ) -> Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>
@@ -200,16 +204,19 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         assert!(self.live_delivery_reservation.is_none());
         assert!(self.publication_recovery_reservation.is_none());
         assert!(self.outstanding_dispatch_reservation.is_none());
-        let outstanding = provider.reserve_outstanding_dispatch(
+        // Each successful reservation stays in this same attempt before the
+        // next fallible acquisition. An owning refusal retains partial rights.
+        self.outstanding_dispatch_reservation = provider.reserve_outstanding_dispatch(
             self.dispatch_outbox
                 .as_ref()
                 .map(|pending| pending.record()),
             self.affinity.product_publication().observation(),
         )?;
-        let publication_recovery = provider.reserve_application_publication_recovery(
-            self.affinity.product_publication().observation(),
-            Some(self.idempotency),
-        )?;
+        self.publication_recovery_reservation =
+            Some(provider.reserve_application_publication_recovery(
+                self.affinity.product_publication().observation(),
+                Some(self.idempotency),
+            )?);
         let reservation = provider.reserve_application_commit_causality(
             self.affinity.product_publication().observation(),
         )?;
@@ -217,8 +224,6 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         let demand = self.retain_output_demand_observation;
         let client = self.retain_client_observation;
         self.live_delivery_reservation = Some(reservation);
-        self.publication_recovery_reservation = Some(publication_recovery);
-        self.outstanding_dispatch_reservation = outstanding;
         Ok((live, demand, client))
     }
 

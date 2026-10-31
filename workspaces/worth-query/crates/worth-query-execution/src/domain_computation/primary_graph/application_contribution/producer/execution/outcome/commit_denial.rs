@@ -37,7 +37,7 @@ pub(super) fn stopped(
         (None, Kind::StorageUnavailable(failure)) => {
             commit_execution_stopped(identity, detail, Ok(Native::StorageUnavailable(failure)))
         }
-        (None, Kind::IdempotencyIntentDrift) => denial(
+        (None, Kind::IdempotencyPreparationBusy | Kind::IdempotencyIntentDrift) => denial(
             WorthQueryOutputDemandDenialKind::ProducerUnavailable,
             format!("{identity}: {detail:?}"),
         ),

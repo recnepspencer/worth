@@ -74,6 +74,7 @@ mod terminal_dispatch_release;
 mod unpublished_idempotency;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::unwind_recovery_inspection_count;
+pub(in crate::domain_computation) use unpublished_idempotency::QueryDurablePreparationGuard;
 pub(in crate::domain_computation) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition;
 pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyReservation;
 
@@ -320,3 +321,8 @@ pub(in crate::domain_computation::primary_graph) use application_attempt_state::
 
 pub use managed_cleanup_control::WorthQueryManagedCleanupRegistrationDenial;
 pub use managed_cleanup_control::WorthQueryManagedCleanupScheduleForTest;
+
+pub(in crate::domain_computation) use application_attempt_state::QueryPreparingApplicationCommit;
+pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::RetainedQueryDurablePreparation;
+
+pub(in crate::domain_computation::primary_graph::provider) use unpublished_idempotency::BeforeWorldQueryReservation;

@@ -1,3 +1,5 @@
+mod preparing;
+pub(in crate::domain_computation) use preparing::QueryDurablePreparationGuard;
 use std::sync::{Arc, Mutex};
 
 use worth_runtime_world::facade::{
@@ -58,7 +60,7 @@ impl WorthQueryUnpublishedIdempotencyReservation {
                 .entry
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
-            assert_eq!(entry.recovery_handle, returned_handle);
+            assert_eq!(entry.handle(), &returned_handle);
             assert!(entry.managed.replace(managed).is_none());
             entry.posture = WorthQueryUnpublishedIdempotencyPosture::Retained;
         }
@@ -84,6 +86,19 @@ impl WorthQueryUnpublishedIdempotencyReservation {
 impl Drop for WorthQueryUnpublishedIdempotencyReservation {
     fn drop(&mut self) {
         if !self.armed {
+            return;
+        }
+        let preparing = {
+            let entry = self
+                .entry
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            entry.preparing.is_some()
+                || entry.posture == WorthQueryUnpublishedIdempotencyPosture::Preparing
+        };
+        if preparing {
+            self.with_store(|store, key, handle| store.retain_exact(key, handle));
+            self.armed = false;
             return;
         }
         #[cfg(test)]

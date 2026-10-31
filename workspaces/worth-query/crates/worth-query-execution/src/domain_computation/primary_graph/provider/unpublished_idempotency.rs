@@ -1,12 +1,16 @@
 use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use super::ManagedUnpublishedAttempt;
 use super::{WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution};
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 
+mod before_world;
+mod handle_slots;
 mod managed_recovery;
+pub(in crate::domain_computation::primary_graph::provider) use before_world::BeforeWorldQueryReservation;
+mod preparation;
 mod release;
 mod reservation;
 pub(in crate::domain_computation::primary_graph::provider) use managed_recovery::{
@@ -15,6 +19,7 @@ pub(in crate::domain_computation::primary_graph::provider) use managed_recovery:
 pub(in crate::domain_computation) use release::WorthQueryUnpublishedReleaseReservation;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use reservation::unwind_recovery_inspection_count;
+pub(in crate::domain_computation) use reservation::QueryDurablePreparationGuard;
 pub(in crate::domain_computation::primary_graph) use reservation::WorthQueryUnpublishedIdempotencyReservation;
 
 type WorthQueryUnpublishedIdempotencyKey = super::idempotency::WorthQueryIdempotencyLookupKey;
@@ -22,6 +27,7 @@ type WorthQueryUnpublishedIdempotencyKey = super::idempotency::WorthQueryIdempot
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum WorthQueryUnpublishedIdempotencyPosture {
     Active,
+    Preparing,
     Retained,
     Recovering,
     Releasing,
@@ -29,9 +35,10 @@ enum WorthQueryUnpublishedIdempotencyPosture {
 
 struct WorthQueryUnpublishedIdempotencyEntry {
     binding: WorthQueryApplicationIdempotencyBinding,
-    recovery_handle: ProductUnpublishedRecoveryHandle,
+    handle_slot: Arc<OnceLock<ProductUnpublishedRecoveryHandle>>,
     posture: WorthQueryUnpublishedIdempotencyPosture,
     managed: Option<ManagedUnpublishedAttempt>,
+    preparing: Option<super::RetainedQueryDurablePreparation>,
 }
 
 /// Provider-owned bounded evidence that owner effects were not published as a
@@ -44,7 +51,7 @@ pub(super) struct WorthQueryUnpublishedIdempotencyStore {
         Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
     >,
     by_recovery: Vec<(
-        ProductUnpublishedRecoveryHandle,
+        Arc<OnceLock<ProductUnpublishedRecoveryHandle>>,
         WorthQueryUnpublishedIdempotencyKey,
     )>,
 }
@@ -67,32 +74,6 @@ impl WorthQueryUnpublishedIdempotencyStore {
         }
     }
 
-    fn recovery_key(
-        &self,
-        handle: &ProductUnpublishedRecoveryHandle,
-    ) -> Option<&WorthQueryUnpublishedIdempotencyKey> {
-        self.by_recovery
-            .iter()
-            .find(|(candidate, _)| candidate == handle)
-            .map(|(_, key)| key)
-    }
-
-    fn remove_recovery(
-        &mut self,
-        handle: &ProductUnpublishedRecoveryHandle,
-    ) -> Option<WorthQueryUnpublishedIdempotencyKey> {
-        let index = self
-            .by_recovery
-            .iter()
-            .position(|(candidate, _)| candidate == handle)?;
-        Some(self.by_recovery.swap_remove(index).1)
-    }
-
-    fn maximum_recovery_mappings(&self) -> Option<usize> {
-        self.maximum_entries
-            .and_then(|maximum| maximum.checked_mul(2))
-    }
-
     fn reserve(
         &mut self,
         product: WorthQueryProductIdempotencyAffinity,
@@ -105,9 +86,33 @@ impl WorthQueryUnpublishedIdempotencyStore {
         ),
         (),
     > {
+        if self.recovery_key(&recovery_handle).is_some() {
+            return Err(());
+        }
+        let (key, entry, slot) = self.reserve_before_world(product, binding)?;
+        slot.set(recovery_handle)
+            .expect("one private reservation binds once");
+        entry
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .posture = WorthQueryUnpublishedIdempotencyPosture::Active;
+        Ok((key, entry))
+    }
+
+    fn reserve_before_world(
+        &mut self,
+        product: WorthQueryProductIdempotencyAffinity,
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<
+        (
+            WorthQueryUnpublishedIdempotencyKey,
+            Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
+            Arc<OnceLock<ProductUnpublishedRecoveryHandle>>,
+        ),
+        (),
+    > {
         let key = WorthQueryUnpublishedIdempotencyKey::for_binding(&product, &binding);
         if self.by_key.contains_key(&key)
-            || self.recovery_key(&recovery_handle).is_some()
             || self
                 .maximum_entries
                 .is_some_and(|maximum| self.by_key.len() >= maximum)
@@ -119,16 +124,18 @@ impl WorthQueryUnpublishedIdempotencyStore {
             return Err(());
         }
         self.by_recovery.try_reserve_exact(1).map_err(|_| ())?;
-        self.by_recovery
-            .push((recovery_handle.clone(), key.clone()));
+        let slot = Arc::new(OnceLock::new());
         let entry = Arc::new(Mutex::new(WorthQueryUnpublishedIdempotencyEntry {
             binding,
-            recovery_handle,
-            posture: WorthQueryUnpublishedIdempotencyPosture::Active,
+            handle_slot: Arc::clone(&slot),
+            posture: WorthQueryUnpublishedIdempotencyPosture::Preparing,
             managed: None,
+            preparing: None,
         }));
+        // This is an occupied canonical index row, not spare shared capacity.
+        self.by_recovery.push((Arc::clone(&slot), key.clone()));
         self.by_key.insert(key.clone(), Arc::clone(&entry));
-        Ok((key, entry))
+        Ok((key, entry, slot))
     }
 
     fn release_exact(
@@ -137,11 +144,12 @@ impl WorthQueryUnpublishedIdempotencyStore {
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Option<Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>> {
         let matches = self.by_key.get(key).is_some_and(|entry| {
-            &entry
+            entry
                 .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .recovery_handle
-                == handle
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .handle_slot
+                .get()
+                == Some(handle)
         });
         if !matches {
             return None;
@@ -160,7 +168,7 @@ impl WorthQueryUnpublishedIdempotencyStore {
             let mut entry = entry
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
-            if &entry.recovery_handle == handle {
+            if entry.handle_slot.get() == Some(handle) {
                 entry.posture = WorthQueryUnpublishedIdempotencyPosture::Retained;
             }
         }
@@ -180,7 +188,21 @@ impl WorthQueryUnpublishedIdempotencyStore {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         Some(if recorded.binding == binding {
-            WorthQueryProviderIdempotencyResolution::Unpublished
+            if recorded.handle_slot.get().is_none() {
+                WorthQueryProviderIdempotencyResolution::PreparationBusy
+            } else if let Some(preparing) = &recorded.preparing {
+                WorthQueryProviderIdempotencyResolution::PreparationPending {
+                    handle: recorded.handle().clone(),
+                    stage: preparing.stage(),
+                }
+            } else if recorded.posture == WorthQueryUnpublishedIdempotencyPosture::Preparing {
+                WorthQueryProviderIdempotencyResolution::PreparationPending {
+                    handle: recorded.handle().clone(),
+                    stage: crate::domain_computation::WorthQueryProductPreparationStage::CheckedOut,
+                }
+            } else {
+                WorthQueryProviderIdempotencyResolution::Unpublished
+            }
         } else {
             WorthQueryProviderIdempotencyResolution::Drift
         })
@@ -197,7 +219,7 @@ impl WorthQueryUnpublishedIdempotencyStore {
         let recorded = recorded
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        Some((recorded.binding, recorded.recovery_handle.clone()))
+        Some((recorded.binding, recorded.handle_slot.get()?.clone()))
     }
 
     #[cfg(test)]

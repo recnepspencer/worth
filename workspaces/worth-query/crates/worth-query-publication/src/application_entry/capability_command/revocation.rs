@@ -274,6 +274,13 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     return Ok(NativeCommandResult::Resolved(read));
                 }
                 match read.into_resolution() {
+                    WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(
+                        pending,
+                    ) => {
+                        return Ok(NativeCommandResult::Commit(
+                            WorthQueryApplicationCommitOutcome::ProductPreparationPending(pending),
+                        ));
+                    }
                     WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
                         return Ok(NativeCommandResult::Commit(
                             WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt),

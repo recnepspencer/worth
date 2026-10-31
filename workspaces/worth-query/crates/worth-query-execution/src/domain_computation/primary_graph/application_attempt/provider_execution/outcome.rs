@@ -9,6 +9,9 @@ use crate::domain_computation::provider_session::WorthQueryMutationGraphWorkComp
 pub(in crate::domain_computation) enum WorthQueryProviderProgressionOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     NoEffect(WorthQueryApplicationNoEffect),
     Committed(WorthQueryPendingApplicationCommitReceipt),
     AlreadyCommitted(WorthQueryApplicationCommitReceipt),
@@ -30,6 +33,12 @@ impl WorthQueryProviderProgressionOutcome {
             Self::ProductStale(stale) => WorthQueryApplicationCommitOutcome::ProductStale(stale),
             Self::ProductUnpublished(unpublished) => {
                 WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished)
+            }
+            Self::ProductPreparationPending(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner)
+            }
+            Self::ProductPreparationRefused(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductPreparationRefused(owner)
             }
             Self::NoEffect(no_effect) => WorthQueryApplicationCommitOutcome::NoEffect(no_effect),
             Self::Committed(receipt) => {

@@ -31,7 +31,7 @@ impl WorthQueryUnpublishedReleaseReservation {
         let mut entry = entry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if entry.recovery_handle != *handle || entry.posture != Posture::Retained {
+        if entry.handle() != handle || entry.posture != Posture::Retained {
             return Err(());
         }
         entry.posture = Posture::Releasing;
@@ -69,7 +69,7 @@ impl Drop for WorthQueryUnpublishedReleaseReservation {
             let mut entry = entry
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
-            if entry.recovery_handle == self.handle && entry.posture == Posture::Releasing {
+            if entry.handle() == &self.handle && entry.posture == Posture::Releasing {
                 entry.posture = Posture::Retained;
             }
         }

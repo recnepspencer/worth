@@ -22,6 +22,40 @@ program-owned actions (`retain_operation`, then fresh-request `advance`), instal
 and publish, start, and advance workflows, and adopt a new program on a
 branch. This README covers the host's deeper contracts.
 
+## Directory Home publication custody
+
+`WorthQueryApplicationHome` owns the physical Home and its lifecycle. Keep the
+Home while borrowing its program runtime; consuming Home close retains the
+same advanced owner on refusal. A retained runtime clone can prevent composition
+release after World seal. Drop that clone and retry the same close custody;
+sealed ordinary ports cannot resume service.
+
+An ordinary Directory mutation can return `ProductPreparationPending` before
+or after Native effects. Keep that original terminal. Same-key requests observe
+the existing custody and must not replay the handler. Its explicit
+`try_into_recovery()` handoff can return the same terminal when busy; successful
+handoff abandons only the original World phase into its existing catalog. This
+uses ordinary owner destruction and is not a deadline-bounded conversion.
+
+Inspect `next_actions()` through `facade::primary_graph::ProductUnpublishedNextAction`
+and the canonical `RuntimeWorldRecoveryDenial`. A persistent live open reports
+`ReopenRequired`, with actions `[Inspect, ReopenRequired]`. Preserve stable
+request/correlation data, end ownership of the current Home, and reopen the same
+location under Store's new mutation lease for recovered reconciliation. Close
+can retain or refuse accepted custody; ordinary disposal is not release or a
+successful close. The old Home's lease blocks concurrent opening, and old
+recovery handles cannot cross incarnations: obtain claims from the newly
+readmitted Home. Neither zero observed effects nor this diagnostic proves
+release, restores a proposal, or permits resubmission.
+Existing-Home Query serving and original business-result readmission remain
+closed until their genuine publication and terminal producers are available.
+
+`ProductPreparationRefused` is different: it retains unprepared Query input and
+the actual terminal cause, with no publication or retry door. Its business entry
+is released, but it may retain partial successor reservations. Discard the
+carrier before a resource-blocked fresh attempt; disposal is unbudgeted. Memory
+recovery retains its existing owner-specific actions.
+
 ## Explain a query result or source operation
 
 Start with `request.inspect::<ReadBinding>(&original)` for a completed query or

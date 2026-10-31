@@ -152,6 +152,11 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             .expect("one condition replay binding returns one resolution");
         Ok(match resolution.into_resolution() {
             WorthQueryApplicationIdempotencyResolution::Unseen => None,
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                Some(WorkflowProgressOutcome::Application(
+                    WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+                ))
+            }
             WorthQueryApplicationIdempotencyResolution::IntentDrift => Some(
                 WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),

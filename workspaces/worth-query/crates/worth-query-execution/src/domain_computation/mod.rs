@@ -15,6 +15,10 @@ pub(crate) mod managed_run;
 pub(crate) mod operation_binding;
 pub(crate) mod primary_graph;
 mod product_publication;
+pub use product_publication::{
+    WorthQueryProductPreparationPending, WorthQueryProductPreparationRefusal,
+    WorthQueryProductPreparationRefused, WorthQueryProductPreparationStage,
+};
 pub(crate) mod provider_session;
 pub(crate) mod runtime_time;
 

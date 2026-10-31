@@ -234,9 +234,11 @@ where
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
             ))
         }
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage })) => Some(Progression::ProductPreparationPending(authority.application().primary_provider.preparation_pending(&authority.product.publication_binding(), handle, stage))),
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Unpublished)) => {
             Some(progression_denied(DenialStage::Idempotency))
         }
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy)) | Ok(Err(IdempotencyDenial::PreparationBusy)) => Some(Progression::Denied(WorthQueryApplicationCommitDenial::idempotency_preparation_busy())),
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Absent)) => None,
         Ok(Err(IdempotencyDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,

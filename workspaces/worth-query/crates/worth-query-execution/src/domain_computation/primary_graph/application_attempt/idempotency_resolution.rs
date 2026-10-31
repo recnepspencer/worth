@@ -39,8 +39,9 @@ use crate::domain_computation::primary_graph::{
 /// What an idempotency key already means on the current product branch, read
 /// through `resolve_admitted_application_idempotency` without committing
 /// anything.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub enum WorthQueryApplicationIdempotencyResolution {
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
     /// No commit is recorded under this key.
     Unseen,
     /// A commit with the same intent is recorded under this key; its receipt is
@@ -370,6 +371,17 @@ where
                         WorthQueryApplicationIdempotencyResolution::IntentDrift,
                     ))
                 }
+                Ok(WorthQueryProviderIdempotencyResolution::PreparationPending {
+                    handle,
+                    stage,
+                }) => Ok(WorthQueryAdmittedIdempotencyRead::mint(
+                    read_for,
+                    WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(
+                        self.pending_preparation_resolution(handle, stage),
+                    ),
+                )),
+                Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy) => Err(WorthQueryApplicationIdempotencyResolutionDenial::from_provider(
+                    crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy)),
                 Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
                     Err(WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable())
                 }

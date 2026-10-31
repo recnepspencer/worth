@@ -142,6 +142,20 @@ pub(super) fn retained_decision_counts(
                 let _ = (evidence, cleanup);
                 counts.failed += 1;
             }
+            WorthQueryRetainedConditionalDecision::OperationPreparationPending(
+                evidence,
+                pending,
+            ) => {
+                let _ = (evidence, pending);
+                counts.failed += 1;
+            }
+            WorthQueryRetainedConditionalDecision::OperationPreparationRefused(
+                evidence,
+                refused,
+            ) => {
+                let _ = (evidence, refused);
+                counts.failed += 1;
+            }
             WorthQueryRetainedConditionalDecision::OperationProductStale(evidence, stale) => {
                 let _decision = evidence.signal().class();
                 let _expected_product = stale.expected_product();

@@ -20,10 +20,15 @@ use snapshot_resolution::resolve_at_snapshot;
 
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolution {
+    PreparationBusy,
     Absent,
     Equivalent(WorthQueryPrimaryGraphCommittedApplication),
     Drift,
     Unpublished,
+    PreparationPending {
+        handle: worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
+        stage: crate::domain_computation::WorthQueryProductPreparationStage,
+    },
 }
 
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedWorkflowOperationCustody
@@ -39,6 +44,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedW
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolutionDenial
 {
+    PreparationBusy,
     ActiveSnapshotCapacityExhausted {
         maximum_active_snapshots: usize,
     },
@@ -115,6 +121,15 @@ impl WorthQueryPrimaryGraphProvider {
 
         let affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
+        match self.resolve_unpublished_application_idempotency(&affinity, binding) {
+            Some(WorthQueryProviderIdempotencyResolution::PreparationBusy) => {
+                return Custody::Indeterminate(
+                    WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy,
+                )
+            }
+            Some(WorthQueryProviderIdempotencyResolution::Drift) => return Custody::IntentDrift,
+            _ => {}
+        }
         // A retained World partial keeps its publication slot reserved for
         // resumption, and a reserved slot reports its binding, so exact
         // unpublished custody is read before that reservation.
@@ -143,11 +158,17 @@ impl WorthQueryPrimaryGraphProvider {
             );
         }
         match self.resolve_idempotency_binding_at_product(execution, binding, product) {
+            Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy) => Custody::Indeterminate(
+                WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy,
+            ),
             Ok(WorthQueryProviderIdempotencyResolution::Absent) => Custody::Unseen,
             Ok(WorthQueryProviderIdempotencyResolution::Equivalent(committed)) => {
                 Custody::Committed(committed)
             }
             Ok(WorthQueryProviderIdempotencyResolution::Drift) => Custody::IntentDrift,
+            Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { .. }) => {
+                Custody::PublicationPending
+            }
             Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
                 Custody::Indeterminate(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)
             }
@@ -168,6 +189,18 @@ impl WorthQueryPrimaryGraphProvider {
         let layout = self.graph.layout.provider_idempotency().clone();
         let product_affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
+        match self.resolve_unpublished_application_idempotency(&product_affinity, binding) {
+            Some(WorthQueryProviderIdempotencyResolution::PreparationBusy) => {
+                return Err(WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy)
+            }
+            Some(
+                resolution @ (WorthQueryProviderIdempotencyResolution::PreparationPending {
+                    ..
+                }
+                | WorthQueryProviderIdempotencyResolution::Drift),
+            ) => return Ok(resolution),
+            _ => {}
+        }
         self.graph.with_runtime(execution, |runtime| {
             if binding.correction_identity().is_some()
                 && self.inspect_pending_correction_idempotency(binding.key_identity())

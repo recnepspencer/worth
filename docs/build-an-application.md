@@ -5827,8 +5827,41 @@ v3 fields. Graph equality, a source profile or an old process identifier cannot
 readmit component authority. Native recovery, Signal seed admission, Bridge
 baseline admission and World reconciliation retain that order.
 
-The lower seam and live occurrence path are still under qualification;
-existing-Home World reconciliation, recovered dispositions, joint checkpoint
-coverage and Host open/continuation are unfinished. See
-[the Home composition capability](capability-index.md#compose-world-with-an-admitted-application-home)
+The fresh Native-only Directory Host journey now opens the actual Home,
+initializes once, reads seeded data, publishes an ordinary mutation through the
+same World, and closes through the owning Home. A genuine retained runtime
+clone produces a composition refusal after World seal; dropping that clone and
+retrying the same close custody completes the close. This does not establish
+existing-Home Query serving, original business-result readmission, or full
+request-bounded close.
+
+Treat `ProductPreparationPending` as original custody. Keep the returned
+terminal and business key; duplicate requests must observe that custody rather
+than invoke the handler again. `try_into_recovery()` is an explicit unbudgeted
+handoff of the actual retained phase. A busy handoff returns the same terminal.
+Inspect the returned record's actual `next_actions()`, using
+`worth_query_host::facade::primary_graph::ProductUnpublishedNextAction`.
+
+For a persistent live open, the canonical `RuntimeWorldRecoveryDenial` reports
+`ReopenRequired` and the record permits exactly `[Inspect, ReopenRequired]`.
+Preserve stable request/correlation data and end ownership of the current Home,
+then reopen the same physical location under Store's new mutation lease for
+recovered reconciliation. A close refusal keeps its actual recovery custody;
+ordinary disposal is neither release nor successful close. The old lease blocks
+concurrent open. Old recovery handles are incarnation-fenced, so obtain claims
+from the newly readmitted Home. Do not loop live release, reconstruct the old
+proposal, or resubmit the handler.
+Zero observed effects are descriptive and do not issue a no-effect authority.
+Existing-Home Query attachment still refuses until the authentic bootstrap
+publication and original terminal can be readmitted; lower World recovery alone
+cannot reconstruct an application's Rust return value.
+
+A terminal `ProductPreparationRefused` has no future publication or retry door.
+Its business entry is released, while its opaque carrier can still own partial
+successor reservations. Discard it to release those resources through ordinary
+unbudgeted destruction before an otherwise resource-blocked fresh attempt.
+Resource contention is distinct from a retained business key. Memory continues
+to use its actual owner-specific recovery actions.
+
+See [the Home composition capability](capability-index.md#compose-world-with-an-admitted-application-home)
 for current refusals and lifecycle custody.

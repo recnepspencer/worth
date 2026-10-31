@@ -22,6 +22,9 @@ pub enum WorthQueryProviderCommitAdmissionDenial {
 pub enum WorthQueryProviderCompareAndCommitOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
     Committed(WorthQueryCommittedProviderSession),
     Stale(WorthQueryStaleDecisionReadSet),
@@ -194,6 +197,20 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
                     .overlay
                     .release_to_provider_resolution();
                 WorthQueryProviderCompareAndCommitOutcome::ProductUnpublished(unpublished)
+            }
+            WorthQuerySessionCommitOutcome::ProductPreparationPending(owner) => {
+                self.proposed
+                    .attempt
+                    .overlay
+                    .release_to_provider_resolution();
+                WorthQueryProviderCompareAndCommitOutcome::ProductPreparationPending(owner)
+            }
+            WorthQuerySessionCommitOutcome::ProductPreparationRefused(owner) => {
+                self.proposed
+                    .attempt
+                    .overlay
+                    .release_to_provider_resolution();
+                WorthQueryProviderCompareAndCommitOutcome::ProductPreparationRefused(owner)
             }
             WorthQuerySessionCommitOutcome::NoEffect(no_effect) => {
                 let _ = self.proposed.attempt.overlay.discard();

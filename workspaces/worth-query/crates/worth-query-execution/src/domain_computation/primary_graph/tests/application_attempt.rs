@@ -321,3 +321,6 @@ mod freshness_stops;
 mod equality_stop_oracle;
 
 mod typed_invariant_refusal;
+
+#[path = "application_attempt/query_preparation_refusal.rs"]
+mod query_preparation_refusal;

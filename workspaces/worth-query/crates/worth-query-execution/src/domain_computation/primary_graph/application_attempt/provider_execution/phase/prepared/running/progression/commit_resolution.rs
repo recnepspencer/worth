@@ -144,6 +144,8 @@ pub(super) fn finish_authorized_compare(
         WorthQueryProviderCompareAndCommitOutcome::ProductUnpublished(unpublished) => {
             WorthQueryProviderProgressionOutcome::ProductUnpublished(unpublished)
         }
+        WorthQueryProviderCompareAndCommitOutcome::ProductPreparationPending(owner) => WorthQueryProviderProgressionOutcome::ProductPreparationPending(owner),
+        WorthQueryProviderCompareAndCommitOutcome::ProductPreparationRefused(owner) => WorthQueryProviderProgressionOutcome::ProductPreparationRefused(owner),
         WorthQueryProviderCompareAndCommitOutcome::NoEffect(no_effect) => {
             world_no_effect::classify(no_effect)
         }
@@ -193,6 +195,16 @@ fn resolve_indeterminate_commit(
                 ),
             }
         }
+        Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage }) => {
+            WorthQueryProviderProgressionOutcome::ProductPreparationPending(
+                context
+                    .provider
+                    .preparation_pending(&context.product, handle, stage),
+            )
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy) => {
+            WorthQueryProviderProgressionOutcome::Indeterminate(evidence.with_preparation_busy())
+        }
         Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
             WorthQueryProviderProgressionOutcome::Aborted
         }
@@ -210,6 +222,7 @@ fn indeterminate_read_denied(
 ) -> WorthQueryProviderProgressionOutcome {
     let evidence = match denial {
         crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(stop) => evidence.with_read_stop(stop),
+        crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy => evidence.with_preparation_busy(),
         _ => evidence,
     };
     WorthQueryProviderProgressionOutcome::Indeterminate(evidence)

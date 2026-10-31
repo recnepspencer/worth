@@ -129,6 +129,7 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
 
 fn classify_kind(kind: Kind) -> Outcome {
     match kind {
+        Kind::IdempotencyPreparationBusy => Outcome::RetryableCommitFailure(kind),
         Kind::StorageUnavailable(_) => Outcome::TerminalFailure(Terminal::ApplicationCommit(kind)),
         Kind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,

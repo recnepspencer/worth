@@ -101,9 +101,11 @@ pub fn assert_source_change_key_absent(application: &Application) {
                 .unwrap()
         })
         .expect("installed host call opens");
-    assert_eq!(
-        read.resolution(),
-        &primary_graph::WorthQueryApplicationIdempotencyResolution::Unseen,
+    assert!(
+        matches!(
+            read.resolution(),
+            primary_graph::WorthQueryApplicationIdempotencyResolution::Unseen
+        ),
         "a pre-effect refusal records no idempotency commitment"
     );
 }

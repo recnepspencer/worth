@@ -87,6 +87,9 @@ pub enum WorthQueryApplicationCommitOutcome {
     /// Some component owners moved, but the product head did not. Recover the
     /// product publication.
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     /// Nothing was written. The cause says why.
     NoEffect(WorthQueryApplicationNoEffect),
     /// This attempt committed; the receipt says what landed.
@@ -123,6 +126,8 @@ impl WorthQueryApplicationCommitOutcome {
             other @ (Self::CleanupRequired(_)
             | Self::ProductStale(_)
             | Self::ProductUnpublished(_)
+            | Self::ProductPreparationPending(_)
+            | Self::ProductPreparationRefused(_)
             | Self::NoEffect(_)
             | Self::Stale(_)
             | Self::Cancelled
@@ -148,6 +153,8 @@ impl WorthQueryApplicationCommitOutcome {
             Self::CleanupRequired(cleanup) => Uncommitted::CleanupRequired(cleanup),
             Self::ProductStale(stale) => Uncommitted::ProductStale(stale),
             Self::ProductUnpublished(unpublished) => Uncommitted::ProductUnpublished(unpublished),
+            Self::ProductPreparationPending(owner) => Uncommitted::ProductPreparationPending(owner),
+            Self::ProductPreparationRefused(owner) => Uncommitted::ProductPreparationRefused(owner),
             Self::NoEffect(no_effect) => Uncommitted::NoEffect(no_effect),
             Self::Stale(stale) => Uncommitted::Stale(stale),
             Self::Cancelled => Uncommitted::Cancelled,
@@ -169,6 +176,9 @@ pub enum WorthQueryApplicationUncommitted {
     CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
+    ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
+
     NoEffect(WorthQueryApplicationNoEffect),
     Stale(WorthQueryApplicationStaleAttempt),
     Cancelled,
@@ -186,6 +196,8 @@ impl From<WorthQueryApplicationUncommitted> for WorthQueryApplicationCommitOutco
             Uncommitted::CleanupRequired(cleanup) => Self::CleanupRequired(cleanup),
             Uncommitted::ProductStale(stale) => Self::ProductStale(stale),
             Uncommitted::ProductUnpublished(unpublished) => Self::ProductUnpublished(unpublished),
+            Uncommitted::ProductPreparationPending(owner) => Self::ProductPreparationPending(owner),
+            Uncommitted::ProductPreparationRefused(owner) => Self::ProductPreparationRefused(owner),
             Uncommitted::NoEffect(no_effect) => Self::NoEffect(no_effect),
             Uncommitted::Stale(stale) => Self::Stale(stale),
             Uncommitted::Cancelled => Self::Cancelled,
@@ -209,6 +221,8 @@ pub struct WorthQueryApplicationUnresolvedCommitEvidence {
     stage: crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage,
     detail: String,
     cleanup_failure: Option<WorthQueryApplicationManagedCleanupFailure>,
+    idempotency_read_denial:
+        Option<super::super::WorthQueryApplicationIdempotencyResolutionDenialKind>,
 }
 
 /// Additional managed cleanup evidence retained alongside the unresolved commit cause.
@@ -235,9 +249,21 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
             stage: failure.stage(),
             detail: failure.detail().to_owned(),
             cleanup_failure: None,
+            idempotency_read_denial: None,
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn with_preparation_busy(mut self) -> Self {
+        self.idempotency_read_denial = Some(
+            super::super::WorthQueryApplicationIdempotencyResolutionDenialKind::PreparationBusy,
+        );
+        self
+    }
+    pub const fn idempotency_read_denial(
+        &self,
+    ) -> Option<super::super::WorthQueryApplicationIdempotencyResolutionDenialKind> {
+        self.idempotency_read_denial
+    }
     pub(in crate::domain_computation::primary_graph) fn with_read_stop(
         mut self,
         cause: Result<

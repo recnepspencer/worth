@@ -347,3 +347,6 @@ mod tests;
 pub(in crate::domain_computation::primary_graph) use commit_preparation::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
+
+pub(in crate::domain_computation) use commit_preparation::QueryPreparingApplicationCommit;
+pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::RetainedQueryDurablePreparation;

@@ -20,8 +20,7 @@ mod inspection_read;
 mod managed_index_read;
 mod mutation_readmission;
 pub(in crate::domain_computation) use managed_index_read::{
-    WorthQueryManagedIndexCallbackProof, WorthQueryManagedIndexReadSession,
-    WorthQueryManagedIndexSelectionProof,
+    WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
     WorthQueryManagedIndexSessionDenial,
 };
 mod prepared_query_read;

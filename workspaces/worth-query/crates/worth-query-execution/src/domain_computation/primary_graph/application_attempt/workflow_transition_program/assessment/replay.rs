@@ -170,6 +170,11 @@ where
         .into_resolution();
     Ok(match resolution {
         WorthQueryApplicationIdempotencyResolution::Unseen => None,
+        WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+            Some(WorkflowProgressOutcome::Application(
+                WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+            ))
+        }
         WorthQueryApplicationIdempotencyResolution::IntentDrift => Some(
             WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                 super::super::super::WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
