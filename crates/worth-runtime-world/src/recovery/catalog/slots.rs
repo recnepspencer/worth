@@ -134,6 +134,7 @@ impl RecoveryRecordSlots {
         ));
         Some(entry)
     }
+    #[cfg(test)]
     pub(super) fn iter(
         &self,
     ) -> impl Iterator<Item = (&ProductUnpublishedOwnerEffectsIdentity, &RecoveryEntry)> {

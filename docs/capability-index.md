@@ -1062,7 +1062,15 @@ This minimum also refuses Directory custody without a qualified durable handoff;
 it does not claim full request-aware Home or Native snapshot cleanup.
 
 The consuming `seal_world` retains the actual World close report and advances
-the same World-owned result cleanup before dropping World. A refused seal
+the same World-owned result cleanup before dropping World. Initialization uses
+original-request checks and trylocked constant-size Closed/catalog admission.
+Each cleanup advance visits one sealed history slot or advances Native's genuine
+original-result retirement task with the actual Home Native owner borrowed.
+Busy, stop, Native refusal and observer loss retain the same cursor, result and
+original release-cell custody; counts describe observed Native Complete outcomes.
+Recovered publication capabilities never become synthetic live result tasks.
+Final World/Bridge/Native destruction, materialized Native cache custody and cold
+capability retirement retain their separate contracts; this is not full Home D11. A refused seal
 retries through `try_seal_world`. Host can then release its Query observations
 before `finish_close` attempts Native teardown. Shared conditional assembly
 custody returns `WorldCompositionRetained` in the same Home recovery object;

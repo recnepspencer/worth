@@ -121,20 +121,20 @@ where
         mut self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<WorldSealedApplicationHome, WorldHomeCloseRefused<D, I, E, Ctx, T>> {
-        if let Err(cause) = crate::close::posture::interrupted(request) {
-            return Err(WorldHomeCloseRefused {
-                home: self,
-                reason: crate::ApplicationHomeCloseDenial::Execution(cause),
-            });
-        }
-        // Stop and observe accepted work outside World's admission locks. The
-        // actual World close then rechecks these SAME slots under its existing
-        // operation gate, so another admission cannot race check and seal.
-        self.home
-            .context
-            .world_publications
-            .settle_for_close(&self.home.context.serving);
         if self.home.context.world_close_report.is_none() {
+            if let Err(cause) = crate::close::posture::interrupted(request) {
+                return Err(WorldHomeCloseRefused {
+                    home: self,
+                    reason: crate::ApplicationHomeCloseDenial::Execution(cause),
+                });
+            }
+            // Stop and observe accepted work outside World's admission locks. The
+            // actual World close then rechecks these SAME slots under its existing
+            // operation gate, so another admission cannot race check and seal.
+            self.home
+                .context
+                .world_publications
+                .settle_for_close(&self.home.context.serving);
             let report = match self.world.lifecycle_port().close(request, &self.world) {
                 Ok(report) => report,
                 Err(cause) => {
@@ -147,30 +147,28 @@ where
             self.home.context.world_close_report = Some(report);
         }
         if self.world_cleanup.is_none() {
-            match self.world.result_snapshot_cleanup_after_close() {
+            match self.world.result_snapshot_cleanup_after_close(request) {
                 Ok(task) => self.world_cleanup = Some(task),
                 Err(cause) => {
                     return Err(WorldHomeCloseRefused {
                         home: self,
-                        reason: crate::ApplicationHomeCloseDenial::World(
-                            worth_runtime_world::facade::RuntimeWorldServiceDenial::Denied(cause),
-                        ),
+                        reason: crate::ApplicationHomeCloseDenial::WorldResultSnapshot(cause),
                     })
                 }
             }
         }
         // The SAME owning task stays in this Home before borrowing it for
         // Native release. Refusal never fabricates a serving World posture.
-        if let Err(cause) = self
-            .world_cleanup
-            .as_mut()
-            .expect("retained exact result task")
-            .advance()
-        {
-            return Err(WorldHomeCloseRefused {
-                home: self,
-                reason: crate::ApplicationHomeCloseDenial::WorldResultSnapshot(cause),
-            });
+        loop {
+            match self.world_cleanup.as_mut().expect("retained exact result task")
+                .advance(request, self.home.relational().runtime()) {
+                Ok(worth_runtime_world::facade::RuntimeWorldResultSnapshotCleanupProgress::Advanced) => continue,
+                Ok(worth_runtime_world::facade::RuntimeWorldResultSnapshotCleanupProgress::Complete(_)) => break,
+                Err(cause) => return Err(WorldHomeCloseRefused {
+                    home: self,
+                    reason: crate::ApplicationHomeCloseDenial::WorldResultSnapshot(cause),
+                }),
+            }
         }
         let Self {
             home,

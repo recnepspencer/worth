@@ -7,7 +7,8 @@ mod ports;
 pub use clock::{RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldInstant};
 pub use close::{
     RuntimeWorldCloseDenial, RuntimeWorldCloseReport, RuntimeWorldRecoveredCustodyReport,
-    RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupReport,
+    RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupDenial,
+    RuntimeWorldResultSnapshotCleanupProgress, RuntimeWorldResultSnapshotCleanupReport,
     RuntimeWorldRetainedRecordReport,
 };
 pub use owner::{

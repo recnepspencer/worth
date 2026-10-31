@@ -250,11 +250,6 @@ impl std::fmt::Debug for ProductUnpublishedOwnerEffectsRecord {
 }
 
 impl ProductUnpublishedOwnerEffectsRecord {
-    pub(crate) fn owned_relational_result(
-        &self,
-    ) -> Option<Arc<worth_relational::facade::transactions::CommitResult>> {
-        self.component_results.owned_relational_result()
-    }
     pub(crate) fn admitted_at(&self) -> RuntimeWorldInstant {
         self.admitted_at
     }

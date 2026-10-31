@@ -26,10 +26,10 @@ pub struct RuntimeWorldPublicationCursor {
 /// Owner-scoped immutable frontier for a bounded reconstruction pass.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuntimeWorldPublicationFrontier {
-    owner: RuntimeWorldOwnerIdentity,
-    catalog_affinity: usize,
-    revision: u64,
-    upper_bound: Option<CompositeCommitIdentity>,
+    pub(super) owner: RuntimeWorldOwnerIdentity,
+    pub(super) catalog_affinity: usize,
+    pub(super) revision: u64,
+    pub(super) upper_bound: Option<CompositeCommitIdentity>,
 }
 
 /// One committed publication retained by history, independent of live heads.

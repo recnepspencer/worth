@@ -25,9 +25,7 @@ pub enum ApplicationHomeCloseOutcome {
 pub enum ApplicationHomeCloseDenial {
     WorldCompositionRetained,
     CheckpointSettlement(crate::ApplicationHomeCheckpointDenial),
-    WorldResultSnapshot(
-        worth_relational::facade::branch::RelationalCommitResultSnapshotReleaseDenial,
-    ),
+    WorldResultSnapshot(worth_runtime_world::facade::RuntimeWorldResultSnapshotCleanupDenial),
     World(
         worth_runtime_world::facade::RuntimeWorldServiceDenial<
             worth_runtime_world::facade::RuntimeWorldCloseDenial,

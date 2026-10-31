@@ -17,22 +17,6 @@ impl ReservedProductUnpublishedSlot {
 }
 
 impl ProductUnpublishedRecoveryCatalog {
-    pub(crate) fn owned_relational_results(
-        &self,
-    ) -> Vec<Arc<worth_relational::facade::transactions::CommitResult>> {
-        let identities = self.identities();
-        let mut results = Vec::new();
-        for identity in identities {
-            let handle = ProductUnpublishedRecoveryHandle::new(identity, self.affinity());
-            if let Ok(record) = self.inspect_record(&handle)
-                && let Some(result) = record.owned_relational_result()
-            {
-                results.push(result);
-            }
-        }
-        results
-    }
-
     pub(crate) fn claim_recovered(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,

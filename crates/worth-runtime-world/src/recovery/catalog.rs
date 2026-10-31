@@ -293,6 +293,7 @@ impl ProductUnpublishedRecoveryCatalog {
         Ok(Some(record))
     }
 
+    #[cfg(test)]
     pub(crate) fn identities(&self) -> Vec<ProductUnpublishedOwnerEffectsIdentity> {
         let state = self.locked_state();
         state

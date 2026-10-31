@@ -5,7 +5,8 @@ mod drain;
 mod report;
 mod result_snapshots;
 pub use result_snapshots::{
-    RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupReport,
+    RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupDenial,
+    RuntimeWorldResultSnapshotCleanupProgress, RuntimeWorldResultSnapshotCleanupReport,
 };
 
 pub use report::{

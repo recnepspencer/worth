@@ -2,7 +2,30 @@ use worth_relational::facade::branch::{AdmittedRelationalBranchBasis, Relational
 use worth_relational::facade::history::RelationalCommitIdentity;
 use worth_relational::facade::transactions::CommitResult;
 
-use super::{CompositeRelationalOwnerResult, CompositeRelationalOwnerResultKind};
+use super::{
+    CompositeOwnerExecutionResults, CompositeRelationalOwnerResult,
+    CompositeRelationalOwnerResultKind,
+};
+
+impl CompositeOwnerExecutionResults {
+    /// Absence is coherent only for a leg that creates no commit snapshot.
+    pub(crate) fn result_for_snapshot_cleanup(
+        &self,
+    ) -> Result<Option<std::sync::Arc<CommitResult>>, ()> {
+        match &self.relational.result {
+            CompositeRelationalOwnerResultKind::RetainedExact
+            | CompositeRelationalOwnerResultKind::Forked { .. } => Ok(None),
+            CompositeRelationalOwnerResultKind::Published {
+                settlement: Some(_),
+                result: Some(result),
+                ..
+            } => Ok(Some(result.clone())),
+            CompositeRelationalOwnerResultKind::Published { .. }
+            | CompositeRelationalOwnerResultKind::SettlementRequired { .. }
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. } => Err(()),
+        }
+    }
+}
 
 impl CompositeRelationalOwnerResult {
     pub(crate) fn retained() -> Self {

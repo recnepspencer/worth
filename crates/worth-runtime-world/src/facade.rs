@@ -94,6 +94,7 @@ pub use crate::lifecycle::{
     RuntimeWorldOwner, RuntimeWorldOwnerBuilder, RuntimeWorldOwnerLifecycleObservation,
     RuntimeWorldOwnerUnavailable, RuntimeWorldPublicationPort, RuntimeWorldRecoveredCustodyReport,
     RuntimeWorldRecoveryPort, RuntimeWorldResultSnapshotCleanup,
+    RuntimeWorldResultSnapshotCleanupDenial, RuntimeWorldResultSnapshotCleanupProgress,
     RuntimeWorldResultSnapshotCleanupReport, RuntimeWorldRetainedRecordReport,
     RuntimeWorldServiceDenial,
 };

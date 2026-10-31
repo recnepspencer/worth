@@ -39,18 +39,43 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    /// Initialize constant-size cleanup custody after this actual owner sealed.
     pub fn result_snapshot_cleanup_after_close(
         &self,
-    ) -> Result<super::RuntimeWorldResultSnapshotCleanup, super::RuntimeWorldCloseDenial> {
-        if self.root.lifecycle_observation() != super::RuntimeWorldOwnerLifecycleObservation::Closed
-        {
-            return Err(super::RuntimeWorldCloseDenial::CloseNotCompleted);
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        super::RuntimeWorldResultSnapshotCleanup,
+        super::RuntimeWorldResultSnapshotCleanupDenial,
+    > {
+        use super::RuntimeWorldResultSnapshotCleanupDenial as Denial;
+        request.consult().map_err(Denial::Stopped)?;
+        let state = &self.root.state;
+        let operation = state.operation.state.try_lock().map_err(|_| Denial::Busy)?;
+        let close = state.close.try_lock().map_err(|_| Denial::Busy)?;
+        if !self.root.owner_is_present() {
+            return Err(Denial::OwnerUnavailable);
         }
-        let mut results = self.root.state.history.owned_relational_results();
-        results.extend(self.root.state.recovery.owned_relational_results());
+        if close.state() != super::close::RuntimeWorldCloseState::Closed {
+            return Err(Denial::CloseNotCompleted);
+        }
+        if operation.active != 0
+            || operation.recovery_active != 0
+            || state
+                .recovery
+                .try_has_close_custody()
+                .map_err(|_| Denial::Busy)?
+            || state
+                .custody
+                .try_has_close_custody()
+                .map_err(|_| Denial::Busy)?
+        {
+            return Err(Denial::InconsistentSealedCatalog);
+        }
+        let frontier = state.history.try_result_snapshot_cleanup_frontier()?;
         Ok(super::RuntimeWorldResultSnapshotCleanup::from_closed_owner(
-            self.root.state.relational.basis_port(),
-            results,
+            state.relational.basis_port(),
+            state.history.clone(),
+            frontier,
         ))
     }
 
