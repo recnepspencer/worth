@@ -16,6 +16,7 @@ mod checkpoint_transition;
 mod checkpointing;
 mod diagnostics;
 mod recorded_component_readmission;
+mod recovered_associated_effects;
 mod recovered_publication;
 pub use recovered_publication::{
     RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,

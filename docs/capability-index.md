@@ -789,7 +789,11 @@ recovered publication capability; see
 For actual reconstruction, `durability_recovery().recover_with_authority` returns
 the existing Native recovery authority. Its `admit_recorded_component` admits
 exact source-produced Empty or canonical images with actual observation pins;
-canonical Memory and missing/foreign/mismatched images refuse. Its descriptive
+canonical Memory and missing/foreign/mismatched images refuse.
+Its closed-readmission `discover_recovered_associated_effects(execution, &runtime)`
+checks exact recovery/runtime affinity before the same complete associated
+inventory, even when empty. It grants no live publication fence or absence proof.
+Its descriptive
 `recorded_publication_successor` selects the original after-reference from the
 same source-backed effect and this recovery's captured observations when a crash
 preceded the caller's occurrence; missing/ambiguous images refuse, and it grants

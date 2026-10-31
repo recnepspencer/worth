@@ -201,6 +201,13 @@ opaque bytes, so the caller can validate its own namespace and original opens
 before claiming reconciliation. It skips unassociated entries without loading
 them and retains the same Memory, missing-metadata and changed-subject refusals.
 Native interprets no caller namespace.
+
+For closed readmission, the actual recovered authority's
+`discover_recovered_associated_effects(execution, &runtime)` unconditionally
+checks its exact runtime affinity before this same full inventory scan, including
+an empty inventory. This historical authority grants neither a live publication
+fence nor an absence witness; the not-yet-exposed composition supplies exclusion.
+
 `readmit_associated_effect(execution, &subject)` reads that source even when a
 body is resident, validates its full receipt, position, digest, association and
 schema/root metadata, and exposes the original immutable semantic image.
