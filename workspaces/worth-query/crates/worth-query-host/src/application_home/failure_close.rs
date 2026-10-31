@@ -45,6 +45,10 @@ enum WorldQueryPreparation<Schema: ApplicationSchemaComposition, Program> {
         _query: ReadmittedHomeQueryService<Schema, Program>,
         _cause: HomeCustodyReadmissionDenial,
     },
+    OwnerAdmission {
+        _query: ReadmittedHomeQueryService<Schema, Program>,
+        _cause: ApplicationHomeOwnerAdmissionDenial,
+    },
 }
 enum BootstrapFailure {
     InitialState(QueryHomeInitialStateDenial),
@@ -68,6 +72,7 @@ impl<Schema: ApplicationSchemaComposition, Program> WorldQueryPreparation<Schema
             Self::Bootstrap { _cause, .. } => _cause.detail(),
             Self::Attachment(query) => query.detail(),
             Self::Custody { _cause, .. } => format!("{_cause:?}"),
+            Self::OwnerAdmission { _cause, .. } => format!("{_cause:?}"),
         }
     }
 }
@@ -176,6 +181,17 @@ impl<Schema: ApplicationSchemaComposition, Program>
                 home,
                 request,
             ),
+            OwnerAdmission { query, home } => {
+                let (home, cause) = home.into_parts();
+                close_world_preparation(
+                    WorldQueryPreparation::OwnerAdmission {
+                        _query: query,
+                        _cause: cause,
+                    },
+                    home,
+                    request,
+                )
+            }
         }
     }
 }

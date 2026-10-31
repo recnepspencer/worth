@@ -79,6 +79,10 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
         home: DirectoryHome,
         cause: HomeCustodyReadmissionDenial,
     },
+    OwnerAdmission {
+        query: ReadmittedHomeQueryService<Schema, Program>,
+        home: ApplicationHomeOwnerAdmissionRefused,
+    },
 }
 
 #[derive(Debug)]
@@ -126,6 +130,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             Self::WorldRoot { cause, .. } => format!("{cause:?}"),
             Self::QueryAttachment { query, .. } => query.detail(),
             Self::CustodyReadmission { cause, .. } => format!("{cause:?}"),
+            Self::OwnerAdmission { home, .. } => format!("{:?}", home.reason()),
         }
     }
 }

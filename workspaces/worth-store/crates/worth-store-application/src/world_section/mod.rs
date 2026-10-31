@@ -18,6 +18,7 @@ pub(crate) use attachment::ApplicationHomeBridgeComposition;
 pub(crate) use attachment::UnclaimedWorldSlot;
 pub use readmission::{readmit_query_world, ApplicationHomeQueryCompositionDenial};
 pub use readmission::{readmit_world, WorldHomeReadmissionRefused, WorldReadmittedApplicationHome};
+pub use readmission::{ApplicationHomeOwnerAdmissionRefused, NoPendingApplicationHomeTransition};
 use std::sync::Arc;
 use worth_runtime_world::facade::WorldDurableHomeBinding;
 use worth_store::physical_runtime::{AdmittedRecordPlacementPolicy, ServingPhysicalRuntime};

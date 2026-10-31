@@ -50,6 +50,13 @@ release, restores a proposal, or permits resubmission.
 Existing-Home Query serving and original business-result readmission remain
 closed until their genuine publication and terminal producers are available.
 
+Before Directory service escapes, Store also inspects its actual reserved
+transition, Signal and Query obligation journals. An entry, unresolved journal
+publication or unavailable inspection returns owned opening refusal. Keep that
+refusal and use its consuming `close` route; it retains the same Home lease
+until actual close completes. Program activation equality alone does not
+establish that a pending transition has settled.
+
 `ProductPreparationRefused` is different: it retains unprepared Query input and
 the actual terminal cause, with no publication or retry door. Its business entry
 is released, but it may retain partial successor reservations. Discard the

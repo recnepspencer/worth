@@ -5856,6 +5856,14 @@ Existing-Home Query attachment still refuses until the authentic bootstrap
 publication and original terminal can be readmitted; lower World recovery alone
 cannot reconstruct an application's Rust return value.
 
+Directory startup also refuses before service if Store finds a retained entry
+or unresolved publication in an unsupported transition, Signal or Query
+obligation journal, or cannot inspect that journal. The opening refusal owns
+the original Query preparation and Home. Consume its `close` operation to
+release them through the actual lifecycle; a refusal continues to hold the
+mutation lease. Matching program activation does not settle a pending Home
+transition.
+
 A terminal `ProductPreparationRefused` has no future publication or retry door.
 Its business entry is released, while its opaque carrier can still own partial
 successor reservations. Discard it to release those resources through ordinary

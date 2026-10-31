@@ -197,12 +197,21 @@ where
 }
 
 /// Private payloads are never returned before both actual admission phases.
-struct FreshHomeService<Schema: ApplicationSchemaComposition, Program> {
+struct HomeServiceCustody<Schema: ApplicationSchemaComposition, Program> {
     query: ReadmittedHomeQueryService<Schema, Program>,
     home: DirectoryHome,
 }
 impl<Schema: ApplicationSchemaComposition, Program: 'static> AuthorityMarker
-    for FreshHomeService<Schema, Program>
+    for HomeServiceCustody<Schema, Program>
+{
+}
+
+struct SettledHomeService<Schema: ApplicationSchemaComposition, Program> {
+    query: ReadmittedHomeQueryService<Schema, Program>,
+    home: NoPendingApplicationHomeTransition,
+}
+impl<Schema: ApplicationSchemaComposition, Program: 'static> AuthorityMarker
+    for SettledHomeService<Schema, Program>
 {
 }
 
@@ -245,17 +254,20 @@ fn finish_fresh_service<Schema: ApplicationSchemaComposition, Program: 'static>(
             cause,
         });
     }
-    // Query's exclusive fresh constructors expose no service/provider/source
-    // handle before this point. Their new ledgers cannot have accepted work.
-    let custody = CustodyReadmitted::from_owner(FreshHomeService { query, home });
-    // This consuming fresh recipe selected the real initial program/closed
-    // roster and acknowledged its activation before the actual World root.
-    // It carries no adoption request and admits no existing-home transition.
-    let settled = custody.consume(TransitionSettled::from_owner);
+    let custody = CustodyReadmitted::from_owner(HomeServiceCustody { query, home });
+    let settled = custody.consume(|HomeServiceCustody { query, home }| {
+        match home.readmit_no_pending_owners(&phase.execution_request()) {
+            Ok(home) => Ok(TransitionSettled::from_owner(SettledHomeService {
+                query,
+                home,
+            })),
+            Err(home) => Err(WorthQueryApplicationHomeOpenRefused::OwnerAdmission { query, home }),
+        }
+    })?;
     Ok(settled.consume(
-        |FreshHomeService { query, home }| WorthQueryApplicationHome {
+        |SettledHomeService { query, home }| WorthQueryApplicationHome {
             query: query.into_home_program_runtime(),
-            directory: Some(home),
+            directory: Some(home.into_no_pending_home()),
         },
     ))
 }

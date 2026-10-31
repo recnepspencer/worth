@@ -1,4 +1,5 @@
 pub(crate) mod physical_admission;
+pub(crate) mod readmission;
 
 use crate::home_context::{
     AdmittedApplicationHome, HomeContext, ReadmittedApplicationHome, RecoveredPhysicalHome,
