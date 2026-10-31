@@ -7,7 +7,11 @@ use std::{num::NonZeroUsize, time::Duration};
 fn realized_footprint_atomic_pin_rejects_a_native_write_after_target_verification() {
     lifecycle::run(|| {
         let calls = Arc::new(prefix::Calls::default());
-        let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
+        let world = host::install_decision_read(
+            calls.clone(),
+            Arc::new(rule::Calls::new(calls)),
+            DecisionRead::Empty,
+        );
         let scope = authentication::request_scope();
         let principal = authentication::block_on(
             authentication::admit(world.installed_schema()).authenticate(
@@ -25,7 +29,8 @@ fn realized_footprint_atomic_pin_rejects_a_native_write_after_target_verificatio
         assert!(source.has_verified_realized_footprint());
         let (partition, slot, generation) = original.rows()[0].coordinate;
         let record = RelationalBridgeRecordIdentityParts::entity(partition, slot, generation);
-        // The later target must be Realized, rather than the unchanged whole-Source path.
+        // The genuine handler reads needle. Its fresh fact cannot coalesce with
+        // this old sh expectation; the latter must reach target revalidation.
         insert(
             &world,
             &principal,

@@ -211,14 +211,41 @@ where
                 .read
                 .result_set_observation()
                 .source()
-                .source_meaning
-                .footprint()
-                .maintained_source()
+                .invocation_managed_source()
+                .map_err(|_| Denial::ForeignAssociation)?
                 .ok_or(Denial::ForeignAssociation)?;
             let dependency = Arc::clone(dependency);
             Ok((completed.read.into_rows(), dependency))
         });
     result.map_err(|cause| {
         WorthQueryManagedIndexDenial::new(ReceiverCause::Provider(cause), Some(allocation))
+    })
+}
+
+/// The already resolved selected Source consumes the same Native transport.
+pub(in crate::domain_computation::primary_graph::application_query) fn read_source_admitted<S, B>(
+    execution: &ExecutionRequest<'_, '_>,
+    access: &SourceQueryReaderAccess<'_, S>,
+    plan: BoundPlan<'_, S, B>,
+    native: &mut ApplicationQueryNativeAccess<'_>,
+) -> Result<CompletedOneShotRead<B::Query, ResultValue<S, B>>, SourceQueryObservationStop>
+where
+    S: ApplicationSchema,
+    B: ApplicationQueryBinding<S>,
+    ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+{
+    use super::denial::{ReceiverCause, WorthQueryManagedIndexDenial};
+    let storage_stop =
+        |cause: worth_relational::facade::transactions::RelationalExecutionDenialCause| {
+            SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Admission(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause)))
+        };
+    let allocation = SourceFactsAllocation::open(execution).map_err(storage_stop)?;
+    read::<S, B>(execution, access, plan, native, &allocation).map_err(|cause| {
+        match WorthQueryManagedIndexDenial::new(ReceiverCause::Provider(cause), Some(allocation))
+            .retain(execution)
+        {
+            Ok(cause) => SourceQueryObservationStop::ManagedIndex(cause),
+            Err(cause) => storage_stop(cause),
+        }
     })
 }

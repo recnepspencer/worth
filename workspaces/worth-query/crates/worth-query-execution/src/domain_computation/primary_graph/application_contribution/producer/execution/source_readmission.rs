@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
@@ -247,19 +248,61 @@ where
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let installed_limits = runtime.resolve_application_query_limits(installed.limits());
     let maximum_results = installed_limits.maximum_results();
-    let (_, product, application_basis) = selected.into_parts();
-    let controls = WorthQueryApplicationQueryControls::product_one_shot(
-        product,
-        application_basis,
-        maximum_results,
-        request,
-    );
-    let plan = runtime
-        .readmit_application_query_from_observed(execution, query, &access, retained, controls)
-        .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
-    let read = runtime
-        .execute_application_query_one_shot_with_request(execution, plan)
-        .map_err(|error| query_execution_denied(Binding::IDENTITY, error))?;
+    let read = if query.read_graph().managed_index_selection().is_none() {
+        // The ordinary current executor refreshes governed authorization. It is
+        // a different supported admission purpose from selected read-only disclosure.
+        let (_, product, application_basis) = selected.into_parts();
+        let controls = WorthQueryApplicationQueryControls::product_one_shot(
+            product,
+            application_basis,
+            maximum_results,
+            request,
+        );
+        let plan = runtime
+            .readmit_application_query_from_observed(execution, query, &access, retained, controls)
+            .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
+        runtime
+            .execute_application_query_one_shot_with_request(execution, plan)
+            .map_err(|error| query_execution_denied(Binding::IDENTITY, error))?
+    } else {
+        let shared = selected
+            .prepare_shared_query_basis()
+            .map_err(|(_, stop)| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
+        let (product, application_basis) = runtime
+            .retain_selected_query_basis_admitted(&shared)
+            .map_err(|stop| match stop {
+                SelectedQueryBasisRetentionStop::Admission(stop) => {
+                    ready::ready_resource_denial(Binding::IDENTITY, stop)
+                }
+                SelectedQueryBasisRetentionStop::Basis => {
+                    ProducerExecutionStop::ExecutionStopped(denial(
+                        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                        Binding::IDENTITY,
+                    ))
+                }
+            })?;
+        let controls = WorthQueryApplicationQueryControls::selected_read_one_shot(
+            product,
+            application_basis,
+            maximum_results,
+            request,
+        )
+        .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
+        let plan = runtime
+            .readmit_application_query_from_observed(execution, query, &access, retained, controls)
+            .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
+        let reader =
+            crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess {
+                application: runtime,
+                shared: &shared,
+                principal: external_principal,
+                request,
+            };
+        let read = reader.read_admitted_result::<SourceBinding<Schema, Binding>>(execution, plan, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+            .map_err(|stop| super::denial::selected_source_read_denied(Binding::IDENTITY, stop))?;
+
+        read
+    };
 
     super::super::demand::disclosure::validate_readmitted(
         execution,

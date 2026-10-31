@@ -8,6 +8,7 @@ pub use handler::Handler;
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Generate {
+    pub identity: String,
     pub directory: String,
     pub name: String,
 }
@@ -19,7 +20,7 @@ pub struct Decision {
     pub a: WorthQueryInvariantMutationTarget<Catalog, Directory>,
     pub b: WorthQueryInvariantMutationTarget<Catalog, Directory>,
 }
-worth_query_structured_value_binding!(pub InputBinding for Generate { identity: "maintained-generated.operation-input.v1" });
+worth_query_structured_value_binding!(pub InputBinding for Generate { identity: "maintained-generated.operation-input.v2" });
 worth_query_structured_value_binding!(pub ResultBinding for Generated { identity: "maintained-generated.operation-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-generated.operation-denial.v1" });
 worth_query_operation!(pub GenerateItem for Catalog, input InputBinding);

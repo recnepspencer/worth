@@ -29,6 +29,7 @@ pub struct WorthQueryOutputDemandDenial {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
+    managed_source_query: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenial>>,
     managed_index: Option<crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial>,
     output_comparison: Option<worth_runtime_bridge::facade::BridgeOutputComparisonDenial>,
     custom_invariant: Option<crate::domain_computation::WorthQueryCustomInvariantDenial>,
@@ -366,3 +367,5 @@ impl WorthQueryOutputDemandDenial {
 
 mod charged_bytes;
 mod managed_index;
+
+mod managed_source_query;

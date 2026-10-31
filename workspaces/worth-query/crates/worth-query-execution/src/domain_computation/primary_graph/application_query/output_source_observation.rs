@@ -16,6 +16,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
+mod admitted;
 mod permission;
 mod read_closure;
 mod same_scope;
@@ -47,6 +48,7 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum SourceQueryObservationStop {
+    ManagedIndex(Arc<super::managed_index::WorthQueryManagedIndexDenial>),
     Installation(worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial),
     Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
     Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),

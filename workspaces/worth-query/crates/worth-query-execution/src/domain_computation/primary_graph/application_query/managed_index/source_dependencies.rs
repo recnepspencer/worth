@@ -108,13 +108,21 @@ pub(super) fn capture_maintained(
         .map_err(storage_stop)?;
     let mut digest = Sha256::new();
     storage.work(96)?;
-    digest.update(b"worth-query:maintained-source:v1");
+    digest.update(b"worth-query:maintained-source:v2");
     digest.update(observation.key().obligation);
     let scope = observation.key().scope;
     digest.update(scope.partition_value().to_be_bytes());
     digest.update(scope.local_slot_value().to_be_bytes());
     digest.update(scope.generation_value().to_be_bytes());
-    digest.update(observation.native().source_revision().0.to_be_bytes());
+    if let Some(origin) = observation.key().influence {
+        storage.work(65)?;
+        digest.update([1]);
+        digest.update(origin.parameters);
+        digest.update(origin.content.bytes());
+    } else {
+        digest.update([0]);
+        digest.update(observation.native().source_revision().0.to_be_bytes());
+    }
     storage.arc::<ManagedSourceDependencies>()?;
     Ok(Arc::new(ManagedSourceDependencies {
         rows,

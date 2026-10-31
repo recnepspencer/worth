@@ -1,11 +1,22 @@
 //! Ordinary typed observations and output authoring supply actual manifest custody.
 use super::*;
 pub struct Handler;
-impl OperationHandler<Catalog, Binding> for Handler {
+impl<B> OperationHandler<Catalog, B> for Handler
+where
+    B: ApplicationMutationBinding<
+        Catalog,
+        Input = Generate,
+        Operation = GenerateItem,
+        Decision = Decision,
+        Result = Generated,
+        Denial = Denial,
+        Output = Outputs,
+    >,
+{
     fn decide(
         &self,
         input: &Generate,
-        reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
+        reader: &mut DecisionReader<'_, '_, '_, Catalog, B>,
     ) -> HandlerResult<Decision, Denial> {
         HandlerResult::from_result((|| {
             let a =
@@ -21,7 +32,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
         &self,
         input: &Generate,
         decision: Decision,
-        writer: &mut CandidateWriter<'_, Catalog, Binding>,
+        writer: &mut CandidateWriter<'_, Catalog, B>,
     ) -> HandlerResult<Generated, Denial> {
         let result = (|| {
             let a = writer
@@ -34,15 +45,11 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 .create_entity_in_context(
                     &a,
                     Item::reference(),
-                    WorthQueryApplicationEntityKey::new("generated-item").unwrap(),
+                    WorthQueryApplicationEntityKey::new(&input.identity).unwrap(),
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(
-                    &item,
-                    ItemIdentity::reference(),
-                    "generated-item".to_owned(),
-                )
+                .initialize_field(&item, ItemIdentity::reference(), input.identity.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .initialize_field(&item, ItemName::reference(), input.name.clone())
@@ -58,10 +65,20 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .link(Contains::reference(), "generated-A", &a, &item)
+                .link(
+                    Contains::reference(),
+                    &format!("{}-A", input.identity),
+                    &a,
+                    &item,
+                )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .link(Contains::reference(), "generated-B", &b, &item)
+                .link(
+                    Contains::reference(),
+                    &format!("{}-B", input.identity),
+                    &b,
+                    &item,
+                )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .create_output::<ItemOutput>(&item)

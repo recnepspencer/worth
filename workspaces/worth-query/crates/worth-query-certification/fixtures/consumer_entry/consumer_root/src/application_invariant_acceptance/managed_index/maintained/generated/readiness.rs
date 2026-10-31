@@ -22,9 +22,9 @@ worth_query_host::facade::worth_query_conditional_node!(
     pub ReadyNode in ReadinessDomain, ReadinessOperation, ReadinessFamily => operation "generated-catalog-ready"
 );
 pub struct Readiness;
-type Contract =
+pub(super) type Contract =
     WorthQueryOutputReadinessContract<ReadinessDomain, ReadinessOperation, ReadinessFamily>;
-type Binding = domain::WorthQueryApplicationConditionalOperationBinding<
+pub(super) type Binding = domain::WorthQueryApplicationConditionalOperationBinding<
     Catalog,
     GenerateItem,
     Generate,
@@ -32,10 +32,10 @@ type Binding = domain::WorthQueryApplicationConditionalOperationBinding<
     ReadinessOperation,
     ReadinessFamily,
 >;
-fn binding(contract: &Contract) -> Binding {
+pub(super) fn binding(contract: &Contract) -> Binding {
     Binding::declare(GenerateItem::reference(), contract.definition().reference())
 }
-fn contract(
+pub(super) fn contract(
     declaration: &ErasedApplicationSchemaDeclaration,
 ) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
     WorthQueryOutputReadinessContractBuilder::for_field(

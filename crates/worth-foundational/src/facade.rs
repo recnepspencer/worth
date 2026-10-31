@@ -712,3 +712,5 @@ pub use crate::value_shape::{
     ValueVariantShape,
 };
 pub use worth_value_shape_derive::{ChargedBytes, WorthValue};
+
+pub use crate::projected_candidate_content::ProjectedCandidateContentV1;

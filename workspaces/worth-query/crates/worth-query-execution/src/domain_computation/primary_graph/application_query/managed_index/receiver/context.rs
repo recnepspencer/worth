@@ -50,7 +50,10 @@ pub(super) fn prepare<'a, S: ApplicationSchema, B: ApplicationQueryBinding<S>>(
     if !std::ptr::eq(binding.query(), plan.query) {
         return Err(ReceiverCause::Refused(Refusal::ForeignBinding));
     }
-    if !plan.controls.is_current_product_one_shot() || plan.retain_expression_context {
+    if plan.controls.lane()
+        != worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane::OneShot
+        || plan.retain_expression_context
+    {
         return Err(ReceiverCause::Refused(Refusal::UnsupportedMode));
     }
     validate_one_shot_plan(execution, application, plan).map_err(ReceiverCause::Read)?;
@@ -97,7 +100,10 @@ pub(super) fn prepare<'a, S: ApplicationSchema, B: ApplicationQueryBinding<S>>(
         &mut |units| storage.work(units),
         || worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow,
     )? {
-        return Err(ReceiverCause::Refused(Refusal::ForeignContext));
+        // A retained read is supported only while its genuine admitted World
+        // and Native occurrence still equal current truth. It keeps read-only
+        // controls; no Bridge/publication source is manufactured by this check.
+        return Err(ReceiverCause::Refused(Refusal::UnsupportedMode));
     }
     let selector =
         retain_scope(execution, plan.scope, plan.query.name()).map_err(ReceiverCause::Read)?;

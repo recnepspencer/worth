@@ -86,3 +86,24 @@ impl std::fmt::Display for WorthQueryManagedIndexDenial {
     }
 }
 impl std::error::Error for WorthQueryManagedIndexDenial {}
+
+impl PartialEq for WorthQueryManagedIndexDenial {
+    fn eq(&self, other: &Self) -> bool {
+        self.cause() == other.cause()
+    }
+}
+impl Eq for WorthQueryManagedIndexDenial {}
+impl WorthQueryManagedIndexDenial {
+    pub(in crate::domain_computation::primary_graph) fn retain(
+        mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<Self>, ExecutionCause> {
+        let allocation = match &self._allocation {
+            Some(value) => Arc::clone(value),
+            None => SourceFactsAllocation::open(execution)?,
+        };
+        crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion::new(execution, &allocation).arc::<Self>()?;
+        self._allocation = Some(allocation);
+        Ok(Arc::new(self))
+    }
+}

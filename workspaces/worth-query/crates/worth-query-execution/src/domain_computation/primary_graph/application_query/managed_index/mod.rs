@@ -2,6 +2,7 @@
 mod adapter;
 mod admitted_read;
 pub(in crate::domain_computation::primary_graph) use admitted_read::read_decision;
+pub(in crate::domain_computation::primary_graph::application_query) use admitted_read::read_source_admitted;
 mod build;
 mod candidates;
 mod configuration;

@@ -55,7 +55,7 @@ pub enum WorthQueryManagedIndexRefusal {
 }
 
 /// The actual original cause, borrowed from the owned operation denial.
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedIndexDenialCause<'a> {
     Refused(WorthQueryManagedIndexRefusal),
     Execution(&'a worth_relational::facade::transactions::RelationalExecutionDenialCause),
@@ -91,6 +91,7 @@ pub(super) fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
         ProviderExecutionDenial::SourceRead(cause) => {
             use application_query::output_source_observation::SourceQueryObservationStop as Stop;
             match cause {
+                Stop::ManagedIndex(cause) => cause.cause(),
                 Stop::Installation(cause) => Cause::Installation(cause),
                 Stop::Principal(cause) => Cause::Principal(cause),
                 Stop::Scope(cause) => Cause::Scope(cause),

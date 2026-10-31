@@ -24,6 +24,7 @@ impl WorthQueryApplicationProducerProvider<Catalog, Producer> for Provider {
     const SEMANTIC_IDENTITY: &'static str = "maintained-generated.provider.v1";
     fn operation_input(&self, source: &source::Row) -> operation::Generate {
         operation::Generate {
+            identity: "generated-item".into(),
             directory: source.directory.clone(),
             name: source.note.clone(),
         }

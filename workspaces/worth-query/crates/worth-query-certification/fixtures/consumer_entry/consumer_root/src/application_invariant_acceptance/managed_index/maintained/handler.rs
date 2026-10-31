@@ -17,7 +17,7 @@ impl OperationHandler<Catalog, mutation::Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Catalog, mutation::Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Catalog, Item>, mutation::Denial> {
         let rows = match self.0 {
-            DecisionRead::Declared | DecisionRead::Empty | DecisionRead::TwoProbes => {
+            DecisionRead::Declared | DecisionRead::TwoProbes => {
                 // compiled-example: begin
                 let rows = reader.index_query::<query::PrefixBinding>(query::FindPrefix {
                     directory: input.directory.clone(),
@@ -25,6 +25,14 @@ impl OperationHandler<Catalog, mutation::Binding> for Handler {
                 });
                 // compiled-example: end
                 rows
+            }
+            DecisionRead::Empty => {
+                // An independent genuine empty probe, even when the mutation's
+                // explicit Source expectation names another admitted parameter.
+                reader.index_query::<query::PrefixBinding>(query::FindPrefix {
+                    directory: input.directory.clone(),
+                    prefix: "needle".into(),
+                })
             }
             DecisionRead::OtherScope => {
                 reader.index_query::<query::PrefixBinding>(query::FindPrefix {

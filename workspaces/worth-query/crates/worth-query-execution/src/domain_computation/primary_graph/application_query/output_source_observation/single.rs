@@ -30,11 +30,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             native,
             |plan, native| {
                 let query = plan.query;
-                let completed = application
-                    .execute_application_query_one_shot_admitted_with_native_access(
-                        execution, plan, native,
-                    )
-                    .map_err(Stop::Read)?;
+                let completed = self.read_admitted::<Binding>(execution, plan, native)?;
                 let (rows, disclosure) = completed.read.into_admitted_disclosed().into_parts();
                 if rows.is_empty() {
                     return Err(Stop::Missing);

@@ -5700,9 +5700,11 @@ disposal releases the registration's image. Outstanding results, Source
 observations or in-flight selections can retain their own backing. Final
 release requires those owners and all runtime keepalives to close or drop.
 A stopped cold rebuild may leave Failed status; it publishes no Ready image.
-Use a fresh lawful request for another explicit rebuild. Historical/pinned
-managed-index reads and rebuilds remain unsupported; ordinary historical Source
-reads retain their existing contract.
+Use a fresh lawful request for another explicit rebuild. A retained managed
+one-shot read can run while its genuine World and Native selection still equals
+the current image. It retains read-only custody. A moved historical image remains
+unsupported before provider lookup; ordinary historical Source reads keep their
+existing contract.
 
 Declare `STRUCTURE = ApplicationManagedIndexSourceStructure::BinarySourceTree` and
 implement Node-only `decompose` to expose each node's stored genuine Source
@@ -5903,12 +5905,24 @@ Governed Parents and unsupported projection profiles retain the conservative
 whole-Source posture. Public reads, watches and pages still require fresh READ
 and disclosure admission; internal consistency verification exposes no rows.
 
-This first Phase4 slice does not stabilize observed-Source semantic identity
-across Source revisions, narrow field access, qualify output-demand reuse,
-selected-membership cutoff or correction history. Keep the observation until the
-mutation consumes it, then reread and reassess if equality cannot be proved.
+At this qualified Public profile, semantic Source identity covers the complete
+candidate cut, full projected content and exact dispositions, including rejected
+candidates. An unrelated Source edit can preserve genuine generated-output reuse.
+Every demand still admits fresh principal/scope/READ and disclosure, verifies the
+retained output at the actual target, and keeps the original Native expectation.
+A reused committed output can report `Performed` with its original historical
+receipt and zero new producer contacts; `StableReused` is a separate stable-lineage
+posture. Identity alone grants no reuse or publication authority.
+
+This profile retains full candidate inputs; it does not trace narrower field use,
+qualify selected-membership cutoff, correction history or governed influence.
+Successful regeneration after changed inputs depends on the declared producer
+lifecycle; an Initial-only/Create operation cannot replace a prior live output.
+Keep the observation until the mutation consumes it, then reread and reassess
+if equality cannot be proved.
 Reuse the operation's idempotency identity for a recorded retry; it does not
-repeat the completed mutation. See the [currentness evidence](../plans/WORTH-query/milestone-9.19-phase4-currentness-evidence.md).
+repeat the completed mutation. See the [currentness evidence](../plans/WORTH-query/milestone-9.19-phase4-currentness-evidence.md) and
+[semantic reuse plan](../plans/WORTH-query/milestone-9.19-phase4-semantic-reuse-plan.md).
 
 The maintained prefix and geometry courts also exercise genuine equal-value
 rename/move commits. A watch may remain Pending or deliver unchanged rows;

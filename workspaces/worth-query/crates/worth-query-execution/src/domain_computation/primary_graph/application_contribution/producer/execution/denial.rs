@@ -9,6 +9,7 @@ mod request_execution;
 mod source_readmission;
 pub(super) use content_identity::identity_failed;
 pub(super) use source_readmission::{query_admission_denied, query_execution_denied};
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use source_readmission::selected_source_read_denied;
 
 /// A rejected caller cannot terminally fail the output shared by other callers.
 /// Only actual operation/query admission issues the first variant.

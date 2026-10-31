@@ -11,7 +11,7 @@ pub(super) fn append_fact(
                 entries,
                 prefix,
                 if observation.has_verified_realized_footprint() {
-                    "managed-verified-candidate-influence-v1"
+                    "managed-verified-projected-candidate-content-v1"
                 } else {
                     "managed-complete-source"
                 },
@@ -33,12 +33,23 @@ pub(super) fn append_fact(
                     observation.key().obligation,
                 )),
             );
-            number_u64(
-                entries,
-                prefix,
-                "revision",
-                observation.native().source_revision().0,
-            );
+            if let Some(origin) = observation.key().influence {
+                push(
+                    entries,
+                    format!("{prefix}.projected-candidate-content-v1"),
+                    CanonicalBasisEntryKind::Value,
+                    CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(
+                        origin.content.bytes(),
+                    )),
+                );
+            } else {
+                number_u64(
+                    entries,
+                    prefix,
+                    "revision",
+                    observation.native().source_revision().0,
+                );
+            }
         }
         WorthQueryApplicationObservedFact::ComponentSelection { observation } => {
             kind(entries, prefix, "scoped-native-components");

@@ -14,6 +14,7 @@ use worth_relational::facade::identity::EntityId;
 pub(super) struct CapturedCandidateRows {
     owner: WorthQueryGraphWorkSessionIdentity,
     entries: ExecutionOrderedMap<EntityId, RowInfluence>,
+    content: worth_foundational::facade::ProjectedCandidateContentV1,
 }
 #[derive(Clone)]
 struct RowInfluence {
@@ -47,10 +48,50 @@ impl CapturedCandidateRows {
         if entries.len() != candidates.len() {
             return Err(control.refuse(Stop::IncompleteCoverage).into());
         }
+        let mut admit = |work| control.checkpoint(work);
+        let overflow = || control.refuse(Stop::CapacityOverflow);
+        let mut writer = crate::domain_computation::primary_graph::application_query::projection::ContentWriter::new(&mut admit, &overflow);
+        writer.bytes(worth_foundational::facade::ProjectedCandidateContentV1::DOMAIN)?;
+        writer.number(entries.len() as u64)?;
+        for (entity, influence) in entries.iter() {
+            writer.entity(*entity)?;
+            writer.number(u64::from(influence.accepted))?;
+            writer.bytes(&influence.body.content(control)?)?;
+        }
+        let content = worth_foundational::facade::ProjectedCandidateContentV1::new(writer.finish());
+        control.poll()?;
         Ok(Self {
             owner: rows.owner(),
             entries,
+            content,
         })
+    }
+    pub(super) fn content(&self) -> worth_foundational::facade::ProjectedCandidateContentV1 {
+        self.content
+    }
+    pub(super) fn same_captured(
+        &self,
+        other: &Self,
+        whole_source: bool,
+        checkpoint: &mut dyn FnMut(u64) -> bool,
+    ) -> bool {
+        if self.owner != other.owner
+            || self.content != other.content
+            || self.entries.len() != other.entries.len()
+        {
+            return false;
+        }
+        for ((left_key, left), (right_key, right)) in self.entries.iter().zip(other.entries.iter())
+        {
+            if !checkpoint(32)
+                || left_key != right_key
+                || left.accepted != right.accepted
+                || (!whole_source && !Arc::ptr_eq(&left.body, &right.body))
+            {
+                return false;
+            }
+        }
+        checkpoint(0)
     }
     pub(super) fn matches(
         &self,

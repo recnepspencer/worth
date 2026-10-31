@@ -97,15 +97,16 @@ where
                 let plan = runtime
                     .finish_prepared_application_query_permission(execution, permission)
                     .map_err(query_admission_denial)?;
-                let read = runtime
-                    .execute_application_query_one_shot_admitted(execution, plan)
+                let reader = crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess { application: runtime, shared: &shared, principal, request };
+                let read = reader.read_admitted_result::<Family::Source>(execution, plan, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
                     .map_err(|stop| {
-use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop as Stop;
+                        use crate::domain_computation::primary_graph::application_query::{SourceQueryObservationStop as Query, WorthQueryAdmittedOneShotStop as Stop};
                         match stop {
-                            Stop::Admission(stop) => resource_denial(stop),
-                            Stop::Execution(stop) => query_execution_denial(stop),
-                            Stop::WorkCounterOverflow
-                            | Stop::WorkAccountingMismatch => work_denial(),
+                            Query::Read(Stop::Admission(stop)) => resource_denial(stop),
+                            Query::Read(Stop::Execution(stop)) => query_execution_denial(stop),
+                            Query::Read(Stop::WorkCounterOverflow | Stop::WorkAccountingMismatch) => work_denial(),
+                            Query::ManagedIndex(cause) => WorthQueryOutputDemandDenial::managed_source_query(cause, "retained demand Source"),
+                            _ => denial(WorthQueryOutputDemandDenialKind::ForeignSource, "retained Source disclosure"),
                         }
                     })?;
                 crate::domain_computation::primary_graph::application_output_demand::observe_retained_source_selection(

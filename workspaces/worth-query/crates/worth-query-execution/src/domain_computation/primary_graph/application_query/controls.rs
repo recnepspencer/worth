@@ -58,7 +58,6 @@ pub struct WorthQueryApplicationQueryResumeControls<'a> {
 /// freshness, basis deadline, result and work limits, and request scope.
 pub struct WorthQueryAdmittedApplicationQueryControls<'a> {
     producer: Option<Arc<OriginalSettledProducerObservation>>,
-    current_product_one_shot: bool,
     basis: WorthQueryApplicationQueryBasisPosture,
     consistency: WorthQueryApplicationQueryConsistency,
     freshness: WorthQueryApplicationQueryFreshness,
@@ -238,8 +237,6 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
     ) {
         let basis_deadline = self.request_scope.deadline();
         let admitted = WorthQueryAdmittedApplicationQueryControls {
-            current_product_one_shot: self.publication_product.is_some()
-                && self.lane == WorthQueryApplicationQueryLane::OneShot,
             basis: self.basis_posture(),
             consistency: self.consistency(),
             freshness: self.freshness(),
@@ -303,11 +300,6 @@ impl WorthQueryAdmittedApplicationQueryControls<'_> {
             .as_ref()
             .filter(|origin| origin.matches_read(actual))
             .cloned()
-    }
-    pub(in crate::domain_computation::primary_graph::application_query) fn is_current_product_one_shot(
-        &self,
-    ) -> bool {
-        self.current_product_one_shot
     }
     pub const fn basis_posture(&self) -> WorthQueryApplicationQueryBasisPosture {
         self.basis

@@ -33,11 +33,21 @@ worth_query_mutation_binding!(pub Binding for RequestItem, schema Catalog, ident
     field DirectoryIdentity::reference(), value scope,
 );
 pub struct Handler;
-impl OperationHandler<Catalog, Binding> for Handler {
+impl<B> OperationHandler<Catalog, B> for Handler
+where
+    B: ApplicationMutationBinding<
+        Catalog,
+        Input = RequestItem,
+        Operation = RequestGeneratedItem,
+        Decision = WorthQueryInvariantMutationTarget<Catalog, Directory>,
+        Result = Changed,
+        Denial = Denial,
+    >,
+{
     fn decide(
         &self,
         input: &RequestItem,
-        reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
+        reader: &mut DecisionReader<'_, '_, '_, Catalog, B>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Catalog, Directory>, Denial> {
         HandlerResult::from_result((|| {
             let directory =
@@ -50,7 +60,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
         &self,
         input: &RequestItem,
         target: WorthQueryInvariantMutationTarget<Catalog, Directory>,
-        writer: &mut CandidateWriter<'_, Catalog, Binding>,
+        writer: &mut CandidateWriter<'_, Catalog, B>,
     ) -> HandlerResult<Changed, Denial> {
         HandlerResult::from_result((|| {
             let directory = writer

@@ -1,4 +1,5 @@
 //! Retained consistency authority exposes no rows, READ grant or publication.
+mod comparison;
 use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 use std::sync::Arc;
@@ -15,7 +16,12 @@ pub(in crate::domain_computation::primary_graph) trait RetainedManagedInfluence:
 {
     fn as_any(&self) -> &dyn std::any::Any;
     fn comparison_work(&self) -> u64;
-    fn same_inputs(&self, other: &dyn RetainedManagedInfluence) -> bool;
+    fn content(&self) -> worth_foundational::facade::ProjectedCandidateContentV1;
+    fn same_inputs(
+        &self,
+        other: &dyn RetainedManagedInfluence,
+        checkpoint: &mut dyn FnMut(u64) -> bool,
+    ) -> bool;
     fn revalidate(
         &self,
         runtime: &RelationalRuntime,
@@ -55,12 +61,26 @@ impl CapturedManagedInfluence {
     pub(in crate::domain_computation::primary_graph) fn comparison_work(&self) -> u64 {
         self.support.comparison_work()
     }
-    /// The consuming comparison admits both original parameter bounds first.
-    pub(in crate::domain_computation::primary_graph) fn same_inputs(&self, other: &Self) -> bool {
-        self.authority.admits(&other.proof)
-            && other.authority.admits(&self.proof)
-            && self.support.same_inputs(other.support.as_ref())
+    pub(in crate::domain_computation::primary_graph) fn content(
+        &self,
+    ) -> worth_foundational::facade::ProjectedCandidateContentV1 {
+        self.support.content()
     }
+    /// A false checkpoint cannot be swallowed into success by an erased callee.
+    pub(in crate::domain_computation::primary_graph) fn same_inputs<E>(
+        &self,
+        other: &Self,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+    ) -> Result<bool, E> {
+        admit(self.comparison_work())?;
+        admit(other.comparison_work())?;
+        comparison::with_checkpoint(admit, &mut |checkpoint| {
+            self.authority.admits(&other.proof)
+                && other.authority.admits(&self.proof)
+                && self.support.same_inputs(other.support.as_ref(), checkpoint)
+        })
+    }
+
     pub(in crate::domain_computation::primary_graph) fn new(
         proof: VerifiedRealizedFootprint,
         authority: RealizedFootprintAuthority,

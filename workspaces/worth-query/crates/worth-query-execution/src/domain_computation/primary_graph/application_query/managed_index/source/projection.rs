@@ -33,6 +33,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     pub(super) occurrence: ManagedIndexSourceOccurrence,
     pub(super) row: Tree,
     pub(super) dependencies: BTreeSet<ViewDependency>,
+    pub(super) content: std::sync::OnceLock<[u8; 32]>,
     _allocation: Arc<SourceFactsAllocation>,
 }
 impl Entry {
@@ -158,6 +159,7 @@ pub(super) fn project(
         row: WorkingTree::new(vec![row])
             .into_disclosed(&WorthQueryApplicationQueryGovernance::Public),
         dependencies: projector.dependencies,
+        content: std::sync::OnceLock::new(),
         _allocation: projector.allocation,
     })
 }

@@ -20,7 +20,7 @@ pub(in crate::domain_computation::primary_graph) struct ManagedSourceReadKey {
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct ManagedInfluenceOrigin {
     pub parameters: [u8; 32],
-    pub source_revision: worth_relational::facade::history::CommitId,
+    pub content: worth_foundational::facade::ProjectedCandidateContentV1,
 }
 
 #[derive(Clone)]
@@ -63,9 +63,9 @@ impl ManagedSourceRead {
             key: ManagedSourceReadKey {
                 obligation,
                 scope,
-                influence: influence.as_ref().map(|_| ManagedInfluenceOrigin {
+                influence: influence.as_ref().map(|capture| ManagedInfluenceOrigin {
                     parameters,
-                    source_revision: native.source_revision(),
+                    content: capture.content(),
                 }),
             },
             native,
@@ -91,16 +91,14 @@ impl ManagedSourceRead {
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
     ) -> Result<bool, E> {
-        if self.key != other.key || !self.native.same_source(&other.native) {
+        if self.key != other.key {
             return Ok(false);
         }
         Ok(match (&self.influence, &other.influence) {
-            (None, None) => true,
+            (None, None) => self.native.same_source(&other.native),
             (Some(left), Some(right)) if Arc::ptr_eq(left, right) => true,
             (Some(left), Some(right)) => {
-                admit(left.comparison_work())?;
-                admit(right.comparison_work())?;
-                left.same_inputs(right)
+                return left.same_inputs(right, admit);
             }
             _ => false,
         })

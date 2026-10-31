@@ -23,6 +23,7 @@ pub(super) fn reads_source(fact: &Fact) -> bool {
     matches!(
         fact,
         Fact::SourcePublication { .. }
+            | Fact::ManagedIndexSource { .. }
             | Fact::StructuralWalk { .. }
             | Fact::ComponentSelection { .. }
             | Fact::Aggregate { .. }

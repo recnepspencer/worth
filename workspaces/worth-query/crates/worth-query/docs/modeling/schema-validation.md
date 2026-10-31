@@ -380,8 +380,14 @@ complete forward receiver, actual Native cell/installation correspondence and
 shared immutable complete candidate bodies. The commit receiver pins that exact
 checked target. Raw frames, result rows and diagnostics cannot mint this support.
 Governed Parents remain conservative until passive capability/purpose binding is
-carried. Source semantic identity, selected membership and correction remain
-later work; this is no field-access trace. See the
+carried. Qualified Source semantic identity now uses complete projected candidate
+content and full admitted parameters, with actual captured-body equality and
+separate current-invocation custody. Real producer reuse after irrelevant edits
+keeps the original committed receipt and freshly admits output READ/disclosure.
+Exact-current retained managed reads require actual Native/World correspondence;
+moved historical reads still refuse. Selected membership and correction remain
+later work; this is no field-access trace. Initial-only producers do not gain
+successful changed-input regeneration from semantic reuse. See the
 [application guide](../../../../../../docs/build-an-application.md#construct-committed-provider-indexes)
 for ordinary Decl/Host setup, explicit access and the qualified fixture limits.
 

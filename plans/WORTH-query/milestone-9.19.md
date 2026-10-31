@@ -2181,3 +2181,17 @@ The [boundary review](milestone-9.19-phase4-boundary-review.md),
 first qualified-candidate influence/atomic expectation slice. It does not close
 Phase4. Semantic identity/output reuse, field tracing, selected-membership cutoff,
 correction support/history and governed influence qualification remain open.
+
+### Phase4 semantic identity and producer reuse slice
+
+The [review](milestone-9.19-phase4-semantic-reuse-boundary-review.md) and
+[implementation plan](milestone-9.19-phase4-semantic-reuse-plan.md) cover qualified
+Public managed Source semantic identity, fresh invocation custody, shared selected
+Source dispatch and original producer post-effect Source fact rebase. Real
+producer reuse preserves its actual committed authority with zero new contacts.
+Initial-only changed-input regeneration remains unqualified. This does not close
+Phase4: narrower field tracing, selected-membership cutoff, correction support/
+history and governed influence qualification remain open. The
+[verification receipt](milestone-9.19-phase4-semantic-reuse-evidence.md) records
+scoped passing courts, full prefix invoices and the explicitly non-green broad
+consumer run with its two established cleanup failures.

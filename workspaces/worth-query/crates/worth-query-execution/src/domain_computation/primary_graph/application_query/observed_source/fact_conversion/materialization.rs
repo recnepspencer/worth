@@ -9,7 +9,7 @@ impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
         let control = self.control;
         control.poll(&source.query_identifier)?;
         let mut facts = reserve_facts(self.fact_count, &source.query_identifier)?;
-        if let Some(observation) = source.source_meaning.footprint().maintained_source() {
+        if let Some(observation) = source.invocation_managed_source()? {
             control.poll(&source.query_identifier)?;
             facts.push(Fact::ManagedIndexSource {
                 observation: std::sync::Arc::clone(observation),

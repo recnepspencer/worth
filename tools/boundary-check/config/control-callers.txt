@@ -500,3 +500,6 @@ crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certificat
 
 # Query9.19 observes its actual checked-target-to-pin seam and a genuine Native writer.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/realized_footprint/atomic.rs
+
+# Query9.19 qualified reuse: passive genuine producer-entry count at Initial-only successor refusal.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/generated/indexed/court/initial_successor.rs

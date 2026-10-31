@@ -93,8 +93,13 @@ impl ApplicationFeature<Catalog> for Feature {
 }
 impl ApplicationProgramDefinition<Catalog> for Program {
     type Contributions = (Contribution,);
-    type Outputs =
-        ApplicationProgramOutputs<(generated::program::Root, geometry::generated::program::Root)>;
+    type Outputs = ApplicationProgramOutputs<(
+        generated::program::Root,
+        (
+            geometry::generated::program::Root,
+            generated::indexed::program::Root,
+        ),
+    )>;
     type Rules = ApplicationRuleList<
         ApplicationRuleAt<
             ApplicationSharedRuleRef<Catalog, rule::ReservedName>,
@@ -119,6 +124,9 @@ impl ApplicationProgramDefinition<Catalog> for Program {
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<Catalog, Feature>()
+                .provides::<generated::indexed::program::ItemsOutput>()
+                .action::<generated::indexed::request::Binding, generated::indexed::program::Delivery>()
+                .finish_action()
                 .provides::<generated::program::DirectoryOutput>()
                 .provides::<geometry::generated::program::DirectoryOutput>()
                 .action::<geometry::generated::request::Binding, geometry::generated::program::Delivery>()
@@ -140,6 +148,7 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 .finish_action()
                 .finish(),
             generated::program::feature(),
+            generated::indexed::program::feature(),
             geometry::generated::program::feature(),
         ]
     }

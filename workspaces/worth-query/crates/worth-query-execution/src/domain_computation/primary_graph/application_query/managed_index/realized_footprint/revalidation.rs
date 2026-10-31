@@ -29,11 +29,19 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Retai
     fn comparison_work(&self) -> u64 {
         self.parameters.retained_bytes
     }
-    fn same_inputs(&self, other: &dyn RetainedManagedInfluence) -> bool {
+    fn content(&self) -> worth_foundational::facade::ProjectedCandidateContentV1 {
+        self.candidates.content()
+    }
+    fn same_inputs(
+        &self,
+        other: &dyn RetainedManagedInfluence,
+        checkpoint: &mut dyn FnMut(u64) -> bool,
+    ) -> bool {
         let Some(other) = other.as_any().downcast_ref::<Self>() else {
             return false;
         };
-        self.scope == other.scope
+        self.original.same_source_scope(&other.original)
+            && self.scope == other.scope
             && self._admitted_source.principal() == other._admitted_source.principal()
             && self._admitted_source.runtime() == other._admitted_source.runtime()
             && self._admitted_source.scope() == other._admitted_source.scope()
@@ -43,6 +51,11 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Retai
                 .parent()
                 .same_association(other.parameters.parent())
             && self.parameters.parameters().bindings() == other.parameters.parameters().bindings()
+            && self.candidates.same_captured(
+                &other.candidates,
+                self.original.same_source(&other.original),
+                checkpoint,
+            )
     }
     fn revalidate(
         &self,
