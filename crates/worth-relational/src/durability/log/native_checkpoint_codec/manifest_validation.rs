@@ -5,6 +5,8 @@ use crate::durability::data::{DurabilityError, RelationalCheckpointManifest};
 use crate::history::data::CommitId;
 use worth_foundational::FoundationalBranchTarget;
 
+mod components;
+
 #[cfg(test)]
 #[path = "manifest_integrity_tests.rs"]
 mod tests;
@@ -64,20 +66,20 @@ pub(super) fn validate(
         .collect::<BTreeSet<_>>();
     let mut roots = BTreeSet::new();
     for root in &manifest.roots {
-        if !heads.contains(&root.commit_id)
-            || !commits.contains(&root.commit_id)
+        if !commits.contains(&root.commit_id)
             || !schemas.contains(&root.schema_carrier_digest)
             || !roots.insert(root.commit_id)
         {
             return Err(corrupt(
-                "checkpoint root directory is not the distinct branch heads",
+                "checkpoint root directory has duplicate or unbacked roots",
             ));
         }
         validate_leaves(&root.regions)?;
     }
-    if roots != heads {
+    if !heads.is_subset(&roots) {
         return Err(corrupt("checkpoint omitted a selected branch root"));
     }
+    components::validate(manifest)?;
     if manifest
         .mirror_schema
         .is_some_and(|schema| !schemas.contains(&schema))

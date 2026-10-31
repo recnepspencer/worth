@@ -9,6 +9,14 @@ use crate::identity::data::PartitionId;
 use crate::runtime::RelationalRuntime;
 
 pub(super) struct CapturedCheckpointBasis {
+    pub(super) recorded_components: std::collections::BTreeMap<
+        crate::history::data::CommitId,
+        Vec<crate::branch::RelationalBranchBasisDescriptor>,
+    >,
+    pub(super) retained_empty_components:
+        Vec<crate::durability::data::RelationalCheckpointEmptyComponent>,
+    pub(super) empty_component_schemas: Vec<crate::durability::data::DurableBranchRootSchemaImage>,
+    pub(super) component_holds: Vec<crate::branch::AdmittedRelationalBranchBasis>,
     pub(super) latest_commit: Option<RelationalCommitReceipt>,
     pub(super) selected_directory:
         Option<std::sync::Arc<crate::durability::data::RelationalCheckpointDirectory>>,
@@ -98,18 +106,14 @@ impl CapturedCheckpointBasis {
             })
             .collect();
         let covered_transitions = selection.covered_transitions();
-        let branch_roots = runtime
-            .history
-            .branch_root_checkpoints()
-            .map_err(|detail| {
-                DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                    detail,
-                )
-            })?;
-        let envelope_versions = envelopes
+        let components = super::checkpoint_components::capture(runtime)?;
+        let branch_roots = components.roots;
+        let envelope_versions = artifacts
             .iter()
-            .map(|envelope| (envelope.commit.commit_id, envelope.commit.version_id))
+            .map(|artifact| {
+                let receipt = artifact.receipt();
+                (receipt.commit_id, receipt.version_id)
+            })
             .collect::<std::collections::BTreeMap<_, _>>();
         let root_bases = branch_roots
             .iter()
@@ -200,6 +204,10 @@ impl CapturedCheckpointBasis {
                 index_state.retained_generations(&retained),
             )?;
         let captured = Self {
+            recorded_components: components.canonical,
+            retained_empty_components: components.empty,
+            empty_component_schemas: components.empty_schemas,
+            component_holds: components.held,
             envelope_cells: artifacts
                 .iter()
                 .map(|artifact| artifact.envelope_residency())

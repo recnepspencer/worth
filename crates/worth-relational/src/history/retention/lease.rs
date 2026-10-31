@@ -25,7 +25,7 @@ impl RelationalBranchRetentionLease {
     ) -> Result<Self, super::RelationalRetentionAcquisitionDenial> {
         let obligation = super::RelationalExternalBasisRetentionObligation::acquire(
             binding,
-            Arc::clone(observation.selected_root()),
+            &observation.admitted_basis(),
         )?;
         Ok(Self {
             observation: Some(observation),

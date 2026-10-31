@@ -11,6 +11,10 @@ use super::checkpoint_capture::{CapturedCheckpointBasis, CapturedRecordIdentity}
 impl CapturedCheckpointBasis {
     pub(super) fn build_checkpoint_image(self) -> Result<DurableCheckpoint, DurabilityError> {
         let CapturedCheckpointBasis {
+            recorded_components,
+            retained_empty_components,
+            empty_component_schemas,
+            component_holds: _component_holds,
             selected_directory: _,
             symbol_pages_resident: _,
             latest_commit,
@@ -60,9 +64,12 @@ impl CapturedCheckpointBasis {
         let record_identity = checkpoint_record_identity(record_identity)?;
         let CapturedBranchRootImages {
             roots: branch_roots,
-            schemas: branch_root_schema_images,
+            schemas: mut branch_root_schema_images,
             kinds: root_kind_images,
         } = branch_root_images(branch_roots)?;
+        branch_root_schema_images.extend(empty_component_schemas);
+        branch_root_schema_images.sort_by_key(|image| image.carrier_digest());
+        branch_root_schema_images.dedup_by_key(|image| image.carrier_digest());
         let mirror_partitions = partitions.materialize_owned_partitions()?;
         let mirror_kind_images =
             crate::storage::residency::CheckpointRegionKindImages::capture(&mirror_partitions)
@@ -81,6 +88,7 @@ impl CapturedCheckpointBasis {
             })?
             .map(|image| image.carrier_digest());
         Ok(DurableCheckpoint {
+            recorded_components, retained_empty_components,
             directory: None,
             root_kind_images, mirror_kind_images,
             commit_descriptors,

@@ -28,6 +28,10 @@ pub struct RelationalAssociatedEffectSubject {
 }
 
 impl RelationalAssociatedEffectSubject {
+    pub(super) fn source_entry(&self) -> &crate::history::RelationalCommitIndexEntry {
+        &self.entry
+    }
+
     pub fn receipt(&self) -> &crate::history::data::RelationalCommitReceipt {
         &self.entry.commit
     }

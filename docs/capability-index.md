@@ -751,7 +751,7 @@ Native callers can retain opaque caller meaning with
 bytes), then consume a validated proposal through `bind_caller_association`
 before its one existing canonical preparation. Candidates and canonical
 envelopes expose immutable association observations; prepared candidates cannot
-be rebound. Artifact v3 and checkpoint CHK15 preserve the bytes through Native
+be rebound. Artifact v3 and checkpoint CHK16 preserve the bytes through Native
 recovery and refuse older versions. Native interprets no World meaning, and the
 bytes confer no completion or durable-effect authority. See
 [opaque caller association](../crates/worth-relational/README.md#opaque-caller-association).
@@ -763,7 +763,7 @@ publication counts, and original validation execution/check/decision meaning.
 The image excludes live snapshots, timings, work measurements and publication
 claims. Required per-commit `facade::durability::RelationalAssociationDiscovery`
 allows associated subjects to be selected without reading unrelated cold bodies.
-Missing images/discovery and older artifact v1/v2 or checkpoint CHK13/CHK14
+Missing images/discovery and older artifact v1/v2 or checkpoint CHK13/CHK14/CHK15
 refuse; decoded descriptions do not grant recovered publication authority.
 
 To record an exact current Native component, call the concrete basis service's
@@ -789,15 +789,23 @@ recovered publication capability; see
 For actual reconstruction, `durability_recovery().recover_with_authority` returns
 the existing Native recovery authority. Its `admit_recorded_component` admits
 exact source-produced Empty or canonical images with actual observation pins;
-canonical Memory and missing/foreign/mismatched images refuse. Its
-`admit_recorded_publication` consumes the actual readmitted associated effect and
+canonical Memory and missing/foreign/mismatched images refuse. Its descriptive
+`recorded_publication_successor` selects the original after-reference from the
+same source-backed effect and this recovery's captured observations when a crash
+preceded the caller's occurrence; missing/ambiguous images refuse, and it grants
+no adoption. Its `admit_recorded_publication` consumes the actual readmitted associated effect and
 original before/after references, verifies matching settled/recovered owner state,
 and acquires both real component leases before issuing the concrete
 `worth_proof::RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>`.
 Readonly observations use weak owner/source identities; the concrete phase owns
 real pins and transfers them once. Refusal retains source data and partial custody.
-Native never fabricates a live result. Exact cold historical checkpoint images
-and Store/World recovered adoption remain unfinished; see
+Native never fabricates a live result. CHK16 preserves required exact canonical
+component headers and explicit Empty/schema headers from current cells and live
+external component leases. Capture owns the selected bases after original lease
+release; reopened historical artifact bodies stay cold until exact source/root
+admission acquires real pins. Plain observations and released leases add no durable
+component obligation. Missing selected material refuses. Store/World recovered
+adoption and the coherent Home checkpoint cut remain integration obligations; see
 [admit an original recovered publication](../crates/worth-relational/README.md#admit-an-original-recovered-publication).
 
 ### Native record and aspect history pages

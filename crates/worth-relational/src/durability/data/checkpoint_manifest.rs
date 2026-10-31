@@ -23,6 +23,7 @@ pub(crate) struct RelationalCheckpointManifest {
     pub(crate) index_generation_frontier: u64,
     pub(crate) index_definitions: Vec<crate::indexes::data::DerivedIndexDefinition>,
     pub(crate) roots: Vec<RelationalCheckpointRoot>,
+    pub(crate) retained_empty_components: Vec<RelationalCheckpointEmptyComponent>,
     pub(crate) mirror_schema: Option<[u8; 32]>,
     pub(crate) mirror: Vec<RelationalCheckpointRegion>,
     pub(crate) history_dependencies: Vec<RelationalCheckpointHistoryDependency>,
@@ -89,6 +90,7 @@ impl RelationalCheckpointManifest {
 #[serde(deny_unknown_fields)]
 pub(crate) struct RelationalCheckpointRoot {
     pub(crate) commit_id: CommitId,
+    pub(crate) recorded_components: Vec<crate::branch::RelationalBranchBasisDescriptor>,
     pub(crate) schema_carrier_digest: [u8; 32],
     pub(crate) regions: Vec<RelationalCheckpointRegion>,
 }
@@ -113,4 +115,12 @@ pub(crate) struct RelationalCheckpointRegion {
 pub(crate) struct RelationalCheckpointSymbolBucket {
     pub(crate) bucket: u8,
     pub(crate) pages: Vec<RelationalDurableMemberLocator>,
+}
+
+/// Exact owner-recorded Empty observation with its executable schema carrier.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RelationalCheckpointEmptyComponent {
+    pub(crate) descriptor: crate::branch::RelationalBranchBasisDescriptor,
+    pub(crate) schema_carrier_digest: [u8; 32],
 }

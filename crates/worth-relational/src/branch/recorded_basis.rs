@@ -6,6 +6,7 @@ use crate::history::data::{CommitId, RelationalCommitReceipt};
 use crate::publication::patch::data::PatchStreamPosition;
 
 mod export;
+mod readmission;
 #[cfg(test)]
 mod tests;
 
@@ -34,6 +35,23 @@ pub struct RecordedRelationalCanonicalComponent {
 }
 
 impl RecordedRelationalComponentReference {
+    pub(crate) fn from_readmitted_source(
+        descriptor: RelationalBranchBasisDescriptor,
+        entry: &crate::history::RelationalCommitIndexEntry,
+    ) -> Self {
+        Self {
+            descriptor,
+            target: RecordedRelationalComponentTarget::Canonical(
+                RecordedRelationalCanonicalComponent {
+                    receipt: entry.commit.clone(),
+                    position: entry.position,
+                    artifact_digest: entry.payload_digest,
+                    roots: entry.root.clone(),
+                },
+            ),
+        }
+    }
+
     /// Descriptor in Native's canonical runtime frame. It cannot be used as
     /// a live descriptor by rewriting its runtime or allocation identity.
     pub fn descriptor(&self) -> &RelationalBranchBasisDescriptor {

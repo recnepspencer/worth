@@ -6,11 +6,14 @@ use crate::runtime::RelationalRuntime;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
 
+mod checkpoint_images;
+
 #[derive(Debug)]
 enum RecoveredRootHold {
     Reconstructing(Arc<RelationalBranchRoot>),
     Owner(Weak<RelationalBranchRoot>),
     Empty(Arc<crate::branch::RelationalBranchRootSchemaAuthority>),
+    Checkpoint(std::sync::Mutex<Weak<RelationalBranchRoot>>),
 }
 
 impl RecoveredRootHold {
@@ -18,6 +21,10 @@ impl RecoveredRootHold {
         match self {
             Self::Reconstructing(root) => Some(root.clone()),
             Self::Owner(root) => root.upgrade(),
+            Self::Checkpoint(root) => root
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .upgrade(),
             Self::Empty(schema) => Some(RelationalBranchRoot::empty_with_schema(
                 schema.registry(),
                 schema.descriptor_semantics_version(),
@@ -38,6 +45,7 @@ struct RecoveredRootImage {
 #[derive(Debug, Default)]
 pub(in crate::durability::authority) struct RecoveredRootInventory {
     roots: BTreeMap<CommitId, RecoveredRootImage>,
+    directory: Option<Weak<crate::durability::data::RelationalCheckpointDirectory>>,
     empty: Vec<RecoveredRootImage>,
 }
 
@@ -47,7 +55,17 @@ impl RecoveredRootInventory {
         for branch_id in runtime.history.branch_ids_snapshot() {
             inventory.retain_current(runtime, &branch_id)?;
         }
+        inventory.install_checkpoint_headers(runtime)?;
         Ok(inventory)
+    }
+
+    pub(in crate::durability::authority) fn publication_observations(
+        &self,
+        commit: CommitId,
+    ) -> Option<&[RelationalBranchBasisDescriptor]> {
+        self.roots
+            .get(&commit)
+            .map(|image| image.observations.as_slice())
     }
 
     pub(super) fn resolve(&self, commit_id: CommitId) -> Option<Arc<RelationalBranchRoot>> {
@@ -75,25 +93,32 @@ impl RecoveredRootInventory {
 
     pub(in crate::durability::authority) fn exact_image(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
         recorded: &crate::branch::RecordedRelationalComponentReference,
-    ) -> Option<(Arc<RelationalBranchRoot>, RelationalBranchBasisDescriptor)> {
-        let find = |image: &RecoveredRootImage| {
-            image
-                .observations
+    ) -> Result<
+        Option<(Arc<RelationalBranchRoot>, RelationalBranchBasisDescriptor)>,
+        crate::durability::data::RelationalRecoveryStop,
+    > {
+        let selected = match recorded.target() {
+            crate::branch::RecordedRelationalComponentTarget::Empty => self
+                .empty
                 .iter()
-                .find(|descriptor| {
-                    descriptor.in_canonical_frame().ok().as_ref() == Some(recorded.descriptor())
-                })
-                .and_then(|descriptor| image.root.root().map(|root| (root, descriptor.clone())))
+                .find_map(|image| matching_observation(image, recorded)),
+            crate::branch::RecordedRelationalComponentTarget::Canonical(target) => self
+                .roots
+                .get(&target.receipt().commit_id)
+                .and_then(|image| matching_observation(image, recorded)),
         };
-        match recorded.target() {
-            crate::branch::RecordedRelationalComponentTarget::Empty => {
-                self.empty.iter().find_map(find)
-            }
-            crate::branch::RecordedRelationalComponentTarget::Canonical(target) => {
-                self.roots.get(&target.receipt().commit_id).and_then(find)
-            }
-        }
+        let Some((image, descriptor)) = selected else {
+            return Ok(None);
+        };
+        let root = match image.root.root() {
+            Some(root) => root,
+            None => self.materialize_checkpoint_image(execution, runtime, recorded, image)?,
+        };
+        let descriptor = checkpoint_images::bind_recorded_descriptor(descriptor, runtime, &root)?;
+        Ok(Some((root, descriptor)))
     }
 
     pub(super) fn retain_current(
@@ -164,4 +189,17 @@ impl RecoveredRootInventory {
 
 fn corrupt(detail: impl Into<String>) -> DurabilityError {
     DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
+}
+
+fn matching_observation<'a>(
+    image: &'a RecoveredRootImage,
+    recorded: &crate::branch::RecordedRelationalComponentReference,
+) -> Option<(&'a RecoveredRootImage, &'a RelationalBranchBasisDescriptor)> {
+    image
+        .observations
+        .iter()
+        .find(|descriptor| {
+            descriptor.in_canonical_frame().ok().as_ref() == Some(recorded.descriptor())
+        })
+        .map(|descriptor| (image, descriptor))
 }

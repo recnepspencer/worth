@@ -6,6 +6,7 @@ pub use associated_effects::{
     RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
 };
 mod checkpoint_capture;
+mod checkpoint_components;
 mod checkpoint_image;
 mod checkpoint_lineage_basis;
 mod checkpoint_member_carry;
@@ -17,8 +18,8 @@ mod diagnostics;
 mod recorded_component_readmission;
 mod recovered_publication;
 pub use recovered_publication::{
-    RefusedRelationalPublicationReadmission, RelationalRecoveredPublicationAdmissionCause,
-    RelationalRecoveredPublicationCustody,
+    RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,
+    RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,
 };
 mod recovery;
 pub use recorded_component_readmission::{

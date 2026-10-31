@@ -61,6 +61,22 @@ pub(super) struct RelationalRetiredBranchRoot {
 }
 
 impl RelationalBranchRetentionOwner {
+    pub(crate) fn checkpoint_components(
+        &self,
+    ) -> Vec<crate::branch::AdmittedRelationalBranchBasis> {
+        self.inner
+            .retired_roots
+            .iter()
+            .flat_map(|entry| {
+                entry
+                    .branch_bindings
+                    .values()
+                    .flat_map(|binding| binding.checkpoint_components())
+                    .collect::<Vec<_>>()
+            })
+            .collect()
+    }
+
     /// Capacity retained outside the runtime's own live branch heads.
     /// These are the native admission/release counters, not diagnostic totals.
     pub(crate) fn has_detached_obligations(&self) -> bool {

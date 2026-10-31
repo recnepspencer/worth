@@ -62,7 +62,7 @@ fn reclamation_and_checkpoint_keep_sibling_head_generation() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = durable_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "sibling-index-first");
     let sibling = create_branch_from_main(&runtime, "index-sibling");
     let index = name_index(&runtime);
@@ -296,7 +296,7 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = durable_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "pinned-index-first");
     let index = name_index(&runtime);
     let first_generation = build(execution, &runtime, index.index_id, &first);

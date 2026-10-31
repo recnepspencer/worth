@@ -53,6 +53,9 @@ impl CapturedCheckpointBasis {
         let _lineage_event_leases = std::mem::take(&mut self.lineage_event_leases);
         let carried_index_image = self.carried_index_image;
         let roots = std::mem::take(&mut self.branch_roots);
+        let recorded_components = self.recorded_components.clone();
+        let empty_component_schemas = self.empty_component_schemas.clone();
+        let _component_holds = std::mem::take(&mut self.component_holds);
         let mirror = std::mem::take(&mut self.partitions);
         let mirror_schema = self.mirror_schema_authority.clone();
         // With storage sources removed, this constructs metadata only. The
@@ -98,7 +101,10 @@ impl CapturedCheckpointBasis {
                 RelationalCheckpointMember::Carried { locator },
             );
         }
-        let mut schemas = BTreeMap::new();
+        let mut schemas = empty_component_schemas
+            .into_iter()
+            .map(|image| (image.carrier_digest(), image))
+            .collect::<BTreeMap<_, _>>();
         let mut history_dependencies = BTreeMap::new();
         for root in roots {
             policy.check_live()?;
@@ -147,6 +153,10 @@ impl CapturedCheckpointBasis {
             }
             captured.manifest.roots.push(RelationalCheckpointRoot {
                 commit_id: root.commit_id(),
+                recorded_components: recorded_components
+                    .get(&root.commit_id())
+                    .cloned()
+                    .ok_or_else(|| corrupt("root lacks exact component observations"))?,
                 schema_carrier_digest: schema_digest,
                 regions: leaves,
             });

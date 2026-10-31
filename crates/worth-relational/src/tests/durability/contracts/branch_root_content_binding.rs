@@ -328,8 +328,8 @@ fn corrupt_recovery_error(
         .all(|cell| matches!(cell.observation.target(), FoundationalBranchTarget::Empty)));
     assert!(recovered
         .history
-        .branch_root_checkpoints()
-        .expect("fresh branch cells contain no malformed roots")
-        .is_empty());
+        .current_root_storage_inventory()
+        .iter()
+        .all(|root| root.commit_id().is_none() && root.descriptor().is_none()));
     error
 }

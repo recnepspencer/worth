@@ -286,6 +286,9 @@ pub(crate) fn branch_root_image_digest(
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DurableCheckpoint {
+    pub(crate) recorded_components:
+        BTreeMap<CommitId, Vec<crate::branch::RelationalBranchBasisDescriptor>>,
+    pub(crate) retained_empty_components: Vec<super::RelationalCheckpointEmptyComponent>,
     pub(crate) root_kind_images:
         BTreeMap<CommitId, crate::storage::residency::CheckpointRegionKindImages>,
     pub(crate) mirror_kind_images: crate::storage::residency::CheckpointRegionKindImages,
