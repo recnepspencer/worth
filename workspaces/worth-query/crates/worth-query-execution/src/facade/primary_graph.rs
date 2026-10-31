@@ -167,7 +167,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryCommittedDispatchOutboxReadWork, WorthQueryCommittedProductPublication,
     WorthQueryCompleteApplicationReadSet, WorthQueryCompletedGeneratedOutputReconstruction,
     WorthQueryCompletedInvariantProjection, WorthQueryCompletedMutationCandidate,
-    WorthQueryCompletedOperationInvariantProjection,
+    WorthQueryCompletedOperationInvariantProjection, WorthQueryCompletedRequiredOutputs,
     WorthQueryConditionalApplicationRuntimeInstallation,
     WorthQueryConditionalAuthoritativeDeliveryFailure, WorthQueryConditionalClockHandle,
     WorthQueryConditionalClockObservationDenial, WorthQueryConditionalClockObservationDenialKind,

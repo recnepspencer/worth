@@ -1,4 +1,4 @@
-//! Fixed leaf history delegates actual source/output/recovery and close owners.
+//! Fixed history delegates actual complete-output/recovery and close owners.
 use super::*;
 use crate::application_entry::{
     history::{WorthQueryFixedHistoryEditOutcome, WorthQueryHistoryEditDenial},
@@ -7,7 +7,7 @@ use crate::application_entry::{
 use driver::*;
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationAdmissionBinding, NoApplicationMutationSource},
-    application_program::{ApplicationFixedDeliveryMode, ApplicationOutputLeaf},
+    application_program::ApplicationFixedDeliveryMode,
 };
 use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial as NativeDenial;
 
@@ -26,8 +26,8 @@ where
     A: ApplicationAction<S, I::Binding>,
     A::Delivery: ApplicationFixedActionDelivery<S, I::Binding, Root = R, Projection = Q>,
     Q: WorthQueryOutputProjectionInstallation<S>,
-    R: ApplicationOutputGraphShape<S, Dependents = ApplicationOutputLeaf>
-        + ApplicationRequiredOutputRoot,
+    R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
+    R::Dependents: crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<S,P,Demand<S,R>>,
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
     I::Binding: WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>
@@ -68,8 +68,8 @@ where
     A: ApplicationAction<S, I::Binding>,
     A::Delivery: ApplicationFixedActionDelivery<S, I::Binding, Root = R, Projection = Q>,
     Q: WorthQueryOutputProjectionInstallation<S>,
-    R: ApplicationOutputGraphShape<S, Dependents = ApplicationOutputLeaf>
-        + ApplicationRequiredOutputRoot,
+    R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
+    R::Dependents: crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<S,P,Demand<S,R>>,
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
     I::Binding: WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>
@@ -201,13 +201,21 @@ where
             }
         }
     }
-    fn recording_source(completed: &C<S, I, P, R, A>) -> Option<HistoryRecordingSource<'_>> {
-        completed.settlement().performed_source().map(|source| {
-            HistoryRecordingSource::RequiredRoot {
-                source: source.receipt(),
-                root: source.root_fulfillment(),
-            }
-        })
+    fn recording_source<'a>(completed: &'a C<S, I, P, R, A>, phase:&WorthQueryAdvancementPhase<'_>, request:&WorthQueryApplicationRequest<'_, '_, '_, S>) -> Result<Option<HistoryRecordingSource<'a>>,WorthQueryHistoryEditDenial> {
+        let settlement=completed.settlement();
+        let Some(source)=settlement.performed_source() else {return Ok(None)};
+        let current=WorthQueryApplicationRequest {application:request.application,principal:request.principal,scope:request.scope,branch:completed.branch()};
+        // The original completed observation proposes a basis. Only Native's
+        // complete-set validation can qualify it; neither ordinal nor latest
+        // candidate selection supplies that evidence.
+        let retained=current.at(settlement.observation());
+        let selected=completed.delivery.selected_action_at(&retained,phase)
+            .map_err(WorthQueryHistoryEditDenial::Delivery)?;
+        let qualified=selected.qualify_completed_required_outputs(phase,&worth_query_execution::publication_boundary::program_publication_access(),request.scope,
+            source.receipt(),source.root_fulfillment(),settlement.root_settlement().retained_settlement(),
+            settlement.retained_settlements().skip(1),settlement.dependencies.as_ref())
+            .map_err(WorthQueryHistoryEditDenial::OutputQualification)?;
+        Ok(Some(HistoryRecordingSource::RequiredOutputs {source:source.receipt(),completed:qualified}))
     }
     fn close_operation(
         operation: O<S, I, P, R, A>,

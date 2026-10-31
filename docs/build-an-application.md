@@ -1894,8 +1894,8 @@ or the original terminal action outcome. A refusal after adoption can still
 report `Selected`; preserve its completion and finish it with a fresh request.
 Use `discard(&request)` to explicitly abandon unselected candidate work, keeping
 the returned owner when cleanup refuses. This entry accepts declared
-source-completion actions and fixed required-output leaves with no mutation
-source, workflow control or external effects. A fixed leaf returns
+source-completion actions and fixed required-output graphs with no mutation
+source, workflow control or external effects. A fixed graph returns
 `WorthQueryFixedHistoryEditOutcome::Recorded { step, delivery }`; `delivery` is
 the original `WorthQueryClosedFixedDelivery`, retaining its actual settlement
 and close evidence. A terminal fixed edit returns `NotRecorded { terminal }`;
@@ -1993,9 +1993,11 @@ with `preview.read(&document, &request)?`, supplying the actual current document
 on every call. Later edits can move that document while the holder keeps its
 original composite source. The result exposes admitted `rows()`, the exact
 descriptive `source()` and the actual Native `basis()` used by the query.
-For a recorded fixed leaf, `required_root_posture()` carries the original
-qualified root settlement. Its output endpoint can follow the source action's
-commit. `None` means the step carries no required-root settlement; it does not
+For a recorded fixed graph, `required_root_posture()` carries the original
+qualified root settlement. The step's endpoint is separately qualified against
+every completed root and dependent output and the original discovery evidence.
+The source action, root output and common endpoint can have different commits.
+`None` means the step carries no required-root settlement; it does not
 mean an output is unavailable. Preview reads execute no source command or producer.
 The holder and result expose no retained-selection or mutation conversion.
 Call `result.close()` and `preview.close()` when finished; another independently

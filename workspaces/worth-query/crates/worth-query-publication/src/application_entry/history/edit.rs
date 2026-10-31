@@ -54,6 +54,8 @@ pub enum WorthQueryHistoryEditDenial {
     History(WorthQueryApplicationHistoryDenial),
     Source(WorthQuerySourceOnlyDenial),
     Fixed(crate::application_entry::WorthQueryOperationAdvanceDenial),
+    Delivery(crate::application_entry::WorthQueryOperationDeliveryDenial),
+    OutputQualification(worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial),
     Close(WorthQueryOperationCloseDenial),
     Candidate(WorthQueryDocumentHistoryCandidateDenial),
     ForkRecovery,

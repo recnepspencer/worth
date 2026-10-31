@@ -122,10 +122,14 @@ where
             }
         }
     }
-    fn recording_source(completed: &C<S, I, P, A>) -> Option<HistoryRecordingSource<'_>> {
+    fn recording_source<'a>(
+        completed: &'a C<S, I, P, A>,
+        _phase: &WorthQueryAdvancementPhase<'_>,
+        _request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<Option<HistoryRecordingSource<'a>>, WorthQueryHistoryEditDenial> {
         let (WorthQuerySourceCompletion::Fresh { receipt, .. }
         | WorthQuerySourceCompletion::Recovered { receipt, .. }) = completed.evidence();
-        Some(HistoryRecordingSource::Source(receipt))
+        Ok(Some(HistoryRecordingSource::Source(receipt)))
     }
     fn close_operation(
         operation: O<S, I, P, A>,

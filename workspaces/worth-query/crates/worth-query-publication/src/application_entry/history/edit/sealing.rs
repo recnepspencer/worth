@@ -56,7 +56,7 @@ where
                         WorthQueryApplicationHistoryDenial::Installation(cause),
                     )
                 })?;
-            let source = Mode::<S, I, A>::recording_source(completed).ok_or(
+            let source = Mode::<S, I, A>::recording_source(completed, &phase, &current)?.ok_or(
                 WorthQueryHistoryEditDenial::History(WorthQueryApplicationHistoryDenial::Document(
                     WorthQueryDocumentHistoryDenial::ReceiptMismatch,
                 )),
@@ -80,8 +80,8 @@ where
                         receipt,
                     )
                 }
-                HistoryRecordingSource::RequiredRoot { source, root } => {
-                    self.document.owner.adopt_fulfilled_history::<I::Binding>(
+                HistoryRecordingSource::RequiredOutputs { source, completed } => {
+                    self.document.owner.adopt_completed_history::<I::Binding>(
                         &phase,
                         &program_publication_access(),
                         &installed,
@@ -89,7 +89,7 @@ where
                         reservation,
                         candidate,
                         source,
-                        root,
+                        &completed,
                     )
                 }
             };

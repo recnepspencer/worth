@@ -6,6 +6,7 @@ use worth_query_host::facade::application_entry::*;
 use worth_query_topology_entry::{
     PlanarDocumentHistory, PlanarInitialAdjustment, PlanarOutputDemand, PlanarOutputRead,
 };
+mod aggregate;
 mod journeys;
 mod profile;
 mod race;
@@ -47,11 +48,20 @@ fn install() -> World {
     )
     .unwrap()
 }
-fn with_request<T>(application: &Runtime, f: impl FnOnce(&Request<'_, '_, '_>) -> T) -> T {
+fn with_request<
+    P: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>,
+    T,
+>(
+    application: &installation::ConsumerRuntime<P>,
+    f: impl FnOnce(&Request<'_, '_, '_>) -> T,
+) -> T {
     with_branch_request(application, application.current_world(), f)
 }
-fn with_branch_request<T>(
-    application: &Runtime,
+fn with_branch_request<
+    P: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>,
+    T,
+>(
+    application: &installation::ConsumerRuntime<P>,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
     f: impl FnOnce(&Request<'_, '_, '_>) -> T,
 ) -> T {
@@ -94,11 +104,20 @@ fn warm(application: &Runtime, key: &str) {
     }
     panic!("the existing leaf finishes within the finite fixture traversal")
 }
-fn attach<'a>(application: &'a Runtime, key: &str) -> Document<'a> {
+fn attach<
+    'a,
+    P: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>,
+>(
+    application: &'a installation::ConsumerRuntime<P>,
+    key: &str,
+) -> Document<'a> {
     attach_with_branch(application, key).0
 }
-fn attach_with_branch<'a>(
-    application: &'a Runtime,
+fn attach_with_branch<
+    'a,
+    P: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>,
+>(
+    application: &'a installation::ConsumerRuntime<P>,
     key: &str,
 ) -> (
     Document<'a>,
@@ -200,7 +219,12 @@ fn finish<'a>(mut edit: Edit<'a>, application: &Runtime) -> Finish<'a> {
     }
     panic!("captured history completion did not select")
 }
-fn close(document: Document<'_>, application: &Runtime) {
+fn close<
+    P: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>,
+>(
+    document: Document<'_>,
+    application: &installation::ConsumerRuntime<P>,
+) {
     application
         .with_host_advancement(|phase| {
             document

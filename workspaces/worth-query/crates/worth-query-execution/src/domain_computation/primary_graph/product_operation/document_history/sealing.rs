@@ -8,7 +8,7 @@ use crate::{
     basis::{WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease},
     domain_computation::primary_graph::{
         WorthQueryAdvancementPhase, WorthQueryApplicationCommitReceipt,
-        WorthQueryExpectedProductBranch, WorthQueryFulfilledRequiredRoot,
+        WorthQueryCompletedRequiredOutputs, WorthQueryExpectedProductBranch,
     },
     publication_boundary::WorthQueryProgramPublicationAccess,
 };
@@ -60,15 +60,15 @@ struct PreparedBinding {
 
 enum RecordingCompletion<'a> {
     Source(&'a WorthQueryApplicationCommitReceipt),
-    RequiredRoot {
+    RequiredOutputs {
         source: &'a WorthQueryApplicationCommitReceipt,
-        root: &'a WorthQueryFulfilledRequiredRoot,
+        completed: &'a WorthQueryCompletedRequiredOutputs,
     },
 }
 impl RecordingCompletion<'_> {
     fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         match self {
-            Self::Source(source) | Self::RequiredRoot { source, .. } => source,
+            Self::Source(source) | Self::RequiredOutputs { source, .. } => source,
         }
     }
 }
@@ -120,9 +120,9 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         )
     }
 
-    /// Record the exact root that fulfilled this action, retaining its actual
-    /// producer seed. A later candidate head is never substituted for that root.
-    pub fn adopt_fulfilled_history<M>(
+    /// Record one exact basis qualified against this action's complete original
+    /// output set. A later candidate head is never substituted for that basis.
+    pub fn adopt_completed_history<M>(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -131,7 +131,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         reserved: WorthQueryDocumentHistoryReservation,
         candidate: WorthQueryExpectedProductBranch<'runtime, S>,
         source: &WorthQueryApplicationCommitReceipt,
-        root: &WorthQueryFulfilledRequiredRoot,
+        completed: &WorthQueryCompletedRequiredOutputs,
     ) -> Result<WorthQueryHistoryStep, WorthQueryDocumentHistoryAdoptionFailure<'runtime, S>>
     where
         M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
@@ -144,7 +144,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             operation,
             reserved,
             candidate,
-            RecordingCompletion::RequiredRoot { source, root },
+            RecordingCompletion::RequiredOutputs { source, completed },
         )
     }
 
@@ -242,9 +242,9 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 }
                 (selected, None, None)
             }
-            RecordingCompletion::RequiredRoot { source, root } => {
-                let retained = root.retained_output();
-                if !root.matches_source(source)
+            RecordingCompletion::RequiredOutputs { source, completed } => {
+                let retained = completed.retained_output();
+                if !completed.matches_source(source)
                     || retained.branch_incarnation() != candidate.branch().occurrence()
                 {
                     return Err(Denial::ReceiptMismatch);
@@ -255,7 +255,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 (
                     selected,
                     Some(std::sync::Arc::clone(retained)),
-                    Some(root.posture()),
+                    Some(completed.root_posture()),
                 )
             }
         };

@@ -4,7 +4,7 @@ use crate::application_entry::history::WorthQueryHistoryEditDenial;
 use crate::application_entry::mutation::authorization::PreparedMutation;
 use worth_query_execution::{
     facade::primary_graph::{
-        WorthQueryApplicationCommitReceipt, WorthQueryFulfilledRequiredRoot,
+        WorthQueryApplicationCommitReceipt, WorthQueryCompletedRequiredOutputs,
         WorthQuerySelectedProductOperation,
     },
     publication_boundary::document_history::{
@@ -15,9 +15,9 @@ use worth_query_execution::{
 
 pub enum HistoryRecordingSource<'a> {
     Source(&'a WorthQueryApplicationCommitReceipt),
-    RequiredRoot {
+    RequiredOutputs {
         source: &'a WorthQueryApplicationCommitReceipt,
-        root: &'a WorthQueryFulfilledRequiredRoot,
+        completed: WorthQueryCompletedRequiredOutputs,
     },
 }
 pub enum HistoryOperationAdvance<O, C, T> {
@@ -84,7 +84,11 @@ where
         operation: O,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> HistoryOperationAdvance<O, C, T>;
-    fn recording_source(completed: &C) -> Option<HistoryRecordingSource<'_>>;
+    fn recording_source<'a>(
+        completed: &'a C,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<Option<HistoryRecordingSource<'a>>, WorthQueryHistoryEditDenial>;
     fn close_operation(
         operation: O,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
