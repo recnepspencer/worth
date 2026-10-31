@@ -38,12 +38,14 @@ pub struct EntityProjectionRecord<'a> {
     created_at_version: VersionId,
     authoritative_aspect_state: Option<&'a AuthoritativeRecordAspectState>,
     projection_scope: &'a ProjectionAspectScope,
+    aspect_plan: Option<&'a crate::schema::data::LoweredAspectContractPlan>,
 }
 
 impl<'a> EntityProjectionRecord<'a> {
     pub(crate) fn new(
         record: &'a EntityReadRecord,
         projection_scope: &'a ProjectionAspectScope,
+        aspect_plan: Option<&'a crate::schema::data::LoweredAspectContractPlan>,
     ) -> Self {
         Self {
             entity_id: record.entity_id,
@@ -53,6 +55,7 @@ impl<'a> EntityProjectionRecord<'a> {
             created_at_version: record.created_at_version,
             authoritative_aspect_state: record.authoritative_aspect_state.as_ref(),
             projection_scope,
+            aspect_plan,
         }
     }
 
@@ -65,6 +68,7 @@ impl<'a> EntityProjectionRecord<'a> {
         kind: &'a crate::schema::data::KindResolution,
         created_at_version: VersionId,
         projection_scope: &'a ProjectionAspectScope,
+        aspect_plan: Option<&'a crate::schema::data::LoweredAspectContractPlan>,
     ) -> Self {
         Self {
             entity_id,
@@ -74,6 +78,7 @@ impl<'a> EntityProjectionRecord<'a> {
             created_at_version,
             authoritative_aspect_state: slot.extra().authoritative_aspect_state.as_ref(),
             projection_scope,
+            aspect_plan,
         }
     }
 
@@ -132,13 +137,7 @@ impl<'a> EntityProjectionRecord<'a> {
         aspect_key: &worth_foundational::facade::AspectKey,
         field: &FieldKey,
     ) -> Option<&'a AspectValue> {
-        if !self.projection_scope.contains_field(aspect_key, field) {
-            return None;
-        }
-        match self.authoritative_aspect_state()?.get(aspect_key)?.view() {
-            ContractValidatedAspectValueView::Scalar(_) => None,
-            ContractValidatedAspectValueView::Struct(value) => value.get(field),
-        }
+        self.observe_aspect_field(aspect_key, field)?.value()
     }
 }
 

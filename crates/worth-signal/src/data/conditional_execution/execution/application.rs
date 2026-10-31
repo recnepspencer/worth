@@ -12,6 +12,20 @@ use super::super::{
 };
 use super::{ConditionalExecutionProviders, SignalConditionalExecutionRequest};
 
+pub(super) struct ConditionalResolution {
+    pub(super) class: SignalConditionalDecisionClass,
+    pub(super) computed_evaluation: Option<crate::logic::evaluation::AppliedEffectReport>,
+}
+
+impl ConditionalResolution {
+    pub(super) fn passive(class: SignalConditionalDecisionClass) -> Self {
+        Self {
+            class,
+            computed_evaluation: None,
+        }
+    }
+}
+
 pub(super) struct ConditionalResolutionAttempt<
     'graph,
     'request,
@@ -46,7 +60,7 @@ where
     Comparator: ComparatorPolicyResolver,
     Compute: FnOnce() -> Result<NodeEvaluationResult, SignalError>,
 {
-    pub(super) fn resolve(self) -> Result<SignalConditionalDecisionClass, SignalError> {
+    pub(super) fn resolve(self) -> Result<ConditionalResolution, SignalError> {
         super::work::reserve(self.work, Some(1))?;
         let disposition = resolve_condition(
             self.graph,
@@ -64,7 +78,9 @@ where
                     self.providers.comparator,
                     self.work,
                 )?;
-                Ok(SignalConditionalDecisionClass::SuppressedBeforeCompute)
+                Ok(ConditionalResolution::passive(
+                    SignalConditionalDecisionClass::SuppressedBeforeCompute,
+                ))
             }
             ConditionDisposition::Deferred => {
                 self.apply_deferred(SignalConditionalDecisionClass::DeferredByCondition)
@@ -78,7 +94,7 @@ where
         }
     }
 
-    fn apply_computed(self) -> Result<SignalConditionalDecisionClass, SignalError> {
+    fn apply_computed(self) -> Result<ConditionalResolution, SignalError> {
         let compute = self.providers.compute.take().ok_or_else(|| {
             SignalError::internal("conditional compute provider was already consumed")
         })?;
@@ -110,24 +126,30 @@ where
                 &mut EvaluationWork::Conditional(self.work),
             )?;
         self.counters.semantic_classifications += 1;
-        match applied.report.verdict {
+        let class = match &applied.report.verdict {
             EvaluationVerdict::Recomputed => {
                 self.counters.semantic_changes += 1;
-                Ok(SignalConditionalDecisionClass::ComputedChanged)
+                SignalConditionalDecisionClass::ComputedChanged
             }
             EvaluationVerdict::Suppressed { .. } => {
-                Ok(SignalConditionalDecisionClass::ComputedRevertedClean)
+                SignalConditionalDecisionClass::ComputedRevertedClean
             }
-            EvaluationVerdict::Deferred { .. } => Err(SignalError::internal(
-                "computed conditional output cannot become a deferred verdict",
-            )),
-        }
+            EvaluationVerdict::Deferred { .. } => {
+                return Err(SignalError::internal(
+                    "computed conditional output cannot become a deferred verdict",
+                ))
+            }
+        };
+        Ok(ConditionalResolution {
+            class,
+            computed_evaluation: Some(applied.report),
+        })
     }
 
     fn apply_deferred(
         self,
         class: SignalConditionalDecisionClass,
-    ) -> Result<SignalConditionalDecisionClass, SignalError> {
+    ) -> Result<ConditionalResolution, SignalError> {
         self.counters.application_contacts += 1;
         apply_deferred(
             self.graph,
@@ -135,7 +157,7 @@ where
             self.providers.comparator,
             self.work,
         )?;
-        Ok(class)
+        Ok(ConditionalResolution::passive(class))
     }
 }
 

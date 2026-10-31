@@ -21,8 +21,14 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
+pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledOutputProducerRoute {
+    pub(in crate::domain_computation::primary_graph) scheduling:
+        Arc<BridgeInstalledConditionalLowering>,
+    pub(in crate::domain_computation::primary_graph) output_comparison:
+        Option<super::output_evaluation::InstalledOutputComparison>,
+}
 pub(in crate::domain_computation::primary_graph) type WorthQueryInstalledOutputProducerRoutes =
-    BTreeMap<String, Arc<BridgeInstalledConditionalLowering>>;
+    BTreeMap<String, WorthQueryInstalledOutputProducerRoute>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct ProducerSchedulingSemantics(Arc<str>);
@@ -96,12 +102,20 @@ struct ProducerSignalComputeContext {
 }
 
 pub(super) fn install_output_producer_routes<'a>(
-    identities: impl IntoIterator<Item = &'a str>,
+    identities: impl IntoIterator<
+        Item = (
+            &'a str,
+            Option<(
+                &'a Arc<super::output_equivalence_contract::InstalledProducerOutputEquivalence>,
+                &'a str,
+            )>,
+        ),
+    >,
     builder: &mut BridgeConditionalRuntimeBuilder,
 ) -> Result<WorthQueryInstalledOutputProducerRoutes, WorthQueryPrimaryGraphInstallationDenial> {
     identities
         .into_iter()
-        .map(|identity| {
+        .map(|(identity, output_meaning)| {
             let scheduling_identity: Arc<str> = Arc::from(format!("{identity}:output-demand"));
             let semantics = ProducerSchedulingSemantics(Arc::clone(&scheduling_identity));
             let lowering = builder
@@ -124,7 +138,18 @@ pub(super) fn install_output_producer_routes<'a>(
                         .compute(ProducerSignalCompute { semantics }),
                 })
                 .map_err(|denial| installation_denial(identity, denial))?;
-            Ok((identity.to_owned(), lowering))
+            let output_comparison = output_meaning
+                .map(|(field, role)| {
+                    super::output_evaluation::installation::install(identity, field, role, builder)
+                })
+                .transpose()?;
+            Ok((
+                identity.to_owned(),
+                WorthQueryInstalledOutputProducerRoute {
+                    scheduling: lowering,
+                    output_comparison,
+                },
+            ))
         })
         .collect()
 }

@@ -25,7 +25,7 @@ mod source_readmission;
 mod work_limit;
 pub(in crate::domain_computation::primary_graph::application_query) use governed_access::governance_denial;
 pub(in crate::domain_computation::primary_graph::application_query) use governed_access::prepare_governed_access;
-pub(in crate::domain_computation::primary_graph::application_query) use permission::SelectedIssuedAccessRoot;
+pub(in crate::domain_computation::primary_graph) use permission::SelectedIssuedAccessRoot;
 pub(in crate::domain_computation::primary_graph) use permission::{
     FreshQueryPermissionStop, PreparedApplicationQueryPermission,
 };

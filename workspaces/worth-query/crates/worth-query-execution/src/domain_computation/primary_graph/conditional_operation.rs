@@ -30,6 +30,7 @@ mod reconstruction_authority;
 mod reinstallation;
 mod signal_decision_reentry;
 pub(crate) use signal_decision_reentry::classify_bridge_signal;
+pub(crate) use signal_decision_reentry::classify_bridge_signal_observation;
 pub(in crate::domain_computation::primary_graph) use signal_decision_reentry::{
     WorthQueryConditionalTruthBasis, WorthQuerySelectedSignalProjections,
 };

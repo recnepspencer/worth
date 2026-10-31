@@ -1,9 +1,15 @@
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAdmissionDenial,
+    WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryIssuedSelectedPrincipal,
+    WorthQueryIssuedSelectedScope, WorthQuerySelectedProductOperation,
+};
+use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// Both typed identities came from their owners on one selected immutable
 /// native root and one request. The HRTB Query continuation keeps their
 /// issuers, selected operation and local identities alive until read release.
-pub(in crate::domain_computation::primary_graph::application_query) struct SelectedIssuedAccessRoot<
+pub(in crate::domain_computation::primary_graph) struct SelectedIssuedAccessRoot<
     'a,
     Schema,
     Principal,
@@ -28,9 +34,58 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Selec
         &'a worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 }
 
-impl<Schema, Principal, PrincipalIdentity, Scope>
-    SelectedIssuedAccessRoot<'_, Schema, Principal, PrincipalIdentity, Scope>
+impl<'a, Schema, Principal, PrincipalIdentity, Scope>
+    SelectedIssuedAccessRoot<'a, Schema, Principal, PrincipalIdentity, Scope>
 {
+    /// Borrow only the identities actually issued on this current root/request.
+    pub(in crate::domain_computation::primary_graph) fn from_issued<'selected, 'runtime>(
+        selected: &'selected WorthQuerySelectedProductOperation<'runtime, Schema>,
+        access: &WorthQueryApplicationQueryAccessContext<
+            '_,
+            Schema,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        principal: &'a WorthQueryIssuedSelectedPrincipal<
+            'selected,
+            'runtime,
+            Schema,
+            Principal,
+            PrincipalIdentity,
+        >,
+        scope: &'a WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Scope>,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        subject: &str,
+    ) -> Result<Self, WorthQueryApplicationQueryAdmissionDenial>
+    where
+        Schema: ApplicationSchema,
+    {
+        if !std::ptr::eq(principal.selected(), selected)
+            || !std::ptr::eq(scope.selected(), selected)
+            || !std::ptr::eq(principal.principal(), access.principal())
+            || !std::ptr::eq(scope.scope(), access.scope())
+            || !principal.request().same_request(request)
+            || !scope.request().same_request(request)
+            || principal.issued_root().admission_identity()
+                != scope.issued_root().admission_identity()
+            || !std::ptr::eq(principal.issued_snapshot(), scope.issued_snapshot())
+        {
+            return Err(super::denial(
+                WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis,
+                subject,
+            ));
+        }
+        Ok(Self {
+            principal: principal.principal(),
+            scope: scope.scope(),
+            root: principal.issued_root(),
+            snapshot: principal.issued_snapshot(),
+            product: selected.product().observation(),
+            request: principal.request(),
+        })
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn matches(
         &self,
         principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<

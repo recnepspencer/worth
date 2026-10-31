@@ -1,5 +1,7 @@
+use super::super::application_output_demand::OriginalSettledProducerObservation;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
+use std::sync::Arc;
 use std::time::Instant;
 
 use worth_query_admission::facade::{
@@ -31,6 +33,7 @@ pub enum WorthQueryApplicationQueryFreshness {
 }
 
 pub struct WorthQueryApplicationQueryControls<'a, Schema> {
+    producer: Option<Arc<OriginalSettledProducerObservation>>,
     basis: WorthQueryApplicationQueryBasis,
     security_product: crate::basis::WorthQueryProductObservationLease,
     publication_product: Option<crate::basis::WorthQueryProductBranchLease>,
@@ -54,6 +57,7 @@ pub struct WorthQueryApplicationQueryResumeControls<'a> {
 /// Read-only view of what admission fixed: lane, basis posture, consistency,
 /// freshness, basis deadline, result and work limits, and request scope.
 pub struct WorthQueryAdmittedApplicationQueryControls<'a> {
+    producer: Option<Arc<OriginalSettledProducerObservation>>,
     current_product_one_shot: bool,
     basis: WorthQueryApplicationQueryBasisPosture,
     consistency: WorthQueryApplicationQueryConsistency,
@@ -76,6 +80,14 @@ pub(super) enum WorthQueryApplicationQueryBasis {
 }
 
 impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
+    pub(in crate::domain_computation::primary_graph) fn with_original_settled_producer(
+        mut self,
+        producer: Option<Arc<OriginalSettledProducerObservation>>,
+    ) -> Self {
+        self.producer = producer;
+        self
+    }
+
     pub(in crate::domain_computation::primary_graph) fn publication_product_branch(
         &self,
     ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
@@ -101,6 +113,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             maximum_result_count,
 
             request_scope,
+            producer: None,
             _schema: PhantomData,
         }
     }
@@ -124,6 +137,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             maximum_result_count,
 
             request_scope,
+            producer: None,
             _schema: PhantomData,
         }
     }
@@ -147,6 +161,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             maximum_result_count: maximum_page_width,
 
             request_scope,
+            producer: None,
             _schema: PhantomData,
         }
     }
@@ -170,6 +185,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             maximum_result_count: maximum_materialized_record_count,
 
             request_scope,
+            producer: None,
             _schema: PhantomData,
         }
     }
@@ -232,6 +248,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             maximum_result_count: self.maximum_result_count,
 
             request_scope: self.request_scope,
+            producer: self.producer,
         };
         (self.basis, self.security_product, admitted)
     }
@@ -249,6 +266,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             maximum_result_count: controls.maximum_page_width,
 
             request_scope: controls.request_scope,
+            producer: None,
             _schema: PhantomData,
         }
     }
@@ -277,6 +295,15 @@ impl<'a> WorthQueryApplicationQueryResumeControls<'a> {
 }
 
 impl WorthQueryAdmittedApplicationQueryControls<'_> {
+    pub(super) fn original_settled_producer_for(
+        &self,
+        actual: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Option<Arc<OriginalSettledProducerObservation>> {
+        self.producer
+            .as_ref()
+            .filter(|origin| origin.matches_read(actual))
+            .cloned()
+    }
     pub(in crate::domain_computation::primary_graph::application_query) fn is_current_product_one_shot(
         &self,
     ) -> bool {

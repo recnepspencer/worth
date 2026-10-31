@@ -61,6 +61,7 @@ pub fn reverse_inherited_fork_and_refuse_key_target_drift() {
     assert_eq!(
         host::read_on(&host, first),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 7
         }]
@@ -68,6 +69,7 @@ pub fn reverse_inherited_fork_and_refuse_key_target_drift() {
     assert_eq!(
         host::read_on(&host, second),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]
@@ -95,6 +97,7 @@ pub fn reverse_inherited_fork_and_refuse_key_target_drift() {
     assert_eq!(
         host::read_on(&host, second),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]
@@ -133,6 +136,7 @@ pub fn stale_prepared_target_refuses() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 19
         }]
@@ -213,6 +217,7 @@ pub fn fresh_actor_can_reverse_after_original_actor_revocation() {
             .unwrap()
             .rows(),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 7
         }]

@@ -3,5 +3,3 @@ error: cannot construct `PhysicalRecoveryConstructionPort` with struct literal s
   |
 4 |     PhysicalRecoveryConstructionPort {}
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: private field `_private` that was not provided

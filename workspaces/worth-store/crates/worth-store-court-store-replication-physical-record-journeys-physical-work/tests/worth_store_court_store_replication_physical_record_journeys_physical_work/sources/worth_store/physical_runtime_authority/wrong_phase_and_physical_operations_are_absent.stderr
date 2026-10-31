@@ -1,23 +1,23 @@
 error[E0599]: no method named `append_physical_record` found for reference `&AdmittedPhysicalRuntime` in the current scope
- --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:6:13
+ --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:6:13
   |
 6 |     runtime.append_physical_record(b"not installed");
   |             ^^^^^^^^^^^^^^^^^^^^^^ method not found in `&AdmittedPhysicalRuntime`
 
 error[E0599]: no method named `open_physical_media` found for reference `&AdmittedPhysicalRuntime` in the current scope
- --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:7:13
+ --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:7:13
   |
 7 |     runtime.open_physical_media();
   |             ^^^^^^^^^^^^^^^^^^^ method not found in `&AdmittedPhysicalRuntime`
 
 error[E0599]: no method named `media_observation` found for reference `&AdmittedPhysicalRuntime` in the current scope
- --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:8:13
+ --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:8:13
   |
 8 |     runtime.media_observation();
   |             ^^^^^^^^^^^^^^^^^ method not found in `&AdmittedPhysicalRuntime`
 
 error[E0599]: no method named `lookup_owner` found for reference `&AdmittedPhysicalRuntime` in the current scope
- --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:9:13
+ --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:9:13
   |
 9 |     runtime.lookup_owner("media");
   |             ^^^^^^^^^^^^
@@ -26,25 +26,25 @@ help: there is a method `to_owned` with a similar name, but with different argum
  --> $RUST/alloc/src/borrow.rs
 
 error[E0599]: no method named `append_physical_record` found for reference `&ObservationHandle` in the current scope
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:13:17
+  --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:13:17
    |
 13 |     observation.append_physical_record(b"not installed");
    |                 ^^^^^^^^^^^^^^^^^^^^^^ method not found in `&ObservationHandle`
 
 error[E0599]: no method named `publish_physical_changes` found for reference `&ObservationHandle` in the current scope
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:14:17
+  --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:14:17
    |
 14 |     observation.publish_physical_changes();
    |                 ^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `&ObservationHandle`
 
 error[E0599]: no method named `recover_physical_store` found for reference `&ObservationHandle` in the current scope
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:15:17
+  --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:15:17
    |
 15 |     observation.recover_physical_store();
    |                 ^^^^^^^^^^^^^^^^^^^^^^ method not found in `&ObservationHandle`
 
 error[E0599]: no method named `close` found for reference `&ObservationHandle` in the current scope
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:16:17
+  --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:16:17
    |
 16 |     observation.close();
    |                 ^^^^^
@@ -56,25 +56,25 @@ help: there is a method `clone` with a similar name
    |
 
 error[E0599]: no method named `raw_physical_owner` found for reference `&ObservationHandle` in the current scope
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:17:17
+  --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:17:17
    |
 17 |     observation.raw_physical_owner();
    |                 ^^^^^^^^^^^^^^^^^^ method not found in `&ObservationHandle`
 
 error[E0599]: no method named `observe` found for struct `ClosedRuntime` in the current scope
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:26:28
+  --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:26:28
    |
 26 |     let _observer = closed.observe();
    |                            ^^^^^^^ method not found in `ClosedRuntime`
 
 error[E0599]: no method named `observe` found for struct `AbortedRuntime` in the current scope
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:30:29
+  --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:30:29
    |
 30 |     let _observer = aborted.observe();
    |                             ^^^^^^^ method not found in `AbortedRuntime`
 
 error[E0382]: borrow of moved value: `runtime`
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:22:21
+  --> tests/physical_runtime_authority/wrong_phase_and_physical_operations_are_absent.rs:22:21
    |
 20 | fn reuse_after_close(runtime: AdmittedPhysicalRuntime) {
    |                      ------- move occurs because `runtime` has type `AdmittedPhysicalRuntime`, which does not implement the `Copy` trait
@@ -83,8 +83,8 @@ error[E0382]: borrow of moved value: `runtime`
 22 |     let _identity = runtime.runtime_identity();
    |                     ^^^^^^^ value borrowed here after move
    |
-note: `AdmittedPhysicalRuntime::close` takes ownership of the receiver `self`, which moves `runtime`
-  --> $WORKSPACE/crates/worth-store/src/physical_runtime/runtime.rs
+note: `worth_store::physical_runtime::AdmittedPhysicalRuntime::close` takes ownership of the receiver `self`, which moves `runtime`
+  --> src/physical_runtime/runtime.rs
    |
    |     pub fn close(self) -> ClosedRuntime {
    |                  ^^^^

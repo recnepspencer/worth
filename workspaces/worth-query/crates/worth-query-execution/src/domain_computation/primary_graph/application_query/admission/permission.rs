@@ -25,10 +25,11 @@ use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSe
 mod current_ready;
 mod fresh;
 mod principal_dependency;
+mod read_authorization;
 mod selected_access;
 mod source_parameters;
 pub(in crate::domain_computation::primary_graph) use fresh::FreshQueryPermissionStop;
-pub(in crate::domain_computation::primary_graph::application_query) use selected_access::SelectedIssuedAccessRoot;
+pub(in crate::domain_computation::primary_graph) use selected_access::SelectedIssuedAccessRoot;
 
 /// Query-owned permission for the exact prepared source, access and Product.
 /// Its fields cannot be separated into reusable raw decisions by a caller.

@@ -28,6 +28,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             self.binding_identity.clone(),
             members,
             &portable_contract,
+            self.native_contracts.as_ref(),
             &self.operation,
             &self.input_type,
         ) else {

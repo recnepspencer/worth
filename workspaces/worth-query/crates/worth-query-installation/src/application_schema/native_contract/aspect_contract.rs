@@ -57,6 +57,32 @@ impl WorthQueryInstalledApplicationAspectContract {
         &self.binding
     }
 
+    /// Interpret only fields belonging to this actual installed storage binding.
+    pub(crate) fn field_value_contract(
+        &self,
+        field: &FieldKey,
+    ) -> Option<(
+        worth_foundational::facade::ScalarAspectType,
+        worth_foundational::facade::FieldRequirement,
+        Option<worth_foundational::facade::CanonicalDigestId>,
+    )> {
+        use worth_foundational::facade::{AspectShape, FieldRequirement};
+        if !self.contains_field(field) {
+            return None;
+        }
+        match (self.contract.shape(), &self.binding) {
+            (AspectShape::Scalar(family), AspectBinding::EntityField { field: physical })
+                if physical == field && self.fields.len() == 1 =>
+            {
+                Some((*family, FieldRequirement::Required, None))
+            }
+            (AspectShape::Struct(shape), _) => shape
+                .field(field)
+                .map(|field| (field.value_type(), field.requirement(), field.codec())),
+            _ => None,
+        }
+    }
+
     pub fn canonical_contract_basis(&self) -> &CanonicalBasisReadyArtifact {
         self.canonical_contract_basis.as_ref()
     }

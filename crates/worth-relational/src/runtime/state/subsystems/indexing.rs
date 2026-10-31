@@ -14,6 +14,7 @@ mod prepared_publication;
 pub(crate) use prepared_publication::PreparedGenerationBatch;
 mod discard;
 mod generation_catalog;
+mod publication_retirement;
 #[cfg(test)]
 mod query_generation_routing;
 use generation_catalog::GenerationCatalog;

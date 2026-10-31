@@ -27,6 +27,8 @@ mod governed_continuation;
 mod governed_retained;
 mod live_approved;
 mod live_open;
+mod retained_projection;
+pub use retained_projection::WorthQueryApplicationProjectionRetentionRequest;
 mod managed_index;
 
 /// A query request. `execute` runs it once; `subscribe` opens it live; `limits` bounds its
@@ -44,6 +46,7 @@ pub struct WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, S
     intent: Intent,
     limits: Option<NonZeroUsize>,
     retain_expression_context: bool,
+    retain_projection_for_inspection: bool,
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent>
@@ -68,6 +71,7 @@ where
             intent,
             limits: None,
             retain_expression_context: false,
+            retain_projection_for_inspection: false,
         }
     }
 
@@ -90,6 +94,7 @@ where
             intent,
             limits: None,
             retain_expression_context: false,
+            retain_projection_for_inspection: false,
         }
     }
 
@@ -98,6 +103,23 @@ where
     pub fn limit_results(mut self, maximum_results: NonZeroUsize) -> Self {
         self.limits = Some(maximum_results);
         self
+    }
+
+    /// Explicitly retain the original complete Native disclosed projection for
+    /// later inspection. This grants no inspection permission, captures no DTO
+    /// and supports only one-shot execution. Unsupported shapes return a typed
+    /// execution refusal.
+    pub fn retain_projection_for_inspection(
+        mut self,
+    ) -> WorthQueryApplicationProjectionRetentionRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Intent,
+    > {
+        self.retain_projection_for_inspection = true;
+        WorthQueryApplicationProjectionRetentionRequest::new(self)
     }
 
     /// Executes an exactly-one query and retains its native expression record

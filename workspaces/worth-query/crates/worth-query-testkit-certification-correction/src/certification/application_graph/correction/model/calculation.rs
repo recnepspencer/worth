@@ -10,6 +10,7 @@ use worth_query_host::facade::{
 pub struct Calculate {
     pub key: String,
     pub primary: u64,
+    pub operand: Option<u64>,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Published;
@@ -19,7 +20,7 @@ worth_query_structured_value_binding!(pub InputBinding for Calculate { identity:
 worth_query_structured_value_binding!(pub ResultBinding for Published { identity: "numeric-correction.calculation-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for SourceChanged { identity: "numeric-correction.calculation-denial.v1" });
 worth_query_operation!(pub CalculateNumber for NumericSchema, input InputBinding);
-worth_query_operation_reads!(CalculateNumber => [Key, Primary, Calculated]);
+worth_query_operation_reads!(CalculateNumber => [Key, Primary, Calculated, Operand]);
 worth_query_operation_writes!(CalculateNumber => [Calculated]);
 pub struct Outputs;
 pub struct CalculatedNumber;
@@ -118,6 +119,11 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
             Ok(_) => return HandlerResult::DomainDenied(SourceChanged),
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         }
+        match reader.field(&target, Operand::reference()) {
+            Ok(value) if value == input.operand => {}
+            Ok(_) => return HandlerResult::DomainDenied(SourceChanged),
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        }
         match reader.field(&target, Calculated::reference()) {
             Ok(Some(_)) => {}
             Ok(None) => return HandlerResult::DomainDenied(SourceChanged),
@@ -136,7 +142,11 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
     ) -> HandlerResult<Published, SourceChanged> {
         let build = |writer: &mut CandidateWriter<'_, NumericSchema, Binding>| {
             let target = writer.projected_entity(&target)?;
-            writer.write_field(&target, Calculated::reference(), input.primary * 2 + 1)?;
+            writer.write_field(
+                &target,
+                Calculated::reference(),
+                input.primary * 2 + 1 + input.operand.unwrap_or(0),
+            )?;
             writer.preserve_output::<CalculatedNumber>(&target)
         };
         match build(writer) {
@@ -196,6 +206,7 @@ impl WorthQueryApplicationProducerProvider<NumericSchema, Producer> for Provider
         Calculate {
             key: "numeric".to_owned(),
             primary: row.primary,
+            operand: row.operand,
         }
     }
     fn idempotency_key(&self, _: &query::Row, source: &[u8; 32]) -> u64 {
@@ -217,6 +228,7 @@ pub fn declare(
         .operation_read_field(CalculateNumber::reference(), Key::reference())
         .operation_read_field(CalculateNumber::reference(), Primary::reference())
         .operation_read_field(CalculateNumber::reference(), Calculated::reference())
+        .operation_read_field(CalculateNumber::reference(), Operand::reference())
         .operation_write(CalculateNumber::reference(), Calculated::reference())
         .application_mutation_binding::<Binding>()
 }

@@ -26,7 +26,7 @@ error[E0507]: cannot move out of a shared reference
    |             |
    |             move occurs because value has type `ObservedRecoveryArtifact`, which does not implement the `Copy` trait
    |
-note: `ObservedRecoveryArtifact::into_bytes` takes ownership of the receiver `self`, which moves value
+note: `worth_store::physical_runtime::ObservedRecoveryArtifact::into_bytes` takes ownership of the receiver `self`, which moves value
   --> $WORKSPACE/crates/worth-store-physical-backend/src/recovery_media/discovery/observed_artifact.rs
    |
    |     pub fn into_bytes(self) -> Option<Vec<u8>> {

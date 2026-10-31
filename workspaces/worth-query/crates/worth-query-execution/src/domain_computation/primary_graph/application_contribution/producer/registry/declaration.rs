@@ -49,6 +49,8 @@ impl DeclaredProducerBinding {
             required_invariants: Binding::REQUIRED_INVARIANTS.to_vec(),
             reuse_policy: Binding::REUSE_POLICY.to_owned(),
             input_reuse: Binding::INPUT_REUSE,
+            output_equivalence: Binding::output_equivalence().map(|contract| contract.into_field()),
+            installed_output_equivalence: None,
             binding_type: TypeId::of::<Binding>(),
             source_type: TypeId::of::<
                 <Binding::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source,
@@ -75,10 +77,16 @@ impl DeclaredProducerBinding {
         Binding: WorthQueryApplicationProducerBinding<Schema>,
     {
         let expected = Self::of::<Schema, Binding>(&self.owner);
-        self.has_same_meaning_as(&expected)
+        self.same_binding_declaration(&expected)
     }
 
+    #[cfg(test)]
     pub(super) fn has_same_meaning_as(&self, expected: &Self) -> bool {
+        self.same_binding_declaration(expected)
+            && self.installed_output_equivalence == expected.installed_output_equivalence
+    }
+
+    fn same_binding_declaration(&self, expected: &Self) -> bool {
         self.identity == expected.identity
             && self.source_selector == expected.source_selector
             && self.output_family == expected.output_family
@@ -94,6 +102,7 @@ impl DeclaredProducerBinding {
             && self.required_invariants == expected.required_invariants
             && self.reuse_policy == expected.reuse_policy
             && self.input_reuse == expected.input_reuse
+            && self.output_equivalence == expected.output_equivalence
             && self.binding_type == expected.binding_type
             && self.source_type == expected.source_type
             && self.operation_binding_type == expected.operation_binding_type

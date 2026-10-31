@@ -13,28 +13,38 @@ use crate::storage::{
 pub(super) fn authoritative_partition_allocations(
     runtime_instance_id: u64,
     partition: &PartitionState,
+    seen: &mut std::collections::BTreeSet<u64>,
+    work: Option<&mut super::retained_storage::RelationalRetainedStorageWork>,
 ) -> Vec<RelationalAuthoritativeAllocationObservation> {
     let mut walk = PartitionAllocationWalk {
         runtime_instance_id,
         partition_id: partition.partition_id,
-        seen: Default::default(),
+        seen,
         allocations: Vec::new(),
+        work,
     };
     partition.visit_authoritative_allocations(false, &mut walk);
     walk.allocations
 }
 
-struct PartitionAllocationWalk {
+struct PartitionAllocationWalk<'a> {
     runtime_instance_id: u64,
     partition_id: PartitionId,
-    seen: std::collections::BTreeSet<u64>,
+    seen: &'a mut std::collections::BTreeSet<u64>,
     allocations: Vec<RelationalAuthoritativeAllocationObservation>,
+    work: Option<&'a mut super::retained_storage::RelationalRetainedStorageWork>,
 }
 
-impl StorageAllocationVisitor for PartitionAllocationWalk {
+impl StorageAllocationVisitor for PartitionAllocationWalk<'_> {
     fn visit(&mut self, allocation: StorageAllocationObservation) -> bool {
+        if let Some(work) = self.work.as_mut() {
+            work.payload_allocation_attempts += 1;
+        }
         if !self.seen.insert(allocation.id) {
             return false;
+        }
+        if let Some(work) = self.work.as_mut() {
+            work.payload_new_allocations += 1;
         }
         self.allocations
             .push(RelationalAuthoritativeAllocationObservation::new(
@@ -54,13 +64,14 @@ impl StorageAllocationVisitor for PartitionAllocationWalk {
 pub(super) fn excluded_partition_allocations(
     partition: &PartitionState,
     root: &crate::branch::RelationalBranchRoot,
+    seen: &mut std::collections::BTreeSet<u64>,
 ) -> Vec<(
     RelationalExcludedAllocationLane,
     StorageAllocationObservation,
 )> {
     let mut walk = ExcludedAllocationWalk {
         lane: RelationalExcludedAllocationLane::Diagnostics,
-        seen: Default::default(),
+        seen,
         allocations: Vec::new(),
     };
     partition.visit_diagnostic_allocations(&mut walk);
@@ -72,15 +83,15 @@ pub(super) fn excluded_partition_allocations(
     walk.allocations
 }
 
-struct ExcludedAllocationWalk {
+struct ExcludedAllocationWalk<'a> {
     lane: RelationalExcludedAllocationLane,
-    seen: std::collections::BTreeSet<u64>,
+    seen: &'a mut std::collections::BTreeSet<u64>,
     allocations: Vec<(
         RelationalExcludedAllocationLane,
         StorageAllocationObservation,
     )>,
 }
-impl StorageAllocationVisitor for ExcludedAllocationWalk {
+impl StorageAllocationVisitor for ExcludedAllocationWalk<'_> {
     fn visit(&mut self, allocation: StorageAllocationObservation) -> bool {
         if !self.seen.insert(allocation.id) {
             return false;

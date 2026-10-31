@@ -112,6 +112,7 @@ pub(super) fn build_incremental_regions(
                     retention: &prior.partition,
                     inventory: prior.allocation_inventory(),
                     unavailable_records: prior.materialization_unavailable_records(),
+                    kind_commitment: prior.kind_commitment,
                 },
                 overlay,
                 journal,

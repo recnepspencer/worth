@@ -25,6 +25,7 @@ use crate::domain_computation::primary_graph::application_query::projection::{
 
 mod bounded_ordering;
 mod collection_selection;
+mod field_presence;
 pub(super) use collection_selection::*;
 pub(in crate::domain_computation::primary_graph::application_query) mod fallible_heap;
 mod fields;

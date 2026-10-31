@@ -31,7 +31,8 @@ function New-ConstitutionDiagnostic([string]$Code, [string]$Subject, [string]$Me
 
 function Write-ConstitutionFailure([string]$Format, [object]$Diagnostic, [string]$HumanMessage) {
     if ($Format -eq "json") {
-        [ordered]@{ schema = "worth.constitution.v1"; ok = $false; diagnostics = @($Diagnostic) } | ConvertTo-Json -Depth 8
+        $json = [ordered]@{ schema = "worth.constitution.v1"; ok = $false; diagnostics = @($Diagnostic) } | ConvertTo-Json -Depth 8
+        [Console]::Out.WriteLine($json)
     } else { [Console]::Error.WriteLine($HumanMessage) }
 }
 

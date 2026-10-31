@@ -7,6 +7,7 @@ use worth_foundational::facade::AspectValue;
 mod resource;
 #[path = "application_principal_binding_tests/result_only.rs"]
 mod result_only;
+pub(crate) use result_only::ResultOnlyQueryBinding;
 #[path = "application_principal_binding_tests/retained_validation.rs"]
 mod retained_validation;
 use worth_query_declaration::facade::application_query::{

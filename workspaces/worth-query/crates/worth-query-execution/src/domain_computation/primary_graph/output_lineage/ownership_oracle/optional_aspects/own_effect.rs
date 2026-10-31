@@ -17,8 +17,17 @@ worth_query_decl::facade::worth_query_application! {
 worth_query_decl::facade::worth_query_application! {
     pub(super) ClearingSchema { owner: "worth.query.test.optional-own-clear", version: (1, 0), contributions: [installation::Members], }
 }
+worth_query_decl::facade::worth_query_application! {
+    pub(super) RenewingSchema { owner: "worth.query.test.optional-own-renew", version: (1, 0), contributions: [installation::Members], }
+}
 impl TopologyModelBinding for MaterializingSchema {}
 impl TopologyModelBinding for ClearingSchema {}
+impl TopologyModelBinding for RenewingSchema {}
+impl BirthSchema for RenewingSchema {
+    const REQUIRED: bool = false;
+    const SOURCE_WRITE: SourceWrite = SourceWrite::Materialize;
+    const RENEW_OUTPUT: bool = true;
+}
 impl BirthSchema for MaterializingSchema {
     const REQUIRED: bool = false;
     const SOURCE_WRITE: SourceWrite = SourceWrite::Materialize;
@@ -95,6 +104,15 @@ fn ordinary_handler_own_effect_materialization_moves_aspect_absence() {
             MaterializingSchema,
         >>::IDENTITY
     );
+    // A second real installed journey distinguishes P1 creation, P2 unequal
+    // publication, and P3 equal-write preservation; it is not a made-up receipt.
+    let renewing = installation::install::<RenewingSchema>(false);
+    let readers = renewing.application_query_basis_observer();
+    let baseline = readers.observe().active();
+    let renewed = journey::materializing_demand(&renewing);
+    court::readmit(&renewing, &renewed, true);
+    drop(renewed);
+    assert_eq!(readers.observe().active(), baseline);
 }
 
 #[test]

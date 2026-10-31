@@ -4,14 +4,14 @@ use crate::identity::data::{EntityId, KindId, RelationId};
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_foundational::facade::{AspectContract, AspectFieldLocator, FieldKey};
+#[path = "proposal_touches/aspect_patch.rs"]
+mod aspect_patch;
 #[path = "proposal_touches/collection.rs"]
 mod collection;
 #[path = "proposal_touches/intent_projection.rs"]
 mod intent_projection;
 #[path = "proposal_touches/preparation.rs"]
 mod preparation;
-#[path = "proposal_touches/struct_aspect.rs"]
-mod struct_aspect;
 
 /// One semantic locus touched by an invariant-validated Relational mutation.
 ///

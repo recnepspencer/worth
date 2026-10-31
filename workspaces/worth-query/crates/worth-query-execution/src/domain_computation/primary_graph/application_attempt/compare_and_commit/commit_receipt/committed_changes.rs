@@ -1,4 +1,8 @@
+mod materialized_field;
+pub(in crate::domain_computation::primary_graph) use materialized_field::MaterializedCommittedField;
 mod actor_observation;
+mod field_effect;
+mod output_effect;
 use std::{collections::BTreeMap, sync::Arc};
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
@@ -21,6 +25,13 @@ pub struct WorthQueryApplicationCommittedChanges {
 }
 
 impl WorthQueryApplicationCommittedChanges {
+    pub(in crate::domain_computation::primary_graph) fn shares_original(
+        &self,
+        other: &Self,
+    ) -> bool {
+        Arc::ptr_eq(&self.envelope, &other.envelope)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_commit(commit: &CommitResult) -> Self {
         Self {
             envelope: Arc::clone(&commit.publication().envelope),

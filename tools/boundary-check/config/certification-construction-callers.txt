@@ -1,4 +1,6 @@
 # Closed callers recorded at the one-build inventory; owners are allowed by the rule.
+# cfg(test) original-binding custody court: two real bound queries versus the unbound query.
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_observation/declared_query/tests.rs
 # 9.18: native root disclosure court; fixture queries remain inside Execution certification.
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/correction_disclosure.rs
 bridge workspaces/worth-query/crates/worth-query/src/domain_installation/dependency_impact/compiled/invalidation_manifest/structural_manifest_tests.rs
@@ -85,3 +87,6 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/complete_closure.rs
 # Ruled metadata-only lookup for real declared-orbit principal/scope admission and Native reads.
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/read.rs
+
+# Ruled cfg(test) bound-versus-unbound original projection capture through real admission.
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/projection/retained_projection/tests/reads.rs

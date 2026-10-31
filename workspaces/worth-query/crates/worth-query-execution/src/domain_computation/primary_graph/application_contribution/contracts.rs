@@ -96,10 +96,15 @@ where
                 Binding::IDENTITY,
             ));
         }
-        self.producers.insert(
-            Binding::IDENTITY.to_owned(),
-            DeclaredProducerBinding::of::<Schema, Binding>(&self.owner),
-        );
+        let declared = DeclaredProducerBinding::of::<Schema, Binding>(&self.owner);
+        // Validate declared field meaning before any contribution configures or seeds.
+        if let Some(field) = declared.output_equivalence.as_ref() {
+            field.declare(self.declaration).map_err(|cause| {
+                denial(DenialKind::ProducerBindingMeaningMismatch, cause.detail)
+            })?;
+        }
+        self.producers
+            .insert(Binding::IDENTITY.to_owned(), declared);
         Ok(self)
     }
 

@@ -1,5 +1,7 @@
 import unittest
 import os
+import json
+import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -10,6 +12,36 @@ from run_lane import LANDING, child_environment, execute, selected_lanes, log_la
 
 
 class GovernedExecutionPlanTests(unittest.TestCase):
+    def test_focused_runner_checks_dependency_testkit_sources_before_compiling_any_target(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            names = ['owner', 'owner-testkit', 'unrelated-court']
+            (root/'Cargo.toml').write_text('[workspace]\nmembers=["*"]\n')
+            for name in names:
+                package = root/name
+                (package/'src').mkdir(parents=True)
+                (package/'Cargo.toml').write_text(f'[package]\nname="{name}"\nversion="0.1.0"\n')
+                (package/'src/lib.rs').write_text('' if name == 'owner' else
+                    '#[test] fn bad() { std::process::Command::new("cargo"); }')
+            metadata = {'workspace_members': names, 'packages': [
+                {'id': name, 'name': name, 'targets': [{'name': name, 'kind': ['lib']}]} for name in names],
+                'resolve': {'nodes': [{'id': name, 'dependencies': ['owner-testkit'] if name == 'owner' else []}
+                                      for name in names]}}
+            class Runner:
+                environment = {}
+                commands = []
+                def __call__(self, command, cwd, log):
+                    self.commands.append(command)
+                    return subprocess.CompletedProcess(command, 0, json.dumps(metadata), '')
+            runner = Runner()
+            with patch('run_lane.child_environment', return_value={}):
+                with self.assertRaisesRegex(ValueError, 'tests invoke compilers') as denied:
+                    execute(root, 'root', ['owner-unit'], root/'out', cargo_runner=runner,
+                            native_selection={'packages': ['owner'], 'targets': {'lib': True}})
+            self.assertIn('owner-testkit', str(denied.exception))
+            self.assertNotIn('unrelated-court', str(denied.exception))
+            self.assertEqual([command[1] for command in runner.commands], ['metadata'])
+
     def test_rust_plan_identities_have_windows_safe_log_paths(self):
         self.assertEqual(log_label('scenario::nextest'), 'scenario--nextest')
         self.assertLessEqual(len(log_label('smoke::' + 'domain' * 100)), 80)

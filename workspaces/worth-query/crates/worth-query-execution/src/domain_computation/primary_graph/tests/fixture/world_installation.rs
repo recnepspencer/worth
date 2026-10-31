@@ -152,6 +152,17 @@ pub(in crate::domain_computation) fn installed_authorization_world(
     })
 }
 
+/// A real Native policy that permits explicit reclamation before generation reuse.
+pub(in crate::domain_computation::primary_graph) fn installed_reclaiming_authorization_world(
+) -> AuthorizationWorld {
+    super::authorization_world_installation::install_reclaiming_authorization_world(
+        AuthorizationWorldSpec {
+            owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
+            ..standard_spec()
+        },
+    )
+}
+
 pub(in crate::domain_computation::primary_graph) fn installed_authorization_world_with_label(
     label: &str,
     resources: WorthQueryApplicationQueryResourceProfile,

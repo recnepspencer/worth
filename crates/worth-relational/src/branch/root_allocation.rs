@@ -1,4 +1,11 @@
 use super::RelationalBranchRoot;
+use crate::branch::root_regions::RelationalPersistentRegionNodeObservation;
+#[path = "root_allocation/union.rs"]
+mod union;
+
+#[cfg(test)]
+#[path = "root_allocation_tests.rs"]
+mod tests;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum RelationalRootAuthoritativeAllocationKind {
@@ -17,40 +24,72 @@ pub(crate) struct RelationalRootAuthoritativeAllocationObservation {
     pub(crate) authoritative_bytes: u64,
 }
 
+pub(crate) trait RelationalRootAllocationVisitor {
+    type Error;
+    /// Returning false prunes the children of this immutable allocation.
+    fn allocation(&mut self, allocation: RelationalRootAuthoritativeAllocationObservation) -> bool;
+    fn region(
+        &mut self,
+        region: super::RelationalRootRegionObservation,
+        partition: Result<
+            Option<&crate::storage::overlay::PartitionState>,
+            crate::storage::data::RelationalStorageUnavailable,
+        >,
+    ) -> Result<(), Self::Error>;
+}
+
+impl From<RelationalPersistentRegionNodeObservation>
+    for RelationalRootAuthoritativeAllocationObservation
+{
+    fn from(node: RelationalPersistentRegionNodeObservation) -> Self {
+        use crate::branch::RelationalPersistentRegionAllocationKind as Region;
+        let kind = match node.allocation_kind {
+            Region::SetObject => {
+                RelationalRootAuthoritativeAllocationKind::PersistentRegionSetObject
+            }
+            Region::MapNodeObject => {
+                RelationalRootAuthoritativeAllocationKind::PersistentRegionMapNodeObject
+            }
+            Region::ReplacementStorage => {
+                RelationalRootAuthoritativeAllocationKind::PersistentRegionReplacementStorage
+            }
+            Region::RemovalStorage => {
+                RelationalRootAuthoritativeAllocationKind::PersistentRegionRemovalStorage
+            }
+        };
+        Self {
+            kind,
+            owner_id: node.node_id,
+            authoritative_bytes: node.authoritative_bytes,
+        }
+    }
+}
+
 impl RelationalBranchRoot {
+    /// Allocation lookup evidence, never canonical ordering or root meaning.
+    /// The borrow pins this physical root; readmission can preserve its
+    /// semantic identity in a different allocation.
+    pub(crate) fn metadata_allocation_observation(
+        &self,
+    ) -> RelationalRootAuthoritativeAllocationObservation {
+        RelationalRootAuthoritativeAllocationObservation {
+            kind: RelationalRootAuthoritativeAllocationKind::RootMetadata,
+            owner_id: self as *const Self as usize as u64,
+            authoritative_bytes: std::mem::size_of::<Self>() as u64,
+        }
+    }
+
     pub(crate) fn authoritative_allocation_observations(
         &self,
     ) -> Vec<RelationalRootAuthoritativeAllocationObservation> {
-        let mut observations = vec![RelationalRootAuthoritativeAllocationObservation {
-            kind: RelationalRootAuthoritativeAllocationKind::RootMetadata,
-            owner_id: self.id,
-            authoritative_bytes: std::mem::size_of::<Self>() as u64,
-        }];
+        let mut observations = vec![self.metadata_allocation_observation()];
         observations.push(RelationalRootAuthoritativeAllocationObservation {
             kind: RelationalRootAuthoritativeAllocationKind::SchemaAuthority,
             owner_id: self.schema_authority().allocation_id(),
             authoritative_bytes: self.schema_authority().authoritative_allocation_bytes(),
         });
         for node in self.regions.allocation_observations() {
-            let kind = match node.allocation_kind {
-                crate::branch::RelationalPersistentRegionAllocationKind::SetObject => {
-                    RelationalRootAuthoritativeAllocationKind::PersistentRegionSetObject
-                }
-                crate::branch::RelationalPersistentRegionAllocationKind::MapNodeObject => {
-                    RelationalRootAuthoritativeAllocationKind::PersistentRegionMapNodeObject
-                }
-                crate::branch::RelationalPersistentRegionAllocationKind::ReplacementStorage => {
-                    RelationalRootAuthoritativeAllocationKind::PersistentRegionReplacementStorage
-                }
-                crate::branch::RelationalPersistentRegionAllocationKind::RemovalStorage => {
-                    RelationalRootAuthoritativeAllocationKind::PersistentRegionRemovalStorage
-                }
-            };
-            observations.push(RelationalRootAuthoritativeAllocationObservation {
-                kind,
-                owner_id: node.node_id,
-                authoritative_bytes: node.authoritative_bytes,
-            });
+            observations.push(node.into());
         }
         observations
     }

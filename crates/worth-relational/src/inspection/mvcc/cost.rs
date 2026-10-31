@@ -12,6 +12,7 @@ pub struct RelationalMvccCostScope {
     baseline_maintenance: crate::history::retention::RelationalRetentionCostCounters,
     baseline_coordination_contacts: u64,
     baseline_global_population_scans: u64,
+    baseline_settlement_route_visits: u64,
 }
 
 impl RelationalMvccCostScope {
@@ -30,6 +31,7 @@ impl RelationalMvccCostScope {
             baseline_interruption,
             baseline_maintenance,
             baseline_global_population_scans: runtime.branch_population_scan_count(),
+            baseline_settlement_route_visits: runtime.history.settlement_route_visit_count(),
             baseline_coordination_contacts: branch_ids
                 .iter()
                 .filter_map(|branch_id| runtime.history.branch_cell(branch_id))
@@ -49,11 +51,15 @@ pub struct RelationalMvccCostObservation {
     counters: RelationalMvccCounterObservation,
 }
 
-/// Branch-local MVCC counter evidence that remains available while a
+/// MVCC counter evidence that remains available while a
 /// performed publication is awaiting settlement and its sharing artifact is
-/// not yet catalog-visible.
+/// not yet catalog-visible. Canonical settlement route visits, population
+/// scans and maintenance are runtime-global; selected branch counters retain
+/// their branch attribution.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationalMvccCounterObservation {
+    canonical_settlement_route_visits: u64,
+    retention_reclaim_batch_size: usize,
     branch_population_scans: u64,
     branch_cell_contacts: u64,
     sharing_cost_delta: crate::runtime::RelationalBranchSharingCostCounters,
@@ -63,6 +69,14 @@ pub struct RelationalMvccCounterObservation {
 }
 
 impl RelationalMvccCostObservation {
+    /// Runtime-global actual route visits while checking unsettled publication.
+    pub const fn canonical_settlement_route_visits(&self) -> u64 {
+        self.counters.canonical_settlement_route_visits()
+    }
+    /// The configured retention granule; publication-delta work is additional.
+    pub const fn retention_reclaim_batch_size(&self) -> usize {
+        self.counters.retention_reclaim_batch_size()
+    }
     pub fn sharing(&self) -> &RelationalBranchSharingObservation {
         &self.sharing
     }
@@ -97,6 +111,15 @@ impl RelationalMvccCostObservation {
 }
 
 impl RelationalMvccCounterObservation {
+    /// Actual canonical-owner route visits, independent of retained-root work.
+    pub const fn canonical_settlement_route_visits(&self) -> u64 {
+        self.canonical_settlement_route_visits
+    }
+    /// The actual configured retention batch at observation. This bounds older
+    /// generation visits, not delta candidates or physical-root/branch degree.
+    pub const fn retention_reclaim_batch_size(&self) -> usize {
+        self.retention_reclaim_batch_size
+    }
     pub const fn branch_population_scans(&self) -> u64 {
         self.branch_population_scans
     }
@@ -179,6 +202,11 @@ impl RelationalRuntime {
             .sum::<u64>()
             .saturating_sub(scope.baseline_coordination_contacts);
         Ok(RelationalMvccCounterObservation {
+            canonical_settlement_route_visits: self
+                .history
+                .settlement_route_visit_count()
+                .saturating_sub(scope.baseline_settlement_route_visits),
+            retention_reclaim_batch_size: self.config.storage.retention.reclaim_batch_size,
             // Population traversal is a deliberately separate runtime-global
             // reconstruction lane. The selected branch counters below remain
             // owner-scoped; this field reports the explicit global delta.

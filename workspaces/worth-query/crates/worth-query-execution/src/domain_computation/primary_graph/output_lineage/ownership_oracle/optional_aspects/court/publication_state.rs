@@ -67,6 +67,18 @@ pub(super) fn observe_roles<Schema: BirthSchema>(
         .unwrap();
     let aspect = locator.aspect().aspect_key();
     let key = &locator.field_path().fields()[0];
+    // The renewing fixture's Preserve handler declares a real unequal write.
+    // Choose its one expected payload from that fixture contract, never from
+    // the observed bytes; birth and ordinary controls retain their old golden.
+    let expected = if Schema::RENEW_OUTPUT
+        && roles
+            .iter()
+            .all(|role| role.posture == RequiredOutputRolePosture::Preserve)
+    {
+        "native-changed"
+    } else {
+        "native-present"
+    };
     graph.with_runtime(&execution, |native| {
         let view = native
             .read_truth()
@@ -89,7 +101,7 @@ pub(super) fn observe_roles<Schema: BirthSchema>(
             .unwrap();
         assert_eq!(
             value,
-            StringApplicationValueBinding::encode(&"native-present".to_owned()).unwrap(),
+            StringApplicationValueBinding::encode(&expected.to_owned()).unwrap(),
             "readiness observes the real existing payload, never a wake-only write"
         );
         // Every role retains its exact native identity and kind, including the

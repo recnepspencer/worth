@@ -206,7 +206,7 @@ impl Projector<'_, '_, '_> {
                         self.allocation.claim(self.execution, value.owned_allocation_capacity_bytes() as u64)?;
                         Ok(value.clone())
                     }
-                    None if projection.presence() == worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional => Ok(worth_foundational::facade::AspectValue::Null),
+                    None if projection.presence().schema_presence() == worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional => Ok(worth_foundational::facade::AspectValue::Null),
                     None => Err(DerivedRelationReadDenial::Definition(DerivedRelationDenial::RecordUnavailable).into()),
                 }
             };

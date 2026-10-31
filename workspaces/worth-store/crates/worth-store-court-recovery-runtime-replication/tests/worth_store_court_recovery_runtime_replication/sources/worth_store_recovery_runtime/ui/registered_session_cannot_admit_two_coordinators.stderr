@@ -9,7 +9,7 @@ error[E0382]: use of moved value: `session`
 13 |     let _second = session.admit_coordination(media, capacity, policy, None);
    |                   ^^^^^^^ value used here after move
    |
-note: `physical_runtime::recovery_coordination::owner::<impl PhysicalRecoveryRegisteredSessionAuthority>::admit_coordination` takes ownership of the receiver `self`, which moves `session`
+note: `worth_store::physical_runtime::recovery_coordination::owner::<impl worth_store::physical_runtime::PhysicalRecoveryRegisteredSessionAuthority>::admit_coordination` takes ownership of the receiver `self`, which moves `session`
   --> $WORKSPACE/crates/worth-store/src/physical_runtime/recovery_coordination/owner.rs
    |
    |         self,

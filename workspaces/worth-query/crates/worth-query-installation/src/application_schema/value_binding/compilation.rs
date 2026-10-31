@@ -179,13 +179,10 @@ fn validate_contract(
     if !contains_field {
         return Err(denial(DenialKind::NativeContractMissing, locus));
     }
-    let worth_foundational::facade::AspectShape::Struct(shape) = native.contract().shape() else {
-        return Err(denial(DenialKind::ContractMismatch, locus));
-    };
-    let native_field = shape
-        .fields()
-        .iter()
-        .find(|field| field.key().as_str() == locus.field())
+    let field_key = worth_foundational::facade::FieldKey::new(locus.field())
+        .ok_or_else(|| denial(DenialKind::NativeContractMissing, locus))?;
+    let (native_family, native_requirement, native_codec) = native
+        .field_value_contract(&field_key)
         .ok_or_else(|| denial(DenialKind::NativeContractMissing, locus))?;
     let requirement = match presence {
         worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Required => {
@@ -195,9 +192,7 @@ fn validate_contract(
             worth_foundational::facade::FieldRequirement::Optional
         }
     };
-    if native_field.codec() != codec
-        || native_field.value_type() != scalar_family
-        || native_field.requirement() != requirement
+    if native_codec != codec || native_family != scalar_family || native_requirement != requirement
     {
         return Err(denial(DenialKind::ContractMismatch, locus));
     }

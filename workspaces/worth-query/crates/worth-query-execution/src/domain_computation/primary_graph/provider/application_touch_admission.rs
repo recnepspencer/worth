@@ -60,6 +60,7 @@ enum ResolvedApplicationTouch {
     LinkRelation(KindId),
     InitializeRelationField(KindId, AspectFieldLocator),
     UnlinkRelation(KindId),
+    RemoveEntityAspect(KindId, worth_foundational::facade::AspectKey),
 }
 
 pub(super) fn admit_validated_application_touches(
@@ -160,6 +161,17 @@ fn resolve_installed_touch(
     scope: &WorthQueryOperationTouchScope,
 ) -> Result<ResolvedApplicationTouch, ()> {
     match scope {
+        WorthQueryOperationTouchScope::RemoveAspect(scope) => {
+            if layout.aspect_contract(scope.entity(), scope.contract().key())
+                != Some(scope.contract())
+            {
+                return Err(());
+            }
+            Ok(ResolvedApplicationTouch::RemoveEntityAspect(
+                layout.entity_kind(scope.entity()).ok_or(())?,
+                scope.contract().key().clone(),
+            ))
+        }
         WorthQueryOperationTouchScope::InitializeRelationField(scope) => {
             let relation = scope.relation();
             resolve_relation_touch(layout, relation, true)?;

@@ -5,10 +5,10 @@ use super::observation::RelationalBranchSharingObservation;
 /// authoritative totals.
 ///
 /// Any change to what an existing metric means requires a new version rather
-/// than a silent redefinition. Version 5 retains the complete-owner scope and
-/// visibility commitments, but identifies payloads at shared node/value
-/// granularity rather than treating a whole partition as one allocation.
-pub const RELATIONAL_SHARING_INSPECTION_VERSION: u16 = 5;
+/// than a silent redefinition. Version 6 identifies root metadata by its
+/// physical allocation, including when distinct readmissions preserve one
+/// semantic root id. Shared payloads retain their node/value granularity.
+pub const RELATIONAL_SHARING_INSPECTION_VERSION: u16 = 6;
 
 /// Explicit scope of the live authoritative byte totals in a sharing
 /// observation.

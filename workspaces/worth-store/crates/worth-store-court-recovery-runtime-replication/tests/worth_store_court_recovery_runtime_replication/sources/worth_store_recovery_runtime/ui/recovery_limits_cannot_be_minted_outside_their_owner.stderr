@@ -6,8 +6,8 @@ error[E0308]: mismatched types
    |             |
    |             arguments to this function are incorrect
    |
-   = note: expected struct `worth_proof::Performed<BudgetRefused, worth_store_physical_backend::recovery_media::discovery::observation_budget::FilesystemObservationBudgetAuthority, LimitCounts>`
-              found struct `worth_proof::Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
+   = note: expected struct `Performed<BudgetRefused, worth_store_physical_backend::recovery_media::discovery::observation_budget::FilesystemObservationBudgetAuthority, LimitCounts>`
+              found struct `Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
 note: function defined here
   --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:17:4
    |
@@ -25,8 +25,8 @@ error[E0308]: mismatched types
    |             |
    |             arguments to this function are incorrect
    |
-   = note: expected struct `worth_proof::Performed<BudgetRefused, worth_store_physical_integrity::artifact::release_custody_head::walk_budget::ReleaseCustodyHeadWalkBudgetAuthority, LimitCounts>`
-              found struct `worth_proof::Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
+   = note: expected struct `Performed<BudgetRefused, worth_store_physical_integrity::artifact::release_custody_head::walk_budget::ReleaseCustodyHeadWalkBudgetAuthority, LimitCounts>`
+              found struct `Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
 note: function defined here
   --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:17:4
    |
@@ -44,8 +44,8 @@ error[E0308]: mismatched types
    |             |
    |             arguments to this function are incorrect
    |
-   = note: expected struct `worth_proof::Performed<BudgetRefused, worth_store_recovery_physics::source_precedence::physics_budget::PhysicsBudgetAuthority, LimitCounts>`
-              found struct `worth_proof::Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
+   = note: expected struct `Performed<BudgetRefused, worth_store_recovery_physics::source_precedence::physics_budget::PhysicsBudgetAuthority, LimitCounts>`
+              found struct `Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
 note: function defined here
   --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:17:4
    |
@@ -63,8 +63,8 @@ error[E0308]: mismatched types
    |             |
    |             arguments to this function are incorrect
    |
-   = note: expected struct `worth_proof::Performed<BudgetRefused, worth_store_recovery_physics::redo_replay::plan::head_replay::exceeded_bound::HeadReplayBudgetAuthority, LimitCounts>`
-              found struct `worth_proof::Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
+   = note: expected struct `Performed<BudgetRefused, worth_store_recovery_physics::redo_replay::plan::head_replay::exceeded_bound::HeadReplayBudgetAuthority, LimitCounts>`
+              found struct `Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
 note: function defined here
   --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:17:4
    |
@@ -82,8 +82,8 @@ error[E0308]: mismatched types
    |             |
    |             arguments to this function are incorrect
    |
-   = note: expected struct `worth_proof::Performed<BudgetRefused, worth_store_recovery_physics::source_precedence::exceeded_bound::RootHistoryBudgetAuthority, LimitCounts>`
-              found struct `worth_proof::Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
+   = note: expected struct `Performed<BudgetRefused, worth_store_recovery_physics::source_precedence::exceeded_bound::RootHistoryBudgetAuthority, LimitCounts>`
+              found struct `Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
 note: function defined here
   --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:17:4
    |

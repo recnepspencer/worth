@@ -27,6 +27,7 @@ arc-swap = "1"
 im = { version = "=15.1.0", features = ["serde"] }
 sized-chunks = "0.6.5"
 [dev-dependencies]
+worth-testkit-relational = { path = "../worth-testkit-relational" }
 "worth-harness" = { "workspace" = true }
 "proptest" = { "version" = "1", "default-features" = false, "features" = ["std", "bit-set"] }
 "serde_json" = "1"

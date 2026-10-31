@@ -18,7 +18,7 @@ pub enum BridgeCausalInspectionAdmissionSummaryKind {
 }
 
 impl BridgeCausalInspectionAdmissionSummaryKind {
-    fn as_str(&self) -> &'static str {
+    pub(super) fn as_str(&self) -> &'static str {
         match self {
             Self::Admitted => "admitted",
             Self::Advisory => "advisory",
@@ -32,6 +32,8 @@ pub struct BridgeCausalInspectionAdmissionSummary {
     query_admission_identity: BridgeIdentityEvidence,
     causal_observation_anchor_identity: BridgeIdentityEvidence,
     summary_identity: BridgeIdentityEvidence,
+    expected_query_observation: Option<BridgeIdentityEvidence>,
+    query_observation_report: bool,
 }
 
 impl BridgeCausalInspectionAdmissionSummary {
@@ -79,11 +81,68 @@ impl BridgeCausalInspectionAdmissionSummary {
             query_admission_identity,
             causal_observation_anchor_identity,
             summary_identity,
+            expected_query_observation: None,
+            query_observation_report: false,
         })
     }
 
     pub fn kind(&self) -> BridgeCausalInspectionAdmissionSummaryKind {
         self.kind
+    }
+
+    /// Reporting association only; this descriptor grants no Query permission.
+    pub fn for_native_observation(
+        kind: BridgeCausalInspectionAdmissionSummaryKind,
+        query_admission_identity: BridgeIdentityEvidence,
+        causal_observation_anchor_identity: BridgeIdentityEvidence,
+        expected_query_observation: BridgeIdentityEvidence,
+    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
+        validate_admission_summary_inputs(
+            expected_query_observation.as_str(),
+            causal_observation_anchor_identity.as_str(),
+        )?;
+        let mut summary = Self::new(
+            kind,
+            query_admission_identity,
+            causal_observation_anchor_identity,
+        )?;
+        summary.summary_identity = compose_bridge_causal_envelope_evidence_identity(
+            BridgeCausalEnvelopeDigestArtifact::NativeAdmissionSummary,
+            &[
+                shape_part(kind.as_str()),
+                evidence_part(&summary.query_admission_identity),
+                evidence_part(&summary.causal_observation_anchor_identity),
+                evidence_part(&expected_query_observation),
+            ],
+        );
+        summary.expected_query_observation = Some(expected_query_observation);
+        Ok(summary)
+    }
+
+    pub fn expected_query_observation_identity(&self) -> Option<&BridgeIdentityEvidence> {
+        self.expected_query_observation.as_ref()
+    }
+
+    /// Reporting association cannot enter a descriptor-only inspection path.
+    pub fn requires_application_inspection_admission(&self) -> bool {
+        self.query_observation_report
+    }
+
+    pub(super) fn query_observation_reporting(
+        kind: BridgeCausalInspectionAdmissionSummaryKind,
+        admission: &BridgeIdentityEvidence,
+        anchor: &BridgeIdentityEvidence,
+        observation: &BridgeIdentityEvidence,
+        identity: BridgeIdentityEvidence,
+    ) -> Self {
+        Self {
+            kind,
+            query_admission_identity: admission.clone(),
+            causal_observation_anchor_identity: anchor.clone(),
+            summary_identity: identity,
+            expected_query_observation: Some(observation.clone()),
+            query_observation_report: true,
+        }
     }
 
     pub fn query_admission_for_reporting(&self) -> &str {
@@ -119,11 +178,41 @@ pub struct BridgeCausalEnvelopeAssemblyRequest {
 }
 
 impl BridgeCausalEnvelopeAssemblyRequest {
+    pub(super) fn query_observation_reporting(
+        admission_summary: BridgeCausalInspectionAdmissionSummary,
+        references: Arc<[BridgeCausalEvidenceReference]>,
+        request_identity: BridgeIdentityEvidence,
+    ) -> Self {
+        Self {
+            admission_summary,
+            references,
+            request_identity,
+        }
+    }
+
     pub fn from_query_admission(
         admission_summary: BridgeCausalInspectionAdmissionSummary,
         references: Vec<BridgeCausalEvidenceReference>,
     ) -> Result<Self, BridgeCausalEnvelopeDenial> {
         validate_request_inputs(&references)?;
+        if let Some(expected) = admission_summary.expected_query_observation_identity() {
+            let actual = references
+                .iter()
+                .find(|reference| {
+                    reference.family() == BridgeCausalEvidenceFamily::QueryObservation
+                })
+                .unwrap();
+            if actual.reference_evidence_identity() != expected {
+                return Err(BridgeCausalEnvelopeDenial::new(
+                    BridgeCausalEnvelopeDenialKind::QueryObservationAssociationMismatch,
+                    actual.family(),
+                    actual.owner(),
+                    actual.family().expected_owner(),
+                    actual.reference_evidence_identity().clone(),
+                    BridgeCausalEnvelopeCounters::empty(),
+                ));
+            }
+        }
         let mut request_parts = Vec::with_capacity(references.len() + 1);
         request_parts.push(evidence_part(admission_summary.summary_evidence_identity()));
         request_parts.extend(

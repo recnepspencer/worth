@@ -13,7 +13,7 @@ pub(super) fn discover(
     state: &DemandRegistryState,
     requested: &WorthQueryOutputDemandKey,
     selected: Option<&CompositeCommitIdentity>,
-    stable_refresh: bool,
+    refreshing_accepted_output: bool,
 ) -> Result<OccurrenceNotes, WorthQueryOutputDemandDenial> {
     let mut notes = OccurrenceNotes {
         delivery: None,
@@ -35,7 +35,7 @@ pub(super) fn discover(
             DemandState::Output(output) => output.published_commit.as_ref(),
             _ => None,
         };
-        if !stable_refresh
+        if !refreshing_accepted_output
             && key.producer == requested.producer
             && key.applicability == requested.applicability
             && selected.is_some_and(|selected| pending_commit == Some(selected))

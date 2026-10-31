@@ -1,4 +1,4 @@
-use worth_foundational::facade::CanonicalDigestDerivationDenial;
+use crate::application_query::denial::{canonical_work_denial, graph_obligation_denial};
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryAuthorizationRequirement, ErasedApplicationQueryDefinition,
@@ -20,10 +20,7 @@ use crate::{
     },
     application_schema::WorthQueryInstalledApplicationSchema,
     canonical_work::WorthQueryCanonicalWorkEvidence,
-    graph_obligation::{
-        bind_query_obligations, install_disclosure_capabilities,
-        WorthQueryGraphObligationInstallationDenial,
-    },
+    graph_obligation::{bind_query_obligations, install_disclosure_capabilities},
 };
 
 use super::WorthQueryCompiledApplicationQuery;
@@ -153,35 +150,4 @@ where
                 )
             }),
     }
-}
-
-pub(in crate::application_query) fn graph_obligation_denial(
-    subject: &str,
-    denial: WorthQueryGraphObligationInstallationDenial,
-) -> WorthQueryApplicationQueryInstallationDenial {
-    let kind = match denial {
-        WorthQueryGraphObligationInstallationDenial::InvalidContract => {
-            WorthQueryApplicationQueryInstallationDenialKind::InvalidGraphObligationContract
-        }
-        WorthQueryGraphObligationInstallationDenial::Canonical(denial) => {
-            return canonical_work_denial(subject, denial)
-        }
-    };
-    WorthQueryApplicationQueryInstallationDenial::new(kind, subject)
-}
-
-fn canonical_work_denial(
-    subject: &str,
-    denial: CanonicalDigestDerivationDenial,
-) -> WorthQueryApplicationQueryInstallationDenial {
-    let kind = match denial {
-        CanonicalDigestDerivationDenial::EntryLimitExceeded { .. } => {
-            WorthQueryApplicationQueryInstallationDenialKind::CanonicalEntryBudgetExceeded
-        }
-        CanonicalDigestDerivationDenial::EncodedByteLimitExceeded { .. } => {
-            WorthQueryApplicationQueryInstallationDenialKind::CanonicalEncodedByteBudgetExceeded
-        }
-        _ => WorthQueryApplicationQueryInstallationDenialKind::CanonicalDigestSlotRejected,
-    };
-    WorthQueryApplicationQueryInstallationDenial::new(kind, subject)
 }

@@ -16,7 +16,7 @@ from executed_coverage import observations as execution_observations, prove as p
 from logs import read_lane
 from lane_environment import inherited, validate as validate_environment
 from measured_slots import load as load_slots, retain as retain_slots
-from nextest_build import LANES, build, coverage, list_tests
+from nextest_build import LANES, build, coverage, list_tests, source_packages
 from prebuild import prepare
 from prebuild_selection import required as required_prebuilds
 from ratchet import build_violations, compiler_observations, lane_budget, source_violations
@@ -35,7 +35,10 @@ class LaneExecutionFailure(ValueError):
         super().__init__(message)
 
 
-def full_workspace_required(lanes, queries, expression, partition, include_docs, selection_proof):
+def full_workspace_required(lanes, queries, expression, partition, include_docs, selection_proof,
+                            workspace_inventory=True):
+    if not workspace_inventory:
+        return False
     default_complete = (queries is None and expression is None and partition is None
                         and set(lanes) == set(LANDING))
     return default_complete or (include_docs and selection_proof['status'] == 'pass')
@@ -44,7 +47,10 @@ def full_workspace_required(lanes, queries, expression, partition, include_docs,
 def retain_completed(repository, workspace, output, result, violations, failures):
     result['build_ratchet'] = {'violations': violations}
     result['failures'] = list(failures)
-    for destination in {output, repository / 'target/test-cost' / workspace}:
+    destinations = {output}
+    if result.get('native_build_scope', {}).get('scope', 'workspace') == 'workspace':
+        destinations.add(repository / 'target/test-cost' / workspace)
+    for destination in destinations:
         destination.mkdir(parents=True, exist_ok=True)
         (destination / 'census.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
         (destination / 'census.md').write_text(markdown(result), encoding='utf-8')
@@ -83,8 +89,11 @@ def child_environment():
 
 def execute(repository, workspace, lanes, output, profile='dev', expression=None,
             partition=None, nextest_profile='ci', cargo_runner=None, queries=None, build_only=False,
-            include_docs=False):
+            include_docs=False, native_selection=None):
     repository, output = Path(repository).resolve(), Path(output).resolve()
+    selection = native_selection if native_selection is not None else getattr(queries, 'build_selection', None)
+    if selection is not None and output == repository / 'target/test-cost' / workspace:
+        output /= 'focused'
     environment = (cargo_runner.environment if cargo_runner is not None and
                    cargo_runner.environment is not None else child_environment())
     validate_environment(environment)
@@ -99,18 +108,27 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
     budgets = json.loads(Path(__file__).with_name('budgets.json').read_text())
     budget = lane_budget(budgets, workspace, lanes, profile)
     environment.setdefault('WORTH_REPO', str(repository))
-    # Refuse the source boundary before any expensive build.
-    before = collect(manifest, repository)
-    forbidden = source_violations(before['source_sites'])
-    if forbidden:
-        raise ValueError('tests invoke compilers: ' + json.dumps(forbidden))
+    source_scope = None
+    def inspect_sources(metadata, selected):
+        nonlocal source_scope
+        source_scope = source_packages(metadata, selected)
+        before = collect(manifest, repository, source_packages=source_scope)
+        forbidden = source_violations(before['source_sites'])
+        if forbidden:
+            raise ValueError('tests invoke compilers: ' + json.dumps(forbidden))
     started = time.perf_counter()
-    reuse = build(manifest, output / 'build', runner, profile)
+    reuse = build(manifest, output / 'build', runner, profile,
+                  selection=selection, before_compile=inspect_sources)
+    native_scope = json.loads((output / 'build/native-selection.json').read_text(encoding='utf-8'))
+    native_scope['source_packages'] = source_scope
+    workspace_inventory = native_scope['scope'] == 'workspace'
     discovered, selections, proof = coverage(reuse, output / 'build', runner)
     if any(not row['ignored'] for row in inventory(selections['scale']) if row.get('selected', True)):
         raise ValueError('scheduled scale tests must be explicitly ignored; no scale lane is executed')
     if build_only:
-        return {'coverage': proof, 'reuse': reuse}
+        if not workspace_inventory:
+            proof.update(status='partial', scope='selected-packages')
+        return {'coverage': proof, 'reuse': reuse, 'native_build_scope': native_scope}
     if callable(queries):
         queries = queries(discovered)
     programs = json.loads((output / 'build/standalone.json').read_text(encoding='utf-8'))
@@ -187,7 +205,10 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
     events, walls = execution_observations(runner.logs, discovered)
     executed = prove_executions(complete, requested, events,
         require_full_workspace=full_workspace_required(
-            lanes, queries, expression, partition, include_docs, selection_proof))
+            lanes, queries, expression, partition, include_docs, selection_proof, workspace_inventory))
+    if not workspace_inventory and executed['status'] != 'fail':
+        executed.update(status='partial', scope='selected-packages',
+                        reason='native build selected packages; workspace inventory was not requested')
     if documentation is None and executed['status'] == 'pass':
         executed.update(status='partial', scope='native-only',
                         reason='documentation inventory and executions were not requested')
@@ -204,10 +225,14 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
     baseline = original_reservations(config, nextest_profile, discovered, lambda index, query:
         json.loads((output / 'build' / f'reservation-{index}.json').read_text(encoding='utf-8')))
     retain_slots(slot_directory, observed['cpu'], read_lane(runner.logs[0])['headers']['HEAD'],
-                 str(telemetry.relative_to(repository)), baseline, known)
+                 str(telemetry.relative_to(repository)), baseline, known if workspace_inventory else None)
     previous_path.write_text(json.dumps(load_slots(slot_directory, known=known), indent=2) + '\n', encoding='utf-8')
     logs = [(path.stem + '-' + str(index), path) for index, path in enumerate(runner.logs)]
-    result = collect(manifest, repository, logs, complete, requested)
+    result = collect(manifest, repository, logs, complete, requested, source_packages=source_scope)
+    result['native_build_scope'] = native_scope
+    if not workspace_inventory and result['coverage']['status'] != 'fail':
+        result['coverage'].update(status='partial', scope='selected-packages',
+                                  reason='workspace inventory was not requested')
     if documentation is None and result['coverage']['status'] == 'pass':
         result['coverage'].update(status='partial', scope='native-only',
                                   reason='documentation was not requested')

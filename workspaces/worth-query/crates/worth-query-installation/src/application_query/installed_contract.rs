@@ -31,6 +31,7 @@ pub enum WorthQueryInstalledApplicationQueryAuthorization {
 
 pub struct WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope> {
     compiled: Arc<WorthQueryCompiledApplicationQuery>,
+    binding: Option<super::WorthQueryInstalledApplicationQueryBindingObservation>,
     _marker: PhantomData<fn(Parameters) -> (Schema, Query, QueryResult, Scope)>,
 }
 
@@ -68,8 +69,28 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     pub(crate) fn from_compiled(compiled: Arc<WorthQueryCompiledApplicationQuery>) -> Self {
         Self {
             compiled,
+            binding: None,
             _marker: PhantomData,
         }
+    }
+    pub(crate) fn from_binding(
+        binding: Arc<super::binding::WorthQueryCompiledApplicationQueryBinding>,
+    ) -> Self {
+        Self {
+            compiled: binding.query(),
+            binding: Some(
+                super::WorthQueryInstalledApplicationQueryBindingObservation::new(binding),
+            ),
+            _marker: PhantomData,
+        }
+    }
+    /// Retains the actual binding's interpretation for completed source evidence.
+    /// A query issued without a binding has no observation; query identity cannot
+    /// fill that absence. This grants no inspection or execution permission.
+    pub fn binding_observation(
+        &self,
+    ) -> Option<&super::WorthQueryInstalledApplicationQueryBindingObservation> {
+        self.binding.as_ref()
     }
     pub(crate) fn is_compiled_query(
         &self,

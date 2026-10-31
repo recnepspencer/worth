@@ -12,6 +12,7 @@ pub struct ApplicationAspectValueMeaning {
     identity: AspectIdentity,
     revision: AspectContractRevision,
     absence: worth_foundational::facade::AbsenceLaw,
+    scalar_field: Option<String>,
     fields: Vec<ApplicationFieldValueMeaning>,
 }
 
@@ -42,6 +43,7 @@ impl ApplicationAspectValueMeaning {
                 identity: *identity,
                 revision: *revision,
                 absence: *absence,
+                scalar_field: None,
                 fields: Vec::new(),
             };
             if aspects
@@ -61,6 +63,29 @@ impl ApplicationAspectValueMeaning {
             meaning.fields.push(
                 ApplicationFieldValueMeaning::from_member(member)?.expect("field member checked"),
             );
+        }
+        for member in members {
+            if let ApplicationSchemaMember::ScalarAspectField {
+                entity,
+                aspect,
+                field,
+            } = member
+            {
+                let meaning = aspects
+                    .get_mut(&(entity.as_str(), aspect.as_str()))
+                    .ok_or(D::FieldWithoutAspect)?;
+                if meaning.scalar_field.replace(field.clone()).is_some()
+                    || meaning.fields.len() != 1
+                    || !meaning.fields.iter().any(|declared| {
+                        declared.name() == field
+                            && declared.presence()
+                                == crate::application_schema::ApplicationFieldPresence::Required
+                            && declared.codec_digest().is_none()
+                    })
+                {
+                    return Err(D::InvalidScalarStorage);
+                }
+            }
         }
         for meaning in aspects.values_mut() {
             meaning.fields.sort_by(|a, b| a.name().cmp(b.name()));
@@ -91,5 +116,8 @@ impl ApplicationAspectValueMeaning {
     }
     pub fn fields(&self) -> &[ApplicationFieldValueMeaning] {
         &self.fields
+    }
+    pub fn scalar_field(&self) -> Option<&str> {
+        self.scalar_field.as_deref()
     }
 }

@@ -35,6 +35,16 @@ macro_rules! producer {
             const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[$posture];
             const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
 
+            // Prior-output selection uses the admitted operation scope. The
+            // shared handlers use neither the execution key nor principal.
+            const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = if Schema::INPUT_REUSE
+            {
+                Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+                    WorthQueryDecisionContextDependencies::SCOPE,
+                ))
+            } else {
+                None
+            };
             const REUSE_POLICY: &'static str = "exact-source";
         }
         impl<Schema: BirthSchema> WorthQueryApplicationProducerProvider<Schema, $producer<Schema>>

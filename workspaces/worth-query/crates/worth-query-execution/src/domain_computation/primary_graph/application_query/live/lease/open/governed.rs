@@ -61,6 +61,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         };
         let execution = &request;
 
+        let producer = self.original_settled_producer().cloned();
         let (application, product, application_basis) = self.into_parts();
         let access = WorthQueryApplicationQueryAccessContext::new(principal, &scope);
         let query_controls = WorthQueryApplicationQueryControls::<Schema>::product_live(
@@ -75,7 +76,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 })?,
             controls.maximum_materialized_record_count(),
             controls.request(),
-        );
+        )
+        .with_original_settled_producer(producer.clone());
         let pending = prepare_governed_access(
             application,
             &query,
@@ -103,6 +105,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             product,
             application_basis,
             pending_governance: Some(pending),
+            producer,
         })
     }
 }

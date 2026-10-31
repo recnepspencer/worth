@@ -26,7 +26,8 @@ pub(super) fn values(
                     write.value.as_ref().map(|value| (kind, field, value))
                 }));
             }
-            Effect::DeleteEntity { .. }
+            Effect::RemoveAspect { .. }
+            | Effect::DeleteEntity { .. }
             | Effect::CreateRelation { .. }
             | Effect::DeleteRelation { .. }
             | Effect::Emit(_) => {}

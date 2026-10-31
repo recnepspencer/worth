@@ -1,10 +1,13 @@
 //! Closed application commit receipt.
 
+#[cfg(test)]
+mod certification;
 mod committed_changes;
 mod construction;
 pub use committed_changes::WorthQueryApplicationCommittedChanges;
 #[cfg(doctest)]
 mod disclosure_fences;
+mod input_observation;
 mod output_source_identity;
 mod pending;
 mod projection;
@@ -69,6 +72,8 @@ pub struct WorthQueryApplicationCommitReceipt {
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
     >,
     pub(super) committed_changes: WorthQueryApplicationCommittedChanges,
+    pub(super) performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
+    pub(super) performed_output_fields: Option<Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>,
     pub(super) output_correspondence: std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(super) exact_output_settlement: Option<std::sync::Arc<
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
@@ -109,6 +114,8 @@ impl Clone for WorthQueryApplicationCommitReceipt {
             exact_output_settlement: self.exact_output_settlement.clone(),
             unrebased_own_effect: self.unrebased_own_effect,
             committed_changes: self.committed_changes.clone(),
+            performed_input_facts: self.performed_input_facts.clone(),
+            performed_output_fields: self.performed_output_fields.clone(),
         }
     }
 }
@@ -373,23 +380,6 @@ impl WorthQueryApplicationCommitReceipt {
             && self.commit == other.commit
             && self.committed_product_publication == other.committed_product_publication
     }
-
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn with_provider_runtime_instance_id_for_test(
-        mut self,
-        runtime: u64,
-    ) -> Self {
-        self.provider_runtime_instance_id = runtime;
-        self
-    }
-
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn with_idempotency_binding_for_test(
-        mut self,
-        binding: super::super::WorthQueryApplicationIdempotencyBinding,
-    ) -> Self {
-        self.authority_binding
-            .replace_idempotency_binding_for_test(binding);
-        self
-    }
 }
+
+pub(in crate::domain_computation::primary_graph) use committed_changes::MaterializedCommittedField;

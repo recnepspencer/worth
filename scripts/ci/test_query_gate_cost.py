@@ -17,6 +17,37 @@ def binary(package, kind, names, harness=True):
 
 
 class SharedGateSelectionTests(unittest.TestCase):
+    def test_owner_suite_selects_its_library_before_native_build_and_keeps_scope_partial(self):
+        metadata = {'workspace_members': ['owner', 'court'], 'packages': [
+            {'id': 'owner', 'name': 'worth-query-execution', 'targets': [
+                {'name': 'worth_query_execution', 'kind': ['lib']}]},
+            {'id': 'court', 'name': 'worth-query-court-host', 'targets': [
+                {'name': 'host', 'kind': ['test']}]}]}
+        with tempfile.TemporaryDirectory() as temporary:
+            plan = SuiteQueries(['query-execution'], Path(temporary))
+            self.assertEqual(plan.build_selection(metadata), {
+                'packages': ['worth-query-execution'], 'targets': {'lib': True}})
+            plan({'rust-suites': {'owner': binary('worth-query-execution', 'lib', [('owner_case', False)])}})
+            self.assertEqual(plan.coverage['status'], 'partial')
+            self.assertEqual(plan.coverage['inventory_scope'], 'selected-packages')
+            self.assertEqual(plan.expected['query-execution'], {('owner', 'owner_case')})
+
+    def test_full_landing_retains_workspace_build_and_complete_inventory(self):
+        for workspace in ('root', 'query', 'bank'):
+            with self.subTest(workspace=workspace), tempfile.TemporaryDirectory() as temporary:
+                plan = SuiteQueries(landing_suites(workspace), Path(temporary))
+                self.assertIsNone(plan.build_selection({}))
+                self.assertTrue(plan.workspace_inventory)
+
+    def test_root_owner_predicate_keeps_owned_courts_without_unrelated_courts(self):
+        names = ['worth-execution', 'worth-court-execution', 'worth-court-proof']
+        metadata = {'workspace_members': names, 'packages': [
+            {'id': name, 'name': name, 'targets': [{'name': name, 'kind': ['test' if '-court-' in name else 'lib']}]}
+            for name in names]}
+        with tempfile.TemporaryDirectory() as temporary:
+            scope = SuiteQueries(['execution'], Path(temporary)).build_selection(metadata)
+        self.assertEqual(scope, {'packages': ['worth-court-execution', 'worth-execution'], 'targets': {}})
+
     def test_real_package_ownership_and_categories_produce_disjoint_suite_queries(self):
         suites = ['relational', 'root-rest', 'root-process', 'root-compile-fail']
         discovered = {'rust-suites': {

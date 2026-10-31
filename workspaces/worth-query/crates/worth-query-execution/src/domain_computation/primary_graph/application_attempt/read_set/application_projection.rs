@@ -108,8 +108,8 @@ impl CompletedFactProjection {
             if let Fact::Field { entity_id, locator, .. } = fact
                 && let Some(worth_query_installation::facade::WorthQueryOperationGraphReadScope::NativeProjection(scope)) = scopes.get(ordinal)
                 && scope.aspect() == locator.aspect().aspect_key()
-                && scope.projection().mask().paths().contains(locator.field_path())
                 && let Some(field) = crate::domain_computation::application_aftermath::demanded_field_slot(locator.field_path())
+                && scope.admits_field(field)
                 && scopes.preimage_demand().is_some_and(|demand| demand.loci().iter().any(|locus|
                     locus.entity() == scope.entity().semantic_key()
                         && locus.aspect() == scope.aspect().as_str()

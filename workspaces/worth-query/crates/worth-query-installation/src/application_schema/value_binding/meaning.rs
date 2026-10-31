@@ -41,13 +41,14 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
                 .native_contracts()
                 .aspect(meaning.entity(), meaning.aspect())
                 .ok_or(D::NativeAspectMismatch)?;
-            let AspectShape::Struct(shape) = native.contract().shape() else {
-                return Err(D::NativeAspectMismatch);
-            };
+            if matches!(native.contract().shape(), AspectShape::Scalar(_)) != meaning.scalar_field().is_some()
+                || meaning.scalar_field().is_some_and(|name| !matches!(native.binding(),
+                    worth_foundational::facade::AspectBinding::EntityField { field } if field.as_str() == name))
+            { return Err(D::NativeAspectMismatch); }
             if native.contract().identity() != meaning.identity()
                 || native.contract().revision() != meaning.revision()
                 || native.contract().absence() != meaning.absence()
-                || shape.fields().len() != meaning.fields().len()
+                || native.fields().len() != meaning.fields().len()
             {
                 return Err(D::NativeAspectMismatch);
             }
@@ -75,18 +76,18 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
                 {
                     return Err(D::BindingMismatch);
                 }
-                let native_field = shape
-                    .fields()
-                    .iter()
-                    .find(|native| native.key().as_str() == field.name())
+                let key = worth_foundational::facade::FieldKey::new(field.name())
+                    .ok_or(D::NativeFieldMismatch)?;
+                let (native_family, native_requirement, native_codec) = native
+                    .field_value_contract(&key)
                     .ok_or(D::NativeFieldMismatch)?;
                 let requirement = match field.presence() {
                     ApplicationFieldPresence::Required => FieldRequirement::Required,
                     ApplicationFieldPresence::Optional => FieldRequirement::Optional,
                 };
-                if native_field.value_type() != *scalar_family
-                    || native_field.requirement() != requirement
-                    || native_field.codec() != field.codec_digest()
+                if native_family != *scalar_family
+                    || native_requirement != requirement
+                    || native_codec != field.codec_digest()
                 {
                     return Err(D::NativeFieldMismatch);
                 }

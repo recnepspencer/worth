@@ -15,6 +15,20 @@ pub struct BridgeCausalEnvelopeReceipt {
 }
 
 impl BridgeCausalEnvelopeReceipt {
+    pub(super) fn query_observation_reporting(
+        identity: &BridgeCausalEnvelopeIdentity,
+        envelope_identity: &BridgeIdentityEvidence,
+        counters: &BridgeCausalEnvelopeCounters,
+        receipt_identity: BridgeIdentityEvidence,
+    ) -> Self {
+        Self {
+            envelope_identity: identity.envelope_evidence_identity().clone(),
+            envelope_digest_identity: envelope_identity.clone(),
+            counter_identity: counters.counter_evidence_identity().clone(),
+            receipt_identity,
+        }
+    }
+
     pub(super) fn new(
         identity: &BridgeCausalEnvelopeIdentity,
         envelope_identity: &BridgeIdentityEvidence,

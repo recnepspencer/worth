@@ -16,6 +16,7 @@ pub enum ApplicationValueMeaningDenial {
     RevisionZero,
     FieldWithoutAspect,
     DuplicateField,
+    InvalidScalarStorage,
 }
 
 #[cfg(test)]

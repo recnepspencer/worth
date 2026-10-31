@@ -22,9 +22,38 @@ pub struct BridgeCausalExplanationEnvelope {
     counters: BridgeCausalEnvelopeCounters,
     receipt: BridgeCausalEnvelopeReceipt,
     envelope_identity: BridgeIdentityEvidence,
+    retained_native: super::retained_source::RetainedNativeObservation,
 }
 
 impl BridgeCausalExplanationEnvelope {
+    pub(super) fn query_observation_reporting(
+        request: BridgeCausalEnvelopeAssemblyRequest,
+        bindings: Vec<BridgeCausalEvidenceBinding>,
+        counters: BridgeCausalEnvelopeCounters,
+        identity: BridgeCausalEnvelopeIdentity,
+        receipt: BridgeCausalEnvelopeReceipt,
+        envelope_identity: BridgeIdentityEvidence,
+    ) -> Self {
+        Self {
+            identity,
+            admission_summary_kind: request.admission_summary().kind(),
+            admission_summary_identity: request
+                .admission_summary()
+                .summary_evidence_identity()
+                .clone(),
+            request_identity: request.request_evidence_identity().clone(),
+            causal_observation_anchor_identity: request
+                .admission_summary()
+                .causal_observation_anchor_identity()
+                .clone(),
+            bindings: bindings.into_boxed_slice(),
+            counters,
+            receipt,
+            envelope_identity,
+            retained_native: Default::default(),
+        }
+    }
+
     pub(super) fn new(
         request: BridgeCausalEnvelopeAssemblyRequest,
         bindings: Vec<BridgeCausalEvidenceBinding>,
@@ -74,11 +103,31 @@ impl BridgeCausalExplanationEnvelope {
             counters,
             receipt,
             envelope_identity,
+            retained_native: Default::default(),
         }
     }
 
     pub fn identity(&self) -> &BridgeCausalEnvelopeIdentity {
         &self.identity
+    }
+
+    pub(super) fn retain_native(
+        mut self,
+        observation: crate::conditional_execution::BridgeConditionalCausalObservation,
+    ) -> Self {
+        self.retained_native.0 = Some(observation);
+        self
+    }
+
+    /// Confirms exact retained custody; descriptive digest equality cannot do so.
+    pub fn retains_native_observation(
+        &self,
+        observation: &crate::conditional_execution::BridgeConditionalCausalObservation,
+    ) -> bool {
+        self.retained_native
+            .0
+            .as_ref()
+            .is_some_and(|retained| retained.same_observation(observation))
     }
 
     pub fn admission_summary_kind(&self) -> BridgeCausalInspectionAdmissionSummaryKind {

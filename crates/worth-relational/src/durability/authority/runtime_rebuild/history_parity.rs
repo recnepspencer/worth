@@ -5,7 +5,7 @@ use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::{HistoryDriftClass, VersionNode};
 use crate::runtime::RelationalRuntime;
 
-use super::super::super::derived_index_artifacts::apply_envelope_derived_index_artifacts;
+use super::super::super::derived_index_artifacts::admit_envelope_derived_index_artifacts;
 
 pub(super) fn apply_authoritative_commit_artifacts(
     runtime: &mut RelationalRuntime,
@@ -14,6 +14,7 @@ pub(super) fn apply_authoritative_commit_artifacts(
     advance_branch_currentness: bool,
 ) -> Result<(), DurabilityError> {
     let envelope = positioned.envelope();
+    let index_artifacts = admit_envelope_derived_index_artifacts(envelope)?;
     let history_before = runtime
         .history
         .detached_owner_snapshot()
@@ -115,7 +116,7 @@ pub(super) fn apply_authoritative_commit_artifacts(
             .commit_envelopes
             .insert(envelope.commit.commit_id, artifact.envelope_residency());
     });
-    apply_envelope_derived_index_artifacts(runtime, envelope);
+    index_artifacts.install(runtime);
     Ok(())
 }
 

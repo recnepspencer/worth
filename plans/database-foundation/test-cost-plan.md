@@ -258,3 +258,270 @@ Ignored tests, Query scale, WORTH UI and exhaustive Store certification were not
 run. The warm prebuild and follow-up measurements do not establish a complete
 cold-landing speedup. Track B must resolve the remaining proof-reader failures
 and complete its outstanding cost work with honest end-to-end evidence.
+
+### Next B3 slice: pinned compiler proof snapshots
+
+Boundary review: the completed production/certification batches own the actual
+compiler observations. The existing public result reader validates their
+fixture attribution before comparing complete diagnostics. Its audit of 136
+snapshot fixtures finds 35 stale goldens; eight court groups fail comparison.
+The operations, source identities, audiences and primary denials remain intact.
+Error-code inventories match except the compiler's omitted secondary E0282
+after the preserved missing-method E0599. No boundary was opened by that change.
+The pinned 1.99.1 compiler ruling supersedes the old diagnostic wording, optional
+private-field and macro-origin notes, suggestion layout and type rendering.
+No test or denial claim is retired; literal goldens must describe actual output.
+
+Plan: update only those 35 complete observed goldens, retaining existing external
+coordinate masks. Do not change the renderer, fixture Rust, production behavior,
+audiences, features or compiler stages. Reuse the already-built public reader to
+audit all 136 snapshots, then run the eight failed court groups with the existing
+native binaries and real compiler outcomes. Keep the failed 1,049-case capture
+and every expected/observed pair. No compiler batch or passed durability/process
+case needs another execution for this data correction.
+
+Separately retain the completed capture's generated Store slot observations.
+Validate bounded catalog framing, immutable historical samples, current native
+identity filtering and the generated nextest configuration. Timing remains
+telemetry. Commit snapshot correction and measured policy separately. Obtain
+fresh independent review of these changes and the affected evidence; prior
+source approval does not cover the generated catalog. A comparable full cold
+landing and the ranked runtime/setup/generic residue remain separate work.
+
+### B3 affected proof closeout
+
+Commits `9195629f86` and `083ab6f50f` complete the preceding correction.
+The existing public reader audits all 136 captured snapshot fixtures with zero
+mismatches. Nine actual court cases pass: the eight failed groups and the
+production certification-absence control. No Rust, fixture, audience, stage,
+manifest, lockfile or renderer changed. The original 1,049-case capture remains
+1,041 passes and eight failures; its later repair is separate evidence.
+All prior source/sample/baseline values survive in the measured catalog:
+5,824 samples, 66 current rules and 451 retired identities. Independent review
+approves the exact `465478e955..083ab6f50f` range without findings. Raw evidence
+and the review are under `target/test-cost/b3-pool-integration/`.
+This closes the affected correction, not a whole cold landing or Milestone 3.
+
+### B4.0 cadence cutover: superseding owner decision
+
+The latest user decision in `orchestration/m3/track_b.md` supersedes the prior
+B4 loop/freshness proposal and the intermediate per-edit/checkpoint proposal.
+There will be ZERO automatic boundary/constitution checks after writes, edits,
+patches, shell calls or batches, including real source changes. A planned phase
+completion and landing explicitly run the existing full checks. Individual
+edits and tool calls are not phases. Broader iteration commands are deferred;
+no classifier, dirty tracking, debounce, watcher, cache or preflight replaces
+this automatic hook. The superseded proposal remains in Git history only.
+
+Boundary review: both `.claude/settings.json` and `.codex/hooks.json` actively
+register the same constitution PostToolUse command. The dedicated
+`scripts/check-constitution-post-tool-use.ps1` has no other live repository
+caller in the inspected hook/script/workflow paths. User/local Claude and
+Codex settings contain no equivalent WORTH entry; active Git-hook inspection
+found none. Unrelated setting values were not exposed. SessionStart preparation
+builds the tools but does not execute boundary/context validation; preserve it.
+The explicit `scripts/check-constitution.ps1` and CI landing invocation remain
+the gate. Real launcher testing exposed a readiness bug: JSON emitted into the
+PowerShell return pipeline made a missing-tool result truthy. Emit that failure
+through standard output without contaminating the boolean readiness result;
+retain the typed refusal and existing diagnostic projection.
+
+Authorized files: remove only the identified PostToolUse registrations in the
+two repository hook configurations; retire their unused dedicated script; fix
+the launcher readiness-output seam; add focused cadence/launcher tests; update
+this plan. No checker rule/configuration,
+profile, registry, product, constructor or Phase 3 file changes are needed.
+
+Implementation and acceptance:
+
+1. Remove the two constitution registrations, preserving other hooks/settings.
+   Do not replace them with automatic checks of any kind. Delete the dedicated
+   post-tool script after the caller audit; retain preparation and explicit gate.
+2. Test actual event wiring with invocation counters: writes, edits, multi-edits,
+   patches and known/unknown shell calls each cause zero automatic constitution
+   invocations. Preserve unrelated hooks and existing session preparation.
+3. Run the real prepared checker and context executable through the unchanged
+   explicit launcher on an isolated Git/Cargo fixture. Its valid counterpart
+   must pass; an actual governed source violation and forbidden dependency must
+   fail for their intended diagnostics, not missing inputs or mocked exits.
+   Check generated-context refusal and prepared-tool failure handling as well.
+   Reuse existing executables; no fixture compilation or new Cargo target tree.
+4. Run the full explicit repository boundary/generated-context checks only at
+   this planned slice's completion, plus required focused checks and independent
+   review. Record invocation counts and elapsed observations as telemetry.
+   Do not replay Store suites. B3/B3+ runtime/setup/generic work and the missing
+   comparable cold landing remain separate; they do not block this cutover.
+
+### Subsequent independently landable B4 slices
+
+The current parent Track B brief additionally authorizes B4.1-B4.6. Land the
+verified B4.0 cutover first; do not hold coherent slices for all of B4 or a new
+full cold campaign. The fresh independent reviewer policy is unchanged.
+
+| Slice | Boundary and first acceptance journey |
+|---|---|
+| B4.1 worker instructions | Update the existing external preamble/active callers in place: checkout pin and committed artifact configuration, available runners, no blanket serialization/cache deletion or per-module mandatory checks. Preserve reviewer policy. Prose-only evidence; external edits are not a Git landing. |
+| B4.2 selection before build | Trace query_gate/CostGate/run_lane/nextest_build. Derive requested owner/binary scope before prebuild; reuse existing Cargo ownership. Prove one real owner target and required dependencies build while unrelated courts do not, with identical intended audience/features/profile. Full qualification retains full inventory/coverage. |
+| B4.3 build identity | Trace application_build UUID issuance and shared testkit consumers. Agree a concrete write scope with Phase 3 before constructor/testkit changes. Preserve new application-build identity while reusing an issued verification-session/artifact identity lawfully; never substitute a global constant. |
+| B4.4 compiler proof meaning | Use existing structured observations to assert intended denial/API/symbol/fixture and wrong-reason rejection. Preserve audiences, check/codegen and successful counterparts. Keep presentation-contract snapshots; retire incidental prose only with replacement semantic assertions. Reuse real captured outcomes. |
+| B4.5 verification tiers | Separate running the checker from its self-tests and route local owner/risk categories with existing selections. Expensive campaigns require material reach or explicit full/scheduled selection. Prove routing and honest partial/full reporting without running matrices to test routing. |
+| B4.6 CI | Reuse affected-workspace/dependency authority for scoped jobs and compatible Rust caches. Preserve full/manual qualification and safe cancellation semantics. Coordinate default meanings with B4.5; independent cache work may land earlier. |
+
+No new scheduler, registry, daemon, persistent invalidation protocol or evidence
+framework is authorized. Benchmark products/configuration/captures remain frozen
+during the coordinator's controlled comparison. B3+ constructor/setup work and
+B4.3 require Phase 3 scope agreement. The controlled-comparison timing hold has
+been released. B4.0 runtime acceptance uses the focused real-tool fixture and
+explicit phase-end checks.
+
+### B4.2 focused native build selection
+
+Boundary review: `CostGate` already owns suite predicates; Cargo metadata owns
+package/target identity. Today `nextest_build.build` obtains that metadata but
+unconditionally builds every workspace target before `SuiteQueries` applies
+those predicates. The existing CargoRunner declares/checks required units and
+must remain the only compilation boundary. No new ownership registry is needed.
+Compiler fixture/executable prerequisites still derive from selected test cases.
+
+The first bounded owner journey exposed a second broad step: the lexical source
+census ran before Cargo metadata and spent minutes scanning unrelated Root
+sources. It subsequently built the owner target and passed the selected case,
+then was interrupted while repeating that broad scan for final aggregation.
+Preserve the actual inner build/test/CPU observations and incomplete outer
+capture; it is not a completed lane. Resolve metadata first, then check the requested packages and their
+resolved transitive workspace dependencies before the only compiling command.
+Check dependency testkits too; missing dependency resolution refuses. The final
+census uses the same explicit source scope. Full qualification still checks all
+workspace sources. This is scoped source selection, not a persisted cache or a
+replacement enforcement lane.
+
+Plan: resolve requested gate predicates against Cargo metadata before nextest's
+binary prebuild; a library-only owner uses its package and `--lib`, other gate
+requests use only their selected packages. Explicit full landing keeps the
+existing workspace/all-target inventory and complete membership proof. Provide
+the native runner an explicit package/target selection for direct owner requests;
+an arbitrary case filter alone cannot infer a Cargo owner and retains its
+existing build scope. Preserve default features, committed profiles/configuration
+and the pre-execution unit graph declaration. Scope receipts describe selection,
+never compiler output hashes. A scoped inventory must remain labeled partial
+against the workspace; it must not retire unrelated scheduling identities or
+replace the canonical complete census. Existing full qualification is unchanged.
+
+Acceptance: focused command/selection tests, partial/full coverage and retained
+history tests, then one real root owner-target build/run showing only that owner
+test executable and required dependencies. Use the existing target directory;
+no ignored/scale/UI or durability campaign. B4.3 identity and B4.5 default risk
+tiering remain separate. Root owns the external B4.1 instruction cleanup.
+
+### B4.3 verification artifact identity
+
+Boundary review: genuine `application_build.py` calls own fresh application-build
+issuance. Gate construction currently also issues a fresh UUID, even when a
+focused invocation verifies the same existing output artifact. The two named
+Query certification testkits embed it; changing it invalidates their compiler
+inputs. Existing per-workspace `build/binaries-build-units.json` receipts already
+carry the issued input. There is no need for another persisted identity record,
+registry, constructor parameter or product/runtime environment door.
+
+Root and Phase 3 agreed the Python issuance/session scope and named testkit
+files are disjoint; this implementation needs no Rust edit. The reserved Host,
+Execution construction and Store application-home files remain untouched.
+
+Plan: `Gate.plan` resolves selected workspaces before any Cargo work. Without an
+explicit caller ID, reuse one valid issued ID only when every requested workspace
+artifact carries the same ID. Require the existing compiler-plan schema, the
+expected workspace/manifest, native prebuild command and receipt container shape.
+Do not add source/configuration/graph revalidation just to choose a descriptive
+UUID; those checks remain exclusively in the existing compilation owner.
+Missing, malformed, unrelated or mixed receipts keep the one newly
+issued verification ID. Explicit caller identity retains precedence and must
+parse as a nonzero UUID. Freeze the result within that Gate object.
+
+The logical verification artifact is the existing gate output's per-workspace
+native build, across focused invocations in that same output. A different output
+starts a new artifact. This input reuse is never source/evidence freshness:
+normal source checks, graph declarations, builds and result proofs still run.
+Genuine `application_build.py` invocations continue issuing fresh UUIDs.
+
+Write scope: `scripts/ci/query_gate.py`, `query_gate_environment.py`, their owning
+Python tests and this plan. Prove coherent reuse, missing/malformed/mixed/unrelated
+receipt handling and explicit precedence/refusal with
+fixtures; retain the genuine-build issuance tests. Then use one bounded warm
+compiler journey to observe repeated unchanged shared support without UUID-only
+recompilation. No broad Query/compiler campaign or new target directory. Commit
+and independently review this slice separately from the landed B4.2.
+
+### B4.5 first cut: checker execution versus self-tests
+
+Boundary review: the `boundary` command suite currently runs preparation,
+constitution validation, the boundary checker's own Rust test suite, and dirty
+line caps. The explicit constitution launcher already runs both boundary and
+generated-context validation. The affected-lane tool separately selects checker
+self-tests when their owning workspace is reached. No checker behavior changes.
+
+First independent cut: move the existing checker-test command, byte-for-byte,
+into an explicit `boundary-tests` command suite. `boundary` continues to run
+preparation, the real prepared constitution entrypoint and line caps. Prove
+command separation and unchanged failure propagation with routing tests using
+the real Gate command owner and a recorded fake process boundary. Do not rerun
+the checker's own tests merely to prove routing. Run the actual constitution
+gate at phase completion, retain full evidence and obtain independent review.
+Caller audit: the generic full `ORDER` now selects `boundary-tests` explicitly
+once, preserving its prior implementation-test coverage. CI retains its direct
+checker-test invocation. The external affected-lane tool retains its checker
+workspace's direct Cargo self-test descriptor; source/config changes there still
+reach it. Documentation, scheduling data and product changes reach the actual
+global constitution check without creating a checker implementation-test reach.
+Existing preparation-only SessionStart wiring and explicit terminal/CI launchers
+are unchanged. No other generic `query_gate.py boundary` caller was found in the
+scoped script/workflow/hook or active orchestration prompt/launcher searches.
+
+The larger local-default cut remains separate. `landing_plan.py` explicitly
+requires the Root gate and Store runner defaults to cover every normal partition;
+preserve those entrypoints. The proposed generic gate default derives ordinary
+owner/integration suites from existing workspace predicates, with named risk
+categories and existing full landing paths still explicit. No new risk registry,
+scheduler or source classifier. Resolve the concrete local/default reporting
+contract before implementing that second cut. The accepted 4,408 Store membership
+proof remains scoped to its earlier HEAD; four later admission tests have exact
+targeted runtime evidence and do not retroactively enlarge that proof.
+
+### B4.5 second cut: ordinary local selection
+
+Use the nearest actual Cargo workspace declaration and the existing governed
+workspace map to choose local defaults: Root's four ordinary owner suites,
+Query's two, or Bank's one. Derive those names from `TEST_SUITES` and
+`CATEGORY_SUITES`; do not maintain another ownership/risk registry. Unsupported
+nested workspaces require an explicit suite. The separate Root and Store landing
+entrypoints retain their complete default contracts, as do Query/Bank landing
+aliases. Explicit generic `--full` selects the retained full `ORDER`, including
+checker implementation tests; named process/oracle/cost and other category
+requests remain explicit material-risk selections. No ignored restriction changes.
+
+Put CLI selection and qualification reporting in `query_gate_selection.py` so the
+existing command owner stays below 400 lines. The final gate summary reports
+requested-check status separately from per-workspace coverage. Ordinary requests
+are partial. Full workspace coverage requires successful results for every native
+partition and documentation, with the existing complete/observed coverage fields;
+a full request alone is insufficient. Test the default, risk, full, unsupported,
+failure and partial-reporting paths with fixture workspaces and command doubles.
+Do not execute matrices to test routing. Reuse accepted unchanged-source runtime
+evidence and keep the older Store membership proof's original scope explicit.
+
+B4.4 coordination: Root accepted the single corrected semantic pilot at
+`2320d91083`. `record_chunk_view_exposes_no_pool_authority.rs` uses the existing
+compiler testkit's narrow certification/check path and its actual captured
+E0614/`PhysicalRecordChunkView` attribution. The complete 25-dependency audience,
+including five version dependencies, remains represented; the actual 153-package
+closure is unchanged. Store readers and all Cargo manifests/locks are restored
+unchanged. The broad Store test-support dependency was rejected and is absent
+from the accepted net tree. This is one pilot, not a completed snapshot migration.
+
+Root's accepted cohort `06c87ea1e1` extends that pilot to six semantic cases in
+the same physical audience: 48 sources, 25 dependencies, 42 remaining snapshots
+and six semantic readers. Native identities are unchanged. The registry grew to
+429 lines during the pilot; its assigned owner compacted dependency objects to
+readable single-line rows, preserving parsed values/order apart from the approved
+source/authority changes. It is now 300 lines. This closes that line-limit finding
+without a new registry scheme. The cohort is bounded, not a completed migration
+of the other compiler snapshots or new current whole-workspace qualification.

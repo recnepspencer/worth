@@ -129,6 +129,10 @@ fn conditional_reinstallation_compares_named_aspects_and_preserves_retained_warm
             usize::from(before != after)
         );
         assert_eq!(changed.counters().compute_contacts, 0);
+        assert!(
+            changed.computed_evaluation().is_none(),
+            "neither dependency reuse nor pre-compute suppression is computed equivalence"
+        );
         assert_eq!(
             read_clean(request_execution, &mut graph, &replacement).class(),
             Class::DependencyUnchanged

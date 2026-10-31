@@ -250,6 +250,8 @@ fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
 
         reuse_policy: "exact".into(),
         input_reuse: None,
+        output_equivalence: None,
+        installed_output_equivalence: None,
         binding_type,
         source_type: TypeId::of::<()>(),
         operation_binding_type: TypeId::of::<()>(),
@@ -293,3 +295,5 @@ impl WorthQueryApplicationOutputRoleFamily for Member {
 }
 
 mod canonical_inventory;
+
+mod output_equivalence;

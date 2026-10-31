@@ -15,16 +15,20 @@ mod affinity_access;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 
+mod inspection_preparation;
+mod inspection_read;
 mod managed_index_read;
 mod mutation_readmission;
 pub(in crate::domain_computation) use managed_index_read::{
-    WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
+    WorthQueryManagedIndexCallbackProof, WorthQueryManagedIndexReadSession,
+    WorthQueryManagedIndexSelectionProof,
     WorthQueryManagedIndexSessionDenial,
 };
 mod prepared_query_read;
 mod product_read;
 mod query_preparation;
 mod query_read;
+pub(in crate::domain_computation) use inspection_read::WorthQuerySessionInspectionReadProof;
 mod resource_preparation;
 mod resource_read;
 pub(in crate::domain_computation) use prepared_query_read::{
@@ -322,7 +326,7 @@ impl WorthQueryManagedGraphWorkSession {
                 read,
             } => Some(&read.identity),
             WorthQueryGraphWorkBasis::ProductRead {
-                intent: ProductReadIntent::Resource(_),
+                intent: ProductReadIntent::Resource(_) | ProductReadIntent::Inspection(_),
                 ..
             }
             | WorthQueryGraphWorkBasis::Mutation(_) => None,

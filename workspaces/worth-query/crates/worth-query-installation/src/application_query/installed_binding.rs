@@ -226,10 +226,10 @@ where
             .map_err(WorthQueryInstalledQueryBindingAdmissionStop::Admission)?;
         }
         Ok(WorthQueryInstalledApplicationQueryBinding {
-            query: WorthQueryInstalledApplicationQuery::from_compiled(installed.query()),
             principal_binding,
             scope: installed.scope().clone(),
             limits: installed.limits(),
+            query: WorthQueryInstalledApplicationQuery::from_binding(installed),
         })
     }
 }

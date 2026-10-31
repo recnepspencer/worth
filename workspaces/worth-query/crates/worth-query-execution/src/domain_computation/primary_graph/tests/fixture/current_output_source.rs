@@ -64,3 +64,56 @@ impl ApplicationQueryBinding<IdentityExecutionSchema> for TestAccountSourceBindi
         IdentityBinding::reference()
     }
 }
+
+/// A distinct installed binding with the same query and parameter meaning.
+pub struct AlternateAccountSourceBinding;
+
+impl ApplicationQueryBinding<IdentityExecutionSchema> for AlternateAccountSourceBinding {
+    type Input = AccountSummaryParameters;
+    type InputBinding = AccountSummaryQueryParametersBinding;
+    type Query = AccountSummaryQuery;
+    type ParameterBinding = AccountSummaryQueryParametersBinding;
+    type ResultBinding = AccountSummaryQueryResultBinding;
+    type ScopeBinding = ApplicationQueryFieldScope<
+        IdentityExecutionSchema,
+        Account,
+        super::AccountPolicy,
+        AccountStatus,
+        String,
+        ReadWrite,
+        NoApplicationUnit,
+    >;
+    type PrincipalBinding = IdentityBinding;
+    type Mapping = ExternalMapping;
+    type Principal = Principal;
+    type PrincipalIdentity = u64;
+    type PrincipalIdentityBinding = U64ApplicationValueBinding;
+
+    const IDENTITY: &'static str = "worth.query.test.alternate-account-source.v1";
+    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
+
+    fn scope_field() -> worth_query_declaration::facade::application_schema::ApplicationFieldRef<
+        IdentityExecutionSchema,
+        Account,
+        super::AccountPolicy,
+        AccountStatus,
+        String,
+        ReadWrite,
+        worth_query_declaration::facade::application_schema::EqualityPredicate,
+        NoApplicationUnit,
+    > {
+        AccountStatus::reference()
+    }
+
+    fn principal_binding(
+    ) -> worth_query_declaration::facade::application_schema::ApplicationPrincipalBindingRef<
+        IdentityExecutionSchema,
+        IdentityBinding,
+        ExternalMapping,
+        Principal,
+        u64,
+        U64ApplicationValueBinding,
+    > {
+        IdentityBinding::reference()
+    }
+}

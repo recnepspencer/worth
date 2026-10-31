@@ -1,18 +1,15 @@
 error: cannot construct `PhysicalWalBarrierSettlement` with struct literal syntax due to private fields
- --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:8:13
+ --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:8:13
   |
 8 |     let _ = PhysicalWalBarrierSettlement {};
   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: private fields `group`, `binding` and `member` that were not provided
 
 error: cannot construct `WalDurablePhysicalMutation` with struct literal syntax due to private fields
- --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:9:13
+ --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:9:13
   |
 9 |     let _ = WalDurablePhysicalMutation {};
   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: private fields `appended`, `group_binding`, `settlement` and `completed_data_prefix` that were not provided
 help: you might have meant to use the `new` associated function
   |
 9 -     let _ = WalDurablePhysicalMutation {};
@@ -20,24 +17,24 @@ help: you might have meant to use the `new` associated function
   |
 
 error[E0277]: the trait bound `WalDurablePhysicalMutation: Clone` is not satisfied
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:10:21
+  --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:10:21
    |
 10 |     require_clone::<WalDurablePhysicalMutation>();
    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `WalDurablePhysicalMutation`
    |
 note: required by a bound in `require_clone`
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:5:21
+  --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:5:21
    |
  5 | fn require_clone<T: Clone>() {}
    |                     ^^^^^ required by this bound in `require_clone`
 
 error[E0624]: associated function `new` is private
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:17:33
+  --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:17:33
    |
 17 |       WalDurablePhysicalMutation::new(appended, settlement)
    |                                   ^^^ private associated function
    |
-  ::: $WORKSPACE/crates/worth-store/src/physical_runtime/durability/mutation/progression/wal_durable.rs
+  ::: src/physical_runtime/durability/mutation/progression/wal_durable.rs
    |
    | /     pub(in crate::physical_runtime) fn new(
    | |         member: WalBarrierMember<WalAppendedPhysicalMutation>,
@@ -46,20 +43,20 @@ error[E0624]: associated function `new` is private
    | |_____________- private associated function defined here
 
 error[E0308]: arguments to this function are incorrect
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:17:5
+  --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:17:5
    |
 17 |     WalDurablePhysicalMutation::new(appended, settlement)
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^           ---------- expected `CompletionBoundPhysicalWalBarrierSettlement`, found `PhysicalWalBarrierSettlement`
    |
-note: expected `WalBarrierMember<...>`, found `WalAppendedPhysicalMutation`
-  --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:17:37
+note: expected `WalBarrierMember<_>`, found `WalAppendedPhysicalMutation`
+  --> tests/physical_runtime_authority/wal_durable_authority_requires_completed_barrier.rs:17:37
    |
 17 |     WalDurablePhysicalMutation::new(appended, settlement)
    |                                     ^^^^^^^^
    = note: expected struct `WalBarrierMember<WalAppendedPhysicalMutation>`
               found struct `WalAppendedPhysicalMutation`
 note: associated function defined here
-  --> $WORKSPACE/crates/worth-store/src/physical_runtime/durability/mutation/progression/wal_durable.rs
+  --> src/physical_runtime/durability/mutation/progression/wal_durable.rs
    |
    |     pub(in crate::physical_runtime) fn new(
    |                                        ^^^

@@ -20,6 +20,10 @@ impl<'value> RelationalProjectedFieldObservation<'value> {
 impl<'value> EntityProjectionRecord<'value> {
     /// `None` means the field is outside this projection. Aspect presence does
     /// not authorize any other field or expose the whole aspect payload.
+    /// Scalar values require the selected kind's exact installed EntityField
+    /// binding; the aspect name and an arbitrary selected field are insufficient.
+    /// Scalar interpretation visits that kind's installed binding roster and
+    /// borrows the value without allocating or acquiring another reader.
     pub fn observe_aspect_field(
         self,
         aspect: &AspectKey,
@@ -36,7 +40,20 @@ impl<'value> EntityProjectionRecord<'value> {
             return Some(Observation::AspectAbsent);
         };
         Some(match value.view() {
-            ContractValidatedAspectValueView::Scalar(_) => Observation::UnsupportedAspectShape,
+            ContractValidatedAspectValueView::Scalar(scalar) => {
+                let installed = self.aspect_plan.is_some_and(|plan| {
+                    plan.executable_bindings.iter().any(|binding| {
+                        binding.aspect_key() == aspect
+                            && binding.targets_entity_scalar_field(field)
+                            && &binding.contract == value.contract()
+                    })
+                });
+                if installed {
+                    Observation::Present(scalar)
+                } else {
+                    Observation::UnsupportedAspectShape
+                }
+            }
             ContractValidatedAspectValueView::Struct(value) => value
                 .get(field)
                 .map_or(Observation::FieldAbsent, Observation::Present),

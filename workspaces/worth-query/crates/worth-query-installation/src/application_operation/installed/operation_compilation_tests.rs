@@ -264,6 +264,7 @@ fn compile_with_portable_members(
         binding,
         members,
         &portable,
+        &catalog,
         "freeze",
         "FixtureInput",
     )?

@@ -129,9 +129,6 @@ impl PreparedBranchPublicationPreflight {
             None => None,
         };
 
-        let previous_head_version = observed_root
-            .canonical_envelope()
-            .map(|envelope| envelope.commit.version_id);
         // Keep the caller's original request at the final pre-effect boundary;
         // a separate operation-control token cannot replace its first cause.
         if let Err(stop) = crate::authority::commit::pipeline::consult_stage(
@@ -140,11 +137,6 @@ impl PreparedBranchPublicationPreflight {
         ) {
             return RelationalPublicationOutcome::RequestStopped(stop);
         }
-        let next_head_version = self
-            .movement
-            .root
-            .canonical_envelope()
-            .map(|envelope| envelope.commit.version_id);
 
         let next_root = &self.movement.root;
         let reservation_pause = &self.control;
@@ -181,7 +173,7 @@ impl PreparedBranchPublicationPreflight {
                     }
                     let transferred = head_retirement.transfer_head(next_root);
                     self.branch_head_versions
-                        .move_head(previous_head_version, next_head_version);
+                        .move_head(Some(&observed_root), Some(next_root));
                     drop(previous_root);
                     drop(publication_state);
                     transferred

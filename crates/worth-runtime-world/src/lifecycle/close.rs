@@ -87,6 +87,19 @@ where
     fn close(&self) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial> {
         RuntimeWorldOwnerRoot::close(self)
     }
+    fn retire_changed_history(
+        &self,
+    ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
+        let _operation = self
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .map_err(|_| {
+                HistoryReclamationDenial::OwnerUnavailable(
+                    super::RuntimeWorldOwnerUnavailable::new(),
+                )
+            })?;
+        let retired = self.state.history.retire_changed_history();
+        Ok(self.reclaim_retired_entries(retired))
+    }
     fn retire_unprotected_history(
         &self,
         keep: &crate::identity::CompositeCommitIdentity,

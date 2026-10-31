@@ -95,6 +95,7 @@ where
                     producer_identity,
                     &receipt,
                     delivery.as_ref(),
+                    &ready_backing,
                     request_scope,
                 );
                 let readiness = match readiness {

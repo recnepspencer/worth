@@ -6,7 +6,7 @@ pub struct WorthQueryApplicationConditionalPackageContract {
     domain_operation: WorthQueryPortableDomainOperationDefinition,
     operation_binding: WorthQueryPortableApplicationConditionalOperationBinding,
     target: WorthQueryConditionalNodeLocation,
-    pub(super) fields: Vec<output_readiness_contract::typed::FieldExpectation>,
+    pub(super) fields: Vec<super::super::native_field_contract::FieldExpectation>,
     pub(super) delivery_fields: std::collections::BTreeSet<
         worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
     >,

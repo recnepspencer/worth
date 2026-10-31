@@ -18,6 +18,10 @@ pub enum BridgeCausalEnvelopeDenialKind {
     QueryObservationAnchorOverclaim,
     MissingRequiredBridgeRouteEvidence,
     MissingRetainedBridgeRecord,
+    NativeObservationRequired,
+    ApplicationInspectionAdmissionRequired,
+    ForeignNativeObservation,
+    QueryObservationAssociationMismatch,
 }
 
 impl BridgeCausalEnvelopeDenialKind {
@@ -33,6 +37,12 @@ impl BridgeCausalEnvelopeDenialKind {
             Self::QueryObservationAnchorOverclaim => "query_observation_anchor_overclaim",
             Self::MissingRequiredBridgeRouteEvidence => "missing_required_bridge_route_evidence",
             Self::MissingRetainedBridgeRecord => "missing_retained_bridge_record",
+            Self::NativeObservationRequired => "native_observation_required",
+            Self::ApplicationInspectionAdmissionRequired => {
+                "application_inspection_admission_required"
+            }
+            Self::ForeignNativeObservation => "foreign_native_observation",
+            Self::QueryObservationAssociationMismatch => "query_observation_association_mismatch",
         }
     }
 }

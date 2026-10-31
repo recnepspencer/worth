@@ -4,7 +4,6 @@ error: cannot construct `PhysicalRecoveryConstructionAuthority` with struct lite
 4 |     PhysicalRecoveryConstructionAuthority {}
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: private fields `_witness`, `store`, `media` and `session` that were not provided
 help: you might have meant to use the `issue` associated function
   |
 4 -     PhysicalRecoveryConstructionAuthority {}

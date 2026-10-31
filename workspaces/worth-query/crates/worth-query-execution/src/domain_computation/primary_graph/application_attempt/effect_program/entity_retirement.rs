@@ -20,6 +20,9 @@ impl<S, O, I, Scope> WorthQueryApplicationEffectProgramBuilder<S, O, I, Scope> {
                 entity,
             ));
         };
+        if self.effects.iter().any(|effect| matches!(effect, WorthQueryApplicationRealizedEffect::RemoveAspect { entity_id: target, .. } if *target == entity_id)) {
+            return Err(denial(WorthQueryApplicationAttemptDenialKind::ConflictingEffectStep, entity));
+        }
         self.reserve_effects(1)?;
         self.effects
             .push(WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id });

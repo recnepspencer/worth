@@ -29,3 +29,5 @@ pub(in crate::domain_computation::primary_graph) use commit_receipt::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
 };
 pub use committed_publication::WorthQueryCommittedProductPublication;
+
+pub(in crate::domain_computation::primary_graph) use commit_receipt::MaterializedCommittedField;

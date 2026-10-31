@@ -1,270 +1,495 @@
-# Cross-Runtime Causal Inspection
+# Explain Original Query Results and Source Operations
 
-> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+Use causal inspection to answer an audit or debugging question about work that
+already happened: what a query returned, whether two results differ, which source
+operation supplied a produced value, and whether a producer changed its output.
+Inspection uses the saved originals, so a later write cannot replace the evidence
+you are explaining. Each inspection checks the caller's current permission.
 
-## What This Feature Is
+Application declarations use `worth-query-decl`. Requests and results use
+`worth-query-host::facade::{application_entry, causal_inspection}`. Start with
+[application requests](../foundations/ordinary-application-front-door.md) if you
+have not installed an application and authenticated a caller yet.
 
-Cross-runtime causal inspection explains why an observed Query result changed,
-was suppressed, was denied, or was replayed across Query, bridge, relational,
-and signal boundaries. It starts from an observation receipt plus a sealed
-inspection-basis capability, then produces an admitted explanation plan and an
-inspectable artifact.
+| You want to… | Start with |
+| --- | --- |
+| Identify one original query result | [Fresh application inspection](#fresh-application-inspection) |
+| Compare what two queries returned | [Paired original comparison](#paired-original-comparison) |
+| Inspect an authored operation without a query | [Source-only inspection](#source-only-inspection) |
+| Connect an authored operation to produced output | [Source/producer connection](#sourceproducer-connection) |
+| Distinguish changed output from equivalent output | [Performed producer output evaluation](#performed-producer-output-evaluation) |
+| Read the saved query values or source effects | [Materialize original values](#rich-original-query-materialization) |
+| Check retained detail and handle its loss | [Evidence availability](#original-evidence-availability) |
 
-The operational implementation lives in
-`worth-query-execution/src/domain_computation/primary_graph/causal_inspection/`.
-The older engine preserves its supported receipt constructors through a
-directional adapter containing one Execution receipt; it retains only old-receipt
-translation and historical certification. Anchoring, reference resolution,
-admission and materialization have one Execution owner.
+In the examples, `Read`, `ReadBinding`, `SourceDisclosure`, capability names and
+`AppError` are types supplied by your application. `runtime` is your installed
+application runtime; a program installation exposes it through
+`application.runtime()`. `external_principal` and `scope` identify the current
+caller and request. Use these Host imports for the examples:
 
-Completed application-query publication receipts retain an opaque native
-observation when their disclosed source owner supplies one. It carries original
-source, parameter, scope and basis evidence, without a snapshot pin or current
-permission. The ordinary Decl/Host inspection entrance and fresh governed
-disclosure remain unfinished in milestone 9.18.1 Phase 9. The older diagnostic
-builder described here does not provide that application admission.
+```rust,ignore
+use worth_query_host::facade::{
+    application_entry::WorthQueryApplicationRequestExt,
+    application_contribution::WorthQueryProducerOutputEquivalence,
+    causal_inspection::{
+        CausalInspectionReason,
+        WorthQueryApplicationEvidenceFamily as Family,
+        WorthQueryApplicationMaterializationRequest as Detail,
+        WorthQueryConditionalHistoryOutcome,
+    },
+    primary_graph::WorthQueryPrincipalResolutionMode,
+};
+```
 
-Output-readiness delivery also privately retains the actual Native conditional
-observation. Its immutable Bridge backing preserves the real Signal decision,
-semantic observations, admitted snapshot identity and Signal-issued invalidation
-observation, without keeping the operational snapshot reader or reentry seed.
-The unique performed invalidation receipt still transfers only once; the
-read-only observer shares its original funded backing and grants no execution or
-disclosure authority. This retention does not yet connect the complete producer
-chain to an application inspection entrance. See
-[Native observation custody](../../../../../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody)
-for ownership, funding and release details.
+## Prepare the inspection contracts
 
 ### Optional Query Inspection Metadata Meaning
 
-The declaration facade exposes
-`ApplicationQueryInspectionDefinition<Schema, QueryBinding>::new(metadata_contract)`
-and the schema builder's `application_query_inspection(definition)`. This attaches
-optional metadata meaning to the existing complete query binding; it requires no
-additional inspection marker. See the
-[typed declaration and installation court](../../../worth-query-installation/src/application_principal_binding_tests/inspection.rs).
+Declare `ApplicationQueryInspectionDefinition<Schema, ReadBinding>` against the
+query's complete binding and register it with `application_query_inspection`.
+This determines who may inspect identities, evidence links, counts, availability,
+explanations and diagnostic fields. It is separate from the query's business-data
+disclosure: permission to read a result does not automatically permit an explanation.
 
-`ApplicationQueryInspectionMetadataRef<Schema, QueryBinding>` selects one of six
-closed facets: `ObservationIdentity`, `EvidenceLinks`, `EvidenceCounts`,
-`EvidenceAvailability`, `Explanation` and `DiagnosticFields`. A governed contract
-uses `disclose_inspection_metadata_by` for every facet exactly once. Counts need
-`Count` influence and the other facets need `Explanation`. Each rule belongs to
-the full binding, including its input, query, result, scope and principal meaning;
-matching names cannot transfer a rule to another binding. Explicit public metadata
-uses `ApplicationQueryDisclosureContract::public()` without rules.
+A public metadata contract is explicit. For governed metadata, disclose the
+inspection facets through the intended capability. Counts require `Count`
+influence; the other metadata facets require `Explanation`. Comparison and rich
+values also need the declared diagnostic field, relation and influence permissions.
 
-This is portable meaning only. Installation resolves every definition against the
-actual compiled query bindings, then returns typed `InspectionUnavailable` until
-the fresh Host issuer is implemented. The ordinary binding without this optional
-definition continues to install. Payload disclosure grants no metadata access,
-and a diagnostic-fields metadata rule grants no field values: those still require
-the separately admitted current subject's diagnostic mask. The Archive encoding
-adds member45/v1 and selector8/v1 without changing unextended schema bytes or
-identity. These declarations do not complete the Host inspection entrance.
+For source inspection, implement `ApplicationSourceDisclosureBinding<Schema>` and
+add `inspection_disclosure SourceDisclosure,` to the mutation binding. The source
+receipt then retains that binding's original scope and parameters. The disclosure
+query defines inspection permissions; inspection does not rerun it to reconstruct
+the operation.
 
-An application mutation may independently declare its original source-disclosure
-meaning with `ApplicationSourceDisclosureBinding<Schema>` and the mutation macro's
-`inspection_disclosure Binding,` clause. The binding names the actual source and
-installed disclosure query, and maps the original typed input to query parameters.
-Installation checks that query's scope and principal interpretation against the
-source. `ApplicationQueryBindingReference` is the portable descriptive association;
-it grants no permission and must resolve against the actual installed inventory.
+The [query binding declaration](../../../worth-query-certification/examples/application_correction_support/causal_inspection/query.rs),
+[source-disclosure declaration](../../../worth-query-certification/examples/application_correction_support/causal_inspection.rs)
+and [metadata contract](../../../worth-query-certification/examples/application_correction_support/causal_inspection/independent.rs)
+show the binding and facet declarations together.
 
-Original source capture retains the genuine scope and admitted disclosure
-parameters on the source receipt's existing owner. Accounted requests, including
-an actual accounted ancestor, fund framework retention through their original
-execution request; an opaque application
-parameter mapper's returned heap is admitted after materialization, before
-framework retention. Unaccounted serial requests keep their native posture and
-original control checkpoints, without a fabricated accounting reservation.
-Inspection alone retains neither the business input nor a correction contract.
-Correction keeps its additional input/inverse custody where required. These
-captures provide evidence for later fresh admission; the ordinary and governed
-Host inspection entrances and connected producer-chain journey remain unfinished.
+## Keep the evidence you will inspect
 
-This is different from `workspace.inspections()?.inspect(...)`, which explains one retained
-workspace target. Use causal inspection when the question crosses runtime
-boundaries.
+| Object | How to obtain it | What to use it for |
+| --- | --- | --- |
+| Authored source receipt | Keep the performed receipt returned by the original action or mutation | Pass it to `inspect_source`, `caused_by` or `evaluated_by` |
+| Settled output observation | Keep `settlement.observation()` from the output demand | Select the produced result's read basis |
+| Original query observation | Clone `result.receipt().inspect().observation()` before dropping the result | Pass it to `inspect::<ReadBinding>` |
+| Current capability access | Admit the declared inspection capability for the current caller and subject | Supply metadata or diagnostic permission for a new inspection |
 
-## Why You Use It
+### Original Disclosed Projection Custody
 
-- Explain a result change through Query, bridge, truth, and signal evidence.
-- Investigate temporal wakes, async completions, remasking, replay drift, or a
-  resume mismatch.
-- Ask for reference-only evidence without materializing every lower-runtime
-  detail.
-- Preserve a typed denial or advisory when requested evidence is unavailable
-  or too expensive.
-- Keep the explanation tied to the same scoped authority as the observation.
+Opt into saved values on each query that you intend to compare or materialize:
 
-## Stable Entry Points
-
-Import the basis capability from the foundation facade and causal inspection
-from the runtime facade:
-
-```rust
-use worth_query::facade::{
-    foundation::{basis_lifecycle, ScopedInspectionBasis},
-    runtime::{CausalInspection, QueryObservationReceipt},
-};
+```rust,ignore
+let request = runtime.request(&external_principal, &scope);
+let result = request.query(Read { key })
+    .retain_projection_for_inspection()
+    .execute()?;
+let original = result.receipt().inspect().observation()
+    .ok_or(AppError::ObservationUnavailable)?.clone();
+drop(result);
 ```
 
-The ordinary builder surface is:
+A governed payload query uses its ordinary
+`execute_governed(Capability::reference(), Operation::reference(), input)` form.
+Save both originals when comparing two executions. Captured empty results are
+valid empty projections. Without the opt-in, you can inspect the original's
+reference, but its values are unavailable for comparison or materialization.
 
-- `CausalInspection::for_observation(receipt, inspection_basis)`
-- `why_changed()`, `why_suppressed()`, `why_denied()`,
-  `why_replayed()`, or `why_previewed()`
-- `why_temporal_wake()`, `why_async_completion()`, `why_remasked()`, or
-  `why_resume_mismatch()` for common cross-runtime questions
-- `reference_only()` or `materialized_detail()`
-- `plan()`
-- `plan.materialize_with_bridge(...)`
-- `CausalInspection::support()`
+Complete one-shot field/relation projections support capture. Unbound, partial,
+continuation, orbit and component capture return a typed refusal. Handle that
+refusal when executing the query rather than assuming values were saved.
 
-The observation receipt alone is not inspection authority. The scoped
-inspection basis is required and must match the basis retained by the receipt.
+### Original Settled Producer Custody
 
-## Core Mental Model
+When you need a producer explanation, read through its actual settlement:
 
-The receipt proves that an observation happened. The inspection basis proves
-that this caller may inspect that truth world. Neither artifact substitutes for
-the other.
-
-`CausalInspection::for_observation(...)` keeps both together. Planning anchors
-the observation, resolves retained evidence references, checks support and
-cost, and creates an admitted, advisory, or denied proof flow. Materialization
-then asks the bridge for the detail allowed by that plan.
-
-Reference-only evidence is the common supported lane. Materialized detail is
-advisory because availability, redaction, and lower-runtime cost can narrow the
-answer.
-
-## How It Executes
-
-```text
-observation receipt + matching ScopedInspectionBasis
-  -> causal question and evidence selection
-  -> evidence-reference resolution
-  -> support and cost admission
-  -> causal inspection plan
-  -> optional bridge materialization
-  -> Query-owned causal inspection artifact
+```rust,ignore
+let result = request.at(settlement.observation())
+    .query(Read { key })
+    .retain_projection_for_inspection()
+    .execute_governed(ReadCapability::reference(), ReadOperation::reference(), read_input)?;
+let original = result.receipt().inspect().observation()
+    .ok_or(AppError::ObservationUnavailable)?.clone();
+drop(result);
 ```
 
-Basis mismatch and missing required evidence stop during planning, before a
-bridge explanation is assembled.
+A plain `request.query(...)` reads the selected head and does not infer the
+settled producer from equal values. Keep the authored source receipt separately:
+`settlement.application_commit_receipt()` identifies the producer publication and
+is not automatically the authored operation that changed its input.
+[Output demands](../foundations/ordinary-application-front-door.md)
+explain how to obtain and settle the output owner.
 
-## Small Example
+## Admit current inspection access
 
-```rust
-use worth_query::facade::{
-    foundation::ScopedInspectionBasis,
-    runtime::{CausalInspection, QueryObservationReceipt},
-};
+Inspection's `execute_governed` consumes already-admitted
+`WorthQueryAdmittedApplicationCapabilityAccess` values. This differs from a
+payload query's refs-and-input execution call. Admit access using the Host's
+selected branch and the capability declared by the inspection contract:
 
-fn plan_change_explanation(
-    receipt: QueryObservationReceipt,
-    inspection_basis: ScopedInspectionBasis,
-) -> Result<_, worth_query::facade::runtime::CausalInspectionPlanError> {
-    CausalInspection::for_observation(receipt, inspection_basis)
-        .why_changed()
-        .reference_only()
-        .include_all_retained_evidence()
-        .plan()
+```rust,ignore
+let metadata = runtime.with_host_advancement(|phase| -> Result<_, AppError> {
+    let selected = runtime.on_branch(runtime.current_world()).select(&phase)?;
+    let binding = runtime.installed_schema()
+        .principal_binding(ActorBinding::reference())?;
+    let principal = selected.resolve_authenticated_principal(
+        &phase, &binding, &external_principal, &scope,
+        WorthQueryPrincipalResolutionMode::Ordinary,
+    )?;
+    let capability = runtime.installed_schema()
+        .capability(Inspect::reference(), InspectEvidence::reference())?;
+    Ok(selected.admit_capability_access(
+        &phase, &principal, &capability, inspection_input, &scope,
+    )?)
+})??;
+```
+
+`inspection_input` selects the actual subject and purpose required by your
+capability contract. `AppError` maps the typed setup/admission denials into your
+application's error handling. Repeat admission for each metadata and diagnostic
+argument. Use the source subject for source access and the query subject for
+query access; do not clone or borrow one side's permission for the other.
+The [subject-specific access helper](../../../worth-query-certification/examples/application_correction_support/causal_inspection/distinct_subjects.rs)
+shows this selection in application code.
+
+## Fresh Application Inspection
+
+Start a new request and inspect the saved original:
+
+```rust,ignore
+let fresh = runtime.request(&external_principal, &scope);
+let report = fresh.inspect::<ReadBinding>(&original)
+    .why_observed().reference_only().execute_governed(metadata)?;
+assert_eq!(report.reason(), CausalInspectionReason::ObservedResult);
+let availability = report.evidence_availability();
+report.close();
+```
+
+For public inspection metadata, use `execute()` instead. One original establishes
+`ObservedResult`. It does not establish that anything changed or that a particular
+operation caused the result. `observation_identity()` correlates the original;
+`report_identity()` identifies this inspection. Treat both as descriptive IDs.
+
+## Paired Original Comparison
+
+Use two saved complete projections to compare their returned values:
+
+```rust,ignore
+let report = fresh.inspect::<ReadBinding>(&after)
+    .why_changed(&before).reference_only()
+    .execute_governed(metadata, diagnostics)?;
+match report.reason() {
+    CausalInspectionReason::ChangedResult => show_changed(),
+    CausalInspectionReason::UnchangedResult => show_unchanged(),
+    _ => unreachable!(),
+}
+report.close();
+```
+
+Public metadata uses `execute_with_diagnostic(diagnostics)`. The bindings,
+parameters, subject, result shape and disclosure meaning must be compatible.
+Comparison includes optional presence and ordered nested rows. A new revision or
+producer execution alone does not mean the returned values changed. Missing or
+withheld values refuse comparison rather than producing a partial unchanged result.
+
+## Source-only inspection
+
+Inspect an authored operation even when no query result was retained:
+
+```rust,ignore
+let report = fresh.inspect_source::<SourceDisclosure>(&source_receipt)
+    .why_performed().reference_only()
+    .execute_governed(source_metadata)?;
+let commit = report.source_commit();
+report.close();
+```
+
+Public source metadata uses `execute()`. This report identifies the original
+performed source. It does not include business values or claim a producer cause.
+
+## Source/producer connection
+
+Use a source receipt and a query read from the producer settlement to explain
+creation of an observed output revision:
+
+```rust,ignore
+let report = fresh.inspect::<ReadBinding>(&original).why_observed()
+    .caused_by::<SourceDisclosure>(&source_receipt).reference_only()
+    .execute_governed(query_metadata, query_diagnostics,
+        source_metadata, source_diagnostics)?;
+let connection = report.producer_connection();
+report.close();
+```
+
+The arguments are query metadata, query diagnostics, source metadata, then source
+diagnostics. Public metadata uses
+`execute_with_diagnostics(query_diagnostics, source_diagnostics)`.
+The source must be the operation whose recorded change was actually read by the
+producer; its declared output must match what the original query observed. An
+older equal write, no-op write or unrelated producer cannot supply that cause.
+
+`producer_commit()` identifies the settled producer publication.
+`output_publication_commit()` identifies the publication that created the
+observed field revision. These can differ when a producer reobserves its own
+publication. Use the returned IDs; do not infer either from the current head.
+
+### Independently admitted source and query connection
+
+The output query may omit the authored input. Give source and query their own
+inspection bindings and admit their contracts independently. Their parameter
+values can differ; each must still describe its own original subject.
+
+### Distinct Original Source And Query Subjects
+
+A query rooted at B may observe A's produced field through an authored reference.
+Admit query access for B and source access for A. A grant for one record does not
+authorize the other, even if both have the same entity kind. A replacement under
+the same selector is a different generation and cannot stand in for the original.
+
+### Retained Output After Retirement
+
+If the original query's subject still admits inspection, it can explain a nested
+output captured before that output was retired. An equal replacement does not
+replace the original evidence. An empty query made after retirement does not by
+itself establish a retirement cause.
+
+## Performed Producer Output Evaluation
+
+Use `evaluated_by` to distinguish a producer that changed its output from one that
+computed an equivalent output. The producer opts in for one Required standard
+`u64` field on its exactly-one Preserve role. Add this method to its
+`WorthQueryApplicationProducerBinding<Schema>` implementation:
+
+```rust,ignore
+fn output_equivalence(
+) -> Option<WorthQueryProducerOutputEquivalence<Schema, Self::OutputRole>> {
+    Some(WorthQueryProducerOutputEquivalence::exact_u64(Calculated::reference()))
 }
 ```
 
-The function requires both proof artifacts. A caller cannot authorize
-inspection by supplying a receipt or matching-looking digest alone.
+The handler must complete the declared read of that output field before writing
+it. Then inspect the original evaluation:
 
-## Real Example
-
-```rust
-use worth_query::facade::runtime::CausalInspection;
-
-let plan = CausalInspection::for_observation(receipt, inspection_basis)
-    .why_async_completion()
-    .reference_only()
-    .include_all_retained_evidence()
-    .plan()?;
-
-let artifact = plan.materialize_with_bridge(&bridge)?;
-
-record_causal_evidence(
-    artifact.receipt(),
-    artifact.authority_bindings(),
-    artifact.performance_envelope(),
-);
+```rust,ignore
+let report = fresh.inspect::<ReadBinding>(&original).why_observed()
+    .evaluated_by::<SourceDisclosure>(&source_receipt).reference_only()
+    .execute_governed(query_metadata, query_diagnostics,
+        source_metadata, source_diagnostics)?;
+let evaluation = report.producer_evaluation();
+let decision = evaluation.decision(); // Changed or Equivalent
+report.close();
 ```
 
-The observation and inspection capability are authoritative inputs. The bridge
-owns its lower-runtime evidence and Query owns the public explanation artifact.
-The artifact's references and digests are inspection projections, not new
-authority inputs.
+For a parity producer, input `2 -> 4` can compute output `0` again: Equivalent.
+Input `4 -> 5` computes output `1`: Changed. Equivalent preserves the observed
+output revision, so it cannot claim a new creation through `caused_by`.
+`output_role()`, `output_field()` and `observed_output_revision()` identify the
+admitted field; `same_evaluation_as` compares evaluation occurrences.
 
-## How It Relates To Other Features
+Stable input reuse and checkpoint-restored output cannot supply a new performed
+comparison; inspection returns `NotPerformed`. A retry that resumes the same
+completed evaluation can report that original occurrence without another compute.
 
-- [Inspection](./inspection.md) explains retained Query targets without
-  assembling a cross-runtime causal envelope.
-- [Basis Capability Lifecycle](./basis-capability-lifecycle.md) creates the
-  `ScopedInspectionBasis` required here.
-- [Authoritative Mutation Evidence](./authoritative-mutation-evidence.md)
-  explains what a write changed; causal inspection explains why an observed
-  result followed.
-- [Lower-Runtime Capability Routing](../domain-capabilities/lower-runtime-capability-routing.md)
-  owns bridge-facing materialization boundaries.
-- Lower-runtime explanation contributions describe
-  domain explanation posture; they do not execute this runtime lane.
+## Rich original query materialization
 
-## Inspection And Debugging
+Select `QueryInspection` to read the saved values:
 
-Before materialization, inspect:
+```rust,ignore
+let detail = Detail::family(Family::QueryInspection);
+let rich = fresh.inspect::<ReadBinding>(&original).why_observed()
+    .materialize(detail).execute_governed(metadata, diagnostics)?;
+for row in rich.materialization().original_query().into_iter().flat_map(|p| p.rows()) {
+    for field in row.fields() {
+        consume(field.output_name(), field.result_path(), field.value());
+    }
+}
+rich.close();
+```
 
-- `plan.support_posture()`
-- `plan.required_evidence()`
-- `plan.decision_trace()`
-- `plan.estimated_cost()`
-- `plan.inspection_basis()`
-- `plan.explain()`
+Public metadata uses `execute_with_diagnostic(diagnostics)`. The view reads the
+original disclosed fields and ordered nested relations, even if the current head
+has changed. A captured empty projection is Provided with zero rows. An original
+without saved values reports `OriginalProjectionNotRetained`.
 
-After materialization, inspect:
+## Rich connected source and producer evidence
 
-- `artifact.primary_result()`
-- `artifact.warnings()`
-- `artifact.authority_bindings()`
-- `artifact.evidence()`
-- `artifact.performance_envelope()`
-- `artifact.receipt()`
-- `artifact.denial_reason()` or `artifact.advisory_reason()`
+Add source effects and the verified producer explanation to a connected request:
 
-Use `CausalInspection::support()` to distinguish supported, advisory, and
-deferred explanation families before authoring a production workflow.
+```rust,ignore
+let detail = Detail::family(Family::QueryInspection)
+    .with_source_effects().with_producer_evidence();
+let rich = fresh.inspect::<ReadBinding>(&original).why_observed()
+    .evaluated_by::<SourceDisclosure>(&source_receipt).materialize(detail)
+    .execute_governed(query_metadata, query_diagnostics,
+        source_metadata, source_diagnostics)?;
+let body = rich.materialization();
+for field in body.source_effects().into_iter().flat_map(|s| s.fields()) {
+    consume(field.output_name(), field.effect(), field.value());
+}
+rich.close();
+```
 
-## Anti-Patterns
+For a `caused_by` result, read `rich.materialization().producer_connection()`;
+for an `evaluated_by` result, read `rich.materialization().producer_evaluation()`.
+Both return an `Option`. Select `.with_producer_evidence()` to include that
+explanation in the materialized body. Unrequested detail remains NotRequested.
 
-- Calling `CausalInspection::for_observation(...)` without a scoped inspection
-  basis.
-- Reconstructing inspection authority from receipt, basis, or evidence digests.
-- Calling `workspace.inspections()?.inspect(...)` and describing it as cross-runtime causal
-  inspection.
-- Importing bridge or signal internals into product code to assemble a local
-  explanation.
-- Treating advisory materialized detail as guaranteed support.
-- Using domain explanation contributions in place of causal inspection.
+## Rich source-only inspection
 
-## Current Limits
+Select source effects without requiring a completed query:
 
-- Cross-runtime reference-only explanation is supported.
-- Materialized detail is advisory and can narrow under evidence, redaction, or
-  bridge constraints.
-- Durable causal archives and store-backed replay reconstruction are deferred.
-- Causal inspection explains retained evidence; it does not create truth,
-  replay authority, or durable history.
+```rust,ignore
+let rich = fresh.inspect_source::<SourceDisclosure>(&source_receipt)
+    .why_performed().materialize(Detail::source_effects())
+    .execute_governed(source_metadata, source_diagnostics)?;
+drop(source_receipt);
+for field in rich.materialization().source_effects().into_iter().flat_map(|s| s.fields()) {
+    consume(field.output_name(), field.effect(), field.value());
+}
+rich.close();
+```
 
-## Related Docs
+This result owns its readonly source view and can outlive the source receipt.
+Public metadata uses `execute_with_diagnostic(source_diagnostics)`.
+Source effects support the disclosure query's direct-root fields on the original
+source subject. Other shapes report `UnsupportedSourceProjectionShape`.
 
-- [Inspection](./inspection.md)
-- [Basis Capability Lifecycle](./basis-capability-lifecycle.md)
-- [Inspection Vs Cross-Runtime Explanation](../domain-capabilities/choosing/inspection-vs-cross-runtime-explanation.md)
-- [Support Matrix And Admission](../foundations/support-matrix-and-admission.md)
-- [Authoritative Mutation Evidence](./authoritative-mutation-evidence.md)
+| Effect | Value returned |
+| --- | --- |
+| Present | The value recorded by that source write |
+| Unchanged | None; the field was not changed by that source |
+| FieldCleared | None; the source cleared the field |
+| AspectCleared | None; the source removed the parent aspect |
+
+The view describes the source's recorded effects, not a query against later
+state. Query projection, producer evidence and conditional history are not
+provided by source-only mode.
+
+## Original evidence availability
+
+Reference, connected, evaluated and rich query reports expose
+`evidence_availability()`. Comparisons expose before/after availability separately.
+The values are snapshots taken during that inspection; getters do not check again.
+
+| Accessor | Meaning |
+| --- | --- |
+| `projection()` | Retained or NotRetained; an intentionally saved empty result is Retained |
+| `supplier()` | CommittedOutput, StableInputReuse, CheckpointRestoration or NotRetained |
+| `native_observation()` | Whether the original conditional observation is retained |
+| `conditional_history()` | Optional history's recorded availability, or None when no conditional observation was captured |
+
+NotRetained does not mean no producer ran or that evidence expired. An original's
+immutable evidence has no TTL. For materialized detail, distinguish NotRequested,
+OriginalProjectionNotRetained, unsupported source shape, and
+RequestedButNotProvidedBySelectedObservationMode. Use the outcome accessors before
+reading an optional body; a missing body is not a complete empty explanation.
+
+## Optional conditional execution history
+
+Use history when you need the supplier's conditional/readiness decision, attempt
+or output versions. It describes readiness separately from Changed/Equivalent
+output comparison. Select it on a connected rich request:
+
+```rust,ignore
+let detail = Detail::conditional_history()
+    .with_source_effects().with_producer_evidence();
+let report = fresh.inspect::<ReadBinding>(&original).why_observed()
+    .evaluated_by::<SourceDisclosure>(&source_receipt).materialize(detail)
+    .execute_governed(query_metadata, query_diagnostics,
+        source_metadata, source_diagnostics)?;
+match report.materialization().conditional_history_outcome() {
+    WorthQueryConditionalHistoryOutcome::Provided => {
+        let history = report.materialization().conditional_history().unwrap();
+        consume(history.attempt(), history.decision_class());
+    }
+    WorthQueryConditionalHistoryOutcome::OwnerUnavailable(cause) => show_loss(cause),
+    other => show_selection_outcome(other),
+}
+report.close();
+```
+
+History has bounded retention. A new execution can evict detail between an
+availability report and a later materialization request. That later request
+rechecks the original's history and can report EvictedByRetention while the source,
+query values and performed evaluation remain usable. OmittedByTier, CaptureDenied
+and OwnerClosed describe different owner outcomes. Minimal diagnostics tier alone
+does not imply omission; the installed record-retention policy decides that.
+A previously materialized readonly history snapshot remains usable after eviction.
+Plain query and source-only requests cannot provide connected history.
+
+## Refusal, Cancellation And Retry
+
+Handle `kind()` first. Depending on the failed operation, inspect
+`resource_refusal()`, `canonical_refusal()`, `producer_connection_refusal()`,
+`producer_output_refusal()` or `producer_evaluation_refusal()` for more detail.
+Early permission refusal can intentionally expose no protected cause detail.
+For an output connection, detail can distinguish an unrelated entity/field,
+missing revision, wrong contract or an output not created by that publication.
+It does not identify an alternative creator.
+
+Revoked access, cancellation and deadline expiry refuse the new request. They do
+not expire an immutable original or undo a completed source operation. Retain the
+originals and use a new authorized request and newly admitted capability access
+for a retry. Close reports to release their request funding. Close or drop the
+last original holder when you no longer need its evidence; closing one clone
+leaves its sibling valid. Original query reports borrow that original, while the
+source-only materialized result owns its source view.
+
+## Declare source shapes that can be explained
+
+### Canonical Absence Evidence
+
+An absent-input connection needs a completed absence read and the specific clear
+or parent removal that created that absence. Repeated no-op clears and equal
+`None` values cannot replace that occurrence. Keep the original source receipt
+through removal, recreation and a later removal.
+
+### Explicit Scalar Aspect Storage
+
+Bind a whole scalar aspect explicitly:
+
+```rust,ignore
+let schema = schema
+    .optional_aspect(Number::reference(), ScalarFacts::reference())
+    .scalar_aspect_field(Number::reference(), Value::reference());
+```
+
+Use one Required field with a primitive scalar codec such as
+`U64ApplicationValueBinding`. Extra children, optional child presence or structured
+carriers refuse with `InvalidAspectShape`. A normal `field` declaration uses Struct
+storage, even with one child. Read and write the bound scalar through ordinary
+`DecisionReader::field` and `CandidateWriter::write_field`.
+
+### Scalar Producer Outputs
+
+Use the scalar field's own declared output role and build readiness with
+`WorthQueryOutputReadinessContractBuilder::for_field`, then its declared
+`field_dependency` and `build_typed`. This preserves the Scalar field's delivery
+and eligibility meaning. Read through the output settlement and independently
+admit the source/query inspection contracts. A changed Struct sibling cannot
+supply the Scalar output's missing effect or revision; handle `OutputUnconnected`.
+
+### Public Optional Struct Removal
+
+Declare parent removal with `worth_query_operation_removes_aspects!`, register
+`operation_remove_aspect`, and declare every child decision read:
+
+```rust,ignore
+worth_query_operation_reads!(EditInputAspect => [Key, Ceiling, Bias, Sibling]);
+worth_query_operation_removes_aspects!(EditInputAspect => [InputFacts]);
+let schema = schema
+    .operation_read_field(EditInputAspect::reference(), Bias::reference())
+    .operation_read_field(EditInputAspect::reference(), Sibling::reference())
+    .operation_remove_aspect(EditInputAspect::reference(), InputFacts::reference());
+```
+
+Complete the child reads before `writer.remove_aspect(&target, InputFacts::reference())`.
+A field-write marker does not authorize parent removal. Recreate a removed parent
+with all required fields; mixing removal and child writes refuses.
+
+For a Required child under an Optional parent, use
+`ApplicationQueryOptionalAspectFieldRef`, `optional_aspect_field` and
+`disclose_optional_aspect_field_by`. Project each child with
+`row.optional_aspect_field(slot)?`. Only actual parent absence returns None;
+a present parent missing Required content is a denial.

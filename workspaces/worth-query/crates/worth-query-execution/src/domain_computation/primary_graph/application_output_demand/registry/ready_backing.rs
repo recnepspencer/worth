@@ -17,7 +17,9 @@ type ProducerMode =
 
 struct ReadyCell {
     completion: OnceLock<WorthQueryCompletedOutputDemand>,
+    output_evaluation: OnceLock<Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
     producer_mode: OnceLock<ProducerMode>,
+    original_publication: OnceLock<Arc<super::super::OriginalProducingPublication>>,
 }
 
 /// Prepared before an output effect. It cannot be read as a Ready completion.
@@ -54,7 +56,9 @@ impl PreparedReadyBacking {
         Self {
             cell: Arc::new(ReadyCell {
                 completion: OnceLock::new(),
+                output_evaluation: OnceLock::new(),
                 producer_mode: OnceLock::new(),
+                original_publication: OnceLock::new(),
             }),
         }
     }
@@ -64,6 +68,19 @@ impl PreparedReadyBacking {
         Self::new()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn output_evaluation(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>{
+        self.cell.output_evaluation.get()
+    }
+    pub(in crate::domain_computation::primary_graph) fn retain_output_evaluation(
+        &self,
+        evaluation: Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>,
+    ) {
+        assert!(
+            self.cell.output_evaluation.set(evaluation).is_ok(),
+            "one claimed completion evaluates an output once"
+        );
+    }
+
     /// Bind the mode selected for the actual producer execution before it
     /// publishes either a performed result or a Stable equality result.
     pub(in crate::domain_computation::primary_graph) fn bind_execution_mode(
@@ -71,6 +88,16 @@ impl PreparedReadyBacking {
         mode: ProducerMode,
     ) -> Self {
         assert!(self.cell.producer_mode.set(mode).is_ok());
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn bind_original_producing_publication(
+        self,
+        original: Option<Arc<super::super::OriginalProducingPublication>>,
+    ) -> Self {
+        if let Some(original) = original {
+            assert!(self.cell.original_publication.set(original).is_ok());
+        }
         self
     }
 
@@ -95,6 +122,12 @@ impl Deref for ReadyCompletion {
 }
 
 impl ReadyCompletion {
+    pub(in crate::domain_computation::primary_graph) fn original_producing_publication(
+        &self,
+    ) -> Option<&Arc<super::super::OriginalProducingPublication>> {
+        self.0.original_publication.get()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn same_cell(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
     }

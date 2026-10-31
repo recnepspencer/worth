@@ -8,7 +8,7 @@ error[E0382]: use of moved value: `core`
 9 |     let _second = core.into_serving_handoff();
   |                   ^^^^ value used here after move
   |
-note: `physical_runtime::recovery_construction::serving_handoff::<impl RecoveredPhysicalRuntimeCore>::into_serving_handoff` takes ownership of the receiver `self`, which moves `core`
+note: `worth_store::physical_runtime::recovery_construction::serving_handoff::<impl worth_store::physical_runtime::RecoveredPhysicalRuntimeCore>::into_serving_handoff` takes ownership of the receiver `self`, which moves `core`
  --> src/physical_runtime/recovery_construction/serving_handoff.rs
   |
   |     pub fn into_serving_handoff(self) -> Option<RecoveredPhysicalServingHandoff> {
@@ -25,7 +25,7 @@ error[E0382]: use of moved value: `handoff`
 18 |     drop(handoff);
    |          ^^^^^^^ value used here after move
    |
-note: `RecoveredPhysicalServingHandoff::admit_serving` takes ownership of the receiver `self`, which moves `handoff`
+note: `worth_store::physical_runtime::RecoveredPhysicalServingHandoff::admit_serving` takes ownership of the receiver `self`, which moves `handoff`
   --> src/physical_runtime/recovery_construction/serving_handoff.rs
    |
    |         self,
@@ -41,7 +41,7 @@ error[E0382]: use of moved value: `media`
 23 |     drop(media);
    |          ^^^^^ value used here after move
    |
-note: `RecoveredMediaOwnedPhysicalRuntime::open_record_store` takes ownership of the receiver `self`, which moves `media`
+note: `worth_store::physical_runtime::RecoveredMediaOwnedPhysicalRuntime::open_record_store` takes ownership of the receiver `self`, which moves `media`
   --> src/physical_runtime/recovery_construction/serving_handoff.rs
    |
    |     pub fn open_record_store(self, request: PhysicalRecordOpen) -> RecordStoreOpenOutcome {
