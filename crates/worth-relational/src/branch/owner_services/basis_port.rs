@@ -15,6 +15,21 @@ pub struct RelationalBranchBasisPort {
 }
 
 impl RelationalBranchBasisPort {
+    /// Describe the original owner-admitted pinned subject independently of
+    /// later branch advancement. This creates no recovery or durability proof.
+    pub fn export_recorded_retained_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Result<
+        crate::branch::RecordedRelationalComponentReference,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .export_recorded_retained_component(execution, basis)
+    }
+
     /// Record one exact current component for durable composition. This is
     /// descriptive export only; readmission still belongs to Native recovery.
     pub fn export_recorded_current_component(

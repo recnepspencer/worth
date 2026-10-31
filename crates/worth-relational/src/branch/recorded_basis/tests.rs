@@ -117,3 +117,45 @@ fn recorded_current_component_refuses_foreign_and_stale_admitted_bases() {
         .export_recorded_current_component(execution, &after)
         .is_ok());
 }
+
+#[test]
+fn recorded_retained_component_keeps_original_subject_after_head_advances() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let runtime = durable_runtime_with_test_schema();
+    let port = runtime.owner_component_services().basis_port();
+    create_entity(execution, &runtime, "original-retained-successor");
+    let (_, original) = port
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let recorded = port
+        .export_recorded_current_component(execution, &original)
+        .unwrap();
+    let original_artifact = attached_test_medium(&runtime).offered().pop().unwrap();
+    create_entity(execution, &runtime, "later-unrelated-advance");
+    assert!(port
+        .export_recorded_current_component(execution, &original)
+        .is_err());
+    let retained = port
+        .export_recorded_retained_component(execution, &original)
+        .unwrap();
+    assert_eq!(retained, recorded);
+    let Target::Canonical(subject) = retained.target() else {
+        panic!("original canonical subject")
+    };
+    assert_eq!(subject.position(), original_artifact.position());
+    assert_eq!(
+        subject.artifact_digest(),
+        original_artifact.payload_digest().as_bytes()
+    );
+    let foreign = durable_runtime_with_test_schema();
+    assert!(matches!(
+        foreign
+            .owner_component_services()
+            .basis_port()
+            .export_recorded_retained_component(execution, &original),
+        Err(RelationalRecordedComponentRefusal::Basis(
+            crate::branch::RelationalBranchBasisDenial::ForeignRuntime { .. }
+        ))
+    ));
+}

@@ -774,6 +774,18 @@ Stale and foreign admitted bases refuse. The description confers neither durable
 source qualification nor recovery authority; see
 [record a current Native component](../crates/worth-relational/README.md#record-a-current-native-component).
 
+The same basis service's `export_recorded_retained_component` exports the exact
+original admitted and pinned subject after head advancement, preserving its
+original receipt/position/digest. Native's durability authority provides
+`discover_associated_effects` and `readmit_associated_effect` for selected
+associations: discovery leaves unrelated bodies cold, and readmission verifies
+the exact retained Journal source/index/body rather than a resident re-encoding.
+Associated Memory refuses. Matching performed route flags distinguish pending
+from settled; `CheckpointReadmitted` describes directory evidence only, and
+missing registration never implies settled. These descriptions confer no
+recovered publication capability; see
+[readmit an associated Native effect](../crates/worth-relational/README.md#readmit-an-associated-native-effect).
+
 ### Native record and aspect history pages
 
 The Relational owner provides a retained cursor inside one exact selected commit:

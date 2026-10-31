@@ -7,6 +7,8 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonica
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 
+#[path = "canonical_publication_routes/associated_effect_observation.rs"]
+mod associated_effect_observation;
 #[path = "canonical_publication_routes/authored_writes.rs"]
 mod authored_writes;
 #[path = "canonical_publication_routes/branch_transition_stream.rs"]

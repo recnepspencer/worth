@@ -17,6 +17,25 @@ impl RelationalRuntime {
     ) -> Result<RecordedRelationalComponentReference, Refusal> {
         crate::execution::check_request(execution).map_err(Refusal::Request)?;
         self.compare_current_exact(basis).map_err(Refusal::Basis)?;
+        let recorded = self.export_recorded_retained_component(execution, basis)?;
+        self.compare_current_exact(basis).map_err(Refusal::Basis)?;
+        Ok(recorded)
+    }
+
+    /// Record the exact subject already pinned by this actual admitted basis,
+    /// even after another publication advances the branch. No descriptor can
+    /// be paired with a different result or selected by current-head fallback.
+    pub(crate) fn export_recorded_retained_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Result<RecordedRelationalComponentReference, Refusal> {
+        crate::execution::check_request(execution).map_err(Refusal::Request)?;
+        super::super::basis_identity_validation::require_local_branch_identity(
+            self,
+            basis.identity(),
+        )
+        .map_err(Refusal::Basis)?;
         let descriptor = basis
             .descriptor()
             .in_canonical_frame()
@@ -71,7 +90,6 @@ impl RelationalRuntime {
             }
         };
         crate::execution::check_request(execution).map_err(Refusal::Request)?;
-        self.compare_current_exact(basis).map_err(Refusal::Basis)?;
         Ok(RecordedRelationalComponentReference { descriptor, target })
     }
 }

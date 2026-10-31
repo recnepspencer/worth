@@ -7,6 +7,24 @@ use crate::publication::patch::data::PatchStreamPosition;
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn performed_effect_residencies(
+        &self,
+    ) -> Vec<(
+        CommitId,
+        Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    )> {
+        self.canonical_publication_routes
+            .performed_effect_residencies()
+    }
+
+    pub(crate) fn associated_effect_settlement(
+        &self,
+        entry: &crate::history::RelationalCommitIndexEntry,
+        residency: &Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    ) -> Option<crate::durability::authority::RelationalAssociatedEffectSettlement> {
+        self.canonical_publication_routes
+            .associated_effect_settlement(entry, residency)
+    }
     pub(crate) fn discard_authored_write_generation(
         &self,
         commit: CommitId,

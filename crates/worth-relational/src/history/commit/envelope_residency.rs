@@ -286,7 +286,7 @@ impl RelationalCommitEnvelopeResidency {
             }
         }
     }
-    pub(super) fn readmit_positioned(
+    pub(crate) fn readmit_positioned(
         entry: &RelationalCommitIndexEntry,
         source: &dyn RelationalDurableColdSource,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

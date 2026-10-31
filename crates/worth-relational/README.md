@@ -182,6 +182,28 @@ no retained-root, durable-source or recovered-publication authority. Native
 recovery must admit the recorded subject before it can become an operational
 basis; callers cannot rewrite its canonical runtime frame into a live identity.
 
+`export_recorded_retained_component(execution, &original_basis)` uses that same
+owner fact path for an already-admitted, pinned subject after a later commit
+advances the branch. It preserves the original performed position and artifact
+digest; it neither selects the latest head nor pairs a caller-supplied result
+with a descriptor. Foreign owners refuse.
+
+## Readmit an associated Native effect
+
+`durability_authority().discover_associated_effects(execution, &association)`
+selects actual catalog or performed-route subjects from their required discovery
+metadata. Unrelated cold bodies remain cold. Each returned subject retains the
+exact runtime, Journal index and source; associated Memory backing refuses.
+`readmit_associated_effect(execution, &subject)` reads that source even when a
+body is resident, validates its full receipt, position, digest, association and
+schema/root metadata, and exposes the original immutable semantic image.
+Refusal leaves the borrowed original subject and source custody intact.
+
+Settlement descriptions distinguish matching `PerformedPending` and
+`PerformedSettled` route flags from `CheckpointReadmitted` directory evidence.
+Missing registration is not settlement evidence. These read-only observations
+grant no recovered publication or product adoption authority.
+
 ## Durability
 
 A runtime is memory-only by default: its canonical history lives in an

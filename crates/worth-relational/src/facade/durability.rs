@@ -1,3 +1,7 @@
+pub use crate::durability::authority::{
+    ReadmittedRelationalAssociatedEffect, RelationalAssociatedEffectRefusal,
+    RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
+};
 pub use crate::durability::branch_transition_artifact::{
     RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactDigest,
     RelationalBranchTransitionArtifactEncodeDenial, RelationalBranchTransitionArtifactFrameRefusal,

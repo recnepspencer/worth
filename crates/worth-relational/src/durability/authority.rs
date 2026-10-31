@@ -1,5 +1,10 @@
 pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
+mod associated_effects;
 mod authority_continuity;
+pub use associated_effects::{
+    ReadmittedRelationalAssociatedEffect, RelationalAssociatedEffectRefusal,
+    RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
+};
 mod checkpoint_capture;
 mod checkpoint_image;
 mod checkpoint_lineage_basis;
