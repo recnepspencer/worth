@@ -4,6 +4,7 @@ use worth_execution::{
     CancellationSource, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
 };
 mod selection;
+mod spatial_rows;
 mod work_attribution;
 
 const REMOTE_BATCH_EDGES: u32 = 1_250;

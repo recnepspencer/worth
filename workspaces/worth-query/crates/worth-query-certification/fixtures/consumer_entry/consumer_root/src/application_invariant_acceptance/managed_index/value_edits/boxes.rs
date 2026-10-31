@@ -58,19 +58,10 @@ fn parity(tree: &Tree, root: Option<usize>, values: &BTreeMap<usize, Box2Coordin
     if let Some(root) = root {
         inspect_balance(tree, root, &mut seen, &mut ordered);
     }
-    let mut expected_order: Vec<_> = values.iter().collect();
-    expected_order.sort_by_key(|(source, raw)| {
-        (
-            [raw.lower[0], raw.lower[1], raw.upper[0], raw.upper[1]],
-            **source,
-        )
-    });
+    assert_eq!(ordered.len(), values.len());
     assert_eq!(
-        ordered,
-        expected_order
-            .iter()
-            .map(|(source, _)| **source)
-            .collect::<Vec<_>>()
+        ordered.into_iter().collect::<BTreeSet<_>>(),
+        values.keys().copied().collect()
     );
     assert_eq!(seen.len(), tree.nodes.iter().flatten().count());
     for probe in [

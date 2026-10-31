@@ -36,9 +36,15 @@ Required repairs and current evidence:
    typed original partial-seal refusal, grant release and old/sibling isolation.
    Affected managed49/49 and Candidates9/9 pass. Historical coordinate depth and
    spatial grouping remain separate obligations.
-6. Spatial grouping: improve demonstrated poor grouping using ordinary spatial
-   heuristics and qualify representative/adversarial distributions. No universal
-   cheap-empty-query promise: not every spatial query/distribution can be selective.
+6. **Verified and independently cleared:** [Exact centroid Morton grouping](milestone-9.19-spatial-order-plan.md)
+   replaces the fixture's lower-x-first lex order while keeping exact closed
+   unions, stable occurrence ties and the same cold/warm AVL edits. Pure owner2/2
+   agrees with an independent130-bit oracle at all coordinate extremes. Actual
+   alternating separated rows Source33/65 use13/15 comparisons for empty band
+   gaps; cold/warm membership, boundary, Parent order and retained old rows pass.
+   Existing collinear/keyed edit cases remain green within managed50/50;
+   Candidates9/9 passes. Morton grouping is an ordinary heuristic with no universal
+   cheap-empty-query, overlap selectivity or production CAD adoption claim.
 7. Churn: separate stable identity from physical placement, reuse/compact safely or
    use an equivalent bounded-live structural representation. Small live indexes
    must not silently inherit ever-issued-coordinate traversal cost. Preserve old

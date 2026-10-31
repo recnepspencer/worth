@@ -1,6 +1,7 @@
 //! A balanced finite box tree; callers own storage, controls and source resolution.
 use crate::{BoundsDenial, Box2};
 mod edit;
+mod order;
 pub use edit::{insert_box_source, remove_box_source, replace_box_source, BoxEditStorage};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

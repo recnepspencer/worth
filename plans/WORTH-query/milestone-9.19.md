@@ -1686,6 +1686,16 @@ with released grants. Affected managed49/49 and Candidates9/9 pass. This removes
 duplicate ancestor construction; historical-coordinate churn and spatial grouping
 remain required repairs. Independent qa-loop, qa-tests and code-quality-qa review clears this slice.
 
+The [spatial ordering slice](milestone-9.19-spatial-order-plan.md) replaces the
+pure box fixture's lower-x-first order with exact centroid Morton grouping and
+full-coordinate/occurrence ties. Pure owner2/2 agrees with an independent130-bit
+oracle. Actual Source33/65 alternating distant rows need13/15 summary comparisons
+for empty between-row queries; explicit cold rebuild, warm endpoint motion,
+closed boundaries, Parent order and retained rows pass. Affected managed50/50 and
+Candidates9/9 pass. This repairs the demonstrated grouping defect; it promises
+no universal spatial selectivity or production CAD adoption. Churn and remaining
+Phase3/4/5/6 work stay open. Independent qa-loop, qa-tests and code-quality-qa review clears this slice.
+
 The [recorded-coverage slice](milestone-9.19-phase3-recorded-coverage-plan.md)
 records and verifies actual visited/pruned cuts and their matched-slot bijection.
 Public and maintained selection receivers and Native invariant projections consume

@@ -1,5 +1,5 @@
 //! Spatial AVL edits. Exact leaf bounds route edits and bound query traversal.
-use super::{Box2, BoxNode, BoxNodeLinks};
+use super::{order::key, Box2, BoxNode, BoxNodeLinks};
 
 /// The caller supplies stable occurrence keys, isolated backing and original stops.
 /// Keys are not positions in a newly sorted or filtered Source image.
@@ -150,14 +150,6 @@ fn remove<S: BoxEditStorage>(
             Ok(sibling)
         }
     }
-}
-
-fn key<Source: Copy>(bounds: Box2, source: Source) -> ([i64; 4], Source) {
-    let raw = bounds.coordinates();
-    (
-        [raw.lower[0], raw.lower[1], raw.upper[0], raw.upper[1]],
-        source,
-    )
 }
 
 fn checkpoint<S: BoxEditStorage>(depth: u32, storage: &mut S) -> Result<(), S::Stop> {
