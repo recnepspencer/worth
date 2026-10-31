@@ -23,13 +23,28 @@ impl std::fmt::Debug for ProductHeadRetentionObligation {
             .debug_struct("ProductHeadRetentionObligation")
             .field("owner", &self.owner)
             .field("basis", &self.basis)
-            .field("relational", &self.relational.key())
-            .field("signal", &self.signal.key())
+            .field("relational", &self.relational)
+            .field("signal", &self.signal)
             .finish()
     }
 }
 
 impl ProductHeadRetentionObligation {
+    pub(crate) fn try_retire_shared_for_close(&mut self) -> Result<(), ()> {
+        let (Some(relational), Some(signal)) = (&self.relational.claim, &self.signal.claim) else {
+            assert!(self.relational.claim.is_none() && self.signal.claim.is_none());
+            return Ok(());
+        };
+        relational
+            .control
+            .try_retire_shared_pair(relational, signal)?;
+        // Claims contain only metadata and a control handle; the actual owner
+        // leases remain in the same registry and the populated history slot.
+        self.relational.claim = None;
+        self.signal.claim = None;
+        Ok(())
+    }
+
     pub(crate) fn owner_issued(pair: IssuedComponentPinPair) -> Self {
         let (owner, basis, dependency, relational, signal) = pair.into_parts();
         assert_eq!(dependency, ComponentBasisDependencyClass::ProductBranchHead);

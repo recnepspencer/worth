@@ -61,6 +61,13 @@ pub(crate) enum ProductBranchHeadProtectionDenial {
 }
 
 impl ProductBranchHeadProtection {
+    pub(super) fn try_retire_components_for_close(&mut self) -> Result<(), ()> {
+        self.product_head.try_retire_shared_for_close()
+    }
+    pub(super) fn try_retire_history_for_close(&mut self) -> Result<(), ()> {
+        self.product_head_history.try_retire_for_close()
+    }
+
     /// Admit a transferred product-head pair only when it names the exact
     /// commit occurrence, basis, owner, and transfer provenance of the image.
     pub(crate) fn owner_issued(

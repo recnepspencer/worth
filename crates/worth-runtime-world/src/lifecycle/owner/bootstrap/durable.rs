@@ -30,9 +30,6 @@ enum RetainedBootstrapRoot {
     Selected(PreparedRoot<SelectedDurableRoot>),
 }
 impl WorldDurableBootstrapCustody {
-    pub(crate) fn is_driving(&self) -> bool {
-        self.driving.load(Ordering::Acquire)
-    }
     fn claim(self: &Arc<Self>) -> Option<BootstrapDriver> {
         self.driving
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)

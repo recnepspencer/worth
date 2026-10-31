@@ -5,7 +5,6 @@ mod publication;
 mod reclamation;
 mod retention;
 
-pub(crate) use catalog::InstalledRootCommitRollback;
 pub(crate) use catalog::{AncestorSelectionPath, HistoryTraversalControl};
 pub use catalog::{
     CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, CompositeHistoryTraversal,
@@ -17,6 +16,7 @@ pub(crate) use catalog::{
     CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RetainedExactHistoryPosition,
     RetiredHistoryEntries, RuntimeWorldHistoryCatalogContract,
 };
+pub(crate) use catalog::{CompositeHistoryCatalogEntry, InstalledRootCommitRollback};
 #[allow(
     unused_imports,
     reason = "the internal denial is asserted by the real constructor contract test"

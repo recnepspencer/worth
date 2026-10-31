@@ -184,7 +184,12 @@ fn public_foreign_prepared_token_never_contacts_a_component() {
 fn public_close_denies_saved_ports_without_closing_components() {
     let (fixture, owner, expected) = public_world();
     let observation = owner.observation_port();
-    let report = owner.lifecycle_port().close().unwrap();
+    let report = owner
+        .lifecycle_port()
+        .close(&worth_execution::ExecutionRequest::serial(
+            &crate::test_execution_policy::serial_request(),
+        ))
+        .unwrap();
     drop(report);
     assert!(observation
         .observe_product_branch(expected.branch_identity())

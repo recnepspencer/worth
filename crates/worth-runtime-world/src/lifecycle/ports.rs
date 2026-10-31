@@ -317,7 +317,10 @@ pub(crate) trait RuntimeWorldLifecycleService:
 {
     fn bootstrap_root(&self, intent: RuntimeWorldBootstrapIntent) -> RuntimeWorldBootstrapOutcome;
 
-    fn close(&self) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial>;
+    fn close(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial>;
     /// Owner-wide automatic retirement of changed, eligible history interiors.
     fn retire_changed_history(
         &self,

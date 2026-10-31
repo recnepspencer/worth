@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use worth_relational::facade::branch::RelationalOwnerServicePorts;
@@ -98,11 +98,6 @@ where
     pub(super) recovery: RecoveryCatalog,
     pub(super) bootstrap: Mutex<RuntimeWorldBootstrapState>,
     pub(super) close: Mutex<RuntimeWorldCloseContract>,
-    /// Callers currently blocked on the operation ledger inside close
-    /// admission. Close stops new admission, so an operator watching a world
-    /// that will not close needs to see that a close is queued rather than
-    /// absent.
-    pub(super) close_admission_waiters: AtomicUsize,
     pub(super) operation: RuntimeWorldOperationLedger,
     pub(super) publication_capacity: RuntimeWorldPublicationCapacityLedger,
 }
@@ -182,7 +177,6 @@ where
                 recovery,
                 bootstrap: Mutex::new(RuntimeWorldBootstrapState::Unperformed),
                 close: Mutex::new(RuntimeWorldCloseContract::open()),
-                close_admission_waiters: AtomicUsize::new(0),
                 operation: RuntimeWorldOperationLedger::new(),
                 publication_capacity,
             }),

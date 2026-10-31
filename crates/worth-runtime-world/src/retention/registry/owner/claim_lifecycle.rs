@@ -20,6 +20,41 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn try_retire_shared_pair(
+        &self,
+        relational: &ComponentBasisPinClaim,
+        signal: &ComponentBasisPinClaim,
+    ) -> Result<(), ()> {
+        let mut state = self.state.try_lock().map_err(|_| ())?;
+        if relational.key == signal.key {
+            return Err(());
+        }
+        for claim in [relational, signal] {
+            let entry = state.entries.get(&claim.key).ok_or(())?;
+            if claim.owner != state.owner_identity
+                || claim.dependency != ComponentBasisDependencyClass::ProductBranchHead
+                || entry.lease_identity != claim.lease_identity
+                || entry.owner_lease.is_none()
+                || entry.counts.get(claim.dependency) == 0
+                || entry.counts.total() <= 1
+            {
+                return Err(());
+            }
+        }
+        for claim in [relational, signal] {
+            state
+                .entries
+                .get_mut(&claim.key)
+                .expect("validated pair")
+                .counts
+                .decrement(claim.dependency)
+                .expect("validated dependency");
+        }
+        state.active_obligations -= 2;
+        state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(2);
+        Ok(())
+    }
+
     fn fork_history_pair(
         &self,
         relational: &ComponentBasisPinClaim,

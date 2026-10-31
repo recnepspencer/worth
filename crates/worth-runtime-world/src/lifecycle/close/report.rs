@@ -42,20 +42,6 @@ pub struct RuntimeWorldRetainedRecordReport {
 }
 
 impl RuntimeWorldRetainedRecordReport {
-    pub(crate) fn new(
-        identity: ProductUnpublishedOwnerEffectsIdentity,
-        cause: ProductUnpublishedCause,
-        obligations: ProductUnpublishedLiveObligations,
-        next_actions: Vec<ProductUnpublishedNextAction>,
-    ) -> Self {
-        Self {
-            identity,
-            cause,
-            obligations,
-            next_actions,
-        }
-    }
-
     pub const fn identity(&self) -> &ProductUnpublishedOwnerEffectsIdentity {
         &self.identity
     }

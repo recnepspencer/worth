@@ -15,11 +15,25 @@ pub(crate) struct WorldPublications {
 }
 impl WorldPublications {
     pub(crate) fn posture(&self) -> worth_runtime_world::facade::WorldPublicationTaskPosture {
-        if self.tasks().iter().any(|task| task.pending()) {
-            worth_runtime_world::facade::WorldPublicationTaskPosture::Unsettled
-        } else {
-            worth_runtime_world::facade::WorldPublicationTaskPosture::Terminal
+        use worth_runtime_world::facade::WorldPublicationTaskPosture as Posture;
+        for slot in [&self.branches, &self.custody, &self.occurrences] {
+            let Ok(slot) = slot.try_lock() else {
+                return Posture::Busy;
+            };
+            if let Some(task) = slot.as_ref() {
+                let Ok(state) = task.state.try_lock() else {
+                    return Posture::Busy;
+                };
+                if !matches!(
+                    state.endpoint,
+                    Some(Endpoint::Committed(_) | Endpoint::Terminal(_) | Endpoint::NoEffect)
+                ) && (state.source.is_some() || state.recovery.is_some())
+                {
+                    return Posture::Unsettled;
+                }
+            }
         }
+        Posture::Terminal
     }
     fn tasks(&self) -> Vec<Arc<WorldPublicationTask>> {
         [&self.branches, &self.custody, &self.occurrences]

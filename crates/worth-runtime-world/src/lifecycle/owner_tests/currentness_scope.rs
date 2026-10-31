@@ -27,8 +27,10 @@ fn currentness_scope_holds_operation_and_service_through_exact_head_callback() {
             assert_eq!(owner.state.operation.active(), 1);
             assert_eq!(Arc::strong_count(&owner), strong + 1);
             assert!(matches!(
-                owner.close(),
-                Err(RuntimeWorldCloseDenial::AlreadyClosing)
+                owner.close(&worth_execution::ExecutionRequest::serial(
+                    &crate::test_execution_policy::serial_request()
+                )),
+                Err(RuntimeWorldCloseDenial::InFlightCriticalSection)
             ));
             argument + 1
         })
@@ -113,7 +115,11 @@ fn currentness_scope_denies_foreign_and_closed_owner_before_callback() {
         })
     ));
     let own_port = port(&owner);
-    let report = owner.close().expect("no scope is active");
+    let report = owner
+        .close(&worth_execution::ExecutionRequest::serial(
+            &crate::test_execution_policy::serial_request(),
+        ))
+        .expect("no scope is active");
     assert!(report.retained_records().is_empty());
     assert!(matches!(
         own_port.while_product_branch_current(&expected, 4, |_, _| panic!("closed owner")),

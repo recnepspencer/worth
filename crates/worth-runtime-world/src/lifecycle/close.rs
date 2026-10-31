@@ -25,6 +25,14 @@ pub(crate) enum RuntimeWorldCloseState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldCloseDenial {
     CloseNotCompleted,
+    OwnerUnavailable,
+    Busy,
+    Stopped(worth_execution::MapKernelStop),
+    PublicationFrontierChanged,
+    UnresolvedBusinessCustody,
+    CleanupRequired,
+    CloseProgressPoisoned,
+    CloseProgressInvariant,
     UndeliveredPublication,
     AlreadyClosing,
     AlreadyClosed,
@@ -42,25 +50,15 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    /// Close the owner and report what the drain settled, released, and
-    /// deliberately exposed. A retained obligation is never discarded.
-    ///
-    /// Bootstrap and operation admission remain locked through the ledger
-    /// check and Open -> Closing transition. Closing excludes new work, so
-    /// the drain releases component custody outside lifecycle locks.
-    pub fn close(&self) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial> {
-        drain::close_owner(&self.state)
-    }
-
-    /// How many callers are queued inside close admission right now. Close
-    /// blocks on the operation ledger before it decides, so a world that will
-    /// not close is distinguished from a world nobody is closing by this count
-    /// rather than by waiting.
-    #[cfg(test)]
-    pub fn close_admission_waiters(&self) -> usize {
-        self.state
-            .close_admission_waiters
-            .load(std::sync::atomic::Ordering::SeqCst)
+    /// Close under the caller's original request. Busy or stopped admission
+    /// leaves Open; after sealing, the SAME retained task resumes in Closing.
+    /// Unresolved business custody refuses before sealing. Head retirement
+    /// runs outside admission locks and retains each exact item on refusal.
+    pub fn close(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial> {
+        drain::close_owner(&self.state, request)
     }
 
     pub fn lifecycle_observation(&self) -> super::RuntimeWorldOwnerLifecycleObservation {
@@ -94,8 +92,11 @@ where
         RuntimeWorldOwnerRoot::bootstrap_root(self, intent)
     }
 
-    fn close(&self) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial> {
-        RuntimeWorldOwnerRoot::close(self)
+    fn close(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial> {
+        RuntimeWorldOwnerRoot::close(self, request)
     }
     fn retire_changed_history(
         &self,
@@ -174,19 +175,21 @@ where
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug)]
 pub(crate) struct RuntimeWorldCloseContract {
     state: RuntimeWorldCloseState,
+    progress: Option<std::sync::Arc<std::sync::Mutex<drain::CloseProgress>>>,
 }
 
 impl RuntimeWorldCloseContract {
     pub(crate) const fn open() -> Self {
         Self {
             state: RuntimeWorldCloseState::Open,
+            progress: None,
         }
     }
 
-    pub(crate) const fn state(self) -> RuntimeWorldCloseState {
+    pub(crate) const fn state(&self) -> RuntimeWorldCloseState {
         self.state
     }
 

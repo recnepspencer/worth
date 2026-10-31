@@ -1,213 +1,289 @@
-use std::sync::atomic::Ordering;
-
-use crate::branch::{OwnerCreatedComponentCustodyRecord, OwnerRetirementWork};
+//! Original-request close admission and retained one-head progression.
+use super::{RuntimeWorldCloseDenial as Denial, RuntimeWorldCloseReport, RuntimeWorldCloseState};
 use crate::lifecycle::owner::{RuntimeWorldBootstrapState, RuntimeWorldOwnerState};
-use crate::recovery::{ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle};
+use worth_execution::ExecutionRequest;
 
-use super::report::{
-    RuntimeWorldCloseReleaseCounts, RuntimeWorldCloseReport, RuntimeWorldRetainedRecordReport,
-};
-use super::RuntimeWorldCloseDenial;
+#[derive(Debug, Default)]
+pub(super) struct CloseProgress {
+    pending: Option<crate::branch::registry::PendingProductHeadClose>,
+    released_heads: usize,
+    report: Option<RuntimeWorldCloseReport>,
+}
 
-/// Admit close under bootstrap -> operation -> close lock order. Publishing
-/// Closing excludes every new admission before the guards are released.
-/// Component custody drains outside lifecycle locks.
 pub(super) fn close_owner<D, I, E, Ctx, T>(
     state: &RuntimeWorldOwnerState<D, I, E, Ctx, T>,
-) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial>
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<RuntimeWorldCloseReport, Denial>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    let bootstrap = state
-        .bootstrap
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    if matches!(*bootstrap, RuntimeWorldBootstrapState::InProgress)
-        || matches!(&*bootstrap, RuntimeWorldBootstrapState::Pending(pending) if pending.is_driving())
-    {
-        return Err(RuntimeWorldCloseDenial::AlreadyClosing);
+    let phase = state.close.try_lock().map_err(|_| Denial::Busy)?.state();
+    if phase == RuntimeWorldCloseState::Closed {
+        return Err(Denial::AlreadyClosed);
     }
-    // Publish the queued waiter before blocking so the transition from "no
-    // close" to "a close is admitting" is observable rather than inferred from
-    // elapsed time.
-    state.close_admission_waiters.fetch_add(1, Ordering::SeqCst);
-    let operation = state
-        .operation
-        .state
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    state.close_admission_waiters.fetch_sub(1, Ordering::SeqCst);
-    admit_close(
-        operation.recovery_active,
-        operation.active,
-        state.recovery.reserved_slots(),
-    )?;
-    // The SAME operation gate excludes publication admission until Closing.
-    // This reads only actual task-slot state; no Store I/O occurs under it.
-    if state
-        .durable
+    if !state
+        .owner_present
+        .load(std::sync::atomic::Ordering::Acquire)
+    {
+        return Err(Denial::OwnerUnavailable);
+    }
+    if phase == RuntimeWorldCloseState::Open {
+        admit(state, request)?;
+    }
+    let close = state.close.try_lock().map_err(|_| Denial::Busy)?;
+    if close.state() == RuntimeWorldCloseState::Closed {
+        return Err(Denial::AlreadyClosed);
+    }
+    let task = close
+        .progress
         .as_ref()
-        .is_some_and(|binding| binding.publication_unsettled())
-    {
-        return Err(RuntimeWorldCloseDenial::DurablePublicationUnsettled);
-    }
-    if state.durable.is_some() && state.history.has_undelivered_publication() {
-        return Err(RuntimeWorldCloseDenial::UndeliveredPublication);
-    }
-    let (retained_records, recovered_custody) = enumerate_retained_records(state)?;
-    let mut close = state
-        .close
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    close.begin()?;
+        .cloned()
+        .ok_or(Denial::CloseProgressInvariant)?;
     drop(close);
-    drop(operation);
-    drop(bootstrap);
-    let report = drain_for_close(state, retained_records, recovered_custody);
-    state
-        .close
-        .lock()
-        .unwrap_or_else(|error| error.into_inner())
-        .finish()?;
-    Ok(report)
+    // Root permanently owns this SAME task. Try-only exclusive driving never
+    // lends it out, restores it, or drops its last Arc on a budgeted return.
+    // The guard spans only World-local nonwaiting metadata steps below, never
+    // Native/Signal/provider calls, I/O, or live capability destruction.
+    let mut progress = task.try_lock().map_err(|cause| match cause {
+        std::sync::TryLockError::WouldBlock => Denial::Busy,
+        std::sync::TryLockError::Poisoned(_) => Denial::CloseProgressPoisoned,
+    })?;
+    drain_heads(state, request, &mut progress)?;
+    finish_report(&state.close, &mut progress)
 }
 
-/// Decide whether this owner can be drained at all, from the operation ledger
-/// the caller is holding. A declared critical section that is still in flight
-/// cannot be drained, so it denies here rather than closing over live work.
-///
-/// An installed retained record is deliberately not a denial: close settles
-/// what it can and exposes the rest in its terminal report.
-fn admit_close(
-    recovery_active: usize,
-    active: usize,
-    reserved_recovery_slots: usize,
-) -> Result<(), RuntimeWorldCloseDenial> {
-    if recovery_active != 0 {
-        return Err(RuntimeWorldCloseDenial::InFlightCriticalSection);
-    }
-    if active != 0 || reserved_recovery_slots != 0 {
-        return Err(RuntimeWorldCloseDenial::AlreadyClosing);
+fn drain_heads<D, I, E, Ctx, T>(
+    state: &RuntimeWorldOwnerState<D, I, E, Ctx, T>,
+    request: &ExecutionRequest<'_, '_>,
+    progress: &mut CloseProgress,
+) -> Result<(), Denial>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    while progress.report.is_none() {
+        request.check_live().map_err(Denial::Stopped)?;
+        if progress.pending.is_none() {
+            progress.pending = state
+                .branches
+                .try_take_next_for_close()
+                .map_err(|_| Denial::Busy)?;
+        }
+        if let Some(pending) = progress.pending.as_mut() {
+            // The actual entry is already retained before either owner phase.
+            request.check_live().map_err(Denial::Stopped)?;
+            pending.advance(&state.history, request)?;
+            progress.released_heads += 1;
+            drop(progress.pending.take());
+            continue;
+        }
+        // This minimum slice refused unresolved business custody before seal.
+        // These rows are therefore empty because the actual catalog was empty,
+        // not because descriptive inspection substituted for retained custody.
+        progress.report = Some(RuntimeWorldCloseReport::new(
+            Vec::new(),
+            Vec::new(),
+            super::report::RuntimeWorldCloseReleaseCounts {
+                released_product_head_pins: progress.released_heads,
+                ..Default::default()
+            },
+            state.retention.active_observation_count(),
+            Vec::new(),
+        ));
     }
     Ok(())
 }
 
-/// Drain custody after Closing has excluded new admission. Retained records
-/// were described during admission; this phase exposes them and releases
-/// unneeded pins without settling or reclassifying their owner effects.
-fn drain_for_close<D, I, E, Ctx, T>(
-    state: &RuntimeWorldOwnerState<D, I, E, Ctx, T>,
-    retained_records: Vec<RuntimeWorldRetainedRecordReport>,
-    recovered_custody: Vec<super::RuntimeWorldRecoveredCustodyReport>,
-) -> RuntimeWorldCloseReport
-where
-    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
-    I: Copy + Ord + Send + Sync + 'static,
-    T: Copy + Ord + Send + Sync + 'static,
-{
-    // Order matters: releasing the branch references first is what makes the
-    // custody drain total. A record still installed after that belongs to an
-    // occurrence no product reference names any more, which is exactly the
-    // work close must hand back instead of dropping.
-    let released_product_head_pins = state.branches.release_non_root_branches();
-    let outstanding_owner_retirement_work: Vec<OwnerRetirementWork> = state
-        .custody
-        .take_all_installed()
-        .into_iter()
-        .map(OwnerCreatedComponentCustodyRecord::into_retirement_work)
-        .collect();
-    let counts = RuntimeWorldCloseReleaseCounts {
-        // Enumerating a retained record is exposure, never settlement. The
-        // drain settles no record today: every record it can read survives the
-        // close that named it, so the settled count is the zero it settled.
-        settled_records: 0,
-        // One per non-root product branch whose reference the registry held and
-        // close released. The root is the world's own reference, not a created
-        // branch, so it is not counted here. Observation pins are held by
-        // caller-owned observations that outlive this call and are not
-        // released by close. Their live count is reported separately.
-        released_product_head_pins,
-        released_observation_pins: 0,
-        // Every installed commit is still protected, either by a product head
-        // or by a retained record enumerated above, so close releases no
-        // history protection.
-        released_history_pins: 0,
-        released_unique_component_pins: release_reclaimable_component_pins(state),
-        // Close retires the custody charge itself: the registry no longer
-        // holds these records. What it cannot do is delete a component branch,
-        // so the same records leave as typed work the caller must dispatch.
-        retired_owner_created_custody: outstanding_owner_retirement_work.len(),
-    };
-    RuntimeWorldCloseReport::new(
-        retained_records,
-        recovered_custody,
-        counts,
-        state.retention.active_observation_count(),
-        outstanding_owner_retirement_work,
-    )
+fn finish_report(
+    contract: &std::sync::Mutex<super::RuntimeWorldCloseContract>,
+    progress: &mut CloseProgress,
+) -> Result<RuntimeWorldCloseReport, Denial> {
+    // Once the terminal report exists, preserve it even if this metadata lock
+    // is busy. A late stop does not erase already completed owner retirement.
+    let mut close = contract.try_lock().map_err(|cause| match cause {
+        std::sync::TryLockError::WouldBlock => Denial::Busy,
+        std::sync::TryLockError::Poisoned(_) => Denial::CloseProgressPoisoned,
+    })?;
+    if progress.report.is_none() {
+        return Err(Denial::CloseProgressInvariant);
+    }
+    close.finish()?;
+    let report = progress.report.take().expect("original close report");
+    drop(close);
+    Ok(report)
 }
 
-/// Name every retained record the catalog still holds. A record that is inside
-/// its own update critical section cannot be read without racing that update,
-/// so it denies rather than producing a row that may already be stale.
-fn enumerate_retained_records<D, I, E, Ctx, T>(
+fn admit<D, I, E, Ctx, T>(
     state: &RuntimeWorldOwnerState<D, I, E, Ctx, T>,
-) -> Result<
-    (
-        Vec<RuntimeWorldRetainedRecordReport>,
-        Vec<super::RuntimeWorldRecoveredCustodyReport>,
-    ),
-    RuntimeWorldCloseDenial,
->
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<(), Denial>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    let affinity = state.recovery.affinity();
-    let identities = state.recovery.identities();
-    let mut rows = Vec::with_capacity(identities.len());
-    let mut recovered = Vec::new();
-    for identity in identities {
-        let handle = ProductUnpublishedRecoveryHandle::new(identity, affinity);
-        if let Some(row) = state.recovery.recovered_close_report(&handle) {
-            recovered.push(row);
-            continue;
+    request.check_live().map_err(Denial::Stopped)?;
+    {
+        let operation = state.operation.state.try_lock().map_err(|_| Denial::Busy)?;
+        if operation.active != 0 || operation.recovery_active != 0 {
+            return Err(Denial::InFlightCriticalSection);
         }
-        let Some(record) = state.recovery.lookup_record(&handle) else {
-            return Err(RuntimeWorldCloseDenial::InFlightCriticalSection);
-        };
-        rows.push(describe(
-            &ProductUnpublishedOwnerEffects::from_catalog_record(record),
+    }
+    // Cheap actual-custody rejection precedes a history pass. Neither this
+    // observation nor a frontier replaces the final same-gate recheck below.
+    if state
+        .recovery
+        .try_has_close_custody()
+        .map_err(|_| Denial::Busy)?
+        || state
+            .custody
+            .try_has_close_custody()
+            .map_err(|_| Denial::Busy)?
+    {
+        return Err(Denial::UnresolvedBusinessCustody);
+    }
+    let frontier = state.history.close_frontier(request)?;
+    let task = std::sync::Arc::new(std::sync::Mutex::new(CloseProgress::default()));
+    let bootstrap = state.bootstrap.try_lock().map_err(|_| Denial::Busy)?;
+    match &*bootstrap {
+        RuntimeWorldBootstrapState::InProgress => return Err(Denial::AlreadyClosing),
+        RuntimeWorldBootstrapState::Pending(_) => return Err(Denial::UnresolvedBusinessCustody),
+        _ => {}
+    }
+    let operation = state.operation.state.try_lock().map_err(|_| Denial::Busy)?;
+    if operation.active != 0 || operation.recovery_active != 0 {
+        return Err(Denial::InFlightCriticalSection);
+    }
+    let mut close = state.close.try_lock().map_err(|_| Denial::Busy)?;
+    if close.state() != RuntimeWorldCloseState::Open {
+        return Err(Denial::AlreadyClosing);
+    }
+    if !state
+        .owner_present
+        .load(std::sync::atomic::Ordering::Acquire)
+    {
+        return Err(Denial::OwnerUnavailable);
+    }
+    state.history.try_validate_close_frontier(&frontier)?;
+    if state
+        .recovery
+        .try_has_close_custody()
+        .map_err(|_| Denial::Busy)?
+        || state
+            .custody
+            .try_has_close_custody()
+            .map_err(|_| Denial::Busy)?
+    {
+        return Err(Denial::UnresolvedBusinessCustody);
+    }
+    if let Some(binding) = &state.durable {
+        binding.try_admit_close()?;
+    }
+    request.check_live().map_err(Denial::Stopped)?;
+    close.begin()?;
+    close.progress = Some(task);
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    struct Clock;
+    impl crate::lifecycle::RuntimeWorldClockSource for Clock {
+        fn now(&self) -> crate::lifecycle::RuntimeWorldInstant {
+            crate::lifecycle::RuntimeWorldInstant::from_ticks(0)
+        }
+    }
+    fn owner() -> (
+        crate::branch::reference_test_fixture::RealReferenceFixture,
+        crate::lifecycle::RuntimeWorldOwnerRoot<(), (), (), (), ()>,
+    ) {
+        let mut fixture = crate::branch::reference_test_fixture::real_fixture(8, 8);
+        let owner = crate::lifecycle::RuntimeWorldOwnerRoot::new(fixture.owner_inputs(
+            crate::budget::RuntimeWorldBudgets::without_policy_limits(),
+            crate::lifecycle::RuntimeWorldClock::from_source(Clock),
+        ))
+        .unwrap();
+        (fixture, owner)
+    }
+    #[test]
+    fn close_finish_busy_retains_same_root_task_and_original_report() {
+        let (_fixture, owner) = owner();
+        let cancel = worth_execution::CancellationSource::new();
+        let policy =
+            crate::test_execution_policy::serial_request().with_cancellation(cancel.token());
+        let request = ExecutionRequest::serial(&policy);
+        admit(&owner.state, &request).unwrap();
+        let task = owner
+            .state
+            .close
+            .lock()
+            .unwrap()
+            .progress
+            .as_ref()
+            .unwrap()
+            .clone();
+        let mut progress = task.try_lock().unwrap();
+        drain_heads(&owner.state, &request, &mut progress).unwrap();
+        let report = progress.report.as_ref().unwrap() as *const RuntimeWorldCloseReport;
+        let close = owner.state.close.lock().unwrap();
+        assert!(std::sync::Arc::ptr_eq(
+            close.progress.as_ref().unwrap(),
+            &task
+        ));
+        assert_eq!(
+            finish_report(&owner.state.close, &mut progress).unwrap_err(),
+            Denial::Busy
+        );
+        assert_eq!(progress.report.as_ref().unwrap() as *const _, report);
+        drop(progress);
+        // A normal Busy return from close itself has no restoration lock or
+        // lost task: the lifecycle guard is deliberately still held here.
+        assert_eq!(
+            close_owner(&owner.state, &request).unwrap_err(),
+            Denial::Busy
+        );
+        drop(close);
+        cancel.cancel();
+        let report = close_owner(&owner.state, &request).unwrap();
+        assert_eq!(report.released_product_head_pins(), 0);
+        assert_eq!(
+            owner.lifecycle_observation(),
+            crate::lifecycle::RuntimeWorldOwnerLifecycleObservation::Closed
+        );
+    }
+    #[test]
+    fn close_poison_retains_actual_task_and_never_restores_serving() {
+        let (_fixture, owner) = owner();
+        let policy = crate::test_execution_policy::serial_request();
+        let request = ExecutionRequest::serial(&policy);
+        admit(&owner.state, &request).unwrap();
+        let task = owner
+            .state
+            .close
+            .lock()
+            .unwrap()
+            .progress
+            .as_ref()
+            .unwrap()
+            .clone();
+        let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _drive = task.try_lock().unwrap();
+            panic!("actual close task unwind");
+        }));
+        assert!(panic.is_err());
+        assert_eq!(
+            close_owner(&owner.state, &request).unwrap_err(),
+            Denial::CloseProgressPoisoned
+        );
+        let close = owner.state.close.lock().unwrap();
+        assert_eq!(close.state(), RuntimeWorldCloseState::Closing);
+        assert!(std::sync::Arc::ptr_eq(
+            close.progress.as_ref().unwrap(),
+            &task
         ));
     }
-    Ok((rows, recovered))
-}
-
-/// One report row per record, carrying the record's own live obligations. The
-/// split is the record's, read as it stands: the report never re-derives a
-/// count it could contradict.
-fn describe(effects: &ProductUnpublishedOwnerEffects) -> RuntimeWorldRetainedRecordReport {
-    RuntimeWorldRetainedRecordReport::new(
-        effects.identity().clone(),
-        effects.cause(),
-        effects.live_obligations(),
-        effects.next_actions().to_vec(),
-    )
-}
-
-/// Release every exact component pin that no live dependency and no component
-/// owner lease still holds. The count is what the registry actually reclaimed.
-fn release_reclaimable_component_pins<D, I, E, Ctx, T>(
-    state: &RuntimeWorldOwnerState<D, I, E, Ctx, T>,
-) -> usize
-where
-    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
-    I: Copy + Ord + Send + Sync + 'static,
-    T: Copy + Ord + Send + Sync + 'static,
-{
-    let live = state.retention.unique_pin_count();
-    state.retention.reclaim(live).reclaimed()
 }

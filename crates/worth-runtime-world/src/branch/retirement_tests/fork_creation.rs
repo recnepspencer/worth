@@ -181,7 +181,9 @@ pub(super) fn seed_relational_source(
         &cell,
         CompositeLateCancellationPosture::NotRequested,
     ) {
-        crate::publication::RuntimeWorldPublicationOutcome::Performed(_) => {}
+        crate::publication::RuntimeWorldPublicationOutcome::Performed(value) => {
+            drop(value.consume())
+        }
         other => panic!("source seed must publish: {other:?}"),
     }
     drop(initial);

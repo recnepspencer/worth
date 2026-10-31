@@ -18,13 +18,4 @@ impl CompositeHistoryCatalog {
             })
             .collect()
     }
-
-    pub(crate) fn has_undelivered_publication(&self) -> bool {
-        let state = lock_state(&self.state);
-        state.entries.values().any(|slot| {
-            slot.get()
-                .and_then(|entry| entry.publication.as_ref())
-                .is_some_and(|publication| publication.awaits_delivery())
-        })
-    }
 }

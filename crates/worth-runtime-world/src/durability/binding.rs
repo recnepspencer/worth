@@ -84,13 +84,19 @@ impl WorldDurableMediumBinding {
             .barrier
             .is_some()
     }
-    pub(crate) fn publication_unsettled(&self) -> bool {
-        let gates = self.gates.lock().unwrap_or_else(|e| e.into_inner());
+    pub(crate) fn try_admit_close(&self) -> Result<(), crate::lifecycle::RuntimeWorldCloseDenial> {
+        use crate::lifecycle::RuntimeWorldCloseDenial as Denial;
+        let gates = self.gates.try_lock().map_err(|_| Denial::Busy)?;
         if gates.branches.in_caller || gates.custody.in_caller || gates.occurrences.in_caller {
-            return true;
+            return Err(Denial::DurablePublicationUnsettled);
         }
-        drop(gates);
-        self.medium.publication_task_posture() == super::WorldPublicationTaskPosture::Unsettled
+        match self.medium.publication_task_posture() {
+            super::WorldPublicationTaskPosture::Busy => Err(Denial::Busy),
+            super::WorldPublicationTaskPosture::Unsettled => {
+                Err(Denial::DurablePublicationUnsettled)
+            }
+            super::WorldPublicationTaskPosture::Terminal => Ok(()),
+        }
     }
     pub(crate) fn publish(
         self: &Arc<Self>,

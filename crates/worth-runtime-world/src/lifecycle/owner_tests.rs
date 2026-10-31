@@ -202,14 +202,20 @@ fn close_is_typed_and_prevents_a_later_bootstrap() {
         RuntimeWorldClock::from_source(FixedClock),
     ))
     .expect("managed owner construction");
-    assert!(owner.close().is_ok());
+    assert!(owner
+        .close(&worth_execution::ExecutionRequest::serial(
+            &crate::test_execution_policy::serial_request()
+        ))
+        .is_ok());
     assert_eq!(
         owner.lifecycle_observation(),
         RuntimeWorldOwnerLifecycleObservation::Closed
     );
     assert_eq!(
         owner
-            .close()
+            .close(&worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request()
+            ))
             .expect_err("a closed owner cannot close twice"),
         RuntimeWorldCloseDenial::AlreadyClosed
     );
@@ -241,7 +247,11 @@ fn closed_owner_rejects_preparation_without_consuming_capacity() {
         owner.state.retention.reserved_unique_pin_capacity(),
         owner.state.publication_capacity.active(),
     );
-    let _report = owner.close().expect("owner closes while idle");
+    let _report = owner
+        .close(&worth_execution::ExecutionRequest::serial(
+            &crate::test_execution_policy::serial_request(),
+        ))
+        .expect("owner closes while idle");
     let denied = crate::lifecycle::RuntimeWorldPreparationService::prepare_publication(
         &owner,
         expected,
@@ -303,9 +313,11 @@ fn owner_reservation_owns_all_real_capacity_and_drops_it_as_one_attempt() {
     assert_eq!(owner.state.operation.active(), 1);
     assert_eq!(
         owner
-            .close()
+            .close(&worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request()
+            ))
             .expect_err("a live attempt blocks the close drain"),
-        RuntimeWorldCloseDenial::AlreadyClosing
+        RuntimeWorldCloseDenial::InFlightCriticalSection
     );
     drop(attempt);
     assert_eq!(owner.state.history.reserved_len(), 0);

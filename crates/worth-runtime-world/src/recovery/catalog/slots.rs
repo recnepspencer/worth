@@ -34,6 +34,10 @@ pub(super) struct RecoveryRecordSlots {
 }
 
 impl RecoveryRecordSlots {
+    pub(super) fn occupied_len(&self) -> usize {
+        self.index.len()
+    }
+
     pub(super) const fn metadata_charge_hint() -> usize {
         std::mem::size_of::<RecoverySlot>()
             + std::mem::size_of::<ProductUnpublishedOwnerEffectsIdentity>()

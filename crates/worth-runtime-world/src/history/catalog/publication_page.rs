@@ -1,4 +1,5 @@
 //! Bounded read-only traversal of canonical performed publication envelopes.
+mod close_admission;
 
 use std::num::NonZeroUsize;
 use std::ops::Bound;

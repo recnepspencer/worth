@@ -22,6 +22,11 @@ pub(crate) struct OwnerCreatedComponentCustodyRegistry {
 }
 
 impl OwnerCreatedComponentCustodyRegistry {
+    pub(crate) fn try_has_close_custody(&self) -> Result<bool, ()> {
+        let state = self.state.try_lock().map_err(|_| ())?;
+        Ok(state.reserved != 0 || !state.installed.is_empty())
+    }
+
     pub(crate) fn new(maximum: RuntimeWorldBudgetLimit) -> Self {
         Self {
             state: Arc::new(Mutex::new(CustodyRegistryState {
@@ -106,16 +111,6 @@ impl OwnerCreatedComponentCustodyRegistry {
                 index += 1;
             }
         }
-    }
-
-    /// Take every record still charged against this registry. Close drains
-    /// custody exactly once and reports the typed work it drained; a record
-    /// left installed behind a closed owner would be a component branch nobody
-    /// is named as owing, so the drain empties the registry rather than
-    /// reading it.
-    pub(crate) fn take_all_installed(&self) -> Vec<OwnerCreatedComponentCustodyRecord> {
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        std::mem::take(&mut state.installed)
     }
 
     /// Every record still charged against this registry, in installation order.

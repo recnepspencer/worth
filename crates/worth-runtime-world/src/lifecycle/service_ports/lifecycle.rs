@@ -36,12 +36,17 @@ impl RuntimeWorldLifecyclePort {
     }
     pub fn close(
         &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         super::super::RuntimeWorldCloseReport,
         super::super::RuntimeWorldServiceDenial<super::super::RuntimeWorldCloseDenial>,
     > {
-        self.service()?
-            .close()
+        // Close alone may reach the SAME owner in Closing to resume its task.
+        // All ordinary operations continue using service() and require Open.
+        self.owner
+            .upgrade()
+            .ok_or_else(RuntimeWorldOwnerUnavailable::new)?
+            .close(request)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
     /// Automatically retires changed, unprotected history interiors throughout

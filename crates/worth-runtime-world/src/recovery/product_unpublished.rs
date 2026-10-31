@@ -188,9 +188,6 @@ impl ProductUnpublishedOwnerEffects {
 
     /// The same count divided by scope, for a report that must never
     /// contradict the record it describes.
-    pub(crate) fn live_obligations(&self) -> ProductUnpublishedLiveObligations {
-        self.record.live_obligations
-    }
 
     pub fn cause(&self) -> ProductUnpublishedCause {
         self.record.cause

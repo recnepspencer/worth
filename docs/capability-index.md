@@ -1034,6 +1034,16 @@ its complete associated-effect inventory. Failed admission returns
 slot; `into_home` explicitly cleans up refused component custody and returns
 that Native-readmitted Home. Attached memory bootstrap, legacy publication and
 branch mutation doors refuse before effects.
+World lifecycle `close(request)` uses the caller's original request, nonwaiting
+admission, and the existing publication frontier. Before sealing, contention or
+interruption preserves Open. After sealing, the same retained task owns each
+extracted head, its populated history slot, retirement phases and report;
+interruption preserves Closing. Ordinary weak ports stay unavailable while the
+close-only weak port can retry that same task. Unresolved business, pending
+bootstrap and owner-created component retirement custody refuse before sealing.
+This minimum also refuses Directory custody without a qualified durable handoff;
+it does not claim full request-aware Home or Native snapshot cleanup.
+
 The consuming `seal_world` retains the actual World close report and advances
 the same World-owned result cleanup before dropping World. A refused seal
 retries through `try_seal_world`. Host can then release its Query observations

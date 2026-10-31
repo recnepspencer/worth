@@ -135,7 +135,7 @@ where
             .world_publications
             .settle_for_close(&self.home.context.serving);
         if self.home.context.world_close_report.is_none() {
-            let report = match self.world.lifecycle_port().close() {
+            let report = match self.world.lifecycle_port().close(request) {
                 Ok(report) => report,
                 Err(cause) => {
                     return Err(WorldHomeCloseRefused {

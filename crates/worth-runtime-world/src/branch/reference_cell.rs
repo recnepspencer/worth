@@ -14,6 +14,7 @@ pub(crate) use protection::{
     ProductBranchHeadProtection, ProductBranchHeadProtectionAdmissionFailure,
 };
 
+mod close;
 mod durable_movement;
 mod protection;
 use durable_movement::ProductMovementPhase;

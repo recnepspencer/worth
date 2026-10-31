@@ -40,7 +40,8 @@ fn budgets(maximum_recovery_records: u64) -> RuntimeWorldBudgets {
         },
         history: RuntimeWorldHistoryBudgetInstallation {
             retained_composite_commits: 4,
-            history_metadata_bytes: 4096,
+            // Root plus the genuine canonical publication exceeds the old 4096 ceiling.
+            history_metadata_bytes: 8192,
         },
         observations: RuntimeWorldObservationBudgetInstallation {
             active_observations: 1,
@@ -116,7 +117,13 @@ pub(super) fn relational_attempt(
         &cancellation.token(),
         None,
     )
-    .expect("the owner prepares and reserves the exact relational recovery attempt")
+    .unwrap_or_else(|refused| {
+        panic!(
+            "recovery reservation {:?}; actual history {:?}",
+            refused.cause(),
+            owner.state.history.metadata_ledger()
+        )
+    })
     .into_attempt()
 }
 

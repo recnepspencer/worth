@@ -108,7 +108,9 @@ fn assert_close_denied_before_any_record(owner: &super::TestOwner) {
     );
     assert_eq!(
         owner
-            .close()
+            .close(&worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request()
+            ))
             .expect_err("the recovering reservation alone must deny close"),
         RuntimeWorldCloseDenial::InFlightCriticalSection,
         "the recovering reservation alone must deny close before the record exists"
@@ -131,11 +133,8 @@ fn assert_retained_custody_survives_the_reservation(
     assert_eq!(owner.state.operation.active(), 0);
     assert_eq!(recovery_active(owner), 0);
     assert_eq!(owner.recovery_record_count(), 1);
-    // SPEC-P4-008: the reservation's denial ends with the reservation. The
-    // installed record it left behind is exposed by close rather than refused,
-    // and that exposure is pinned by
-    // `close_exposes_every_retained_record_in_its_terminal_report`, so this
-    // proof keeps its world open for the cleanup step below.
+    // The same installed business custody now refuses Memory teardown until
+    // actual explicit cleanup; report rows cannot replace its capabilities.
     assert_eq!(
         owner.state.branches.reserved_branch_count(),
         0,
@@ -157,7 +156,9 @@ fn assert_cleanup_reopens_close(owner: &super::TestOwner, effects: ProductUnpubl
     );
     assert_eq!(owner.recovery_record_count(), 0);
     let _report = owner
-        .close()
+        .close(&worth_execution::ExecutionRequest::serial(
+            &crate::test_execution_policy::serial_request(),
+        ))
         .expect("cleanup removes the final recovery close obligation");
     assert_eq!(
         owner.lifecycle_observation(),

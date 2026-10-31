@@ -1,5 +1,6 @@
 mod admission;
 mod ancestry;
+mod close_admission;
 mod counters;
 mod denial;
 mod entry;

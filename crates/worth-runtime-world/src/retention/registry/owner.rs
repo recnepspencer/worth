@@ -28,6 +28,7 @@ use super::{RetentionCostSnapshot, RetentionObligationDenial};
 
 mod acquisition;
 mod batch_acquisition;
+#[cfg(test)]
 mod canonical_reclamation;
 mod capacity_reservation;
 mod claim_lifecycle;
@@ -284,6 +285,7 @@ where
         self.lock().active_obligations
     }
 
+    #[cfg(test)]
     pub(crate) fn unique_pin_count(&self) -> usize {
         self.lock().unique_slots
     }

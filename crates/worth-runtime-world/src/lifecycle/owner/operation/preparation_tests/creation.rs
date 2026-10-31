@@ -160,7 +160,11 @@ fn closed_owner_rejects_creation_preparation_without_consuming_capacity() {
         RuntimeWorldBranchAdmissionDenial::PlansOmitted
     );
 
-    let _report = owner.close().expect("owner closes while idle");
+    let _report = owner
+        .close(&worth_execution::ExecutionRequest::serial(
+            &crate::test_execution_policy::serial_request(),
+        ))
+        .expect("owner closes while idle");
     let denied = prepare(owner.as_ref(), &source, fork_both_intent("closed-child"))
         .expect_err("a closed owner cannot prepare a creation");
     assert_eq!(denied, RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);

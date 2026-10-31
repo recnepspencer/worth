@@ -100,6 +100,7 @@ pub enum WorldPublicationObservation {
 }
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum WorldPublicationTaskPosture {
+    Busy,
     Unsettled,
     Terminal,
 }

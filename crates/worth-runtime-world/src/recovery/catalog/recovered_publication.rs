@@ -1,5 +1,4 @@
 use super::*;
-use crate::recovery::recovered_publication::RecoveredNativeCustody;
 use crate::recovery::{
     RecoveredWorldPublicationInputs, RecoveredWorldPublicationRecord,
     WorldRecoveredUnpublishedEffects,
@@ -18,35 +17,6 @@ impl ReservedProductUnpublishedSlot {
 }
 
 impl ProductUnpublishedRecoveryCatalog {
-    pub(crate) fn recovered_close_report(
-        &self,
-        handle: &ProductUnpublishedRecoveryHandle,
-    ) -> Option<crate::lifecycle::RuntimeWorldRecoveredCustodyReport> {
-        if handle.catalog_affinity() != self.affinity() {
-            return None;
-        }
-        let record = {
-            let state = self.locked_state();
-            match state.slots.get(handle.identity()) {
-                Some(RecoveryEntry::Recovered(record)) => record.clone(),
-                _ => return None,
-            }
-        };
-        let native_receipt = match &*record.native.lock().unwrap_or_else(|e| e.into_inner()) {
-            RecoveredNativeCustody::Relational(native) => {
-                Some(native.custody().effect().subject().receipt().clone())
-            }
-            RecoveredNativeCustody::OpenOnly => None,
-            RecoveredNativeCustody::Released => unreachable!("released records leave the catalog"),
-        };
-        Some(crate::lifecycle::RuntimeWorldRecoveredCustodyReport {
-            identity: record.identity.clone(),
-            attempt: record.attempt.clone(),
-            commit: record.commit.clone(),
-            native_receipt,
-        })
-    }
-
     pub(crate) fn owned_relational_results(
         &self,
     ) -> Vec<Arc<worth_relational::facade::transactions::CommitResult>> {

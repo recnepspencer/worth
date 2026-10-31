@@ -5,10 +5,7 @@ use worth_relational::facade::mvcc::RelationalTransactionIntent;
 use crate::branch::reference_test_fixture::{self, RealReferenceFixture};
 use crate::branch::ProductBranchObservation;
 use crate::branch::ProductBranchReferenceSnapshot;
-use crate::lifecycle::{
-    RuntimeWorldObservationService, RuntimeWorldOwnerExecutionService,
-    RuntimeWorldPreparationService, RuntimeWorldProductPublicationService,
-};
+use crate::lifecycle::{RuntimeWorldOwnerExecutionService, RuntimeWorldPreparationService};
 use crate::publication::{
     CompositeAttemptProgress, RelationalAttemptProgress, SignalAttemptProgress,
 };
@@ -52,33 +49,6 @@ fn setup_with_budgets(
         }
     };
     (fixture, owner, performed.product_branch().clone())
-}
-
-pub(super) fn setup_with_relational_source(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> (
-    RealReferenceFixture,
-    Arc<TestOwner>,
-    ProductBranchObservation,
-) {
-    let (fixture, owner, expected) = setup();
-    let ready = ready_relational_publication(execution, &fixture, &owner, expected.clone());
-    let cell = owner.state.branches.root_cell().expect("bootstrapped cell");
-    match RuntimeWorldProductPublicationService::publish(
-        owner.as_ref(),
-        ready,
-        &cell,
-        CompositeLateCancellationPosture::NotRequested,
-    ) {
-        RuntimeWorldPublicationOutcome::Performed(_) => {}
-        other => panic!("the canonical seed publishes its product head: {other:?}"),
-    }
-    let expected = RuntimeWorldObservationService::observe_product_branch(
-        owner.as_ref(),
-        &expected.branch_identity().clone(),
-    )
-    .expect("the owner re-observes the published source basis");
-    (fixture, owner, expected)
 }
 
 pub(super) fn prepare_relational(

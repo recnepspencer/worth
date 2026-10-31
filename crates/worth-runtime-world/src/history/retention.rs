@@ -20,6 +20,7 @@ pub(in crate::history) struct CompositeHistoryProtectionObligation {
     reachability: HistoryReachabilityHandle,
     identity: CompositeCommitIdentity,
     class: HistoryProtectionClass,
+    released: bool,
 }
 
 impl std::fmt::Debug for CompositeHistoryProtectionObligation {
@@ -34,6 +35,9 @@ impl std::fmt::Debug for CompositeHistoryProtectionObligation {
 
 impl Drop for CompositeHistoryProtectionObligation {
     fn drop(&mut self) {
+        if self.released {
+            return;
+        }
         let mut reachability = lock_index(&self.reachability);
         reachability.decrement_direct_protection(&self.identity);
     }
@@ -49,6 +53,7 @@ impl CompositeHistoryProtectionObligation {
             reachability,
             identity,
             class,
+            released: false,
         }
     }
 }
@@ -82,6 +87,19 @@ impl std::fmt::Debug for ProductHeadHistoryProtectionObligation {
 }
 
 impl ProductHeadHistoryProtectionObligation {
+    /// Retire the exact head under the History owner's complete nonwaiting
+    /// transaction. A refusal leaves both this obligation and its Drop armed.
+    pub(crate) fn try_retire_for_close(&mut self) -> Result<(), ()> {
+        if self.protection.released {
+            return Ok(());
+        }
+        let mut index = self.protection.reachability.try_lock().map_err(|_| ())?;
+        index.try_retire_product_head(&self.protection.identity, self.seated)?;
+        self.seated = false;
+        self.protection.released = true;
+        Ok(())
+    }
+
     pub(in crate::history) fn issued(protection: CompositeHistoryProtectionObligation) -> Self {
         debug_assert_eq!(protection.class, HistoryProtectionClass::ProductHead);
         Self {
