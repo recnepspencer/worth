@@ -52,7 +52,8 @@ pub use managed_index::{
     WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceChange,
     WorthQueryManagedIndexSourceRow, WorthQueryManagedIndexSourceRows,
     WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop,
-    WorthQueryManagedIndexSummarySources, WorthQueryManagedIndexWorkDenial,
+    WorthQueryManagedIndexSummarySources, WorthQueryManagedIndexTextReadDenial,
+    WorthQueryManagedIndexWorkDenial,
 };
 mod native_access;
 pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQueryNativeAccess;

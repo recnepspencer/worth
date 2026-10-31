@@ -26,7 +26,10 @@ mod source_completion;
 mod source_dependencies;
 mod source_image;
 mod source_order;
+mod source_row;
 mod source_rows;
+mod source_text;
+pub use source_row::{WorthQueryManagedIndexSourceRow, WorthQueryManagedIndexTextReadDenial};
 pub(in crate::domain_computation::primary_graph) use source_rows::SourceImageView;
 mod source_structure;
 pub(in crate::domain_computation::primary_graph) use source::{
@@ -55,7 +58,7 @@ pub use nodes::{
 };
 pub use provider::{
     WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
-    WorthQueryManagedIndexSourceChange, WorthQueryManagedIndexSourceRow,
+    WorthQueryManagedIndexSourceChange,
 };
 pub use provider_failure::WorthQueryManagedIndexProviderFailure;
 pub use retention::WorthQueryManagedIndexLifecycle;

@@ -33,7 +33,8 @@ where
             .source_budget
             .map(|budget| control.under_source(budget));
         let control = source_control.as_ref().unwrap_or(control);
-        let sources = WorthQueryManagedIndexSourceRows::<S, I>::new(image, session, control);
+        let sources =
+            WorthQueryManagedIndexSourceRows::<S, I>::new(image, session, control, *execution);
         let capacity = provider_result(
             execution,
             control,

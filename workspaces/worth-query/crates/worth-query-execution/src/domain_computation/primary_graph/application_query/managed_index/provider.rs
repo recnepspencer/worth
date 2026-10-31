@@ -3,8 +3,8 @@ use super::{
     WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
     WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeRegion,
     WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
-    WorthQueryManagedIndexProviderStop, WorthQueryManagedIndexSourceRows,
-    WorthQueryManagedIndexSummarySources,
+    WorthQueryManagedIndexProviderStop, WorthQueryManagedIndexSourceRow,
+    WorthQueryManagedIndexSourceRows, WorthQueryManagedIndexSummarySources,
 };
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding,
@@ -29,11 +29,6 @@ impl WorthQueryManagedIndexSourceChange {
 
 /// The actual declared probe codec's domain value.
 pub type WorthQueryManagedIndexProbeValue<S, I> = <<I as ApplicationManagedIndexBinding<S>>::ProbeBinding as ApplicationScalarValueBinding>::Value;
-/// One actual Source row selected by Query's complete traversal.
-pub type WorthQueryManagedIndexSourceRow<'a, S, I> = super::super::WorthQueryApplicationProjectionRow<
-    'a, S, <<I as ApplicationManagedIndexBinding<S>>::SourceBinding as worth_query_declaration::facade::application_query::ApplicationQueryBinding<S>>::Query,
->;
-
 /// Pure controlled mechanics over finite framework storage and genuine source slots.
 /// No callback returns a root object, entity handle, permission or completeness proof.
 pub trait WorthQueryManagedIndexProvider<S, I>: Send + Sync + 'static

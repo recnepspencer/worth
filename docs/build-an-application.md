@@ -5593,6 +5593,16 @@ installs the matching pure provider with `setup.managed_index::<Index, _>(provid
 Providers borrow disclosed, query-bound Source rows and finite node/candidate
 writers; they receive no mutation handle or reusable read permission.
 
+For repeated required String reads, use
+`row.with_text(name_selector, |name| name.starts_with("al"))`. Nested callbacks
+can compare two rows while borrowing their decoded text. Query keeps this memo
+inside one actual Source image and provider invocation; before/after images
+remain separate. Each use still checks the current request, disclosed field
+contract and installed Rust binding. The text cannot escape its callback; return
+an owned result such as a boolean or ordering. A text read returns either a
+projection denial or the original controlled stop.
+
+
 Source queries have no parameters and must have Public authorization and Public
 disclosure without capability or rule governance. Parent queries may use Public
 or Governed disclosure, with their own installed READ ability and capability

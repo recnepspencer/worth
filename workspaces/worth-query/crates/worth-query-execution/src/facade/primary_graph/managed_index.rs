@@ -10,5 +10,6 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceChange,
     WorthQueryManagedIndexSourceRow, WorthQueryManagedIndexSourceRows,
     WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop,
-    WorthQueryManagedIndexSummarySources, WorthQueryManagedIndexWorkDenial,
+    WorthQueryManagedIndexSummarySources, WorthQueryManagedIndexTextReadDenial,
+    WorthQueryManagedIndexWorkDenial,
 };

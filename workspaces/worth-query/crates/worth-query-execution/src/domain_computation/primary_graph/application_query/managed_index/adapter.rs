@@ -105,7 +105,8 @@ where
                         WorthQueryManagedIndexStop::ForeignNode,
                     )
                 })?;
-            let source = WorthQueryManagedIndexSourceRows::<S, I>::new(image, session, control);
+            let source =
+                WorthQueryManagedIndexSourceRows::<S, I>::new(image, session, control, *execution);
             use worth_query_declaration::facade::application_query::ApplicationManagedIndexMembership as Membership;
             let complete = I::MEMBERSHIP != Membership::Candidates;
             if complete {
@@ -221,8 +222,10 @@ where
             let retained = nodes
                 .downcast_ref::<node_backing::ProviderNodeBacking<S, I, P>>()
                 .ok_or_else(|| control.refuse(WorthQueryManagedIndexStop::ForeignNode))?;
-            let before = WorthQueryManagedIndexSourceRows::<S, I>::new(before, decode, control);
-            let after = WorthQueryManagedIndexSourceRows::<S, I>::new(after, decode, control);
+            let before =
+                WorthQueryManagedIndexSourceRows::<S, I>::new(before, decode, control, *execution);
+            let after =
+                WorthQueryManagedIndexSourceRows::<S, I>::new(after, decode, control, *execution);
             let proposed_capacity = provider_result(
                 execution,
                 control,

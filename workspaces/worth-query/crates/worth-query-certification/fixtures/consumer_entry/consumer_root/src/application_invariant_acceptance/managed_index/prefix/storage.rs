@@ -11,15 +11,6 @@ pub(super) struct Build<'call, 'source, 'node, 'control> {
 fn invalid() -> Stop {
     Stop::Domain(PrefixIndexDenial::InvalidTopology)
 }
-fn name(
-    sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
-    slot: WorthQueryManagedIndexSourceSlot,
-) -> Result<String, Stop> {
-    let row = sources.get(slot)?;
-    // Actual codec refusals are latched by the framework invocation before this
-    // structural adapter refusal can become its final domain result.
-    row.field(query::name()).map_err(|_| invalid())
-}
 impl PrefixBuildStorage for Build<'_, '_, '_, '_> {
     type Id = WorthQueryManagedIndexNodeId;
     type Source = WorthQueryManagedIndexSourceSlot;
@@ -32,14 +23,18 @@ impl PrefixBuildStorage for Build<'_, '_, '_, '_> {
         left: Self::Source,
         right: Self::Source,
     ) -> Result<std::cmp::Ordering, Stop> {
-        let a = name(self.sources, left)?;
-        let b = name(self.sources, right)?;
-        // Text meaning belongs to the pure owner. The issued material slot
-        // breaks text ties without reducing a full-generation key to an ordinal.
-        compare_prefix_keys(&a, 0, &b, 0, |units| {
-            self.control.checkpoint(units).map_err(Into::into)
+        let a = self.sources.get(left)?;
+        let b = self.sources.get(right)?;
+        a.with_text(query::name(), |a| {
+            b.with_text(query::name(), |b| {
+                compare_prefix_keys(a, 0, b, 0, |units| {
+                    self.control.checkpoint(units).map_err(Into::into)
+                })
+                .map(|order| order.then_with(|| left.cmp(&right)))
+            })
+            .map_err(text_denial)?
         })
-        .map(|order| order.then_with(|| left.cmp(&right)))
+        .map_err(text_denial)?
     }
     fn append(&mut self, node: Node) -> Result<Self::Id, Stop> {
         let id = self.nodes.push(node)?;

@@ -6,12 +6,6 @@ use worth_query_consumer_values::{
 type Bounds = PrefixSourceBounds<WorthQueryManagedIndexSourceSlot>;
 type Sources<'a, 'b> = WorthQueryManagedIndexSummarySources<'a, 'b, Catalog, PrefixIndex>;
 
-fn name(sources: &Sources<'_, '_>, slot: WorthQueryManagedIndexSourceSlot) -> Result<String, Stop> {
-    sources
-        .get(slot)?
-        .field(query::name())
-        .map_err(|_| Stop::Domain(PrefixIndexDenial::InvalidTopology))
-}
 pub(super) fn merge(
     parts: [Option<Bounds>; 3],
     sources: &Sources<'_, '_>,
@@ -23,12 +17,18 @@ pub(super) fn merge(
         result = Some(match result {
             None => bounds,
             Some(before) => join_prefix_bounds(before, bounds, |left, right| {
-                let a = name(sources, left)?;
-                let b = name(sources, right)?;
-                compare_prefix_keys(&a, 0, &b, 0, |units| {
-                    control.checkpoint(units).map_err(Stop::Controlled)
+                let a = sources.get(left)?;
+                let b = sources.get(right)?;
+                a.with_text(query::name(), |a| {
+                    b.with_text(query::name(), |b| {
+                        compare_prefix_keys(a, 0, b, 0, |units| {
+                            control.checkpoint(units).map_err(Stop::Controlled)
+                        })
+                        .map(|order| order.then_with(|| left.cmp(&right)))
+                    })
+                    .map_err(text_denial)?
                 })
-                .map(|order| order.then_with(|| left.cmp(&right)))
+                .map_err(text_denial)?
             })?,
         });
     }
@@ -40,10 +40,17 @@ pub(super) fn may_match(
     probe: &query::Probe,
     control: &WorthQueryManagedIndexControl<'_>,
 ) -> Result<bool, Stop> {
-    prefix_bounds_may_match(
-        &name(sources, bounds.lower)?,
-        &name(sources, bounds.upper)?,
-        &probe.prefix,
-        |units| control.checkpoint(units).map_err(Stop::Controlled),
-    )
+    let lower = sources.get(bounds.lower)?;
+    let upper = sources.get(bounds.upper)?;
+    lower
+        .with_text(query::name(), |lower| {
+            upper
+                .with_text(query::name(), |upper| {
+                    prefix_bounds_may_match(lower, upper, &probe.prefix, |units| {
+                        control.checkpoint(units).map_err(Stop::Controlled)
+                    })
+                })
+                .map_err(text_denial)?
+        })
+        .map_err(text_denial)?
 }

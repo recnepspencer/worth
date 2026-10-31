@@ -1966,6 +1966,16 @@ facades and displaced-path inventory is empty. Close only when both the integrat
 public candidate and its real private adoption pass; this is also the milestone's
 final acceptance gate.
 
+### Prefix text reuse slice (partial Phase 3)
+
+[Borrow-confined decoded Source text](milestone-9.19-prefix-text-reuse-plan.md)
+now uses one actual image/invocation memo, canonical carried field keys and actual
+shared installed descriptors. Each lending use retains field/disclosure, nominal
+binding and original request checks. Current public managed courts pass 49/49,
+Candidates 9/9, installation 8/8 and the owned-result/lifetime-escape twins pass.
+Ancestry reuse and prefix scale qualification remain open; this does not close
+Phase 3 or the remaining performance audit repairs.
+
 ## Performance Contract
 
 - Build, lookup, refinement, maintenance, dependency routing, verification,

@@ -16,6 +16,9 @@ mod storage;
 pub(super) mod structure;
 #[path = "prefix/summary.rs"]
 mod summary;
+#[cfg(test)]
+#[path = "prefix/text_read.rs"]
+mod text_read;
 pub struct PrefixIndex;
 // compiled-example: begin
 impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
@@ -34,8 +37,24 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
 // compiled-example: end
 pub type Node = PrefixNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot>;
 pub type Stop = WorthQueryManagedIndexProviderStop<PrefixIndexDenial>;
+fn text_denial(cause: WorthQueryManagedIndexTextReadDenial) -> Stop {
+    match cause {
+        WorthQueryManagedIndexTextReadDenial::Controlled(cause) => Stop::Controlled(cause),
+        WorthQueryManagedIndexTextReadDenial::Projection(_) => {
+            Stop::Domain(PrefixIndexDenial::InvalidTopology)
+        }
+    }
+}
 #[derive(Default)]
 pub struct Calls {
+    #[cfg(test)]
+    pub inspect_text: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub wrong_text_binding: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub text_reads: AtomicUsize,
+    #[cfg(test)]
+    pub after_text: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     #[cfg(test)]
     pub summary_read_first: std::sync::atomic::AtomicBool,
     #[cfg(test)]
@@ -86,10 +105,14 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
     fn source_summary(
         &self,
         slot: WorthQueryManagedIndexSourceSlot,
-        _row: WorthQueryManagedIndexSourceRow<'_, Catalog, PrefixIndex>,
+        row: WorthQueryManagedIndexSourceRow<'_, Catalog, PrefixIndex>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, Stop> {
         control.checkpoint(1)?;
+        #[cfg(test)]
+        text_read::inspect(&self.0, &row)?;
+        #[cfg(not(test))]
+        let _ = row;
         Ok(worth_query_consumer_values::PrefixSourceBounds::point(slot))
     }
     fn merge_summaries(
@@ -100,13 +123,16 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
     ) -> Result<Self::Summary, Stop> {
         #[cfg(test)]
         if self.0.summary_read_first.load(Ordering::SeqCst) {
-            sources.get(
-                self.0
-                    .first_source
-                    .lock()
-                    .unwrap()
-                    .expect("the build observed a genuine slot"),
-            )?;
+            sources
+                .get(
+                    self.0
+                        .first_source
+                        .lock()
+                        .unwrap()
+                        .expect("the build observed a genuine slot"),
+                )?
+                .with_text(query::name(), |_| ())
+                .map_err(text_denial)?;
         }
         summary::merge(parts, sources, control)
     }
@@ -282,12 +308,13 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
         probe: &query::Probe,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, Stop> {
-        let name = row
-            .field(query::name())
-            .map_err(|_| Stop::Domain(PrefixIndexDenial::InvalidTopology))?;
-        let order = worth_query_consumer_values::prefix_order(&name, &probe.prefix, |units| {
-            control.checkpoint(units).map_err(Stop::Controlled)
-        })?;
+        let order = row
+            .with_text(query::name(), |name| {
+                worth_query_consumer_values::prefix_order(name, &probe.prefix, |units| {
+                    control.checkpoint(units).map_err(Stop::Controlled)
+                })
+            })
+            .map_err(text_denial)??;
         let previous = self.0.matched_sources.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
         if previous == 1 {

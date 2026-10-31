@@ -11,8 +11,7 @@ use crate::domain_computation::primary_graph::{
 };
 use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
 use worth_query_declaration::facade::{
-    application_query::{ApplicationManagedIndexBinding, ApplicationQueryBinding},
-    application_schema::ApplicationSchema,
+    application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog;
 
@@ -51,6 +50,8 @@ pub struct WorthQueryManagedIndexSourceRows<
     I: ApplicationManagedIndexBinding<S>,
 > {
     image: SourceImageView<'a>,
+    text: super::source_text::SourceText,
+    execution: worth_execution::ExecutionRequest<'a, 'a>,
     decode: &'a ValueDecodeSession<'a>,
     control: &'a WorthQueryManagedIndexControl<'a>,
     marker: std::marker::PhantomData<fn() -> (S, I)>,
@@ -63,9 +64,12 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
         image: SourceImageView<'a>,
         decode: &'a ValueDecodeSession<'a>,
         control: &'a WorthQueryManagedIndexControl<'a>,
+        execution: worth_execution::ExecutionRequest<'a, 'a>,
     ) -> Self {
         Self {
             image,
+            text: super::source_text::SourceText::default(),
+            execution,
             decode,
             control,
             marker: std::marker::PhantomData,
@@ -86,11 +90,7 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
     ) -> Result<
         (
             WorthQueryManagedIndexSourceSlot,
-            WorthQueryApplicationProjectionRow<
-                '_,
-                S,
-                <I::SourceBinding as ApplicationQueryBinding<S>>::Query,
-            >,
+            super::WorthQueryManagedIndexSourceRow<'_, S, I>,
         ),
         Stop,
     > {
@@ -115,41 +115,42 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
                 (node, Some(entity))
             }
         };
-        Ok((
-            WorthQueryManagedIndexSourceSlot {
-                owner: self.image.owner,
-                ordinal: if entity.is_some() { 0 } else { ordinal },
-                entity,
-            },
-            WorthQueryApplicationProjectionRow::new(node, self.image.governance, self.decode),
-        ))
+        let slot = WorthQueryManagedIndexSourceSlot {
+            owner: self.image.owner,
+            ordinal: if entity.is_some() { 0 } else { ordinal },
+            entity,
+        };
+        Ok((slot, self.row(slot, node)))
     }
     pub fn get(
         &self,
         slot: WorthQueryManagedIndexSourceSlot,
-    ) -> Result<
-        WorthQueryApplicationProjectionRow<
-            '_,
-            S,
-            <I::SourceBinding as ApplicationQueryBinding<S>>::Query,
-        >,
-        Stop,
-    > {
+    ) -> Result<super::WorthQueryManagedIndexSourceRow<'_, S, I>, Stop> {
         self.validate(slot)?;
         match (self.image.rows, slot.entity) {
             (SourceImageRows::Maintained(rows), Some(entity)) => {
                 let node = rows
                     .get(entity)
                     .ok_or_else(|| self.control.refuse(Stop::SourceSlotUnavailable))?;
-                Ok(WorthQueryApplicationProjectionRow::new(
-                    node,
-                    self.image.governance,
-                    self.decode,
-                ))
+                Ok(self.row(slot, node))
             }
             (SourceImageRows::Completed { .. }, None) => self.at(slot.ordinal).map(|(_, row)| row),
             _ => Err(self.control.refuse(Stop::ForeignSourceSlot)),
         }
+    }
+    fn row<'row>(
+        &'row self,
+        slot: WorthQueryManagedIndexSourceSlot,
+        node: super::super::projection::WorthQueryApplicationDisclosedProjectionNode<'row>,
+    ) -> super::WorthQueryManagedIndexSourceRow<'row, S, I> {
+        super::WorthQueryManagedIndexSourceRow::new(
+            WorthQueryApplicationProjectionRow::new(node, self.image.governance, self.decode),
+            slot,
+            &self.text,
+            self.decode,
+            self.control,
+            self.execution,
+        )
     }
     pub(super) fn image(&self) -> SourceImageView<'a> {
         self.image

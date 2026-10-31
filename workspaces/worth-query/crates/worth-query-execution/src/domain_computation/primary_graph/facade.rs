@@ -189,10 +189,10 @@ pub use super::application_query::{
     WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceChange,
     WorthQueryManagedIndexSourceRow, WorthQueryManagedIndexSourceRows,
     WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop,
-    WorthQueryManagedIndexSummarySources, WorthQueryManagedIndexWorkDenial,
-    WorthQueryObservedResultSet, WorthQueryObservedSource, WorthQueryPendingSourceExpectation,
-    WorthQueryPrimaryGraphApplicationReadinessSnapshot, WorthQuerySourceExpectationDenial,
-    WorthQuerySourceExpectationDenialKind,
+    WorthQueryManagedIndexSummarySources, WorthQueryManagedIndexTextReadDenial,
+    WorthQueryManagedIndexWorkDenial, WorthQueryObservedResultSet, WorthQueryObservedSource,
+    WorthQueryPendingSourceExpectation, WorthQueryPrimaryGraphApplicationReadinessSnapshot,
+    WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
 };
 pub use super::application_runtime::{
     WorthQueryAdmittedInboundOccurrence, WorthQueryApplicationLiveDeliveryCloseReceipt,

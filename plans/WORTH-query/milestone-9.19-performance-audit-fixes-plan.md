@@ -20,7 +20,7 @@ Required repairs and current evidence:
 3. **Verified and independently cleared:** [Cold Source graph validation](milestone-9.19-cold-validation-plan.md): single DFS/BFS with visitation state, preserving
    Source bijection, connectivity/acyclicity and hostile/disconnected/skewed cases.
    Incremental checks continue for actual new edges.
-4. Prefix proof/key reuse: memoize within actual immutable invocation/root/version/
+4. **Partially implemented:** [Borrow-confined decoded text](milestone-9.19-prefix-text-reuse-plan.md) removes repeated String decoding/copying and owned selector-key construction from current prefix paths. Ancestry reuse and prefix scale evidence remain open. Prefix proof/key reuse: memoize within actual immutable invocation/root/version/
    receiving audience; preserve region restriction and per-use admission. Qualify
    prefix scale separately. Current fixture Source bound16 and observer bound8
    must be repaired before large complete-census tests; sparse Parent cap16 stays.

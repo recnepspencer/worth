@@ -175,6 +175,27 @@ where
         Slot::PORTABLE_TYPE_NAME
     }
 
+    /// Compare the complete required-field contract without constructing an owned key.
+    pub fn matches_slot_key(&self, key: &ApplicationQueryResultSlotKey) -> bool
+    where
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        Slot: WorthQueryPortableType,
+    {
+        key.matches_field(
+            Query::QUERY_TYPE_IDENTITY,
+            Slot::PORTABLE_TYPE_IDENTITY,
+            ApplicationQueryResultFieldSlotContract {
+                entity: self.entity,
+                aspect: self.aspect,
+                field: self.field,
+                output_name: self.output_name,
+                scalar_family: Field::Binding::SCALAR_FAMILY,
+                value_type: Field::Binding::IDENTITY,
+                presence: ApplicationQueryResultFieldPresence::Required,
+            },
+        )
+    }
+
     pub fn slot_key(&self) -> ApplicationQueryResultSlotKey
     where
         Query: ApplicationQueryMarkerIdentity<Schema>,
@@ -290,72 +311,4 @@ where
     }
 }
 
-impl<Query, Slot, Schema, Entity, Aspect, Field, Value, Write, Equality, Unit> Clone
-    for ApplicationQueryResultFieldRef<
-        Query,
-        Slot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >
-{
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<Query, Slot, Schema, Entity, Aspect, Field, Value, Write, Equality, Unit> Copy
-    for ApplicationQueryResultFieldRef<
-        Query,
-        Slot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >
-{
-}
-
-impl<Query, Slot, Schema, Entity, Aspect, Field, Value, Write, Equality, Unit> Clone
-    for ApplicationQueryOptionalResultFieldRef<
-        Query,
-        Slot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >
-{
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<Query, Slot, Schema, Entity, Aspect, Field, Value, Write, Equality, Unit> Copy
-    for ApplicationQueryOptionalResultFieldRef<
-        Query,
-        Slot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >
-{
-}
+mod copy;
