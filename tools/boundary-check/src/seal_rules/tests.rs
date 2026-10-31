@@ -141,6 +141,43 @@ fn certification_factory_callers_are_class_and_file_exact() {
         ("readmit_world_home", "world-home"),
         ("world_composition_runtime", "native-home-composition"),
         ("world_recovery_authority", "native-world-readmission"),
+        ("query_runtime_handle", "query-registered-native"),
+        ("prepare_home_program", "query-home-preparation"),
+        ("install_home_native_schema", "query-home-preparation"),
+        (
+            "finish_fresh_home_native_readmission",
+            "query-home-preparation",
+        ),
+        ("attach_home_registered_source", "query-home-preparation"),
+        ("attach_home_world", "query-home-preparation"),
+        (
+            "native_for_schema_installation",
+            "native-home-query-preparation",
+        ),
+        ("query_finalization_parts", "native-home-query-preparation"),
+        ("initialize_new_home", "native-home-query-preparation"),
+        ("query_composition_parts", "native-home-query-preparation"),
+        ("attach_unrecovered_home", "native-home-attachment"),
+        (
+            "home_schema_installation_runtime",
+            "native-home-schema-installation",
+        ),
+        (
+            "home_query_finalization_parts",
+            "native-home-query-finalization",
+        ),
+        (
+            "prepare_query_publication_without_signal",
+            "query-world-commit-preparation",
+        ),
+        (
+            "bind_query_native_proposal",
+            "query-world-commit-preparation",
+        ),
+        (
+            "complete_query_native_preparation",
+            "query-world-commit-preparation",
+        ),
     ] {
         let reference = format!("{factory}();");
         let mut input = Inputs::fixture(&[("app/src/lib.rs", &reference)], "");

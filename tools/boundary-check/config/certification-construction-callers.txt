@@ -4,6 +4,17 @@ world-home workspaces/worth-store/crates/worth-store-application/src/world_secti
 # D1: same Native owner Arc enters only the Home's private Bridge attachment.
 native-home-composition workspaces/worth-store/crates/worth-store-application/src/world_section/attachment.rs
 native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
+# D1/D17: only Host opening composes the consuming fresh-Home Query stages.
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening.rs
+# The source attachment derives Native custody from the actual registered source.
+query-registered-native workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner/attachment.rs
+# The actual Home retains raw Native custody through schema and Query preparation.
+native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening.rs
+native-home-attachment workspaces/worth-store/crates/worth-store-application/src/relational_preparation/attachment.rs
+native-home-schema-installation workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
+native-home-query-finalization workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unshared.rs
+# D4/D17: one Query commit owner retains pre-submit and Native preparation custody.
+query-world-commit-preparation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution.rs
 # cfg(test) original-binding custody court: two real bound queries versus the unbound query.
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_observation/declared_query/tests.rs
 # 9.18: native root disclosure court; fixture queries remain inside Execution certification.

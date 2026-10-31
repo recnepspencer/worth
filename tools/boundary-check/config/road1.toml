@@ -219,6 +219,7 @@ target = "worth-signal"
 # Leaf courts and testkits cannot become production construction callers.
 allowed_sources = [
   "worth-store",
+  "worth-store-application",
   "worth-store-court-recovery-runtime-replication-store-physical-blob-journeys",
   "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-durability-admission",
   "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views",
@@ -229,7 +230,7 @@ allowed_sources = [
   "worth-store-testkit-store",
   "worth-store-testkit-application-oracle",
 ]
-guidance = "physical Signal composition remains behind Store-owned construction ports; relocated courts consume vocabulary, while the application oracle retains the actual Signal owner for its real Home/World composition"
+guidance = "physical Signal composition remains behind Store-owned construction ports; Store Application composes the actual InitialEmpty Signal/Bridge assembly, relocated courts consume vocabulary, and the application oracle retains its actual Signal owner"
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
@@ -251,7 +252,7 @@ guidance = "M3 D1: only Query Host composes Store Application; other Query packa
 [[source_dependency_allowlists]]
 workspace_manifest = "workspaces/worth-query/Cargo.toml"
 sources = ["worth-query-host"]
-allowed_targets = ["worth-query-admission", "worth-query-declaration", "worth-query-execution", "worth-query-installation", "worth-query-publication", "worth-query-decl", "worth-runtime-bridge", "worth-execution", "worth-harness", "worth-foundational", "worth-relational", "worth-store-application"]
+allowed_targets = ["worth-query-admission", "worth-query-declaration", "worth-query-execution", "worth-query-installation", "worth-query-publication", "worth-query-decl", "worth-runtime-bridge", "worth-execution", "worth-harness", "worth-foundational", "worth-proof", "worth-relational", "worth-store-application"]
 guidance = "M3 D1: Host may compose only Store Application, never another Store implementation owner"
 
 [[source_identifier_denials]]

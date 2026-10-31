@@ -499,6 +499,8 @@ workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/cr
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/home_opening.rs
 workspaces/worth-store/crates/worth-store-relational/ workspaces/worth-store/crates/worth-store-application/src/home_controls_for_test.rs
 workspaces/worth-store/crates/worth-store-relational/ workspaces/worth-store/crates/worth-store-application/src/open/mod.rs
+# Actual receiver-owned read observation through the unshared Home attachment.
+workspaces/worth-store/crates/worth-store-relational/ workspaces/worth-store/crates/worth-store-application/src/relational_preparation/attachment.rs
 
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/support/open_refusals/declarations.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/relational/relational_home/schema_recovery/mod.rs

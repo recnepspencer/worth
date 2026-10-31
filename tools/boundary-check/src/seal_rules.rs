@@ -14,6 +14,22 @@ const FACTORIES: &[&str] = &[
     "readmit_world_home",
     "world_composition_runtime",
     "world_recovery_authority",
+    "query_runtime_handle",
+    "prepare_home_program",
+    "install_home_native_schema",
+    "finish_fresh_home_native_readmission",
+    "attach_home_registered_source",
+    "attach_home_world",
+    "native_for_schema_installation",
+    "query_finalization_parts",
+    "initialize_new_home",
+    "query_composition_parts",
+    "attach_unrecovered_home",
+    "home_schema_installation_runtime",
+    "home_query_finalization_parts",
+    "prepare_query_publication_without_signal",
+    "bind_query_native_proposal",
+    "complete_query_native_preparation",
 ];
 fn owner(input: &Inputs, path: &str) -> Option<String> {
     input
@@ -239,6 +255,56 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                     (
                         "native-home-composition",
                         "workspaces/worth-store/crates/worth-store-relational/",
+                    )
+                } else if *name == "query_runtime_handle" {
+                    ("query-registered-native", "crates/worth-runtime-bridge/")
+                } else if matches!(
+                    *name,
+                    "prepare_home_program"
+                        | "install_home_native_schema"
+                        | "finish_fresh_home_native_readmission"
+                        | "attach_home_registered_source"
+                        | "attach_home_world"
+                ) {
+                    (
+                        "query-home-preparation",
+                        "workspaces/worth-query/crates/worth-query-execution/",
+                    )
+                } else if matches!(
+                    *name,
+                    "native_for_schema_installation"
+                        | "query_finalization_parts"
+                        | "initialize_new_home"
+                        | "query_composition_parts"
+                ) {
+                    (
+                        "native-home-query-preparation",
+                        "workspaces/worth-store/crates/worth-store-application/",
+                    )
+                } else if *name == "attach_unrecovered_home" {
+                    (
+                        "native-home-attachment",
+                        "workspaces/worth-store/crates/worth-store-relational/",
+                    )
+                } else if *name == "home_schema_installation_runtime" {
+                    (
+                        "native-home-schema-installation",
+                        "workspaces/worth-store/crates/worth-store-relational/",
+                    )
+                } else if *name == "home_query_finalization_parts" {
+                    (
+                        "native-home-query-finalization",
+                        "workspaces/worth-store/crates/worth-store-relational/",
+                    )
+                } else if matches!(
+                    *name,
+                    "prepare_query_publication_without_signal"
+                        | "bind_query_native_proposal"
+                        | "complete_query_native_preparation"
+                ) {
+                    (
+                        "query-world-commit-preparation",
+                        "crates/worth-runtime-world/",
                     )
                 } else if *name == "readmit_world_home" {
                     ("world-home", "crates/worth-runtime-world/")
