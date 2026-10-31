@@ -69,6 +69,39 @@ impl crate::ApplicationHomeRequest {
 }
 
 impl crate::ReadmittedApplicationHome {
+    /// Observe the actual original input tickets, without allocating or quoting.
+    pub fn checkpoint_input_memory_bytes_for_test(&self) -> Option<u64> {
+        self.context.checkpoint.input_memory_bytes_for_test()
+    }
+    pub fn checkpoint_with_step_observer_for_test(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        observer: impl Fn(&worth_store::physical_runtime::AnchoredRecordStepRegistration) + Send + Sync,
+    ) -> Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial> {
+        crate::checkpoint::journey::checkpoint(
+            &self.context.serving,
+            &self.context.checkpoint,
+            execution,
+            || self.relational.prepare_checkpoint(execution),
+            Some(&observer),
+            None,
+        )
+    }
+
+    pub fn checkpoint_with_acknowledgement_observer_for_test(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        observer: impl Fn() + Send + Sync,
+    ) -> Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial> {
+        crate::checkpoint::journey::checkpoint(
+            &self.context.serving,
+            &self.context.checkpoint,
+            execution,
+            || self.relational.prepare_checkpoint(execution),
+            None,
+            Some(&observer),
+        )
+    }
     pub fn close_with_physical_observer_for_test(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -93,10 +126,15 @@ impl crate::ReadmittedApplicationHome {
         checkpoint: worth_relational::facade::durability::RelationalNativeCheckpoint,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial> {
-        crate::checkpoint::publication::checkpoint(&self.context.serving, execution, || {
-            self.relational
-                .prepare_captured_checkpoint_for_test(checkpoint, execution)
-        })
+        crate::checkpoint::publication::checkpoint(
+            &self.context.serving,
+            &self.context.checkpoint,
+            execution,
+            || {
+                self.relational
+                    .prepare_captured_checkpoint_for_test(checkpoint, execution)
+            },
+        )
     }
 
     pub fn abort_for_test(self) {

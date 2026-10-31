@@ -63,7 +63,7 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
             )
             .unwrap();
         let generation = published.version().generation();
-        prepared.select(published.membership());
+        source.select_members(published.version().generation(), published.members());
         generation
     };
     let initial = replace();

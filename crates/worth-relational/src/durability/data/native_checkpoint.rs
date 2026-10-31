@@ -20,6 +20,7 @@ pub struct RelationalNativeCheckpoint {
     members: Arc<[super::RelationalCheckpointMember]>,
     publications: Arc<[crate::storage::residency::RelationalCheckpointRegionPublication]>,
     manifest_publication: Option<crate::runtime::RelationalCheckpointManifestPublication>,
+    publication: Option<Arc<crate::durability::medium::CheckpointPublication>>,
 }
 
 /// What a captured checkpoint covers: its last commit position and its last
@@ -53,6 +54,7 @@ impl Clone for RelationalNativeCheckpoint {
             members: self.members.clone(),
             publications: self.publications.clone(),
             manifest_publication: self.manifest_publication.clone(),
+            publication: self.publication.clone(),
         }
     }
 }
@@ -86,6 +88,7 @@ impl RelationalNativeCheckpoint {
             members: Arc::from([]),
             publications: Arc::from([]),
             manifest_publication: None,
+            publication: None,
         }
     }
 
@@ -107,6 +110,7 @@ impl RelationalNativeCheckpoint {
             members: Arc::from([]),
             publications: Arc::from([]),
             manifest_publication: None,
+            publication: None,
         })
     }
 
@@ -128,16 +132,79 @@ impl RelationalNativeCheckpoint {
         self
     }
 
-    /// Confirm that the manifest and its complete member set were selected in
-    /// one durable publication. The home calls this only after that decision,
-    /// even if its subsequent physical checkpoint is interrupted.
-    pub fn acknowledge_publication(&self) {
-        if let Some(publication) = &self.manifest_publication {
-            publication.acknowledge();
+    /// Ask the attached medium about this original capture, then acknowledge
+    /// its actual selection. Progress remains owned across caller interruption.
+    pub fn acknowledge_selected(
+        &self,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
+        self.publication.as_ref().ok_or(crate::durability::medium::RelationalCheckpointAcknowledgementDenial::CaptureNotBound)?
+            .advance(context)
+    }
+
+    pub fn publication_subject(
+        &self,
+    ) -> Option<&crate::durability::medium::OpaqueCapturedCheckpointSubject> {
+        self.publication
+            .as_ref()
+            .map(|publication| publication.subject())
+    }
+
+    /// Admission of an adapter's actual read source precedes physical effects.
+    /// This does not certify selection or mint acknowledgement authority.
+    pub fn validate_publication_source(
+        &self,
+        source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
+        use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Denial;
+        if self.publication.is_none() {
+            return Err(Denial::CaptureNotBound);
         }
-        for publication in self.publications.iter() {
-            publication.acknowledge();
+        if !self
+            .manifest_publication
+            .as_ref()
+            .is_some_and(|publication| publication.source_matches(source))
+        {
+            return Err(Denial::ForeignSource);
         }
+        Ok(())
+    }
+
+    pub(crate) fn bind_publication(
+        mut self,
+        binding: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+    ) -> Self {
+        if let Some(binding) = binding
+            && self
+                .manifest_publication
+                .as_ref()
+                .is_some_and(|publication| publication.source_matches(&binding.cold_source()))
+        {
+            let subject = crate::durability::medium::OpaqueCapturedCheckpointSubject::new(
+                self.bytes.clone(),
+                self.region.clone(),
+                self.members.iter().map(|member| member.locator()).collect(),
+            );
+            self.publication = Some(Arc::new(
+                crate::durability::medium::CheckpointPublication::new(
+                    subject,
+                    Arc::downgrade(&binding),
+                    self.clone(),
+                ),
+            ));
+        }
+        self
+    }
+
+    pub(crate) fn manifest_publication(
+        &self,
+    ) -> Option<&crate::runtime::RelationalCheckpointManifestPublication> {
+        self.manifest_publication.as_ref()
+    }
+    pub(crate) fn region_publications(
+        &self,
+    ) -> &[crate::storage::residency::RelationalCheckpointRegionPublication] {
+        &self.publications
     }
 
     pub(crate) fn with_region_publications(
@@ -175,6 +242,7 @@ impl RelationalNativeCheckpoint {
             members: Arc::from([]),
             publications: Arc::from([]),
             manifest_publication: None,
+            publication: None,
             captured_sections: Some(sections),
             captured_coverage: Some(NativeCheckpointCoverage {
                 position,

@@ -20,11 +20,14 @@ pub struct ApplicationHomeRecoveryCustody {
     descriptor: crate::descriptor::HomeDescriptor,
     checkpoint: Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial>,
     physical: PhysicalCloseCustody,
+    native: Option<worth_store_relational::ClosingRelationalSection>,
+    checkpoint_owner: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
 }
 
 impl ApplicationHomeRecoveryCustody {
     pub(super) fn retained(
         context: crate::home_context::HomeContext,
+        native: worth_store_relational::ClosingRelationalSection,
         checkpoint: Result<
             crate::ApplicationHomeCheckpoint,
             crate::ApplicationHomeCheckpointDenial,
@@ -35,6 +38,8 @@ impl ApplicationHomeRecoveryCustody {
             descriptor: context.descriptor,
             checkpoint,
             physical: PhysicalCloseCustody::Retained(context.serving),
+            native: Some(native),
+            checkpoint_owner: context.checkpoint,
         }
     }
 
@@ -104,6 +109,28 @@ impl ApplicationHomeRecoveryCustody {
         execution: &ExecutionRequest<'_, '_>,
         start: PhysicalCloseStart,
     ) -> ApplicationHomeCloseOutcome {
+        if self.native.is_some() {
+            let PhysicalCloseCustody::Retained(serving) = &self.physical else {
+                unreachable!("Native teardown precedes physical close start")
+            };
+            use crate::checkpoint::close_settlement::{self, CloseCheckpointWaitDenial};
+            match close_settlement::settle(serving, &self.checkpoint_owner, execution) {
+                Ok(Some(checkpoint)) => self.checkpoint = checkpoint,
+                Ok(None) => {}
+                Err(CloseCheckpointWaitDenial::Interrupted(cause)) => {
+                    return self.refused(ApplicationHomeCloseDenial::Execution(cause))
+                }
+                Err(CloseCheckpointWaitDenial::RecoveryRequired(observation)) => {
+                    return self.refused(ApplicationHomeCloseDenial::CheckpointRecoveryRequired(
+                        observation,
+                    ))
+                }
+            }
+            self.native
+                .take()
+                .expect("stopped Native owner is retained until settlement")
+                .finish();
+        }
         if let PhysicalCloseCustody::Retained(serving) = self.physical {
             if let Err(cause) = interrupted(execution) {
                 return Self {
@@ -206,7 +233,7 @@ impl ApplicationHomeRecoveryCustody {
 // Releasing an owner remains lawful after checkpoint work/memory exhaustion;
 // checkpoint failure cannot refuse close. Cancellation and deadline still stop
 // waiting and return actual physical custody. No new allowance is created.
-fn interrupted(execution: &ExecutionRequest<'_, '_>) -> Result<(), WorkCeilingDenial> {
+pub(crate) fn interrupted(execution: &ExecutionRequest<'_, '_>) -> Result<(), WorkCeilingDenial> {
     match execution.consult() {
         Ok(()) => Ok(()),
         Err(WorkCeilingDenial::Stopped(

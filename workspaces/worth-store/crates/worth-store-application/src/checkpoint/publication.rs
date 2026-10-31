@@ -2,30 +2,30 @@ use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_relational::facade::branch::RelationalBranchTransitionSequence;
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_store::physical_runtime::{
-    AnchoredRecordName, AnchoredRecordPublication, AnchoredRecordPublicationFailure,
-    AnchoredRecordPublished, AnchoredRecordReadFailure, AnchoredRecordsDenial,
-    PhysicalMutationDeadline, ServingPhysicalRuntime,
+    AnchoredRecordPublicationFailure, AnchoredRecordReadFailure, AnchoredRecordsDenial,
 };
-use worth_store_relational::{PreparedRelationalSection, RelationalSectionCheckpointDenial};
 
 #[derive(Debug)]
 pub enum ApplicationHomeCheckpointDenial {
     Unavailable(AnchoredRecordsDenial),
     Read(AnchoredRecordReadFailure),
     Manifest(super::HomeManifestDenial),
-    Native(RelationalSectionCheckpointDenial),
+    Native(worth_store_relational::RelationalSectionCheckpointDenial),
     Execution(WorkCeilingDenial),
+    InterruptionView(worth_execution::ExecutionInterruptionViewDenial),
     Deadline(crate::ApplicationHomeDeadlineDenial),
     SizeLimit,
+    NoPendingCheckpoint,
+    RecoveryRequired(super::ApplicationHomeCheckpointRecovery),
     Publication(AnchoredRecordPublicationFailure),
+    PhysicalPublication(worth_store::physical_runtime::AnchoredRecordOperationFailure),
+    StoppedBeforeSelection {
+        prefix: Vec<worth_store::physical_runtime::AnchoredRecordMemberLocator>,
+    },
     PhysicalCheckpoint {
         detail: String,
     },
-    /// The manifest is already selected; the original request stopped before
-    /// the optional physical WAL checkpoint could start.
-    PhysicalCheckpointRequestStopped {
-        cause: crate::ApplicationHomeDeadlineDenial,
-    },
+    PhysicalCheckpointOutcome(worth_store::physical_runtime::PhysicalCheckpointOutcome),
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -56,72 +56,39 @@ impl crate::ReadmittedApplicationHome {
         &self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial> {
-        checkpoint(&self.context.serving, execution, || {
-            self.relational.prepare_checkpoint(execution)
-        })
+        checkpoint(
+            &self.context.serving,
+            &self.context.checkpoint,
+            execution,
+            || self.relational.prepare_checkpoint(execution),
+        )
+    }
+
+    /// Finish only the original accepted physical step and Native acknowledgement.
+    /// A fresh request never restarts members or anchor publication.
+    pub fn recover_checkpoint(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial> {
+        super::journey::recover(&self.context.serving, &self.context.checkpoint, execution)
+    }
+
+    pub fn checkpoint_observation(&self) -> Option<super::ApplicationHomeCheckpointRecovery> {
+        self.context
+            .checkpoint
+            .pending()
+            .map(|attempt| attempt.observation())
     }
 }
 
-pub(crate) fn checkpoint<'section>(
-    serving: &ServingPhysicalRuntime,
+pub(crate) fn checkpoint(
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+    owner: &super::owner::HomeCheckpointOwner,
     execution: &ExecutionRequest<'_, '_>,
     capture: impl FnOnce() -> Result<
-        PreparedRelationalSection<'section>,
-        RelationalSectionCheckpointDenial,
+        worth_store_relational::PreparedRelationalSection,
+        worth_store_relational::RelationalSectionCheckpointDenial,
     >,
 ) -> Result<ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial> {
-    let prepared = super::preparation::capture(serving, execution, capture)?;
-    publish(serving, prepared, execution)
-}
-
-fn publish(
-    serving: &ServingPhysicalRuntime,
-    prepared: super::preparation::PreparedHomeCheckpoint<'_>,
-    execution: &ExecutionRequest<'_, '_>,
-) -> Result<ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial> {
-    use ApplicationHomeCheckpointDenial as Denial;
-    let super::preparation::PreparedHomeCheckpoint {
-        native: prepared,
-        payload,
-        members,
-        member_memory: _member_memory,
-        generation,
-    } = prepared;
-    let records = serving.anchored_records().map_err(Denial::Unavailable)?;
-    let anchor = AnchoredRecordName::new(crate::registry::CHECKPOINT_ANCHOR)
-        .expect("static checkpoint anchor");
-    let milliseconds =
-        crate::deadline::milliseconds(execution, 120_000).map_err(Denial::Deadline)?;
-    let deadline = PhysicalMutationDeadline::after_milliseconds(milliseconds)
-        .expect("admitted positive checkpoint duration");
-    execution.consult().map_err(Denial::Execution)?;
-    let crate::frame_encoding::EncodedHomeFrame {
-        bytes,
-        memory: _memory,
-    } = payload;
-    let published = records
-        .publish(
-            AnchoredRecordPublication::new(
-                anchor,
-                generation,
-                bytes,
-                crate::open::physical_admission::placement(),
-                deadline,
-            )
-            .with_members(members),
-        )
-        .map_err(Denial::Publication)?;
-    let membership = match published {
-        AnchoredRecordPublished::Published(membership)
-        | AnchoredRecordPublished::AlreadyPublished(membership) => membership,
-    };
-    let result = ApplicationHomeCheckpoint {
-        covered: prepared.covered(),
-        covered_transitions: prepared.covered_transitions(),
-        generation: membership.version().generation(),
-        bytes: prepared.bytes().len(),
-    };
-    prepared.select(&membership);
-    super::physical_checkpoint::complete(serving, result.generation, execution)?;
-    Ok(result)
+    super::journey::checkpoint(serving, owner, execution, capture, None, None)
 }

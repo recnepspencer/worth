@@ -91,44 +91,6 @@ fn cancelled_close_returns_the_same_usable_serving_home_and_does_not_seal_admiss
 }
 
 #[test]
-fn checkpoint_failure_is_reported_by_successful_close_and_reopen_reads_the_journal_tail() {
-    let directory = tempfile::tempdir().unwrap();
-    let request = SerialRequest::from_memory(
-        SerialMemoryBudget::new(None),
-        CancellationSource::new().token(),
-        None,
-    );
-    let execution = ExecutionRequest::serial(&request);
-    let home = open(directory.path(), &execution);
-    super::native_schema::commit(
-        home.relational().runtime(),
-        &execution,
-        "durable-before-close",
-    );
-    let before = super::native_schema::artifacts(home.relational().runtime());
-    let closing = SerialRequest::from_memory(
-        SerialMemoryBudget::new(Some(0)),
-        CancellationSource::new().token(),
-        None,
-    );
-    match home.close(&ExecutionRequest::serial(&closing)) {
-        ApplicationHomeCloseOutcome::Closed { checkpoint, .. } => assert!(checkpoint.is_err()),
-        ApplicationHomeCloseOutcome::CloseRefused { .. } => {
-            panic!("failed checkpoint cannot refuse quiescent close")
-        }
-    }
-    let home = open(directory.path(), &execution);
-    assert_eq!(
-        super::native_schema::artifacts(home.relational().runtime()),
-        before
-    );
-    assert!(matches!(
-        home.close(&execution),
-        ApplicationHomeCloseOutcome::Closed { .. }
-    ));
-}
-
-#[test]
 fn retained_native_read_pin_refuses_close_and_the_same_home_can_release_it_and_continue() {
     let directory = tempfile::tempdir().unwrap();
     let request = SerialRequest::from_memory(

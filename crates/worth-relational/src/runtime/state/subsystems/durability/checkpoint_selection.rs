@@ -1,5 +1,7 @@
 //! The runtime's last acknowledged native directory. Payloads remain in Store.
-use crate::durability::data::{RelationalCheckpointDirectory, RelationalCheckpointManifest};
+use crate::durability::data::{
+    PreparedCheckpointDirectory, RelationalCheckpointDirectory, RelationalCheckpointManifest,
+};
 use crate::durability::medium::RelationalDurableColdSource;
 use std::sync::{Arc, Mutex};
 
@@ -11,7 +13,7 @@ pub(crate) struct RelationalCheckpointManifestSelection {
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalCheckpointManifestPublication {
     selection: RelationalCheckpointManifestSelection,
-    directory: Arc<RelationalCheckpointDirectory>,
+    directory: PreparedCheckpointDirectory,
 }
 
 impl RelationalCheckpointManifestSelection {
@@ -34,11 +36,11 @@ impl RelationalCheckpointManifestSelection {
     ) -> RelationalCheckpointManifestPublication {
         RelationalCheckpointManifestPublication {
             selection: self.clone(),
-            directory: Arc::new(RelationalCheckpointDirectory {
+            directory: PreparedCheckpointDirectory {
                 manifest,
                 source,
                 history_members,
-            }),
+            },
         }
     }
     pub(crate) fn restore(&self, directory: Arc<RelationalCheckpointDirectory>) {
@@ -50,7 +52,13 @@ impl RelationalCheckpointManifestSelection {
 }
 
 impl RelationalCheckpointManifestPublication {
-    pub(crate) fn acknowledge(&self) {
+    pub(crate) fn source_matches(&self, source: &Arc<dyn RelationalDurableColdSource>) -> bool {
+        Arc::ptr_eq(&self.directory.source, source)
+    }
+    pub(crate) fn acknowledge(
+        &self,
+    ) -> Result<(), crate::storage::data::RelationalStorageUnavailableCause> {
+        let directory = Arc::new(self.directory.clone().readmit()?);
         let mut selected = self
             .selection
             .selected
@@ -61,8 +69,9 @@ impl RelationalCheckpointManifestPublication {
                 || prior.manifest.coverage.up_to_branch_transition
                     > self.directory.manifest.coverage.up_to_branch_transition
         }) {
-            return;
+            return Ok(());
         }
-        *selected = Some(self.directory.clone());
+        *selected = Some(directory);
+        Ok(())
     }
 }

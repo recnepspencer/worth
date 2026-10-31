@@ -1,8 +1,8 @@
 //! Store composition audience; applications enter through Query Host.
 
 pub use crate::checkpoint::{
-    ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial, HomeManifestDenial,
-    HOME_CHECKPOINT_PROTOCOL, HOME_CHECKPOINT_VERSION,
+    ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial, ApplicationHomeCheckpointRecovery,
+    HomeManifestDenial, HOME_CHECKPOINT_PROTOCOL, HOME_CHECKPOINT_VERSION,
 };
 pub use crate::close::{
     ApplicationHomeCloseDenial, ApplicationHomeCloseOutcome, ApplicationHomeClosePosture,

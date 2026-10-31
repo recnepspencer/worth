@@ -15,6 +15,11 @@
 //! [`DurabilityAccess::recovery_plan_from_source`](crate::durability::access::DurabilityAccess::recovery_plan_from_source).
 
 mod binding;
+mod checkpoint_selection;
+pub use checkpoint_selection::{
+    CheckpointSelectionIdentity, CheckpointSelectionObservation, OpaqueCapturedCheckpointSubject,
+    RelationalCheckpointAcknowledgementDenial,
+};
 mod cold_source;
 mod commit_publication;
 pub use cold_source::{RelationalDurableColdSource, RelationalDurableMemberLocator};
@@ -27,8 +32,8 @@ pub use transition_read::RelationalDurableTransitionReadFailure;
 pub(crate) use transition_read::RelationalTransitionHistoryReader;
 
 pub(crate) use binding::{
-    RelationalDurableCommitReadmission, RelationalDurableMediumBinding, RelationalDurableStepStop,
-    RelationalDurableTransitionPublication,
+    CheckpointPublication, RelationalDurableCommitReadmission, RelationalDurableMediumBinding,
+    RelationalDurableStepStop, RelationalDurableTransitionPublication,
 };
 pub(crate) use commit_publication::RelationalCommitPublication;
 pub use recovery_source::{RelationalDurableCheckpointSource, RelationalDurableRecoverySource};
@@ -55,6 +60,14 @@ use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtif
 /// runtime, and a forked runtime never inherits publication access. Speculative
 /// forks may carry only a read-only historical-transition reader.
 pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
+    /// Read the exact Home attempt's actual terminal receipt. A caller-supplied
+    /// fate or separately paired receipt is not an answer to this question.
+    fn checkpoint_selection(
+        &self,
+        _subject: &OpaqueCapturedCheckpointSubject,
+    ) -> CheckpointSelectionObservation {
+        CheckpointSelectionObservation::NotSelected
+    }
     /// The same durable journal's read-only source, available before the first
     /// publication. Each committed artifact remains readable at its position;
     /// member placement and retention stay owned by the source provider.

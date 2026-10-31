@@ -25,6 +25,7 @@ pub(crate) struct StoreJournalMedium {
     serving: Arc<ServingPhysicalRuntime>,
     placement: AdmittedRecordPlacementPolicy,
     cold_source: Arc<crate::cold_source::StoreColdSource>,
+    checkpoint_selection: Arc<dyn crate::section::RelationalCheckpointSelectionSource>,
 }
 
 impl StoreJournalMedium {
@@ -32,11 +33,13 @@ impl StoreJournalMedium {
         serving: Arc<ServingPhysicalRuntime>,
         placement: AdmittedRecordPlacementPolicy,
         cold_source: Arc<crate::cold_source::StoreColdSource>,
+        checkpoint_selection: Arc<dyn crate::section::RelationalCheckpointSelectionSource>,
     ) -> Self {
         Self {
             serving,
             placement,
             cold_source,
+            checkpoint_selection,
         }
     }
 
@@ -83,6 +86,12 @@ impl std::fmt::Debug for StoreJournalMedium {
 }
 
 impl RelationalDurableMedium for StoreJournalMedium {
+    fn checkpoint_selection(
+        &self,
+        subject: &worth_relational::facade::durability::OpaqueCapturedCheckpointSubject,
+    ) -> worth_relational::facade::durability::CheckpointSelectionObservation {
+        crate::section::selection::observe(self.checkpoint_selection.as_ref(), subject)
+    }
     fn cold_source(
         &self,
     ) -> Arc<dyn worth_relational::facade::durability::RelationalDurableColdSource> {

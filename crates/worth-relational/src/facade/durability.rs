@@ -18,7 +18,9 @@ pub use crate::durability::data::{
     RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop,
 };
 pub use crate::durability::medium::{
-    DurablePublicationFate, RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
+    CheckpointSelectionIdentity, CheckpointSelectionObservation, DurablePublicationFate,
+    OpaqueCapturedCheckpointSubject, RelationalCheckpointAcknowledgementDenial,
+    RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
     RelationalDurableCheckpointSource, RelationalDurableColdSource, RelationalDurableMedium,
     RelationalDurableMemberCustody, RelationalDurableMemberLocator,
     RelationalDurablePublicationRefusal, RelationalDurableRecoverySource,

@@ -1,5 +1,5 @@
 //! Refused close preserves serving custody or the actual physical close task.
-mod posture;
+pub(crate) mod posture;
 mod start;
 
 pub use posture::ApplicationHomeRecoveryCustody;
@@ -32,6 +32,7 @@ pub enum ApplicationHomeCloseDenial {
     },
     PhysicalCloseFailed(PhysicalStoreCloseFailureCause),
     PhysicalInspectionRequired,
+    CheckpointRecoveryRequired(crate::ApplicationHomeCheckpointRecovery),
 }
 
 pub enum ApplicationHomeClosePosture {
@@ -61,7 +62,7 @@ impl crate::ReadmittedApplicationHome {
         execution: &ExecutionRequest<'_, '_>,
         start: start::PhysicalCloseStart,
     ) -> ApplicationHomeCloseOutcome {
-        if let Err(reason) = execution.consult() {
+        if let Err(reason) = posture::interrupted(execution) {
             return ApplicationHomeCloseOutcome::CloseRefused {
                 reason: ApplicationHomeCloseDenial::Execution(reason),
                 posture: ApplicationHomeClosePosture::Serving(self),
@@ -83,15 +84,16 @@ impl crate::ReadmittedApplicationHome {
                 }
             }
         };
-        let checkpoint =
-            crate::checkpoint::publication::checkpoint(&context.serving, execution, || {
-                closing.prepare_checkpoint(execution)
-            });
+        let checkpoint = crate::checkpoint::publication::checkpoint(
+            &context.serving,
+            &context.checkpoint,
+            execution,
+            || closing.prepare_checkpoint(execution),
+        );
         // Checkpoint failure never refuses close. Accepted native work was
         // classified by its real owner before teardown; physical completion
         // now remains owned even if the original request stops waiting.
-        closing.finish();
-        ApplicationHomeRecoveryCustody::retained(context, checkpoint)
+        ApplicationHomeRecoveryCustody::retained(context, closing, checkpoint)
             .release_started(execution, start)
     }
 }

@@ -9,6 +9,7 @@ pub struct ClosingRelationalSection {
     runtime: PreparedRelationalRuntimeClose,
     cold_source: Arc<crate::cold_source::StoreColdSource>,
     serving: Arc<ServingPhysicalRuntime>,
+    checkpoint_selection: Arc<dyn super::RelationalCheckpointSelectionSource>,
 }
 
 impl RelationalStoreSection {
@@ -19,12 +20,14 @@ impl RelationalStoreSection {
             runtime,
             cold_source,
             serving,
+            checkpoint_selection,
         } = self;
         match runtime.prepare_close() {
             Ok(runtime) => Ok(ClosingRelationalSection {
                 runtime,
                 cold_source,
                 serving,
+                checkpoint_selection,
             }),
             Err(refused) => {
                 let reason = refused.reason();
@@ -33,6 +36,7 @@ impl RelationalStoreSection {
                         runtime: refused.into_runtime(),
                         cold_source,
                         serving,
+                        checkpoint_selection,
                     },
                     reason,
                 ))
@@ -45,7 +49,7 @@ impl ClosingRelationalSection {
     pub fn prepare_checkpoint(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<PreparedRelationalSection<'_>, RelationalSectionCheckpointDenial> {
+    ) -> Result<PreparedRelationalSection, RelationalSectionCheckpointDenial> {
         let members = self.cold_source.member_locators();
         let checkpoint = self.runtime.native_checkpoint(execution,
             worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
@@ -53,6 +57,7 @@ impl ClosingRelationalSection {
             },
         ).map_err(RelationalSectionCheckpointDenial::Capture)?;
         super::checkpoint::prepare_captured(&self.cold_source, checkpoint, execution)
+            .map(|prepared| prepared.with_selection(self.checkpoint_selection.clone()))
     }
 
     pub fn resume(self) -> RelationalStoreSection {
@@ -60,6 +65,7 @@ impl ClosingRelationalSection {
             runtime: self.runtime.resume(),
             cold_source: self.cold_source,
             serving: self.serving,
+            checkpoint_selection: self.checkpoint_selection,
         }
     }
 

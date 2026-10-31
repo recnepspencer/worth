@@ -1,4 +1,6 @@
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
+mod checkpoint_selection;
+pub(crate) use checkpoint_selection::CheckpointPublication;
 use worth_proof::{AuthorityMarker, DurablyCommitted};
 
 use super::{

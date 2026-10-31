@@ -10,6 +10,7 @@ pub struct RelationalStoreSection {
     pub(super) runtime: RelationalRuntime,
     pub(super) cold_source: Arc<crate::cold_source::StoreColdSource>,
     pub(super) serving: Arc<ServingPhysicalRuntime>,
+    pub(super) checkpoint_selection: Arc<dyn super::RelationalCheckpointSelectionSource>,
 }
 
 impl RelationalStoreSection {
@@ -19,9 +20,16 @@ impl RelationalStoreSection {
         definition: RelationalRuntimeDefinition,
         serving: Arc<ServingPhysicalRuntime>,
         placement: AdmittedRecordPlacementPolicy,
+        checkpoint_selection: Arc<dyn super::RelationalCheckpointSelectionSource>,
     ) -> Result<Self, RelationalRuntimeConstructionDenial> {
         let cold_source = Arc::new(crate::cold_source::StoreColdSource::new(serving.clone()));
-        Self::attach_with_source(definition, serving, placement, cold_source)
+        Self::attach_with_source(
+            definition,
+            serving,
+            placement,
+            cold_source,
+            checkpoint_selection,
+        )
     }
 
     pub(super) fn attach_with_source(
@@ -29,17 +37,20 @@ impl RelationalStoreSection {
         serving: Arc<ServingPhysicalRuntime>,
         placement: AdmittedRecordPlacementPolicy,
         cold_source: Arc<crate::cold_source::StoreColdSource>,
+        checkpoint_selection: Arc<dyn super::RelationalCheckpointSelectionSource>,
     ) -> Result<Self, RelationalRuntimeConstructionDenial> {
         let medium = crate::journal_medium::StoreJournalMedium::new(
             serving.clone(),
             placement,
             cold_source.clone(),
+            checkpoint_selection.clone(),
         );
         let runtime = definition.build_durable(Box::new(medium))?;
         Ok(Self {
             runtime,
             cold_source,
             serving,
+            checkpoint_selection,
         })
     }
 

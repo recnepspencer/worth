@@ -37,6 +37,36 @@ pub(crate) struct RelationalCheckpointManifest {
 }
 
 impl RelationalCheckpointManifest {
+    pub(crate) fn semantic_members(
+        &self,
+        history: &RelationalHistoryMemberDirectory,
+    ) -> Vec<RelationalDurableMemberLocator> {
+        let mut members = std::collections::BTreeSet::new();
+        for leaf in self
+            .roots
+            .iter()
+            .flat_map(|root| &root.regions)
+            .chain(&self.mirror)
+        {
+            members.insert(leaf.head);
+            members.extend(history.members(leaf.history));
+        }
+        members.extend(
+            self.symbols
+                .iter()
+                .chain(&self.lineage)
+                .map(|page| page.member),
+        );
+        members.extend(
+            self.symbol_buckets
+                .iter()
+                .flat_map(|bucket| bucket.pages.iter().copied()),
+        );
+        members.extend(self.lineage_events.iter().map(|page| page.member));
+        members.insert(self.derived_indexes);
+        members.into_iter().collect()
+    }
+
     pub(crate) fn readmit_history_members(
         &self,
     ) -> Result<

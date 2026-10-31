@@ -23,6 +23,29 @@ impl TestDurableMediumAttachment {
 }
 
 impl RelationalDurableMedium for TestDurableMediumAttachment {
+    fn checkpoint_selection(
+        &self,
+        subject: &crate::durability::medium::OpaqueCapturedCheckpointSubject,
+    ) -> crate::durability::medium::CheckpointSelectionObservation {
+        use crate::durability::medium::{
+            CheckpointSelectionIdentity, CheckpointSelectionObservation,
+        };
+        use sha2::Digest;
+        let journal = self.contents.journal();
+        match journal
+            .checkpoint
+            .as_ref()
+            .and_then(|checkpoint| checkpoint.checkpoint().publication_subject())
+        {
+            Some(selected) if selected.same_capture(subject) => {
+                CheckpointSelectionObservation::Selected(CheckpointSelectionIdentity {
+                    generation: 1,
+                    manifest_sha256: sha2::Sha256::digest(subject.bytes()).into(),
+                })
+            }
+            _ => CheckpointSelectionObservation::NotSelected,
+        }
+    }
     fn cold_source(
         &self,
     ) -> std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource> {

@@ -163,11 +163,13 @@ fn checkpoint_dictionary(
         failed_member: Mutex::new(None),
         failure: Mutex::new(None),
     });
-    let directory = RelationalCheckpointDirectory {
+    let directory = crate::durability::data::PreparedCheckpointDirectory {
         history_members: input.manifest.readmit_history_members().unwrap(),
         manifest: input.manifest,
         source: source.clone(),
-    };
+    }
+    .readmit()
+    .unwrap();
     let table = RuntimeSymbolTable::default();
     table.install_cold_pages(&directory).unwrap();
     (

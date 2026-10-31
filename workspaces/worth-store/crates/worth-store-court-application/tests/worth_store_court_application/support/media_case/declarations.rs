@@ -319,9 +319,10 @@ pub(crate) fn checkpoint_outcome(
             (crate::media_case::Ended::Acknowledged, vec![new])
         }
         // The record is selected; only Store's own checkpoint did not finish.
-        Err(worth_store_application::ApplicationHomeCheckpointDenial::PhysicalCheckpoint {
-            ..
-        } | worth_store_application::ApplicationHomeCheckpointDenial::PhysicalCheckpointRequestStopped { .. }) => (crate::media_case::Ended::Acknowledged, vec![new]),
+        Err(
+            worth_store_application::ApplicationHomeCheckpointDenial::PhysicalCheckpoint { .. }
+            | worth_store_application::ApplicationHomeCheckpointDenial::PhysicalCheckpointOutcome(_),
+        ) => (crate::media_case::Ended::Acknowledged, vec![new]),
         Err(worth_store_application::ApplicationHomeCheckpointDenial::Publication(
             worth_store::physical_runtime::AnchoredRecordPublicationFailure::ProvenNoEffect(_),
         )) => (crate::media_case::Ended::Refused, vec![old]),

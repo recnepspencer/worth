@@ -20,7 +20,11 @@ fn publish_checkpoint(
         )
         .unwrap();
     medium.file_checkpoint(native.clone());
-    native.acknowledge_publication();
+    execution
+        .run_native_with_checkpoint(|context| native.acknowledge_selected(context))
+        .unwrap()
+        .0
+        .unwrap();
     native
 }
 

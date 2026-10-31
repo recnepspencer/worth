@@ -78,13 +78,15 @@ impl StoreColdSource {
                 )
             })
             .collect();
-        let mut current = self
-            .members
-            .write()
-            .unwrap_or_else(|error| error.into_inner());
-        if generation >= current.0 {
-            *current = (generation, selected);
-        }
+        self.custody.select(|| {
+            let mut current = self
+                .members
+                .write()
+                .unwrap_or_else(|error| error.into_inner());
+            if generation >= current.0 {
+                *current = (generation, selected);
+            }
+        });
     }
     pub(crate) fn counters(&self) -> RelationalStoreColdReadCounters {
         RelationalStoreColdReadCounters {
@@ -99,8 +101,11 @@ impl StoreColdSource {
     ) {
         self.commit_read_observer = Some(Box::new(observer));
     }
-    pub(crate) fn protect_member_selection(&self) -> RetainedMemberPublication<'_> {
-        self.custody.protect_selection()
+    pub(crate) fn protect_member_selection(
+        &self,
+        next: impl IntoIterator<Item = RelationalDurableMemberLocator>,
+    ) -> Result<RetainedMemberPublication, Cause> {
+        self.custody.protect_selection(next)
     }
     pub(crate) fn member_locators(&self) -> Vec<RelationalDurableMemberLocator> {
         self.members

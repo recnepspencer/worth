@@ -76,6 +76,7 @@ pub fn admit_home(
         .map_err(ApplicationHomeOpenRefusal::Descriptor)?;
         Ok(HomeAdmitted::from_owner(AdmittedApplicationHome {
             context: HomeContext {
+                checkpoint: Arc::new(Default::default()),
                 location,
                 descriptor,
                 serving: recovered.serving,
@@ -102,6 +103,7 @@ pub fn readmit_relational(
             admitted.definition,
             admitted.context.serving.clone(),
             physical_admission::placement(),
+            admitted.context.checkpoint.selection_source(),
         );
         #[cfg(feature = "certification-test-authority")]
         let relational = match admitted.read_observer {
@@ -110,6 +112,7 @@ pub fn readmit_relational(
                     admitted.definition,
                     admitted.context.serving.clone(),
                     physical_admission::placement(),
+                    admitted.context.checkpoint.selection_source(),
                     observer,
                 )
             }
@@ -117,6 +120,7 @@ pub fn readmit_relational(
                 admitted.definition,
                 admitted.context.serving.clone(),
                 physical_admission::placement(),
+                admitted.context.checkpoint.selection_source(),
             ),
         };
         let mut relational = relational.map_err(ApplicationHomeOpenRefusal::RuntimeConstruction)?;

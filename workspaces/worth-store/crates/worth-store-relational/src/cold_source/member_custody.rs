@@ -1,27 +1,38 @@
-//! Live read-side placement obligations and their checkpoint selection fence.
-use std::collections::BTreeMap;
-use std::sync::{Arc, RwLock, RwLockReadGuard};
+//! Live placement obligations and an owned, frozen checkpoint selection.
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::{Arc, RwLock, Weak};
 use worth_relational::facade::durability::{
     RelationalDurableMemberCustody, RelationalDurableMemberLocator,
 };
 use worth_relational::facade::storage::RelationalStorageUnavailableCause as Cause;
 use worth_store::physical_runtime::ServingPhysicalRuntime;
 
-type Counts = BTreeMap<RelationalDurableMemberLocator, usize>;
+#[derive(Debug, Default)]
+struct CustodyState {
+    counts: BTreeMap<RelationalDurableMemberLocator, usize>,
+    selection: Weak<FrozenSelection>,
+}
+
+#[derive(Debug)]
+struct FrozenSelection {
+    members: BTreeSet<RelationalDurableMemberLocator>,
+}
 
 #[derive(Debug, Default)]
 pub(super) struct MemberCustodyRegistry {
-    counts: Arc<RwLock<Counts>>,
+    state: Arc<RwLock<CustodyState>>,
 }
 
 struct MemberCustodyOwner {
     _serving: Arc<ServingPhysicalRuntime>,
-    counts: Arc<RwLock<Counts>>,
+    state: Arc<RwLock<CustodyState>>,
     members: Vec<RelationalDurableMemberLocator>,
 }
 
-pub(crate) struct RetainedMemberPublication<'source> {
-    counts: RwLockReadGuard<'source, Counts>,
+/// Lifetime-only protection. Clones protect the same frozen selection.
+#[derive(Debug, Clone)]
+pub(crate) struct RetainedMemberPublication {
+    selection: Arc<FrozenSelection>,
 }
 
 impl MemberCustodyRegistry {
@@ -38,75 +49,91 @@ impl MemberCustodyRegistry {
         selected.extend_from_slice(members);
         selected.sort_unstable();
         selected.dedup();
-        let mut counts = self
-            .counts
+        let mut state = self
+            .state
             .write()
             .unwrap_or_else(|error| error.into_inner());
-        // Publication holds the reader until its new membership is selected.
-        // Validation therefore cannot race a selection that removes a member.
+        if state.selection.upgrade().is_some_and(|selection| {
+            selected
+                .iter()
+                .any(|member| !selection.members.contains(member))
+        }) {
+            return Err(Cause::MissingMember);
+        }
+        // Registry then source-map is the common order for retention and cutover.
+        // New placement is not retainable until the actual selection is installed.
         validate(&selected)?;
         if selected
             .iter()
-            .any(|member| counts.get(member) == Some(&usize::MAX))
+            .any(|member| state.counts.get(member) == Some(&usize::MAX))
         {
             return Err(Cause::MemoryExhausted);
         }
         for member in &selected {
-            *counts.entry(*member).or_default() += 1;
+            *state.counts.entry(*member).or_default() += 1;
         }
         Ok(RelationalDurableMemberCustody::new(MemberCustodyOwner {
             _serving: serving,
-            counts: self.counts.clone(),
+            state: self.state.clone(),
             members: selected,
         }))
     }
 
-    pub(super) fn protect_selection(&self) -> RetainedMemberPublication<'_> {
-        RetainedMemberPublication {
-            counts: self
-                .counts
-                .read()
-                .unwrap_or_else(|error| error.into_inner()),
+    pub(super) fn protect_selection(
+        &self,
+        next: impl IntoIterator<Item = RelationalDurableMemberLocator>,
+    ) -> Result<RetainedMemberPublication, Cause> {
+        let mut state = self
+            .state
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        if state.selection.upgrade().is_some() {
+            return Err(Cause::SourceUnavailable);
         }
+        // Acknowledged directories intrinsically own all their semantic members,
+        // so their basis and every inherited read obligation are in these counts.
+        let selection = Arc::new(FrozenSelection {
+            members: next
+                .into_iter()
+                .chain(state.counts.keys().copied())
+                .collect(),
+        });
+        state.selection = Arc::downgrade(&selection);
+        Ok(RetainedMemberPublication { selection })
+    }
+
+    pub(super) fn select(&self, install: impl FnOnce()) {
+        let _state = self
+            .state
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        install();
     }
 }
 
-impl RetainedMemberPublication<'_> {
+impl RetainedMemberPublication {
     pub(crate) fn member_locators(
         &self,
     ) -> impl Iterator<Item = RelationalDurableMemberLocator> + '_ {
-        self.counts.keys().copied()
+        self.selection.members.iter().copied()
     }
 }
 
 impl Drop for MemberCustodyOwner {
     fn drop(&mut self) {
-        let mut counts = self
-            .counts
+        let mut state = self
+            .state
             .write()
             .unwrap_or_else(|error| error.into_inner());
         for member in &self.members {
-            let count = counts
+            let count = state
+                .counts
                 .get_mut(member)
                 .expect("owned member custody has a count");
             *count -= 1;
             if *count == 0 {
-                counts.remove(member);
+                state.counts.remove(member);
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn selection_fence_excludes_custody_mutation_until_membership_is_selected() {
-        let registry = MemberCustodyRegistry::default();
-        let fence = registry.protect_selection();
-        assert!(registry.counts.try_write().is_err());
-        drop(fence);
-        assert!(registry.counts.try_write().is_ok());
     }
 }

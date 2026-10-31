@@ -63,7 +63,7 @@ fn seeded_home(
 }
 
 #[test]
-fn forked_cells_checkpoint_into_two_homes_without_foreign_carried_locators() {
+fn a_speculative_foreign_runtime_cannot_publish_a_home_checkpoint() {
     let directory = tempfile::tempdir().unwrap();
     let request = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
@@ -78,20 +78,16 @@ fn forked_cells_checkpoint_into_two_homes_without_foreign_carried_locators() {
         if checkpoint_before_fork {
             first.checkpoint(&execution).unwrap();
         }
-        // Both journals contain the real seed. Their live roots now share
-        // cells, while Store membership is owned by each destination home.
+        // A speculative fork deliberately has no attached publication medium.
+        // Replacing a component cannot transfer the first Home's authority.
         second.replace_relational_runtime_for_test(first.relational().runtime().fork().unwrap());
-        for _ in 0..2 {
-            for home in [&first, &second] {
-                let before = home.relational().cold_storage_reads();
-                home.checkpoint(&execution).unwrap();
-                assert_eq!(
-                    home.relational().cold_storage_reads(),
-                    before,
-                    "capture cannot load foreign members"
-                );
-            }
-        }
+        let before = crate::selected_checkpoint::generation(&second);
+        let refusal = second.checkpoint(&execution).unwrap_err();
+        assert!(matches!(refusal, worth_store_application::ApplicationHomeCheckpointDenial::Native(
+            worth_store_relational::RelationalSectionCheckpointDenial::PublicationAdmission(
+                worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial::CaptureNotBound))));
+        assert_eq!(crate::selected_checkpoint::generation(&second), before);
+        first.checkpoint(&execution).unwrap();
         first.close(&execution);
         second.close(&execution);
     }

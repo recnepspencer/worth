@@ -30,9 +30,16 @@ pub(super) fn readmit(
             .map_err(corrupt)?;
         envelopes.push(commit);
     }
+    let directory = PreparedCheckpointDirectory {
+        manifest: manifest.clone(),
+        source,
+        history_members: facts.history_members,
+    }
+    .readmit()
+    .map_err(|cause| corrupt(format!("checkpoint basis custody: {cause:?}")))?;
     let checkpoint = DurableCheckpoint {
         root_kind_images: Default::default(), mirror_kind_images: Default::default(),
-        directory: Some(Arc::new(RelationalCheckpointDirectory { manifest: manifest.clone(), source, history_members: facts.history_members })),
+        directory: Some(Arc::new(directory)),
         coverage: manifest.coverage,
         commit_descriptors: manifest.commits.iter().map(|entry| (entry.commit.commit_id, entry.root.clone())).collect(),
         mirror_schema_digest: manifest.mirror_schema,

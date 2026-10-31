@@ -6,9 +6,7 @@ use worth_relational::facade::durability::{
     RelationalCheckpointArtifactPolicy, RelationalCheckpointMember, RelationalNativeCheckpoint,
     RelationalNativeCheckpointCaptureDenial,
 };
-use worth_store::physical_runtime::{
-    AnchoredRecordMember, AnchoredRecordMemberLocator, AnchoredRecordMembership,
-};
+use worth_store::physical_runtime::{AnchoredRecordMember, AnchoredRecordMemberLocator};
 
 #[derive(Debug)]
 pub enum RelationalSectionCheckpointDenial {
@@ -18,32 +16,74 @@ pub enum RelationalSectionCheckpointDenial {
     StaleCapture,
     MissingCarriedMember,
     SizeLimit,
+    Acknowledgement(
+        worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial,
+    ),
+    PublicationAdmission(
+        worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial,
+    ),
 }
 
 /// A native capture and the read-custody fence that must outlive publication.
 /// No Clone/Copy: only selection may acknowledge this capture.
-pub struct PreparedRelationalSection<'section> {
+///
+/// ```compile_fail,E0599
+/// use worth_store_relational::PreparedRelationalSection;
+/// use worth_store::physical_runtime::AnchoredRecordMembership;
+/// fn pair_descriptions(section: PreparedRelationalSection, receipt: &AnchoredRecordMembership) {
+///     section.select(receipt);
+/// }
+/// ```
+///
+/// ```compile_fail,E0599
+/// use worth_relational::facade::durability::RelationalNativeCheckpoint;
+/// fn public_fate_is_not_selection(native: RelationalNativeCheckpoint) {
+///     native.acknowledge_publication();
+/// }
+/// ```
+///
+/// ```compile_fail,E0432
+/// use worth_relational::facade::durability::ActualCheckpointSelection;
+/// ```
+///
+/// ```
+/// use worth_store_relational::PreparedRelationalSection;
+/// fn observe(section: &PreparedRelationalSection) {
+///     let _description = section.publication_subject();
+/// }
+/// ```
+pub struct PreparedRelationalSection {
     checkpoint: RelationalNativeCheckpoint,
-    source: &'section crate::cold_source::StoreColdSource,
-    retained: crate::cold_source::RetainedMemberPublication<'section>,
+    source: std::sync::Arc<crate::cold_source::StoreColdSource>,
+    retained: crate::cold_source::RetainedMemberPublication,
     bytes: Vec<u8>,
     _memory: Option<ExecutionMemoryReservation>,
+    selection: Option<std::sync::Arc<dyn super::RelationalCheckpointSelectionSource>>,
+}
+
+/// Lifetime-only transport to an accepted physical step. No publication or
+/// acknowledgement authority, source map, or Native capture is exposed.
+#[derive(Clone)]
+pub struct RelationalCheckpointSelectionProtection {
+    _retained: crate::cold_source::RetainedMemberPublication,
 }
 
 impl RelationalStoreSection {
     pub fn prepare_checkpoint(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<PreparedRelationalSection<'_>, RelationalSectionCheckpointDenial> {
-        prepare(&self.runtime, &self.cold_source, execution)
+    ) -> Result<PreparedRelationalSection, RelationalSectionCheckpointDenial> {
+        let mut prepared = prepare(&self.runtime, &self.cold_source, execution)?;
+        prepared.selection = Some(self.checkpoint_selection.clone());
+        Ok(prepared)
     }
 }
 
-pub(super) fn prepare<'source>(
+pub(super) fn prepare(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    source: &'source std::sync::Arc<crate::cold_source::StoreColdSource>,
+    source: &std::sync::Arc<crate::cold_source::StoreColdSource>,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<PreparedRelationalSection<'source>, RelationalSectionCheckpointDenial> {
+) -> Result<PreparedRelationalSection, RelationalSectionCheckpointDenial> {
     use RelationalSectionCheckpointDenial as Denial;
     let members = source.member_locators();
     let checkpoint = runtime
@@ -60,11 +100,11 @@ pub(super) fn prepare<'source>(
     prepare_captured(source, checkpoint, execution)
 }
 
-pub(crate) fn prepare_captured<'source>(
-    source: &'source std::sync::Arc<crate::cold_source::StoreColdSource>,
+pub(crate) fn prepare_captured(
+    source: &std::sync::Arc<crate::cold_source::StoreColdSource>,
     checkpoint: RelationalNativeCheckpoint,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<PreparedRelationalSection<'source>, RelationalSectionCheckpointDenial> {
+) -> Result<PreparedRelationalSection, RelationalSectionCheckpointDenial> {
     use RelationalSectionCheckpointDenial as Denial;
     let size = checkpoint
         .bytes()
@@ -90,17 +130,36 @@ pub(crate) fn prepare_captured<'source>(
     let bytes = copied
         .map_err(|stop| Denial::Execution(WorkCeilingDenial::Stopped(stop)))?
         .ok_or(Denial::MalformedSection)?;
-    let retained = source.protect_member_selection();
+    let retained = source
+        .protect_member_selection(checkpoint.members().iter().map(|member| member.locator()))
+        .map_err(|_| Denial::MissingCarriedMember)?;
     Ok(PreparedRelationalSection {
         checkpoint,
-        source,
+        source: source.clone(),
         retained,
         bytes,
         _memory: memory,
+        selection: None,
     })
 }
 
-impl PreparedRelationalSection<'_> {
+impl PreparedRelationalSection {
+    pub fn validate_publication(&self) -> Result<(), RelationalSectionCheckpointDenial> {
+        use worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial as Denial;
+        if self.selection.is_none() {
+            return Err(RelationalSectionCheckpointDenial::PublicationAdmission(
+                Denial::CaptureNotBound,
+            ));
+        }
+        self.checkpoint
+            .validate_publication_source(
+                &(self.source.clone()
+                    as std::sync::Arc<
+                        dyn worth_relational::facade::durability::RelationalDurableColdSource,
+                    >),
+            )
+            .map_err(RelationalSectionCheckpointDenial::PublicationAdmission)
+    }
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
@@ -220,20 +279,52 @@ impl PreparedRelationalSection<'_> {
         Ok((members, memory))
     }
 
-    /// The application calls this only with its successfully published manifest
-    /// membership, while this capture still holds the selection fence.
-    pub fn select(self, membership: &AnchoredRecordMembership) {
-        let Self {
-            checkpoint,
-            source,
-            retained,
-            bytes: _bytes,
-            _memory,
-        } = self;
-        source.select_members(membership.version().generation(), membership.members());
-        // Selection is complete. Acknowledgement can release the final region
-        // owner and its member custody, which needs the registry's writer.
-        drop(retained);
-        checkpoint.acknowledge_publication();
+    pub fn publication_subject(
+        &self,
+    ) -> Option<&worth_relational::facade::durability::OpaqueCapturedCheckpointSubject> {
+        self.checkpoint.publication_subject()
+    }
+
+    pub fn selection_protection(&self) -> RelationalCheckpointSelectionProtection {
+        RelationalCheckpointSelectionProtection {
+            _retained: self.retained.clone(),
+        }
+    }
+
+    pub(super) fn with_selection(
+        mut self,
+        selection: std::sync::Arc<dyn super::RelationalCheckpointSelectionSource>,
+    ) -> Self {
+        self.selection = Some(selection);
+        self
+    }
+
+    /// Resolve only through this section's already attached Home source.
+    /// Neither a membership argument nor a public fate can authorize selection.
+    pub fn acknowledge_selected(
+        &self,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<(), RelationalSectionCheckpointDenial> {
+        use worth_relational::facade::durability::{
+            CheckpointSelectionObservation, RelationalCheckpointAcknowledgementDenial as Ack,
+        };
+        let refused = || RelationalSectionCheckpointDenial::Acknowledgement(Ack::SelectionNotKnown);
+        let subject = self.publication_subject().ok_or_else(refused)?;
+        let selection = self.selection.as_ref().ok_or_else(refused)?;
+        if !matches!(
+            super::selection::observe(selection.as_ref(), subject),
+            CheckpointSelectionObservation::Selected(_)
+        ) {
+            return Err(refused());
+        }
+        let membership = selection.selected_membership(subject).ok_or_else(refused)?;
+        context.poll().map_err(|stop| {
+            RelationalSectionCheckpointDenial::Acknowledgement(Ack::Stopped(stop))
+        })?;
+        self.source
+            .select_members(membership.version().generation(), membership.members());
+        self.checkpoint
+            .acknowledge_selected(context)
+            .map_err(RelationalSectionCheckpointDenial::Acknowledgement)
     }
 }

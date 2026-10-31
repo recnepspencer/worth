@@ -6,8 +6,13 @@ mod codec;
 #[cfg(feature = "certification-test-authority")]
 mod component_controls_for_test;
 mod readmission;
+pub(crate) mod selection;
+pub use selection::RelationalCheckpointSelectionSource;
 
 pub use attachment::RelationalStoreSection;
-pub use checkpoint::{PreparedRelationalSection, RelationalSectionCheckpointDenial};
+pub use checkpoint::{
+    PreparedRelationalSection, RelationalCheckpointSelectionProtection,
+    RelationalSectionCheckpointDenial,
+};
 pub use close::ClosingRelationalSection;
 pub use readmission::RelationalSectionReadmissionDenial;

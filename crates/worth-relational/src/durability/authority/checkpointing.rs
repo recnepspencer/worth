@@ -77,7 +77,8 @@ impl<'runtime> DurabilityAuthority<'runtime> {
             } else {
                 Vec::new()
             })
-            .with_manifest_publication(manifest_publication),
+            .with_manifest_publication(manifest_publication)
+            .bind_publication(self.runtime.durability.medium()),
         )
     }
 

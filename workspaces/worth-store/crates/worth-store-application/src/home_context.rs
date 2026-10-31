@@ -53,6 +53,7 @@ pub struct ReadmittedApplicationHome {
 impl AuthorityMarker for ReadmittedApplicationHome {}
 
 pub(crate) struct HomeContext {
+    pub(crate) checkpoint: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
     pub(crate) location: std::path::PathBuf,
     pub(crate) descriptor: crate::descriptor::HomeDescriptor,
     pub(crate) serving: Arc<ServingPhysicalRuntime>,

@@ -2,7 +2,7 @@ mod branch_lifecycle_images;
 mod branch_root_schema_images;
 mod checkpoint_coverage;
 mod checkpoint_directory;
-pub(crate) use checkpoint_directory::RelationalCheckpointDirectory;
+pub(crate) use checkpoint_directory::{PreparedCheckpointDirectory, RelationalCheckpointDirectory};
 mod checkpoint_images;
 mod checkpoint_manifest;
 mod checkpoint_member;

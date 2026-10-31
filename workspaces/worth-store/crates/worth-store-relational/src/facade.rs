@@ -4,7 +4,8 @@ pub use crate::recovered_history::RelationalStoreJournalRefusal;
 pub use crate::recovered_transitions::RelationalStoreTransitionJournalRefusal;
 pub use crate::resolution::RelationalStoreCommitFate;
 pub use crate::section::{
-    ClosingRelationalSection, PreparedRelationalSection, RelationalSectionCheckpointDenial,
+    ClosingRelationalSection, PreparedRelationalSection, RelationalCheckpointSelectionProtection,
+    RelationalCheckpointSelectionSource, RelationalSectionCheckpointDenial,
     RelationalSectionReadmissionDenial, RelationalStoreSection,
 };
 pub use crate::transition_resolution::RelationalStoreTransitionFate;
