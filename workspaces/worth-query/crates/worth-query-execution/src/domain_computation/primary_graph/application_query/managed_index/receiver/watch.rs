@@ -32,6 +32,7 @@ pub(super) struct WatchState {
     selection: MaintainedWatchSelection,
     audience: Audience,
     maximum_results: NonZeroUsize,
+    governance: Option<crate::domain_computation::authorization::WorthQueryCapabilityUseIdentity>,
 }
 #[derive(Eq, PartialEq)]
 struct Audience {

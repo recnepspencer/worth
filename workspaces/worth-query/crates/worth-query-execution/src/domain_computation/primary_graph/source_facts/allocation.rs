@@ -18,7 +18,7 @@ pub(in crate::domain_computation) struct SourceFactsAllocation {
 }
 
 impl SourceFactsAllocation {
-    pub(in crate::domain_computation::primary_graph) fn work(
+    pub(in crate::domain_computation) fn work(
         execution: &ExecutionRequest<'_, '_>,
         units: u64,
     ) -> Result<(), Cause> {
@@ -62,7 +62,7 @@ impl SourceFactsAllocation {
             .is_some()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn open(
+    pub(in crate::domain_computation) fn open(
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, Cause> {
         let bytes = (size_of::<Self>() + 2 * size_of::<usize>()) as u64;

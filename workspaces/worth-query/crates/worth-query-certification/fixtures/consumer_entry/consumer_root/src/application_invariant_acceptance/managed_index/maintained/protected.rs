@@ -1,0 +1,23 @@
+//! Protected Parent declarations reuse the actual grant and READ-policy owners.
+#[path = "../boxes/access.rs"]
+pub(super) mod access;
+#[cfg(test)]
+mod court;
+mod query;
+mod seed;
+#[path = "../boxes/status.rs"]
+pub(super) mod status;
+use super::schema::Catalog;
+use worth_query_decl::facade::application_schema::*;
+pub(super) fn declare(
+    schema: ApplicationSchemaDeclarationBuilder<Catalog>,
+) -> ApplicationSchemaDeclarationBuilder<Catalog> {
+    let schema = status::declare(access::declare(schema));
+    schema
+        .application_query(query::definition())
+        .application_query_binding::<query::Binding>()
+        .application_query_binding::<query::AliasBinding>()
+        .application_query(query::blocked_definition())
+        .application_query_binding::<query::BlockedBinding>()
+}
+pub(super) use seed::populate;

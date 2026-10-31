@@ -117,6 +117,14 @@ impl ApplicationCapabilityRelationBinding {
         }
     }
 
+    /// Actual owned string backing, excluding the inline descriptor.
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        self.relation
+            .capacity()
+            .saturating_add(self.from.capacity())
+            .saturating_add(self.to.capacity())
+    }
+
     pub fn relation(&self) -> &str {
         &self.relation
     }

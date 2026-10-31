@@ -30,8 +30,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let opened = (|| {
             let context = context::prepare(&execution, self, binding, &mut plan, &allocation)?;
             if !plan.query.lanes().live_enabled()
-                || context.association.access_contract().meaning().predicate_profile().is_err()
-                || !matches!(plan.governance, super::super::super::super::disclosure::WorthQueryApplicationQueryGovernance::Public) {
+                || context
+                    .association
+                    .access_contract()
+                    .meaning()
+                    .predicate_profile()
+                    .is_err()
+            {
                 return Err(ReceiverCause::Refused(Refusal::UnsupportedMode));
             }
             let adapter = self
@@ -57,6 +62,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .map_err(live_denial)?;
             context.recheck_current(self)?;
             let audience = Audience::of(&plan.graph_work)?;
+            let governance = plan.governance.authorization().map(|authorization| {
+                crate::domain_computation::authorization::WorthQueryCapabilityUseIdentity::retain(authorization, &execution, &allocation)
+            }).transpose()?;
             let maximum_results = plan.controls.maximum_result_count();
             let probe =
                 RetainedPredicateProbe::capture(&execution, &context.association, &plan.parameters)
@@ -108,6 +116,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 selection,
                 audience,
                 maximum_results,
+                governance,
             };
             let completed = self.finish_managed_parent::<B>(
                 &execution,

@@ -1,5 +1,7 @@
 //! Bound requests authorize every whole-Parent opening and refresh independently.
 use super::*;
+mod governed_next;
+mod governed_open;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
 };
@@ -102,15 +104,24 @@ where
                 ));
             })
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
-        match (advancement, completed) {
-            (_, Some(Ok(outcome)))
-                if matches!(&outcome, WorthQueryManagedIndexWatchOutcome::Delivered(_)) =>
-            {
-                Ok(outcome)
-            }
-            (Err(cause), _) => Err(cause),
-            (Ok(()), Some(outcome)) => outcome,
-            (Ok(()), None) => unreachable!("completed advancement ran the managed watch body"),
+        finish_next(advancement, completed)
+    }
+}
+
+fn finish_next<Q, R>(
+    advancement: Result<(), WorthQueryApplicationRequestQueryDenial>,
+    completed: Option<
+        Result<WorthQueryManagedIndexWatchOutcome<Q, R>, WorthQueryApplicationRequestQueryDenial>,
+    >,
+) -> Result<WorthQueryManagedIndexWatchOutcome<Q, R>, WorthQueryApplicationRequestQueryDenial> {
+    match (advancement, completed) {
+        (_, Some(Ok(outcome)))
+            if matches!(&outcome, WorthQueryManagedIndexWatchOutcome::Delivered(_)) =>
+        {
+            Ok(outcome)
         }
+        (Err(cause), _) => Err(cause),
+        (Ok(()), Some(outcome)) => outcome,
+        (Ok(()), None) => unreachable!("completed advancement ran the managed watch body"),
     }
 }

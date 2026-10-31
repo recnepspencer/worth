@@ -5749,9 +5749,29 @@ ordering, fixed summary algebra and region matching; it owns no subscriptions.
 Prefix and closed-box providers use this same path. Supported profiles require the
 complete canonical Source projection. Projected root refinements may conservatively
 wake every matching provider candidate; delivery applies the full Parent again.
-Untracked inputs, candidate-only membership, public-cache-only Sources, protected
-Parents and continuations refuse this first watch entrance. Tracked exact refinement
-and protected continuation qualification remain unfinished Phase 3 work. No verified
+
+For governed Parents, open with `watch_index_governed::<Index, _, _, _>` and
+poll with `next_watch_governed`, passing the capability, operation and original
+purpose input each time. The corresponding `_approved` methods take a genuine
+current approved elevation. These methods use the ordinary capability owner and
+independent Parent READ admission on every call. Retained request correspondence
+binds the actual installed capability, principal/resource, action/purpose,
+elevation, related/field/magnitude/cardinality and context. It retains no old
+grant or decision authority. Revocation and READ denial leave a queued
+notification unacknowledged; a fresh lawful regrant can deliver it.
+
+A governed managed Live Parent must explicitly permit membership influence,
+including `LiveMembership`, for every Parent scalar projection through its
+internal field-use rules. The exact installed Source/Parent projection profile
+then covers implicit provider inputs such as names and bounds. Projecting or
+omitting a value does not itself grant membership influence. A permitted hidden
+field remains omitted by the ordinary final projector and current disclosure
+receipt; a missing influence permission refuses before provider execution.
+Broader Source/projection profiles must extend this closure before admission.
+
+Untracked inputs, candidate-only membership, public-cache-only Sources and
+continuations refuse this watch entrance. Tracked exact refinement and protected
+continuation qualification remain unfinished Phase 3 work. No verified
 narrowed footprint is issued by these traversal or watch strategies.
 
 Indexed results retain complete positive, empty and ordering dependencies from

@@ -1,5 +1,5 @@
 //! The maintained application's fixed public root; no alternate declaration for another root.
-use super::{authoring, bounds, geometry, mutation, prefix, query};
+use super::{authoring, bounds, geometry, mutation, prefix, protected, query};
 use worth_query_decl::facade::{
     application_query::ApplicationManagedIndexDefinition, application_schema::*, authentication::*,
     *,
@@ -13,7 +13,7 @@ worth_query_application! { pub Catalog {
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
-    geometry::declare(authoring::declare(mutation::declare(
+    let schema = geometry::declare(authoring::declare(mutation::declare(
         schema
             .entity(ExternalMapping::reference())
             .entity(Principal::reference())
@@ -58,7 +58,8 @@ pub(super) fn declare(
                 Catalog,
                 prefix::PrefixIndex,
             >::new()),
-    )))
+    )));
+    protected::declare(schema)
 }
 
 worth_query_entity!(pub ExternalMapping for Catalog);

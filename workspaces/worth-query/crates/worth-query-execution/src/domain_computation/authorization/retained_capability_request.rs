@@ -11,6 +11,8 @@ use super::operation_progression::{
 };
 
 mod context;
+mod use_identity;
+pub(in crate::domain_computation) use use_identity::WorthQueryCapabilityUseIdentity;
 mod portable;
 use context::RetainedContext;
 pub(in crate::domain_computation) use portable::MAXIMUM_PORTABLE_BYTES;
@@ -142,6 +144,14 @@ impl WorthQueryRetainedCapabilityRequest {
         candidate: &Self,
         elevation: worth_relational::facade::identity::EntityId,
     ) -> bool {
+        candidate.elevation == Some(elevation) && self.same_request_except_elevation(candidate)
+    }
+
+    fn matches_use(&self, candidate: &Self) -> bool {
+        self.elevation == candidate.elevation && self.same_request_except_elevation(candidate)
+    }
+
+    fn same_request_except_elevation(&self, candidate: &Self) -> bool {
         (match (&self.recorded_actor, &candidate.recorded_actor) {
             (None, None) => true,
             (Some(original), Some(candidate)) => original.same_original_source(candidate),
@@ -150,7 +160,6 @@ impl WorthQueryRetainedCapabilityRequest {
             && candidate.principal == self.principal
             && candidate.resource == self.resource
             && candidate.resource_entity == self.resource_entity
-            && candidate.elevation == Some(elevation)
             && candidate.action == self.action
             && candidate.purpose == self.purpose
             && candidate.related_relation == self.related_relation

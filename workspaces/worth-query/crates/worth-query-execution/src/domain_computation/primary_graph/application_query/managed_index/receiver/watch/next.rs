@@ -26,6 +26,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;
         let outcome = (|| {
             let context = context::prepare(&execution, self, binding, &mut plan, &allocation)?;
+            if !plan.query.lanes().live_enabled()
+                || context
+                    .association
+                    .access_contract()
+                    .meaning()
+                    .predicate_profile()
+                    .is_err()
+            {
+                return Err(ReceiverCause::Refused(Refusal::UnsupportedMode));
+            }
             let Some(state) = watch.state.as_mut() else {
                 return Ok(WorthQueryManagedIndexWatchOutcome::Closed);
             };
@@ -41,6 +51,14 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     &plan.parameters,
                 )?
             {
+                return Err(ReceiverCause::Refused(Refusal::ForeignContext));
+            }
+            let same_use = match (&state.governance, plan.governance.authorization()) {
+                (None, None) => true,
+                (Some(original), Some(current)) => original.matches(current, &execution)?,
+                _ => false,
+            };
+            if !same_use {
                 return Err(ReceiverCause::Refused(Refusal::ForeignContext));
             }
             if !state

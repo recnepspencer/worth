@@ -1609,6 +1609,17 @@ adapter rewrite or CAD cutover is required here.
 
 ### Phase 3: Complete Membership, Exact Refinement And Disclosure
 
+The [governed-watch extension](milestone-9.19-phase3-governed-watch-plan.md)
+adds fresh capability/optional approval and independent READ admission to the
+same complete maintained Parent watch receiver. Its canonical influence closure
+covers all projected provider inputs together with exact Source/Parent profile
+correspondence. Opaque retained capability-use metadata preserves full original
+purpose/request semantics and funding without keeping a grant or decision as
+authority. Genuine revoke/regrant and READ-denial retries preserve queued B,
+while current disclosure keeps permitted hidden fields omitted. This extends
+the supported watch profiles; tracked domain exact refinement, protected
+continuation qualification and Phases4-6 remain unfinished.
+
 The [supported maintained Parent watch slice](milestone-9.19-phase3-predicate-watch-plan.md)
 now supplies inverse routing for complete Public prefix and closed-box Parents.
 The framework owns the live predicate tree, Source/World/scope axes, same-image

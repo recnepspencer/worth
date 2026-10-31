@@ -12,6 +12,7 @@ mod host;
 mod mutation;
 #[path = "prefix.rs"]
 mod prefix;
+mod protected;
 #[path = "query.rs"]
 mod query;
 mod rule;

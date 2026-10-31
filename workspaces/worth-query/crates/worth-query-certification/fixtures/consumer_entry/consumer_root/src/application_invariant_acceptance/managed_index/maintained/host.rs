@@ -2,7 +2,7 @@
 use super::{
     authoring, generated, geometry,
     handler::{DecisionRead, Handler},
-    mutation, prefix, query, rule,
+    mutation, prefix, protected, query, rule,
     schema::*,
 };
 use std::sync::Arc;
@@ -56,6 +56,7 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
         ))?;
         setup.handler::<mutation::Binding, _>(Handler(configuration.decision_read))?;
         setup.handler::<authoring::Binding, _>(authoring::Handler)?;
+        setup.handler::<protected::status::Binding, _>(protected::status::Handler)?;
         setup.invariant(
             rule::ReservedName::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
@@ -99,6 +100,9 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 .finish_action()
                 .native_action::<mutation::Binding>()
                 .finish_action()
+                .native_action::<protected::status::Binding>()
+                .finish_action()
+                .operation::<protected::access::InspectBoxes>()
                 .native_action::<authoring::Binding>()
                 .finish_action()
                 .native_action::<geometry::authoring::Binding>()
@@ -221,6 +225,7 @@ fn install_root(
                 WorthQueryApplicationEntityKey::new("catalog").unwrap())
                 .field(DirectoryIdentity::reference(), "catalog".to_owned())
                 .field(DirectoryNote::reference(), String::new()))?;
+            protected::populate(graph)?;
             Ok(())
         },
     ).expect("the genuine maintained catalog installs before public use")

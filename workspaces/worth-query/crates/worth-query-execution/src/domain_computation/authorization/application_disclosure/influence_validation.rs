@@ -27,6 +27,20 @@ pub(super) fn validate_influence<Schema, Query, Parameters, QueryResult, Scope, 
     results: &BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
     admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
 ) -> Result<(), CompilationStop<E>> {
+    // A managed Live Parent's implicit provider inputs can affect notification
+    // presence. The watch receiver additionally requires the exact installed
+    // Source/Parent projection profile; neither premise substitutes for the other.
+    if query.lanes().live_enabled() && query.read_graph().managed_index_selection().is_some() {
+        for projection in query.read_graph().projections() {
+            admit_cone(admit)?;
+            require_field_influence(
+                fields,
+                (projection.entity(), projection.aspect(), projection.field()),
+                membership_surfaces(query),
+                admit,
+            )?;
+        }
+    }
     for predicate in query.read_graph().predicates() {
         admit_cone(admit)?;
         require_field_influence(fields, predicate.field(), membership_surfaces(query), admit)?;

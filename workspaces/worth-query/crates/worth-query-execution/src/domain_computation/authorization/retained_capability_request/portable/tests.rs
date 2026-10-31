@@ -11,7 +11,8 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1)),
+            // Reuse this actual SDK owner for passive capability-use retention as well.
+            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(100_000)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -85,6 +86,118 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
         WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(&execution, &encoded)
             .unwrap();
     assert!(request.matches_elevated_request(&restored, request.elevation.unwrap()));
+    assert!(
+        request.matches_use(&restored),
+        "Native and decoded context have the same use semantics"
+    );
+    let metadata: serde_json::Value = serde_json::from_str(&encoded).unwrap();
+    let different_entity = serde_json::to_value(EntityId::new(
+        worth_relational::facade::identity::PartitionId::main(),
+        99,
+        1,
+    ))
+    .unwrap();
+    // These are alternate serialized request facts, not authorization verdicts.
+    // Changing any named purpose/resource dimension must change correspondence.
+    for (field, replacement) in [
+        ("purpose", serde_json::json!({"UInt64": 6})),
+        ("action", serde_json::json!({"UInt64": 6})),
+        ("principal", different_entity.clone()),
+        ("resource", different_entity.clone()),
+        ("elevation", serde_json::Value::Null),
+        ("related", different_entity),
+        ("resource_entity", serde_json::json!("different-resource")),
+        ("field", serde_json::json!({"UInt64": 9})),
+        ("magnitude", serde_json::json!({"UInt64": 9})),
+        ("cardinality", serde_json::json!(10)),
+        ("context_name", serde_json::json!("different-context")),
+        ("context_type", serde_json::json!("different-context-type")),
+        (
+            "capability_identity",
+            serde_json::to_value([9u8; 32]).unwrap(),
+        ),
+    ] {
+        let mut changed = metadata.clone();
+        changed[field] = replacement;
+        let changed = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
+            &execution,
+            &changed.to_string(),
+        )
+        .unwrap();
+        assert!(
+            !request.matches_use(&changed),
+            "{field} belongs to exact capability-use correspondence"
+        );
+    }
+    let mut changed_context = metadata.clone();
+    changed_context["context"][0][1] = serde_json::to_value(EntityId::new(
+        worth_relational::facade::identity::PartitionId::main(),
+        100,
+        2,
+    ))
+    .unwrap();
+    let changed_context = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
+        &execution,
+        &changed_context.to_string(),
+    )
+    .unwrap();
+    assert!(
+        !request.matches_use(&changed_context),
+        "context membership is part of the original use"
+    );
+    drop(changed_context);
+    let mut changed_relation = metadata.clone();
+    changed_relation["related_relation"]["relation"] = serde_json::json!("different-relation");
+    let changed_relation = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
+        &execution,
+        &changed_relation.to_string(),
+    )
+    .unwrap();
+    assert!(
+        !request.matches_use(&changed_relation),
+        "the actual relation binding is part of the original use"
+    );
+    drop(changed_relation);
+    let elevation = EntityId::new(
+        worth_relational::facade::identity::PartitionId::main(),
+        101,
+        2,
+    );
+    let mut changed_elevation = metadata.clone();
+    changed_elevation["elevation"] = serde_json::to_value(elevation).unwrap();
+    let changed_elevation = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
+        &execution,
+        &changed_elevation.to_string(),
+    )
+    .unwrap();
+    assert!(!request.matches_use(&changed_elevation));
+    assert!(
+        request.matches_elevated_request(&changed_elevation, elevation),
+        "factoring retains the separate original approval selector rule"
+    );
+    drop(changed_elevation);
+    let before_use = lease.charged_memory_bytes();
+    let allocation =
+        crate::domain_computation::primary_graph::SourceFactsAllocation::open(&execution).unwrap();
+    let use_identity = super::super::use_identity::WorthQueryCapabilityUseIdentity::retain_request(
+        &restored,
+        &execution,
+        &allocation,
+    )
+    .unwrap();
+    let retained_charge = lease.charged_memory_bytes();
+    assert!(
+        retained_charge > before_use,
+        "the actual original request pays for extended immutable use custody"
+    );
+    drop(allocation);
+    assert_eq!(lease.charged_memory_bytes(), retained_charge);
+    drop(use_identity);
+    assert_eq!(
+        lease.charged_memory_bytes(),
+        before_use,
+        "the passive use releases its exact retained payer"
+    );
     let retained = restored.clone();
     let charged = lease.charged_memory_bytes();
     assert!(charged > encoded.len() as u64);
@@ -118,6 +231,16 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
     assert!(nonportable
         .encode_workflow_approval_request(&execution)
         .is_err());
+    let allocation =
+        crate::domain_computation::primary_graph::SourceFactsAllocation::open(&execution).unwrap();
+    let use_identity = super::super::use_identity::WorthQueryCapabilityUseIdentity::retain_request(
+        &nonportable,
+        &execution,
+        &allocation,
+    )
+    .unwrap();
+    drop(use_identity);
+    drop(allocation);
 }
 
 #[test]

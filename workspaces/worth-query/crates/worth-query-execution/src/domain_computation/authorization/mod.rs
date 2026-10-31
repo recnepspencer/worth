@@ -30,6 +30,7 @@ pub(in crate::domain_computation) use operation_scope_binding::WorthQueryDecisio
 mod retained_capability_request;
 pub(in crate::domain_computation) use retained_capability_request::WorkflowApprovalRequestDecodingDenial;
 pub(in crate::domain_computation) use retained_capability_request::WorkflowApprovalRequestEncodingDenial;
+pub(in crate::domain_computation) use retained_capability_request::WorthQueryCapabilityUseIdentity;
 pub(in crate::domain_computation) use retained_capability_request::WorthQueryRetainedCapabilityRequest;
 pub(in crate::domain_computation) use retained_capability_request::MAXIMUM_PORTABLE_BYTES;
 mod retained_capability_support;

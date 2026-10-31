@@ -9,6 +9,12 @@ pub(in crate::domain_computation::authorization) enum RetainedContext {
     Decoded(Vec<Entry>),
 }
 impl RetainedContext {
+    pub(super) fn retained_storage_bytes(&self) -> Option<u64> {
+        match self {
+            Self::Native(entries) => crate::domain_computation::primary_graph::admitted_capture::storage::tree_clone_bytes::<Entry>(entries.len()),
+            Self::Decoded(entries) => u64::try_from(entries.capacity().checked_mul(size_of::<Entry>())?).ok(),
+        }
+    }
     pub(super) fn decoded(mut entries: Vec<Entry>) -> Result<Self, ()> {
         entries.sort_unstable_by(|left, right| left.0.cmp(&right.0));
         if entries.windows(2).any(|pair| pair[0].0 == pair[1].0) {
