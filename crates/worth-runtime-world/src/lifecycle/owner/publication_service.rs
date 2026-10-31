@@ -1,4 +1,5 @@
 use super::RuntimeWorldOwnerRoot;
+mod durable;
 
 #[cfg(test)]
 use crate::branch::ProductBranchReferenceCell;

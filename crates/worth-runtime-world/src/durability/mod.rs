@@ -4,8 +4,12 @@ mod association;
 mod binding;
 mod codec;
 mod frontiers;
+mod initial_components;
+pub(crate) use initial_components::RecordedWorldInitialComponents;
 mod medium;
+mod occurrence_custody;
 mod open_custody;
+pub(crate) use occurrence_custody::WorldOccurrenceCustody;
 pub(crate) use open_custody::WorldDurableOpenCustody;
 mod readmission;
 pub(crate) use artifact::{

@@ -8,6 +8,7 @@ mod history;
 mod name;
 pub(crate) mod observation;
 mod reference_cell;
+pub(crate) use reference_cell::WorldProductMovementPermit;
 mod reference_description;
 #[cfg(test)]
 pub(crate) use reference_cell::publication_unwind;

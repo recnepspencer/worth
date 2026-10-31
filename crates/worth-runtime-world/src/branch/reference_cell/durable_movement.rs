@@ -33,6 +33,7 @@ impl ProductMovementPhase {
 
 /// Only the exact current cell can issue this operation. Losing it keeps the
 /// same subject and actual acknowledgement in that cell until fresh recovery.
+#[derive(Debug)]
 pub(crate) struct WorldProductMovementPermit {
     cell: ProductBranchReferenceCell,
     subject: WorldDurableArtifact,
@@ -134,17 +135,16 @@ impl WorldProductMovementPermit {
         drop(previous);
     }
 
-    pub(crate) fn publish_recorded<A>(
+    pub(crate) fn publish_recorded(
         mut self,
         expected: &ProductBranchObservation,
-        argument: &mut A,
-        materialize: impl FnOnce(&mut A) -> &mut Option<ProductBranchHeadProtection>,
+        successor: &mut Option<ProductBranchHeadProtection>,
         publication: crate::history::PreparedPublicationRecord,
     ) -> Result<ProductBranchReferenceMovement, ProductBranchReferenceLoss> {
         let result = self.cell.replace_expected_permitted(
             expected,
-            argument,
-            materialize,
+            successor,
+            |successor| successor,
             Some(publication),
             Some(&self),
         );

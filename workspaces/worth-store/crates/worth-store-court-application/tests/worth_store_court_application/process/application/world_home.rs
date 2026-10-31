@@ -25,6 +25,30 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
         "Original World Root"
     );
     assert_eq!(bootstrap.product_branch().reference_generation().get(), 0);
+    let cancellation = worth_runtime_world::facade::RuntimeWorldCancellationSource::new();
+    let prepared = fixture.prepare_publication(
+        &execution,
+        bootstrap.product_branch().clone(),
+        crate::batches::create(0),
+        &cancellation.token(),
+    );
+    let performed = fixture.publish(&execution, prepared, &cancellation.token());
+    assert_eq!(
+        performed.old_product_head().selected_commit(),
+        bootstrap.product_branch().selected_commit()
+    );
+    assert_eq!(performed.new_product_head().reference_generation().get(), 1);
+    assert_eq!(
+        performed
+            .new_product_head()
+            .branch_identity()
+            .name()
+            .as_str(),
+        "Original World Root"
+    );
+    // This is the actual product handoff. Dropping an unconsumed performed
+    // claim deliberately leaves its successor observation owed to delivery.
+    drop(performed.consume());
     // Only the World retains these root/history pins after this external
     // bootstrap observation is dropped. An additional Native read below
     // separately exercises genuine external custody.
@@ -88,7 +112,10 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
             checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
             ..
         } => {}
-        _ => panic!("release of actual external read permits the same Native/Home close"),
+        ApplicationHomeCloseOutcome::CloseRefused { reason, .. } => {
+            panic!("same Native/Home close remains refused after external read release: {reason:?}")
+        }
+        _ => panic!("same Home close must report its World checkpoint refusal"),
     }
     drop(inert_ports);
     let reopened = crate::durable_run::open(directory.path(), &execution).unwrap();

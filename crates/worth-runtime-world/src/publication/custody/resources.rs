@@ -18,6 +18,8 @@ use crate::retention::{
 #[derive(Debug)]
 pub(crate) struct ActiveAttemptResources {
     pub(crate) durable_open: Option<Arc<crate::durability::WorldDurableOpenCustody>>,
+    pub(crate) durable_occurrence: Option<crate::durability::WorldOccurrenceCustody>,
+    pub(super) durable_movement: Option<crate::branch::WorldProductMovementPermit>,
     pub(crate) conditional_definition: Option<Arc<super::ConditionalDefinitionAttemptCustody>>,
     pub(crate) product_comparison_costs:
         Option<crate::publication::CompositePublicationCostCounters>,

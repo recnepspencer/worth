@@ -56,6 +56,7 @@ where
     pub(crate) fn seal(
         &mut self,
         partition: SignalOwnerPartition<D, I, T>,
+        schema_commitment: String,
         conditional_budget: crate::runtime_policy::SignalConditionalEvaluationBudget,
         temporal_budget: crate::runtime_policy::SignalConditionalTemporalBudget,
     ) {
@@ -76,6 +77,7 @@ where
         let owner = SignalOwner::from_partition(
             runtime_instance_id,
             definition_basis,
+            schema_commitment,
             partition,
             basis_registry,
             conditional_budget,

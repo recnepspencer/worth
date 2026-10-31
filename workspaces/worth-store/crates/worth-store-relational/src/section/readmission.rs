@@ -78,11 +78,12 @@ impl RelationalStoreSection {
                 RecoveryVerificationMode::NormalRecoveryVerification,
             )
             .map_err(Denial::Native)?;
-        std::sync::Arc::get_mut(&mut self.runtime)
+        let (_, authority) = std::sync::Arc::get_mut(&mut self.runtime)
             .ok_or(Denial::RuntimeSharedBeforeReadmission)?
             .durability_recovery()
-            .recover(execution, plan)
+            .recover_with_authority(execution, plan)
             .map_err(Denial::Native)?;
+        self.recovered = Some(authority);
         Ok(())
     }
 }

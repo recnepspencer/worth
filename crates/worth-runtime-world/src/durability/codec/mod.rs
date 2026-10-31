@@ -1,5 +1,6 @@
 mod fields;
-mod native_component;
+mod initial_components;
+pub(in crate::durability) mod occurrence_backing;
 use super::artifact::WORLD_ARTIFACT_VERSION;
 use super::{WorldDurableFrameDenial as Denial, WorldDurableMediumDenial, WorldRecord};
 use fields::*;
@@ -84,7 +85,7 @@ pub(crate) fn decode(bytes: &[u8], home: HomeIdentity) -> Result<WorldRecord, De
                 head,
                 bootstrap,
                 program_revision: read.fixed()?,
-                relational: read.recorded_component()?,
+                components: read.recorded_components()?,
             }
         }
         3 => WorldRecord::OpenAttempt(read.open()?),
@@ -151,13 +152,13 @@ fn write_record(record: &WorldRecord, out: &mut Emit<'_>) -> Result<(), Denial> 
             head: value,
             bootstrap,
             program_revision,
-            relational,
+            components,
         } => {
             out(&[2])?;
             head(out, value)?;
             number(out, bootstrap.ordinal())?;
             out(program_revision)?;
-            native_component::emit(out, relational)
+            initial_components::emit(out, components)
         }
         WorldRecord::OpenAttempt(value) => {
             out(&[3])?;

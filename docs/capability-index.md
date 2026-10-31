@@ -1003,14 +1003,20 @@ signal_basis)` validates the actual current Signal owner and supplies the same
 private Bridge's baseline. Its retained bootstrap can be advanced through
 `advance_durable_bootstrap_root(request)`. The existing bootstrap state keeps the
 original pre-install history, pins and branch cell across pending calls. World
-artifact v2 carries Native's explicit recorded component and the actual program
-revision; older Branch grammar refuses. Root installation follows the actual
+artifact v3 requires Native's explicit recorded component, Signal's owner-proven
+InitialEmpty recipe, Bridge's versioned registered-source baseline and the actual
+program revision; v1/v2 and missing seed fields refuse. General authored Signal
+or installed Bridge state refuses before this narrow bootstrap. Root installation follows the actual
 sealed journal acknowledgement. The focused filesystem Home court covers this
 bootstrap and actual root/history/Bridge release, followed by Native-only reopen;
 it grants no cold World seed or historical readmission claim.
 
 World's durable open retains its original identities and one Native preparation,
-but its prepared wrapper does not yet expose execution. Attached checkpoint
+and its prepared wrapper executes through `execute_durable_without_signal`.
+The original occurrence backing is admitted before Native effects, then filled
+only with the original settled receipt, position and artifact digest. Actual
+journal selection authorizes the same cell's live CAS; pending retains the
+original ready custody and capacities. Attached checkpoint
 refuses `WorldSectionRequired`; close reports that checkpoint failure. Native-only
 reopened Home checkpoint also refuses before capture when actual World journal
 heads exist. This presence check grants no World proof from empty streams;

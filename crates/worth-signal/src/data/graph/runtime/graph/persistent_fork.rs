@@ -115,6 +115,7 @@ impl SignalGraph {
         ));
         (
             Self {
+                initial_empty_origin: false,
                 lifecycle_token: Default::default(),
                 instance_id: self.instance_id,
                 arena: self.arena.fork_persistent(),

@@ -32,7 +32,7 @@ impl WorldIdentityFrontiers {
             WorldRecord::Branch {
                 head,
                 bootstrap,
-                relational: _,
+                components: _,
                 program_revision: _,
             } => {
                 include(

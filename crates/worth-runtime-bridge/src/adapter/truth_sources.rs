@@ -2,6 +2,12 @@ use super::*;
 use crate::input::envelope::{TruthBranchIdentity, TruthCommitIdentity};
 
 pub trait CommittedPatchSource: Send + Sync + 'static {
+    /// Descriptive meaning of the registered, unpartitioned baseline source.
+    /// This is correlation data, never source or restoration authority.
+    fn runtime_world_baseline_graph_role(&self) -> Option<&str> {
+        None
+    }
+
     fn authoritative_source_profile(
         &self,
     ) -> Option<crate::input::envelope::BridgeAuthoritativeSourceProfile> {

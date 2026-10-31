@@ -8,7 +8,7 @@ use worth_foundational::facade::{
 };
 pub const WORLD_ARTIFACT_PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.world.artifact");
-pub const WORLD_ARTIFACT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(2);
+pub const WORLD_ARTIFACT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(3);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct DurableWorldHead {
@@ -45,7 +45,7 @@ pub(crate) enum WorldRecord {
         head: DurableWorldHead,
         bootstrap: worth_foundational::facade::DurableWorldBootstrapAttemptIdentity,
         program_revision: [u8; 32],
-        relational: worth_relational::facade::branch::RecordedRelationalComponentReference,
+        components: super::RecordedWorldInitialComponents,
     },
     OpenAttempt(WorldOpenAttemptRecord),
     Occurrence {
@@ -99,7 +99,7 @@ pub enum WorldDurableFrameDenial {
 #[derive(Clone, Debug)]
 pub struct WorldDurableArtifact {
     pub(crate) record: WorldRecord,
-    bytes: Arc<worth_execution::ExecutionArray<u8>>,
+    bytes: Arc<worth_execution::ExecutionImmutableBytes>,
 }
 impl WorldDurableArtifact {
     /// Whether both values retain the same original owner-framed allocation.
@@ -111,8 +111,17 @@ impl WorldDurableArtifact {
         record: WorldRecord,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, super::WorldDurableMediumDenial> {
-        let bytes = Arc::new(super::codec::encode(&record, execution)?);
+        let bytes = Arc::new(super::codec::encode(&record, execution)?.into_immutable_bytes());
         Ok(Self { record, bytes })
+    }
+    pub(crate) fn from_preallocated(
+        record: WorldRecord,
+        bytes: worth_execution::ExecutionImmutableBytes,
+    ) -> Self {
+        Self {
+            record,
+            bytes: Arc::new(bytes),
+        }
     }
     pub(crate) fn readmit(
         bytes: &[u8],
@@ -124,7 +133,7 @@ impl WorldDurableArtifact {
         Self::from_record(record, execution)
     }
     pub fn as_bytes(&self) -> &[u8] {
-        self.bytes.elements()
+        self.bytes.bytes()
     }
     pub fn journal(&self) -> WorldDurableJournal {
         self.record.journal()

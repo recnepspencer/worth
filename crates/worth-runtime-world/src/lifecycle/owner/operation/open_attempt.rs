@@ -48,6 +48,11 @@ where
             .as_ref()
             .ok_or(Refusal::NotHomeBound)?
             .clone();
+        if binding.occurrence_unresolved() {
+            return Err(Refusal::Durable(
+                crate::durability::WorldDurableMediumDenial::PublicationUnresolved,
+            ));
+        }
         let owner = self
             .owner_identity()
             .durable()

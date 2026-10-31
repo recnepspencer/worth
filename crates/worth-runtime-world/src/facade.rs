@@ -78,8 +78,9 @@ pub use crate::identity::{
     RuntimeWorldIdentityFamily, RuntimeWorldOwnerIdentity,
 };
 pub use crate::publication::{
-    WorldNativePreparationDenial, WorldNativePreparationRefusal, WorldOpenAttemptOutcome,
-    WorldOpenAttemptRefusal, WorldOpenedPublicationAttempt, WorldPendingOpenAttempt,
+    WorldDurablePublicationDenial, WorldDurablePublicationOutcome, WorldNativePreparationDenial,
+    WorldNativePreparationRefusal, WorldOpenAttemptOutcome, WorldOpenAttemptRefusal,
+    WorldOpenedPublicationAttempt, WorldPendingDurablePublication, WorldPendingOpenAttempt,
     WorldPreparedPublicationWithoutSignal,
 };
 

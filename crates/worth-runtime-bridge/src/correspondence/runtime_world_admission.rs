@@ -2,6 +2,9 @@ mod admission;
 mod basis;
 mod denial;
 mod inspection;
+mod recorded_baseline;
+pub(crate) use recorded_baseline::{readmit_baseline, recorded_baseline};
+pub use recorded_baseline::{RecordedRuntimeWorldBaseline, RuntimeWorldBaselineRefusal};
 #[cfg(test)]
 mod tests;
 

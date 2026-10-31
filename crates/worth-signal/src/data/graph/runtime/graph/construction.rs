@@ -31,6 +31,7 @@ impl Clone for SignalGraph {
                 observation_sessions.shared_last_completion(),
             ));
         Self {
+            initial_empty_origin: false,
             lifecycle_token: Default::default(),
             instance_id,
             arena: self.arena.operational_clone(),
@@ -92,6 +93,7 @@ impl SignalGraph {
                 observation_sessions.shared_last_completion(),
             ));
         Self {
+            initial_empty_origin: true,
             lifecycle_token: Default::default(),
             instance_id: super::next_signal_graph_instance_id(),
             arena: NodeArena {

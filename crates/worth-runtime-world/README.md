@@ -1,6 +1,6 @@
 # `worth-runtime-world`
 
-Runtime World owns memory-resident product branches and coordinated publication
+Runtime World owns product branches and coordinated publication
 across real Relational and Signal owners. Bridge owns their installed semantic
 correspondence; component owners retain their own mutation, settlement and basis
 authority. The public import surface is `worth_runtime_world::facade`.
@@ -143,9 +143,19 @@ preserves the generation charge selected by its genuine current custodian,
 including pending retries hidden by a newer same-node index entry.
 These operations do not supply Query provider storage, authorization or restart.
 
-This crate has no Query, Store, persistence, replay, codec or physical-runtime
-dependency. It does not provide durable restart, multi-parent history, rollback,
-or Query public completion. Query already consumes this crate through
+World owns the three attached-Home journal grammars through an owner-neutral
+medium; Store owns physical publication and Home lifecycle. World artifact v3
+requires Native's recorded predecessor plus Signal's owner-proven InitialEmpty
+recipe and Bridge's versioned uninstalled baseline. Older World artifacts
+refuse. The attached Relational-only publication path opens original custody
+before Native preparation, preallocates its occurrence destination, then fills
+it from the original settled Native evidence. Actual journal selection precedes
+the same product cell's live movement. Pending publication retains the original
+ready attempt and capacities; indeterminate selection requires reopen.
+
+Existing-Home World reconciliation, recovered dispositions, full World
+checkpoint coverage and the process-death journey remain unfinished. This crate
+has no Query, Store or physical-runtime dependency. Query consumes it through
 `worth_runtime_world::facade` (from `worth-query-execution` and
 `worth-query-publication`) to publish application commits and report their
 product outcomes.

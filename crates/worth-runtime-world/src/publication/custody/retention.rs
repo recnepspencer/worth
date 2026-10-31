@@ -8,6 +8,8 @@ use super::{ActiveAttemptCustody, ActiveHistoryCustody, ActivePinCustody};
 /// A pre-movement loser releases the unused history slot. An intermediate
 /// owner-effect terminal installs its already prepared successor for recovery.
 pub(crate) enum RetainedCommitDisposition {
+    /// Durable selection may still need every original prepared destination.
+    KeepOriginal,
     InstallSuccessor,
     ReleaseUnused,
 }
@@ -40,6 +42,9 @@ impl ActiveAttemptCustody {
     }
 
     fn prepare_retained_resources(&mut self, disposition: RetainedCommitDisposition) {
+        if matches!(disposition, RetainedCommitDisposition::KeepOriginal) {
+            return;
+        }
         self.retain_creation_resources();
         let mut lease = self.lease_resources();
         let resources = lease.resources_mut();
@@ -75,6 +80,7 @@ impl ActiveAttemptCustody {
             }
         }
         match disposition {
+            RetainedCommitDisposition::KeepOriginal => unreachable!("preserved above"),
             RetainedCommitDisposition::InstallSuccessor => {
                 if let ActiveHistoryCustody::Reserved(capacity) = &mut resources.history_custody {
                     if resources.history_pins.is_none()

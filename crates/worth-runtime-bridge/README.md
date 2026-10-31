@@ -297,3 +297,16 @@ session and consuming terminal retain those responsibilities. The common Bridge
 assembler reports no Native binding, evaluation or invalidation for a source-only
 reference. The performed-source reporting case and three affected Bridge controls
 pass. This does not qualify connected producer assembly or rich Native materialization.
+
+### Initial baseline for an attached World
+
+`RecordedRuntimeWorldBaseline` records the versioned, uninstalled correspondence
+baseline and its registered source's stable adapter and graph-role meaning.
+`RuntimeWorldCorrespondencePort` exports only an actual admitted baseline with
+no installed semantic dependency. Readmission compares that recipe with the
+current registered source and consumes the Signal owner's fresh admitted
+InitialEmpty seed to mint a new local Bridge basis. Unsupported sources,
+installed dependencies and altered meaning refuse. Source profile and role
+descriptions remain correlation data. Store's private Home composition supplies
+the same actual Native owner and registered source; a matching caller-supplied
+profile cannot construct the concrete Home stage.

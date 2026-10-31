@@ -103,6 +103,7 @@ pub use preview_session_liveness::{
 pub use request::BridgeRouteRequest;
 pub use runtime::RuntimeBridge;
 pub use runtime_world::{
+    RecordedRuntimeWorldBaseline, RuntimeWorldBaselineRefusal,
     RuntimeWorldCorrespondenceInspectionCounters, RuntimeWorldCorrespondencePort,
 };
 pub use standard_path::{

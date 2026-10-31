@@ -6,6 +6,8 @@ pub enum WorldDurableBootstrapRefusal {
     NoPendingBootstrap,
     Preparation(RuntimeWorldBootstrapNoEffectCause),
     Native(worth_relational::facade::branch::RelationalRecordedComponentRefusal),
+    SignalInitialRoot(worth_signal::facade::branch::SignalInitialEmptyRootRefusal),
+    BridgeBaseline(worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal),
     Medium(crate::durability::WorldDurableMediumDenial),
 }
 #[derive(Debug)]

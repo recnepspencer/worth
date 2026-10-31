@@ -14,6 +14,7 @@ pub enum WorldNativePreparationDenial {
     MissingAssociation,
     ForeignAssociation,
     Lowering(crate::publication::NoEffectCause),
+    Durable(crate::durability::WorldDurableMediumDenial),
 }
 
 /// Refusal retains the same committed open, independently issued identities,
@@ -105,12 +106,13 @@ impl WorldOpenedPublicationAttempt {
                 })
             }
         };
-        self.complete_native_preparation(candidate)
+        self.complete_native_preparation(candidate, request)
     }
 
     fn complete_native_preparation(
-        self,
+        mut self,
         candidate: PreparedRelationalCommitCandidate,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorldPreparedPublicationWithoutSignal, WorldNativePreparationRefusal> {
         let Some(association) = candidate.caller_association() else {
             return Err(WorldNativePreparationRefusal {
@@ -143,6 +145,16 @@ impl WorldOpenedPublicationAttempt {
                 })
             }
         };
+        if let Err(cause) = self
+            .original
+            .custody
+            .prepare_durable_occurrence(&self.original.subject, request)
+        {
+            return Err(WorldNativePreparationRefusal {
+                open: self,
+                cause: WorldNativePreparationDenial::Durable(cause),
+            });
+        }
         let original = self.original;
         let expected = original.resolved.expected().clone();
         let attempt = ReservedCompositePublicationAttempt::from_open(

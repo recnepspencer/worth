@@ -70,10 +70,12 @@ pub(crate) use runtime_world_admission::RuntimeWorldCorrespondenceInspectionLedg
 pub(crate) use runtime_world_admission::{
     admit_baseline, admit_installed_basis, compare_current_basis,
 };
+pub(crate) use runtime_world_admission::{readmit_baseline, recorded_baseline};
 pub use runtime_world_admission::{
     AdmittedRuntimeWorldCorrespondenceBasis, RuntimeWorldCorrespondenceAdmissionDenial,
     RuntimeWorldCorrespondenceInspectionCounters,
 };
+pub use runtime_world_admission::{RecordedRuntimeWorldBaseline, RuntimeWorldBaselineRefusal};
 pub(crate) use semantic_dependency_binding::BridgeInstalledBindingKey;
 pub use semantic_dependency_candidate::{
     BridgeSemanticDependencyCandidate, BridgeSemanticDependencyCandidateParts,

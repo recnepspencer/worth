@@ -6,6 +6,7 @@ use crate::data::node::{NodeDefinitionData, NodeEntry, NodeWarmData};
 
 impl SignalGraph {
     pub(in crate::data::graph) fn allocate_node(&mut self, entry: NodeEntry) -> NodeId {
+        self.initial_empty_origin = false;
         let (definition, hot, warm, cold) = entry.into_storage_parts();
         while let Some(index) = self.arena.free_list.pop_back() {
             if index as usize >= self.arena.nodes.len() {

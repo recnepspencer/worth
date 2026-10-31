@@ -20,6 +20,7 @@ pub(super) mod fork_destination;
 pub(super) mod fork_reservation;
 mod inspection;
 mod output_retention;
+pub(super) mod recorded_initial_root;
 mod retention;
 #[path = "owner/retention_preflight.rs"]
 mod retention_preflight;
@@ -55,6 +56,7 @@ where
 {
     runtime_instance_id: u64,
     definition_basis: u64,
+    initial_empty_root: std::sync::OnceLock<recorded_initial_root::InitialEmptyRootWitness>,
     next_branch_id: AtomicU64,
     lifecycle: Arc<SignalOwnerLifecycleState>,
     registry: Arc<SignalBranchRegistry<SignalBranchCellState<D, I, T>>>,
@@ -80,11 +82,13 @@ where
     fn from_partition(
         runtime_instance_id: u64,
         definition_basis: u64,
+        schema_commitment: String,
         partition: SignalOwnerPartition<D, I, T>,
         basis_registry: SignalBranchBasisRegistry,
         conditional_budget: crate::runtime_policy::SignalConditionalEvaluationBudget,
         temporal_budget: crate::runtime_policy::SignalConditionalTemporalBudget,
     ) -> Arc<Self> {
+        let initial_empty_branch = partition.initial_empty_branch();
         let (metadata, next_branch_id, retention, selected_branch_id, cells) =
             partition.into_parts();
         assert!(
@@ -104,6 +108,7 @@ where
         let owner = Arc::new(Self {
             runtime_instance_id,
             definition_basis,
+            initial_empty_root: std::sync::OnceLock::new(),
             next_branch_id: AtomicU64::new(next_branch_id),
             lifecycle,
             registry,
@@ -150,6 +155,9 @@ where
                 0,
                 cell.incarnation().get(),
             );
+            if initial_empty_branch == Some(branch_id) {
+                owner.install_initial_empty_witness(&admission, &cell, &schema_commitment);
+            }
         }
         drop(admission);
         owner

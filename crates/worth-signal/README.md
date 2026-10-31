@@ -189,6 +189,18 @@ evidence; Query and Runtime World carry it without reopening graph access or
 restamping component identity. A product branch may reuse the same Signal basis
 while its Relational sibling advances independently.
 
+The attached-Home Relational-only lane records `RecordedSignalInitialEmptyRoot`.
+Only the real partition-to-owner transfer can establish its private initial
+witness: one untouched original root, no authored nodes, installed definition,
+fork, snapshot, retirement, restore or merge history. Allocation irreversibly
+invalidates graph-origin eligibility; clone and reconstruction never inherit it.
+The recipe carries the actual full schema commitment and versioned Empty
+visibility/definition meaning. `SignalBranchBasisPort` exports it from the exact
+current basis and readmits it only through a freshly composed qualifying owner,
+acquiring genuine basis retention. Decoding the recipe or matching a folded
+definition basis grants no admission. General authored graph durability remains
+outside this narrow seed contract.
+
 ## One Continuous Story
 
 The flagship story looks like this:

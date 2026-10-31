@@ -7,6 +7,8 @@ use worth_store::physical_runtime::{AdmittedRecordPlacementPolicy, ServingPhysic
 /// One actual native runtime attached to its two ordered journals.
 /// This component carries no application, World or Query recovery proof.
 pub struct RelationalStoreSection {
+    pub(super) recovered:
+        Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
     pub(super) runtime: Arc<RelationalRuntime>,
     pub(super) cold_source: Arc<crate::cold_source::StoreColdSource>,
     pub(super) serving: Arc<ServingPhysicalRuntime>,
@@ -47,6 +49,7 @@ impl RelationalStoreSection {
         );
         let runtime = definition.build_durable(Box::new(medium))?;
         Ok(Self {
+            recovered: None,
             runtime: Arc::new(runtime),
             cold_source,
             serving,
@@ -62,6 +65,14 @@ impl RelationalStoreSection {
     /// retain borrowed runtime access and cannot extract lifecycle ownership.
     pub fn world_composition_runtime(&self) -> Arc<RelationalRuntime> {
         Arc::clone(&self.runtime)
+    }
+
+    /// Closed Home readmission borrows evidence from this section's ONE
+    /// successful Native recovery. Absence grants no recovery authority.
+    pub fn world_recovery_authority(
+        &self,
+    ) -> Option<&worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority> {
+        self.recovered.as_ref()
     }
 
     pub fn cold_storage_reads(&self) -> crate::RelationalStoreColdReadCounters {

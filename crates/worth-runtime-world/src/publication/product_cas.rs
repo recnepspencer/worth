@@ -12,10 +12,14 @@ use super::{
     CompositePublicationCostCounters, RuntimeWorldPublicationOutcome,
 };
 
+mod durable;
 #[path = "product_cas/movement.rs"]
 mod movement;
 #[path = "product_cas/retained.rs"]
 mod retained;
+pub use durable::{
+    WorldDurablePublicationDenial, WorldDurablePublicationOutcome, WorldPendingDurablePublication,
+};
 
 use movement::attempt_product_movement;
 use retained::retain_before_product_movement;
@@ -63,10 +67,15 @@ impl std::fmt::Debug for CompositePublicationReady {
 
 impl CompositePublicationReady {
     pub(crate) fn retain(self, cause: ProductUnpublishedCause) -> RuntimeWorldPublicationOutcome {
+        let disposition = if self.custody.has_durable_open() {
+            crate::publication::RetainedCommitDisposition::KeepOriginal
+        } else {
+            crate::publication::RetainedCommitDisposition::ReleaseUnused
+        };
         RuntimeWorldPublicationOutcome::ProductUnpublished(self.custody.retain(
             cause,
             None,
-            crate::publication::RetainedCommitDisposition::ReleaseUnused,
+            disposition,
         ))
     }
 

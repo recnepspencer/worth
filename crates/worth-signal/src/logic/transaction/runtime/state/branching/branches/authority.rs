@@ -14,6 +14,7 @@ use super::super::super::temporal::TemporalRuntimeState;
 
 #[path = "authority/conditional_owned_async.rs"]
 mod conditional_owned_async;
+mod initial_empty;
 #[cfg(test)]
 #[path = "authority/replacement_test_observation.rs"]
 mod replacement_test_observation;

@@ -121,6 +121,17 @@ where
         }
     }
 
+    pub(super) fn has_initial_empty_history(
+        &self,
+        admission: &SignalOwnerOperationAdmission<'_>,
+    ) -> Result<bool, SignalOwnerMetadataAuthorizationDenial> {
+        let _hold = self.authorize(admission)?;
+        Ok(
+            self.pending_snapshot_reservations.load(Ordering::Acquire) == 0
+                && self.lock().has_initial_empty_history(),
+        )
+    }
+
     fn authorize<'a>(
         &self,
         admission: &'a SignalOwnerOperationAdmission<'_>,

@@ -37,6 +37,7 @@ impl WorldDurableHomeBinding {
 }
 #[derive(Debug)]
 pub enum WorldDurableMediumDenial {
+    Allocation(worth_execution::ExecutionAllocationDenial),
     Backing(worth_execution::ExecutionRequestArrayDenial),
     Request(WorkCeilingDenial),
     Frame(WorldDurableFrameDenial),

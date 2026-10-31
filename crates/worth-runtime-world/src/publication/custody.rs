@@ -5,6 +5,7 @@
 
 mod conditional_definition;
 mod creation;
+mod durable_publication;
 pub(crate) use conditional_definition::ConditionalDefinitionAttemptCustody;
 #[cfg(test)]
 mod creation_rehearsal;
@@ -78,6 +79,18 @@ impl ActiveAttemptCustody {
             .resources
             .as_ref()
             .is_some_and(|resources| resources.durable_open.is_some())
+    }
+
+    pub(crate) fn prepare_durable_occurrence(
+        &mut self,
+        original: &crate::durability::WorldDurableArtifact,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::durability::WorldDurableMediumDenial> {
+        let mut lease = self.lease_resources();
+        lease.resources_mut().durable_occurrence = Some(
+            crate::durability::WorldOccurrenceCustody::prepare(original, execution)?,
+        );
+        Ok(())
     }
 
     /// A durable preparing record needs no invented successor or owner effect

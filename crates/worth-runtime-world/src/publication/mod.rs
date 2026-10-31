@@ -24,6 +24,9 @@ mod owner_execution;
 mod owner_results;
 mod performed;
 mod product_cas;
+pub use product_cas::{
+    WorldDurablePublicationDenial, WorldDurablePublicationOutcome, WorldPendingDurablePublication,
+};
 mod product_comparison;
 mod progress;
 mod progression;

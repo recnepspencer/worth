@@ -4,6 +4,7 @@ use crate::correspondence::{
     admit_baseline, admit_installed_basis, compare_current_basis,
     AdmittedRuntimeWorldCorrespondenceBasis, RuntimeWorldCorrespondenceAdmissionDenial,
 };
+pub use crate::correspondence::{RecordedRuntimeWorldBaseline, RuntimeWorldBaselineRefusal};
 use std::sync::Arc;
 
 use super::{BridgeInstalledSemanticCorrespondence, RuntimeBridge};
@@ -28,6 +29,26 @@ impl std::fmt::Debug for RuntimeWorldCorrespondencePort {
 }
 
 impl RuntimeWorldCorrespondencePort {
+    pub fn export_recorded_runtime_world_baseline(
+        &self,
+        basis: &AdmittedRuntimeWorldCorrespondenceBasis,
+    ) -> Result<RecordedRuntimeWorldBaseline, RuntimeWorldBaselineRefusal> {
+        if basis.dependency().is_some() {
+            return Err(RuntimeWorldBaselineRefusal::UninstalledBaselineRequired);
+        }
+        self.compare_current_exact(basis)
+            .map_err(|_| RuntimeWorldBaselineRefusal::CurrentBasisRequired)?;
+        crate::correspondence::recorded_baseline(&self.runtime)
+    }
+
+    pub fn readmit_recorded_runtime_world_baseline(
+        &self,
+        recorded: &RecordedRuntimeWorldBaseline,
+        signal: &worth_signal::facade::branch::AdmittedSignalInitialEmptyRoot,
+    ) -> Result<AdmittedRuntimeWorldCorrespondenceBasis, RuntimeWorldBaselineRefusal> {
+        crate::correspondence::readmit_baseline(&self.runtime, recorded, signal)
+    }
+
     pub fn admit_installed_basis(
         &self,
         installed: &BridgeInstalledSemanticCorrespondence,

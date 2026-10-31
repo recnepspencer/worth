@@ -13,6 +13,7 @@ const FACTORIES: &[&str] = &[
     "certification_query",
     "readmit_world_home",
     "world_composition_runtime",
+    "world_recovery_authority",
 ];
 fn owner(input: &Inputs, path: &str) -> Option<String> {
     input
@@ -229,7 +230,12 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 ));
             }
             if FACTORIES.contains(name) {
-                let (class, owner) = if *name == "world_composition_runtime" {
+                let (class, owner) = if *name == "world_recovery_authority" {
+                    (
+                        "native-world-readmission",
+                        "workspaces/worth-store/crates/worth-store-relational/",
+                    )
+                } else if *name == "world_composition_runtime" {
                     (
                         "native-home-composition",
                         "workspaces/worth-store/crates/worth-store-relational/",
@@ -257,135 +263,4 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
     out
 }
 #[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn every_control_reference_requires_its_owner_or_an_exact_caller() {
-        for declaration in [
-            "fn arm_for_test() {}",
-            "pub const arm_for_test: usize = 0;",
-            "pub static arm_for_test: usize = 0;",
-            "pub struct Control<T: Fn() -> Option<()>, const N: usize = { 1 }> { pub arm_for_test: (), marker: std::marker::PhantomData<T> }",
-            "fn\u{200e}arm_for_test() {}",
-            "static mut arm_for_test: () = ();",
-            "pub macro arm_for_test() {}",
-            "pub struct Control { #[cfg(test)] pub arm_for_test: () }",
-            "union Control { arm_for_test: () }",
-            "enum Control { arm_for_test }",
-            "enum Control { Armed { arm_for_test: () } }",
-            "pub use ordinary as arm_for_test;",
-            "pub use {crate::ordinary as arm_for_test};",
-            "pub use ::ordinary as arm_for_test;",
-            "extern crate ordinary as arm_for_test;",
-            "#[proc_macro_derive(arm_for_test)] fn derive() {}",
-            "#[cfg(test)] impl Private { fn arm_for_test() {} }",
-            "pub(in crate) fn r#arm_for_test() {}",
-            "pub struct Other { #[cfg(test)] pub x: (), } pub fn arm_for_test() {}",
-            "declare! { pub fn arm_for_test() {} }",
-            "fn hidden() { #[macro_export] macro_rules! arm_for_test { () => {} } }",
-        ] {
-            let mut input = Inputs::fixture(
-                &[
-                    ("crates/worth-signal/src/control.rs", declaration),
-                    ("app/src/lib.rs", "r#arm_for_test();"),
-                ],
-                "",
-            );
-            assert_eq!(check(&input).len(), 1, "{declaration}");
-            input.files.insert(
-                format!("{CONFIG}control-callers.txt"),
-                "crates/worth-signal/ app/src/lib.rs".into(),
-            );
-            assert!(check(&input).is_empty(), "{declaration}");
-        }
-    }
-    #[test]
-    fn comments_and_literals_do_not_create_control_references() {
-        let input = Inputs::fixture(
-            &[
-                ("crates/worth-signal/src/control.rs", "struct DoorForTest;"),
-                (
-                    "app/src/lib.rs",
-                    "// DoorForTest\nlet text = r#\"DoorForTest\"#; noop!(\"ignored\"DoorForTest); /* DoorForTest */",
-                ),
-            ],
-            "",
-        );
-        assert!(check(&input).is_empty());
-    }
-    #[test]
-    fn cross_owner_composition_does_not_grant_ownership() {
-        let input = Inputs::fixture(
-            &[
-                ("crates/worth-signal/src/control.rs", "fn arm_for_test() {}"),
-                (
-                    "crates/worth-runtime-bridge/src/lib.rs",
-                    "fn bridge_for_test() { arm_for_test(); }",
-                ),
-            ],
-            "",
-        );
-        assert_eq!(check(&input).len(), 1);
-    }
-    #[test]
-    fn field_initializers_and_renamed_imports_cannot_claim_a_foreign_door() {
-        for reference in [
-            "fn build() { Control { arm_for_test: () }; }",
-            "use owner::Control as r#struct; fn build() { r#struct { arm_for_test: () }; }",
-            "use owner::arm_for_test as bridge_for_test;",
-            "use owner::arm_for_test as arm_for_test;",
-            "use owner::ControlForTest; fn borrow(_: &'static ControlForTest) {}",
-            "use owner::ControlForTest; fn borrow(_: *const ControlForTest) {}",
-            "#[cfg(any())] struct Binder { field: Box<dyn owner::Trait<ControlForTest: Copy>> } fn borrow(_: owner::ControlForTest) {}",
-            "macro_rules! noop { ($lit:literal $name:ident) => {} } noop!(\"ignored\"struct ControlForTest);",
-            "fn union(_: owner::Control) {} fn build() { union(owner::Control { arm_for_test: () }); }",
-            "fn borrow<T: Fn(<owner::ControlForTest as Trait>::Item), const ControlForTest: usize>(_: owner::ControlForTest) {}",
-            "fn borrow<const ControlForTest: usize>(_: owner::ControlForTest) {}",
-            "fn borrow<#[allow(non_upper_case_globals)] const ControlForTest: usize>(_: owner::ControlForTest) {}",
-        ] {
-            let mut input = Inputs::fixture(
-                &[
-                    (
-                        "owner/src/lib.rs",
-                        "pub struct Control { pub arm_for_test: () } pub struct ControlForTest;",
-                    ),
-                    ("app/src/lib.rs", reference),
-                ],
-                "",
-            );
-            assert_eq!(check(&input).len(), 1, "{reference}");
-            input.files.insert(
-                format!("{CONFIG}control-callers.txt"),
-                "owner/ app/src/lib.rs".into(),
-            );
-            assert!(check(&input).is_empty(), "{reference}");
-        }
-    }
-    #[test]
-    fn certification_factory_callers_are_class_and_file_exact() {
-        for (factory, class) in [
-            ("certification_query", "installation"),
-            ("readmit_world_home", "world-home"),
-            ("world_composition_runtime", "native-home-composition"),
-        ] {
-            let reference = format!("{factory}();");
-            let mut input = Inputs::fixture(&[("app/src/lib.rs", &reference)], "");
-            assert_eq!(check(&input).len(), 1);
-            for denied in [
-                "other app/src/lib.rs".to_owned(),
-                format!("{class} app/src/sibling.rs"),
-            ] {
-                input.files.insert(
-                    format!("{CONFIG}certification-construction-callers.txt"),
-                    denied,
-                );
-                assert_eq!(check(&input).len(), 1);
-            }
-            input.files.insert(
-                format!("{CONFIG}certification-construction-callers.txt"),
-                format!("{class} app/src/lib.rs"),
-            );
-            assert!(check(&input).is_empty());
-        }
-    }
-}
+mod tests;

@@ -14,6 +14,8 @@ pub(crate) use close_cleanup::SignalOwnerMetadataCloseBatch;
 #[path = "owner_partition/retirement_receipts.rs"]
 mod retirement_receipts;
 pub(crate) use retirement_receipts::SignalOwnerRetirementCleanup;
+#[path = "owner_partition/initial_empty.rs"]
+mod initial_empty;
 #[path = "owner_partition/validation.rs"]
 mod validation;
 

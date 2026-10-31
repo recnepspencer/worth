@@ -1,11 +1,11 @@
-//! Transport Native's owned serde grammar without copying its component schema.
+//! Transport all three mandatory owner recipes without copying their grammars.
+use super::super::RecordedWorldInitialComponents;
 use super::{Denial, Emit};
 use std::io::{self, Write};
-use worth_relational::facade::branch::RecordedRelationalComponentReference;
 
 pub(super) fn emit(
     out: &mut Emit<'_>,
-    reference: &RecordedRelationalComponentReference,
+    reference: &RecordedWorldInitialComponents,
 ) -> Result<(), Denial> {
     let mut refused = None;
     serde_json::to_writer(

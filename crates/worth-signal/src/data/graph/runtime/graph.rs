@@ -31,6 +31,7 @@ mod deserialization_shape_tests;
 mod direct_invalidation_basis_tests;
 #[cfg(test)]
 mod evaluation_partition_tests;
+mod initial_empty;
 mod lineage_publication;
 mod node_arena_wire;
 mod observation_state;
@@ -188,6 +189,8 @@ impl NodeArena {
 #[derive(Debug, Serialize)]
 pub struct SignalGraph {
     #[serde(skip, default)]
+    pub(in crate::data::graph) initial_empty_origin: bool,
+    #[serde(skip, default)]
     pub(in crate::data::graph) lifecycle_token: std::sync::Arc<()>,
     #[serde(skip, default = "next_signal_graph_instance_id")]
     pub(in crate::data::graph) instance_id: u64,
@@ -255,6 +258,7 @@ impl<'de> Deserialize<'de> for SignalGraph {
         wire.arena
             .validate_deserialized_lane_alignment::<D::Error>()?;
         let mut graph = Self {
+            initial_empty_origin: false,
             lifecycle_token: Default::default(),
             instance_id: next_signal_graph_instance_id(),
             arena: wire.arena,

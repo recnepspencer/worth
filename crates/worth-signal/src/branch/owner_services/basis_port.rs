@@ -17,6 +17,7 @@ use super::{
 
 pub(super) mod denial_mapping;
 pub(super) mod descriptor_validation;
+mod recorded_initial_root;
 #[cfg(test)]
 mod tests;
 

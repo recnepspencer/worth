@@ -3,6 +3,9 @@
 pub enum ProductUnpublishedCause {
     /// World accepted the original durable open before Native preparation.
     OpenAttemptRetained,
+    WorldOccurrencePending,
+    WorldOccurrenceRefused,
+    WorldOccurrenceReadmissionRequired,
     SiblingOwnerDenied,
     CallerAbandoned,
     SettlementPending,

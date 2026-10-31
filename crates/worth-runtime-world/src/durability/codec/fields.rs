@@ -154,10 +154,9 @@ impl<'a> Read<'a> {
             digest: self.fixed()?,
         })
     }
-    pub(super) fn recorded_component(
+    pub(super) fn recorded_components(
         &mut self,
-    ) -> Result<worth_relational::facade::branch::RecordedRelationalComponentReference, Denial>
-    {
+    ) -> Result<super::super::RecordedWorldInitialComponents, Denial> {
         let recorded = serde_json::from_slice(self.bytes).map_err(|_| Denial::Malformed)?;
         self.bytes = &[];
         Ok(recorded)

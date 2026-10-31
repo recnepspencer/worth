@@ -5815,3 +5815,20 @@ an immutable original. Close reports and the final original holder when done.
 Follow [Explain original query results and source operations](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
 for contract setup, capability admission, supported shapes, materialized values,
 loss outcomes and retry handling.
+
+### Current durable Home composition boundary
+
+The lower Store Application `readmit_world` seam composes the same admitted
+Native owner with privately constructed Bridge and the authored Signal owner.
+Its first Relational-only durable lane requires an untouched InitialEmpty Signal
+root and an uninstalled Bridge baseline. Their versioned owner recipes, the
+exact Native predecessor and the program revision are mandatory World artifact
+v3 fields. Graph equality, a source profile or an old process identifier cannot
+readmit component authority. Native recovery, Signal seed admission, Bridge
+baseline admission and World reconciliation retain that order.
+
+The lower seam and live occurrence path are still under qualification;
+existing-Home World reconciliation, recovered dispositions, joint checkpoint
+coverage and Host open/continuation are unfinished. See
+[the Home composition capability](capability-index.md#compose-world-with-an-admitted-application-home)
+for current refusals and lifecycle custody.

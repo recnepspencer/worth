@@ -14,6 +14,7 @@ use worth_signal::facade::{SignalError, SignalTransaction};
 
 mod bootstrap;
 mod conditional_recovery;
+mod durable;
 mod open_attempt;
 
 /// Executes the concrete component-owner progression and exact product CAS.

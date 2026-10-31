@@ -11,6 +11,11 @@ pub(super) fn attempt_product_movement(
     late: CompositeLateCancellationPosture,
     cutoff: Option<crate::publication::ProductMovementCutoff>,
 ) -> RuntimeWorldPublicationOutcome {
+    let disposition = if ready.custody.has_durable_open() {
+        RetainedCommitDisposition::KeepOriginal
+    } else {
+        RetainedCommitDisposition::ReleaseUnused
+    };
     match ready.custody.attempt_movement(
         &ready.expected_head,
         &ready.commit,
@@ -26,7 +31,7 @@ pub(super) fn attempt_product_movement(
             RuntimeWorldPublicationOutcome::ProductUnpublished(ready.custody.retain(
                 cause,
                 None,
-                RetainedCommitDisposition::ReleaseUnused,
+                disposition,
             ))
         }
         Err(crate::publication::custody::AttemptProductMovementFailure::Reference(loss)) => {
@@ -44,7 +49,7 @@ pub(super) fn attempt_product_movement(
             RuntimeWorldPublicationOutcome::ProductUnpublished(ready.custody.retain(
                 cause,
                 Some(loss.observed_head().clone()),
-                RetainedCommitDisposition::ReleaseUnused,
+                disposition,
             ))
         }
     }

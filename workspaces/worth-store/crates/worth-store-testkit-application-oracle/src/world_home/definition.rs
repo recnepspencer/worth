@@ -31,8 +31,7 @@ pub(super) fn authored() -> (
     ApplicationWorldDefinition<(), (), (), (), ()>,
     SignalRuntime<(), (), (), (), ()>,
 ) {
-    let mut graph = SignalGraph::new();
-    let _node = graph.node().build();
+    let graph = SignalGraph::new();
     let mut signal = SignalRuntime::builder(graph)
         .with_domains::<()>()
         .with_impacts::<()>()

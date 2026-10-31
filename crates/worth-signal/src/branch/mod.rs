@@ -13,6 +13,10 @@ mod managed_reference;
 mod merge;
 pub(crate) mod owner_services;
 mod readmission;
+mod recorded_initial_root;
+pub use recorded_initial_root::{
+    AdmittedSignalInitialEmptyRoot, RecordedSignalInitialEmptyRoot, SignalInitialEmptyRootRefusal,
+};
 mod reference;
 mod restoration;
 mod retention;

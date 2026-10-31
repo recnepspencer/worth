@@ -118,6 +118,7 @@ impl SignalGraph {
                 observation_sessions.shared_last_completion(),
             ));
         let mut graph = Self {
+            initial_empty_origin: false,
             lifecycle_token: Default::default(),
             instance_id,
             arena: restore_node_arena(&authority.arena, free_slots),

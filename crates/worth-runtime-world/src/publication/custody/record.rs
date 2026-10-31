@@ -63,6 +63,8 @@ impl ActiveAttemptRecord {
         } = capacities.into_parts();
         let publication = reserved_commit_capacity.publication_envelope().cloned();
         let resources = ActiveAttemptResources {
+            durable_occurrence: None,
+            durable_movement: None,
             durable_open: None,
             conditional_definition: None,
             product_comparison_costs: None,
