@@ -3,9 +3,13 @@ use super::*;
 
 #[test]
 fn checked_summary_rejects_unchanged_root_for_changed_source_then_commits_lawful_twin() {
-    lifecycle::run(journey);
+    lifecycle::run(|| journey(false, 30));
 }
-fn journey() {
+#[test]
+fn checked_summary_rejects_leaf_only_edits_with_unwritten_ancestors() {
+    lifecycle::run(|| journey(true, -10));
+}
+fn journey(write_leaves: bool, next_x: i64) {
     let calls = Arc::new(provider::Calls::default());
     let config = Configuration::new(calls.clone());
     let rules = config.rules.clone();
@@ -39,7 +43,10 @@ fn journey() {
         .clone();
     let before = values(request.query(all("A")).execute().unwrap().rows());
     rules.records.lock().unwrap().clear();
-    calls.preserve_root.store(true, Ordering::SeqCst);
+    calls.preserve_root.store(!write_leaves, Ordering::SeqCst);
+    calls
+        .write_leaves_only
+        .store(write_leaves, Ordering::SeqCst);
     let memory = accounted_request();
     let baseline = memory.charged_memory_bytes();
     let result = request
@@ -47,7 +54,7 @@ fn journey() {
         .mutate(Edit::Move {
             directory: "A".into(),
             vertex: "v1".into(),
-            x: 30,
+            x: next_x,
             y: 0,
         })
         .idempotency(&0x919601u64)
@@ -57,7 +64,7 @@ fn journey() {
         denial,
     )) = result
     else {
-        panic!("an unchanged root cannot represent changed Source: {result:?}");
+        panic!("stale summary ancestors cannot represent changed Source: {result:?}");
     };
     let native = denial
         .invariant_execution_failure()
@@ -94,6 +101,7 @@ fn journey() {
         before
     );
     calls.preserve_root.store(false, Ordering::SeqCst);
+    calls.write_leaves_only.store(false, Ordering::SeqCst);
     let fresh_scope = authentication::request_scope();
     commit(
         &world,
@@ -102,7 +110,7 @@ fn journey() {
         Edit::Move {
             directory: "A".into(),
             vertex: "v1".into(),
-            x: 30,
+            x: next_x,
             y: 0,
         },
         0x919602,
@@ -112,11 +120,11 @@ fn journey() {
         .request(&principal, &fresh_scope)
         .on_branch(world.current_world());
     for directory in ["A", "B"] {
-        for x in [15, 30, 50, 80] {
+        for x in [-10, 0, 15, 30, 50, 80] {
             let probe = find(directory, x);
             assert_eq!(
                 values(fresh.query(probe.clone()).execute().unwrap().rows()),
-                expected(directory, 30, probe.probe)
+                expected(directory, next_x, probe.probe)
             );
         }
     }

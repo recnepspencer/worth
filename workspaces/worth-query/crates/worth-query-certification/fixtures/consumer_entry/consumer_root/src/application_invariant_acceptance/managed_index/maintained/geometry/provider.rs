@@ -14,6 +14,8 @@ use worth_query_host::facade::primary_graph::*;
 #[cfg(test)]
 pub(super) mod cost_stages;
 mod storage;
+#[cfg(test)]
+mod summary_fault;
 pub struct BoxIndex;
 impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     type SourceBinding = query::SourceBinding;
@@ -35,6 +37,8 @@ pub struct Calls {
     pub(super) cost_stages: cost_stages::CostStages,
     #[cfg(test)]
     pub preserve_root: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub write_leaves_only: std::sync::atomic::AtomicBool,
     pub builds: AtomicUsize,
     pub updates: AtomicUsize,
     pub probe_validations: AtomicUsize,
@@ -197,6 +201,11 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
         self.0.updates.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
         if self.0.preserve_root.load(Ordering::SeqCst) {
+            return Ok(root);
+        }
+        #[cfg(test)]
+        if self.0.write_leaves_only.load(Ordering::SeqCst) {
+            summary_fault::replace_leaves(after, changes, nodes, &self.0)?;
             return Ok(root);
         }
         for change in changes {

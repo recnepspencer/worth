@@ -7,7 +7,8 @@ use super::*;
 use worth_execution::{ExecutionArray, ExecutionRequestArrayBuilder};
 use worth_query_declaration::facade::{
     application_query::{
-        ApplicationManagedIndexBinding, ApplicationManagedIndexSourceStructure as Structure,
+        ApplicationManagedIndexBinding, ApplicationManagedIndexMembership as Membership,
+        ApplicationManagedIndexSourceStructure as Structure,
     },
     application_schema::ApplicationSchema,
 };
@@ -70,6 +71,7 @@ where
         &mut describe,
         control,
     )?;
+    drop(warm); // Exact dirty-key enumeration is complete before custody moves.
     let image = source.image();
     let mut tree = match &step {
         Step::Cold => SourceTree::empty(image.owner),
@@ -89,16 +91,28 @@ where
         tree.admit_delta(before, changes, execution, control)?;
     }
     tree.root = nodes.root().map(|id| id.ordinal);
-    super::summary::qualify(
-        execution,
-        provider,
-        source,
-        nodes,
-        &tree,
-        &step,
-        edits.elements(),
-        control,
-    )?;
+    if I::MEMBERSHIP == Membership::CheckedSummarySourceTree {
+        let affected = match &step {
+            Step::Cold => None,
+            Step::Warm { before, changes } => Some(tree.affected(
+                before,
+                changes,
+                edits.elements(),
+                changed.expect("warm key enumeration required actual dirty custody"),
+                execution,
+                control,
+            )?),
+        };
+        super::summary::qualify(
+            execution,
+            provider,
+            source,
+            nodes,
+            &tree,
+            affected.as_ref(),
+            control,
+        )?;
+    }
     source.check()?;
     Ok(Some(tree))
 }

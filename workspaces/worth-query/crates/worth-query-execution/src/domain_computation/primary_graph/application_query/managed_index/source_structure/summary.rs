@@ -14,8 +14,7 @@ pub(super) fn qualify<S, I, P>(
     source: &WorthQueryManagedIndexSourceRows<'_, S, I>,
     nodes: &WorthQueryManagedIndexNodes<P::Node>,
     tree: &SourceTree,
-    step: &Step<'_>,
-    edits: &[Edit],
+    affected: Option<&Map<usize, ()>>,
     control: &Control<'_>,
 ) -> Result<(), Denial>
 where
@@ -23,16 +22,7 @@ where
     I: ApplicationManagedIndexBinding<S>,
     P: WorthQueryManagedIndexProvider<S, I>,
 {
-    if I::MEMBERSHIP != ApplicationManagedIndexMembership::CheckedSummarySourceTree {
-        return Ok(());
-    }
-    let affected = match step {
-        Step::Cold => None,
-        Step::Warm { before, changes } => {
-            Some(tree.affected(before, changes, edits, execution, control)?)
-        }
-    };
-    summary_frontier::postorder(tree, affected.as_ref(), control, &mut |ordinal| {
+    summary_frontier::postorder(tree, affected, control, &mut |ordinal| {
         let region = tree.region(ordinal, control)?;
         let node = nodes
             .node_at_ordinal(ordinal, control)?

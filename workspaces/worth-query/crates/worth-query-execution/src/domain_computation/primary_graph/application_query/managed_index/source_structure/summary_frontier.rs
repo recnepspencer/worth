@@ -8,13 +8,18 @@ impl SourceTree {
         before: &SourceTree,
         changes: &[Change],
         edits: &[Edit],
+        mut affected: Map<usize, ()>,
         execution: &ExecutionRequest<'_, '_>,
         control: &Control<'_>,
     ) -> Result<Map<usize, ()>, Stop> {
-        let mut affected = Map::default();
+        // Every live seed schedules its own final parent. Another seed may
+        // stop this walk before its turn because that turn still closes its
+        // parent chain; seed membership alone is not a completed closure.
         for edit in edits {
             if edit.region.is_some() {
-                self.add_ancestors(edit.ordinal, &mut affected, execution, control)?;
+                if let Some(parent) = self.parent(edit.ordinal, control)? {
+                    self.add_ancestors(parent, &mut affected, execution, control)?;
+                }
             }
         }
         for change in changes {
