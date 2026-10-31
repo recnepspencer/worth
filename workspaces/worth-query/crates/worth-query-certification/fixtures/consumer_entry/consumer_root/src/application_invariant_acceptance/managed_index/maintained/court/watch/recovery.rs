@@ -6,6 +6,7 @@ pub(super) fn run(
     world: &host::Host,
     principal: &WorthQueryAuthenticatedExternalPrincipal<super::super::super::schema::Catalog>,
     scope: &WorthQueryRequestScope,
+    calls: &prefix::Calls,
 ) {
     let request = world
         .runtime()
@@ -80,8 +81,8 @@ pub(super) fn run(
     );
     let recovered = request
         .advanced()
-        .mutate(edit)
-        .expect_result_set(source)
+        .mutate(edit.clone())
+        .expect_result_set(source.clone())
         .idempotency(&key)
         .recover_unpublished_in_program(&recovery, world)
         .unwrap();
@@ -108,6 +109,66 @@ pub(super) fn run(
             .unwrap(),
         WorthQueryManagedIndexWatchOutcome::Pending
     ));
+    let completed_head = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
+    let maintenance = (
+        calls.builds.load(Ordering::SeqCst),
+        calls.updates.load(Ordering::SeqCst),
+    );
+    let replay = request
+        .advanced()
+        .mutate(edit)
+        .expect_result_set(source.clone())
+        .idempotency(&key)
+        .execute_in_program(world, ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert!(
+        matches!(
+            replay,
+            WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
+                | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
+        ),
+        "completed replay must reach actual recorded resolution: {replay:?}"
+    );
+    let changed = request
+        .advanced()
+        .mutate(rename("race", "wrong-replay"))
+        .expect_result_set(source)
+        .idempotency(&key)
+        .execute_in_program(world, ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert!(
+        matches!(
+            changed,
+            WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
+        ),
+        "{changed:?}"
+    );
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &completed_head
+    );
+    assert_eq!(
+        (
+            calls.builds.load(Ordering::SeqCst),
+            calls.updates.load(Ordering::SeqCst)
+        ),
+        maintenance,
+        "recorded replay and drift cannot publish another provider root"
+    );
+    assert!(
+        matches!(
+            request
+                .query(find("A", "race"))
+                .next_watch(&mut watch)
+                .unwrap(),
+            WorthQueryManagedIndexWatchOutcome::Pending
+        ),
+        "recorded resolution cannot enqueue another occurrence"
+    );
     assert_eq!(values(initial.rows()), vec![("x".into(), "race".into())]);
     watch.close().unwrap();
 }

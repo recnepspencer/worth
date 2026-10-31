@@ -52,6 +52,48 @@ fn run() {
         matches!(request.query(exact()).next_watch(&mut broad), Err(_)),
         "equal probes do not identify the same Parent/mode watch"
     );
+    let equal = request
+        .advanced()
+        .mutate(rename("sha", "shared"))
+        .expect_result_set(candidate.result_set_observation().unwrap().clone())
+        .idempotency(&0x9199_0ffeu64)
+        .execute_in_program(&world, ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert!(
+        matches!(
+            equal,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ),
+        "fresh same-value action must execute lawfully: {equal:?}"
+    );
+    match request
+        .query(find("A", "sha"))
+        .next_watch(&mut broad)
+        .unwrap()
+    {
+        WorthQueryManagedIndexWatchOutcome::Pending => (),
+        WorthQueryManagedIndexWatchOutcome::Delivered(update) => assert_eq!(
+            values(update.read().rows()),
+            vec![("x".into(), "shared".into())]
+        ),
+        _ => panic!("same-value update must preserve supported watch availability"),
+    }
+    assert!(matches!(
+        request
+            .query(find("A", "sha"))
+            .next_watch(&mut broad)
+            .unwrap(),
+        WorthQueryManagedIndexWatchOutcome::Pending
+    ));
+    assert!(matches!(
+        request.query(exact()).next_watch(&mut precise).unwrap(),
+        WorthQueryManagedIndexWatchOutcome::Pending
+    ));
+    assert_eq!(
+        values(request.query(find("A", "sha")).execute().unwrap().rows()),
+        vec![("x".into(), "shared".into())]
+    );
+    assert!(request.query(exact()).execute().unwrap().rows().is_empty());
     for (offset, name) in ["sha", "shared"].into_iter().enumerate() {
         let changed = request
             .advanced()

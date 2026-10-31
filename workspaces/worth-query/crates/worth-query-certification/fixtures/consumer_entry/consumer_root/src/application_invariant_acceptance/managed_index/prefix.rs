@@ -383,7 +383,8 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
         let previous = self.0.matched_sources.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
         if previous == 1 {
-            if let Some(observe) = self.0.after_second_match.lock().unwrap().take() {
+            let observe = self.0.after_second_match.lock().unwrap().take();
+            if let Some(observe) = observe {
                 observe();
             }
         }

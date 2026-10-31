@@ -257,5 +257,5 @@ fn journey() {
     );
     race::run(&world, &principal, &scope, &calls);
     refusal::run(&world, &principal, &scope, &calls);
-    recovery::run(&world, &principal, &scope);
+    recovery::run(&world, &principal, &scope, &calls);
 }

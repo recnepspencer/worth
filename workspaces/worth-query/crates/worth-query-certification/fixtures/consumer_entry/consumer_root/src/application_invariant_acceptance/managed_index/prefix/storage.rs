@@ -8,6 +8,14 @@ pub(super) struct Build<'call, 'source, 'node, 'control> {
     pub control: &'call WorthQueryManagedIndexControl<'control>,
     pub after_first_node: &'call Mutex<Option<Box<dyn FnOnce() + Send>>>,
 }
+impl Build<'_, '_, '_, '_> {
+    fn observed_write(&self) {
+        let observe = self.after_first_node.lock().unwrap().take();
+        if let Some(observe) = observe {
+            observe();
+        }
+    }
+}
 fn invalid() -> Stop {
     Stop::Domain(PrefixIndexDenial::InvalidTopology)
 }
@@ -38,22 +46,21 @@ impl PrefixBuildStorage for Build<'_, '_, '_, '_> {
     }
     fn append(&mut self, node: Node) -> Result<Self::Id, Stop> {
         let id = self.nodes.push(node)?;
-        if self.nodes.len() == 1 {
-            let observe = self.after_first_node.lock().unwrap().take();
-            if let Some(observe) = observe {
-                observe();
-            }
-        }
+        self.observed_write();
         Ok(id)
     }
     fn read(&mut self, id: Self::Id) -> Result<Node, Stop> {
         self.nodes.get(id).map_err(Into::into)
     }
     fn replace(&mut self, id: Self::Id, node: Node) -> Result<(), Stop> {
-        self.nodes.replace(id, node).map_err(Into::into)
+        self.nodes.replace(id, node)?;
+        self.observed_write();
+        Ok(())
     }
     fn remove(&mut self, id: Self::Id) -> Result<(), Stop> {
-        self.nodes.remove(id).map_err(Into::into)
+        self.nodes.remove(id)?;
+        self.observed_write();
+        Ok(())
     }
     fn invalid(&self) -> Stop {
         invalid()

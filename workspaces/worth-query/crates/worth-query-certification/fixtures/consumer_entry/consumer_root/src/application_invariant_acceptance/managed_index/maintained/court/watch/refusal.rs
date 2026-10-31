@@ -56,7 +56,12 @@ pub(super) fn run(
     ));
     let cancellation = WorthQueryCancellationSource::new();
     let stopped = WorthQueryRequestScope::new(None, cancellation.token());
-    *calls.after_first_node.lock().unwrap() = Some(Box::new(move || cancellation.cancel()));
+    let fired = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let observed = Arc::clone(&fired);
+    *calls.after_first_node.lock().unwrap() = Some(Box::new(move || {
+        observed.store(true, Ordering::SeqCst);
+        cancellation.cancel();
+    }));
     let denied = world
         .runtime()
         .request(principal, &stopped)
@@ -67,11 +72,18 @@ pub(super) fn run(
         .idempotency(&0x9198_0351u64)
         .execute_in_program(world, ExecutionAllocationPolicy::Execution(&memory))
         .unwrap();
+    assert!(
+        fired.load(Ordering::SeqCst),
+        "the actual staged node mutation must fire its one-shot observer"
+    );
     let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
         denial,
     )) = denied
     else {
-        panic!("stopped Source preparation cannot commit: {denied:?}");
+        panic!(
+            "stopped Source preparation must refuse; commit posture: {:?}",
+            denied.commit_outcome()
+        );
     };
     assert_eq!(
         denial.invariant_execution_failure().unwrap().kind(),

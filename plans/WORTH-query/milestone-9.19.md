@@ -1609,6 +1609,14 @@ adapter rewrite or CAD cutover is required here.
 
 ### Phase 3: Complete Membership, Exact Refinement And Disclosure
 
+Phase 3 is complete at the supported contract. Current qualification and limits
+are recorded in the
+[authoritative Phase 3 closure matrix](milestone-9.19-phase3-closure.md).
+That matrix supersedes the historical progress statements below. Phases 4–6
+remain open; Phase 3 issues no verified narrowed footprint or private CAD claim.
+
+#### Historical slice notes (superseded by the closure matrix)
+
 The [protected ordinary continuation slice](milestone-9.19-phase3-protected-continuation-plan.md)
 qualifies current capability/independent READ and hidden Ordering/Pagination
 influence before ordinary child-page metadata. Thin governed/approved public
@@ -1771,6 +1779,8 @@ the private executable's coverage with actual borrowed invocation correspondence
 Public Source observations retain the frontier without making physical rebuild
 shape part of semantic Source equality. This supplies no retained reverse routing,
 same-image registration, exact refinement or narrowing authority.
+
+#### Required contract
 
 **Owner:** Query access admission, managed dependencies and provider/domain refinement.
 **Depends on:** Phases 1–2 and existing installed capability/disclosure admission.
@@ -2067,6 +2077,9 @@ public candidate and its real private adoption pass; this is also the milestone'
 final acceptance gate.
 
 ### Prefix text reuse slice (partial Phase 3)
+
+This historical slice receipt is superseded for current phase status by the
+[Phase 3 closure matrix](milestone-9.19-phase3-closure.md).
 
 [Borrow-confined decoded Source text](milestone-9.19-prefix-text-reuse-plan.md)
 now uses one actual image/invocation memo, canonical carried field keys and actual

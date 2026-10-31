@@ -5889,6 +5889,16 @@ and reassess the operation instead of substituting only the returned rows.
 Reuse the operation's idempotency identity for a recorded retry; it does not
 repeat the completed mutation.
 
+The maintained prefix and geometry courts also exercise genuine equal-value
+rename/move commits. A watch may remain Pending or deliver unchanged rows;
+notification suppression is not promised. An empty read overlapped by a matching
+entrant refuses stale registration, and a fresh opening includes the entrant.
+Completed replay after unpublished recovery preserves the selected World,
+provider maintenance counts and drained notification state; changed input under
+the same key returns `IdempotencyIntentDrift`. See the
+[Phase 3 qualification matrix](../plans/WORTH-query/milestone-9.19-phase3-closure.md)
+for the supported contracts, current cost receipts and explicit later-phase work.
+
 Use the request-bearing mutation entrances for indexed observations. A lower-level
 conversion without an Execution request returns `ManagedSourceExpansionUnsupported`;
 supplying an allocation policy alone does not make that conversion available.

@@ -88,6 +88,45 @@ fn run() {
         refined.rows().is_empty(),
         "point (4,5) is off the diagonal segment"
     );
+    commit(
+        &world,
+        &principal,
+        &scope,
+        Edit::Move {
+            directory: "catalog".into(),
+            vertex: "exact-b".into(),
+            x: 10,
+            y: 10,
+        },
+        0x9199_300f,
+    );
+    match request
+        .query(broad())
+        .next_watch(&mut candidate_watch)
+        .unwrap()
+    {
+        WorthQueryManagedIndexWatchOutcome::Pending => (),
+        WorthQueryManagedIndexWatchOutcome::Delivered(update) => {
+            assert_eq!(values(update.read().rows()), values(candidate.rows()))
+        }
+        _ => panic!("same endpoint value must preserve supported watch availability"),
+    }
+    assert!(matches!(
+        request
+            .query(broad())
+            .next_watch(&mut candidate_watch)
+            .unwrap(),
+        WorthQueryManagedIndexWatchOutcome::Pending
+    ));
+    assert!(matches!(
+        request.query(exact()).next_watch(&mut exact_watch).unwrap(),
+        WorthQueryManagedIndexWatchOutcome::Pending
+    ));
+    assert_eq!(
+        values(request.query(broad()).execute().unwrap().rows()),
+        values(candidate.rows())
+    );
+    assert!(request.query(exact()).execute().unwrap().rows().is_empty());
     for (offset, (x, y, count)) in [(4, 5, 1), (10, 10, 0)].into_iter().enumerate() {
         commit(
             &world,
