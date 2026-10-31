@@ -506,3 +506,6 @@ workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/cr
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/relational/relational_home/schema_recovery/mod.rs
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-application/src/close/start.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/failed_close.rs
+# Existing Home court observes real candidate-preparation and post-effect World boundaries.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home.rs
