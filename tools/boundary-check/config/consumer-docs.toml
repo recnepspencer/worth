@@ -199,3 +199,15 @@ name = "managed_prefix_initialization.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
 target = "src/main.rs"
 source = "src/application_invariant_acceptance/managed_index/refusing/host.rs"
+
+[[compiled_sources]]
+name = "protected_continuation.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/managed_index/maintained/protected/court/continuation.rs"
+
+[[compiled_sources]]
+name = "managed_exact_refinement.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/managed_index/maintained/refinement/query.rs"

@@ -1609,6 +1609,18 @@ adapter rewrite or CAD cutover is required here.
 
 ### Phase 3: Complete Membership, Exact Refinement And Disclosure
 
+The [protected ordinary continuation slice](milestone-9.19-phase3-protected-continuation-plan.md)
+qualifies current capability/independent READ and hidden Ordering/Pagination
+influence before ordinary child-page metadata. Thin governed/approved public
+entrances share canonical page admission/readmission; requested width is checked
+against its actual binding maximum. Real revoked/regranted grants and READ,
+independently issued move-only cursors, pinned B data amid current reordering,
+omitted fields, exact ordinals and final no-more use the existing owner.
+Managed root selection plus child continuation remains an explicitly qualified
+typed refusal; root-result pagination is not invented by lifting that exclusion.
+This is supported-shape qualification; a separate actual-evidence audit must
+reconcile every remaining Phase3 requirement before closing the phase.
+
 The [row-local exact-refinement slice](milestone-9.19-phase3-exact-refinement-plan.md)
 now binds separately versioned optional domain contracts and explicit candidate/
 refined access through declaration, canonical identity, archive, installation,
@@ -1800,7 +1812,7 @@ and [admit_application_query_governance](../../workspaces/worth-query/crates/wor
 with existing [continuation readmission](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/readmission.rs).
 These owners still decide protected influence and fresh disclosure; provider
 selection cannot bypass them. Extend the existing public provider journeys and
-[continuation court family](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition/related/continuation.rs)
+[continuation court family](../../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/canonical_transition/related/continuation/mod.rs)
 at the new consumers. Phase 4 may trust qualified coverage and tracked refinement,
 but only its verifier may convert them into narrowed authority.
 

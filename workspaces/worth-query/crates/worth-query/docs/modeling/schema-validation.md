@@ -375,3 +375,21 @@ This Phase3 support retains complete original Source dependencies. The retained
 rows/dispositions are no field-access trace or Phase4 realized footprint. See the
 [application guide](../../../../../../docs/build-an-application.md#construct-committed-provider-indexes)
 for ordinary Decl/Host setup, explicit access and the qualified fixture limits.
+
+### Protected ordinary child continuation
+
+The existing cursor owns position in one Native ordered Many relation below an
+ExactlyOne root. Public governed first-page/resume entrances delegate existing
+capability/optional-elevation admission, independent READ, exact retained-product
+readmission, generation checks and canonical projection/finalization. Both page
+and resume validate the actual requested width against the installed binding.
+A retained old data image supplies no old grant authority: current capability and
+READ can deny its next page before any metadata, then an independently issued
+cursor can resume lawfully after regrant. Denial consumes the move-only cursor.
+Hidden ordering needs Ordering/Pagination influence, with ordinary omission.
+
+This is related-collection continuation, not managed root-result pagination.
+The managed+continuation declaration refusal remains necessary because the
+continuation reader does not consume the managed candidate receiver. See
+[compiled protected pages](../../../../../../docs/build-an-application.md#protected-continuation-pages)
+for the ordinary public methods and real old-data/current-governance example.

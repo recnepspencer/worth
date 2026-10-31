@@ -4,6 +4,7 @@ pub fn probe(
 ) -> ApplicationQueryParameterRef<ExactQuery, source::ProbeParameter, source::ProbeBinding> {
     ApplicationQueryParameterRef::from_query_identifier("probe")
 }
+// compiled-example: begin
 pub fn definition(
 ) -> ApplicationQueryDefinition<Catalog, ExactQuery, source::Parameters, source::ItemRow, Directory>
 {
@@ -19,6 +20,8 @@ pub fn definition(
     .build()
     .unwrap()
 }
+// compiled-example: end
+
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct FindExact {
     pub directory: String,

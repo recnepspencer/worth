@@ -118,6 +118,8 @@ mod serial {
             BTreeSet::from([
                 "logical_relation_projection.rs".to_owned(),
                 "managed_prefix_index.rs".to_owned(),
+                "managed_exact_refinement.rs".to_owned(),
+                "protected_continuation.rs".to_owned(),
                 "managed_prefix_initialization.rs".to_owned(),
                 "managed_box_index.rs".to_owned(),
                 "candidate_source_changes.rs".to_owned(),

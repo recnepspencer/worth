@@ -3,6 +3,7 @@
 pub(super) mod access;
 #[cfg(test)]
 mod court;
+mod page;
 mod query;
 mod seed;
 #[path = "../boxes/status.rs"]
@@ -14,6 +15,10 @@ pub(super) fn declare(
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
     let schema = status::declare(access::declare(schema));
     schema
+        .application_query(page::definition())
+        .application_query_binding::<page::Binding>()
+        .application_query(page::blocked_definition())
+        .application_query_binding::<page::BlockedBinding>()
         .application_query(query::exact::definition())
         .application_query_binding::<query::exact::Binding>()
         .application_query(query::exact::blocked_definition())

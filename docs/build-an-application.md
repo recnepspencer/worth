@@ -2036,12 +2036,61 @@ accept `.at(observation)`. Resume with the token itself and a fresh request:
 ```rust,ignore
 // Illustrative: not compiled.
 // The application declares read_children and the query.
-let first = original_request.query(read_children.clone()).page(width, work)?;
+let first = original_request.query(read_children.clone()).page(width)?;
 let (owned_rows, continuation, _) = first.into_parts();
 let token = continuation.expect("another child page");
 // Keep the original owner available while installing/regenerating the target.
-let second = fresh_original_request.query(read_children).resume(token, width, work)?;
+let second = fresh_original_request.query(read_children).resume(token, width)?;
 ```
+
+### Protected continuation pages
+
+An ordinary continuation advances one ordered Many child collection below an
+ExactlyOne root with pinned basis support. Open a governed first page with
+`page_governed` and resume with `resume_governed`, supplying the actual capability,
+operation and purpose on every call. The `_approved` forms additionally require
+current approved elevation. `readmit_resume_governed` and its `_approved` twin
+lend the canonical admitted plan to an owning callback when needed.
+
+This compiled maintained-Catalog court uses real protected child rows:
+
+<!-- compiled: protected_continuation.rs -->
+```rust
+    let first = request
+        .query(input())
+        .page_governed(
+            access::ReadBoxes::reference(),
+            access::InspectBoxes::reference(),
+            purpose(),
+            width(),
+        )
+        .unwrap();
+    let (rows, continuation, _) = first.into_parts();
+    let second = request
+        .query(input())
+        .resume_governed(
+            access::ReadBoxes::reference(),
+            access::InspectBoxes::reference(),
+            purpose(),
+            continuation.expect("another child page"),
+            width(),
+        )
+        .unwrap();
+```
+
+Each page admits current capability and independent READ before rows, count,
+ordering, cursor or completion metadata. Hidden ordering fields need explicit
+Ordering and Pagination influence; permitted hidden values remain omitted.
+The cursor retains the exact old World, parameters and Native ordering generation.
+Regrant can authorize an independently issued old cursor while current data has
+changed; it does not replace the cursor's data with current values. A failed
+resume consumes its move-only token. Retain separate genuinely issued cursors
+when separate attempts are required. A requested page width cannot widen the
+installed binding limit.
+
+Managed-index root selection and related-collection continuation remain distinct
+declared shapes. Combining them refuses during declaration; a managed candidate
+hit supplies no child-page position or root-pagination authority.
 
 The [related-output journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/related/continuation.rs)
 publishes three output roles and two internal relations. An original token still
@@ -5771,8 +5820,9 @@ receipt; a missing influence permission refuses before provider execution.
 Broader Source/projection profiles must extend this closure before admission.
 
 Untracked inputs, candidate-only membership, public-cache-only Sources and
-continuations refuse this watch entrance. Protected continuation qualification
-remains unfinished Phase 3 work. No verified narrowed footprint is issued by
+continuations refuse this watch entrance. Ordinary protected child pages use
+[their existing continuation owner](#protected-continuation-pages); they do not
+paginate managed root results. No verified narrowed footprint is issued by
 these traversal or watch strategies.
 
 For a domain predicate narrower than candidate membership, declare an optional
@@ -5793,6 +5843,27 @@ in a Parent definition, or `context.refined_managed_index(&prepared)` for Native
 committed/proposed reads. Existing `.managed_index` entrances keep their
 candidate meaning. Missing contracts, executables, complete candidate coverage,
 or compatible Source/Parent projection profiles refuse exact access.
+
+The maintained exact-name Parent selects that explicit access mode:
+
+<!-- compiled: managed_exact_refinement.rs -->
+```rust
+pub fn definition(
+) -> ApplicationQueryDefinition<Catalog, ExactQuery, source::Parameters, source::ItemRow, Directory>
+{
+    source::base(
+        ExactQuery::reference(),
+        ApplicationQueryLaneEligibility::one_shot().with_live(),
+    )
+    .managed_index_refined(prefix::PrefixIndex::reference(), probe())
+    .order_by(
+        source::identity(),
+        ApplicationQueryOrderingDirection::Ascending,
+    )
+    .build()
+    .unwrap()
+}
+```
 
 Query verifies the complete candidate cut first, then evaluates every candidate
 once. It retains the original cut, all accepted/rejected dispositions and the

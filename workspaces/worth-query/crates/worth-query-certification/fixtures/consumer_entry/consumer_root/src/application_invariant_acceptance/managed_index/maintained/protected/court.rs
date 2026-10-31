@@ -1,4 +1,5 @@
 //! Current grant and READ decisions gate every notification and hidden-field omission.
+mod continuation;
 mod exact_refinement;
 use super::super::super::super::{authentication, managed_index::lifecycle};
 use super::{

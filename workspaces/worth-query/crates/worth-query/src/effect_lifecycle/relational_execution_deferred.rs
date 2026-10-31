@@ -228,6 +228,9 @@ pub(super) fn publication(
         Deferred::CompanionRegistrationPending | Deferred::CompanionRebindRequired => {
             EffectExecutionDeferredKind::InvalidationCompanionPending
         }
+        Deferred::CompanionPreflight(stop @ (worth_relational::facade::mvcc::CompanionPreflightStop::ManagedSourceNotPrepared | worth_relational::facade::mvcc::CompanionPreflightStop::ManagedSourceChanged)) => {
+            EffectExecutionDeferredKind::InvalidationCompanionUnavailable {stop}
+        }
         Deferred::CompanionPreflight(stop) if super::companion_stop_is_transient(&stop) => {
             EffectExecutionDeferredKind::InvalidationCompanionPending
         }
