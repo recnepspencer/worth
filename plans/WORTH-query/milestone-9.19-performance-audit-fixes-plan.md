@@ -17,7 +17,7 @@ Required repairs and current evidence:
 2. **Verified and independently cleared:** [Candidate collection](milestone-9.19-sparse-candidates-plan.md): output-sized accumulation for pruned non-maintained
    Sources too; sort/deduplicate only emitted candidates, preserve canonical order,
    bounds/duplicates and genuine slot ownership. Empty pruning does no N-bit sweep.
-3. Cold Source graph validation: single DFS/BFS with visitation state, preserving
+3. **Verified and independently cleared:** [Cold Source graph validation](milestone-9.19-cold-validation-plan.md): single DFS/BFS with visitation state, preserving
    Source bijection, connectivity/acyclicity and hostile/disconnected/skewed cases.
    Incremental checks continue for actual new edges.
 4. Prefix proof/key reuse: memoize within actual immutable invocation/root/version/

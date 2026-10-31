@@ -79,13 +79,21 @@ where
         _ => return Err(control.refuse(Stop::ForeignSourceSlot).into()),
     };
     let mut tree = tree.apply_edits(edits.elements(), image, execution, control)?;
-    tree.admit(
-        nodes.root().map(|id| id.ordinal),
-        nodes.len(),
-        source.len(),
-        edits.elements(),
-        control,
-    )?;
+    let root = nodes.root().map(|id| id.ordinal);
+    match &step {
+        Step::Cold => tree.admit_cold(
+            root,
+            nodes.len(),
+            source.len(),
+            edits.elements(),
+            execution,
+            control,
+        )?,
+        Step::Warm { .. } => {
+            tree.admit(root, nodes.len(), source.len(), edits.elements(), control)?
+        }
+    }
+
     if let Step::Warm { before, changes } = &step {
         tree.admit_delta(before, changes, execution, control)?;
     }

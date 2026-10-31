@@ -9,18 +9,7 @@ impl SourceTree {
         edits: &[Edit],
         control: &Control<'_>,
     ) -> Result<(), Stop> {
-        if self.region_count != node_count
-            || self.sources.len() != source_count
-            || self.parent_count != node_count.saturating_sub(1)
-            || root.is_none() != (node_count == 0)
-        {
-            return Err(control.refuse(Stop::SourceStructureIncomplete));
-        }
-        if let Some(root) = root {
-            if self.parent(root, control)?.is_some() || self.region_at(root, control)?.is_none() {
-                return Err(control.refuse(Stop::SourceStructureIncomplete));
-            }
-        }
+        self.admit_shape(root, node_count, source_count, control)?;
         for edit in edits {
             if edit.region.is_none() {
                 // Region retirement never erases this independent incoming posting.
@@ -50,6 +39,53 @@ impl SourceTree {
             }
         }
         control.poll()
+    }
+    pub(super) fn admit_cold(
+        &self,
+        root: Option<usize>,
+        node_count: usize,
+        source_count: usize,
+        edits: &[Edit],
+        execution: &ExecutionRequest<'_, '_>,
+        control: &Control<'_>,
+    ) -> Result<(), Stop> {
+        self.admit_shape(root, node_count, source_count, control)?;
+        for edit in edits {
+            if edit.region.is_none() && self.parent(edit.ordinal, control)?.is_some() {
+                return Err(control.refuse(Stop::SourceStructureIncomplete));
+            }
+        }
+        super::cold::acyclic(
+            edits
+                .iter()
+                .filter(|edit| edit.region.is_some())
+                .map(|edit| edit.ordinal),
+            node_count,
+            execution,
+            control,
+            |ordinal| self.parent(ordinal, control),
+        )
+    }
+    fn admit_shape(
+        &self,
+        root: Option<usize>,
+        node_count: usize,
+        source_count: usize,
+        control: &Control<'_>,
+    ) -> Result<(), Stop> {
+        if self.region_count != node_count
+            || self.sources.len() != source_count
+            || self.parent_count != node_count.saturating_sub(1)
+            || root.is_none() != (node_count == 0)
+        {
+            return Err(control.refuse(Stop::SourceStructureIncomplete));
+        }
+        if let Some(root) = root {
+            if self.parent(root, control)?.is_some() || self.region_at(root, control)?.is_none() {
+                return Err(control.refuse(Stop::SourceStructureIncomplete));
+            }
+        }
+        Ok(())
     }
     pub(super) fn admit_delta(
         &self,

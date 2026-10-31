@@ -1654,6 +1654,16 @@ courts pass; these do not claim that all Source admission, coverage or disclosur
 work is output-sized. Cold cycle validation, prefix reuse/scale, batched directory
 updates, spatial grouping and churn remain required audit repairs.
 
+The [cold validation repair](milestone-9.19-cold-validation-plan.md) replaces
+per-edge cold ancestry walks with invocation-local DFS visitation over actual
+retained parent links. Warm edits retain their predecessor-based new-edge checks.
+Numeric owner courts cover every64/128-node sparse-labelled chain node within
+at most two actual parent reads, long disconnected cycles and original partial
+memory/cancellation cleanup with same-graph fresh retries. Real public47+9 courts
+pass the actual Source/census/root handoff. Overall cold work still includes
+capture, paid ordered state and page depth; prefix reuse, batched directory
+updates, spatial grouping and churn remain required audit repairs.
+
 The [recorded-coverage slice](milestone-9.19-phase3-recorded-coverage-plan.md)
 records and verifies actual visited/pruned cuts and their matched-slot bijection.
 Public and maintained selection receivers and Native invariant projections consume
