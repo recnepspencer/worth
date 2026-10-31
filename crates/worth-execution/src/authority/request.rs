@@ -1,5 +1,6 @@
 //! Borrowed request authority with scoped execution and fixed-size backing metadata.
 
+mod native_preparation;
 mod retained_memory;
 
 use super::{ExecutionResourceLease, SerialRequest};
@@ -199,6 +200,22 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
             RequestBacking::Leased(lease) => super::ExecutionAllocationPolicy::Execution(lease),
             RequestBacking::Serial(_) => super::ExecutionAllocationPolicy::SystemAllocation,
         }
+    }
+
+    /// The earliest deadline on this actual request and its active lineage.
+    /// This observation grants no lease, replacement request or new allowance.
+    pub fn deadline(self) -> Option<std::time::Instant> {
+        let original = match self.form {
+            RequestBacking::Leased(lease) => {
+                let descendant = lease.current_descendant();
+                descendant.as_ref().unwrap_or(lease).deadline()
+            }
+            RequestBacking::Serial(request) => request.deadline,
+        };
+        original
+            .into_iter()
+            .chain(crate::backend::active_deadline())
+            .min()
     }
 
     /// The request's own policy ceiling. This does not observe active ancestors

@@ -25,6 +25,20 @@ Inspect that report for observed placement and worker activity. Handle admission
 interruption and allocation failures through their typed result at the call that
 owns them.
 
+For a platform entry that prepares several dependent values before publishing
+effects, use `ExecutionRequest::prepare_native`. Standalone leased entry opens
+one original scope for the complete preparation; active carriage reuses the
+actual descendant's meter, remaining work, memory and controls. A supplied
+child still enters under its narrower policy. Foreign or sibling leases refuse
+before the callback. Handle both the outer execution refusal and the inner
+typed domain failure. A successful callback must pass final kernel controls;
+stopped values are disposed while their original reservations remain owned.
+This port cannot carry an already changed runtime or publication across a
+failed handoff. `in_scope` retains its scope-free leased carriage semantics.
+The public-entry cases in
+[request preparation](../worth-court-execution/tests/worth_court_execution/execution/request_preparation/mod.rs)
+exercise original one-unit-short refusal, active remainder and child controls.
+
 For algorithms that need work measurement or an explicit work/memory bound,
 construct the policy with `ExecutionRequestPolicy::new(...,
 ExecutionBudget::new(...))` and use `ExecutionRequest::run(ceiling, ...)`.

@@ -93,3 +93,19 @@ impl<T> std::fmt::Debug for ExecutionRequestArrayBuilder<'_, '_, T> {
             .finish_non_exhaustive()
     }
 }
+
+impl ExecutionRequestArrayBuilder<'_, '_, u8> {
+    /// Copy bytes into the already admitted fixed layout, consulting the same
+    /// original request between bounded copies. This never grows the layout.
+    pub fn extend_from_slice(&mut self, bytes: &[u8]) -> Result<(), ExecutionRequestArrayDenial> {
+        use ExecutionRequestArrayDenial as Denial;
+        self.request.consult().map_err(Denial::Request)?;
+        for chunk in bytes.chunks(64 * 1024) {
+            self.request.consult().map_err(Denial::Request)?;
+            self.building
+                .append_bytes(chunk)
+                .map_err(Denial::Allocation)?;
+        }
+        self.request.consult().map_err(Denial::Request)
+    }
+}
