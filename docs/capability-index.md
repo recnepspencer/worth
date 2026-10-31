@@ -781,6 +781,18 @@ See [installed capture and paging](../workspaces/worth-query/crates/worth-query/
 for the API, separate capability decisions, typed gaps and final release.
 See [native paging and retention](../crates/worth-relational/API_OVERVIEW.md#bounded-record-and-aspect-history).
 
+### Create independent component forks from retained truth
+
+Platform owners with a memory-only Native runtime can admit an original basis
+through `fork_port().admit_retained_fork_source(&basis)` and consume its typed
+source with `fork_retained_branch`. World's branch port admits an original
+`ProductBranchObservation` through `admit_retained_branch_source`, then consumes
+it with `create_product_branch_from_retained_source`. Supply real `ForkExact`
+destinations for both components; Signal must still match its original exact
+source. Handle profile refusal and retain any partial effect owner through
+cleanup. See [Native retained forks](../crates/worth-relational/README.md#fork-an-actually-retained-root)
+and [World retained creation](../crates/worth-runtime-world/README.md#create-a-branch-from-retained-component-truth).
+
 ### Graph-read admission in the default Query workspace
 
 `worth-query-admission::integration::review_graph_read_access(requirements, inventory)`

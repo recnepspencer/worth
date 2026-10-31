@@ -1,12 +1,13 @@
-//! The branch fork transition: a fresh branch reference sharing an exact
-//! live source's immutable root.
+//! Branch fork transitions share an actual immutable source root.
 //!
-//! A fork is a durable branch transition (Milestone 2 D8). Every fallible
+//! Current-source forks are durable branch transitions. Every fallible
 //! step (source validation, target preparation, head retention and basis
 //! issuance) runs before the transition is published; the stale-source check
 //! is repeated inside the patch-position reservation, where no commit can
 //! move the source; and the target is installed only after the medium
 //! answers `Committed`. A refusal or an unresolved fate installs nothing.
+//! Retained-source forks instead select original live immutable custody,
+//! require a memory-only owner, and record distinct canonical meaning.
 
 use crate::history::data::{BranchCreateError, CommitId};
 
@@ -36,6 +37,9 @@ pub enum RelationalForkDenial {
     RetiredTarget,
     ForeignRuntime,
     StaleSource,
+    /// This receiver requires live immutable custody and supports no durable
+    /// historical-root reopening. Refused before destination reservation.
+    RetainedSourceDurabilityUnsupported,
     MissingArtifact,
     InvalidTarget(BranchCreateError),
     Cell(RelationalBranchCellDenial),

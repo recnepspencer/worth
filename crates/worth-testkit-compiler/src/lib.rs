@@ -8,6 +8,7 @@ mod denial;
 mod diagnostic_layout;
 mod diagnostic_lists;
 mod diagnostics;
+mod driver_summary;
 mod paths;
 mod refusal;
 mod semantic_denial;

@@ -18,6 +18,7 @@ mod history;
 #[cfg(test)]
 mod install_control;
 mod observation;
+mod retained_source;
 mod retirement;
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -212,7 +213,7 @@ where
         &self,
         request: RuntimeWorldBranchCreationRequest<'_, '_, '_>,
     ) -> Result<RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchAdmissionDenial> {
-        let (execution, source, intent, cancellation) = request.into_parts();
+        let (execution, source, intent, cancellation, retained) = request.into_parts();
         if source.owner_identity() != self.owner_identity()
             || source.branch_identity().owner_identity() != self.owner_identity()
         {
@@ -227,12 +228,32 @@ where
         if cancellation.is_cancelled() {
             return Err(RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect);
         }
+        if retained.is_some() {
+            if !matches!(
+                plans.relational(),
+                crate::branch::RelationalBranchCreationPlan::ForkExact { .. }
+            ) || !matches!(
+                plans.signal(),
+                crate::branch::SignalBranchCreationPlan::ForkExact { .. }
+            ) {
+                return Err(RuntimeWorldBranchAdmissionDenial::UnsupportedRetainedSourcePlan);
+            }
+            self.admit_retained_source_lifecycle(&source)?;
+        }
         if plans.is_exact_reuse() {
             return self
                 .create_reused_branch(source, intent.name().clone(), cancellation)
                 .map(RuntimeWorldBranchCreationOutcome::Performed);
         }
-        creation::create_forked_branch(self, execution, source, intent, cancellation)
+        creation::create_forked_branch(self, execution, source, intent, cancellation, retained)
+    }
+
+    fn admit_retained_branch_source(
+        &self,
+        source: &ProductBranchObservation,
+    ) -> Result<crate::branch::RetainedProductBranchCreationSource, RuntimeWorldBranchAdmissionDenial>
+    {
+        self.admit_retained_creation_source(source)
     }
 
     fn retire_product_branch(

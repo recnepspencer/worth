@@ -11,7 +11,12 @@ use crate::branch::{
 };
 use crate::history::data::BranchId;
 
-/// A source proven live and unchanged since its fork token was issued.
+pub(super) enum ForkSourceInput {
+    Current(crate::branch::AdmittedRelationalForkSourceBasis),
+    Retained(crate::branch::AdmittedRelationalRetainedForkSource),
+}
+
+/// A source admitted by its actual current or retained receiver.
 pub(super) struct ValidatedForkSource {
     pub(super) descriptor: RelationalForkSourceDescriptor,
     pub(super) source_observation: RelationalBranchReferenceObservation,
@@ -19,11 +24,22 @@ pub(super) struct ValidatedForkSource {
     pub(super) source_root: Arc<RelationalBranchRoot>,
     /// The source's selected head in the canonical runtime frame.
     source_head: RelationalBranchTarget,
+    // Keep the original semantic retention obligation until installation.
+    retained: Option<crate::branch::AdmittedRelationalBranchBasis>,
 }
 
 impl ValidatedForkSource {
-    /// The durable transition that forks `target` from this source.
+    /// The canonical transition that forks `target` from this source.
     pub(super) fn transition(&self, target: BranchId) -> RelationalBranchTransition {
+        if self.retained.is_some() {
+            return RelationalBranchTransition::RetainedFork {
+                target,
+                source: self.descriptor.source_branch().clone(),
+                source_generation: self.source_observation.generation(),
+                source_truth_version: self.source_truth_version,
+                source_head: self.source_head.clone(),
+            };
+        }
         RelationalBranchTransition::Fork {
             target,
             source: self.descriptor.source_branch().clone(),
@@ -35,6 +51,40 @@ impl ValidatedForkSource {
 }
 
 impl RelationalForkPort {
+    pub(super) fn validate_fork_input(
+        &self,
+        input: ForkSourceInput,
+    ) -> Result<ValidatedForkSource, RelationalForkDenial> {
+        match input {
+            ForkSourceInput::Current(source) => {
+                let (descriptor, _authority) = source.into_parts();
+                self.validate_fork_source(descriptor)
+            }
+            ForkSourceInput::Retained(source) => {
+                self.validate_retained_fork_profile()?;
+                let basis = source.basis;
+                self.validate_retained_basis(&basis)?;
+                let source_observation = basis.reference().clone();
+                let FoundationalBranchTarget::Basis(target) = source_observation.target() else {
+                    return Err(RelationalForkDenial::EmptySource);
+                };
+                Ok(ValidatedForkSource {
+                    descriptor: RelationalForkSourceDescriptor::new(
+                        self.runtime_instance_id,
+                        source_observation.clone(),
+                        basis.identity().branch_id().clone(),
+                        basis.truth_version(),
+                    ),
+                    source_head: target.rebind_runtime_instance_id(CANONICAL_RUNTIME_INSTANCE_ID),
+                    source_observation,
+                    source_truth_version: basis.truth_version(),
+                    source_root: Arc::clone(&basis.inner.root),
+                    retained: Some(basis),
+                })
+            }
+        }
+    }
+
     /// Require the source the token describes to be live and unchanged.
     pub(super) fn validate_fork_source(
         &self,
@@ -66,6 +116,7 @@ impl RelationalForkPort {
             source_truth_version,
             source_root: source_root.ok_or(RelationalForkDenial::MissingArtifact)?,
             source_head,
+            retained: None,
         })
     }
 
@@ -90,6 +141,12 @@ impl RelationalForkPort {
             RelationalBranchLifecyclePosture::Deleting => {
                 return Err(RelationalForkDenial::SourceDeleting)
             }
+        }
+        if validated.retained.is_some() {
+            // This distinct receiver guards lifecycle, not the old reference's
+            // currentness. Truth remains the original retained immutable root.
+            self.validate_retained_fork_profile()?;
+            return Ok(());
         }
         if state.truth_version() != validated.source_truth_version
             || validated

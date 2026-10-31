@@ -16,6 +16,8 @@ mod coordination;
 mod fork;
 mod fork_port;
 mod fork_source_basis;
+mod retained_fork_source;
+pub use retained_fork_source::AdmittedRelationalRetainedForkSource;
 mod identity;
 mod lifecycle;
 mod materialization;

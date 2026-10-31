@@ -13,8 +13,48 @@ use crate::runtime::BranchTransitionRecordError;
 
 type ForkStop = RelationalBranchTransitionStop<RelationalForkDenial>;
 type ForkFailure<S> = BranchTransitionRecordError<RelationalForkDenial, S>;
+use super::source_validation::ForkSourceInput;
 
 impl RelationalForkPort {
+    /// Consume a retained source into a new independently writable branch.
+    /// This process-local profile refuses attached durability before reserving
+    /// the destination. It grants no model-navigation or application permission.
+    pub fn fork_retained_branch(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        target: BranchId,
+        source: crate::branch::AdmittedRelationalRetainedForkSource,
+    ) -> Result<(RelationalForkOutcome, AdmittedRelationalBranchBasis), ForkStop> {
+        self.validate_retained_fork_profile()
+            .map_err(RelationalBranchTransitionStop::Denied)?;
+        let reservation = self
+            .reserve_fork_target(target)
+            .map_err(RelationalBranchTransitionStop::Denied)?;
+        self.fork_reserved_retained_with_basis(execution, reservation, source)
+    }
+
+    pub fn fork_reserved_retained_with_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        reservation: RelationalForkTargetReservation,
+        source: crate::branch::AdmittedRelationalRetainedForkSource,
+    ) -> Result<(RelationalForkOutcome, AdmittedRelationalBranchBasis), ForkStop> {
+        self.validate_retained_fork_profile()
+            .map_err(RelationalBranchTransitionStop::Denied)?;
+        let step = LiveBranchTransitionStep::new(self.medium.clone(), execution);
+        self.fork_reserved_input_with_hooks(
+            execution,
+            &step,
+            reservation,
+            ForkSourceInput::Retained(source),
+            || {},
+            || {},
+            true,
+        )
+        .map(with_basis)
+        .map_err(Into::into)
+    }
+
     /// Observe an exact live source and issue the owner-sealed fork-only
     /// token. Empty branches do not produce a fork source.
     pub fn observe_fork_source(
@@ -204,6 +244,29 @@ impl RelationalForkPort {
         return_basis: bool,
     ) -> Result<(RelationalForkOutcome, Option<AdmittedRelationalBranchBasis>), ForkFailure<S::Stop>>
     {
+        self.fork_reserved_input_with_hooks(
+            execution,
+            step,
+            reservation,
+            ForkSourceInput::Current(source),
+            pause_before_install,
+            pause_after_install,
+            return_basis,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn fork_reserved_input_with_hooks<S: RelationalBranchTransitionDurableStep>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        step: &S,
+        reservation: RelationalForkTargetReservation,
+        source: ForkSourceInput,
+        pause_before_install: impl FnOnce(),
+        pause_after_install: impl FnOnce(),
+        return_basis: bool,
+    ) -> Result<(RelationalForkOutcome, Option<AdmittedRelationalBranchBasis>), ForkFailure<S::Stop>>
+    {
         let denied = BranchTransitionRecordError::Denied;
         if !self.owner.owns_reservation(&reservation) {
             return Err(denied(RelationalForkDenial::ForeignRuntime));
@@ -213,8 +276,7 @@ impl RelationalForkPort {
             .admit()
             .ok_or(denied(RelationalForkDenial::OwnerUnavailable))?;
         let publication = self.owner.begin_branch_transition();
-        let (descriptor, _authority) = source.into_parts();
-        let validated = self.validate_fork_source(descriptor).map_err(denied)?;
+        let validated = self.validate_fork_input(source).map_err(denied)?;
         pause_before_install();
         let prepared = self
             .prepare_fork_target(reservation, &validated)

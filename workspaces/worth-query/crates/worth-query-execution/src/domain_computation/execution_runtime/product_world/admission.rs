@@ -187,6 +187,8 @@ pub(super) fn map_world_denial(
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::DuplicateName
             | RuntimeWorldBranchAdmissionDenial::PlansOmitted
+            | RuntimeWorldBranchAdmissionDenial::UnsupportedRetainedSourcePlan
+            | RuntimeWorldBranchAdmissionDenial::RetainedSourceDurabilityUnsupported
             | RuntimeWorldBranchAdmissionDenial::ForkSourceChanged
             | RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable,
         ) => WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationRejected),

@@ -39,10 +39,9 @@ pub(crate) fn check_semantic_outcome(
     validate_semantic_observation(outcome, messages)?;
     let mut matched = false;
     let mut errors = 0;
-    for message in messages
-        .iter()
-        .filter(|message| message["level"] == "error")
-    {
+    for message in messages.iter().filter(|message| {
+        message["level"] == "error" && !crate::driver_summary::is_abort_summary(message)
+    }) {
         errors += 1;
         let semantic = diagnostics::semantic_text(message);
         let rendered = message["rendered"].as_str().unwrap_or_default();
