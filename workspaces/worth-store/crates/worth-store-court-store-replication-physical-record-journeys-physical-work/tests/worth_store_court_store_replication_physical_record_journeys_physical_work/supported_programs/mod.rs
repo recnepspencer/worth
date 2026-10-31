@@ -14,3 +14,5 @@ mod record_chunk_views_supported;
 mod responsibility_named_store_facade_supported;
 mod supported_admission;
 mod supported_physical_work;
+
+mod anchored_publication;

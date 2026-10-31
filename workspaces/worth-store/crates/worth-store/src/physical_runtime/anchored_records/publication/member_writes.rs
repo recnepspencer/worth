@@ -9,7 +9,7 @@
 //! and the runtime incarnation, so a retry of the same value in one
 //! incarnation resolves to the batches already written.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 
 use sha2::{Digest, Sha256};
 
@@ -21,8 +21,7 @@ use super::admission::AdmittedMembers;
 use super::batch_capacity::BatchCapacity;
 use crate::physical_runtime::record_serving::{DurableRecordAppend, DurableRecordAppendFailure};
 use crate::physical_runtime::{
-    AdmittedRecordPlacementPolicy, PhysicalMutationDeadline, PhysicalRecordId,
-    PhysicalRecordSubmission, RecordAppendBatch,
+    AdmittedRecordPlacementPolicy, PhysicalMutationDeadline, RecordAppendBatch,
 };
 
 type Failure = AnchoredRecordPublicationFailure;
@@ -57,7 +56,7 @@ impl MemberResolution {
 
 /// Every member batch of one publication, built and ready to submit.
 pub(super) struct MemberWritePlan {
-    batches: Vec<PlannedMemberBatch>,
+    batches: VecDeque<PlannedMemberBatch>,
     name: AnchoredRecordName,
     generation: u64,
     content: [u8; 32],
@@ -126,44 +125,29 @@ impl MemberWritePlan {
         ))
     }
 
-    /// Writes every batch in order and returns the written contents'
-    /// locators in write order. A failure leaves the anchor where it was.
-    pub(super) fn write(
-        self,
-        submission: &PhysicalRecordSubmission,
+    /// Takes exactly the next preplanned batch; no effects or reordering.
+    pub(super) fn next_batch(
+        &mut self,
+        index: usize,
         placement: AdmittedRecordPlacementPolicy,
         deadline: PhysicalMutationDeadline,
-    ) -> Result<Vec<AnchoredRecordMemberLocator>, Failure> {
-        let mut locators = Vec::new();
-        for (written_batches, planned) in self.batches.into_iter().enumerate() {
-            let records = DurableRecordAppend {
+    ) -> Option<(DurableRecordAppend, Vec<([u8; 32], u64)>)> {
+        let planned = self.batches.pop_front()?;
+        Some((
+            DurableRecordAppend {
                 batch: planned.batch,
                 idempotency: material(
                     self.name,
                     self.generation,
                     self.content,
                     self.incarnation,
-                    written_batches,
+                    index,
                 ),
                 placement,
                 deadline,
-            }
-            .submit(submission)
-            .map_err(|failure| Failure::MemberWrite {
-                written_batches,
-                failure: member_failure(failure),
-            })?;
-            locators.extend(records.into_iter().zip(planned.contents).map(
-                |(record, (sha256, length))| {
-                    AnchoredRecordMemberLocator::new(
-                        PhysicalRecordId::from_persisted(record),
-                        sha256,
-                        length,
-                    )
-                },
-            ));
-        }
-        Ok(locators)
+            },
+            planned.contents,
+        ))
     }
 }
 
@@ -209,7 +193,9 @@ impl PlannedMemberBatch {
 }
 
 /// This door's name for a member batch failure.
-fn member_failure(failure: DurableRecordAppendFailure) -> AnchoredRecordMemberWriteFailure {
+pub(super) fn member_failure(
+    failure: DurableRecordAppendFailure,
+) -> AnchoredRecordMemberWriteFailure {
     type Member = AnchoredRecordMemberWriteFailure;
     match failure {
         DurableRecordAppendFailure::Batch(denial) => Member::Batch(denial),

@@ -472,3 +472,5 @@ crates/worth-testkit-relational/ crates/worth-court-relational-certification/tes
 
 # Existing Bridge history control follows its public eviction court.
 crates/worth-runtime-bridge/ crates/worth-court-runtime-bridge/tests/worth_court_runtime_bridge/runtime_bridge/conditional_evaluations/history.rs
+
+workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/process/recovery_runtime/production_entry/anchored_records/owned_publication/fixture.rs

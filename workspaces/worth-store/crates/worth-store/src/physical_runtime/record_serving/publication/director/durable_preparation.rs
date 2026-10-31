@@ -34,6 +34,7 @@ pub(super) use protected_index::ProtectedAppendKind;
 pub(super) struct AdmittedMutationPreparation {
     pub(super) admission: AdmittedPhysicalMutation,
     pub(super) deadline: PhysicalMutationDeadline,
+    pub(super) interruption: Option<std::sync::Arc<worth_execution::ExecutionInterruptionView>>,
 }
 
 pub(super) enum PhysicalMutationPreparationAdmission {
@@ -174,7 +175,8 @@ impl RecordPublicationDirector {
                     resources,
                     start: crate::physical_runtime::PhysicalMutationRuntimeOwner::start_port(
                         &self.mutations,
-                    ),
+                    )
+                    .with_interruption(admitted.interruption),
                     selected_segment_rewrite: false,
                     rewrite_pages: 0,
                     source_root_generation: 0,
@@ -253,7 +255,7 @@ impl RecordPublicationDirector {
         request: PhysicalMutationRequest,
         family: PhysicalMutationOperationFamily,
     ) -> Result<PhysicalMutationPreparationAdmission, PhysicalMutationPreparationOutcome> {
-        let (key, deadline, durability_request) = request.into_parts();
+        let (key, deadline, durability_request, interruption) = request.into_parts();
         let lease = key.lease();
         let fingerprint = self
             .derive_record_append_fingerprint(
@@ -292,6 +294,7 @@ impl RecordPublicationDirector {
             AdmittedMutationPreparation {
                 admission,
                 deadline,
+                interruption,
             },
         ))
     }

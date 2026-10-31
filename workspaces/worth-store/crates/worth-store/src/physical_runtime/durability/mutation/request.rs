@@ -53,6 +53,7 @@ pub struct PhysicalMutationRequest {
     idempotency: PhysicalMutationIdempotencyKey,
     deadline: PhysicalMutationDeadline,
     durability: PhysicalMutationDurabilityRequest,
+    interruption: Option<std::sync::Arc<worth_execution::ExecutionInterruptionView>>,
 }
 
 impl PhysicalMutationRequest {
@@ -64,7 +65,23 @@ impl PhysicalMutationRequest {
             idempotency,
             deadline,
             durability: PhysicalMutationDurabilityRequest::PlatformDurable,
+            interruption: None,
         }
+    }
+
+    pub fn with_interruption_view(
+        mut self,
+        view: worth_execution::ExecutionInterruptionView,
+    ) -> Self {
+        self.interruption = Some(std::sync::Arc::new(view));
+        self
+    }
+    pub(in crate::physical_runtime) fn with_shared_interruption(
+        mut self,
+        view: Option<std::sync::Arc<worth_execution::ExecutionInterruptionView>>,
+    ) -> Self {
+        self.interruption = view;
+        self
     }
 
     pub const fn idempotency_key(&self) -> &PhysicalMutationIdempotencyKey {
@@ -81,7 +98,13 @@ impl PhysicalMutationRequest {
         PhysicalMutationIdempotencyKey,
         PhysicalMutationDeadline,
         PhysicalMutationDurabilityRequest,
+        Option<std::sync::Arc<worth_execution::ExecutionInterruptionView>>,
     ) {
-        (self.idempotency, self.deadline, self.durability)
+        (
+            self.idempotency,
+            self.deadline,
+            self.durability,
+            self.interruption,
+        )
     }
 }

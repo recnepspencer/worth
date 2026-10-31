@@ -874,3 +874,27 @@ owners through normal close, including blocking drains and media release.
 Spawn, allocation and a finished-worker join have no hard deadline bound. Panic
 or lost outcome never proves drainage, lease fate or successful close; retain
 any actual outcome and progress for inspection and normal recovery.
+
+### Own an anchored publication one physical step at a time
+
+`AnchoredRecords::start_publication(publication, interruption_view)` admits an
+owned publication without starting a worker. Retain its recovery custody
+outside a disposable execution result before calling consuming `step`.
+`Pending` returns the same operation; `Ready` permits caller preparation of the
+next existing batch. Only the final actual receipt describes the selected
+anchored value. Admission hashes input and may read the current value; locks,
+allocation, I/O and physical scheduling remain cooperative safe points.
+
+Each accepted step registers its actual identity before worker start and holds
+its owner's selection/input-memory protection through terminal delivery. The
+caller transfers the real existing input reservations into that guard; it does
+not issue another budget. Ordinary synchronous `publish` drives these same
+phases using its existing Signal deadline. A genuine Execution interruption
+view additionally observes the original cancellation lineage and absolute
+clock at pre-effect and group seal, without converting to Signal time.
+
+Consuming `stop` permanently removes further advancement. Stopped custody may
+inspect, explicitly cancel or settle the accepted step, preserving its actual
+prefix/fate. Recovery cannot revive stopped or completed publication authority.
+Observer loss does not cancel accepted mutation authority or certify a result.
+Terminal descriptions retain facts, not live views, selection guards or Serving.

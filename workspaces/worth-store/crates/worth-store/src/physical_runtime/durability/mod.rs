@@ -130,15 +130,15 @@ pub(in crate::physical_runtime) use grouping::{
     PhysicalWalGroupBarrierPort,
 };
 pub use lifecycle::PhysicalMutationShutdown;
+pub(in crate::physical_runtime) use lifecycle::{
+    ExistingPhysicalMutationObservation, PhysicalMutationCostSnapshot,
+    PhysicalMutationRuntimeOwner, PhysicalMutationStartPort, PhysicalMutationTerminalState,
+};
 pub use lifecycle::{PhysicalMutationCheckpoint, PhysicalMutationPauseGate};
 #[cfg(feature = "certification-test-authority")]
 pub use lifecycle::{
     PhysicalMutationCheckpoint as CertificationPhysicalMutationCheckpoint,
     PhysicalMutationPauseGate as CertificationPhysicalMutationPauseGate,
-};
-pub(in crate::physical_runtime) use lifecycle::{
-    PhysicalMutationCostSnapshot, PhysicalMutationRuntimeOwner, PhysicalMutationStartPort,
-    PhysicalMutationTerminalState,
 };
 pub(in crate::physical_runtime) use mutation::PhysicalBindingDecodingContext;
 pub(in crate::physical_runtime) use mutation::{

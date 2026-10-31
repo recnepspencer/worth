@@ -86,6 +86,12 @@ impl WalRangeReservedPhysicalMutation {
         }
     }
 
+    pub(in crate::physical_runtime) fn original_request_stop(
+        &self,
+    ) -> Option<worth_execution::MapKernelStop> {
+        self.basis.start.original_request_stop()
+    }
+
     pub const fn mutation_identity(&self) -> PhysicalMutationIdentity {
         self.basis.mutation_identity()
     }

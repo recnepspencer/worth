@@ -314,3 +314,5 @@ fn terminal_head_retirement_authority_is_owner_issued() {
         &["worth_store::physical_runtime::CheckpointAttestedTerminalHead", "worth_store::physical_runtime::TerminalHeadIdentityNonReissue", "worth_store::physical_runtime::TerminalHeadNoReaderOrRecoveryHold", "worth_store::physical_runtime::TerminalHeadNoRetryClaim", "worth_store::physical_runtime::TerminalHeadPublicationExcluded", "worth_store::physical_runtime::TerminalHeadRetirementAuthority"],
     ).expect("prebuilt semantic compiler denial");
 }
+
+mod owned_publication;

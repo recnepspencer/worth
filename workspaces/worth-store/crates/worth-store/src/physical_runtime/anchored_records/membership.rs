@@ -49,19 +49,41 @@ pub(super) struct ValueMembership {
     listed: BTreeSet<AnchoredRecordMemberLocator>,
 }
 
+/// Membership storage built by the advancing caller before anchor submission.
+/// It has no selected record and therefore cannot describe a committed value.
+pub(super) struct PreparedValueMembership {
+    header: AnchoredRecordHeader,
+    members: Vec<AnchoredRecordMemberLocator>,
+    listed: BTreeSet<AnchoredRecordMemberLocator>,
+}
+impl PreparedValueMembership {
+    pub(super) fn new(
+        header: AnchoredRecordHeader,
+        members: Vec<AnchoredRecordMemberLocator>,
+    ) -> Self {
+        let listed = members.iter().copied().collect();
+        Self {
+            header,
+            members,
+            listed,
+        }
+    }
+    pub(super) fn bind_selected(self, selected: SelectedRecord) -> ValueMembership {
+        ValueMembership {
+            selected,
+            header: self.header,
+            members: self.members,
+            listed: self.listed,
+        }
+    }
+}
 impl ValueMembership {
     pub(super) fn new(
         selected: SelectedRecord,
         header: AnchoredRecordHeader,
         members: Vec<AnchoredRecordMemberLocator>,
     ) -> Self {
-        let listed = members.iter().copied().collect();
-        Self {
-            selected,
-            header,
-            members,
-            listed,
-        }
+        PreparedValueMembership::new(header, members).bind_selected(selected)
     }
 
     /// The version and members this value is reported as.

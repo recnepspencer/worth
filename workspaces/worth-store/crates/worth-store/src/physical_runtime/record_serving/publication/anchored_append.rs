@@ -36,6 +36,16 @@ impl AnchoredRecordAppend {
         self,
         submission: &PhysicalRecordSubmission,
     ) -> Result<PersistedRecordIdentity, DurableRecordAppendFailure> {
+        let records = self.into_durable_append()?.submit(submission)?;
+        match records.as_slice() {
+            [record] => Ok(*record),
+            _ => Err(DurableRecordAppendFailure::CompletedWithoutRecords),
+        }
+    }
+
+    pub(in crate::physical_runtime) fn into_durable_append(
+        self,
+    ) -> Result<DurableRecordAppend, DurableRecordAppendFailure> {
         let batch = RecordAppendBatch::builder()
             .push_owned(self.record)
             .build()
@@ -47,16 +57,11 @@ impl AnchoredRecordAppend {
                 })
             })
             .map_err(DurableRecordAppendFailure::Batch)?;
-        let records = DurableRecordAppend {
+        Ok(DurableRecordAppend {
             batch,
             idempotency: self.idempotency,
             placement: self.placement,
             deadline: self.deadline,
-        }
-        .submit(submission)?;
-        match records.as_slice() {
-            [record] => Ok(*record),
-            _ => Err(DurableRecordAppendFailure::CompletedWithoutRecords),
-        }
+        })
     }
 }

@@ -108,6 +108,9 @@ impl RecordPublicationDirector {
             Ok(completed) => completed,
             Err(terminal) => return Err(keep_unresolved(growth, pending, terminal, copy.as_ref())),
         };
+        // The root owner has issued an actual completed fact. Cleanup cannot
+        // erase it if a later owner panics before the worker returns.
+        attempt.install_terminal(PhysicalMutationTerminalFact::Completed(completed.clone()));
         growth.commit();
         self.release_copy_candidate_after_source_retained();
         Ok(completed)

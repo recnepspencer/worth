@@ -22,6 +22,8 @@ pub struct CompletedPhysicalCheckpoint {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalCheckpointProvenNoEffectCause {
+    OriginalRequestDeadlineElapsedBeforeCandidate,
+    OriginalRequestDeadlineElapsedAndCandidateRemoved,
     CancelledBeforeCandidate,
     CancelledAndCandidateRemoved,
     FailedAndCandidateRemoved(PhysicalCheckpointCaptureFailureKind),

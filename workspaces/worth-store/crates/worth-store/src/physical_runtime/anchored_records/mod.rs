@@ -46,7 +46,7 @@ mod frame;
 mod member;
 mod member_read;
 mod membership;
-mod publication;
+pub(in crate::physical_runtime) mod publication;
 mod read;
 mod value;
 mod verified_value;
@@ -61,6 +61,8 @@ pub use member::{
     MAXIMUM_ANCHORED_RECORD_MEMBERS,
 };
 pub(in crate::physical_runtime) use membership::AnchoredMembershipCache;
+pub use publication::operation::*;
+pub use publication::step_custody::*;
 pub use publication::{AnchoredRecordPublication, AnchoredRecordPublished};
 pub use value::{AnchoredRecord, AnchoredRecordMembership, AnchoredRecordVersion};
 
@@ -97,6 +99,8 @@ impl AnchoredRecordName {
 #[derive(Debug, Default)]
 pub(in crate::physical_runtime) struct AnchoredRecordState {
     unresolved: BTreeSet<RecordAnchorName>,
+    admitting: bool,
+    active: Option<std::sync::Weak<publication::operation::PublicationShared>>,
 }
 
 /// Borrowed access to the home's anchored records.

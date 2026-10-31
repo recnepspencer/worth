@@ -158,6 +158,13 @@ impl PhysicalWalRuntimeOwner {
 }
 
 impl ReservedPhysicalWalGroupMembers {
+    pub(super) fn original_request_stop(&self) -> Option<worth_execution::MapKernelStop> {
+        self.0
+            .as_slice()
+            .iter()
+            .find_map(|member| member.mutation().original_request_stop())
+    }
+
     pub(super) fn from_members(
         members: NonEmpty<WalBarrierMember<WalRangeReservedPhysicalMutation>>,
     ) -> Self {

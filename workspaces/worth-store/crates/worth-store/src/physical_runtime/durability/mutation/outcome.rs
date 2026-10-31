@@ -65,6 +65,7 @@ pub enum PhysicalMutationCancellationOutcome {
     },
 }
 
+#[derive(Clone)]
 pub(in crate::physical_runtime) enum PhysicalMutationTerminalFact {
     Completed(Arc<CompletedPhysicalMutationFact>),
     ProvenNoEffect(ProvenNoEffectPhysicalMutation),
@@ -111,6 +112,14 @@ impl PhysicalMutationProgress {
 }
 
 impl PhysicalMutationTerminalFact {
+    pub(in crate::physical_runtime) fn from_outcome(outcome: PhysicalMutationOutcome) -> Self {
+        match outcome {
+            PhysicalMutationOutcome::Completed(done) => Self::Completed(done.retained_fact()),
+            PhysicalMutationOutcome::ProvenNoEffect(fate) => Self::ProvenNoEffect(fate),
+            PhysicalMutationOutcome::Indeterminate(fate) => Self::Indeterminate(fate),
+        }
+    }
+
     pub(in crate::physical_runtime) fn outcome(&self) -> PhysicalMutationOutcome {
         match self {
             Self::Completed(fact) => {

@@ -3,6 +3,11 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::{Arc, Mutex, Weak};
 use std::thread::JoinHandle;
 
+mod start_port;
+mod worker;
+pub(in crate::physical_runtime) use start_port::ExistingPhysicalMutationObservation;
+use worker::run_worker;
+
 use super::PhysicalMutationShutdown;
 use crate::physical_runtime::{
     IndeterminatePhysicalMutation, PhysicalMutationHandle, PhysicalMutationIndeterminateStage,
@@ -19,6 +24,7 @@ pub(in crate::physical_runtime) struct PhysicalMutationRuntimeOwner {
 #[derive(Clone)]
 pub(in crate::physical_runtime) struct PhysicalMutationStartPort {
     owner: Weak<PhysicalMutationRuntimeOwner>,
+    interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
 }
 
 struct PhysicalMutationLifecycleState {
@@ -76,6 +82,7 @@ impl PhysicalMutationRuntimeOwner {
     pub(in crate::physical_runtime) fn start_port(owner: &Arc<Self>) -> PhysicalMutationStartPort {
         PhysicalMutationStartPort {
             owner: Arc::downgrade(owner),
+            interruption: None,
         }
     }
 
@@ -83,7 +90,13 @@ impl PhysicalMutationRuntimeOwner {
         clippy::disallowed_methods,
         reason = "io-durability-worker thread-builder=1: Store owns this durability or mutation worker independently of parallel computation."
     )]
-    fn start(self: &Arc<Self>, prepared: PreparedPhysicalMutation) -> PhysicalMutationHandle {
+    fn start(
+        self: &Arc<Self>,
+        prepared: PreparedPhysicalMutation,
+        anchored_step: Option<
+            Arc<crate::physical_runtime::anchored_records::publication::step_custody::AcceptedStep>,
+        >,
+    ) -> PhysicalMutationHandle {
         let identity = prepared.mutation_identity();
         let mut state = self.state();
         if !state.accepting {
@@ -92,6 +105,9 @@ impl PhysicalMutationRuntimeOwner {
                     &prepared,
                     Arc::downgrade(self),
                 );
+            if let Some(step) = anchored_step {
+                attempt.register_anchored_step(step);
+            }
             attempt.mark_runtime_closing();
             let handle = PhysicalMutationHandle::new(&attempt);
             drop(state);
@@ -102,13 +118,20 @@ impl PhysicalMutationRuntimeOwner {
             );
             return handle;
         }
-        if let Some(existing) = state.attempts.get(&identity) {
-            return PhysicalMutationHandle::new(existing);
+        if let Some(existing) = state.attempts.get(&identity).cloned() {
+            drop(state);
+            if let Some(step) = anchored_step {
+                existing.register_anchored_step(step);
+            }
+            return PhysicalMutationHandle::new(&existing);
         }
         let attempt = crate::physical_runtime::durability::mutation::PhysicalMutationAttempt::new(
             &prepared,
             Arc::downgrade(self),
         );
+        if let Some(step) = anchored_step {
+            attempt.register_anchored_step(step);
+        }
         state.attempts.insert(identity, Arc::clone(&attempt));
         state.counters.record_started();
 
@@ -209,11 +232,23 @@ impl PhysicalMutationRuntimeOwner {
         terminal: PhysicalMutationTerminalFact,
         panicked: bool,
     ) {
-        self.director
-            .upgrade()
-            .expect("managed mutation retains its publication director through settlement")
-            .persist_mutation_terminal(&terminal)
-            .expect("carried mutation terminal fact matches its exact idempotency binding");
+        // The physical fact must survive later binding persistence or delivery failure.
+        attempt.install_terminal(terminal.clone());
+        let persisted = catch_unwind(AssertUnwindSafe(|| {
+            self.director
+                .upgrade()
+                .ok_or(())?
+                .persist_mutation_terminal(&terminal)
+                .map_err(|_| ())
+        }));
+        let settlement_failure = if panicked {
+            Some(crate::physical_runtime::AnchoredRecordStepSettlementFailure::ExecutionPanicked)
+        } else if !matches!(persisted, Ok(Ok(()))) {
+            Some(crate::physical_runtime::AnchoredRecordStepSettlementFailure::TerminalPersistence)
+        } else {
+            None
+        };
+
         let terminal_class = match &terminal {
             PhysicalMutationTerminalFact::Completed(_) => PhysicalMutationTerminalClass::Completed,
             PhysicalMutationTerminalFact::ProvenNoEffect(_) => {
@@ -234,7 +269,7 @@ impl PhysicalMutationRuntimeOwner {
             PhysicalMutationTerminalFact::ProvenNoEffect(_)
             | PhysicalMutationTerminalFact::Indeterminate(_) => None,
         };
-        attempt.install_terminal(terminal);
+
         let completed_unobserved =
             matches!(terminal_class, PhysicalMutationTerminalClass::Completed)
                 .then(|| attempt.record_completed_unobserved_on_completion())
@@ -253,6 +288,7 @@ impl PhysicalMutationRuntimeOwner {
             state.completed_unobserved.push(event);
         }
         drop(state);
+        attempt.finish_anchored_step(&terminal, settlement_failure);
         attempt.publish_terminal();
     }
 
@@ -299,91 +335,4 @@ impl PhysicalMutationRuntimeOwner {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
-}
-
-impl PhysicalMutationStartPort {
-    pub(in crate::physical_runtime) fn start(
-        &self,
-        prepared: PreparedPhysicalMutation,
-    ) -> PhysicalMutationHandle {
-        let Some(owner) = self.owner.upgrade() else {
-            let identity = prepared.mutation_identity();
-            let attempt =
-                crate::physical_runtime::durability::mutation::PhysicalMutationAttempt::new(
-                    &prepared,
-                    Weak::new(),
-                );
-            attempt.mark_stale();
-            attempt.install_terminal(PhysicalMutationTerminalFact::Indeterminate(
-                IndeterminatePhysicalMutation::possible_effect(
-                    identity,
-                    prepared.idempotency_identity(),
-                    prepared.request_fingerprint(),
-                    PhysicalMutationIndeterminateStage::RuntimeUnavailable,
-                    0,
-                ),
-            ));
-            attempt.publish_terminal();
-            return PhysicalMutationHandle::new(&attempt);
-        };
-        owner.start(prepared)
-    }
-}
-
-fn run_worker(
-    owner: Weak<PhysicalMutationRuntimeOwner>,
-    attempt: Arc<crate::physical_runtime::durability::mutation::PhysicalMutationAttempt>,
-    prepared: PreparedPhysicalMutation,
-) {
-    let execution = catch_unwind(AssertUnwindSafe(|| {
-        let Some(owner) = owner.upgrade() else {
-            return PhysicalMutationTerminalFact::Indeterminate(
-                IndeterminatePhysicalMutation::possible_effect(
-                    attempt.identity(),
-                    attempt.idempotency_identity(),
-                    attempt.fingerprint(),
-                    PhysicalMutationIndeterminateStage::RuntimeUnavailable,
-                    0,
-                ),
-            );
-        };
-        let Some(director) = owner.director.upgrade() else {
-            return PhysicalMutationTerminalFact::Indeterminate(
-                IndeterminatePhysicalMutation::possible_effect(
-                    attempt.identity(),
-                    attempt.idempotency_identity(),
-                    attempt.fingerprint(),
-                    PhysicalMutationIndeterminateStage::RuntimeUnavailable,
-                    0,
-                ),
-            );
-        };
-        owner
-            .yieldpoint
-            .pause(super::PhysicalMutationCheckpoint::BeforeEffectCutover);
-        director.execute_managed_mutation(prepared, &attempt)
-    }));
-    let Some(owner) = owner.upgrade() else {
-        attempt.mark_stale();
-        return;
-    };
-    let (terminal, panicked) = match execution {
-        Ok(terminal) => (terminal, false),
-        Err(_) => (
-            PhysicalMutationTerminalFact::Indeterminate(
-                IndeterminatePhysicalMutation::possible_effect(
-                    attempt.identity(),
-                    attempt.idempotency_identity(),
-                    attempt.fingerprint(),
-                    PhysicalMutationIndeterminateStage::WorkerPanicked,
-                    0,
-                ),
-            ),
-            true,
-        ),
-    };
-    owner
-        .yieldpoint
-        .pause(super::PhysicalMutationCheckpoint::BeforeTerminalFinalization);
-    owner.record_terminal(&attempt, terminal, panicked);
 }

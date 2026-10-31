@@ -201,3 +201,5 @@ fn anchored_records_and_the_journal_survive_an_abandoned_runtime() {
     assert_eq!(current(&again, home), Some((1, value(7, 120))));
     let _ = again.close();
 }
+
+mod owned_publication;
