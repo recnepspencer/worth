@@ -3503,6 +3503,16 @@ basis with fresh query authorization. Neither history nor close advances outputs
 For `ApplicationNoProjection`, `deliver_current` checks every settlement at one
 authentic observation and returns that observation without issuing a query.
 
+After a performed action's required tree settles, use
+`settled.settlement().performed_source()` to borrow its original source
+provenance. `source.receipt()` is the action's receipt before output production;
+`root_receipt()` describes the root producer and may name a later publication.
+The provenance holder retains the action's exact original read occurrence with
+the settled tree. A tree started from a read returns `None` for
+`performed_source()`, including when its producer performs a new publication.
+The source receipt supplies descriptive evidence; inspecting it still requires
+fresh current access, and it grants no navigation or mutation permission.
+
 Use `WorthQueryOperationDeliveryPolicy::default()` for an attempt without an
 additional work ceiling. A caller may explicitly choose a finite attempt as below.
 This shape uses application-specific names;

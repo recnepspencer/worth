@@ -109,6 +109,10 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
         );
         change_suffix(&world, &request);
         let settled = settle_tree(&world, &request);
+        assert!(
+            settled.settlement().performed_source().is_none(),
+            "the genuine read-origin tree has no source action receipt"
+        );
         assert_eq!(
             settled.settlement().output_count(),
             4,

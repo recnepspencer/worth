@@ -55,6 +55,7 @@ pub use performed_source::{
 };
 pub use program_output_settlement::{
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
+    WorthQueryPerformedProgramOutputSource,
 };
 pub use program_output_work::WorthQueryApplicationProgramWork;
 pub use recovery::WorthQueryApplicationRecoveryRequestDenial;

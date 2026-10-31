@@ -326,17 +326,23 @@ where
                 Ok(WorthQueryApplicationProgramOutputProgress::Pending)
             }
             ProgramOutputContinuationProgress::Settled { outputs, work, dependencies } => {
-                if let Some(source_receipt) = &self.source_receipt {
+                let performed_source = match (&self.source_receipt, &self.source_preparation) {
+                    (Some(receipt), Some(_)) => Some(
+                        super::program_output_settlement::WorthQueryPerformedProgramOutputSource::capture(receipt.clone(), &self.source_observation)),
+                    (None, None) => None,
+                    _ => return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery),
+                };
+                if let Some(source) = &performed_source {
                     application.complete_program_output_source(
                         &worth_query_execution::publication_boundary::program_publication_access(),
-                        source_receipt,
+                        source.receipt(),
                     );
                 }
                 self.complete = true;
                 self.source_preparation = None;
                 // A read-origin tree keeps its actual interests through explicit
                 // close. Performed-source completion keeps its existing release.
-                if self.source_receipt.is_some() {
+                if performed_source.is_some() {
                     self.continuation = None;
                     self.root = None;
                 }
@@ -354,6 +360,7 @@ where
                 );
                 Ok(WorthQueryApplicationProgramOutputProgress::Settled(
                     WorthQueryApplicationProgramOutputSettlement {
+                        performed_source,
                         root,
                         outputs,
                         work: program_work,
