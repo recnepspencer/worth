@@ -1,6 +1,6 @@
 mod fields;
-mod initial_components;
 pub(in crate::durability) mod occurrence_backing;
+mod owner_value;
 use super::artifact::WORLD_ARTIFACT_VERSION;
 use super::{WorldDurableFrameDenial as Denial, WorldDurableMediumDenial, WorldRecord};
 use fields::*;
@@ -107,6 +107,11 @@ pub(crate) fn decode(bytes: &[u8], home: HomeIdentity) -> Result<WorldRecord, De
                 WorldRecord::Released {
                     association,
                     custody,
+                    relational: match read.fixed::<1>()? {
+                        [0] => None,
+                        [1] => Some(read.owner_value()?),
+                        _ => return Err(Denial::Malformed),
+                    },
                 }
             } else {
                 WorldRecord::Continued {
@@ -158,7 +163,7 @@ fn write_record(record: &WorldRecord, out: &mut Emit<'_>) -> Result<(), Denial> 
             head(out, value)?;
             number(out, bootstrap.ordinal())?;
             out(program_revision)?;
-            initial_components::emit(out, components)
+            owner_value::emit(out, components)
         }
         WorldRecord::OpenAttempt(value) => {
             out(&[3])?;
@@ -177,10 +182,18 @@ fn write_record(record: &WorldRecord, out: &mut Emit<'_>) -> Result<(), Denial> 
         WorldRecord::Released {
             association: value,
             custody,
+            relational,
         } => {
             out(&[5])?;
             association(out, value)?;
-            number(out, custody.ordinal())
+            number(out, custody.ordinal())?;
+            match relational {
+                None => out(&[0]),
+                Some(relational) => {
+                    out(&[1])?;
+                    owner_value::emit(out, relational)
+                }
+            }
         }
         WorldRecord::Continued {
             association: value,

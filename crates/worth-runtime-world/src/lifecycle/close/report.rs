@@ -4,6 +4,32 @@ use crate::recovery::{
     ProductUnpublishedCause, ProductUnpublishedLiveObligations, ProductUnpublishedNextAction,
 };
 
+/// Original cold custody retained by the owner at close. This row is data;
+/// the catalog, rather than this report, owns the actual Native capability.
+#[derive(Debug, Clone)]
+pub struct RuntimeWorldRecoveredCustodyReport {
+    pub(crate) identity: ProductUnpublishedOwnerEffectsIdentity,
+    pub(crate) attempt: crate::identity::CompositePublicationAttemptIdentity,
+    pub(crate) commit: crate::identity::CompositeCommitIdentity,
+    pub(crate) native_receipt: Option<worth_relational::facade::history::RelationalCommitReceipt>,
+}
+impl RuntimeWorldRecoveredCustodyReport {
+    pub fn identity(&self) -> &ProductUnpublishedOwnerEffectsIdentity {
+        &self.identity
+    }
+    pub fn attempt_identity(&self) -> &crate::identity::CompositePublicationAttemptIdentity {
+        &self.attempt
+    }
+    pub fn reserved_commit_identity(&self) -> &crate::identity::CompositeCommitIdentity {
+        &self.commit
+    }
+    pub fn native_receipt(
+        &self,
+    ) -> Option<&worth_relational::facade::history::RelationalCommitReceipt> {
+        self.native_receipt.as_ref()
+    }
+}
+
 /// One row per retained obligation the owner exposed instead of discarding.
 /// A row is exposure only: it carries no capability to settle or delete the
 /// obligation it describes.
@@ -60,6 +86,7 @@ impl RuntimeWorldRetainedRecordReport {
 #[must_use = "a close report enumerates obligations the caller must still address"]
 pub struct RuntimeWorldCloseReport {
     retained_records: Vec<RuntimeWorldRetainedRecordReport>,
+    recovered_custody: Vec<RuntimeWorldRecoveredCustodyReport>,
     outstanding_observations: usize,
     settled_records: usize,
     released_product_head_pins: usize,
@@ -85,6 +112,7 @@ pub(crate) struct RuntimeWorldCloseReleaseCounts {
 impl RuntimeWorldCloseReport {
     pub(crate) fn new(
         retained_records: Vec<RuntimeWorldRetainedRecordReport>,
+        recovered_custody: Vec<RuntimeWorldRecoveredCustodyReport>,
         counts: RuntimeWorldCloseReleaseCounts,
         outstanding_observations: usize,
         outstanding_owner_retirement_work: Vec<OwnerRetirementWork>,
@@ -99,6 +127,7 @@ impl RuntimeWorldCloseReport {
         } = counts;
         Self {
             retained_records,
+            recovered_custody,
             outstanding_observations,
             settled_records,
             released_product_head_pins,
@@ -118,6 +147,9 @@ impl RuntimeWorldCloseReport {
 
     pub fn retained_records(&self) -> &[RuntimeWorldRetainedRecordReport] {
         &self.retained_records
+    }
+    pub fn recovered_custody(&self) -> &[RuntimeWorldRecoveredCustodyReport] {
+        &self.recovered_custody
     }
 
     pub const fn settled_records(&self) -> usize {

@@ -3,8 +3,14 @@ use crate::history::HistoryReclamationDenial;
 mod drain;
 #[path = "close/report.rs"]
 mod report;
+mod result_snapshots;
+pub use result_snapshots::{
+    RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupReport,
+};
 
-pub use report::{RuntimeWorldCloseReport, RuntimeWorldRetainedRecordReport};
+pub use report::{
+    RuntimeWorldCloseReport, RuntimeWorldRecoveredCustodyReport, RuntimeWorldRetainedRecordReport,
+};
 
 /// Internal close progression for a managed Runtime World owner. The state
 /// is explicit so close cannot be represented by a boolean with no transition
@@ -18,6 +24,8 @@ pub(crate) enum RuntimeWorldCloseState {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldCloseDenial {
+    CloseNotCompleted,
+    UndeliveredPublication,
     AlreadyClosing,
     AlreadyClosed,
     /// A declared in-flight critical section could not be drained.

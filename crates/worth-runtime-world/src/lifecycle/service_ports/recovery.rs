@@ -9,6 +9,29 @@ pub struct RuntimeWorldRecoveryPort {
     owner: Weak<dyn RuntimeWorldRecoveryService + Send + Sync>,
 }
 impl RuntimeWorldRecoveryPort {
+    pub fn inspect_recovered_effects(
+        &self,
+        handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
+    ) -> Result<
+        crate::recovery::WorldRecoveredUnpublishedEffects,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    > {
+        self.service()?.inspect_recovered_effects(handle)
+    }
+
+    pub fn release_recovered_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effects: crate::recovery::WorldRecoveredUnpublishedEffects,
+    ) -> crate::recovery::WorldRecoveredReleaseOutcome {
+        match self.service() {
+            Ok(owner) => owner.release_recovered_effects(execution, effects),
+            Err(cause) => crate::recovery::WorldRecoveredReleaseOutcome::AdmissionRefused {
+                cause: cause.into(),
+                custody: effects,
+            },
+        }
+    }
     pub fn prepare_settled_relational_adoption(
         &self,
         effects: &crate::recovery::ProductUnpublishedOwnerEffects,

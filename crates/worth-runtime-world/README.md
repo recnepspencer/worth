@@ -153,8 +153,17 @@ it from the original settled Native evidence. Actual journal selection precedes
 the same product cell's live movement. Pending publication retains the original
 ready attempt and capacities; indeterminate selection requires reopen.
 
-Existing-Home World reconciliation, recovered dispositions, full World
-checkpoint coverage and the process-death journey remain unfinished. This crate
+The filesystem Home court exercises a killed Native publication before the
+World occurrence, cold readmission of the original custody and unchanged head,
+explicit release through Native's recovered-publication capability, and reopen
+after release. This lower lane supports one initial product branch with an
+InitialEmpty Signal recipe and uninstalled Bridge baseline. Recovered Released
+rows require either an explicit no-Native-effect tag or the original complete
+Native receipt, position and artifact digest. Readmission validates the complete
+Native association inventory and rejects orphan or contradictory evidence.
+
+Cold World occurrence readmission, recovered continuation, general authored
+Signal/Bridge state and World checkpoint coverage remain unfinished. This crate
 has no Query, Store or physical-runtime dependency. Query consumes it through
 `worth_runtime_world::facade` (from `worth-query-execution` and
 `worth-query-publication`) to publish application commits and report their

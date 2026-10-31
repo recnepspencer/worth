@@ -1,7 +1,7 @@
 use super::{WorldOpenAttemptRecord, WorldRecord};
 use crate::identity::{RuntimeWorldIdentityExhaustion, RuntimeWorldIdentityFamily};
 /// Recovered descriptive maxima, never an issuer or authority by themselves.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub(crate) struct WorldIdentityFrontiers {
     pub(crate) branch: u64,
     pub(crate) commit: u64,
@@ -57,6 +57,7 @@ impl WorldIdentityFrontiers {
             WorldRecord::Released {
                 association,
                 custody,
+                ..
             }
             | WorldRecord::Continued {
                 association,

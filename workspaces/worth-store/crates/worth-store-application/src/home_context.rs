@@ -55,7 +55,6 @@ impl AuthorityMarker for ReadmittedApplicationHome {}
 pub(crate) struct HomeContext {
     pub(crate) world_publications: Arc<crate::world_section::WorldPublications>,
     pub(crate) world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
-    pub(crate) origin: RecoveryStorePresence,
     pub(crate) world_slot: Option<crate::world_section::UnclaimedWorldSlot>,
     pub(crate) checkpoint: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
     pub(crate) location: std::path::PathBuf,

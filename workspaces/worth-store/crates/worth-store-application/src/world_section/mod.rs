@@ -13,7 +13,7 @@ pub(crate) use publication_task::WorldPublications;
 mod readmission;
 mod recovery;
 pub(crate) use attachment::UnclaimedWorldSlot;
-pub use readmission::{readmit_world, WorldReadmittedApplicationHome};
+pub use readmission::{readmit_world, WorldHomeReadmissionRefused, WorldReadmittedApplicationHome};
 use std::sync::Arc;
 use worth_runtime_world::facade::WorldDurableHomeBinding;
 use worth_store::physical_runtime::{AdmittedRecordPlacementPolicy, ServingPhysicalRuntime};

@@ -13,8 +13,8 @@ pub(super) enum ProductMovementPhase {
         committed: Option<DurablyCommitted<ActualWorldPublication>>,
     },
     RecoveryRequired {
-        subject: WorldDurableArtifact,
-        committed: Option<DurablyCommitted<ActualWorldPublication>>,
+        _subject: WorldDurableArtifact,
+        _committed: Option<DurablyCommitted<ActualWorldPublication>>,
     },
 }
 impl ProductMovementPhase {
@@ -182,7 +182,10 @@ impl Drop for WorldProductMovementPermit {
         let previous = std::mem::take(&mut current.movement);
         current.movement = match previous {
             ProductMovementPhase::MovementInFlight { subject, committed } => {
-                ProductMovementPhase::RecoveryRequired { subject, committed }
+                ProductMovementPhase::RecoveryRequired {
+                    _subject: subject,
+                    _committed: committed,
+                }
             }
             phase => phase,
         };

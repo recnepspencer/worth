@@ -36,6 +36,13 @@ pub(crate) struct WorldRelationalEvidence {
     pub(crate) position: u64,
     pub(crate) digest: [u8; 32],
 }
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct WorldRelationalReleaseEvidence {
+    pub(crate) receipt: worth_relational::facade::history::RelationalCommitReceipt,
+    pub(crate) position: u64,
+    pub(crate) digest: [u8; 32],
+}
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum WorldRecord {
     Owner {
@@ -56,6 +63,7 @@ pub(crate) enum WorldRecord {
     Released {
         association: CompositeAttemptAssociation,
         custody: DurableProductUnpublishedOwnerEffectsIdentity,
+        relational: Option<WorldRelationalReleaseEvidence>,
     },
     Continued {
         association: CompositeAttemptAssociation,

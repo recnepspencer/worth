@@ -107,7 +107,7 @@ fn interrupted_close(deadline: bool) {
 }
 
 #[test]
-fn close_deadline_retains_the_stopped_native_owner_until_its_accepted_checkpoint_settles() {
+fn close_deadline_retains_serving_native_until_its_original_checkpoint_settles() {
     use worth_store::physical_runtime::{
         certification::CertificationPhysicalMutationCheckpoint, AnchoredRecordStepKind,
     };
@@ -158,25 +158,23 @@ fn close_deadline_retains_the_stopped_native_owner_until_its_accepted_checkpoint
         CancellationSource::new().token(),
         Some(std::time::Instant::now() + std::time::Duration::from_millis(25)),
     );
-    let custody = match home.close(&ExecutionRequest::serial(&closing)) {
+    let home = match home.close(&ExecutionRequest::serial(&closing)) {
         ApplicationHomeCloseOutcome::CloseRefused {
             reason:
                 ApplicationHomeCloseDenial::Execution(WorkCeilingDenial::Stopped(
                     MapKernelStop::DeadlineElapsed,
                 )),
-            posture: ApplicationHomeClosePosture::RecoveryRequired(custody),
-        } => custody,
-        _ => panic!("unsettled accepted checkpoint retains the stopped Native owner in recovery"),
+            posture: ApplicationHomeClosePosture::Serving(home),
+        } => home,
+        _ => panic!(
+            "unsettled original checkpoint must retain genuinely serving Native before teardown"
+        ),
     };
-    assert_eq!(custody.home_identity(), identity);
-    assert!(
-        custody.physical_close_observation().is_none(),
-        "physical release has not started"
-    );
+    assert_eq!(home.home_identity(), identity);
     crate::incarnation::assert_contended(directory.path());
     gate.release();
     assert!(matches!(
-        custody.try_release(&execution),
+        home.close(&execution),
         ApplicationHomeCloseOutcome::Closed {
             checkpoint: Ok(_),
             ..

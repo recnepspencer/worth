@@ -5,6 +5,7 @@ use crate::recovery::{
 };
 
 use super::RuntimeWorldOwnerRoot;
+mod recovered_publication;
 
 #[cfg(test)]
 #[path = "recovery_service/tests.rs"]
@@ -140,6 +141,27 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn inspect_recovered_effects(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> Result<
+        crate::recovery::WorldRecoveredUnpublishedEffects,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    > {
+        let _operation = self
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .map_err(|_| super::super::RuntimeWorldOwnerUnavailable::new())?;
+        self.state.recovery.claim_recovered(handle)
+    }
+
+    fn release_recovered_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effects: crate::recovery::WorldRecoveredUnpublishedEffects,
+    ) -> crate::recovery::WorldRecoveredReleaseOutcome {
+        self.release_recovered_publication(execution, effects)
+    }
+
     fn prepare_settled_relational_adoption(
         &self,
         effects: &ProductUnpublishedOwnerEffects,

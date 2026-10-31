@@ -39,6 +39,21 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    pub fn result_snapshot_cleanup_after_close(
+        &self,
+    ) -> Result<super::RuntimeWorldResultSnapshotCleanup, super::RuntimeWorldCloseDenial> {
+        if self.root.lifecycle_observation() != super::RuntimeWorldOwnerLifecycleObservation::Closed
+        {
+            return Err(super::RuntimeWorldCloseDenial::CloseNotCompleted);
+        }
+        let mut results = self.root.state.history.owned_relational_results();
+        results.extend(self.root.state.recovery.owned_relational_results());
+        Ok(super::RuntimeWorldResultSnapshotCleanup::from_closed_owner(
+            self.root.state.relational.basis_port(),
+            results,
+        ))
+    }
+
     pub fn admit_managed_owned_async_request(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,

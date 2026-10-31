@@ -7,6 +7,7 @@ use std::sync::Arc;
 pub(super) enum RecoveryEntry {
     Active(Arc<ActiveAttemptRecord>),
     Retained(Arc<ProductUnpublishedOwnerEffectsRecord>),
+    Recovered(Arc<crate::recovery::RecoveredWorldPublicationRecord>),
     Busy,
 }
 
@@ -61,10 +62,20 @@ impl RecoveryRecordSlots {
     }
     pub(super) fn insert_active(&mut self, record: Arc<ActiveAttemptRecord>) {
         let identity = record.identity().clone();
+        self.insert(identity, RecoveryEntry::Active(record));
+    }
+    pub(super) fn insert_recovered(
+        &mut self,
+        record: Arc<crate::recovery::RecoveredWorldPublicationRecord>,
+    ) {
+        self.insert(record.identity.clone(), RecoveryEntry::Recovered(record));
+        self.retained += 1;
+    }
+    fn insert(&mut self, identity: ProductUnpublishedOwnerEffectsIdentity, entry: RecoveryEntry) {
         assert!(!self.index.contains_key(&identity));
         let occupied = RecoverySlot::Occupied {
             identity: identity.clone(),
-            entry: RecoveryEntry::Active(record),
+            entry,
         };
         let position = if let Some(position) = self.free {
             let RecoverySlot::Vacant { next } = self.slots[position] else {
@@ -89,9 +100,15 @@ impl RecoveryRecordSlots {
         let RecoverySlot::Occupied { entry, .. } = &mut self.slots[position] else {
             unreachable!("indexed slot")
         };
-        self.retained += usize::from(matches!(next, RecoveryEntry::Retained(_)));
+        self.retained += usize::from(matches!(
+            next,
+            RecoveryEntry::Retained(_) | RecoveryEntry::Recovered(_)
+        ));
         let old = std::mem::replace(entry, next);
-        self.retained -= usize::from(matches!(old, RecoveryEntry::Retained(_)));
+        self.retained -= usize::from(matches!(
+            old,
+            RecoveryEntry::Retained(_) | RecoveryEntry::Recovered(_)
+        ));
         old
     }
     pub(super) fn remove(
@@ -107,7 +124,10 @@ impl RecoveryRecordSlots {
         let RecoverySlot::Occupied { entry, .. } = removed else {
             unreachable!("indexed slot")
         };
-        self.retained -= usize::from(matches!(entry, RecoveryEntry::Retained(_)));
+        self.retained -= usize::from(matches!(
+            entry,
+            RecoveryEntry::Retained(_) | RecoveryEntry::Recovered(_)
+        ));
         Some(entry)
     }
     pub(super) fn iter(

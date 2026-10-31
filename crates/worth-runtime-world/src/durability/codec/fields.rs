@@ -157,6 +157,9 @@ impl<'a> Read<'a> {
     pub(super) fn recorded_components(
         &mut self,
     ) -> Result<super::super::RecordedWorldInitialComponents, Denial> {
+        self.owner_value()
+    }
+    pub(super) fn owner_value<T: serde::de::DeserializeOwned>(&mut self) -> Result<T, Denial> {
         let recorded = serde_json::from_slice(self.bytes).map_err(|_| Denial::Malformed)?;
         self.bytes = &[];
         Ok(recorded)

@@ -85,7 +85,6 @@ pub fn admit_home(
             context: HomeContext {
                 world_publications: world_slot.publications(),
                 world_close_report: None,
-                origin: recovered.origin,
                 world_slot: Some(world_slot),
                 checkpoint: Arc::new(Default::default()),
                 location,

@@ -23,6 +23,10 @@ pub enum ApplicationHomeCloseOutcome {
 
 #[derive(Debug)]
 pub enum ApplicationHomeCloseDenial {
+    CheckpointSettlement(crate::ApplicationHomeCheckpointDenial),
+    WorldResultSnapshot(
+        worth_relational::facade::branch::RelationalCommitResultSnapshotReleaseDenial,
+    ),
     World(
         worth_runtime_world::facade::RuntimeWorldServiceDenial<
             worth_runtime_world::facade::RuntimeWorldCloseDenial,
@@ -81,6 +85,23 @@ impl crate::ReadmittedApplicationHome {
             relational,
             context,
         } = self;
+        let prior_checkpoint = match crate::checkpoint::close_settlement::settle(
+            &context.serving,
+            &context.checkpoint,
+            execution,
+        ) {
+            Ok(result) => result,
+            Err(cause) => {
+                let reason = checkpoint_settlement_denial(cause);
+                return ApplicationHomeCloseOutcome::CloseRefused {
+                    reason,
+                    posture: ApplicationHomeClosePosture::Serving(Self {
+                        relational,
+                        context,
+                    }),
+                };
+            }
+        };
         let closing = match relational.prepare_close() {
             Ok(closing) => closing,
             Err((relational, reason)) => {
@@ -93,16 +114,37 @@ impl crate::ReadmittedApplicationHome {
                 }
             }
         };
-        let checkpoint = crate::checkpoint::publication::checkpoint(
-            &context.serving,
-            &context.checkpoint,
-            execution,
-            || closing.prepare_checkpoint(execution),
-        );
+        let checkpoint = if let Some(result) = prior_checkpoint {
+            result
+        } else {
+            crate::checkpoint::publication::checkpoint(
+                &context.serving,
+                &context.checkpoint,
+                execution,
+                || closing.prepare_checkpoint(execution),
+            )
+        };
         // Checkpoint failure never refuses close. Accepted native work was
         // classified by its real owner before teardown; physical completion
         // now remains owned even if the original request stops waiting.
         ApplicationHomeRecoveryCustody::retained(context, closing, checkpoint)
             .release_started(execution, start)
+    }
+}
+
+fn checkpoint_settlement_denial(
+    cause: crate::checkpoint::close_settlement::CloseCheckpointWaitDenial,
+) -> ApplicationHomeCloseDenial {
+    use crate::checkpoint::close_settlement::CloseCheckpointWaitDenial;
+    match cause {
+        CloseCheckpointWaitDenial::Interrupted(cause) => {
+            ApplicationHomeCloseDenial::Execution(cause)
+        }
+        CloseCheckpointWaitDenial::RecoveryRequired(observation) => {
+            ApplicationHomeCloseDenial::CheckpointRecoveryRequired(observation)
+        }
+        CloseCheckpointWaitDenial::Acknowledgement(cause) => {
+            ApplicationHomeCloseDenial::CheckpointSettlement(cause)
+        }
     }
 }

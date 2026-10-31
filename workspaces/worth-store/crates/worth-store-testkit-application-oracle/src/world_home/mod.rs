@@ -12,6 +12,12 @@ pub struct WorldHomeFixture {
     pub home: WorldReadmittedApplicationHome<(), (), (), (), ()>,
     _signal: SignalRuntime<(), (), (), (), ()>,
 }
+
+#[derive(Debug)]
+pub enum WorldHomeFixtureRefusal {
+    Home(ApplicationHomeOpenRefusal),
+    World(worth_store_application::WorldHomeReadmissionRefused),
+}
 impl WorldHomeFixture {
     pub fn bootstrap_root(
         &self,
@@ -59,15 +65,20 @@ impl WorldHomeFixture {
 pub fn open(
     request: ApplicationHomeRequest,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<WorldHomeFixture, ApplicationHomeOpenRefusal> {
+) -> Result<WorldHomeFixture, WorldHomeFixtureRefusal> {
     let (definition, signal) = definition::authored();
     let mut opened = None;
     let scope = execution.in_scope(|_| {
         opened = Some((|| {
-            let recovered = recover_home(request, execution)?;
-            let admitted = admit_home(recovered, execution)?;
-            let native = readmit_relational(admitted, execution)?;
-            let world = readmit_world(native, definition, execution)?.consume(|home| home);
+            let recovered =
+                recover_home(request, execution).map_err(WorldHomeFixtureRefusal::Home)?;
+            let admitted =
+                admit_home(recovered, execution).map_err(WorldHomeFixtureRefusal::Home)?;
+            let native =
+                readmit_relational(admitted, execution).map_err(WorldHomeFixtureRefusal::Home)?;
+            let world = readmit_world(native, definition, execution)
+                .map_err(WorldHomeFixtureRefusal::World)?
+                .consume(|home| home);
             Ok(WorldHomeFixture {
                 home: world,
                 _signal: signal,
@@ -79,7 +90,9 @@ pub fn open(
         (Err(WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped)), Some(Err(cause))) => {
             Err(cause)
         }
-        (Err(cause), _) => Err(ApplicationHomeOpenRefusal::Execution(cause)),
+        (Err(cause), _) => Err(WorldHomeFixtureRefusal::Home(
+            ApplicationHomeOpenRefusal::Execution(cause),
+        )),
         (Ok(()), None) => unreachable!("completed actual Home composition"),
     }
 }

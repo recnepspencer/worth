@@ -47,6 +47,7 @@ impl ProductUnpublishedRecoveryCatalog {
                     RuntimeWorldRecoveryRecordState::Retained,
                     Some((record.admitted_at(), record.deadline())),
                 ),
+                RecoveryEntry::Recovered(_) => (RuntimeWorldRecoveryRecordState::Recovered, None),
                 RecoveryEntry::Active(record) => (
                     if record.is_abandoned() {
                         RuntimeWorldRecoveryRecordState::Abandoned

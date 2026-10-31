@@ -3,6 +3,13 @@ mod cleanup;
 mod continuation;
 mod product_unpublished;
 mod progress;
+mod recovered_publication;
+pub(crate) use recovered_publication::{
+    RecoveredWorldPublicationInputs, RecoveredWorldPublicationRecord,
+};
+pub use recovered_publication::{
+    WorldRecoveredReleaseOutcome, WorldRecoveredUnpublishedEffects, WorldReleasedRecoveredEffects,
+};
 
 pub use cleanup::ProductUnpublishedCleanup;
 pub use continuation::{ProductUnpublishedNextAction, RecoveryContinuationContract};

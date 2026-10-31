@@ -5,6 +5,7 @@ mod branch;
 mod commit;
 mod durable_issuance;
 mod owner;
+pub(crate) mod readmission;
 mod retained_partial;
 
 pub use attempt::CompositePublicationAttemptIdentity;

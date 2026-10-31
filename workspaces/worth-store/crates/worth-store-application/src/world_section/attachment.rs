@@ -24,7 +24,7 @@ pub(super) fn attach_bridge(
 /// Actual admitted Home custody. No Clone, raw identity constructor or second
 /// extraction exists outside the Home's private composition.
 pub(crate) struct UnclaimedWorldSlot {
-    medium: super::ApplicationWorldMedium,
+    medium: Arc<super::ApplicationWorldMedium>,
 }
 impl UnclaimedWorldSlot {
     pub(crate) fn from_admitted_home(
@@ -36,7 +36,7 @@ impl UnclaimedWorldSlot {
             WorldOwnerSlotIdentity::from_recorded(0),
         );
         Self {
-            medium: super::ApplicationWorldMedium {
+            medium: Arc::new(super::ApplicationWorldMedium {
                 serving,
                 binding: WorldDurableHomeBinding::from_admitted_adapter(
                     owner,
@@ -45,13 +45,15 @@ impl UnclaimedWorldSlot {
                 ),
                 placement: crate::open::physical_admission::placement(),
                 publications: Arc::new(super::WorldPublications::default()),
-            },
+            }),
         }
     }
     pub(crate) fn publications(&self) -> Arc<super::WorldPublications> {
         self.medium.publications.clone()
     }
-    pub(in crate::world_section) fn into_medium(self) -> super::ApplicationWorldMedium {
-        self.medium
+    pub(in crate::world_section) fn medium(
+        &self,
+    ) -> Arc<dyn worth_runtime_world::facade::RuntimeWorldDurableMedium> {
+        self.medium.clone()
     }
 }

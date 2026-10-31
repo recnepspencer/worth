@@ -89,6 +89,8 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
         _ => panic!("only actual external Native read custody remains; no Bridge Arc or fabricated serving posture"),
     };
     assert_eq!(recovery.home_identity(), identity);
+    assert_eq!(recovery.native_active_snapshot_count(), Some(0),
+        "actual World-owned result snapshots were released; the independent external basis still blocks close");
     assert!(recovery.world_close_report().is_some());
     assert!(matches!(
         recovery.checkpoint_result(),
@@ -132,4 +134,79 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
             ..
         }
     ));
+}
+
+#[test]
+fn abandoned_world_delivery_refuses_before_close_and_can_be_delivered_then_closed() {
+    use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServiceDenial};
+    let directory = tempfile::tempdir().unwrap();
+    let request = crate::workload::serial_request();
+    let execution = ExecutionRequest::serial(&request);
+    let opening = worth_store_testkit_application_oracle::home_opening::request(
+        directory.path(),
+        crate::workload::runtime_builder(crate::schema_transition::SOURCE),
+    );
+    let fixture =
+        worth_store_testkit_application_oracle::world_home::open(opening, &execution).unwrap();
+    let bootstrap = fixture.bootstrap_root(&execution);
+    let cancellation = worth_runtime_world::facade::RuntimeWorldCancellationSource::new();
+    let prepared = fixture.prepare_publication(
+        &execution,
+        bootstrap.product_branch().clone(),
+        crate::batches::create(0),
+        &cancellation.token(),
+    );
+    let performed = fixture.publish(&execution, prepared, &cancellation.token());
+    let selected = performed.new_product_head().selected_commit().clone();
+    drop(performed);
+    drop(bootstrap);
+    let identity = fixture.home.home_identity();
+    let refused = match fixture.home.close(&execution) {
+        Err(refused) => refused,
+        Ok(_) => panic!("undelivered actual publication must remain reachable before teardown"),
+    };
+    assert!(matches!(
+        refused.reason(),
+        ApplicationHomeCloseDenial::World(RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldCloseDenial::UndeliveredPublication
+        ))
+    ));
+    assert_eq!(
+        refused.posture(),
+        worth_store_application::WorldHomeClosePosture::Serving
+    );
+    let home = refused
+        .resume()
+        .unwrap_or_else(|_| panic!("actual World remains open"));
+    assert_eq!(home.home_identity(), identity);
+    assert_eq!(
+        home.world().lifecycle_observation(),
+        RuntimeWorldOwnerLifecycleObservation::Open
+    );
+    match crate::durable_run::open(directory.path(), &execution) {
+        Err(worth_store_application::ApplicationHomeOpenRefusal::Physical(refused)) => assert_eq!(
+            refused.kind(),
+            worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended,
+        ),
+        _ => panic!("same Home keeps the actual mutation lease"),
+    }
+    let recovered = home
+        .world()
+        .recovery_port()
+        .recover_performed(&selected)
+        .unwrap();
+    assert_eq!(recovered.new_product_head().reference_generation().get(), 1);
+    assert_eq!(recovered.new_product_head().selected_commit(), &selected);
+    drop(recovered.consume());
+    match home.close(&execution) {
+        Ok(ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
+            ..
+        }) => {}
+        Err(refused) => panic!("delivered World close refused: {:?}", refused.reason()),
+        Ok(ApplicationHomeCloseOutcome::CloseRefused { reason, .. }) => {
+            panic!("Native close refused: {reason:?}")
+        }
+        _ => panic!("close must retain the explicit unsupported World checkpoint report"),
+    }
 }

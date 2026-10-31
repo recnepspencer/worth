@@ -54,6 +54,14 @@ pub struct WorldPreparedPublicationWithoutSignal {
     pub(crate) prepared: PreparedCompositePublicationWithoutSignal,
 }
 impl WorldPreparedPublicationWithoutSignal {
+    /// Original issued identities, exposed only for descriptive correlation.
+    pub fn attempt_identity(&self) -> &crate::identity::CompositePublicationAttemptIdentity {
+        self.prepared.planned_successor().attempt_identity()
+    }
+    pub fn reserved_commit_identity(&self) -> crate::identity::CompositeCommitIdentity {
+        self.prepared.reserved_commit_identity()
+    }
+
     pub fn expected_head(&self) -> &crate::branch::ProductBranchObservation {
         self.prepared.expected_head()
     }

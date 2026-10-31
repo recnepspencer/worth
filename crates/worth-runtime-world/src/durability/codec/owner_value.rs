@@ -1,12 +1,8 @@
-//! Transport all three mandatory owner recipes without copying their grammars.
-use super::super::RecordedWorldInitialComponents;
+//! Stream owned component DTOs without copying their owners' schemas.
 use super::{Denial, Emit};
 use std::io::{self, Write};
 
-pub(super) fn emit(
-    out: &mut Emit<'_>,
-    reference: &RecordedWorldInitialComponents,
-) -> Result<(), Denial> {
+pub(super) fn emit<T: serde::Serialize>(out: &mut Emit<'_>, reference: &T) -> Result<(), Denial> {
     let mut refused = None;
     serde_json::to_writer(
         ComponentWriter {

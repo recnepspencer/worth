@@ -15,6 +15,14 @@ pub(super) struct PreparedRoot {
     rollback: Option<InstalledRootCommitRollback>,
     recovered: bool,
 }
+
+pub(super) struct ReadmittedRootPreparation {
+    pub(super) bootstrap: RuntimeWorldBootstrapAttemptIdentity,
+    pub(super) branch: crate::identity::ProductBranchIdentity,
+    pub(super) incarnation: crate::identity::ProductBranchIncarnation,
+    pub(super) commit: crate::identity::CompositeCommitIdentity,
+    pub(super) basis: AdmittedCompositeRuntimeWorldBasis,
+}
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -25,6 +33,14 @@ where
         &self,
         intent: RuntimeWorldBootstrapIntent,
     ) -> Result<PreparedRoot, RuntimeWorldBootstrapNoEffectCause> {
+        self.prepare_root_with_readmission(intent, None)
+    }
+
+    pub(super) fn prepare_root_with_readmission(
+        &self,
+        intent: RuntimeWorldBootstrapIntent,
+        readmitted: Option<ReadmittedRootPreparation>,
+    ) -> Result<PreparedRoot, RuntimeWorldBootstrapNoEffectCause> {
         let cancellation = intent.cancellation().cloned();
         let (creation, relational, signal, correspondence, generation, posture) =
             intent.into_parts();
@@ -34,7 +50,16 @@ where
         };
 
         let root_name = creation.name().clone();
-        let (bootstrap_attempt, branch, lifecycle, commit_identity) = {
+        let (bootstrap_attempt, branch, lifecycle, commit_identity) = if let Some(readmitted) =
+            &readmitted
+        {
+            (
+                readmitted.bootstrap.clone(),
+                readmitted.branch.clone(),
+                readmitted.incarnation,
+                readmitted.commit.clone(),
+            )
+        } else {
             let mut identities = self
                 .state
                 .identities
@@ -57,21 +82,25 @@ where
             (bootstrap_attempt, branch, lifecycle, commit)
         };
 
-        let basis = match admit_current(
-            &self
-                .state
-                .identities
-                .lock()
-                .unwrap_or_else(|error| error.into_inner()),
-            &self.state.relational.basis_port(),
-            &self.state.signal.basis_port(),
-            &self.state.bridge,
-            relational,
-            signal,
-            correspondence,
-        ) {
-            Ok(basis) => basis,
-            Err(denial) => return Err(map_basis_denial(denial)),
+        let basis = if let Some(readmitted) = readmitted {
+            readmitted.basis
+        } else {
+            match admit_current(
+                &self
+                    .state
+                    .identities
+                    .lock()
+                    .unwrap_or_else(|error| error.into_inner()),
+                &self.state.relational.basis_port(),
+                &self.state.signal.basis_port(),
+                &self.state.bridge,
+                relational,
+                signal,
+                correspondence,
+            ) {
+                Ok(basis) => basis,
+                Err(denial) => return Err(map_basis_denial(denial)),
+            }
         };
         if basis.owner_identity() != self.owner_identity() {
             return Err(RuntimeWorldBootstrapNoEffectCause::ForeignBasis);

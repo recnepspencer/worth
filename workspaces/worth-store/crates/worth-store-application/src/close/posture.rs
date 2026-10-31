@@ -80,6 +80,17 @@ impl ApplicationHomeRecoveryCustody {
         self.world_publications.posture()
     }
 
+    /// Actual Native registry observation while the retained section is
+    /// Serving. None means this phase does not expose that observation.
+    pub fn native_active_snapshot_count(&self) -> Option<usize> {
+        match &self.native {
+            NativeCloseCustody::Serving(native) => {
+                Some(native.runtime().retention().active_snapshot_count())
+            }
+            NativeCloseCustody::Prepared(_) | NativeCloseCustody::Released => None,
+        }
+    }
+
     pub fn location(&self) -> &std::path::Path {
         &self.location
     }
@@ -149,6 +160,11 @@ impl ApplicationHomeRecoveryCustody {
         if let Err(cause) = interrupted(execution) {
             return self.refused(ApplicationHomeCloseDenial::Execution(cause));
         }
+        if matches!(self.native, NativeCloseCustody::Serving(_)) {
+            if let Err(cause) = self.settle_retained_checkpoint(execution) {
+                return self.refused(cause);
+            }
+        }
         self.native = match std::mem::replace(&mut self.native, NativeCloseCustody::Released) {
             NativeCloseCustody::Serving(native) => match native.prepare_close() {
                 Ok(native) => NativeCloseCustody::Prepared(native),
@@ -160,27 +176,8 @@ impl ApplicationHomeRecoveryCustody {
             phase @ (NativeCloseCustody::Prepared(_) | NativeCloseCustody::Released) => phase,
         };
         if matches!(self.native, NativeCloseCustody::Prepared(_)) {
-            let PhysicalCloseCustody::Retained(serving) = &self.physical else {
-                unreachable!("Native teardown precedes physical close start")
-            };
-            use crate::checkpoint::close_settlement::{self, CloseCheckpointWaitDenial};
-            match close_settlement::settle(serving, &self.checkpoint_owner, execution) {
-                Ok(Some(checkpoint)) => {
-                    self.checkpoint = if self.world_close_report.is_some() {
-                        Err(crate::ApplicationHomeCheckpointDenial::WorldSectionRequired)
-                    } else {
-                        checkpoint
-                    };
-                }
-                Ok(None) => {}
-                Err(CloseCheckpointWaitDenial::Interrupted(cause)) => {
-                    return self.refused(ApplicationHomeCloseDenial::Execution(cause))
-                }
-                Err(CloseCheckpointWaitDenial::RecoveryRequired(observation)) => {
-                    return self.refused(ApplicationHomeCloseDenial::CheckpointRecoveryRequired(
-                        observation,
-                    ))
-                }
+            if let Err(cause) = self.settle_retained_checkpoint(execution) {
+                return self.refused(cause);
             }
             let NativeCloseCustody::Prepared(native) =
                 std::mem::replace(&mut self.native, NativeCloseCustody::Released)
@@ -278,6 +275,26 @@ impl ApplicationHomeRecoveryCustody {
             }
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
+    }
+
+    fn settle_retained_checkpoint(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), ApplicationHomeCloseDenial> {
+        let PhysicalCloseCustody::Retained(serving) = &self.physical else {
+            return Err(ApplicationHomeCloseDenial::PhysicalCustodyRetained);
+        };
+        if let Some(checkpoint) =
+            crate::checkpoint::close_settlement::settle(serving, &self.checkpoint_owner, execution)
+                .map_err(super::checkpoint_settlement_denial)?
+        {
+            self.checkpoint = if self.world_close_report.is_some() {
+                Err(crate::ApplicationHomeCheckpointDenial::WorldSectionRequired)
+            } else {
+                checkpoint
+            };
+        }
+        Ok(())
     }
 
     fn refused(self, reason: ApplicationHomeCloseDenial) -> ApplicationHomeCloseOutcome {

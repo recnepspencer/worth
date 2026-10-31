@@ -23,6 +23,6 @@ pub use crate::open::physical_admission::{
 pub use crate::open::{admit_home, readmit_relational, recover_home, ApplicationHomeOpenRefusal};
 pub use crate::world_section::{
     readmit_world, ApplicationWorldDefinition, ApplicationWorldPorts, WorldHomeClosePosture,
-    WorldHomeCloseRefused, WorldReadmittedApplicationHome,
+    WorldHomeCloseRefused, WorldHomeReadmissionRefused, WorldReadmittedApplicationHome,
 };
 pub use worth_foundational::facade::{HomeIdentity, HomeIncarnation};

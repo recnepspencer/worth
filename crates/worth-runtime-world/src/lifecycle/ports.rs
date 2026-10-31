@@ -301,6 +301,18 @@ pub(crate) trait RuntimeWorldProductPublicationService {
 pub(crate) trait RuntimeWorldRecoveryService:
     super::availability::RuntimeWorldAvailability
 {
+    fn inspect_recovered_effects(
+        &self,
+        handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
+    ) -> Result<
+        crate::recovery::WorldRecoveredUnpublishedEffects,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    >;
+    fn release_recovered_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effects: crate::recovery::WorldRecoveredUnpublishedEffects,
+    ) -> crate::recovery::WorldRecoveredReleaseOutcome;
     fn prepare_settled_relational_adoption(
         &self,
         effects: &ProductUnpublishedOwnerEffects,

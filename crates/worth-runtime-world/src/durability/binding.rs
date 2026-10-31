@@ -57,11 +57,11 @@ impl PublicationGates {
 /// a new binding only after physical recovery and Home admission.
 #[derive(Debug)]
 pub(crate) struct WorldDurableMediumBinding {
-    medium: Box<dyn RuntimeWorldDurableMedium>,
+    medium: Arc<dyn RuntimeWorldDurableMedium>,
     gates: Mutex<PublicationGates>,
 }
 impl WorldDurableMediumBinding {
-    pub(crate) fn new(medium: Box<dyn RuntimeWorldDurableMedium>) -> Arc<Self> {
+    pub(crate) fn new(medium: Arc<dyn RuntimeWorldDurableMedium>) -> Arc<Self> {
         Arc::new(Self {
             medium,
             gates: Mutex::new(PublicationGates::default()),

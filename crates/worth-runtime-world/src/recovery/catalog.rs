@@ -13,6 +13,7 @@ mod slots;
 use slots::{RecoveryEntry, RecoveryRecordSlots};
 mod initialization;
 mod page;
+mod recovered_publication;
 #[path = "catalog/update.rs"]
 mod update;
 pub(crate) use update::ReservedProductUnpublishedRecordUpdate;
@@ -202,6 +203,9 @@ impl ProductUnpublishedRecoveryCatalog {
         }
         match state.slots.get(handle.identity()) {
             Some(RecoveryEntry::Retained(record)) => Ok(Arc::clone(record)),
+            Some(RecoveryEntry::Recovered(_)) => {
+                Err(RuntimeWorldRecoveryDenial::RecoveredCustodyRequired)
+            }
             _ => Err(RuntimeWorldRecoveryDenial::MissingRecord),
         }
     }
@@ -225,6 +229,12 @@ impl ProductUnpublishedRecoveryCatalog {
             state.slots.get(handle.identity()),
             Some(RecoveryEntry::Retained(_))
         ) {
+            if matches!(
+                state.slots.get(handle.identity()),
+                Some(RecoveryEntry::Recovered(_))
+            ) {
+                return Err(super::RuntimeWorldRecoveryDenial::RecoveredCustodyRequired);
+            }
             return Err(super::RuntimeWorldRecoveryDenial::MissingRecord);
         }
         let RecoveryEntry::Retained(record) =

@@ -1,4 +1,4 @@
-//! Close settles only accepted work, then discards Native acknowledgement state.
+//! Close settles and actually acknowledges accepted work before Native teardown.
 use super::owner::HomeCheckpointOwner;
 use super::physical_publication::PublicationProgress;
 use super::{ApplicationHomeCheckpoint as Summary, ApplicationHomeCheckpointDenial as Denial};
@@ -7,6 +7,7 @@ use worth_store::physical_runtime::ServingPhysicalRuntime;
 pub(crate) enum CloseCheckpointWaitDenial {
     Interrupted(worth_execution::WorkCeilingDenial),
     RecoveryRequired(super::ApplicationHomeCheckpointRecovery),
+    Acknowledgement(Denial),
 }
 
 pub(crate) fn settle(
@@ -60,24 +61,8 @@ pub(crate) fn settle(
     }
     let result = if let Some(cause) = failure {
         Err(cause)
-    } else if let Some(generation) = attempt.observation().selected_generation {
-        let result = if let Some(result) = *attempt
-            .completed
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-        {
-            result
-        } else {
-            let native = attempt
-                .native()
-                .expect("unacknowledged attempt owns its original capture");
-            Summary {
-                covered: native.covered(),
-                covered_transitions: native.covered_transitions(),
-                generation,
-                bytes: native.bytes().len(),
-            }
-        };
+    } else if attempt.observation().selected_generation.is_some() {
+        let result = acknowledge(&attempt, execution)?;
         super::physical_checkpoint::settle_for_close(serving, &attempt, execution)
             .map_err(CloseCheckpointWaitDenial::Interrupted)?
             .map(|()| result)
@@ -90,9 +75,27 @@ pub(crate) fn settle(
                 .completed_prefix(),
         })
     };
-    // A selected durable manifest requires no live ack when close destroys
-    // the runtime. Clear all capture/source/ticket references before unwrap.
+    // Selection was acknowledged through its actual owner, or this accepted
+    // task settled without selection. Release its capture before Native close.
     attempt.clear_settled_payload();
     owner.clear(&attempt);
     Ok(Some(result))
+}
+
+fn acknowledge(
+    attempt: &super::owner::HomeCheckpointAttempt,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<Summary, CloseCheckpointWaitDenial> {
+    let mut result = None;
+    let scope = execution.run_native_with_checkpoint(|context| {
+        result = Some(super::journey::acknowledge(attempt, context));
+    });
+    match (scope, result) {
+        (_, Some(Ok(summary))) => Ok(summary),
+        (_, Some(Err(cause))) => Err(CloseCheckpointWaitDenial::Acknowledgement(cause)),
+        (Err(cause), None) => Err(CloseCheckpointWaitDenial::Interrupted(cause)),
+        (Ok(_), None) => Err(CloseCheckpointWaitDenial::RecoveryRequired(
+            attempt.observation(),
+        )),
+    }
 }

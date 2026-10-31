@@ -52,6 +52,16 @@ impl std::fmt::Debug for ActiveAttemptCustody {
 }
 
 impl ActiveAttemptCustody {
+    pub(crate) fn reserved_commit_identity(&self) -> crate::identity::CompositeCommitIdentity {
+        self.record
+            .state()
+            .resources
+            .as_ref()
+            .expect("the prepared caller owns its original resources")
+            .commit_identity
+            .clone()
+    }
+
     pub(crate) fn register(
         attempt: CompositePublicationAttemptIdentity,
         expected: ProductBranchObservation,

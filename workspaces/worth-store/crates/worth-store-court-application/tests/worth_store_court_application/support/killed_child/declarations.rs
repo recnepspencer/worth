@@ -42,7 +42,7 @@ pub(crate) fn run_and_kill_observing(
     let mut on_park = Some(on_park);
     let mut command = std::process::Command::new(std::env::current_exe().unwrap());
     command
-        .args(["--exact", test, "--nocapture", "--test-threads=1"])
+        .args(["--exact", test, "--nocapture"])
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
     for (name, value) in environment {

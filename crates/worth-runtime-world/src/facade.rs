@@ -92,8 +92,10 @@ pub use crate::lifecycle::{
     RuntimeWorldObservationPort, RuntimeWorldOwnedAsyncManagedRevalidationDenial,
     RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
     RuntimeWorldOwner, RuntimeWorldOwnerBuilder, RuntimeWorldOwnerLifecycleObservation,
-    RuntimeWorldOwnerUnavailable, RuntimeWorldPublicationPort, RuntimeWorldRecoveryPort,
-    RuntimeWorldRetainedRecordReport, RuntimeWorldServiceDenial,
+    RuntimeWorldOwnerUnavailable, RuntimeWorldPublicationPort, RuntimeWorldRecoveredCustodyReport,
+    RuntimeWorldRecoveryPort, RuntimeWorldResultSnapshotCleanup,
+    RuntimeWorldResultSnapshotCleanupReport, RuntimeWorldRetainedRecordReport,
+    RuntimeWorldServiceDenial,
 };
 
 pub use crate::publication::{
@@ -116,7 +118,8 @@ pub use crate::recovery::{
     PerformedPublicationRecoveryDenial, ProductUnpublishedCause, ProductUnpublishedCleanup,
     ProductUnpublishedNextAction, ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle,
     ProductUnpublishedRetentionPosture, RecoveryContinuationContract, RuntimeWorldRecoveryDenial,
-    RuntimeWorldSettledRelationalAdoptionDenial,
+    RuntimeWorldSettledRelationalAdoptionDenial, WorldRecoveredReleaseOutcome,
+    WorldRecoveredUnpublishedEffects, WorldReleasedRecoveredEffects,
 };
 
 pub use crate::inspection::{

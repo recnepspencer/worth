@@ -73,7 +73,7 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     pub fn close(
-        self,
+        mut self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<crate::ApplicationHomeCloseOutcome, WorldHomeCloseRefused<D, I, E, Ctx, T>> {
         if let Err(cause) = crate::close::posture::interrupted(request) {
@@ -89,17 +89,50 @@ where
             .context
             .world_publications
             .settle_for_close(&self.home.context.serving);
-        let report = match self.world.lifecycle_port().close() {
-            Ok(report) => report,
-            Err(cause) => {
-                return Err(WorldHomeCloseRefused {
-                    home: self,
-                    reason: crate::ApplicationHomeCloseDenial::World(cause),
-                })
+        if self.home.context.world_close_report.is_none() {
+            let report = match self.world.lifecycle_port().close() {
+                Ok(report) => report,
+                Err(cause) => {
+                    return Err(WorldHomeCloseRefused {
+                        home: self,
+                        reason: crate::ApplicationHomeCloseDenial::World(cause),
+                    })
+                }
+            };
+            self.home.context.world_close_report = Some(report);
+        }
+        if self.world_cleanup.is_none() {
+            match self.world.result_snapshot_cleanup_after_close() {
+                Ok(task) => self.world_cleanup = Some(task),
+                Err(cause) => {
+                    return Err(WorldHomeCloseRefused {
+                        home: self,
+                        reason: crate::ApplicationHomeCloseDenial::World(
+                            worth_runtime_world::facade::RuntimeWorldServiceDenial::Denied(cause),
+                        ),
+                    })
+                }
             }
-        };
-        let Self { mut home, world } = self;
-        home.context.world_close_report = Some(report);
+        }
+        // The SAME owning task stays in this Home before borrowing it for
+        // Native release. Refusal never fabricates a serving World posture.
+        if let Err(cause) = self
+            .world_cleanup
+            .as_mut()
+            .expect("retained exact result task")
+            .advance()
+        {
+            return Err(WorldHomeCloseRefused {
+                home: self,
+                reason: crate::ApplicationHomeCloseDenial::WorldResultSnapshot(cause),
+            });
+        }
+        let Self {
+            home,
+            world,
+            world_cleanup,
+        } = self;
+        drop(world_cleanup);
         // Weak service ports and descriptive reports do not own this World.
         // Caller observations keep their own actual Native read custody, which
         // the unchanged Native close admission may still truthfully refuse.

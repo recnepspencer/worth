@@ -1,6 +1,8 @@
 //! Store supplies the actual readmitted Native owner at this closed seam.
 use super::super::RuntimeWorldOwnerRoot;
 use super::*;
+mod associated_effects;
+mod reconcile;
 
 /// Home configuration lacks caller-supplied Relational and Bridge owners.
 /// Store installs the concrete section and its actual bound Bridge once.
@@ -28,8 +30,10 @@ where
         self,
         relational: RelationalOwnerServicePorts,
         bridge: RuntimeWorldCorrespondencePort,
-        medium: Box<dyn crate::durability::RuntimeWorldDurableMedium>,
+        medium: Arc<dyn crate::durability::RuntimeWorldDurableMedium>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+        native_recovery: &worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
     ) -> Result<RuntimeWorldOwner<D, I, E, Ctx, T>, crate::durability::WorldReadmissionDenial> {
         use crate::durability::{
             WorldDurableMediumBinding, WorldReadmissionDenial as Denial, WorldRecoveredJournalState,
@@ -37,15 +41,36 @@ where
         let binding = WorldDurableMediumBinding::new(medium);
         let source = binding.recover(request).map_err(Denial::Medium)?;
         let recovered = WorldRecoveredJournalState::readmit(source, binding.binding(), request)?;
-        // Descriptions cannot stand in for Native's exact recovered-root and
-        // recovered-publication capabilities. Refuse before constructing a
-        // serving World when those owner admissions are still required.
-        if !recovered.branches.is_empty()
-            || !recovered.occurrences.is_empty()
-            || !recovered.opens.is_empty()
+        if !recovered.occurrences.is_empty()
+            || recovered.branches.len() > 1
+            || recovered.dispositions.values().any(|disposition| {
+                matches!(
+                    disposition,
+                    crate::durability::RecoveredCustodyDisposition::Continued
+                )
+            })
         {
-            return Err(Denial::NativeReadmissionRequired);
+            return Err(Denial::OccurrenceReadmissionRequired);
         }
+        for artifact in &recovered.branches {
+            let crate::durability::WorldRecord::Branch {
+                program_revision, ..
+            } = &artifact.record
+            else {
+                unreachable!("branch frame")
+            };
+            if *program_revision != binding.binding().program_revision() {
+                return Err(Denial::ProgramRevisionMismatch);
+            }
+        }
+        if recovered
+            .opens
+            .values()
+            .any(|open| open.program_revision != binding.binding().program_revision())
+        {
+            return Err(Denial::ProgramRevisionMismatch);
+        }
+        let effects = associated_effects::readmit(native, &recovered, binding.binding(), request)?;
         let execution =
             InstalledExecution::try_new(self.execution_authority, self.execution_policy)
                 .map_err(Denial::ExecutionInstallation)?;
@@ -62,11 +87,20 @@ where
         let construction =
             super::super::owner::RuntimeWorldOwnerConstructionContract::readmitted_home(
                 binding.binding(),
-                recovered.frontiers,
+                recovered.frontiers.clone(),
             )
             .map_err(Denial::IdentityExhaustion)?;
-        let root = RuntimeWorldOwnerRoot::construct(inputs, construction, Some(binding))
+        let root = RuntimeWorldOwnerRoot::construct(inputs, construction, Some(binding.clone()))
             .map_err(Denial::IdentityExhaustion)?;
+        reconcile::reconcile(
+            &root,
+            &binding,
+            &recovered,
+            native,
+            native_recovery,
+            effects,
+            request,
+        )?;
         Ok(RuntimeWorldOwner {
             root: Arc::new(root),
         })

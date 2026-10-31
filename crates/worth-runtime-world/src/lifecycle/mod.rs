@@ -6,7 +6,9 @@ mod ports;
 
 pub use clock::{RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldInstant};
 pub use close::{
-    RuntimeWorldCloseDenial, RuntimeWorldCloseReport, RuntimeWorldRetainedRecordReport,
+    RuntimeWorldCloseDenial, RuntimeWorldCloseReport, RuntimeWorldRecoveredCustodyReport,
+    RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupReport,
+    RuntimeWorldRetainedRecordReport,
 };
 pub use owner::{
     RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,

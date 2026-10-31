@@ -53,7 +53,10 @@ where
     {
         return Err(RuntimeWorldCloseDenial::DurablePublicationUnsettled);
     }
-    let retained_records = enumerate_retained_records(state)?;
+    if state.durable.is_some() && state.history.has_undelivered_publication() {
+        return Err(RuntimeWorldCloseDenial::UndeliveredPublication);
+    }
+    let (retained_records, recovered_custody) = enumerate_retained_records(state)?;
     let mut close = state
         .close
         .lock()
@@ -62,7 +65,7 @@ where
     drop(close);
     drop(operation);
     drop(bootstrap);
-    let report = drain_for_close(state, retained_records);
+    let report = drain_for_close(state, retained_records, recovered_custody);
     state
         .close
         .lock()
@@ -97,6 +100,7 @@ fn admit_close(
 fn drain_for_close<D, I, E, Ctx, T>(
     state: &RuntimeWorldOwnerState<D, I, E, Ctx, T>,
     retained_records: Vec<RuntimeWorldRetainedRecordReport>,
+    recovered_custody: Vec<super::RuntimeWorldRecoveredCustodyReport>,
 ) -> RuntimeWorldCloseReport
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -138,6 +142,7 @@ where
     };
     RuntimeWorldCloseReport::new(
         retained_records,
+        recovered_custody,
         counts,
         state.retention.active_observation_count(),
         outstanding_owner_retirement_work,
@@ -149,7 +154,13 @@ where
 /// so it denies rather than producing a row that may already be stale.
 fn enumerate_retained_records<D, I, E, Ctx, T>(
     state: &RuntimeWorldOwnerState<D, I, E, Ctx, T>,
-) -> Result<Vec<RuntimeWorldRetainedRecordReport>, RuntimeWorldCloseDenial>
+) -> Result<
+    (
+        Vec<RuntimeWorldRetainedRecordReport>,
+        Vec<super::RuntimeWorldRecoveredCustodyReport>,
+    ),
+    RuntimeWorldCloseDenial,
+>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
     I: Copy + Ord + Send + Sync + 'static,
@@ -158,8 +169,13 @@ where
     let affinity = state.recovery.affinity();
     let identities = state.recovery.identities();
     let mut rows = Vec::with_capacity(identities.len());
+    let mut recovered = Vec::new();
     for identity in identities {
         let handle = ProductUnpublishedRecoveryHandle::new(identity, affinity);
+        if let Some(row) = state.recovery.recovered_close_report(&handle) {
+            recovered.push(row);
+            continue;
+        }
         let Some(record) = state.recovery.lookup_record(&handle) else {
             return Err(RuntimeWorldCloseDenial::InFlightCriticalSection);
         };
@@ -167,7 +183,7 @@ where
             &ProductUnpublishedOwnerEffects::from_catalog_record(record),
         ));
     }
-    Ok(rows)
+    Ok((rows, recovered))
 }
 
 /// One report row per record, carrying the record's own live obligations. The

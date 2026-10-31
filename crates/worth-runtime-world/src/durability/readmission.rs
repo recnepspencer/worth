@@ -13,6 +13,24 @@ use worth_foundational::facade::{
 
 #[derive(Debug)]
 pub enum WorldReadmissionDenial {
+    NativeCustody {
+        cause: Box<WorldReadmissionDenial>,
+        custody: Box<super::WorldNativeReadmissionCustody>,
+    },
+    NativeDiscovery(worth_relational::facade::durability::RelationalAssociatedEffectRefusal),
+    NativeComponent(Box<worth_relational::facade::durability::RefusedRelationalRecordedComponent>),
+    NativePublication(
+        Box<worth_relational::facade::durability::RefusedRelationalPublicationReadmission>,
+    ),
+    NativeSuccessor(worth_relational::facade::durability::RelationalRecordedSuccessorRefusal),
+    NativeSettlementRequired,
+    OrphanNativeAssociation,
+    DuplicateNativeEffect,
+    MalformedNativeAssociation,
+    DispositionEvidenceMismatch,
+    ProgramRevisionMismatch,
+    OccurrenceReadmissionRequired,
+    RecoveryCapacity,
     ExecutionInstallation(crate::lifecycle::RuntimeWorldBuildDenial),
     Medium(WorldDurableMediumDenial),
     IdentityExhaustion(crate::identity::RuntimeWorldIdentityExhaustion),
@@ -26,11 +44,16 @@ pub enum WorldReadmissionDenial {
     BranchLineage,
     FutureIncarnation,
     NativeReadmissionRequired,
+    RootPreparation(Box<super::RefusedWorldRootReadmission>),
+    SignalInitialRoot(worth_signal::facade::branch::SignalInitialEmptyRootRefusal),
+    BridgeBaseline(worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal),
+    NativeRecorded(worth_relational::facade::branch::RelationalRecordedComponentRefusal),
+    RootAdmission(crate::branch::RuntimeWorldBootstrapNoEffectCause),
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) enum RecoveredCustodyDisposition {
-    Released,
+    Released(Option<super::WorldRelationalReleaseEvidence>),
     Continued,
 }
 
@@ -110,11 +133,12 @@ impl WorldRecoveredJournalState {
                     WorldRecord::Released {
                         association,
                         custody,
+                        relational,
                     } => {
                         recovered.readmit_disposition(
                             association,
                             *custody,
-                            RecoveredCustodyDisposition::Released,
+                            RecoveredCustodyDisposition::Released(relational.clone()),
                         )?;
                     }
                     WorldRecord::Continued {
@@ -139,9 +163,10 @@ impl WorldRecoveredJournalState {
                         if *publishing_incarnation > binding.incarnation() {
                             return Err(WorldReadmissionDenial::FutureIncarnation);
                         }
-                        if recovered.dispositions.get(&open.association.attempt())
-                            == Some(&RecoveredCustodyDisposition::Released)
-                        {
+                        if matches!(
+                            recovered.dispositions.get(&open.association.attempt()),
+                            Some(RecoveredCustodyDisposition::Released(_))
+                        ) {
                             return Err(WorldReadmissionDenial::ConflictingDisposition);
                         }
                         advance_head(&mut heads, &mut history, open)?;

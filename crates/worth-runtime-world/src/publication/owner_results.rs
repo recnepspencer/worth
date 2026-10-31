@@ -53,6 +53,15 @@ pub struct CompositeOwnerExecutionResults {
 }
 
 impl CompositeOwnerExecutionResults {
+    pub(crate) fn owned_relational_result(&self) -> Option<std::sync::Arc<CommitResult>> {
+        match &self.relational.result {
+            CompositeRelationalOwnerResultKind::Published {
+                result: Some(result),
+                ..
+            } => Some(result.clone()),
+            _ => None,
+        }
+    }
     pub(crate) fn settled_relational_parts(
         &self,
     ) -> Option<(

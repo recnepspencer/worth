@@ -2,6 +2,9 @@ use super::{WorldDurableFrameDenial, WorldDurableMediumDenial};
 use worth_execution::{ExecutionArray, ExecutionRequest};
 use worth_foundational::facade::{CompositeAttemptAssociation, HomeIdentity};
 const MAGIC: &[u8; 8] = b"WWASSOC1";
+pub(crate) fn is_world_association(bytes: &[u8]) -> bool {
+    bytes.starts_with(MAGIC)
+}
 pub(crate) fn encode_association(
     execution: &ExecutionRequest<'_, '_>,
     association: &CompositeAttemptAssociation,

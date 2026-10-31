@@ -88,6 +88,10 @@ impl std::fmt::Debug for ReservedCompositePublicationAttempt {
 }
 
 impl ReservedCompositePublicationAttempt {
+    pub(crate) fn reserved_commit_identity(&self) -> crate::identity::CompositeCommitIdentity {
+        self.custody.reserved_commit_identity()
+    }
+
     pub(crate) fn has_durable_open(&self) -> bool {
         self.custody.has_durable_open()
     }

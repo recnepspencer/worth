@@ -50,6 +50,10 @@ pub struct PreparedCompositePublicationWithoutSignal {
 }
 
 impl PreparedCompositePublicationWithoutSignal {
+    pub(crate) fn reserved_commit_identity(&self) -> crate::identity::CompositeCommitIdentity {
+        self.attempt.reserved_commit_identity()
+    }
+
     pub fn planned_successor(&self) -> &PlannedProductReferenceSuccessor {
         self.attempt.planned_successor()
     }

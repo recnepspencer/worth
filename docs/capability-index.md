@@ -1003,11 +1003,12 @@ Home custody through physical teardown. Close stops and settles accepted work;
 unsettled work refuses close. Terminal indeterminate evidence permits teardown
 and reopen, while keeping runtime publication admission fenced.
 
-This is an incomplete lower composition seam. Current successful World
-attachment requires actual known-new Home origin. Existing Homes refuse
-`NativeReadmissionRequired` until Native supplies source-backed historical
-basis and associated-effect readmission. Attached memory bootstrap, legacy
-publication, branch mutation and disposition doors refuse before effects.
+This lower composition seam requires the actual Native recovery authority and
+its complete associated-effect inventory. Failed admission returns
+`WorldHomeReadmissionRefused`, retaining the same concrete Home, lease and World
+slot; `into_home` explicitly cleans up refused component custody and returns
+that Native-readmitted Home. Attached memory bootstrap, legacy publication and
+branch mutation doors refuse before effects.
 `publication_port().begin_durable_bootstrap_root(request, creation, native_basis,
 signal_basis)` validates the actual current Signal owner and supplies the same
 private Bridge's baseline. Its retained bootstrap can be advanced through
@@ -1017,9 +1018,11 @@ artifact v3 requires Native's explicit recorded component, Signal's owner-proven
 InitialEmpty recipe, Bridge's versioned registered-source baseline and the actual
 program revision; v1/v2 and missing seed fields refuse. General authored Signal
 or installed Bridge state refuses before this narrow bootstrap. Root installation follows the actual
-sealed journal acknowledgement. The focused filesystem Home court covers this
-bootstrap and actual root/history/Bridge release, followed by Native-only reopen;
-it grants no cold World seed or historical readmission claim.
+sealed journal acknowledgement. The filesystem Home court covers this bootstrap,
+ordinary Relational-only publication and exact World-owned result snapshot
+cleanup. Undelivered publication refuses Home close before teardown; recover
+its original delivery through `recovery_port().recover_performed` and consume it
+before retrying. Independent Native reads retain their own close obligations.
 
 World's durable open retains its original identities and one Native preparation,
 and its prepared wrapper executes through `execute_durable_without_signal`.
@@ -1030,8 +1033,21 @@ original ready custody and capacities. Attached checkpoint
 refuses `WorldSectionRequired`; close reports that checkpoint failure. Native-only
 reopened Home checkpoint also refuses before capture when actual World journal
 heads exist. This presence check grants no World proof from empty streams;
-already-accepted checkpoint recovery still settles its original task. Durable
-bootstrap qualification, occurrence/disposition recovery, World checkpoint coverage and the
-filesystem process-death journey remain required before a usable durable World
-or phase-completion claim. See [Milestone 3](../plans/database-foundation/milestone-3.md)
+already-accepted checkpoint recovery still settles and actually acknowledges
+its original task before Native close admission.
+
+Cold readmission currently supports one initial product branch with no World
+occurrences. Native source-backed recovery reconstructs the original predecessor
+and unpublished effect; `inspection_port().recovery_page` exposes a Recovered
+row, `recovery_port().inspect_recovered_effects` claims its original identities,
+and `release_recovered_effects` durably records release before dropping the real
+Native capability. Pending or refused release returns the same custody.
+Released artifacts require explicit no-effect evidence or the complete original
+Native receipt, position and digest, checked against Native's actual inventory
+on reopen. The real filesystem child-process court kills after Native durability
+before the World occurrence, reopens and releases the original custody, then
+reopens with the same unmoved product head. World occurrence readmission,
+recovered continuation, general Signal/Bridge state, Host retry and World
+checkpoint coverage remain required for phase completion.
+See [Milestone 3](../plans/database-foundation/milestone-3.md)
 and the owning [Home attachment](../workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs).

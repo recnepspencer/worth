@@ -1,6 +1,7 @@
 use std::sync::Arc;
 mod durable;
 mod preparation;
+mod readmission;
 pub(crate) use durable::WorldDurableBootstrapCustody;
 
 use crate::basis::{admit_current, CompositeBasisAdmissionDenial};
