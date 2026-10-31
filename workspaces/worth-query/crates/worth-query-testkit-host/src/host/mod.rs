@@ -5,6 +5,7 @@ pub mod adapters;
 #[allow(dead_code, unused_imports)]
 #[path = "application_entry_current_read.rs"]
 pub mod application_entry_current_read;
+pub mod application_home;
 #[allow(dead_code, unused_imports)]
 #[path = "application_runtime_surface.rs"]
 pub mod application_runtime_surface;

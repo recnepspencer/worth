@@ -123,32 +123,7 @@ pub fn installed_application(
             worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(
             ),
         ),
-        |_phase, graph, schema| {
-            let binding = schema
-                .principal_binding(IdentityBinding::reference())
-                .unwrap();
-            graph
-                .bind_principal(
-                    &binding,
-                    WorthQueryApplicationPrincipalKey::new("host-principal").unwrap(),
-                    1_u64,
-                    WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject")
-                        .unwrap(),
-                    WorthQueryPrincipalMappingStatus::Enabled,
-                )
-                .unwrap();
-            graph
-                .bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        Account::reference(),
-                        WorthQueryApplicationEntityKey::new("account-row").unwrap(),
-                    )
-                    .field(AccountNumber::reference(), "account-001".to_string()),
-                )
-                .unwrap();
-            inspection_capability::bind(graph);
-            Ok(())
-        },
+        |_phase, graph, schema| seed_identity_graph(graph, schema),
     )
     .unwrap()
 }
@@ -200,3 +175,37 @@ pub mod inspection_authentication;
 pub mod inspection_capability;
 #[path = "application_runtime_surface/inspection_model.rs"]
 pub mod inspection_model;
+
+/// The same genuine principal/account seed used by memory and directory hosts.
+pub fn seed_identity_graph(
+    graph: &mut worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap<
+        HostIdentitySchema,
+    >,
+    schema: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
+        HostIdentitySchema,
+    >,
+) -> Result<(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+    let binding = schema
+        .principal_binding(IdentityBinding::reference())
+        .unwrap();
+    graph
+        .bind_principal(
+            &binding,
+            WorthQueryApplicationPrincipalKey::new("host-principal").unwrap(),
+            1_u64,
+            WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject").unwrap(),
+            WorthQueryPrincipalMappingStatus::Enabled,
+        )
+        .unwrap();
+    graph
+        .bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                Account::reference(),
+                WorthQueryApplicationEntityKey::new("account-row").unwrap(),
+            )
+            .field(AccountNumber::reference(), "account-001".to_string()),
+        )
+        .unwrap();
+    inspection_capability::bind(graph);
+    Ok(())
+}

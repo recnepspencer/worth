@@ -8,6 +8,9 @@ pub struct WorthQueryApplicationHomeClosed {
     outcome: ApplicationHomeCloseOutcome,
 }
 impl WorthQueryApplicationHomeClosed {
+    pub fn is_closed(&self) -> bool {
+        matches!(self.outcome, ApplicationHomeCloseOutcome::Closed { .. })
+    }
     pub(super) fn into_outcome(self) -> ApplicationHomeCloseOutcome {
         self.outcome
     }
