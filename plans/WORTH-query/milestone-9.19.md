@@ -2195,3 +2195,19 @@ history and governed influence qualification remain open. The
 [verification receipt](milestone-9.19-phase4-semantic-reuse-evidence.md) records
 scoped passing courts, full prefix invoices and the explicitly non-green broad
 consumer run with its two established cleanup failures.
+
+### Phase4 qualified selected-membership cutoff slice
+
+The [boundary review](milestone-9.19-phase4-membership-boundary-review.md) and
+[implementation plan](milestone-9.19-phase4-membership-plan.md) cover genuine
+qualified managed selection in the existing canonical producer-input cutoff.
+Actual invocation custody and complete outer/candidate membership remain required;
+semantic Source equality stays body-sensitive. Stable aliases with unsupported
+physical postings retain full verification and actual output projection, with no
+clean equality links or downstream discharges. The real case-normalized equal-
+input producer reaches StableReused after Source content changes, while generation
+substitution and later relevant changes refuse. The
+[verification receipt](milestone-9.19-phase4-membership-evidence.md) records the
+filtered176-test consumer run,26 focused owner tests and explicit exclusions.
+This does not close Phase4; field tracing, correction support/history
+and governed influence remain unfinished.

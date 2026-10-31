@@ -23,12 +23,14 @@ pub struct Provider;
 pub struct Producer;
 impl WorthQueryApplicationProducerProvider<Catalog, Producer> for Provider {
     type DenialValue = WorthQueryUndeclaredProducerDenial;
-    const SEMANTIC_IDENTITY: &'static str = "maintained-generated.indexed.provider.v1";
+    const SEMANTIC_IDENTITY: &'static str = "maintained-generated.indexed.provider.v2";
     fn operation_input(&self, source: &query::ItemRow) -> ordinary::Generate {
+        // This business mapping treats ASCII case variants as the same generated item.
+        let name = source.name.to_ascii_lowercase();
         ordinary::Generate {
-            identity: format!("managed-{}-{}", source.identity, source.name),
+            identity: format!("managed-{}-{}", source.identity, name),
             directory: "A".into(),
-            name: format!("produced:{}", source.name),
+            name: format!("produced:{name}"),
         }
     }
     fn idempotency_key(&self, _: &query::ItemRow, source_identity: &[u8; 32]) -> u64 {

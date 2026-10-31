@@ -8,7 +8,8 @@ use crate::domain_computation::primary_graph::{
     access_strategy::{
         coverage::CoverageFrame,
         realized_footprint::{
-            CapturedManagedInfluence, RetainedManagedInfluence, RevalidatedManagedSource,
+            CapturedInfluenceComparison, CapturedManagedInfluence, RetainedManagedInfluence,
+            RevalidatedManagedSource,
         },
     },
     application_attempt::WorthQuerySourceCurrentnessFailure as Stop,
@@ -35,6 +36,7 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Retai
     fn same_inputs(
         &self,
         other: &dyn RetainedManagedInfluence,
+        purpose: CapturedInfluenceComparison,
         checkpoint: &mut dyn FnMut(u64) -> bool,
     ) -> bool {
         let Some(other) = other.as_any().downcast_ref::<Self>() else {
@@ -51,11 +53,16 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Retai
                 .parent()
                 .same_association(other.parameters.parent())
             && self.parameters.parameters().bindings() == other.parameters.parameters().bindings()
-            && self.candidates.same_captured(
-                &other.candidates,
-                self.original.same_source(&other.original),
-                checkpoint,
-            )
+            && match purpose {
+                CapturedInfluenceComparison::Content => self.candidates.same_captured(
+                    &other.candidates,
+                    self.original.same_source(&other.original),
+                    checkpoint,
+                ),
+                CapturedInfluenceComparison::SelectedMembership => self
+                    .candidates
+                    .same_membership(&other.candidates, checkpoint),
+            }
     }
     fn revalidate(
         &self,

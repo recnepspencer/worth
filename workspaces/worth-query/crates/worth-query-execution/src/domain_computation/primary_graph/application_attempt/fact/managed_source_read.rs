@@ -103,6 +103,27 @@ impl ManagedSourceRead {
             _ => false,
         })
     }
+    pub(in crate::domain_computation::primary_graph) fn same_selected_membership<E>(
+        &self,
+        other: &Self,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+    ) -> Result<bool, E> {
+        let (Some(left_origin), Some(right_origin), Some(left), Some(right)) = (
+            self.key.influence,
+            other.key.influence,
+            &self.influence,
+            &other.influence,
+        ) else {
+            return Ok(false);
+        };
+        if self.key.obligation != other.key.obligation
+            || self.key.scope != other.key.scope
+            || left_origin.parameters != right_origin.parameters
+        {
+            return Ok(false);
+        }
+        left.same_selected_membership(right, admit)
+    }
     pub(in crate::domain_computation::primary_graph) fn remains_equal(
         &self,
         runtime: &RelationalRuntime,

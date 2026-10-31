@@ -7,6 +7,8 @@ use super::super::{
     WorthQueryObservedRootSelection, WorthQueryObservedSource, WorthQueryObservedSourceFootprint,
 };
 use super::WorthQueryObservedSourceMeaning;
+use crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 /// The complete selected source meaning, without its revision-bearing identity.
 /// A restored or incomplete observation cannot mint this cutoff input.
@@ -15,6 +17,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSource
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
     meaning: Arc<WorthQueryObservedSourceMeaning>,
+    managed: Option<Arc<ManagedSourceRead>>,
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
@@ -22,18 +25,22 @@ impl<Query> WorthQueryObservedSource<Query> {
         &self,
     ) -> Option<WorthQueryObservedSourceSelection> {
         let footprint = self.source_meaning.footprint();
-        // Selective membership cutoff has no qualified complete-walk rule yet.
-        // Retained full source currentness still consumes the original bodies.
-        (footprint.complete
-            && footprint.root_selection.as_ref().is_some_and(|selection| {
-                selection.walks.is_none()
-                    && selection.components.is_none()
-                    && selection.managed_index.is_none()
-            }))
-        .then(|| WorthQueryObservedSourceSelection {
+        let selection = footprint.root_selection.as_ref()?;
+        if !footprint.complete || selection.walks.is_some() || selection.components.is_some() {
+            return None;
+        }
+        let managed = match (&selection.managed_index, &self.invocation_managed_source) {
+            (None, None) => None,
+            (Some(_), Some(actual)) if actual.has_verified_realized_footprint() => {
+                Some(Arc::clone(actual))
+            }
+            _ => return None,
+        };
+        Some(WorthQueryObservedSourceSelection {
             runtime_authority: self.runtime_authority,
             schema_binding: self.schema_binding.clone(),
             meaning: Arc::clone(&self.source_meaning),
+            managed,
         })
     }
 }
@@ -43,7 +50,31 @@ impl WorthQueryObservedSourceSelection {
     pub(in crate::domain_computation::primary_graph) fn same_selected_membership_as(
         &self,
         other: &Self,
-    ) -> bool {
+        admit: &mut impl FnMut(u64) -> Result<(), Cause>,
+    ) -> Result<bool, Cause> {
+        admit(1)?;
+        let equal = if self.same_coordinate(other) {
+            super::admit_footprint_comparison(
+                self.meaning.footprint(),
+                other.meaning.footprint(),
+                &mut |work| admit(u64::try_from(work).map_err(|_| Cause::WorkCounterOverflow)?),
+            )?;
+            if !same_footprint_membership(self.meaning.footprint(), other.meaning.footprint()) {
+                false
+            } else {
+                match (&self.managed, &other.managed) {
+                    (None, None) => true,
+                    (Some(left), Some(right)) => left.same_selected_membership(right, admit)?,
+                    _ => false,
+                }
+            }
+        } else {
+            false
+        };
+        admit(0)?;
+        Ok(equal)
+    }
+    fn same_coordinate(&self, other: &Self) -> bool {
         if self.runtime_authority != other.runtime_authority {
             return false;
         }
@@ -83,7 +114,7 @@ impl WorthQueryObservedSourceSelection {
         if left.root != right.root {
             return false;
         }
-        same_footprint_membership(self.meaning.footprint(), other.meaning.footprint())
+        true
     }
 }
 
@@ -123,14 +154,20 @@ fn same_root_selection(
         || right.walks.is_some()
         || left.components.is_some()
         || right.components.is_some()
-        || left.managed_index.is_some()
-        || right.managed_index.is_some()
     {
         return false;
     }
     same_entities(&left.entities, &right.entities)
         && same_fields(&left.aspects, &right.aspects)
         && same_adjacencies(&left.adjacencies, &right.adjacencies)
+        && match (&left.managed_index, &right.managed_index) {
+            (None, None) => true,
+            (Some(left), Some(right)) => {
+                left.access.graph_obligations().identity()
+                    == right.access.graph_obligations().identity()
+            }
+            _ => false,
+        }
 }
 
 fn same_entities(
@@ -212,137 +249,4 @@ fn same_text(left: &str, right: &str) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
-    use std::sync::Arc;
-
-    use worth_foundational::facade::CanonicalDigestId;
-    use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionId};
-
-    use super::*;
-
-    fn entity(slot: u64) -> EntityId {
-        EntityId::new(PartitionId::main(), slot, 1)
-    }
-
-    fn footprint(endpoints: Vec<EntityId>, revision: u64) -> WorthQueryObservedSourceFootprint {
-        let adjacency = WorthQueryObservedAdjacencyRevision {
-            anchor: entity(1),
-            relation_kind: KindId(7),
-            direction: worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing,
-            native_revision: Some(VersionId(revision)),
-            comparison_work_limit: 8,
-            endpoints,
-        };
-        WorthQueryObservedSourceFootprint {
-            root: entity(1),
-            complete: true,
-            entities: vec![entity(1)],
-            aspects: Vec::new(),
-            root_selection: Some(Arc::new(WorthQueryObservedRootSelection::new(
-                crate::domain_computation::primary_graph::source_facts::SourceFacts {
-                    entities: vec![entity(1)],
-                    aspects: Vec::new(),
-                    adjacencies: vec![adjacency.clone()],
-                    walks: None,
-                    allocation: None,
-                },
-                None,
-            ))),
-            adjacencies: vec![adjacency],
-        }
-    }
-
-    impl WorthQueryObservedSourceSelection {
-        /// A complete retained selection for lineage tests outside this
-        /// module, which cannot observe a source of their own.
-        pub(in crate::domain_computation::primary_graph) fn selecting_for_test(
-            endpoint: u64,
-        ) -> Self {
-            let authority = crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test();
-            let meaning = super::super::WorthQueryObservedSourceMeaningRegistry::new(authority)
-                .intern(
-                    &[7; 32],
-                    &[8; 32],
-                    footprint(vec![entity(endpoint)], 4),
-                    &super::super::WorthQueryApplicationBasisSelectionIdentity::Relational,
-                )
-                .unwrap();
-            Self {
-                runtime_authority: authority.as_u64(),
-                schema_binding: ApplicationSchemaBindingIdentity::from_installed_parts(
-                    1,
-                    2,
-                    CanonicalDigestId::new([3; 32]),
-                    CanonicalDigestId::new([4; 32]),
-                ),
-                meaning,
-            }
-        }
-    }
-
-    #[test]
-    fn selected_membership_ignores_revisions_but_not_selected_endpoints() {
-        let before = footprint(vec![entity(2)], 4);
-        let same_selection = footprint(vec![entity(2)], 9);
-        let changed_selection = footprint(vec![entity(3)], 9);
-        assert!(same_footprint_membership(&before, &same_selection));
-        assert!(!same_footprint_membership(&before, &changed_selection,));
-    }
-
-    #[test]
-    fn retained_selection_compares_a_fresh_meaning_without_revision_identity() {
-        let authority = crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test();
-        let registry = super::super::WorthQueryObservedSourceMeaningRegistry::new(authority);
-        let selection = super::super::WorthQueryApplicationBasisSelectionIdentity::Relational;
-        let meaning = |endpoints, revision| {
-            registry
-                .intern(
-                    &[7; 32],
-                    &[8; 32],
-                    footprint(endpoints, revision),
-                    &selection,
-                )
-                .unwrap()
-        };
-        let binding = ApplicationSchemaBindingIdentity::from_installed_parts(
-            1,
-            2,
-            CanonicalDigestId::new([3; 32]),
-            CanonicalDigestId::new([4; 32]),
-        );
-        let carrier = |meaning| WorthQueryObservedSourceSelection {
-            runtime_authority: authority.as_u64(),
-            schema_binding: binding.clone(),
-            meaning,
-        };
-        let before = carrier(meaning(vec![entity(2)], 4));
-        let revision_only = carrier(meaning(vec![entity(2)], 9));
-        let different = carrier(meaning(vec![entity(3)], 9));
-        assert!(before.same_selected_membership_as(&revision_only));
-        assert!(!before.same_selected_membership_as(&different));
-    }
-
-    #[test]
-    fn selection_comparison_requires_complete_membership() {
-        let selected = footprint(vec![entity(2), entity(3)], 4);
-        assert!(same_footprint_membership(&selected, &selected));
-        let mut incomplete = selected.clone();
-        incomplete.root_selection = None;
-        assert!(!same_footprint_membership(&selected, &incomplete));
-    }
-
-    #[test]
-    fn text_comparison_reads_initialized_utf8_not_spare_capacity() {
-        let mut spare = String::with_capacity(4096);
-        spare.push_str("open");
-        // Stale bytes past the initialized length stay in the spare capacity.
-        let mut truncated = String::from("openXYZ");
-        truncated.truncate("open".len());
-        for left in [spare.as_str(), truncated.as_str()] {
-            for right in ["open", "openXYZ", "opal", "closed", ""] {
-                assert_eq!(same_text(left, right), left == right, "{left:?} {right:?}");
-            }
-        }
-        assert!(same_text(&spare, &truncated));
-    }
-}
+mod tests;

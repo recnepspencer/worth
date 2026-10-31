@@ -20,7 +20,7 @@ use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOpera
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use refusal::cutoff_admission_denial;
 use refusal::cutoff_basis_denial;
-use refusal::cutoff_denial;
+use refusal::cutoff_verification_stop;
 
 type StablePublication<'owner, Schema, OperationType, Input, Scope> = Box<
     dyn FnOnce(
@@ -238,7 +238,7 @@ where
                 source_owner,
             )
         })
-        .map_err(cutoff_denial)?;
+        .map_err(cutoff_verification_stop)?;
     let verified = match decision {
         OwnedInputCutoffDecision::Fresh { key, context } => {
             return fresh(
@@ -292,7 +292,7 @@ where
                         fresh.source_facts(),
                     )
                 })
-                .map_err(cutoff_denial)?;
+                .map_err(cutoff_verification_stop)?;
             observation::reach(Gate::PublicationApply);
             let result = verified.with_verified(|verified| {
                 stable_apply::publish::<Schema, Binding, _, _, _>(

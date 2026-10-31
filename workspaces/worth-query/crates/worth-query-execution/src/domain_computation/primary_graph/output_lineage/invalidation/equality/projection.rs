@@ -31,6 +31,15 @@ pub(super) fn carry(
         else {
             break;
         };
+        if state
+            .equal_links
+            .get(&prior)
+            .is_none_or(|link| link.next.as_ref() != Some(&current))
+        {
+            return Err(SettlementRegistrationStop::Alignment(
+                FullVerificationReason::RetainedDeliveryGap,
+            ));
+        }
         current = prior;
     }
     // A source-only row has no separate output projection. Its equality chain

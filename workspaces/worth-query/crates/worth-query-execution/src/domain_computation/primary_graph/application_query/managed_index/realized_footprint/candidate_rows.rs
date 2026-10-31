@@ -93,6 +93,22 @@ impl CapturedCandidateRows {
         }
         checkpoint(0)
     }
+    pub(super) fn same_membership(
+        &self,
+        other: &Self,
+        checkpoint: &mut dyn FnMut(u64) -> bool,
+    ) -> bool {
+        if self.owner != other.owner || self.entries.len() != other.entries.len() {
+            return false;
+        }
+        for ((left_key, left), (right_key, right)) in self.entries.iter().zip(other.entries.iter())
+        {
+            if !checkpoint(32) || left_key != right_key || left.accepted != right.accepted {
+                return false;
+            }
+        }
+        checkpoint(0)
+    }
     pub(super) fn matches(
         &self,
         rows: &PersistentSourceRows,

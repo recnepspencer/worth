@@ -10,6 +10,13 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
 };
 
+/// Which already captured descriptive evidence the caller compares.
+#[derive(Clone, Copy)]
+pub(in crate::domain_computation::primary_graph) enum CapturedInfluenceComparison {
+    Content,
+    SelectedMembership,
+}
+
 /// Only the installed managed adapter implements this consistency execution.
 pub(in crate::domain_computation::primary_graph) trait RetainedManagedInfluence:
     Send + Sync
@@ -20,6 +27,7 @@ pub(in crate::domain_computation::primary_graph) trait RetainedManagedInfluence:
     fn same_inputs(
         &self,
         other: &dyn RetainedManagedInfluence,
+        purpose: CapturedInfluenceComparison,
         checkpoint: &mut dyn FnMut(u64) -> bool,
     ) -> bool;
     fn revalidate(
@@ -72,12 +80,33 @@ impl CapturedManagedInfluence {
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
     ) -> Result<bool, E> {
+        self.compare(other, CapturedInfluenceComparison::Content, admit)
+    }
+    pub(in crate::domain_computation::primary_graph) fn same_selected_membership<E>(
+        &self,
+        other: &Self,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+    ) -> Result<bool, E> {
+        self.compare(
+            other,
+            CapturedInfluenceComparison::SelectedMembership,
+            admit,
+        )
+    }
+    fn compare<E>(
+        &self,
+        other: &Self,
+        purpose: CapturedInfluenceComparison,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+    ) -> Result<bool, E> {
         admit(self.comparison_work())?;
         admit(other.comparison_work())?;
         comparison::with_checkpoint(admit, &mut |checkpoint| {
             self.authority.admits(&other.proof)
                 && other.authority.admits(&self.proof)
-                && self.support.same_inputs(other.support.as_ref(), checkpoint)
+                && self
+                    .support
+                    .same_inputs(other.support.as_ref(), purpose, checkpoint)
         })
     }
 

@@ -5914,15 +5914,31 @@ A reused committed output can report `Performed` with its original historical
 receipt and zero new producer contacts; `StableReused` is a separate stable-lineage
 posture. Identity alone grants no reuse or publication authority.
 
+A qualified complete Public managed Source also participates in the declared
+canonical producer-input cutoff. Fresh actual selection compares every candidate
+identity and exact decision, the outer field/relation membership and full admitted
+query affinity. If canonical operation input and the installed producer remain
+equal, the existing cutoff still verifies prior handler facts, decision context,
+consumed outputs and the actual Native output witness. A real Source content
+change can then yield `StableReused`, zero handler contacts and no new mutation
+receipt. This does not make changed operation input reusable.
+
+Managed Source reverse postings remain conservative. Such a stable alias retains
+full verification and authentic output projection custody; it creates no clean
+equality links or downstream discharges. Later relevant Source/output changes
+still refuse delivery. Generation substitution cannot reuse a prior selected-membership key;
+incomplete/restored or unqualified captures cannot supply one.
+
 This profile retains full candidate inputs; it does not trace narrower field use,
-qualify selected-membership cutoff, correction history or governed influence.
+qualify correction history or governed influence.
 Successful regeneration after changed inputs depends on the declared producer
 lifecycle; an Initial-only/Create operation cannot replace a prior live output.
 Keep the observation until the mutation consumes it, then reread and reassess
 if equality cannot be proved.
 Reuse the operation's idempotency identity for a recorded retry; it does not
 repeat the completed mutation. See the [currentness evidence](../plans/WORTH-query/milestone-9.19-phase4-currentness-evidence.md) and
-[semantic reuse plan](../plans/WORTH-query/milestone-9.19-phase4-semantic-reuse-plan.md).
+[semantic reuse plan](../plans/WORTH-query/milestone-9.19-phase4-semantic-reuse-plan.md) and
+[selected-membership plan](../plans/WORTH-query/milestone-9.19-phase4-membership-plan.md).
 
 The maintained prefix and geometry courts also exercise genuine equal-value
 rename/move commits. A watch may remain Pending or deliver unchanged rows;

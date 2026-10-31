@@ -371,3 +371,5 @@ fn assert_scope_refusal(denial: &WorthQueryProgramOutputAdvanceDenial) {
 }
 
 mod initial_successor;
+
+mod membership;

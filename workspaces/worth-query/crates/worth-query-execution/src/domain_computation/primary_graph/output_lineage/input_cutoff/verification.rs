@@ -137,7 +137,14 @@ impl RetainedInputCutoffCandidate {
         let Some(witness) = self.native_output_witness() else {
             return Ok(None);
         };
-        if !prior_key.same_prepared_input_as(fresh_key) {
+        if !prior_key
+            .same_prepared_input_as(fresh_key, &mut |work| {
+                crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::work(
+                    execution, work,
+                )
+            })
+            .map_err(InputCutoffVerificationStop::Execution)?
+        {
             return Ok(None);
         }
         observation::reach(Gate::DecisionContext);

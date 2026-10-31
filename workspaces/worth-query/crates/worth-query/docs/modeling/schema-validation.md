@@ -385,8 +385,13 @@ content and full admitted parameters, with actual captured-body equality and
 separate current-invocation custody. Real producer reuse after irrelevant edits
 keeps the original committed receipt and freshly admits output READ/disclosure.
 Exact-current retained managed reads require actual Native/World correspondence;
-moved historical reads still refuse. Selected membership and correction remain
-later work; this is no field-access trace. Initial-only producers do not gain
+moved historical reads still refuse. Qualified selected membership can also feed
+the existing canonical producer-input cutoff. Complete candidate IDs/dispositions,
+outer field/relation shape and actual invocation affinity remain checked; input,
+edition, context, handler facts and output witness must still pass. Conservative
+stable registration retains full verification and genuine output projection,
+without clean equality links or downstream discharge. Correction remains later
+work; this is no field-access trace. Initial-only producers do not gain
 successful changed-input regeneration from semantic reuse. See the
 [application guide](../../../../../../docs/build-an-application.md#construct-committed-provider-indexes)
 for ordinary Decl/Host setup, explicit access and the qualified fixture limits.
