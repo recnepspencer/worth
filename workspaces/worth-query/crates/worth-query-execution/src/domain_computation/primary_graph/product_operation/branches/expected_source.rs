@@ -92,6 +92,20 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranchFork<'r
 }
 
 impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runtime, Schema> {
+    /// Transfer this created branch into the application's move-only head slot.
+    /// This releases the original expected-source lease: the branch is no longer
+    /// a pending adoption against that source. Domain model attachment and
+    /// current operation authorization remain separate admissions.
+    pub fn into_owned_head(self) -> super::WorthQueryOwnedProductHead<'runtime, Schema> {
+        let Self {
+            application,
+            branch,
+            source,
+        } = self;
+        drop(source);
+        super::WorthQueryOwnedProductHead::from_created_branch(application, branch)
+    }
+
     pub fn branch(&self) -> WorthQueryProductBranch {
         self.branch
     }

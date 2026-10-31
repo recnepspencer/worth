@@ -11,6 +11,7 @@ use worth_runtime_world::facade::{
 use super::WorthQueryApplicationProductBranchCleanup;
 mod expected_basis;
 mod expected_source;
+mod owned_head;
 use super::{
     WorthQueryOrderedProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverage,
     WorthQueryProgramAdoptionCoverageDenial,
@@ -26,6 +27,7 @@ pub use expected_source::{
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
     WorthQueryExpectedProductBranchFork,
 };
+pub use owned_head::{WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadCloseFailure};
 
 /// The product branch lifecycle of one application runtime: fork branches,
 /// issue program adoption coverage, page through recovery, and find pending

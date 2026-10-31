@@ -1857,6 +1857,14 @@ Source movement also refuses creation, and a refused candidate close retains
 the candidate with its original denial. See
 [fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection).
 
+For a move-only application head, consume the initial candidate with
+`into_owned_head()`. Store the returned owner, target requests with
+`head.branch()`, and adopt subsequent candidates with `head.adopt(candidate,
+&phase)`. Success returns an owned previous head for explicit close. A close
+refusal returns either the live head (`Retained`) or its actual retired cleanup
+obligation (`Retired`). See
+[own an application branch head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#own-an-application-branch-head).
+
 To store the selected basis as application data, serialize
 `selected.describe_basis()` before releasing the selection. After loading that
 record through an ordinary READ request, deserialize it as

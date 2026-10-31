@@ -38,7 +38,8 @@ pub use branches::{
     WorthQueryApplicationProductBranches, WorthQueryExpectedProductBasisSelectionDenial,
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
-    WorthQueryExpectedProductBranchFork,
+    WorthQueryExpectedProductBranchFork, WorthQueryOwnedProductHead,
+    WorthQueryOwnedProductHeadCloseFailure,
 };
 pub use cleanup::{
     WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,

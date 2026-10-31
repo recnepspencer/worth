@@ -98,6 +98,42 @@ The [compiled adoption cases](../../../worth-query-court-decl-host/tests/worth_q
 show ordinary candidate requests, head replacement, stale-source refusal and
 cleanup.
 
+### Own an application branch head
+
+Consume a newly created expected-source candidate with `into_owned_head()` when
+the application needs a move-only owner for its branch slot. Keep that owner in
+the application state and use its descriptive `branch()` for ordinary requests.
+A copied selector cannot construct another head owner.
+
+```rust,ignore
+let mut head = initial_candidate.into_owned_head();
+let selected = application.on_branch(head.branch()).select(&phase)?;
+let candidate = application.branches()
+    .fork_expected(selected)?
+    .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
+    .create(&phase)?;
+// Run the ordinary candidate requests before adoption.
+let previous = head.adopt(candidate, &phase)?;
+previous.close(&phase)?;
+```
+
+`head.adopt` uses the same exact-source and currentness guards as candidate
+adoption. Success returns the previous head as a separate owner; refusal leaves
+the current head unchanged and preserves the candidate in the failure.
+Converting the initial candidate releases its expected-source admission. The
+head owner manages branch custody; ordinary request authorization still applies.
+
+Close each head explicitly. A `Retained { head, denial }` failure returns a live
+head after a refusal before retirement. A `Retired { branch, failure }` failure
+returns the actual cleanup obligation after retirement. Retain
+`failure.into_cleanup()` and call `retry()`; a further failure retains that same
+cleanup through `into_cleanup()`. For example, a reader holding the retired
+head can keep cleanup pending until that reader is released.
+
+The [compiled head-owner cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/proposal_acceptance/owned_head.rs)
+show adoption, independent heads, wrong-source refusal, foreign-phase close
+refusal and cleanup after releasing a held reader.
+
 ### Store an expected basis and select it again
 
 Keep records on a separately owned storage branch when saving them must leave

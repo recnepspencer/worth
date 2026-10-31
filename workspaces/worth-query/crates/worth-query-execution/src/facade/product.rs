@@ -39,6 +39,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryExpectedProductBasisSelectionDenial, WorthQueryExpectedProductBranch,
     WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
     WorthQueryExpectedProductBranchCloseFailure, WorthQueryExpectedProductBranchFork,
+    WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadCloseFailure,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
     WorthQueryProductEntry, WorthQueryProductHistory, WorthQueryProductHistoryEntry,
     WorthQueryProductQueryControls, WorthQueryProductTransaction,
