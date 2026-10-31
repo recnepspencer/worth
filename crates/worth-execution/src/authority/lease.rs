@@ -19,6 +19,7 @@ mod array_backing;
 mod byte_backing;
 mod diagnostic;
 mod fixed_backing;
+mod interruption_view;
 mod limits;
 mod memory;
 mod process_authority;
@@ -39,6 +40,11 @@ pub use fixed_backing::{
     ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationPolicy,
     ExecutionPhysicalAllocationDenialKind,
 };
+pub(crate) use interruption_view::{
+    interruption_backing_lease, unrelated as unrelated_interruption_context,
+    InterruptionViewBuilder,
+};
+pub use interruption_view::{ExecutionInterruptionView, ExecutionInterruptionViewDenial};
 pub(in crate::authority) use memory::LeaseMemory;
 pub(crate) use reservation::SlotRefusal;
 use reservation::{ClaimSlot, RunInline};

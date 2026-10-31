@@ -49,6 +49,25 @@ when the run has this contract. Use the physical report to inspect placement.
 
 ## Original-request retained storage
 
+Within an already admitted `MapKernelContext`, use
+`context.retain_interruption_view(original_lease)` to retain the actual
+cancellation lineage and absolute deadline for an accepted worker. Pass the
+original borrowed lease as `Some(lease)` for leased execution and `None` for
+serial execution. An active descendant keeps its narrower controls and backing;
+foreign/sibling leases, unentered children and a different current receiver
+refuse before observing controls or allocating storage. No extra scope is needed.
+
+`ExecutionInterruptionView::check_live()` observes cancellation and deadline
+after the scope and borrowed request have gone. The move-only view is
+`Send + Sync + 'static`; an owning operation may share the same view with its
+accepted steps through `Arc<ExecutionInterruptionView>`. Its one admitted token
+backing remains charged to the original memory owner until the final shared
+owner drops. Work exhaustion, nested computation stops and fresh admission
+remain with their existing owners; the view grants none of those capabilities.
+See the real public-entry
+[interruption view court](../worth-court-execution/tests/worth_court_execution/execution/interruption_view/mod.rs)
+for lease discovery from an original request without another execution scope.
+
 `ExecutionRequest::reserve_retained_memory(bytes)` admits retained backing
 against the effective accounted context, including serial and inherited
 accounting. It returns a sealed reservation for accounted execution and `None`
