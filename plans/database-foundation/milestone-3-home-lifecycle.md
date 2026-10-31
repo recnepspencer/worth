@@ -148,6 +148,77 @@ cutover and honest fixtures, then run focused provider tests, relevant Native
 regressions, formatting, scoped line caps, boundary and context checks. Fresh
 independent source review must approve the coherent batch before integration.
 
+## Fresh Directory bootstrap completion publication
+
+This producer-only prerequisite may run in an isolated lane alongside Native
+catalog implementation after its contract is frozen. It uses existing ordinary
+Native publication APIs and does not implement or claim existing-Home service.
+The latter remains gated on qualified catalog recovery. Preserve the already
+qualified NoPendingOwnerAdmission and actual Host ownership-close paths.
+
+Implement the completion schema/record described below, its producer codec and
+the additional commit ONLY in Directory's publish_home_query_seed. Ordinary
+Memory bootstrap receives no extra commit. Place lowering after projected,
+derived and aggregate lowering, allocating from the actual completed registry
+and declared contracts; preserve existing platform reservations and IDs.
+Factor the existing admitted binding construction into one private operation,
+without a second binding authority or copied Store descriptor codec.
+
+Freeze the binding String grammar now. It starts with ASCII `WQHB1\n` (the
+final character is a newline). Every following item is one netstring:
+canonical unsigned decimal UTF-8 BYTE length, colon, exactly those payload
+bytes, comma. Decimal lengths/counts have no leading zero except zero itself.
+Items occur in this order: package digest, schema digest, selected identity,
+selected revision, roster count, then identity/revision pairs in the actual
+ApplicationHomeBinding roster order (strict revision order). Digests are
+exactly 64 lowercase ASCII hexadecimal characters. Roster count is itself a
+canonical decimal string inside its netstring. Identity payloads preserve
+their exact UTF-8 bytes, including delimiters; no build UUID, process ordinal
+or trailing item belongs in the encoding. Use checked total byte length and
+original-request allocation/work accounting. A pure length/render core may
+have literal known-value codec tests without constructing a foreign runtime.
+The bounded decoder and installed readmission remain in the dependent slice.
+
+Publish only after genuine bootstrap rows and index construction succeed.
+The existing seed producer consumes activation before its first real row
+commit; use its actual terminal bootstrap receipt. Require the new completion
+commit's parent to match that receipt. Set PreparedHomeQueryRuntime.publication
+only after actual completion success, and return the cached success on repeat
+without another commit. Fence a failed completion attempt with the existing
+bootstrap failure fact before its fallible preparation/allocation/publication:
+no automatic replay of accepted seeds or uncertain completion. Preserve actual
+prepared Query, Home and cause in existing SeedPublication refusal. Do not add
+an ownership mode or pretend an indeterminate record is absent.
+
+The existing Host publishes before select_query_root; actual World genesis
+must therefore bind the completion-containing Native commit. Prove this on the
+same genuine Home, using existing sealed preparation ports in the external
+Store Application court:
+
+```text
+process/application/query_readmission/mod.rs
+process/application/query_readmission/bootstrap_publication.rs
+process/application/query_readmission/bootstrap_publication/inspection.rs
+```
+
+Only bootstrap_publication.rs may gain the existing query-home-preparation,
+native-home-query-preparation and physical_serving_for_test caller audiences.
+Keep factory/control references there; inspection.rs receives borrowed genuine
+Native/root data. Root coordinates the required leaf dependencies and locks
+under the existing Store-court D1 exception. Add no getter, control or raw
+authority factory.
+
+Real multi-batch cases with all rows flushed and with a final pending batch
+must show exactly one completion entity, literal expected aggregate counts,
+actual activation, original terminal receipt/parentage, absence at the terminal
+seed basis and presence at the World genesis basis. A matching Memory case
+retains its commit count. Arm the existing pre-effect candidate-retention
+rejection after a genuine all-flushed initializer so completion consumes it:
+assert exact failure, unchanged accepted seed history, no World genesis/service,
+same Home/lease and no callback replay. Inspect actual owning close posture;
+do not require Closed for indeterminate physical custody. Use real registry
+contracts and immutable receipts, never offsets or a last-commit census.
+
 ## Existing Query publication and service readmission
 
 This batch follows actual Native index-catalog durability/readmission and the
@@ -250,6 +321,22 @@ binding identity, original terminal bootstrap commit and descriptive aggregate c
 Do not use checkpoint `recover_publication`, whose one-commit census cannot
 recover multi-batch aggregate publication. No index registration or bootstrap
 publication occurs on reopen.
+
+Definitions alone do not make recovered indexes usable. Before QueryReadmitted
+or public service escapes, invoke the existing ensure_primary_indexes_for_basis
+at the SAME selected World relational basis and original request. It probes
+the actual layout-derived primary inventory and uses Native refresh_for_basis
+with its existing cold reconstruction budget and before=None for missing
+generations. Do not add another index list/build algorithm or substitute the
+latest Native head. Ordinary principal selectors prohibit population rebuild,
+so deferring this step to first authentication can expose unusable service.
+Any denial retains Query/Home before service. This is derived reconstruction,
+without another business commit; the existing wrapper's small missing-ID Vec
+is not evidence that all wrapper allocations are already request-reserved.
+Preserve genuine Native equivalent-definition selection: matching_definition
+can select the first actual recovered semantic match among duplicate IDs.
+Build the IDs actually installed into the layout; do not re-register or claim
+the historical Query-assigned ID is unique when equivalent definitions exist.
 
 Before service, read the actual latest-Native Query idempotency rows with the
 existing bounded entity scan and cumulative original request. Validate exact
