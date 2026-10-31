@@ -40,19 +40,21 @@ mod inbound_occurrence;
 #[doc(hidden)]
 pub use history::WorthQueryHistoryEditHandoffPauseForTest;
 pub use history::{
-    WorthQueryApplicationHistoryAttachmentFailure, WorthQueryApplicationHistoryCloseFailure,
-    WorthQueryApplicationHistoryDenial, WorthQueryApplicationHistoryDocument,
-    WorthQueryApplicationHistoryPreview, WorthQueryDocumentHistoryCloseReceipt,
-    WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
-    WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryInstallationDenialKind,
-    WorthQueryFixedHistoryEditOutcome, WorthQueryHistoryContextRefreshDenial,
+    OrdinaryHistoryPayload, WorthQueryApplicationHistoryAttachmentFailure,
+    WorthQueryApplicationHistoryCloseFailure, WorthQueryApplicationHistoryDenial,
+    WorthQueryApplicationHistoryDocument, WorthQueryApplicationHistoryPreview,
+    WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
+    WorthQueryDocumentHistoryClosingDenial, WorthQueryDocumentHistoryDenial,
+    WorthQueryDocumentHistoryInstallationDenialKind, WorthQueryFixedHistoryEditOutcome,
+    WorthQueryGovernedHistoryPayload, WorthQueryHistoryContextRefreshDenial,
     WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance,
     WorthQueryHistoryEditBuilder, WorthQueryHistoryEditCaptureDenial,
     WorthQueryHistoryEditCaptureFailure, WorthQueryHistoryEditDenial,
     WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome,
     WorthQueryHistoryEditPosture, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
     WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
-    WorthQueryHistoryPageRow, WorthQueryHistoryPreviewResult, WorthQueryHistoryStep,
+    WorthQueryHistoryPageRow, WorthQueryHistoryPayloadMode, WorthQueryHistoryPreviewResult,
+    WorthQueryHistoryStep,
 };
 mod live;
 mod mandatory_review;

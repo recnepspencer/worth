@@ -46,6 +46,14 @@ impl ApplicationHistoryBinding<DocumentRetentionSchema> for GovernedRetentionHis
     const IDENTITY: &'static str = "GovernedDocumentRetentionHistory";
 }
 
+/// Payload and metadata require their independently authored capability purposes.
+pub struct GovernedPayloadRetentionHistory;
+worth_query_portable_type!(GovernedPayloadRetentionHistory => "worth.query.document-retention.governed-payload-history.v1");
+impl ApplicationHistoryBinding<DocumentRetentionSchema> for GovernedPayloadRetentionHistory {
+    type Access = super::record_history::query::Input;
+    const IDENTITY: &'static str = "GovernedPayloadDocumentRetentionHistory";
+}
+
 pub fn metadata_disclosure() -> ApplicationQueryDisclosureContract {
     metadata_disclosure_for::<GovernedRetentionHistory>()
 }
@@ -85,6 +93,10 @@ pub fn declare(
             .operation::<SetRetentionBinding>(detailed_edit_label()),
     ).application_history(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, GovernedRetentionHistory>::for_binding(metadata_disclosure())
+            .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
+            .operation::<SetRetentionBinding>("Set retention"),
+    ).application_history(
+        ApplicationHistoryDefinition::<DocumentRetentionSchema, GovernedPayloadRetentionHistory>::for_binding(metadata_disclosure_for::<GovernedPayloadRetentionHistory>())
             .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
             .operation::<SetRetentionBinding>("Set retention"),
     )

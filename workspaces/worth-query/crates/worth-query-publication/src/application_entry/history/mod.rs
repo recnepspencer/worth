@@ -82,6 +82,10 @@ mod metadata;
 mod observation;
 mod page_pause;
 mod paging;
+mod payload;
+pub use payload::{
+    OrdinaryHistoryPayload, WorthQueryGovernedHistoryPayload, WorthQueryHistoryPayloadMode,
+};
 mod preview;
 pub use preview::{WorthQueryApplicationHistoryPreview, WorthQueryHistoryPreviewResult};
 mod read;
@@ -157,13 +161,18 @@ pub struct WorthQueryApplicationHistoryDocument<
     'runtime,
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
+    Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
 > {
     owner: WorthQueryDocumentHistory<'runtime, S, H>,
     access: H::Access,
+    payload: Payload,
 }
 
-impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> std::fmt::Debug
-    for WorthQueryApplicationHistoryDocument<'_, S, H>
+impl<
+        S: ApplicationSchema,
+        H: ApplicationHistoryBinding<S>,
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+    > std::fmt::Debug for WorthQueryApplicationHistoryDocument<'_, S, H, Payload>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("WorthQueryApplicationHistoryDocument")

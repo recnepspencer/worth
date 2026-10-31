@@ -1,8 +1,11 @@
 use super::*;
 use crate::domain_computation::{publish_application_result, WorthQueryPublishedApplicationResult};
 
-impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
-    WorthQueryApplicationHistoryDocument<'_, S, H>
+impl<
+        S: ApplicationSchema,
+        H: ApplicationHistoryBinding<S>,
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload>
 where
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
@@ -46,15 +49,25 @@ where
             scope: request.scope,
             branch: self.owner.branch(),
         };
-        current
-            .query(self.access.clone())
-            .with_admitted_query(phase, |runtime, binding, external, plan| {
-                let read = WorthQueryDocumentHistoryRead::new(&installed, binding, external, plan);
-                Ok(runtime
-                    .read_document_history(phase, &program_publication_access(), &self.owner, read)
-                    .map(|read| publish_application_result(read.into_admitted_disclosed()))
-                    .map_err(WorthQueryApplicationHistoryDenial::Document))
-            })
+        self.payload
+            .with_read(
+                current.query(self.access.clone()),
+                phase,
+                None,
+                |runtime, binding, external, plan| {
+                    let read =
+                        WorthQueryDocumentHistoryRead::new(&installed, binding, external, plan);
+                    Ok(runtime
+                        .read_document_history(
+                            phase,
+                            &program_publication_access(),
+                            &self.owner,
+                            read,
+                        )
+                        .map(|read| publish_application_result(read.into_admitted_disclosed()))
+                        .map_err(WorthQueryApplicationHistoryDenial::Document))
+                },
+            )
             .map_err(WorthQueryApplicationHistoryDenial::Query)?
     }
 }

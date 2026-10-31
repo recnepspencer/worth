@@ -38,14 +38,16 @@ pub struct WorthQueryHistoryEditFinish<
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
+    Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
 > where
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
-    pub document: WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+    pub document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
     pub outcome: Outcome<S, I, P, A>,
 }
 
-impl<'runtime, S, H, I, P, A> WorthQueryHistoryEdit<'runtime, S, H, I, P, A>
+impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>>
+    WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,
@@ -59,7 +61,7 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
-        WorthQueryHistoryEditFinish<'runtime, S, H, I, P, A>,
+        WorthQueryHistoryEditFinish<'runtime, S, H, I, P, A, Payload>,
         (Self, WorthQueryHistoryEditDenial),
     > {
         if !std::ptr::eq(self.document.owner.application(), request.application) {

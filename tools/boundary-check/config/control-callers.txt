@@ -492,5 +492,6 @@ crates/worth-testkit-relational/ crates/worth-court-relational-branch-reference-
 crates/worth-testkit-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/observation_contracts/mod.rs
 
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/preview/governed.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/payload.rs
 # Existing Bridge history control follows its public eviction court.
 crates/worth-runtime-bridge/ crates/worth-court-runtime-bridge/tests/worth_court_runtime_bridge/runtime_bridge/conditional_evaluations/history.rs

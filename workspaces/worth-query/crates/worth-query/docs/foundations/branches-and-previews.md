@@ -232,6 +232,29 @@ The [compiled edit-assessment cases](../../../worth-query-court-decl-host/tests/
 show ordinary action construction, model and membership refusals, fresh request
 authority, unchanged model values and disposal of both owners.
 
+### Use a governed payload READ
+
+When the declared model READ requires capability governance, attach with
+`request.attach_history_with_payload::<History, _, _, _>(&phase, head, access,
+capability, operation, input)`. Supply the original query's payload purpose.
+The returned document carries `WorthQueryGovernedHistoryPayload` as its final
+type parameter; retain that mode when moving the document through edits,
+builders, finish results and close refusals.
+
+The stored references and cloneable input describe a purpose. Every read admits
+that purpose again with the current request's principal and security context.
+This includes page and detail reads, opening a preview, reading through an
+existing preview, context refresh and internal edit reads. A retained preview
+supplies its original data and grants no current payload permission.
+
+Metadata still has its own contract and purpose. For example, a governed
+payload document with governed metadata uses `current_step_governed(..)` with
+the metadata capability while the stored payload recipe admits the payload
+query independently. Revoking either grant refuses the corresponding access.
+After a control write, restore lawful current authority and explicitly refresh
+the document context before retrying an old holder. See the
+[executable payload revocation journey](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/payload.rs).
+
 ### Read selected step metadata
 
 Declare metadata policy explicitly in `ApplicationHistoryDefinition::for_binding`.

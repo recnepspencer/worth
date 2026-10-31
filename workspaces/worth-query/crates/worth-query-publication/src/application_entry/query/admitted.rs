@@ -7,7 +7,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding
 
 mod governed;
 
-pub(super) type RequestPlan<'a, S, B> = WorthQueryAdmittedApplicationQueryPlan<
+pub(in crate::application_entry) type RequestPlan<'a, S, B> = WorthQueryAdmittedApplicationQueryPlan<
     'a, S, <B as ApplicationQueryBinding<S>>::Query,
     <<B as ApplicationQueryBinding<S>>::ParameterBinding as ApplicationStructuredValueBinding>::Value,
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value,

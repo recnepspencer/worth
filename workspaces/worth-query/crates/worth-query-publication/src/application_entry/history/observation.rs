@@ -1,8 +1,11 @@
 //! Forward only the actual document receiver's passive storage observation.
 use super::*;
 
-impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
-    WorthQueryApplicationHistoryDocument<'_, S, H>
+impl<
+        S: ApplicationSchema,
+        H: ApplicationHistoryBinding<S>,
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload>
 {
     #[doc(hidden)]
     pub fn observe_history_enrollment_for_test(

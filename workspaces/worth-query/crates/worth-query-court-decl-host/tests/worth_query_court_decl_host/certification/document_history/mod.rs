@@ -5,6 +5,7 @@ mod context;
 mod membership;
 mod metadata;
 mod paging;
+mod payload;
 mod preview;
 pub(crate) mod recording;
 

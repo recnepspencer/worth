@@ -12,6 +12,7 @@ pub(super) fn with_metadata_read<S, H, T>(
     phase: &WorthQueryAdvancementPhase<'_>,
     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     access: H::Access,
+    payload: &impl WorthQueryHistoryPayloadMode<S, H>,
     perform: impl for<'read> FnOnce(
         &WorthQueryPrimaryGraphApplicationRuntime<S>,
         &WorthQueryInstalledDocumentHistory<S, H>,
@@ -28,21 +29,28 @@ where
         .installed_schema()
         .installed_history::<H>()
         .map_err(WorthQueryApplicationHistoryDenial::Installation)?;
-    request
-        .query(access)
-        .with_admitted_query(phase, |runtime, binding, external, plan| {
-            Ok(perform(
-                runtime,
-                &installed,
-                WorthQueryDocumentHistoryRead::new(&installed, binding, external, plan),
-            )
-            .map_err(WorthQueryApplicationHistoryDenial::Document))
-        })
+    payload
+        .with_read(
+            request.query(access),
+            phase,
+            None,
+            |runtime, binding, external, plan| {
+                Ok(perform(
+                    runtime,
+                    &installed,
+                    WorthQueryDocumentHistoryRead::new(&installed, binding, external, plan),
+                )
+                .map_err(WorthQueryApplicationHistoryDenial::Document))
+            },
+        )
         .map_err(WorthQueryApplicationHistoryDenial::Query)?
 }
 
-impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
-    WorthQueryApplicationHistoryDocument<'_, S, H>
+impl<
+        S: ApplicationSchema,
+        H: ApplicationHistoryBinding<S>,
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload>
 where
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
@@ -101,6 +109,7 @@ where
                     &phase,
                     &current,
                     self.access.clone(),
+                    &self.payload,
                     |runtime, _, read| {
                         let read = prepare(&phase, runtime, read)?;
                         runtime.read_document_history_step(

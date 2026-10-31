@@ -11,7 +11,8 @@ use worth_query_execution::{
     },
 };
 
-impl<'runtime, S, H, I, P, A> WorthQueryHistoryEdit<'runtime, S, H, I, P, A>
+impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>>
+    WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,
@@ -74,6 +75,7 @@ where
                     &phase,
                     &current,
                     self.document.access.clone(),
+                    &self.document.payload,
                     |runtime, installed, read| {
                         let read = metadata(&phase, runtime, read)?;
                         self.document.owner.reserve_history_record::<I::Binding>(

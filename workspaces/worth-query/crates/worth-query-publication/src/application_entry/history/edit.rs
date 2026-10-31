@@ -187,10 +187,11 @@ pub struct WorthQueryHistoryEdit<
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
+    Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
 > where
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
-    pub(super) document: WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+    pub(super) document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
     pub(super) phase: Option<Phase<'runtime, S, I, P, A>>,
     handoff: Option<std::sync::Arc<handoff::AdoptionHandoff>>,
 }
@@ -202,12 +203,13 @@ impl<
         I: ApplicationMutationIntent<S>,
         P: ApplicationProgramDefinition<S>,
         A: ApplicationAction<S, I::Binding>,
-    > WorthQueryHistoryEdit<'runtime, S, H, I, P, A>
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+    > WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload>
 where
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
     pub(super) fn new(
-        document: WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
         operation: Operation<S, I, P, A>,
     ) -> Self {
         Self {
@@ -327,7 +329,8 @@ impl<
         I: ApplicationMutationIntent<S>,
         P: ApplicationProgramDefinition<S>,
         A: ApplicationAction<S, I::Binding>,
-    > std::fmt::Debug for WorthQueryHistoryEdit<'_, S, H, I, P, A>
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+    > std::fmt::Debug for WorthQueryHistoryEdit<'_, S, H, I, P, A, Payload>
 where
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {

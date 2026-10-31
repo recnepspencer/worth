@@ -201,6 +201,16 @@ pub(super) fn grant(
     status: &str,
     key: u64,
 ) {
+    grant_named(host, branch, "record-history-metadata-grant", status, key);
+}
+
+pub(super) fn grant_named(
+    host: &App,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    identity: &str,
+    status: &str,
+    key: u64,
+) {
     use worth_query_testkit_document_retention::facade::document_retention_model::workflow::{
         WorkflowGrantStatusInput, WorkflowGrantStatusIntent,
     };
@@ -214,7 +224,7 @@ pub(super) fn grant(
                 .advanced()
                 .mutate(WorkflowGrantStatusIntent {
                     input: WorkflowGrantStatusInput {
-                        grant_identity: "record-history-metadata-grant".to_owned(),
+                        grant_identity: identity.to_owned(),
                         status: status.to_owned(),
                     },
                 })

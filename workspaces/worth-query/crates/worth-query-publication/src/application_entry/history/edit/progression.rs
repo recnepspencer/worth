@@ -6,7 +6,8 @@ use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationScopeBinding, NoApplicationMutationSource},
 };
 
-impl<'runtime, S, H, I, P, A> WorthQueryHistoryEdit<'runtime, S, H, I, P, A>
+impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>>
+    WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,

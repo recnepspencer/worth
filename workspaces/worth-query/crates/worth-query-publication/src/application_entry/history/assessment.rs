@@ -15,8 +15,11 @@ use worth_query_declaration::facade::{
     application_program::{ApplicationAction, ApplicationProgramDefinition},
 };
 
-impl<S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>>
-    WorthQueryApplicationHistoryDocument<'_, S, H>
+impl<
+        S: ApplicationSchema + 'static,
+        H: ApplicationHistoryBinding<S>,
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload>
 where
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,

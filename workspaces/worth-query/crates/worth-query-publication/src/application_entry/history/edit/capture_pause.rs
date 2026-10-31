@@ -2,7 +2,8 @@
 use super::*;
 pub use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryCapturePauseForTest;
 
-impl<S, H, I, P, A> WorthQueryHistoryEdit<'_, S, H, I, P, A>
+impl<S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>>
+    WorthQueryHistoryEdit<'_, S, H, I, P, A, Payload>
 where
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,

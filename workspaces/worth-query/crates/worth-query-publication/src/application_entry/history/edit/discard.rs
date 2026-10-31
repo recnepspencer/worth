@@ -3,8 +3,13 @@ use super::*;
 use worth_query_declaration::facade::application_operation::NoApplicationMutationSource;
 use worth_query_execution::facade::product::WorthQueryOwnedProductHeadCloseFailure;
 
-pub(super) fn close_candidate<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
-    document: &WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+pub(super) fn close_candidate<
+    'runtime,
+    S: ApplicationSchema,
+    H: ApplicationHistoryBinding<S>,
+    Payload: WorthQueryHistoryPayloadMode<S, H>,
+>(
+    document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     candidate: DiscardedCandidate<'runtime, S>,
 ) -> Result<
@@ -57,7 +62,8 @@ pub(super) fn close_candidate<'runtime, S: ApplicationSchema, H: ApplicationHist
     }
 }
 
-impl<'runtime, S, H, I, P, A> WorthQueryHistoryEdit<'runtime, S, H, I, P, A>
+impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>>
+    WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,
@@ -73,7 +79,7 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
-        WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
         (Self, WorthQueryHistoryEditDenial),
     > {
         if !std::ptr::eq(self.document.owner.application(), request.application) {
@@ -189,7 +195,7 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         mut state: Forking<'runtime, S, I, P, A>,
     ) -> Result<
-        WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
         (Self, WorthQueryHistoryEditDenial),
     > {
         if let Some(recovery) = state.recovery.take() {

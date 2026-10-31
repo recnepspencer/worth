@@ -12,9 +12,10 @@ pub enum WorthQueryApplicationHistoryCloseFailure<
     'runtime,
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
+    Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
 > {
     Retained {
-        document: WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
         denial: WorthQueryApplicationProductBranchCloseDenial,
     },
     Retired {
@@ -24,17 +25,25 @@ pub enum WorthQueryApplicationHistoryCloseFailure<
     Closing(WorthQueryDocumentHistoryClosing<'runtime, S>),
 }
 
-impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
-    WorthQueryApplicationHistoryDocument<'runtime, S, H>
+impl<
+        'runtime,
+        S: ApplicationSchema,
+        H: ApplicationHistoryBinding<S>,
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+    > WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>
 {
     pub fn close(
         self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         WorthQueryDocumentHistoryCloseReceipt,
-        WorthQueryApplicationHistoryCloseFailure<'runtime, S, H>,
+        WorthQueryApplicationHistoryCloseFailure<'runtime, S, H, Payload>,
     > {
-        let Self { owner, access } = self;
+        let Self {
+            owner,
+            access,
+            payload,
+        } = self;
         match owner.close(phase) {
             Err(WorthQueryDocumentHistoryCloseFailure::Closing(closing)) => {
                 Err(WorthQueryApplicationHistoryCloseFailure::Closing(closing))
@@ -44,7 +53,11 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 document: owner,
                 denial,
             }) => Err(WorthQueryApplicationHistoryCloseFailure::Retained {
-                document: Self { owner, access },
+                document: Self {
+                    owner,
+                    access,
+                    payload,
+                },
                 denial,
             }),
             Err(WorthQueryDocumentHistoryCloseFailure::Retired { branch, failure }) => {
@@ -54,8 +67,11 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     }
 }
 
-impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> std::fmt::Debug
-    for WorthQueryApplicationHistoryCloseFailure<'_, S, H>
+impl<
+        S: ApplicationSchema,
+        H: ApplicationHistoryBinding<S>,
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+    > std::fmt::Debug for WorthQueryApplicationHistoryCloseFailure<'_, S, H, Payload>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

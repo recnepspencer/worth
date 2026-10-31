@@ -4,9 +4,8 @@ use super::*;
 use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationHistoryDenial as Failure, WorthQueryDocumentHistoryDenial as Native,
-    WorthQueryHistoryEditAdvance as Advance, WorthQueryHistoryPageCursor as Cursor,
-    WorthQueryHistoryPageDenial as PageFailure, WorthQueryHistoryPageLimits as Limits,
-    WorthQueryHistoryStep as Step,
+    WorthQueryHistoryEditAdvance as Advance, WorthQueryHistoryPageDenial as PageFailure,
+    WorthQueryHistoryPageLimits as Limits, WorthQueryHistoryStep as Step,
 };
 use worth_query_testkit_document_retention::facade::document_retention_model::record_history::capability;
 mod budget;
@@ -190,7 +189,35 @@ fn private_reservations_and_discarded_attempts_do_not_change_the_visible_view() 
         expected[1..]
     );
     assert!(page.continuation().is_none());
-    close(&host, document, 4);
+    // Publish after the cancelled ordinal: traversal must cross a real private gap.
+    let (document, later) = finish(
+        &host,
+        ready(
+            &host,
+            begin(&host, document, DOCUMENT_IDENTITY, 5, 0x9182_9021),
+        ),
+        5,
+    );
+    let mut reference = expected.clone();
+    reference.push(later);
+    for width in [1, 2, 4] {
+        let mut cursor = None;
+        let mut visible = Vec::new();
+        loop {
+            let next = document
+                .history_page(&request, limits(width), cursor.as_ref())
+                .unwrap();
+            assert!(next.rows().len() <= width);
+            assert!(next.examined_entries() <= width);
+            visible.extend(next.rows().iter().map(|row| row.step().clone()));
+            cursor = next.continuation();
+            if cursor.is_none() {
+                break;
+            }
+        }
+        assert_eq!(visible, reference);
+    }
+    close(&host, document, 5);
     // A retained page describes past retention; it did not secretly pin payloads.
     assert_eq!(
         page.rows()[0].retained_source_at_read(),

@@ -16,7 +16,12 @@ where
 {
     pub fn read(
         &self,
-        document: &WorthQueryApplicationHistoryDocument<'_, S, H>,
+        document: &WorthQueryApplicationHistoryDocument<
+            '_,
+            S,
+            H,
+            impl WorthQueryHistoryPayloadMode<S, H>,
+        >,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
         WorthQueryHistoryPreviewResult<Query<S, H>, Rows<S, H>>,
@@ -26,7 +31,12 @@ where
     }
     pub fn read_governed<C, O, I>(
         &self,
-        document: &WorthQueryApplicationHistoryDocument<'_, S, H>,
+        document: &WorthQueryApplicationHistoryDocument<
+            '_,
+            S,
+            H,
+            impl WorthQueryHistoryPayloadMode<S, H>,
+        >,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         capability: ApplicationCapabilityRef<S, C>,
         operation: ApplicationOperationRef<S, O, I>,
@@ -47,7 +57,12 @@ where
 
     fn read_with(
         &self,
-        document: &WorthQueryApplicationHistoryDocument<'_, S, H>,
+        document: &WorthQueryApplicationHistoryDocument<
+            '_,
+            S,
+            H,
+            impl WorthQueryHistoryPayloadMode<S, H>,
+        >,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         prepare: impl for<'read> FnOnce(
             &WorthQueryAdvancementPhase<'_>,
@@ -77,6 +92,7 @@ where
                     &phase,
                     &current,
                     document.access.clone(),
+                    &document.payload,
                     |runtime, _, read| {
                         let read = prepare(&phase, runtime, read)?;
                         runtime.prepare_document_history_preview_read(
@@ -92,9 +108,10 @@ where
                     .installed_schema()
                     .installed_history::<H>()
                     .map_err(WorthQueryApplicationHistoryDenial::Installation)?;
-                current
-                    .query(document.access.clone())
-                    .with_admitted_preview_query(
+                document
+                    .payload
+                    .with_read(
+                        current.query(document.access.clone()),
                         &phase,
                         Some(&admission),
                         |runtime, binding, external, plan| {

@@ -1,6 +1,6 @@
 # Milestone 9.18.2: Consumer History Trees And Snapshot Navigation
 
-**Status:** in progress; Phase 1 implemented and verified; Phases 2–7 remain open.
+**Status:** in progress; Phases 1–2 implemented and verified; Phases 3–7 remain open.
 **Public boundary:** process-local Decl/Host consumers.
 **Prerequisites:** qualified branch/correction owners from
 [9.18](./milestone-9.18.md) and retained-read, guarded adoption and history
@@ -115,6 +115,7 @@ historical navigation already exists.
 
 ## Phase 2: Read The Tree And Preview A Historical Step
 
+**Status:** implemented and verified.
 **Depends on:** completed Phase 1.
 **Outcome:** consumers can page history and query an old endpoint without
 changing the active model or executing historical commands.

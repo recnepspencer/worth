@@ -28,7 +28,8 @@ impl<
         I: ApplicationMutationIntent<S>,
         P: ApplicationProgramDefinition<S>,
         A: ApplicationAction<S, I::Binding>,
-    > WorthQueryHistoryEdit<'_, S, H, I, P, A>
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+    > WorthQueryHistoryEdit<'_, S, H, I, P, A, Payload>
 where
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {

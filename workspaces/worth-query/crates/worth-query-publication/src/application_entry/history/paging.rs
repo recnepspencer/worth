@@ -19,8 +19,11 @@ use worth_query_declaration::facade::{
 };
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
-    WorthQueryApplicationHistoryDocument<'_, S, H>
+impl<
+        S: ApplicationSchema,
+        H: ApplicationHistoryBinding<S>,
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload>
 where
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
@@ -81,6 +84,7 @@ where
                     &phase,
                     &current,
                     self.access.clone(),
+                    &self.payload,
                     |runtime, _, read| {
                         let read = prepare(&phase, runtime, read)?;
                         runtime.read_document_history_page(
