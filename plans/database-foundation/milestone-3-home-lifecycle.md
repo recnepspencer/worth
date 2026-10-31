@@ -86,6 +86,7 @@ worth-store-relational/src/
   cold_source/member_custody.rs    [revise: original guard/cursor]
   cold_source/member_custody/retirement.rs [create: actual registry effects]
   cold_source/member_custody/retirement_tests.rs [create: private proof]
+  cold_source/member_custody/retirement_tests/directory.rs [create: genuine FS fixture]
 ```
 
 Store's private `new(serving) -> Arc<Self>` uses `Arc::new_cyclic` and retains
@@ -107,7 +108,15 @@ in `worth-store-relational/src/cold_source/member_custody/retirement_tests.rs`:
 These tests alone may construct genuine foreign Native/Store runtimes because
 the original guard, registry lock, cursor and detached Serving field cannot be
 observed through the public court without an extraction door. This grants no
-family exemption and no new public test access. Use the existing
+family exemption and no new public test access. Their private `directory.rs`
+child may hold only their shared concrete filesystem producer/recovery fixture
+and cold-read/generation oracle; this exact helper is included in the same
+construction exception, introduces no additional tests, and is used only by
+the three named tests. Keep its Native builder/schema/ordinary commits,
+StoreJournalMedium, production external-member capture/preparation, anchored
+publication/read and recovery calls explicit in the review inventory. Split
+this fixture to obey the ordinary 400-line cap; do not add a test family.
+Use the existing
 `cold_source::test_store::initialize`: its `physical_record_journeys::media`
 qualifies actual filesystem media. Produce Native schema and ordinary
 transactions, production section capture/encoding, actual anchored publication
