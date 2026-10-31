@@ -87,3 +87,19 @@ impl PhysicalStoreCloseFailure {
         (cause, actual, observation)
     }
 }
+
+// Generic only over transported evidence: tests exercise the production
+// classifier without constructing a runtime or fabricating a Store outcome.
+pub(super) fn classify_delivery<Actual>(
+    joined: std::thread::Result<()>,
+    actual: Option<Actual>,
+) -> Result<Actual, (PhysicalStoreCloseFailureCause, Option<Actual>)> {
+    match (joined, actual) {
+        (Ok(()), Some(actual)) => Ok(actual),
+        (Ok(()), None) => Err((PhysicalStoreCloseFailureCause::OutcomeUnavailable, None)),
+        (Err(_), actual) => Err((PhysicalStoreCloseFailureCause::WorkerPanicked, actual)),
+    }
+}
+
+#[cfg(test)]
+mod tests;

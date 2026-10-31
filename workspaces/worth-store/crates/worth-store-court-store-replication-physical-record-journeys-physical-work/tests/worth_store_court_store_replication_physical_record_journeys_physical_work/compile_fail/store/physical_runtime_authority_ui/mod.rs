@@ -1,5 +1,6 @@
 #[allow(unused_imports)]
 use crate::physical_runtime_authority_ui::*;
+mod close_task;
 #[test]
 fn external_consumers_cannot_forge_or_duplicate_runtime_authority() {
     crate::bounded_physical_record_access_examples::run_configuration_examples();

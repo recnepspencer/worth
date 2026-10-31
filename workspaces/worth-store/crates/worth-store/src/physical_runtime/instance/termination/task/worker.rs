@@ -2,8 +2,11 @@ use super::{
     PhysicalStoreCloseObservation, PhysicalStoreCloseOutcome, PhysicalStoreCloseStartRefused,
 };
 use crate::physical_runtime::ServingPhysicalRuntime;
-use std::sync::{mpsc, Arc, Mutex, OnceLock};
+use std::sync::{mpsc, Arc, OnceLock};
 use std::thread::JoinHandle;
+
+mod startup;
+use startup::UnacceptedCloseOwner;
 
 pub(super) enum PlanObserver {
     None,
@@ -23,16 +26,12 @@ pub(super) fn spawn_close_worker(
 ) -> Result<JoinHandle<()>, PhysicalStoreCloseStartRefused> {
     // Failed spawn destroys its closure. Keep the actual serving owner outside
     // that closure until acceptance so refusal cannot drop it in the caller.
-    let packet = Arc::new(Mutex::new(Some(serving)));
-    let worker_packet = Arc::clone(&packet);
+    let packet = UnacceptedCloseOwner::retain(serving);
+    let worker_packet = packet.worker_packet();
     let spawned = std::thread::Builder::new()
         .name("worth-store-close".into())
         .spawn(move || {
-            let serving = worker_packet
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .take()
-                .expect("one accepted worker takes the actual Store");
+            let serving = worker_packet.take();
             // Includes the existing blocking scrub Drop before plan construction.
             let plan = serving.close_plan();
             let _installed = observation.set(plan.observation());
@@ -49,11 +48,7 @@ pub(super) fn spawn_close_worker(
     match spawned {
         Ok(worker) => Ok(worker),
         Err(error) => {
-            let serving = packet
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .take()
-                .expect("refused spawn never ran the owner-taking closure");
+            let serving = packet.take();
             Err(PhysicalStoreCloseStartRefused::new(serving, error))
         }
     }

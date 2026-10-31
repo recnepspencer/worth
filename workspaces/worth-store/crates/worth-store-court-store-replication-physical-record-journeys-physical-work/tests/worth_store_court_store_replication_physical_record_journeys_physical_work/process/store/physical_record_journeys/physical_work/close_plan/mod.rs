@@ -1,5 +1,7 @@
 use tempfile::tempdir;
 
+mod task;
+
 use {
     crate::physical_record_journeys::physical_work::readiness::success,
     worth_store_testkit_store::physical_record_journeys::physical_work::executor::admitted_write,
