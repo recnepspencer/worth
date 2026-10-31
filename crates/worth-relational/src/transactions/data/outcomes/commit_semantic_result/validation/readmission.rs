@@ -23,8 +23,9 @@ impl RelationalInvariantExecutionMeaning {
                     && check.custom_provenance.is_some() == decision.custom_provenance_present
                     && decision.decision == InvariantDecisionKind::from_verdict(&check.verdict)
                     && check.custom_provenance.as_ref().is_none_or(|custom| {
+                        // Custom enforcement can name the proposed version while
+                        // aggregate metadata retains the original request version.
                         custom.observation_kind == self.metadata.observation_kind
-                            && custom.version == self.metadata.version
                             && custom.current_version == self.metadata.current_version
                     })
             })
