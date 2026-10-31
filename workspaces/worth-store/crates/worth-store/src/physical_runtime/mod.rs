@@ -165,8 +165,10 @@ pub use instance::{
     PhysicalSignalClockObservationFailure, PhysicalSignalConstructionFailure,
     PhysicalSignalDeltaApplicationFailure, PhysicalSignalObservation,
     PhysicalSignalRuntimeIdentity, PhysicalSignalShutdownOutcome, PhysicalStoreAbortOutcome,
-    PhysicalStoreCloseObservation, PhysicalStoreCloseOutcome, PhysicalStoreClosePhase,
-    PhysicalStoreClosePlan, PhysicalWorkExecution, RecordSchedulerReservationDenial,
+    PhysicalStoreCloseFailure, PhysicalStoreCloseFailureCause, PhysicalStoreCloseObservation,
+    PhysicalStoreCloseOutcome, PhysicalStoreClosePhase, PhysicalStoreClosePlan,
+    PhysicalStoreCloseStartRefused, PhysicalStoreCloseTask, PhysicalStoreCloseTaskPoll,
+    PhysicalStoreCloseTaskReadiness, PhysicalWorkExecution, RecordSchedulerReservationDenial,
 };
 pub use integrity::{
     DamagedPhysicalAuthorityObservation, DamagedPhysicalDerivedDisposition,
