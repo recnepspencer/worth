@@ -88,7 +88,26 @@ fn external_consumers_cannot_forge_or_duplicate_runtime_authority() {
     ).expect("prebuilt semantic compiler denial");
 
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/frame_view_cannot_outlive_lease.rs")).expect("prebuilt compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/lower_clean_authority_is_required.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/lower_clean_authority_is_required.rs"),
+        "E0061",
+        &["FrameWritebackCleanAuthority", "argument #1 of type `&FrameWritebackCleanAuthority` is missing"],
+    ).expect("prebuilt semantic compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/lower_clean_authority_is_required.rs"),
+        "E0061",
+        &["CandidateFrameCleanAuthority", "argument #1 of type `&CandidateFrameCleanAuthority` is missing"],
+    ).expect("prebuilt semantic compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/lower_clean_authority_is_required.rs"),
+        "E0308",
+        &["FrameWritebackCleanAuthority", "CandidateFrameCleanAuthority", "expected `&FrameWritebackCleanAuthority`, found `&CandidateFrameCleanAuthority`"],
+    ).expect("prebuilt semantic compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/lower_clean_authority_is_required.rs"),
+        "E0308",
+        &["FrameWritebackCleanAuthority", "CandidateFrameCleanAuthority", "expected `&CandidateFrameCleanAuthority`, found `&FrameWritebackCleanAuthority`"],
+    ).expect("prebuilt semantic compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_receipt_construction_is_sealed.rs")).expect("prebuilt compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_work_identity_is_sealed.rs")).expect("prebuilt compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_work_progression_is_sealed.rs")).expect("prebuilt compiler denial");
@@ -229,7 +248,16 @@ fn blob_ingest_keeps_store_allocation_and_runtime_authority_bound() {
 
 #[test]
 fn blob_relocation_requires_store_selected_hold() {
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/stable_read_receipt_cannot_relocate_blob.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/stable_read_receipt_cannot_relocate_blob.rs"),
+        "E0308",
+        &["BlobMovementReadHold", "StablePhysicalReadReceipt", "because of return type"],
+    ).expect("prebuilt semantic compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/stable_read_receipt_cannot_relocate_blob.rs"),
+        "E0308",
+        &["BlobMovementReadHold", "StablePhysicalReadReceipt", "arguments to this method are incorrect"],
+    ).expect("prebuilt semantic compiler denial");
 }
 
 #[test]

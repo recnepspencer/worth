@@ -298,7 +298,9 @@
             "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/terminal_head_retirement_authority_is_sealed.rs",
             "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/ordinary_mutation_phase_driving_is_absent.rs",
             "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/noncompleted_mutation_cannot_acknowledge.rs",
-            "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/mutation_evidence_cannot_reenter_authority.rs"
+            "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/mutation_evidence_cannot_reenter_authority.rs",
+            "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/lower_clean_authority_is_required.rs",
+            "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/stable_read_receipt_cannot_relocate_blob.rs"
           ]
         }
       ]
