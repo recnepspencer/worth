@@ -840,3 +840,20 @@ and every actual Field coordinate, including authored no-ops. Strict original
 revision verification and canonical performed cancellation remain required;
 matching values alone do not authorize restoration. Unsupported shapes and
 unavailable canonical evidence retain typed refusals under the original request.
+
+### Retain an accepted physical Store close
+
+The Store physical owner can start `PhysicalStoreCloseTask::start(serving)`.
+The one owned termination worker consumes the actual serving runtime and runs
+the existing close plan. Spawn refusal returns that runtime unstarted.
+`poll(self)` returns the same pending task, an actual close outcome, or owning
+inspect/reopen-only failure evidence. Borrowed readiness/progress is descriptive.
+Consult the original execution request before start and only after a pending
+poll; an observed terminal result wins over a late stop. Keep a pending task in
+recovery custody rather than claiming the Home remains serving.
+
+Dropping observation does not cancel accepted close. The worker retains its
+owners through normal close, including blocking drains and media release.
+Spawn, allocation and a finished-worker join have no hard deadline bound. Panic
+or lost outcome never proves drainage, lease fate or successful close; retain
+any actual outcome and progress for inspection and normal recovery.

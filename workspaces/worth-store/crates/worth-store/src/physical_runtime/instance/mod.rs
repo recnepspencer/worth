@@ -44,8 +44,10 @@ pub use signal_owner::{
 pub use termination::CertificationPhysicalClosePauseGate;
 pub(in crate::physical_runtime) use termination::PhysicalStoreCloseProgressOwner;
 pub use termination::{
-    PhysicalStoreAbortOutcome, PhysicalStoreCloseObservation, PhysicalStoreCloseOutcome,
-    PhysicalStoreClosePhase, PhysicalStoreClosePlan,
+    PhysicalStoreAbortOutcome, PhysicalStoreCloseFailure, PhysicalStoreCloseFailureCause,
+    PhysicalStoreCloseObservation, PhysicalStoreCloseOutcome, PhysicalStoreClosePhase,
+    PhysicalStoreClosePlan, PhysicalStoreCloseStartRefused, PhysicalStoreCloseTask,
+    PhysicalStoreCloseTaskPoll, PhysicalStoreCloseTaskReadiness,
 };
 pub(in crate::physical_runtime) use work_lifecycle::PhysicalWorkLifecycle;
 pub(in crate::physical_runtime) use work_runtime::PhysicalExecutionCall;

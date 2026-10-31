@@ -1,4 +1,5 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/process/store/physical_record_journeys/physical_work/close_plan/task.rs
 # Relocated correction fixtures observe only the original scoped runtime controls.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/output_equivalence/history.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/output_equivalence/retry.rs
