@@ -1865,6 +1865,15 @@ refusal returns either the live head (`Retained`) or its actual retired cleanup
 obligation (`Retired`). See
 [own an application branch head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#own-an-application-branch-head).
 
+To bind that head to one model, declare `ApplicationHistoryBinding` with the
+model's ordinary READ intent and register an `ApplicationHistoryDefinition` in
+its contribution. On the head's branch call
+`request.attach_history::<Binding>(&phase, head, model_read)`. The returned
+document owns the slot; `document.read(&request)` freshly admits the original
+model READ. An externally changed head or recreated model refuses. Close with
+`document.close(&phase)` and retain any live-document or retired-cleanup failure.
+See [attach a model and read its owned head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#attach-a-model-and-read-its-owned-head).
+
 To store the selected basis as application data, serialize
 `selected.describe_basis()` before releasing the selection. After loading that
 record through an ordinary READ request, deserialize it as

@@ -35,7 +35,13 @@ mod denial;
 mod elevation_approval;
 mod elevation_close;
 mod elevation_request;
+mod history;
 mod inbound_occurrence;
+pub use history::{
+    WorthQueryApplicationHistoryAttachmentFailure, WorthQueryApplicationHistoryCloseFailure,
+    WorthQueryApplicationHistoryDenial, WorthQueryApplicationHistoryDocument,
+    WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryInstallationDenialKind,
+};
 mod live;
 mod mandatory_review;
 mod mutation;

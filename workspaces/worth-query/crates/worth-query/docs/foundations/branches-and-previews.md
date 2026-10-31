@@ -134,6 +134,63 @@ The [compiled head-owner cases](../../../worth-query-court-decl-host/tests/worth
 show adoption, independent heads, wrong-source refusal, foreign-phase close
 refusal and cleanup after releasing a held reader.
 
+### Attach a model and read its owned head
+
+Declare a history binding beside the model's existing ordinary READ and
+mutation bindings. The READ binding's scope identifies the model type; the
+definition names participating operations and their labels.
+
+```rust,ignore
+pub struct RetentionHistory;
+worth_query_portable_type!(RetentionHistory => "example.retention-history.v1");
+impl ApplicationHistoryBinding<DocumentRetentionSchema> for RetentionHistory {
+    type Access = DocumentRetentionRead;
+    const IDENTITY: &'static str = "DocumentRetentionHistory";
+}
+let schema = schema.application_history(
+    ApplicationHistoryDefinition::<DocumentRetentionSchema, RetentionHistory>::for_binding()
+        .operation::<SetRetentionBinding>("Set retention"),
+);
+```
+
+Import history declaration types from `worth_query_decl::facade::application_history`.
+Register the definition inside the same application contribution as its READ
+and mutation bindings. Installation checks their actual typed contracts and
+model scope. Matching identity text alone cannot substitute another binding.
+
+Transfer a genuine owned head through the ordinary request on that branch:
+
+```rust,ignore
+let head = initial_candidate.into_owned_head();
+let document = host.with_host_advancement(|phase| {
+    runtime.request(&principal, &scope).on_branch(head.branch())
+        .attach_history::<RetentionHistory>(
+            &phase, head, DocumentRetentionRead { identity: document_identity },
+        )
+})??;
+let result = document.read(&runtime.request(&principal, &scope))?;
+host.with_host_advancement(|phase| document.close(&phase))??;
+```
+
+Attachment completes the declared READ and binds the actual model record,
+including its generation, to the exact current head. A refusal returns the
+original head through `failure.into_parts()`. The document is move-only.
+
+`document.read` uses its own head and original model selector. The request
+supplies fresh principal and execution scope; it cannot retarget the document.
+Each call runs current ordinary READ admission. A foreign runtime, recreated
+model or externally changed head refuses; equal field values do not repair a
+changed head. No rows are issued on a divergence refusal.
+
+Close under a phase from the owning host. `Retained { document, denial }` keeps
+the live document after a refusal before retirement. `Retired { branch,
+failure }` carries actual cleanup after retirement; retain and retry
+`failure.into_cleanup()`. A held reader can delay that cleanup.
+
+The [compiled declaration](../../../worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs)
+and [compiled attachment cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/attachment.rs)
+show two model heads, current reads, equal-value divergence and explicit close.
+
 ### Store an expected basis and select it again
 
 Keep records on a separately owned storage branch when saving them must leave

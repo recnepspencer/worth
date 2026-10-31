@@ -20,7 +20,7 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationQueryIntent<Schema>,
 {
-    pub(super) fn with_admitted_query<T>(
+    pub(in crate::application_entry) fn with_admitted_query<T>(
         self,
         phase: &AdvancementPhase<'_>,
         perform: impl FnOnce(

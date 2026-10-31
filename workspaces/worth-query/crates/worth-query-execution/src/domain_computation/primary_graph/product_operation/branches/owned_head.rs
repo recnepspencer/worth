@@ -42,6 +42,12 @@ pub struct WorthQueryOwnedProductHead<'runtime, Schema> {
 }
 
 impl<'runtime, Schema> WorthQueryOwnedProductHead<'runtime, Schema> {
+    pub(in crate::domain_computation::primary_graph) fn application(
+        &self,
+    ) -> &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.application
+    }
+
     pub(super) fn from_created_branch(
         application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         branch: WorthQueryProductBranch,

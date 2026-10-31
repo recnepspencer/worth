@@ -69,6 +69,9 @@ pub enum ApplicationOperationDecisionReadTarget {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationSchemaMember {
+    ApplicationHistory {
+        definition: crate::application_history::ErasedApplicationHistoryDefinition,
+    },
     ManagedIndex {
         definition: crate::application_query::ErasedApplicationManagedIndexDefinition,
     },

@@ -62,6 +62,8 @@ pub struct WorthQueryInstalledApplicationSchema<Schema> {
     installation_canonical_work: WorthQueryCanonicalWorkEvidence,
     pub(crate) query_catalog: WorthQueryInstalledApplicationQueryCatalog,
     pub(crate) mutation_catalog: WorthQueryInstalledApplicationMutationCatalog,
+    pub(crate) document_history_catalog:
+        crate::application_history::WorthQueryInstalledApplicationHistoryCatalog,
     pub(crate) resource_catalog:
         crate::application_resource::WorthQueryInstalledApplicationResourceCatalog,
     invariant_catalog: WorthQueryInstalledApplicationInvariantCatalog,

@@ -29,6 +29,14 @@ pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
     WorthQueryProgramPublicationAccess { _private: () }
 }
 
+pub mod document_history {
+    pub use crate::domain_computation::primary_graph::application_query::WorthQueryDocumentHistoryRead;
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryDocumentHistory, WorthQueryDocumentHistoryAttachmentFailure,
+        WorthQueryDocumentHistoryCloseFailure, WorthQueryDocumentHistoryDenial,
+    };
+}
+
 pub mod recorded_correction {
     pub use crate::domain_computation::primary_graph::{
         WorthQueryCorrectionActionInputSelection, WorthQueryCorrectionAlternativeRef,
