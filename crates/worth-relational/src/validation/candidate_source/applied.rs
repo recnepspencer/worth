@@ -27,22 +27,8 @@ impl AppliedMutationDraft {
         selected: SelectedRelationalBranchRead<'_>,
         proposal: &crate::mvcc::RelationalMutationProposalIdentity,
     ) -> Result<(), TransactionCommitError> {
-        prepare(self, execution, runtime, selected, proposal).map_err(|cause| {
-            if let Some(cause) = cause.execution_cause() {
-                return TransactionCommitError::execution(
-                    crate::transactions::data::CommitExecutionDenial {
-                        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
-                        partition_identity: None,
-                    },
-                );
-            }
-            TransactionCommitError::preparation(
-                crate::transactions::data::CommitPreparationError::managed_index_source(
-                    self.source_interpretation.physical_basis(),
-                    cause,
-                ),
-            )
-        })
+        prepare(self, execution, runtime, selected, proposal)
+            .map_err(|cause| cause.into_commit_error(self.source_interpretation.physical_basis()))
     }
 }
 
@@ -214,6 +200,7 @@ fn prepare(
                 &work,
             );
             let source = ManagedIndexSourcePreparation {
+                interpretation: &draft.source_interpretation,
                 correspondence: correspondence.as_ref(),
                 program,
                 closure: &closure,

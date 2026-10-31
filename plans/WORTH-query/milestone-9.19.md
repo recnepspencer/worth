@@ -1609,6 +1609,21 @@ adapter rewrite or CAD cutover is required here.
 
 ### Phase 3: Complete Membership, Exact Refinement And Disclosure
 
+The [supported maintained Parent watch slice](milestone-9.19-phase3-predicate-watch-plan.md)
+now supplies inverse routing for complete Public prefix and closed-box Parents.
+The framework owns the live predicate tree, Source/World/scope axes, same-image
+opening and bounded notification/ACK custody. Actual Native preparations retain
+private per-round metadata until the matching performed World transition;
+no-effect preparations retire without delivery. Each fresh next request reads
+the full Parent, retaining separate notification B and current read/receipt C.
+Projected root refinements conservatively route by provider candidate membership.
+Real public courts cover empty entrants, deletion/recreation, unchanged-candidate
+refinement, locality, read/registration interference, pending/adoption, sibling
+isolation, original cancellation and exact B/C ACK separation. This is a supported
+profile slice: tracked domain exact refinement, protected/continuation qualification
+and the remaining Phase 3 requirements below are still unfinished. It issues no
+narrowed footprint authority and does not close Phases 3-6.
+
 The first slice now binds a versioned BinarySourceTree profile and admits the
 exact Source occurrence universe at cold construction and maintained edits.
 Its [boundary, implementation and evidence](milestone-9.19-phase3-source-structure-plan.md)

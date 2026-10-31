@@ -17,6 +17,7 @@ mod retirement;
 mod source_structure;
 mod summary_support;
 mod text_read;
+mod watch;
 
 fn find(scope: &str, prefix: &str) -> query::FindPrefix {
     query::FindPrefix {

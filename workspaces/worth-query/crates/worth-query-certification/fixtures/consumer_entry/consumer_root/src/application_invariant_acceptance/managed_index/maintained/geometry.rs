@@ -55,9 +55,9 @@ pub(super) fn configure(
     configuration: Configuration,
     setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    setup.managed_index::<provider::BoxIndex, _>(provider::Provider(Arc::clone(
-        &configuration.provider,
-    )))?;
+    setup.managed_index_with_predicate_routing::<provider::BoxIndex, _>(provider::Provider(
+        Arc::clone(&configuration.provider),
+    ))?;
     setup.handler::<authoring::Binding, _>(authoring::Handler(configuration.provider))?;
     setup.handler::<refresh::Binding, _>(refresh::Handler)?;
     setup.invariant(

@@ -26,6 +26,11 @@ pub enum Edit {
         directory: String,
         item: String,
     },
+    SetEnabled {
+        directory: String,
+        item: String,
+        enabled: bool,
+    },
     Share {
         directory: String,
         item: String,
@@ -51,7 +56,7 @@ worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "mai
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "maintained-catalog.authoring.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-catalog.authoring.denial.v1" });
 worth_query_operation!(pub AuthorCatalog for Catalog, input InputBinding);
-worth_query_operation_reads!(AuthorCatalog => [Directory, DirectoryIdentity, Item, ItemIdentity, Contains]);
+worth_query_operation_reads!(AuthorCatalog => [Directory, DirectoryIdentity, Item, ItemIdentity, ItemEnabled, Contains]);
 worth_query_operation_creates!(AuthorCatalog => [Directory, Item]);
 worth_query_operation_links!(AuthorCatalog => [Contains]);
 worth_query_operation_deletes!(AuthorCatalog => [Item]);
@@ -85,6 +90,7 @@ pub(super) fn declare(
         .operation_read_field(op, DirectoryIdentity::reference())
         .operation_read_entity(op, Item::reference())
         .operation_read_field(op, ItemIdentity::reference())
+        .operation_read_field(op, ItemEnabled::reference())
         .operation_read_relation(op, Contains::reference())
         .operation_create(op, Directory::reference())
         .operation_create(op, Item::reference())

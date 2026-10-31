@@ -3,6 +3,7 @@ use crate::{BoundsDenial, Box2};
 mod edit;
 mod order;
 pub use edit::{insert_box_source, remove_box_source, replace_box_source, BoxEditStorage};
+pub use order::compare_box_bounds;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BoxIndexDenial {

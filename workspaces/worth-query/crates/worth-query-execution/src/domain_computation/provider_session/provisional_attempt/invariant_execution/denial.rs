@@ -32,6 +32,8 @@ pub enum WorthQueryCustomInvariantDenial {
 /// amount the attempt needed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantExecutionDenialKind {
+    /// The existing Live occurrence cannot fence this candidate preparation.
+    ManagedPredicatePreparationUnavailable,
     /// Validation was refused by the execution owner before effects.
     ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// Validation was stopped by cancellation or its deadline.

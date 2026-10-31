@@ -18,8 +18,12 @@ use worth_relational::facade::runtime::ManagedIndexSourceProgram;
 pub(in crate::domain_computation::primary_graph) struct ManagedSourceInstallation {
     sources: HashMap<ManagedIndexSourceProgram, Arc<dyn SourceService>>,
     public_cache_owner: bool,
+    predicate_routing: bool,
 }
 impl ManagedSourceInstallation {
+    pub(in crate::domain_computation::primary_graph) fn has_predicate_routing(&self) -> bool {
+        self.predicate_routing
+    }
     pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
         self.sources.is_empty() && !self.public_cache_owner
     }
@@ -59,6 +63,7 @@ impl ManagedSourceInstallation {
                 Self {
                     sources: HashMap::new(),
                     public_cache_owner: !providers.is_empty(),
+                    predicate_routing: false,
                 },
                 None,
             ));
@@ -66,21 +71,37 @@ impl ManagedSourceInstallation {
         let (issuer, authority) =
             super::initialization::SourceInitializationIssuer::install(execution)
                 .map_err(super::initialization::initialization_execution_denial)?;
+        let sources = required
+            .into_iter()
+            .map(|(program, (provider, cold))| {
+                Ok((
+                    program.clone(),
+                    provider.bind(execution, program, cold, authority.clone())?,
+                ))
+            })
+            .collect::<Result<
+                HashMap<_, _>,
+                worth_relational::facade::transactions::RelationalExecutionDenialCause,
+            >>()
+            .map_err(super::initialization::initialization_execution_denial)?;
+        let predicate_routing = sources
+            .values()
+            .any(|service| service.predicate_axis().is_some());
         Ok((
             Self {
                 public_cache_owner: !providers.is_empty(),
-                sources: required
-                    .into_iter()
-                    .map(|(program, (provider, cold))| {
-                        (
-                            program.clone(),
-                            provider.bind(program, cold, authority.clone()),
-                        )
-                    })
-                    .collect(),
+                sources,
+                predicate_routing,
             },
             Some(issuer),
         ))
+    }
+    pub(in crate::domain_computation::primary_graph) fn dispose_predicates(&self) {
+        for service in self.sources.values() {
+            if let Some(axis) = service.predicate_axis() {
+                axis.dispose();
+            }
+        }
     }
     pub(in crate::domain_computation::primary_graph) fn service(
         &self,

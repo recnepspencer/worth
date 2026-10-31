@@ -5725,9 +5725,34 @@ proposed invariant reads require complete evidence in their own read posture.
 An interrupted or incomplete cut refuses. Physical traversal shape does not
 change semantic Source equality after an index rebuild.
 
-Tracked exact refinement, retained predicate routing, same-image registration and
-protected continuation qualification remain unfinished Phase 3 work. No verified
-narrowed footprint is issued by either complete traversal strategy.
+To retain a whole-Parent watch on a complete Native-maintained Source, implement
+`WorthQueryManagedIndexPredicateProvider` on the same installed provider and
+configure it with `setup.managed_index_with_predicate_routing::<Index, _>(provider)`.
+Declare Live eligibility on the Public managed Parent. Calling
+`request.query(input).watch_index::<Index>()` returns its complete initial result
+and a `WorthQueryManagedIndexWatch`. The opening subscribes before reading and
+registers against that exact World image; a concurrent preparation or publication
+can refuse the opening. Retry with a fresh request.
+
+Call `fresh_request.query(original_input).next_watch(&mut watch)` for each refresh.
+Every call independently admits the Parent, principal, purpose, full parameters,
+result limit and World occurrence before inspecting watch metadata. `Delivered`
+contains a whole current Parent read and its receipt, plus the actual notification
+publication. A notification at B can be served by current read C; only B is
+acknowledged, so later notifications remain queued. `Pending`, `Overflow`,
+`Unavailable` and `Closed` are distinct. Overflow or unavailable coverage requires
+a fresh opening. `watch.close()` or dropping the watch releases its exact posting
+and queue custody. Retaining an old result never makes it current.
+
+Query owns the inverse tree and active watch IDs. The provider supplies pure probe
+ordering, fixed summary algebra and region matching; it owns no subscriptions.
+Prefix and closed-box providers use this same path. Supported profiles require the
+complete canonical Source projection. Projected root refinements may conservatively
+wake every matching provider candidate; delivery applies the full Parent again.
+Untracked inputs, candidate-only membership, public-cache-only Sources, protected
+Parents and continuations refuse this first watch entrance. Tracked exact refinement
+and protected continuation qualification remain unfinished Phase 3 work. No verified
+narrowed footprint is issued by these traversal or watch strategies.
 
 Indexed results retain complete positive, empty and ordering dependencies from
 the original Source, including nonmatching rows. The ordinary `expect_source`

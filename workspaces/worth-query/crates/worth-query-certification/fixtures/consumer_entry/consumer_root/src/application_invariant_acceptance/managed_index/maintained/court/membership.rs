@@ -10,6 +10,26 @@ fn journey() {
     let provider = Arc::new(prefix::Calls::default());
     let rules = Arc::new(rule::Calls::new(Arc::clone(&provider)));
     let world = host::install(Arc::clone(&provider), Arc::clone(&rules));
+    // Eligibility is compiled from these actual catalog entries. The prefix
+    // and box Parents use different ordering from Source; their output routes
+    // still carry every membership-preserving projection/order influence.
+    let schema = world.installed_schema();
+    let prefix = schema
+        .installed_query_binding::<query::PrefixBinding>()
+        .unwrap();
+    let prefix = schema
+        .installed_managed_index_parent(&prefix, &mut |_, _| Ok::<_, ()>(()))
+        .unwrap()
+        .unwrap();
+    assert_eq!(prefix.access_contract().meaning().predicate_profile(), Ok(worth_query_host::facade::domain::WorthQueryManagedIndexPredicateProfile::ConservativeProjectedRefinement));
+    let boxes = schema
+        .installed_query_binding::<super::super::geometry::query::BoxBinding>()
+        .unwrap();
+    let boxes = schema
+        .installed_managed_index_parent(&boxes, &mut |_, _| Ok::<_, ()>(()))
+        .unwrap()
+        .unwrap();
+    assert_eq!(boxes.access_contract().meaning().predicate_profile(), Ok(worth_query_host::facade::domain::WorthQueryManagedIndexPredicateProfile::DirectSourceProjection));
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
         authentication::admit(world.installed_schema()).authenticate(

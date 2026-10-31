@@ -78,7 +78,7 @@ pub(super) fn ordered_denial(
             MaterialDenial::Storage(RelationalExecutionDenialCause::ChargedBytesOverflow)
         }
         ExecutionOrderedMapDenial::Allocation(cause) => {
-            MaterialDenial::Native(super::super::service::retain_failure(execution, cause))
+            MaterialDenial::Native(super::super::failure::retain_failure(execution, cause))
         }
     }
 }

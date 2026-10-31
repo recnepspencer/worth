@@ -51,7 +51,9 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
         geometry::configure(configuration.geometry, setup)?;
         generated::configure(setup)?;
         geometry::generated::configure(setup)?;
-        setup.managed_index::<prefix::PrefixIndex, _>(prefix::Provider(configuration.prefix))?;
+        setup.managed_index_with_predicate_routing::<prefix::PrefixIndex, _>(prefix::Provider(
+            configuration.prefix,
+        ))?;
         setup.handler::<mutation::Binding, _>(Handler(configuration.decision_read))?;
         setup.handler::<authoring::Binding, _>(authoring::Handler)?;
         setup.invariant(
@@ -112,6 +114,20 @@ impl ApplicationProgramDefinition<Catalog> for Program {
 pub(super) type Host = WorthQueryProgramApplicationRuntime<Catalog, Program>;
 pub(super) fn install(prefix: Arc<prefix::Calls>, rules: Arc<rule::Calls>) -> Host {
     install_decision_read(prefix, rules, DecisionRead::Declared)
+}
+#[cfg(test)]
+pub(super) fn install_watch(prefix: Arc<prefix::Calls>, rules: Arc<rule::Calls>) -> Host {
+    let resources = super::super::super::resources::application_limits_with_observations(
+        super::super::super::resources::EXECUTION_POLICY,
+        320,
+    );
+    install_configured_with_limits(
+        prefix,
+        rules,
+        DecisionRead::Declared,
+        geometry::Configuration::default(),
+        resources,
+    )
 }
 pub(super) fn install_decision_read(
     prefix: Arc<prefix::Calls>,

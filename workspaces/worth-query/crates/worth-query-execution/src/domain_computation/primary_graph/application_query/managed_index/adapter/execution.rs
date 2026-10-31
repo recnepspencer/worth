@@ -32,6 +32,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     Send + Sync
 {
     fn admits(&self, association: &WorthQueryInstalledManagedIndexParent) -> bool;
+    fn predicate_factory(&self) -> Option<&Arc<dyn super::super::predicate::PredicateFactory>>;
     #[allow(clippy::too_many_arguments)]
     fn select<'a, 'request, 'authority>(
         self: Arc<Self>,
@@ -70,6 +71,10 @@ where
 {
     fn admits(&self, association: &WorthQueryInstalledManagedIndexParent) -> bool {
         self.installed.admits_association(association)
+    }
+
+    fn predicate_factory(&self) -> Option<&Arc<dyn super::super::predicate::PredicateFactory>> {
+        self.predicate.as_ref()
     }
 
     fn select<'a, 'request, 'authority>(

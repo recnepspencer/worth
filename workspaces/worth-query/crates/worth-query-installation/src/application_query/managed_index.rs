@@ -23,8 +23,12 @@ pub use access::{
     WorthQueryInstalledManagedIndexAccessContract, WorthQueryInstalledManagedIndexReadMeaning,
 };
 mod installed;
+mod matching;
 pub(crate) use compiled::CompiledManagedIndex;
 pub use installed::{WorthQueryInstalledManagedIndex, WorthQueryInstalledManagedIndexParent};
+pub use matching::{
+    WorthQueryManagedIndexPredicateProfile, WorthQueryManagedIndexPredicateProfileDenial,
+};
 
 #[cfg(test)]
 mod tests;

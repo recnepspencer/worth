@@ -71,7 +71,7 @@ worth_query_value_binding!(pub NameBinding for String {
     canonical: ValueDecodeBounds::new(2048, 1024, 8, 8),
 });
 worth_query_field!(pub ItemName for Catalog, Item, ItemFacts: String => NameBinding, read_write, equality);
-worth_query_field!(pub ItemEnabled for Catalog, Item, ItemFacts: bool => BoolApplicationValueBinding, read_only, equality);
+worth_query_field!(pub ItemEnabled for Catalog, Item, ItemFacts: bool => BoolApplicationValueBinding, read_write, equality);
 worth_query_relation!(pub MappingTarget in Catalog, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub Contains in Catalog, Directory => Item; integrity = same_context_unbounded_retain_dangling);
 worth_query_principal_binding!(pub CatalogPrincipal in Catalog, mapping ExternalMapping {

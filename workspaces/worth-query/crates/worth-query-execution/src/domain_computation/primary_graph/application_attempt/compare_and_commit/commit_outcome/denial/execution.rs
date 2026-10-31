@@ -57,6 +57,7 @@ impl Denial {
                 Invariant::ExecutionControlStopped(kind) => Some(Err(kind)),
                 Invariant::RequestInterrupted(stop) => Some(Err(control_kind(stop))),
                 Invariant::AllocationDenied
+                | Invariant::ManagedPredicatePreparationUnavailable
                 | Invariant::InvariantNotInstalled
                 | Invariant::ExecutorRoleMismatch
                 | Invariant::UndeclaredStateLoadFamily

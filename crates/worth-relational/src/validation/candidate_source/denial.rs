@@ -22,6 +22,25 @@ impl From<DerivedRelationReadDenial> for ManagedIndexSourcePreparationDenial {
 }
 
 impl ManagedIndexSourcePreparationDenial {
+    pub(crate) fn into_commit_error(
+        self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+    ) -> crate::transactions::data::TransactionCommitError {
+        use crate::transactions::data::{
+            CommitExecutionDenial, CommitExecutionDenialKind, CommitPreparationError,
+            TransactionCommitError,
+        };
+        if let Some(cause) = self.execution_cause() {
+            return TransactionCommitError::execution(CommitExecutionDenial {
+                kind: CommitExecutionDenialKind::Cause(cause),
+                partition_identity: None,
+            });
+        }
+        TransactionCommitError::preparation(CommitPreparationError::managed_index_source(
+            basis, self,
+        ))
+    }
+
     /// This exact Source posture had no available root; never means empty rows.
     pub fn source_unavailable(&self) -> bool {
         matches!(self, Self::RootUnavailable)

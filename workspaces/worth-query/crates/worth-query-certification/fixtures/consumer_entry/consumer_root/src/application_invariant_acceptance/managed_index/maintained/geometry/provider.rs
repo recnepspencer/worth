@@ -13,6 +13,7 @@ use worth_query_host::facade::primary_graph::*;
 
 #[cfg(test)]
 pub(super) mod cost_stages;
+mod predicate;
 mod storage;
 #[cfg(test)]
 mod summary_fault;

@@ -1,5 +1,7 @@
 //! Installed generic mechanics consume Native Source loans, never caller scope lists.
+use super::failure::{source_preparation_denial, source_storage};
 mod correspondence;
+mod factory;
 use super::super::{
     adapter::{InstalledIndexProvider, TypedIndexProvider},
     source::occurrences::PersistentSourceRows,
@@ -21,7 +23,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledManagedIndex;
 use worth_relational::facade::runtime::{
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram as Program,
-    ManagedIndexSourceProviderFailure, ManagedIndexSourceScope, PreparedManagedIndexSourceRoot,
+    ManagedIndexSourceScope, PreparedManagedIndexSourceRoot,
 };
 
 pub(in crate::domain_computation::primary_graph::application_query::managed_index) type Payload =
@@ -35,15 +37,20 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     ) -> &worth_query_declaration::facade::application_query::ErasedApplicationManagedIndexDefinition;
     fn bind(
         self: Arc<Self>,
+        execution: &ExecutionRequest<'_, '_>,
         program: Program,
         cold: Cold,
         authority: super::initialization::SourceInitializationAuthority,
-    ) -> Arc<dyn SourceService>;
+    ) -> Result<
+        Arc<dyn SourceService>,
+        worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    >;
 }
 pub(in crate::domain_computation::primary_graph) trait SourceService:
     Send + Sync
 {
     fn program(&self) -> &Program;
+    fn predicate_axis(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_query::derived_view::SourcePredicateAxis>>;
     fn binding_type(&self) -> std::any::TypeId;
     fn admits_initialization(
         &self,
@@ -85,33 +92,8 @@ pub(super) struct TypedSourceService<S: ApplicationSchema, I: ApplicationManaged
     pub(super) provider: Arc<TypedIndexProvider<S, I, P>>,
     pub(super) program: Program,
     cold: Cold,
+    predicate: Option<Arc<crate::domain_computation::primary_graph::application_query::derived_view::SourcePredicateAxis>>,
     pub(super) initialization: super::initialization::SourceInitializationAuthority,
-}
-impl<S, I, P> SourceFactory for TypedIndexProvider<S, I, P>
-where
-    S: ApplicationSchema,
-    I: ApplicationManagedIndexBinding<S>,
-    P: WorthQueryManagedIndexProvider<S, I>,
-{
-    fn definition(
-        &self,
-    ) -> &worth_query_declaration::facade::application_query::ErasedApplicationManagedIndexDefinition
-    {
-        self.installed.definition()
-    }
-    fn bind(
-        self: Arc<Self>,
-        program: Program,
-        cold: Cold,
-        authority: super::initialization::SourceInitializationAuthority,
-    ) -> Arc<dyn SourceService> {
-        Arc::new(TypedSourceService {
-            provider: self,
-            program,
-            cold,
-            initialization: authority,
-        })
-    }
 }
 impl<S, I, P> SourceService for TypedSourceService<S, I, P>
 where
@@ -122,6 +104,10 @@ where
     fn program(&self) -> &Program {
         &self.program
     }
+    fn predicate_axis(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_query::derived_view::SourcePredicateAxis>>{
+        self.predicate.as_ref()
+    }
+
     fn admits_initialization(
         &self,
         proof: &worth_proof::AdmittedManagedIndexSourceInitialization,
@@ -150,6 +136,12 @@ where
             return Err(Denial::ForeignSource);
         }
         let proposed_exists = scope.scope_exists()?;
+        if !proposed_exists
+            || scope.physical_availability()
+                == worth_relational::facade::runtime::ManagedIndexSourceAvailability::Unavailable
+        {
+            self.invalidate_predicates(execution, &scope)?;
+        }
         if proposed_exists {
             if let Some(payload) = self.corresponding_root(execution, &scope)? {
                 return Ok(scope.seal(None, Some(payload)));
@@ -159,7 +151,10 @@ where
         // membership result. All other before-view failures retain their cause.
         let before_exists = match scope.committed_scope_exists() {
             Ok(exists) => exists,
-            Err(Denial::RootUnavailable) => false,
+            Err(Denial::RootUnavailable) => {
+                self.invalidate_predicates(execution, &scope)?;
+                false
+            }
             Err(cause) => return Err(cause),
         };
         let before = if before_exists {
@@ -206,6 +201,22 @@ where
     I: ApplicationManagedIndexBinding<S>,
     P: WorthQueryManagedIndexProvider<S, I>,
 {
+    fn invalidate_predicates(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        scope: &ManagedIndexSourceScope<'_>,
+    ) -> Result<(), Denial> {
+        if let Some(axis) = &self.predicate {
+            super::super::super::derived_view::mark_prepared_predicates_unavailable(
+                execution,
+                scope.preparation_metadata(),
+                axis,
+                scope.scope(),
+                &scope.read_budget(),
+            )?;
+        }
+        Ok(())
+    }
     pub(super) fn cold(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -230,7 +241,7 @@ where
                 owner,
                 rows.view(&self.provider.bindings, Some(&budget)),
             )
-            .map_err(|cause| retain_failure(execution, cause))?;
+            .map_err(|cause| source_preparation_denial(execution, cause))?;
         retain_root(
             execution,
             self.provider.clone(),
@@ -296,7 +307,18 @@ where
                 &changes,
                 before.nodes.as_ref(),
             )
-            .map_err(|cause| retain_failure(execution, cause))?;
+            .map_err(|cause| source_preparation_denial(execution, cause))?;
+        if let Some(axis) = &self.predicate {
+            super::super::super::derived_view::route_prepared_predicates(
+                execution,
+                scope.preparation_metadata(),
+                axis,
+                scope.scope(),
+                before.rows.view(bindings, Some(&budget)),
+                rows.view(bindings, Some(&budget)),
+                &changes,
+            )?;
+        }
         retain_root(
             execution,
             self.provider.clone(),
@@ -340,50 +362,4 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         nodes,
         _allocation: allocation,
     }))
-}
-
-#[derive(Debug)]
-struct PreparationFailure<E: std::error::Error + Send + Sync + 'static> {
-    cause: E,
-    _memory: Option<worth_execution::ExecutionMemoryReservation>,
-}
-impl<E: std::error::Error + Send + Sync + 'static> std::fmt::Display for PreparationFailure<E> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.cause)
-    }
-}
-impl<E: std::error::Error + Send + Sync + 'static> std::error::Error for PreparationFailure<E> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        Some(&self.cause)
-    }
-}
-fn source_storage(
-    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
-) -> Denial {
-    Denial::Source(worth_relational::facade::runtime::DerivedRelationReadDenial::Request(cause))
-}
-pub(super) fn retain_failure<E: std::error::Error + Send + Sync + 'static>(
-    execution: &ExecutionRequest<'_, '_>,
-    cause: E,
-) -> Denial {
-    if let Err(stop) = execution.consult() {
-        return source_storage(stop.into());
-    }
-    let Some(bytes) = std::alloc::Layout::new::<[usize; 2]>()
-        .extend(std::alloc::Layout::new::<PreparationFailure<E>>())
-        .ok()
-        .and_then(|(layout, _)| u64::try_from(layout.pad_to_align().size()).ok())
-    else {
-        return source_storage(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow);
-    };
-    let memory = match execution.reserve_retained_memory(bytes) {
-        Ok(memory) => memory,
-        Err(stop) => return source_storage(stop.into()),
-    };
-    Denial::Provider(ManagedIndexSourceProviderFailure::from_owned(Arc::new(
-        PreparationFailure {
-            cause,
-            _memory: memory,
-        },
-    )))
 }

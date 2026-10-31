@@ -18,6 +18,27 @@ pub(super) struct ParentContext<'a, S> {
     pub(super) selected: WorthQuerySelectedProductOperation<'a, S>,
     pub(super) selector: Arc<WorthQueryObservedScopeSelector>,
 }
+impl<S: ApplicationSchema> ParentContext<'_, S> {
+    /// Pin Live history first, then observe the real current World occurrence.
+    pub(super) fn recheck_current(
+        &self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    ) -> Result<(), ReceiverCause> {
+        let current = application.admit_with_observation_room(|| {
+            application
+                .product_runtime
+                .admit_product_occurrence(self.selected.product().product_branch().occurrence())
+        })?;
+        if current
+            .observation()
+            .compare(self.selected.product().observation())
+            .is_err()
+        {
+            return Err(ReceiverCause::Refused(Refusal::StaleImage));
+        }
+        Ok(())
+    }
+}
 
 pub(super) fn prepare<'a, S: ApplicationSchema, B: ApplicationQueryBinding<S>>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

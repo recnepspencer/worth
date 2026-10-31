@@ -35,3 +35,8 @@ pub(super) fn key<Source: Copy>(bounds: Box2, source: Source) -> (Morton, [i64; 
         source,
     )
 }
+
+/// The same exact spatial order for immutable probes, before framework slot ties.
+pub fn compare_box_bounds(a: Box2, b: Box2) -> Ordering {
+    key(a, ()).cmp(&key(b, ()))
+}

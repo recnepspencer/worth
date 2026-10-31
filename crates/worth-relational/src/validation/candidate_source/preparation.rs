@@ -36,6 +36,7 @@ pub(crate) struct SourceViews<'a> {
 
 /// Native-created invocation scope. No constructor or caller root argument.
 pub struct ManagedIndexSourceScope<'a> {
+    interpretation: &'a Arc<super::NativeManagedSourceInterpretation>,
     correspondence: Option<&'a super::correspondence::NativeManagedSourceCorrespondence<'a>>,
     pub(crate) program: &'a ManagedIndexSourceProgram,
     pub(crate) scope: EntityId,
@@ -46,6 +47,9 @@ pub struct ManagedIndexSourceScope<'a> {
 }
 
 impl<'a> ManagedIndexSourceScope<'a> {
+    pub fn preparation_metadata(&self) -> Option<super::ManagedIndexSourcePreparationMetadata<'_>> {
+        self.interpretation.preparation_metadata()
+    }
     /// Native proved complete logical equality at this actual reconstruction.
     /// This returns proposed backing only; the committed physical view stays
     /// unavailable. Query still validates its typed provider installation.
@@ -195,6 +199,7 @@ pub(crate) struct PreparedSourceProgram {
 
 /// The existing participant receives this only from Native's applied draft.
 pub struct ManagedIndexSourcePreparation<'a> {
+    pub(crate) interpretation: &'a Arc<super::NativeManagedSourceInterpretation>,
     pub(super) correspondence:
         Option<&'a super::correspondence::NativeManagedSourceCorrespondence<'a>>,
     pub(crate) program: &'a ManagedIndexSourceProgram,
@@ -219,6 +224,7 @@ impl ManagedIndexSourcePreparation<'_> {
             .scopes
             .iter()
             .map(|(&scope, changed)| ManagedIndexSourceScope {
+                interpretation: self.interpretation,
                 correspondence: self.correspondence,
                 program: self.program,
                 scope,

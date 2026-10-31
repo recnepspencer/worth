@@ -47,6 +47,11 @@ impl From<Cause> for SelectionDenial {
 }
 
 trait RootCurrency: Send + Sync {
+    fn maintained_observation(
+        &self,
+    ) -> Option<Arc<worth_relational::facade::runtime::ManagedIndexSourceObservation>> {
+        None
+    }
     fn current(
         &self,
         association: &WorthQueryInstalledManagedIndexParent,
@@ -117,7 +122,41 @@ pub(super) struct ManagedSelectionLease<'parent, 'request, 'authority> {
     source: Arc<WorthQueryCompletedSourceRead>,
     rows: SelectionRows,
 }
+/// Owned evidence is derived only while the real maintained selection loan lives.
+/// It describes opening coverage; fresh requests still admit every later READ.
+pub(in crate::domain_computation::primary_graph::application_query) struct MaintainedWatchSelection
+{
+    pub(in crate::domain_computation::primary_graph::application_query) association:
+        WorthQueryInstalledManagedIndexParent,
+    pub(in crate::domain_computation::primary_graph::application_query) scope: EntityId,
+    pub(in crate::domain_computation::primary_graph::application_query) native:
+        Arc<worth_relational::facade::runtime::ManagedIndexSourceObservation>,
+    _source: Arc<WorthQueryCompletedSourceRead>,
+    _coverage: Arc<RetainedCoverage>,
+    _dependencies: Arc<ManagedSourceDependencies>,
+}
 impl<'parent, 'request, 'authority> ManagedSelectionLease<'parent, 'request, 'authority> {
+    pub(super) fn capture_watch(
+        &self,
+        parent: &WorthQueryManagedGraphWorkSession,
+        request: &WorthQueryRequestScope,
+    ) -> Result<MaintainedWatchSelection, SelectionDenial> {
+        let rows = self.rows(parent, request)?;
+        Ok(MaintainedWatchSelection {
+            association: rows.association.clone(),
+            scope: rows.scope,
+            native: rows
+                .currency
+                .maintained_observation()
+                .ok_or(SelectionDenial::ForeignSelection)?,
+            _source: self.source.clone(),
+            _coverage: rows
+                .coverage
+                .clone()
+                .ok_or(SelectionDenial::ForeignSelection)?,
+            _dependencies: rows.dependencies.clone(),
+        })
+    }
     #[allow(clippy::too_many_arguments)]
     pub(super) fn issue<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>>(
         proof: WorthQueryManagedIndexSelectionProof<'parent, 'request, 'authority>,

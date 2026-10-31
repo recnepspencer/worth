@@ -12,9 +12,15 @@ pub(super) enum ReceiverCause {
     Provider(ProviderExecutionDenial),
     Execution(ExecutionCause),
     Read(super::super::WorthQueryApplicationOneShotDenial),
+    LiveAdmission(super::super::WorthQueryApplicationLiveOpenDenial),
     Installation(WorthQueryInstalledQueryBindingAdmissionStop<ExecutionCause>),
     Product(crate::basis::WorthQueryProductBranchAdmissionDenial),
     Refused(WorthQueryManagedIndexRefusal),
+}
+impl From<super::super::WorthQueryApplicationOneShotDenial> for ReceiverCause {
+    fn from(cause: super::super::WorthQueryApplicationOneShotDenial) -> Self {
+        Self::Read(cause)
+    }
 }
 impl From<ExecutionCause> for ReceiverCause {
     fn from(cause: ExecutionCause) -> Self {
@@ -50,6 +56,7 @@ impl WorthQueryManagedIndexDenial {
             ReceiverCause::Provider(cause) => causes::provider(cause),
             ReceiverCause::Execution(cause) => Cause::Execution(cause),
             ReceiverCause::Read(cause) => Cause::QueryRead(cause),
+            ReceiverCause::LiveAdmission(cause) => Cause::LiveAdmission(cause),
             ReceiverCause::Product(cause) => Cause::Product(cause),
             ReceiverCause::Refused(cause) => Cause::Refused(*cause),
             ReceiverCause::Installation(cause) => match cause {

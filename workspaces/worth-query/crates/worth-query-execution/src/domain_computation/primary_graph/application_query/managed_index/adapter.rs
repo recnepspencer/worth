@@ -47,7 +47,8 @@ where
 pub(super) struct TypedIndexProvider<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P>
 {
     pub(super) installed: WorthQueryInstalledManagedIndex<S, I>,
-    pub(super) provider: P,
+    pub(super) provider: Arc<P>,
+    pub(super) predicate: Option<Arc<dyn super::predicate::PredicateFactory>>,
     pub(super) coverage: CoverageVerifier,
     pub(super) bindings:
         worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
@@ -72,7 +73,7 @@ where
         image: source_rows::SourceImageView<'_>,
     ) -> Result<Arc<dyn Any + Send + Sync>, WorthQueryManagedIndexWorkDenial> {
         let (nodes, structure) =
-            build::build::<S, I, P>(execution, &self.provider, build_session, image)?;
+            build::build::<S, I, P>(execution, self.provider.as_ref(), build_session, image)?;
         node_backing::retain::<S, I, P>(execution, nodes, structure).map_err(Into::into)
     }
     fn candidates<'frame, 'loan>(
@@ -262,7 +263,7 @@ where
             let mut nodes = writer.seal(execution, root)?;
             let structure = match (I::STRUCTURE, retained.structure.as_ref()) {
                 (worth_query_declaration::facade::application_query::ApplicationManagedIndexSourceStructure::Opaque, None) => None,
-                (worth_query_declaration::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree, Some(previous)) => super::source_structure::qualify(execution, &self.provider, &after, &mut nodes,
+                (worth_query_declaration::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree, Some(previous)) => super::source_structure::qualify(execution, self.provider.as_ref(), &after, &mut nodes,
                     super::source_structure::Step::Warm { before: previous, changes }, control)?,
                 _ => return Err(control.refuse(WorthQueryManagedIndexStop::SourceStructureIncomplete).into()),
             };

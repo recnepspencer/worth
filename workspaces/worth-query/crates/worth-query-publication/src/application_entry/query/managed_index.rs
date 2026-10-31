@@ -6,6 +6,7 @@ use worth_query_execution::facade::primary_graph::WorthQueryManagedIndex;
 mod completion;
 mod eviction;
 mod governed;
+mod watch;
 
 impl<'application, 'principal, 'scope, Schema, Intent>
     WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, Schema, Intent>

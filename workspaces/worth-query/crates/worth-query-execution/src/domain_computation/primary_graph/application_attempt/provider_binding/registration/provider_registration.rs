@@ -195,8 +195,12 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) fn reserve_successor_observations(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider: &WorthQueryPrimaryGraphProvider,
-    ) -> Result<(bool, bool, bool), &'static str> {
+    ) -> Result<
+        (bool, bool, bool),
+        crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial,
+    > {
         assert!(self.live_delivery_reservation.is_none());
         assert!(self.publication_recovery_reservation.is_none());
         assert!(self.outstanding_dispatch_reservation.is_none());
@@ -211,6 +215,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             Some(self.idempotency),
         )?;
         let reservation = provider.reserve_application_commit_causality(
+            execution,
             self.affinity.product_publication().observation(),
         )?;
         let live = reservation.requires_successor_observation();

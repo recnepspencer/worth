@@ -33,6 +33,7 @@ use crate::domain_computation::WorthQueryProviderSessionProtocolStage;
 pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryCommittedApplicationSession {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
     work: WorthQueryPrimaryMutationWorkCounters,
+    predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
     retained_preimage:
         Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
@@ -72,6 +73,7 @@ pub(super) fn commit(
     let WorthQueryPreparedApplicationCommit {
         mut attempt,
         candidate,
+        predicate,
         work,
         retained_preimage,
         preimage_retention_work,
@@ -208,6 +210,7 @@ pub(super) fn commit(
                 preimage_retention_work,
                 before,
                 managed_views,
+                predicate,
                 source_fact_rebase: Some(source_fact_rebase),
                 required_prerequisites,
                 prepared_lineage_slot,
@@ -251,6 +254,7 @@ pub(super) fn commit(
         prepared_touched_records: Some(prepared_touched_records),
         product_publication: performed,
         managed_views,
+        predicate,
         source_fact_rebase: Some(source_fact_rebase),
 
         required_prerequisites,
@@ -308,6 +312,9 @@ fn world_no_effect(
     }
 }
 impl WorthQueryCommittedApplicationSession {
+    pub(super) fn take_predicate_preparation(&mut self) -> Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>{
+        self.predicate.take()
+    }
     pub(in crate::domain_computation::primary_graph::provider) fn take_recovered_output_source(
         &self,
     ) -> crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource{
@@ -357,11 +364,15 @@ impl WorthQueryCommittedApplicationSession {
         provider: &WorthQueryPrimaryGraphProvider,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
         evidence: super::WorthQueryPrimaryGraphCommitEvidence,
+        predicate: &mut Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
+        retired: &mut crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         WorthQueryProviderSessionFailure,
     > {
-        let published = publication::publish(execution, provider, runtime, self, evidence)?;
+        let published = publication::publish(
+            execution, provider, runtime, self, evidence, predicate, retired,
+        )?;
         publication::encode(provider, published)
     }
 }

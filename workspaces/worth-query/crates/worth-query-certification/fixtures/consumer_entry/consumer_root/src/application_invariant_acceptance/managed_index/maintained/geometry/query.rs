@@ -119,6 +119,7 @@ fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
 
 fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding>>(
     reference: ApplicationQueryReference<Catalog, Q, Parameters, Row, Directory>,
+    lanes: ApplicationQueryLaneEligibility,
 ) -> ApplicationQueryDefinitionBuilder<Catalog, Q, Parameters, Row, Directory> {
     ApplicationQueryDefinitionBuilder::declare(reference)
         .root(Edge::reference())
@@ -127,30 +128,35 @@ fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding
         .cardinality(ApplicationQueryCardinality::Many)
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
-        .lanes(ApplicationQueryLaneEligibility::one_shot())
+        .lanes(lanes)
         .public()
 }
 pub fn source_definition(
 ) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, Row, Directory> {
-    base(SourceQuery::reference())
-        .root_path(
-            ApplicationQueryRootPath::from(Directory::reference())
-                .forward(ContainsEdge::reference()),
-        )
-        .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
-        .build()
-        .unwrap()
+    base(
+        SourceQuery::reference(),
+        ApplicationQueryLaneEligibility::one_shot(),
+    )
+    .root_path(
+        ApplicationQueryRootPath::from(Directory::reference()).forward(ContainsEdge::reference()),
+    )
+    .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
+    .build()
+    .unwrap()
 }
 fn probe() -> ApplicationQueryParameterRef<BoxQuery, ProbeParameter, CoordinatesBinding> {
     ApplicationQueryParameterRef::from_query_identifier("probe")
 }
 pub fn box_definition() -> ApplicationQueryDefinition<Catalog, BoxQuery, Parameters, Row, Directory>
 {
-    base(BoxQuery::reference())
-        .managed_index(BoxIndex::reference(), probe())
-        .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap()
+    base(
+        BoxQuery::reference(),
+        ApplicationQueryLaneEligibility::one_shot().with_live(),
+    )
+    .managed_index(BoxIndex::reference(), probe())
+    .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
+    .build()
+    .unwrap()
 }
 impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection<Catalog, Q>
     for Row

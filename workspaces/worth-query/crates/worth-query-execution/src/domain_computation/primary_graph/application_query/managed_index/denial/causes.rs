@@ -72,6 +72,7 @@ pub enum WorthQueryManagedIndexDenialCause<'a> {
     Scope(&'a crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
     QueryAdmission(&'a application_query::WorthQueryApplicationQueryAdmissionDenial),
     QueryRead(&'a application_query::WorthQueryApplicationOneShotDenial),
+    LiveAdmission(&'a application_query::WorthQueryApplicationLiveOpenDenial),
     Source(&'a application_query::WorthQuerySourceExpectationDenial),
     Work(&'a super::super::WorthQueryManagedIndexWorkDenial),
     NativeSource(&'a worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial),

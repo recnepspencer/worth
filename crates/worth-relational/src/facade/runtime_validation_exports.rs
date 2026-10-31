@@ -32,14 +32,17 @@ pub use crate::validation::engine::InvariantExecutionResult;
 pub use crate::mvcc::{ManagedIndexSourceObservation, ManagedIndexSourceRebuild};
 pub use crate::validation::candidate_source::{
     ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot, ManagedIndexSourceAvailability,
-    ManagedIndexSourceCacheRetirement, ManagedIndexSourceField, ManagedIndexSourceOccurrence,
-    ManagedIndexSourcePreparation, ManagedIndexSourcePreparationDenial, ManagedIndexSourceProgram,
-    ManagedIndexSourceProjection, ManagedIndexSourceProjectionOccurrence,
-    ManagedIndexSourceProjectionRoute, ManagedIndexSourceProviderFailure,
-    ManagedIndexSourcePublication, ManagedIndexSourcePublicationRoot, ManagedIndexSourceRead,
-    ManagedIndexSourceRows, ManagedIndexSourceScope, PreparedManagedIndexProjectionRead,
-    PreparedManagedIndexRelationRead, PreparedManagedIndexSourceRead,
-    PreparedManagedIndexSourceRoot,
+    ManagedIndexSourceCacheRetirement, ManagedIndexSourceContextFactory,
+    ManagedIndexSourceContextReceipt, ManagedIndexSourceContextShare, ManagedIndexSourceField,
+    ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
+    ManagedIndexSourcePreparationDenial, ManagedIndexSourcePreparationMetadata,
+    ManagedIndexSourceProgram, ManagedIndexSourceProjection,
+    ManagedIndexSourceProjectionOccurrence, ManagedIndexSourceProjectionRoute,
+    ManagedIndexSourceProviderFailure, ManagedIndexSourcePublication,
+    ManagedIndexSourcePublicationRoot, ManagedIndexSourceRead, ManagedIndexSourceRows,
+    ManagedIndexSourceScope, NativeSourceInterpretationIdentity,
+    PreparedManagedIndexProjectionRead, PreparedManagedIndexRelationRead,
+    PreparedManagedIndexSourceRead, PreparedManagedIndexSourceRoot,
 };
 pub use crate::validation::DuplicateCustomInvariantRegistration;
 

@@ -10,6 +10,9 @@ struct MaintainedCurrency {
     _allocation: Arc<SourceFactsAllocation>,
 }
 impl RootCurrency for MaintainedCurrency {
+    fn maintained_observation(&self) -> Option<Arc<ManagedIndexSourceObservation>> {
+        Some(self.observation.clone())
+    }
     fn current(
         &self,
         association: &WorthQueryInstalledManagedIndexParent,

@@ -120,7 +120,7 @@ pub(super) fn project(
                 crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjectionDenialKind::RelationCardinalityMismatch,
                 cause.into_subject(),
             );
-            MaterialDenial::Native(super::service::retain_failure(execution, cause))
+            MaterialDenial::Native(super::failure::retain_failure(execution, cause))
         })?;
         projector
             .allocation

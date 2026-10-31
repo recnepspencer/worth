@@ -6,6 +6,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use publicat
 pub(in crate::domain_computation::primary_graph::application_query) mod reconstruction_denial;
 mod registration;
 mod registry;
+pub(in crate::domain_computation::primary_graph) use registry::PredicateNoticeDisposition;
 mod retention;
 
 use worth_foundational::facade::CanonicalDigestId;
@@ -15,10 +16,16 @@ pub(in crate::domain_computation::primary_graph) use change_summary::changes_fro
 pub(in crate::domain_computation::primary_graph) use publication::{
     ViewChange, ViewPublicationBasis,
 };
+pub(in crate::domain_computation::primary_graph::application_query) use registry::PredicateRegistration;
 pub(in crate::domain_computation::primary_graph::application_query) use registry::RegisteredDerivedView;
 pub(in crate::domain_computation::primary_graph::application_query) use registry::RegisteredManagedIndex;
+pub(in crate::domain_computation::primary_graph::application_query) use registry::{
+    mark_prepared_predicates_unavailable, route_prepared_predicates,
+};
 pub(in crate::domain_computation::primary_graph) use registry::{
-    ManagedDerivedViewRegistry, PreparedManagedViewPublication,
+    ManagedDerivedViewRegistry, PredicatePreparationFactory, PredicatePreparationOwner,
+    PredicatePreparationRetirement, PredicateWorld, PreparedManagedViewPublication,
+    PreparedPredicateNotices, PreparedPredicatePublication, SourcePredicateAxis,
 };
 pub use retention::{
     WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedMemberToken,

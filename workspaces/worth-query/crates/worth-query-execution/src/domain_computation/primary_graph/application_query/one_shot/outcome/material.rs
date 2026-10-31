@@ -30,25 +30,7 @@ impl<'a, 'request, 'authority> MaterialCompletion<'a, 'request, 'authority> {
         &self,
         units: u64,
     ) -> Result<(), Cause> {
-        let mut result = None;
-        let outcome = self.execution.run_native_with_checkpoint(|context| {
-            result = Some(if context.has_accounting() {
-                context.checkpoint(units)
-            } else {
-                context.poll()
-            });
-        });
-        match (outcome, result) {
-            (Ok(_), Some(result)) => result.map_err(Into::into),
-            (
-                Err(worth_execution::WorkCeilingDenial::Stopped(
-                    worth_execution::MapKernelStop::NestedStopped,
-                )),
-                Some(Err(cause)),
-            ) => Err(cause.into()),
-            (Err(cause), _) => Err(cause.into()),
-            (Ok(_), None) => unreachable!("completed source metadata checkpoint"),
-        }
+        SourceFactsAllocation::work(self.execution, units)
     }
     pub(super) fn slots<T>(&self, count: usize) -> Result<(), Cause> {
         self.allocation.claim_slice::<T>(self.execution, count)

@@ -18,6 +18,8 @@ mod installed_version;
 #[path = "prefix/storage.rs"]
 mod storage;
 pub use installed_version::IncompatibleVersion;
+#[path = "prefix/predicate.rs"]
+mod predicate;
 #[path = "prefix/structure.rs"]
 pub(super) mod structure;
 #[path = "prefix/summary.rs"]
@@ -54,6 +56,8 @@ fn text_denial(cause: WorthQueryManagedIndexTextReadDenial) -> Stop {
 }
 #[derive(Default)]
 pub struct Calls {
+    #[cfg(test)]
+    pub predicate_regions: AtomicUsize,
     #[cfg(test)]
     pub(super) cost_stages: cost_stages::CostStages,
     #[cfg(test)]

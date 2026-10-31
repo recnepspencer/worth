@@ -66,7 +66,7 @@ pub fn enabled<Q>() -> ApplicationQueryResultFieldRef<
     ItemFacts,
     ItemEnabled,
     bool,
-    ReadOnly,
+    ReadWrite,
     EqualityPredicate,
     NoApplicationUnit,
 > {
@@ -74,6 +74,7 @@ pub fn enabled<Q>() -> ApplicationQueryResultFieldRef<
 }
 fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding>>(
     reference: ApplicationQueryReference<Catalog, Q, Parameters, ItemRow, Directory>,
+    lanes: ApplicationQueryLaneEligibility,
 ) -> ApplicationQueryDefinitionBuilder<Catalog, Q, Parameters, ItemRow, Directory> {
     ApplicationQueryDefinitionBuilder::declare(reference)
         .root(Item::reference())
@@ -90,26 +91,32 @@ fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding
         .cardinality(ApplicationQueryCardinality::Many)
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
-        .lanes(ApplicationQueryLaneEligibility::one_shot())
+        .lanes(lanes)
         .public()
 }
 pub fn source_definition(
 ) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, ItemRow, Directory> {
-    base(SourceQuery::reference())
-        .root_path(
-            ApplicationQueryRootPath::from(Directory::reference()).forward(Contains::reference()),
-        )
-        .order_by(name(), ApplicationQueryOrderingDirection::Descending)
-        .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
-        .build()
-        .unwrap()
+    base(
+        SourceQuery::reference(),
+        ApplicationQueryLaneEligibility::one_shot(),
+    )
+    .root_path(
+        ApplicationQueryRootPath::from(Directory::reference()).forward(Contains::reference()),
+    )
+    .order_by(name(), ApplicationQueryOrderingDirection::Descending)
+    .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
+    .build()
+    .unwrap()
 }
 
 /// A real Phase 1 Source shape outside the invariant Source compiler: its two
 /// disjoint guarded paths cover the actual complete Boolean field universe.
 pub fn guarded_source_definition(
 ) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, ItemRow, Directory> {
-    let mut builder = base(SourceQuery::reference());
+    let mut builder = base(
+        SourceQuery::reference(),
+        ApplicationQueryLaneEligibility::one_shot(),
+    );
     for enabled in [true, false] {
         builder = builder.root_path(
             ApplicationQueryRootPath::from(Directory::reference())
@@ -128,13 +135,16 @@ pub fn guarded_source_definition(
 }
 pub fn prefix_definition(
 ) -> ApplicationQueryDefinition<Catalog, PrefixQuery, Parameters, ItemRow, Directory> {
-    base(PrefixQuery::reference())
-        .managed_index(PrefixIndex::reference(), probe())
-        .parameter(enabled_parameter())
-        .where_equal(ItemEnabled::reference(), enabled_parameter())
-        .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap()
+    base(
+        PrefixQuery::reference(),
+        ApplicationQueryLaneEligibility::one_shot().with_live(),
+    )
+    .managed_index(PrefixIndex::reference(), probe())
+    .parameter(enabled_parameter())
+    .where_equal(ItemEnabled::reference(), enabled_parameter())
+    .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
+    .build()
+    .unwrap()
 }
 impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection<Catalog, Q>
     for ItemRow

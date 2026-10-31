@@ -41,12 +41,14 @@ pub use one_shot::WorthQueryApplicationHistoryCaptureResult;
 mod installed_schema_currentness;
 mod live;
 pub(in crate::domain_computation::primary_graph) mod managed_index;
+pub(in crate::domain_computation::primary_graph) use managed_index::WatchSlot;
 pub use managed_index::{
     WorthQueryManagedIndex, WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
     WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause,
     WorthQueryManagedIndexInvariantDenial, WorthQueryManagedIndexLifecycle,
     WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeRegion,
     WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
+    WorthQueryManagedIndexPredicateProvider, WorthQueryManagedIndexPredicateSummary,
     WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
     WorthQueryManagedIndexProviderFailure, WorthQueryManagedIndexProviderStop,
     WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceChange,
@@ -54,6 +56,10 @@ pub use managed_index::{
     WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop,
     WorthQueryManagedIndexSummarySources, WorthQueryManagedIndexTextReadDenial,
     WorthQueryManagedIndexWorkDenial,
+};
+pub use managed_index::{
+    WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
+    WorthQueryManagedIndexWatchUpdate,
 };
 mod native_access;
 pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQueryNativeAccess;

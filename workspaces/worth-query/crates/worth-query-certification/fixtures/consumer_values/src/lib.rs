@@ -4,12 +4,14 @@ mod box2;
 pub use box2::{BoundsDenial, Box2, Box2Coordinates};
 mod box_tree;
 pub use box_tree::{
-    build_box_tree, insert_box_source, query_box_tree, remove_box_source, replace_box_source,
-    BoxEditStorage, BoxIndexDenial, BoxNode, BoxNodeLinks,
+    build_box_tree, compare_box_bounds, insert_box_source, query_box_tree, remove_box_source,
+    replace_box_source, BoxEditStorage, BoxIndexDenial, BoxNode, BoxNodeLinks,
 };
 mod prefix_order;
 mod prefix_summary;
+mod prefix_watch;
 pub use prefix_summary::{join_prefix_bounds, prefix_bounds_may_match, PrefixSourceBounds};
+pub use prefix_watch::prefix_watch_bounds_may_match;
 mod prefix_tree;
 pub use prefix_order::{compare_prefix_keys, prefix_order, PrefixOrder};
 pub use prefix_tree::{

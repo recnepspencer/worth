@@ -45,6 +45,7 @@ pub(crate) struct NativeManagedSourceInterpretation {
     materialization: Option<Arc<NativeMaterializationSource>>,
     restoration: Option<NativeSourceRestorationOrigin>,
     pub(super) prepared: std::sync::OnceLock<super::staged::PreparedManagedIndexSources>,
+    pub(super) context: std::sync::OnceLock<super::context::BoundSourceContext>,
 }
 
 impl NativeManagedSourceInterpretation {
@@ -61,6 +62,7 @@ impl NativeManagedSourceInterpretation {
             materialization: input.intent().materialization_source().cloned(),
             restoration: input.intent().restoration_origin().cloned(),
             prepared: std::sync::OnceLock::new(),
+            context: std::sync::OnceLock::new(),
         })
     }
 
@@ -125,7 +127,7 @@ impl NativeManagedSourceInterpretation {
 /// Upgrading this weak link is not Source admission; installed audience and the
 /// exact actual observation still have to be checked by the receiving owner.
 #[derive(Clone, Debug)]
-pub(crate) struct NativeSourceInterpretationIdentity(Weak<NativeManagedSourceInterpretation>);
+pub struct NativeSourceInterpretationIdentity(Weak<NativeManagedSourceInterpretation>);
 
 impl NativeSourceInterpretationIdentity {
     pub(crate) fn owner(&self) -> Option<Arc<NativeManagedSourceInterpretation>> {

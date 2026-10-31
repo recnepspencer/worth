@@ -168,6 +168,7 @@ impl WorthQueryPrimaryGraphProvider {
         let layout = self.graph.layout.provider_idempotency().clone();
         let product_affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
+        let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
         self.graph.with_runtime_mut_unwind_isolated(execution, |runtime| {
             if binding.correction_identity().is_some()
                 && self.inspect_pending_correction_idempotency(binding.key_identity())
@@ -189,6 +190,7 @@ impl WorthQueryPrimaryGraphProvider {
             self.resume_pending_application_publication(execution,
                 runtime,
                 product.observation().lifecycle_incarnation(),
+                &mut retired,
             )
                 .map_err(pending_publication_denial)?;
             let basis = product.observation().basis().relational_basis();

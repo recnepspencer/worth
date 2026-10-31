@@ -18,6 +18,30 @@ pub(in crate::domain_computation) struct SourceFactsAllocation {
 }
 
 impl SourceFactsAllocation {
+    pub(in crate::domain_computation::primary_graph) fn work(
+        execution: &ExecutionRequest<'_, '_>,
+        units: u64,
+    ) -> Result<(), Cause> {
+        let mut result = None;
+        let outcome = execution.run_native_with_checkpoint(|context| {
+            result = Some(if context.has_accounting() {
+                context.checkpoint(units)
+            } else {
+                context.poll()
+            });
+        });
+        match (outcome, result) {
+            (Ok(_), Some(result)) => result.map_err(Into::into),
+            (
+                Err(worth_execution::WorkCeilingDenial::Stopped(
+                    worth_execution::MapKernelStop::NestedStopped,
+                )),
+                Some(Err(cause)),
+            ) => Err(cause.into()),
+            (Err(cause), _) => Err(cause.into()),
+            (Ok(_), None) => unreachable!("completed source metadata checkpoint"),
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn claim_arc<T>(
         &self,
         execution: &ExecutionRequest<'_, '_>,

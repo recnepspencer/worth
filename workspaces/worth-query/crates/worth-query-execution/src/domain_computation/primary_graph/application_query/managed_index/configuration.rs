@@ -121,6 +121,42 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         I: ApplicationManagedIndexBinding<S>,
         P: WorthQueryManagedIndexProvider<S, I>,
     {
+        self.register_shared::<I, P>(schema, owner, Arc::new(provider), None)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn register_predicate<I, P>(
+        &mut self,
+        schema: &WorthQueryInstalledApplicationSchema<S>,
+        owner: &str,
+        provider: P,
+    ) -> Result<(), Denial>
+    where
+        I: ApplicationManagedIndexBinding<S>,
+        P: super::WorthQueryManagedIndexPredicateProvider<S, I>,
+    {
+        let provider = Arc::new(provider);
+        let installed = schema
+            .installed_managed_index::<I>()
+            .map_err(|_| Denial::new(Kind::ManagedIndexProviderMeaningMismatch, I::NAME))?;
+        let predicate = Arc::new(super::predicate::TypedPredicateFactory {
+            installed,
+            provider: Arc::clone(&provider),
+            bindings: schema.value_bindings().clone(),
+        });
+        self.register_shared::<I, P>(schema, owner, provider, Some(predicate))
+    }
+
+    fn register_shared<I, P>(
+        &mut self,
+        schema: &WorthQueryInstalledApplicationSchema<S>,
+        owner: &str,
+        provider: Arc<P>,
+        predicate: Option<Arc<dyn super::predicate::PredicateFactory>>,
+    ) -> Result<(), Denial>
+    where
+        I: ApplicationManagedIndexBinding<S>,
+        P: WorthQueryManagedIndexProvider<S, I>,
+    {
         if P::IDENTITY != I::PROVIDER || P::VERSION != I::PROVIDER_VERSION {
             return Err(Denial::new(
                 Kind::ManagedIndexProviderMeaningMismatch,
@@ -149,6 +185,7 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         let concrete = Arc::new(TypedIndexProvider {
             installed,
             provider,
+            predicate,
             coverage: crate::domain_computation::primary_graph::access_strategy::coverage::CoverageVerifier::new(),
             bindings: schema.value_bindings().clone(),
         });

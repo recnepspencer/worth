@@ -15,12 +15,18 @@ mod maintained_read;
 pub use invariant_read::WorthQueryManagedIndexInvariantDenial;
 mod node_backing;
 mod nodes;
+pub(in crate::domain_computation::primary_graph::application_query) mod predicate;
+pub(in crate::domain_computation::primary_graph) use predicate::WatchSlot;
 mod provider;
+pub use predicate::{
+    WorthQueryManagedIndexPredicateProvider, WorthQueryManagedIndexPredicateSummary,
+};
 mod provider_failure;
 mod receiver;
 pub(in crate::domain_computation::primary_graph::application_query) mod retention;
 pub(in crate::domain_computation::primary_graph::application_query) mod selection;
 mod source;
+pub(in crate::domain_computation::primary_graph::application_query) use source::failure::source_preparation_denial;
 pub(in crate::domain_computation::primary_graph::application_query) mod source_acquisition;
 mod source_completion;
 mod source_dependencies;
@@ -61,6 +67,10 @@ pub use provider::{
     WorthQueryManagedIndexSourceChange,
 };
 pub use provider_failure::WorthQueryManagedIndexProviderFailure;
+pub use receiver::{
+    WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
+    WorthQueryManagedIndexWatchUpdate,
+};
 pub use retention::WorthQueryManagedIndexLifecycle;
 pub use source_rows::{WorthQueryManagedIndexSourceRows, WorthQueryManagedIndexSourceSlot};
 pub use stop::{WorthQueryManagedIndexProviderStop, WorthQueryManagedIndexStop};

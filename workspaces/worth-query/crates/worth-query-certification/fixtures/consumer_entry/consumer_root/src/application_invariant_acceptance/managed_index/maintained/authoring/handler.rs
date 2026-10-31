@@ -20,6 +20,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 | Edit::Items { directory, .. }
                 | Edit::Share { directory, .. }
                 | Edit::RetireItem { directory, .. } => directory,
+                Edit::SetEnabled { directory, .. } => directory,
             };
             let directory =
                 reader.resolve_entity(DirectoryIdentity::reference(), scope.to_owned())?;
@@ -28,12 +29,18 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 .require_decision_entity(&directory, Directory::reference())
                 .map_err(HandlerExecutionDenial::new)?;
             let directory = reader.mutation_target(&directory)?;
-            let item = if let Edit::Share { item, .. } | Edit::RetireItem { item, .. } = edit {
+            let item = if let Edit::Share { item, .. }
+            | Edit::RetireItem { item, .. }
+            | Edit::SetEnabled { item, .. } = edit
+            {
                 let item = reader.resolve_entity(ItemIdentity::reference(), item.clone())?;
                 reader
                     .reader()
                     .require_decision_entity(&item, Item::reference())
                     .map_err(HandlerExecutionDenial::new)?;
+                if matches!(edit, Edit::SetEnabled { .. }) {
+                    reader.field(&item, ItemEnabled::reference())?;
+                }
                 Some(reader.mutation_target(&item)?)
             } else {
                 None
@@ -56,6 +63,19 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 .projected_entity(&decision.directory)
                 .map_err(HandlerExecutionDenial::new)?;
             match edit {
+                Edit::SetEnabled { enabled, .. } => {
+                    let item = writer
+                        .projected_entity(
+                            decision
+                                .item
+                                .as_ref()
+                                .expect("enabled edit observes its actual item"),
+                        )
+                        .map_err(HandlerExecutionDenial::new)?;
+                    writer
+                        .write_field(&item, ItemEnabled::reference(), *enabled)
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
                 Edit::Directory { identity } => {
                     let created = writer
                         .create_entity_in_context(

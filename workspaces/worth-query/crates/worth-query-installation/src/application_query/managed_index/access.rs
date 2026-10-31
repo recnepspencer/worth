@@ -23,6 +23,10 @@ pub struct WorthQueryInstalledManagedIndexReadMeaning {
     parent_query: WorthQueryInstalledApplicationQueryIdentity,
     parent_graph: WorthQueryInstalledGraphReadContract,
     maximum_source_results: usize,
+    predicate_profile: Result<
+        super::WorthQueryManagedIndexPredicateProfile,
+        super::WorthQueryManagedIndexPredicateProfileDenial,
+    >,
 }
 
 /// One cold compiled correspondence, shared by all live associations for this Parent.
@@ -51,6 +55,7 @@ impl WorthQueryInstalledManagedIndexAccessContract {
             parent_query: parent.query_identity().clone(),
             parent_graph: parent.query().read_graph().clone(),
             maximum_source_results: source.limits().maximum_results().get(),
+            predicate_profile: super::matching::compile(recipe, source, parent),
         });
         let obligations = bind_managed_index_obligations(&meaning).map_err(|cause| {
             super::super::denial::graph_obligation_denial(&recipe.meaning().parts().name, cause)
@@ -89,6 +94,17 @@ impl WorthQueryInstalledManagedIndexAccessContract {
 }
 
 impl WorthQueryInstalledManagedIndexReadMeaning {
+    /// The compiled tracked full-Parent profile; still requires a maintained
+    /// Source, actual provider association, and fresh read admission at use.
+    pub fn predicate_profile(
+        &self,
+    ) -> Result<
+        super::WorthQueryManagedIndexPredicateProfile,
+        super::WorthQueryManagedIndexPredicateProfileDenial,
+    > {
+        self.predicate_profile
+    }
+
     pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
         &self.schema
     }

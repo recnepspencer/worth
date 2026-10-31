@@ -1,7 +1,13 @@
 //! Native-owned candidate Source interpretation and its retained materialization basis.
+mod context;
 mod correspondence;
 mod denial;
 mod interpretation;
+pub use context::{
+    ManagedIndexSourceContextFactory, ManagedIndexSourceContextReceipt,
+    ManagedIndexSourceContextShare, ManagedIndexSourcePreparationMetadata,
+};
+pub use interpretation::NativeSourceInterpretationIdentity;
 mod program;
 pub use denial::ManagedIndexSourcePreparationDenial;
 pub(crate) use program::SourceBindingCache;
@@ -37,6 +43,5 @@ pub use program::{
 pub use projection::{ManagedIndexSourceProjection, PreparedManagedIndexRelationRead};
 
 pub(crate) use interpretation::{
-    NativeManagedSourceInterpretation, NativeMaterializationSource,
-    NativeSourceInterpretationIdentity, NativeSourceRestorationOrigin,
+    NativeManagedSourceInterpretation, NativeMaterializationSource, NativeSourceRestorationOrigin,
 };

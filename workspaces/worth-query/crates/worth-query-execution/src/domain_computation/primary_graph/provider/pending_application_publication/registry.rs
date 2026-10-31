@@ -153,7 +153,8 @@ impl WorthQueryPendingApplicationPublicationRegistry {
 impl WorthQueryApplicationPublicationRecoveryReservation {
     pub(in crate::domain_computation::primary_graph) fn install(
         mut self,
-        pending: WorthQueryPendingApplicationPublication,
+        mut pending: WorthQueryPendingApplicationPublication,
+        predicate: &mut Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     ) {
         assert_eq!(self.occurrence, pending.product_incarnation());
         if let Some(binding) = self.slot.binding {
@@ -168,6 +169,8 @@ impl WorthQueryApplicationPublicationRecoveryReservation {
             *state,
             WorthQueryApplicationPublicationRecoveryState::Reserved
         ));
+        assert!(pending.predicate.is_none());
+        pending.predicate = predicate.take();
         *state = WorthQueryApplicationPublicationRecoveryState::Pending(pending);
         self.active = false;
     }
@@ -222,10 +225,13 @@ impl WorthQueryApplicationPublicationRecoverySlot {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        assert!(matches!(
-            *state,
-            WorthQueryApplicationPublicationRecoveryState::Pending(_)
-        ));
+        assert!(
+            matches!(
+                &*state,
+                WorthQueryApplicationPublicationRecoveryState::Pending(pending) if pending.predicate.is_none()
+            ),
+            "completed predicate custody returned beyond the registry gate"
+        );
         *state = WorthQueryApplicationPublicationRecoveryState::Complete;
     }
 }

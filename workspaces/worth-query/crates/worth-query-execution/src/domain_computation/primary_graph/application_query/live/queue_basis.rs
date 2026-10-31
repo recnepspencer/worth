@@ -1,9 +1,8 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use super::super::super::outcome::{
+use super::outcome::{
     WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
 };
-use super::super::validation::open_denial;
 use crate::domain_computation::{
     managed_run::{
         admit_live_lower_execution_basis, WorthQueryManagedLowerExecutionBasis,
@@ -14,7 +13,9 @@ use crate::domain_computation::{
 
 static NEXT_APPLICATION_QUERY_LIVE_LEASE: AtomicU64 = AtomicU64::new(1);
 
-pub(super) fn admit_live_managed_basis<Schema>(
+pub(in crate::domain_computation::primary_graph::application_query) fn admit_live_managed_basis<
+    Schema,
+>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     buffer_capacity: usize,
     graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
@@ -25,7 +26,7 @@ pub(super) fn admit_live_managed_basis<Schema>(
         .query_basis()
         .map(|basis| basis.descriptor().clone())
         .ok_or_else(|| {
-            open_denial(
+            WorthQueryApplicationLiveOpenDenial::new(
                 WorthQueryApplicationLiveOpenDenialKind::ProviderVersionUnavailable,
                 subject,
             )
@@ -47,7 +48,7 @@ pub(super) fn admit_live_managed_basis<Schema>(
         execution,
     )
     .map_err(|failure| {
-        open_denial(
+        WorthQueryApplicationLiveOpenDenial::new(
             WorthQueryApplicationLiveOpenDenialKind::BridgeBasisRejected,
             failure.detail.as_ref(),
         )

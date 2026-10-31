@@ -3,7 +3,6 @@ use super::{
     WorthQueryLiveDeliverySource, WorthQueryLiveProductKey, WorthQueryLiveProductPartition,
     WorthQueryLiveSubscription,
 };
-use std::collections::VecDeque;
 use std::sync::{atomic::Ordering, Arc};
 
 #[derive(Debug)]
@@ -31,19 +30,10 @@ impl WorthQueryLiveDeliverySource {
                 .ok_or(WorthQueryLiveSubscriptionCapacityExhausted)?,
             None => 1,
         };
-        let partition =
-            state
-                .partitions
-                .entry(key.clone())
-                .or_insert_with(|| WorthQueryLiveProductPartition {
-                    batches: VecDeque::with_capacity(batch_capacity),
-                    allocated_batch_capacity: batch_capacity,
-                    next_sequence: 0,
-                    last_product_commit: None,
-                    subscriber_count: 0,
-                    reservation_live: false,
-                    retired: false,
-                });
+        let partition = state
+            .partitions
+            .entry(key.clone())
+            .or_insert_with(|| WorthQueryLiveProductPartition::new(batch_capacity, observation));
         partition.subscriber_count = subscribers;
         let cursor = partition.next_sequence;
         state.subscriber_count = total;
