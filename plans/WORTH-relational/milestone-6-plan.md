@@ -527,6 +527,18 @@ Milestone 6 must define canonical lineage sameness in terms of:
 - canonical digest input shape
 - canonical decision-log ordering
 
+Create events are finalized in the full typed `EntityId` order used by the
+canonical created-entity patch records, including partition, slot, and
+generation. This ordering is established before lineage identities and event
+identities are assigned, and before the event batch and decision log are
+digested or published. Mutation draft order is not create-event order.
+Replacement and retirement events retain their declared sequencing after the
+create prefix. Checkpoint admission binds each create event's sole target to
+its canonical node and that position's exact created entity; set coverage
+alone cannot establish that association. Published events, decisions, and
+their original digest basis remain authoritative and are never reordered by
+recovery.
+
 ### Required artifact/digest surfaces
 
 The lineage replay path must define and use explicit digest bases for:
