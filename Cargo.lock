@@ -2177,6 +2177,7 @@ dependencies = [
  "crossbeam-queue",
  "dashmap",
  "im",
+ "indexmap",
  "proptest",
  "rmp-serde",
  "serde",

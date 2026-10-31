@@ -3006,5 +3006,9 @@
 {"source":"crates/worth-runtime-world/src/lifecycle/owner_tests/admission_race.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-runtime-world/src/lifecycle/owner_tests/bootstrap_boundary.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs","module":"file","roots":["ExecutionRequest"]},
-{"source":"crates/worth-runtime-world/src/lifecycle/close/result_snapshots/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]}
+{"source":"crates/worth-runtime-world/src/lifecycle/close/result_snapshots/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
+{"source":"crates/worth-relational/src/change_source/runtime_handle/memory_close/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
+{"source":"crates/worth-relational/src/history/retention/head_cell/memory_close_tests.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-relational/src/runtime/state/runtime_state/publication_lifecycle/memory_close_tests.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-relational/src/runtime/state/subsystems/visibility/cache/memory_close/tests.rs","module":"file","roots":["ExecutionRequest"]}
 ]

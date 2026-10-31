@@ -765,6 +765,34 @@
       "constructors": ["RuntimeWorldOwnerConstructionContract::new", "RuntimeWorldBudgets::without_policy_limits", "RuntimeWorldHistoryCatalogContract::installed", "CompositeHistoryCatalog::new", "RuntimeWorldOwnerConstructionContract::issuer_mut().composite_commit", "Arc::new(OnceLock::new())"],
       "audit": "Coordinator exact private-owner placement against reviewed World 6bce98ad1b, 2026-10-31; explicit named private inventory is required although this unit adds no root baseline row.",
       "private_subject": "Controls the actual catalog mutex, private ordered-ID index and entries map, intentionally unpopulated reservation then missing indexed entry, and unchanged original frontier/ID. The identity is genuinely owner-issued; intentionally incomplete custody is the negative subject. External placement would require public corruption controls or weaken the oracle."
+    },
+    {
+      "source": "crates/worth-relational/src/change_source/runtime_handle/memory_close/tests.rs",
+      "test": "change_source::runtime_handle::memory_close::tests::memory_terminal_close_refuses_admitted_tenure_and_retains_actual_inflight_operation",
+      "constructors": ["crate::tests::support::runtime_with_test_schema", "crate::test_execution_policy::serial_request", "worth_execution::ExecutionRequest::serial", "crate::runtime::RelationalRuntime::admitted"],
+      "audit": "Coordinator exact private-owner placement against Native Memory close work based on 54c554e29c, 2026-10-31; fresh native_memory_terminal_source_review approved only these four named private oracles. Public workflows reside in the existing certification court; no new control or factory audience is admitted.",
+      "private_subject": "Builds an authentic admitted runtime from the original state binding and real operation guard, distinguishes actual Owner tenure, and checks private phase.sealed plus the same admission binding through refusal and terminalization. No fabricated in-flight count or Arc-count authority is used; external placement would require a new tenure/phase mutation door."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/visibility/cache/memory_close/tests.rs",
+      "test": "runtime::state::subsystems::visibility::cache::memory_close::tests::memory_terminal_close_cache_contention_preserves_exact_and_historical_allocations",
+      "constructors": ["crate::tests::support::runtime_with_test_schema", "crate::tests::support::create_entity_outcome", "crate::test_execution_policy::serial_request", "worth_execution::ExecutionRequest::serial", "HistoricalVisibilityBasis::resolve"],
+      "audit": "Coordinator exact private-owner placement against Native Memory close work based on 54c554e29c, 2026-10-31; only this named cache-owner unit and its actual observed root class are admitted.",
+      "private_subject": "Holds the actual canonical cache.states write guard, inspects same-entry Option(state)/Option(retirement), derives a Historical basis from the genuine original commit, checks retained real old-root Weak identity, and proves retired entries cannot be read as a synthetic serving basis. These oracles require private cache/state access; no population fixture exemption or new public control is granted."
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/head_cell/memory_close_tests.rs",
+      "test": "history::retention::head_cell::memory_close_tests::memory_terminal_close_head_contention_retires_actual_token_without_dropping_root",
+      "constructors": ["crate::tests::support::runtime_with_test_schema", "crate::test_execution_policy::serial_request", "worth_execution::ExecutionRequest::serial"],
+      "audit": "Coordinator exact private-owner placement against Native Memory close work based on 54c554e29c, 2026-10-31; only this named head-token unit and its actual observed root class are admitted.",
+      "private_subject": "Holds the actual private head obligation mutex, checks the same owner-issued token.is_live before and after nonwaiting retirement, and compares the authentic head-root Weak through explicit unbudgeted reclamation. External placement would require exposing token or cell mutation; a diagnostic count cannot replace these custody oracles."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/runtime_state/publication_lifecycle/memory_close_tests.rs",
+      "test": "runtime::state::runtime_state::publication_lifecycle::memory_close_tests::memory_terminal_close_publication_registry_contention_preserves_admission",
+      "constructors": ["crate::tests::support::runtime_with_test_schema", "crate::test_execution_policy::serial_request", "worth_execution::ExecutionRequest::serial"],
+      "audit": "Coordinator exact private-owner placement against Native Memory close work based on 54c554e29c, 2026-10-31; only this named publication-registry unit and its actual observed root class are admitted.",
+      "private_subject": "Holds the actual publication.lifecycle.candidates mutex to force genuine preflight contention, then observes the same actual lifecycle admission before irreversible cleanup and after terminalization. No new test hook, invented candidate population, or public release authority is introduced."
     }
   ]
 }
