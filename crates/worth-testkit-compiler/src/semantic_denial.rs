@@ -10,29 +10,73 @@ pub fn certification_semantic_denial(
     code: &str,
     symbols: &[&str],
 ) -> Result<(), CompilerFixtureRefusal> {
+    check_path(path.as_ref(), RequiredDiagnostic::Code(code), symbols)
+}
+
+/// Require an explicitly uncoded certification/check error whose semantic cause
+/// and API symbols belong to this exact fixture. Missing code fields do not match.
+pub fn certification_uncoded_semantic_denial(
+    path: impl AsRef<Path>,
+    cause: &str,
+    symbols: &[&str],
+) -> Result<(), CompilerFixtureRefusal> {
+    check_path(
+        path.as_ref(),
+        RequiredDiagnostic::ExplicitNullCause(cause),
+        symbols,
+    )
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum RequiredDiagnostic<'a> {
+    Code(&'a str),
+    ExplicitNullCause(&'a str),
+}
+
+fn check_path(
+    path: &Path,
+    required: RequiredDiagnostic<'_>,
+    symbols: &[&str],
+) -> Result<(), CompilerFixtureRefusal> {
     let outcomes = session::outcomes()?;
     let source = path
-        .as_ref()
         .canonicalize()
         .map_err(|error| CompilerFixtureRefusal::Read {
-            path: path.as_ref().to_path_buf(),
+            path: path.to_path_buf(),
             reason: error.to_string(),
         })?;
-    check_semantic_outcome(&source, session::fixture(outcomes, &source)?, code, symbols)
+    check_semantic_outcome(
+        &source,
+        session::fixture(outcomes, &source)?,
+        required,
+        symbols,
+    )
 }
 
 pub(crate) fn check_semantic_outcome(
     source: &Path,
     outcome: &serde_json::Value,
-    code: &str,
+    required: RequiredDiagnostic<'_>,
     symbols: &[&str],
 ) -> Result<(), CompilerFixtureRefusal> {
-    if code.trim().is_empty()
+    let fragment = match required {
+        RequiredDiagnostic::Code(code) => code,
+        RequiredDiagnostic::ExplicitNullCause(cause) => cause,
+    };
+    if fragment.trim().is_empty()
         || symbols.is_empty()
         || symbols.iter().any(|symbol| symbol.trim().is_empty())
     {
         return Err(CompilerFixtureRefusal::InvalidPrebuild(
-            "semantic denial requires a code and nonempty API symbols".into(),
+            match required {
+                RequiredDiagnostic::Code(_) => {
+                    "semantic denial requires a code and nonempty API symbols"
+                }
+                RequiredDiagnostic::ExplicitNullCause(_) => {
+                    "uncoded semantic denial requires a cause and nonempty API symbols"
+                }
+            }
+            .into(),
         ));
     }
     let messages = denied_messages(source, outcome, RequiredEnvironment::Any)?;
@@ -55,7 +99,14 @@ pub(crate) fn check_semantic_outcome(
                 reason: "a compiler error reports a setup failure".into(),
             });
         }
-        matched |= message["code"]["code"] == code
+        let expected = match required {
+            RequiredDiagnostic::Code(code) => message["code"]["code"] == code,
+            RequiredDiagnostic::ExplicitNullCause(cause) => {
+                message.get("code").is_some_and(serde_json::Value::is_null)
+                    && semantic.contains(cause)
+            }
+        };
+        matched |= expected
             && symbols.iter().all(|symbol| semantic.contains(symbol))
             && diagnostics::attributed(message, source);
     }
@@ -67,7 +118,10 @@ pub(crate) fn check_semantic_outcome(
     if !matched {
         return Err(CompilerFixtureRefusal::WrongSemanticDenial {
             path: source.to_path_buf(),
-            reason: format!("no fixture-attributed error has code {code} and symbols {symbols:?}"),
+            reason: match required {
+                RequiredDiagnostic::Code(code) => format!("no fixture-attributed error has code {code} and symbols {symbols:?}"),
+                RequiredDiagnostic::ExplicitNullCause(cause) => format!("no fixture-attributed error has explicit null code, cause {cause:?} and symbols {symbols:?}"),
+            },
         });
     }
     Ok(())
