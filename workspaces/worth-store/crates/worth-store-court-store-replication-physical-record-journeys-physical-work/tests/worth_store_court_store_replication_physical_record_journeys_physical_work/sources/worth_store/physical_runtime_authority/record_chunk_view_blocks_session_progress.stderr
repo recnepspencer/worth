@@ -1,9 +1,0 @@
-error[E0499]: cannot borrow `session` as mutable more than once at a time
- --> tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_blocks_session_progress.rs:5:13
-  |
-4 |     let chunk = session.next_chunk().unwrap().unwrap();
-  |                 ------- first mutable borrow occurs here
-5 |     let _ = session.next_chunk();
-  |             ^^^^^^^ second mutable borrow occurs here
-6 |     let _ = chunk.bytes();
-  |             ----- first borrow later used here
