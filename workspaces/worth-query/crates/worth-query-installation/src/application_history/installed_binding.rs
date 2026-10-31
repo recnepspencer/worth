@@ -42,8 +42,18 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
 
     /// Compare the full installed operation meaning, rather than its authored name.
     pub fn contains_operation<M: ApplicationMutationBinding<S>>(&self) -> bool {
+        self.operation_label::<M>().is_some()
+    }
+
+    pub fn operation_label<M: ApplicationMutationBinding<S>>(&self) -> Option<&str> {
         let descriptor = M::descriptor();
-        self.compiled.descriptor.operations().contains(&descriptor)
+        self.compiled
+            .descriptor
+            .operations()
+            .iter()
+            .zip(&self.compiled.definition.parts().operations)
+            .find(|(installed, _)| **installed == descriptor)
+            .map(|(_, operation)| operation.label.as_str())
     }
 }
 

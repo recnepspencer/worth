@@ -1,15 +1,74 @@
-//! Ordinary admitted model attachment and reads retain Execution's actual head owner.
+//! Ordinary model attachment and edits retain actual head and completion owners.
+//!
+//! A consumer cannot rewrite a sealed occurrence's parentage.
+//! ```compile_fail,E0451
+//! use worth_query_publication::facade::application_entry::WorthQueryHistoryStep;
+//! fn forge_parent(step: WorthQueryHistoryStep) -> WorthQueryHistoryStep {
+//!     WorthQueryHistoryStep { parent: None, ..step }
+//! }
+//! ```
+//! Read the issued descriptor or copy its descriptive metadata instead.
+//! ```
+//! use worth_query_publication::facade::application_entry::WorthQueryHistoryStep;
+//! fn keep_description(step: &WorthQueryHistoryStep) -> WorthQueryHistoryStep {
+//!     let _parent = step.parent();
+//!     step.clone()
+//! }
+//! ```
+//! A closing document has only disposal custody, even while another head remains.
+//! ```compile_fail,E0599
+//! use worth_query_publication::facade::application_entry::{
+//!     WorthQueryApplicationRequest, WorthQueryDocumentHistoryClosing,
+//! };
+//! use worth_query_declaration::facade::application_schema::ApplicationSchema;
+//! fn read_closing<S: ApplicationSchema>(
+//!     closing: WorthQueryDocumentHistoryClosing<'_, S>,
+//!     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+//! ) {
+//!     closing.read(request);
+//! }
+//! ```
+//! Retry that same closing owner with the owning runtime's phase.
+//! ```
+//! use worth_query_publication::facade::application_entry::{
+//!     WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryCloseReceipt,
+//! };
+//! use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
+//! use worth_query_declaration::facade::application_schema::ApplicationSchema;
+//! fn retry<'runtime, S: ApplicationSchema>(
+//!     closing: WorthQueryDocumentHistoryClosing<'runtime, S>,
+//!     phase: &WorthQueryAdvancementPhase<'_>,
+//! ) -> Result<WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing<'runtime, S>> {
+//!     closing.retry(phase)
+//! }
+//! ```
 mod assessment;
 mod attachment;
 mod close;
 mod denial;
+mod edit;
+mod edit_builder;
 mod read;
+#[doc(hidden)]
+pub use edit::WorthQueryHistoryEditHandoffPauseForTest;
+pub use edit::{
+    WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance, WorthQueryHistoryEditDenial,
+    WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome, WorthQueryHistoryEditPosture,
+};
+pub use edit_builder::{
+    WorthQueryHistoryEditBuilder, WorthQueryHistoryEditCaptureDenial,
+    WorthQueryHistoryEditCaptureFailure, WorthQueryHistoryEditDescription,
+};
 
 pub use close::WorthQueryApplicationHistoryCloseFailure;
 pub use denial::{
     WorthQueryApplicationHistoryAttachmentFailure, WorthQueryApplicationHistoryDenial,
 };
 pub use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial;
+pub use worth_query_execution::publication_boundary::document_history::{
+    WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
+    WorthQueryDocumentHistoryClosingDenial, WorthQueryHistoryNodeId, WorthQueryHistoryStep,
+};
 pub use worth_query_installation::facade::WorthQueryDocumentHistoryInstallationDenialKind;
 
 use super::WorthQueryApplicationRequest;

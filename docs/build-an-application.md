@@ -1878,6 +1878,26 @@ head or recreated model refuses. Close with
 `document.close(&phase)` and retain any live-document or retired-cleanup failure.
 See [attach a model and read its owned head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#attach-a-model-and-read-its-owned-head).
 
+To record an isolated edit, consume the attached document with
+`document.edit(intent).idempotency_owned(&request, key)?`, then
+`retain_in_program::<Program, Action>(host)`. Repeatedly call `advance(&request)`
+on the returned owner; retain that owner on every progress or refusal. The
+document's `read` continues to use its selected head until candidate adoption.
+When ready, `finish(&request)` returns the document and either its sealed step
+with the original action completion, the original step for an equivalent retry,
+or the original terminal action outcome. A refusal after adoption can still
+report `Selected`; preserve its completion and finish it with a fresh request.
+Use `discard(&request)` to explicitly abandon unselected candidate work, keeping
+the returned owner when cleanup refuses. This entry accepts declared
+source-completion actions with no source, workflow control or external effects.
+See [record an edit and retain its original outcome](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#record-an-edit-and-retain-its-original-outcome).
+
+Closing a document releases its internal history pins and disposes all its
+owned heads. `Closing(owner)` retains unfinished disposal across multiple heads;
+retry `owner.retry(&phase)` after releasing blocking readers. A closing owner
+cannot read or edit the document. A successful close does not release history
+held independently by other consumers.
+
 To store the selected basis as application data, serialize
 `selected.describe_basis()` before releasing the selection. After loading that
 record through an ordinary READ request, deserialize it as

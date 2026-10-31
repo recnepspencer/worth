@@ -22,6 +22,28 @@ where
 pub(super) mod sealed {
     use super::*;
     pub trait Driver<S: ApplicationSchema>: ApplicationMutationAdmissionBinding<S> {
+        fn prepare_history<'owner, I, P, A, M>(
+            owner: &'owner WorthQuerySourceOnlyOperation<S, I, P, A, M>,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        ) -> Result<
+            (
+                crate::application_entry::mutation::authorization::PreparedMutation<S, Self>,
+                worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
+                    'owner,
+                    S,
+                >,
+            ),
+            WorthQueryApplicationRequestMutationDenial,
+        >
+        where
+            S: 'static,
+            I: ApplicationMutationIntent<S, Binding = Self>,
+            P: ApplicationProgramDefinition<S>,
+            A: ApplicationAction<S, Self>,
+            M: WorthQuerySourceDeliveryMode,
+            Self: Sized;
+
         fn admit_for_assessment<'owner, I, P, A, M>(
             owner: &'owner WorthQuerySourceOnlyOperation<S, I, P, A, M>,
             phase: &WorthQueryAdvancementPhase<'_>,
@@ -79,6 +101,30 @@ pub(super) mod sealed {
         B::Input: Clone + Send + Sync,
         B::ScopeBinding: ApplicationMutationScopeResolution<S, B::PrincipalIdentity>,
     {
+        fn prepare_history<'owner, I, P, A, M>(
+            owner: &'owner WorthQuerySourceOnlyOperation<S, I, P, A, M>,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        ) -> Result<
+            (
+                crate::application_entry::mutation::authorization::PreparedMutation<S, Self>,
+                worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
+                    'owner,
+                    S,
+                >,
+            ),
+            WorthQueryApplicationRequestMutationDenial,
+        >
+        where
+            S: 'static,
+            I: ApplicationMutationIntent<S, Binding = Self>,
+            P: ApplicationProgramDefinition<S>,
+            A: ApplicationAction<S, Self>,
+            M: WorthQuerySourceDeliveryMode,
+        {
+            owner.admission.prepare_history_source(phase, request)
+        }
+
         fn admit_for_assessment<'owner, I, P, A, M>(
             owner: &'owner WorthQuerySourceOnlyOperation<S, I, P, A, M>,
             phase: &WorthQueryAdvancementPhase<'_>,

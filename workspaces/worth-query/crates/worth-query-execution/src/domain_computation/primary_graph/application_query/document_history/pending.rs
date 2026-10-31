@@ -11,6 +11,18 @@ pub(super) struct PendingDocumentRead {
 }
 
 impl PendingDocumentRead {
+    pub(super) fn retained_source<S: ApplicationSchema>(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    ) -> std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+    > {
+        crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
+            runtime,
+            self.product.retained_clone(),
+        )
+    }
+
     pub(super) fn capture<S, Q, P, R, A, I, E>(
         plan: &WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, E>,
     ) -> Self {
@@ -42,6 +54,6 @@ impl PendingDocumentRead {
         if self.identity().product_branch() != branch {
             return Err((value, Denial::HeadDiverged));
         }
-        current_head::confirm(runtime, phase, &self.product, value)
+        confirm_document_head(runtime, phase, &self.product, value)
     }
 }

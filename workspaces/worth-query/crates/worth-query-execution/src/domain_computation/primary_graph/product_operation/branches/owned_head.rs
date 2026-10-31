@@ -77,6 +77,16 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryOwnedProductHead<'runtime, S
         Ok(Self::from_created_branch(self.application, previous))
     }
 
+    pub(in crate::domain_computation::primary_graph) fn adopt_at(
+        &mut self,
+        candidate: WorthQueryExpectedProductBranch<'runtime, Schema>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        expected: &crate::basis::WorthQueryProductObservationLease,
+    ) -> Result<Self, WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>> {
+        let previous = candidate.adopt_at(&mut self.branch, phase, expected)?;
+        Ok(Self::from_created_branch(self.application, previous))
+    }
+
     /// Close the current head through its existing application lifecycle.
     /// Retirement followed by unfinished cleanup returns that cleanup owner,
     /// rather than an apparently live head that could be closed a second time.

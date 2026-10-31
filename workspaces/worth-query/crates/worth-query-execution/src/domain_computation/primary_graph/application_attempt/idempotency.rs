@@ -1,5 +1,6 @@
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
+mod admitted_intent;
 mod capability_workflow;
 mod correction;
 mod encoding;

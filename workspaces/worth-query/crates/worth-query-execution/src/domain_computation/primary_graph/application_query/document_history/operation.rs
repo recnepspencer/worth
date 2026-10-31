@@ -47,12 +47,20 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if !installed.contains_operation::<M>() {
             return Err(Denial::OperationNotDeclared);
         }
+        let admitted_product = admitted
+            .graph_work()
+            .mutation_product()
+            .ok_or(Denial::ForeignRecording)?
+            .publication_binding();
+        if admitted_product.observation() != selected.product().observation() {
+            return Err(Denial::HeadDiverged);
+        }
         let product = selected.product().read_lease_ref();
         if WorthQueryProductBranchReadIdentity::from_observation(product.observation())
             != document.expected
         {
             return Err(Denial::HeadDiverged);
         }
-        current_head::confirm(self, phase, product, ()).map_err(|(_, denial)| denial)
+        confirm_document_head(self, phase, product, ()).map_err(|(_, denial)| denial)
     }
 }

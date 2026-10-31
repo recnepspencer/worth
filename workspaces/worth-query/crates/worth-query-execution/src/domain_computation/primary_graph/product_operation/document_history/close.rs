@@ -1,9 +1,11 @@
-use super::WorthQueryDocumentHistory;
+use super::{
+    WorthQueryDocumentHistory, WorthQueryDocumentHistoryCloseReceipt,
+    WorthQueryDocumentHistoryClosing,
+};
 use crate::basis::WorthQueryProductBranch;
-use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchCloseReceipt;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationProductBranchCleanupFailure,
-    WorthQueryApplicationProductBranchCloseDenial, WorthQueryOwnedProductHeadCloseFailure,
+    WorthQueryApplicationProductBranchCloseDenial,
 };
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
 use worth_query_installation::facade::ApplicationSchema;
@@ -22,6 +24,7 @@ pub enum WorthQueryDocumentHistoryCloseFailure<
         branch: WorthQueryProductBranch,
         failure: WorthQueryApplicationProductBranchCleanupFailure,
     },
+    Closing(WorthQueryDocumentHistoryClosing<'runtime, S>),
 }
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
@@ -31,33 +34,27 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<
-        WorthQueryProductBranchCloseReceipt,
+        WorthQueryDocumentHistoryCloseReceipt,
         WorthQueryDocumentHistoryCloseFailure<'runtime, S, H>,
     > {
-        let Self {
-            head,
-            model,
-            expected,
-            binding,
-            marker,
-        } = self;
-        match head.close(phase) {
+        if phase
+            .execution_request_for(&self.application().product_runtime)
+            .is_err()
+        {
+            return Err(WorthQueryDocumentHistoryCloseFailure::Retained {
+                document: self,
+                denial: WorthQueryApplicationProductBranchCloseDenial::ForeignPhase,
+            });
+        }
+        let Self { head, journal, .. } = self;
+        match WorthQueryDocumentHistoryClosing::new(head, journal).retry(phase) {
             Ok(receipt) => Ok(receipt),
-            Err(WorthQueryOwnedProductHeadCloseFailure::Retained { head, denial }) => {
-                Err(WorthQueryDocumentHistoryCloseFailure::Retained {
-                    document: Self {
-                        head,
-                        model,
-                        expected,
-                        binding,
-                        marker,
-                    },
-                    denial,
-                })
-            }
-            Err(WorthQueryOwnedProductHeadCloseFailure::Retired { branch, failure }) => {
-                Err(WorthQueryDocumentHistoryCloseFailure::Retired { branch, failure })
-            }
+            Err(closing) => match closing.into_terminal_cleanup() {
+                Ok((branch, failure)) => {
+                    Err(WorthQueryDocumentHistoryCloseFailure::Retired { branch, failure })
+                }
+                Err(closing) => Err(WorthQueryDocumentHistoryCloseFailure::Closing(closing)),
+            },
         }
     }
 }
@@ -67,6 +64,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> std::fmt::Debug
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Closing(closing) => f.debug_tuple("Closing").field(closing).finish(),
             Self::Retained { denial, .. } => f.debug_tuple("Retained").field(denial).finish(),
             Self::Retired { branch, failure } => f
                 .debug_struct("Retired")

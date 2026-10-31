@@ -115,6 +115,18 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         WorthQueryProductBranchReadIdentity::from_observation(self.source.observation())
     }
 
+    pub(in crate::domain_computation::primary_graph) fn application(
+        &self,
+    ) -> &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.application
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retained_expected_source(
+        &self,
+    ) -> crate::basis::WorthQueryProductObservationLease {
+        self.source.read_lease()
+    }
+
     pub fn close(
         self,
         phase: &WorthQueryAdvancementPhase<'_>,

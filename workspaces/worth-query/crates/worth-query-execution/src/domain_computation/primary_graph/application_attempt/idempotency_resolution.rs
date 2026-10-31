@@ -294,12 +294,7 @@ where
         let bindings = bindings
             .into_iter()
             .map(|read_for| {
-                let binding = read_for
-                    .bind_operation(admission.operation_definition_identity())
-                    .bind_operation_scope(admission.operation_scope_binding())
-                    .bind_preconditions(admission.mutation_preconditions().identity())
-                    .bind_governed_input(admission.governed_input_identity())
-                    .bind_governed_proposal(admission.governed_proposal_identity());
+                let binding = read_for.bind_admission(admission);
                 (read_for, binding)
             })
             .collect::<Vec<_>>();

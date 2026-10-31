@@ -2,6 +2,7 @@
 mod assessment;
 mod attachment;
 mod membership;
+mod recording;
 
 use worth_query_host::facade::{
     application_entry::{WorthQueryApplicationHistoryDocument, WorthQueryApplicationRequestExt},
@@ -18,8 +19,8 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 };
 
 type App = DocumentRetentionRuntime<RetentionProgramP0>;
-type Document<'a> =
-    WorthQueryApplicationHistoryDocument<'a, DocumentRetentionSchema, RetentionHistory>;
+type Document<'a, H = RetentionHistory> =
+    WorthQueryApplicationHistoryDocument<'a, DocumentRetentionSchema, H>;
 
 fn head(host: &App) -> WorthQueryOwnedProductHead<'_, DocumentRetentionSchema> {
     host.with_host_advancement(|phase| {

@@ -3,7 +3,6 @@ use worth_query_execution::{
     facade::product::{
         WorthQueryApplicationProductBranchCleanupFailure,
         WorthQueryApplicationProductBranchCloseDenial, WorthQueryProductBranch,
-        WorthQueryProductBranchCloseReceipt,
     },
     publication_boundary::document_history::WorthQueryDocumentHistoryCloseFailure,
 };
@@ -22,6 +21,7 @@ pub enum WorthQueryApplicationHistoryCloseFailure<
         branch: WorthQueryProductBranch,
         failure: WorthQueryApplicationProductBranchCleanupFailure,
     },
+    Closing(WorthQueryDocumentHistoryClosing<'runtime, S>),
 }
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
@@ -31,11 +31,14 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<
-        WorthQueryProductBranchCloseReceipt,
+        WorthQueryDocumentHistoryCloseReceipt,
         WorthQueryApplicationHistoryCloseFailure<'runtime, S, H>,
     > {
         let Self { owner, access } = self;
         match owner.close(phase) {
+            Err(WorthQueryDocumentHistoryCloseFailure::Closing(closing)) => {
+                Err(WorthQueryApplicationHistoryCloseFailure::Closing(closing))
+            }
             Ok(receipt) => Ok(receipt),
             Err(WorthQueryDocumentHistoryCloseFailure::Retained {
                 document: owner,
@@ -56,6 +59,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> std::fmt::Debug
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Closing(closing) => f.debug_tuple("Closing").field(closing).finish(),
             Self::Retained { denial, .. } => f.debug_tuple("Retained").field(denial).finish(),
             Self::Retired { branch, failure } => f
                 .debug_struct("Retired")

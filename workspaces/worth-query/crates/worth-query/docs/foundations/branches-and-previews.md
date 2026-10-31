@@ -169,6 +169,7 @@ let document = host.with_host_advancement(|phase| {
         )
 })??;
 let result = document.read(&runtime.request(&principal, &scope))?;
+drop(result); // Release this read before attempting retirement.
 host.with_host_advancement(|phase| document.close(&phase))??;
 ```
 
@@ -202,7 +203,11 @@ execute; ordinary action execution still requires fresh authorization.
 Close under a phase from the owning host. `Retained { document, denial }` keeps
 the live document after a refusal before retirement. `Retired { branch,
 failure }` carries actual cleanup after retirement; retain and retry
-`failure.into_cleanup()`. A held reader can delay that cleanup.
+`failure.into_cleanup()`. `Closing(owner)` carries unfinished disposal when
+additional document-owned heads remain. Retry `owner.retry(&phase)` with a
+phase from the owning runtime. A closing owner cannot read or edit. Close drops
+document-owned history pins before retiring heads; independently held readers
+can delay actual cleanup and must be released by their owners.
 
 The [compiled declaration](../../../worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs)
 and [compiled attachment cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/attachment.rs)
@@ -210,6 +215,89 @@ show two model heads, current reads, equal-value divergence and explicit close.
 The [compiled edit-assessment cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/assessment.rs)
 show ordinary action construction, model and membership refusals, fresh request
 authority, unchanged model values and disposal of both owners.
+
+### Record an edit and retain its original outcome
+
+Use the attached document to construct a fresh edit for a declared operation.
+This entry accepts a source-completion action whose binding has no mutation
+source, workflow execution or external effect. The document owns the actual
+selected head throughout the edit; no separate application slot needs updating.
+
+```rust,ignore
+use worth_query_host::facade::application_entry::{
+    WorthQueryHistoryEditAdvance, WorthQueryHistoryEditOutcome,
+};
+
+let mut edit = document
+    .edit(SetRetentionIntent {
+        input: SetRetentionInput { identity: document_identity, retention_days: 3 },
+    })
+    .idempotency_owned(&request, operation_key)?
+    .retain_in_program::<RetentionProgramP0, SetRetentionAction>(host)?;
+
+let edit = loop {
+    match edit.advance(&request) {
+        WorthQueryHistoryEditAdvance::Progress(next) => edit = next,
+        WorthQueryHistoryEditAdvance::Ready(ready) => break ready,
+        WorthQueryHistoryEditAdvance::Refused { edit, denial } => {
+            // Keep this edit: it owns any candidate, completion and cleanup.
+            return Err((edit, denial));
+        }
+    }
+};
+let finished = edit.finish(&request)?;
+let document = finished.document;
+match finished.outcome {
+    WorthQueryHistoryEditOutcome::Recorded { step, completion, closed } => {
+        // Use step.id()/parent()/label() for UI metadata and retain the
+        // original completion for the action's result and commit receipt.
+    }
+    WorthQueryHistoryEditOutcome::AlreadyRecorded { step, closed } => {
+        // This is the original occurrence; the current selection stays put.
+    }
+    WorthQueryHistoryEditOutcome::NotRecorded { terminal, closed } => {
+        // Inspect terminal.native_outcome(); no completed step was appended.
+    }
+}
+```
+
+The [compiled recording journeys](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/journeys.rs)
+and their [concrete action construction](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/mod.rs)
+show the complete imports, installed action type, advancement, outcome handling
+and disposal. Add typed expected facts with `.preconditions(conditions)` before
+capturing the key when the action requires them. A capture refusal returns the
+original builder, key and denial through `failure.into_parts()`.
+
+Before opening a private candidate, admission completes a fresh model READ,
+authorizes the original action and reserves the record's actual storage. The
+business operation runs through its ordinary continuation on that candidate.
+`edit.read(&request)` reads the selected document, while `completed_source()`
+retains the candidate's original completion. Selection binds that receipt's
+exact endpoint. An out-of-band candidate change refuses even when it restores
+the same field values. Equal model values at different completed occurrences
+have distinct step identities.
+
+Use `posture()` when an advancement refuses. Cancellation after adoption can
+leave `Selected` with its step and original completion still owned. It does
+not undo selection. Call `finish` with a fresh request to transfer that evidence
+after ordinary operation cleanup. A domain denial remains a native terminal
+outcome and produces no completed user step. Inspect `terminal_source()` and
+finish it to recover the document and its `NotRecorded` outcome.
+
+For an equivalent retry in the same live document, keep the original key,
+input and typed preconditions. Admission returns the original completed step,
+including after later edits; it neither reruns the handler nor resets the
+selected head. Changing any admitted intent under that key refuses. These
+attempts belong to the process-local document and are not durable restart data.
+`current_step(&request)` freshly admits the document READ before returning its
+current sealed descriptor. A copied step or node ID grants no READ or write
+permission and holds no source lease.
+
+To abandon unselected work, call `discard(&request)`. On refusal, retain the
+returned edit and resolve its actual continuation or cleanup before retrying.
+An unsettled publication cannot be discarded as if it had no effects. A
+selected edit must be finished. Close the returned document explicitly; release
+independently retained reads before retrying a blocked close.
 
 ### Store an expected basis and select it again
 

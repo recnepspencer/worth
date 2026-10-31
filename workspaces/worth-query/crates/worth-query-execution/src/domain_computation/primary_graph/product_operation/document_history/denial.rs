@@ -17,10 +17,41 @@ pub enum WorthQueryDocumentHistoryDenial {
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
     ),
     HeadDiverged,
+    Recording(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    RecordingIdentityExhausted,
+    AttemptInFlight,
+    IntentDrift,
+    ForeignRecording,
+    UnsupportedOperation,
+    CandidateSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
+    ReceiptMismatch,
+    Adoption(
+        crate::domain_computation::primary_graph::WorthQueryExpectedProductBranchAdoptionDenial,
+    ),
     Stopped(WorthQueryAdvancementDenial),
     NativeBasis(RelationalBranchBasisDenial),
     HeadAdmission(RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>),
     Read(WorthQueryManagedIndexDenial),
+}
+
+impl WorthQueryDocumentHistoryDenial {
+    /// Project the Native basis owner's interruption without exposing its type
+    /// as a dependency of the ordinary publication frontend.
+    pub fn native_basis_interruption(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption>
+    {
+        use crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption as Interruption;
+        match self {
+            Self::NativeBasis(RelationalBranchBasisDenial::Cancelled) => {
+                Some(Interruption::Cancelled)
+            }
+            Self::NativeBasis(RelationalBranchBasisDenial::TimedOut) => {
+                Some(Interruption::DeadlineExceeded)
+            }
+            _ => None,
+        }
+    }
 }
 
 /// No document was attached. The original live head and actual read denial remain owned.

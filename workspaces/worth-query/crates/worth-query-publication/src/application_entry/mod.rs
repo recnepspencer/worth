@@ -37,10 +37,18 @@ mod elevation_close;
 mod elevation_request;
 mod history;
 mod inbound_occurrence;
+#[doc(hidden)]
+pub use history::WorthQueryHistoryEditHandoffPauseForTest;
 pub use history::{
     WorthQueryApplicationHistoryAttachmentFailure, WorthQueryApplicationHistoryCloseFailure,
     WorthQueryApplicationHistoryDenial, WorthQueryApplicationHistoryDocument,
-    WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryInstallationDenialKind,
+    WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
+    WorthQueryDocumentHistoryClosingDenial, WorthQueryDocumentHistoryDenial,
+    WorthQueryDocumentHistoryInstallationDenialKind, WorthQueryHistoryEdit,
+    WorthQueryHistoryEditAdvance, WorthQueryHistoryEditBuilder, WorthQueryHistoryEditCaptureDenial,
+    WorthQueryHistoryEditCaptureFailure, WorthQueryHistoryEditDenial,
+    WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome,
+    WorthQueryHistoryEditPosture, WorthQueryHistoryNodeId, WorthQueryHistoryStep,
 };
 mod live;
 mod mandatory_review;

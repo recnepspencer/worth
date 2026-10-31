@@ -7,6 +7,26 @@ where
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
+    /// Observe the selected completed user step through the document's current READ.
+    pub fn current_step(
+        &self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<WorthQueryHistoryStep, WorthQueryApplicationHistoryDenial> {
+        let runtime = self.owner.application();
+        if !std::ptr::eq(runtime, request.application) {
+            return Err(WorthQueryApplicationHistoryDenial::ForeignRuntime);
+        }
+        runtime
+            .with_application_advancement(request.scope, |phase| {
+                self.read_in_advancement(&phase, request)?;
+                Ok(self
+                    .owner
+                    .current_history_step(&program_publication_access())
+                    .clone())
+            })
+            .map_err(WorthQueryApplicationHistoryDenial::ExecutionRequest)?
+    }
+
     /// Read this exact model under current authorization. An externally changed
     /// head or a recreated model refuses instead of silently rebinding the document.
     pub fn read(

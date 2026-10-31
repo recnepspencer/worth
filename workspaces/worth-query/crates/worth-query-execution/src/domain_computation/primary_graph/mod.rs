@@ -73,8 +73,14 @@ pub(in crate::domain_computation) use principal_currentness_capture::PrincipalCu
 pub(crate) mod product_activation;
 mod product_operation;
 pub use product_operation::document_history::{
-    WorthQueryDocumentHistory, WorthQueryDocumentHistoryAttachmentFailure,
-    WorthQueryDocumentHistoryCloseFailure, WorthQueryDocumentHistoryDenial,
+    WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,
+    WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryCandidateDenial,
+    WorthQueryDocumentHistoryCapturePauseForTest, WorthQueryDocumentHistoryCloseFailure,
+    WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
+    WorthQueryDocumentHistoryClosingDenial, WorthQueryDocumentHistoryDenial,
+    WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryOperationConstraint,
+    WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
+    WorthQueryHistoryNodeId, WorthQueryHistoryStep,
 };
 pub(in crate::domain_computation) use product_operation::SharedSelectedProductOperation;
 mod program_occurrence;

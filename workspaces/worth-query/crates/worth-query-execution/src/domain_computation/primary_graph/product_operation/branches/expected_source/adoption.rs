@@ -44,6 +44,30 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         WorthQueryProductBranch,
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
+        self.adopt_with_endpoint(head, phase, None)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn adopt_at(
+        self,
+        head: &mut WorthQueryProductBranch,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        expected: &crate::basis::WorthQueryProductObservationLease,
+    ) -> Result<
+        WorthQueryProductBranch,
+        WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
+    > {
+        self.adopt_with_endpoint(head, phase, Some(expected))
+    }
+
+    fn adopt_with_endpoint(
+        self,
+        head: &mut WorthQueryProductBranch,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        expected: Option<&crate::basis::WorthQueryProductObservationLease>,
+    ) -> Result<
+        WorthQueryProductBranch,
+        WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
+    > {
         let execution = match phase.execution_request_for(&self.application.product_runtime) {
             Ok(execution) => execution,
             Err(_) => {
@@ -83,6 +107,11 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
                 ))
             }
         };
+        if expected.is_some_and(|expected| expected.observation() != candidate.observation()) {
+            return Err(
+                self.adoption_failed(WorthQueryExpectedProductBranchAdoptionDenial::HeadMoved)
+            );
+        }
         // Keep resource drops outside Native access and the World guarded section.
         let result = application
             .primary_provider

@@ -31,9 +31,16 @@ pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
 
 pub mod document_history {
     pub use crate::domain_computation::primary_graph::application_query::WorthQueryDocumentHistoryRead;
+    #[doc(hidden)]
+    pub use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryCapturePauseForTest;
     pub use crate::domain_computation::primary_graph::{
-        WorthQueryDocumentHistory, WorthQueryDocumentHistoryAttachmentFailure,
-        WorthQueryDocumentHistoryCloseFailure, WorthQueryDocumentHistoryDenial,
+        WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,
+        WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryCandidateDenial,
+        WorthQueryDocumentHistoryCloseFailure, WorthQueryDocumentHistoryCloseReceipt,
+        WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
+        WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryOperation,
+        WorthQueryDocumentHistoryOperationConstraint, WorthQueryDocumentHistoryRecordPreparation,
+        WorthQueryDocumentHistoryReservation, WorthQueryHistoryNodeId, WorthQueryHistoryStep,
     };
 }
 

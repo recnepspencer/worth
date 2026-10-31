@@ -1,5 +1,4 @@
 //! A pending exact model capture leaves only after ordinary query completion.
-mod current_head;
 mod operation;
 mod pending;
 
@@ -7,6 +6,7 @@ use super::{
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationOneShotResult,
     WorthQueryApplicationProjection,
 };
+use crate::domain_computation::primary_graph::product_operation::document_history::confirm_document_head;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryDocumentHistory,
     WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryDenial as Denial,
@@ -134,11 +134,28 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             });
         }
         let expected = pending.identity();
+        let execution = match phase.checked_execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return Err(WorthQueryDocumentHistoryAttachmentFailure {
+                    head,
+                    denial: Denial::Stopped(cause),
+                })
+            }
+        };
+        let journal = match crate::domain_computation::primary_graph::product_operation::document_history::HistoryJournal::attach(
+            &execution, self.runtime.authority_identity().as_u64(), expected.clone(), pending.retained_source(self),
+        ) {
+            Ok(journal) => journal,
+            Err(denial) => return Err(WorthQueryDocumentHistoryAttachmentFailure { head, denial }),
+        };
         let document = WorthQueryDocumentHistory {
             head,
             model: pending.model(),
             expected,
             binding,
+            journal,
+            capture_pause: None,
             marker: std::marker::PhantomData,
         };
         match pending.confirm(

@@ -1,11 +1,38 @@
 //! The attached document owns its actual head and exact model association.
+mod allocation;
+mod candidate;
+mod capture_pause;
 mod close;
+mod constraint;
+mod current_head;
 mod denial;
+mod disposal;
+mod journal;
 mod model;
+mod operation_context;
+mod reservation;
+mod sealing;
+mod step;
+pub use candidate::WorthQueryDocumentHistoryCandidateDenial;
+#[doc(hidden)]
+pub use capture_pause::WorthQueryDocumentHistoryCapturePauseForTest;
+pub use constraint::WorthQueryDocumentHistoryOperationConstraint;
+pub use operation_context::WorthQueryDocumentHistoryOperation;
+pub use reservation::{
+    WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
+};
+pub use sealing::WorthQueryDocumentHistoryAdoptionFailure;
 
 pub use close::WorthQueryDocumentHistoryCloseFailure;
+pub(in crate::domain_computation::primary_graph) use current_head::confirm as confirm_document_head;
 pub use denial::{WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryDenial};
+pub use disposal::{
+    WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
+    WorthQueryDocumentHistoryClosingDenial,
+};
+pub(in crate::domain_computation::primary_graph) use journal::HistoryJournal;
 pub(in crate::domain_computation::primary_graph) use model::HistoryModelIdentity;
+pub use step::{WorthQueryHistoryNodeId, WorthQueryHistoryStep};
 
 use super::WorthQueryOwnedProductHead;
 use crate::basis::WorthQueryProductBranchReadIdentity;
@@ -23,6 +50,9 @@ pub struct WorthQueryDocumentHistory<
     pub(in crate::domain_computation::primary_graph) model: HistoryModelIdentity,
     pub(in crate::domain_computation::primary_graph) expected: WorthQueryProductBranchReadIdentity,
     pub(in crate::domain_computation::primary_graph) binding: ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation::primary_graph) journal: HistoryJournal<'runtime, S>,
+    pub(in crate::domain_computation::primary_graph) capture_pause:
+        Option<std::sync::Arc<capture_pause::CapturePause>>,
     pub(in crate::domain_computation::primary_graph) marker: std::marker::PhantomData<fn() -> H>,
 }
 

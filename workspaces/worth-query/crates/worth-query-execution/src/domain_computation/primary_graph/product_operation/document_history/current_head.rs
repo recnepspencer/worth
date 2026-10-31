@@ -1,10 +1,14 @@
-use super::*;
+use super::WorthQueryDocumentHistoryDenial as Denial;
 use crate::basis::WorthQueryProductObservationLease;
+use crate::domain_computation::primary_graph::{
+    WorthQueryAdvancementPhase, WorthQueryPrimaryGraphApplicationRuntime,
+};
+use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
 
 /// Validate through the same Native commit lane and World head guard as adoption.
 /// Prepared values enter and leave the guard without allocation or authored effects.
-pub(super) fn confirm<S: ApplicationSchema, Value>(
+pub(in crate::domain_computation::primary_graph) fn confirm<S: ApplicationSchema, Value>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     phase: &WorthQueryAdvancementPhase<'_>,
     product: &WorthQueryProductObservationLease,

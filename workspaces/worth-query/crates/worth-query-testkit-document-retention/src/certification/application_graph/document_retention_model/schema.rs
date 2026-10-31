@@ -68,6 +68,7 @@ worth_query_application_contribution! {
                 .operation_projection_work_budget(SetRetention::reference(), 8)
                 .operation_read_field(SetRetention::reference(), DocumentIdentityField::reference())
                 .operation_read_field(SetRetention::reference(), DocumentRetentionField::reference())
+                .operation_expected_fact(SetRetention::reference(), DocumentRetentionField::reference())
                 .operation_write(SetRetention::reference(), DocumentRetentionField::reference())
                 .invariant(document_retention_invariants::first_definition())
                 .invariant(document_retention_invariants::second_definition())
@@ -145,6 +146,10 @@ worth_query_structured_value_binding!(pub SetRetentionInputBinding for SetRetent
 worth_query_operation!(pub SetRetention for DocumentRetentionSchema, input SetRetentionInputBinding);
 worth_query_operation_reads!(SetRetention => [DocumentIdentityField, DocumentRetentionField]);
 worth_query_operation_writes!(SetRetention => [DocumentRetentionField]);
+impl declaration::application_schema::OperationExpectsFact<SetRetention>
+    for DocumentRetentionField
+{
+}
 
 impl primary_graph::WorthQueryApplicationProjection<DocumentRetentionSchema, DocumentRetentionQuery>
     for DocumentRetentionRow

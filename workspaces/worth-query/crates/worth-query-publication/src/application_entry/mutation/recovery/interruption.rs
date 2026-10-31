@@ -17,6 +17,23 @@ use worth_query_execution::facade::{
 };
 pub(in crate::application_entry::mutation) fn request_stop(denial: &Request) -> Option<Denial> {
     match denial {
+        Request::DocumentHistory(cause) => {
+            use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial as History;
+            use worth_query_execution::facade::product::WorthQueryExpectedProductBranchAdoptionDenial as Adoption;
+            match cause {
+                History::Stopped(cause) | History::Adoption(Adoption::Stopped(cause)) => Some(*cause),
+                History::OperationAdmission(cause) => authorization_interruption(cause.kind()),
+                History::CandidateSelection(Product::Stopped(cause)) => execution_stop(*cause),
+                History::Recording(cause) => execution_stop(worth_query_execution::facade::primary_graph::relational_execution_kind(*cause, None)),
+                History::NativeBasis(_) => cause.native_basis_interruption().map(Denial::Interrupted),
+                History::ForeignPhase | History::ForeignRuntime | History::InstalledBindingMismatch
+                | History::UnsupportedReadMode | History::ForeignModel | History::OperationNotDeclared
+                | History::HeadDiverged | History::RecordingIdentityExhausted | History::AttemptInFlight
+                | History::IntentDrift | History::ForeignRecording | History::UnsupportedOperation
+                | History::ReceiptMismatch | History::CandidateSelection(_) | History::Adoption(_)
+                | History::HeadAdmission(_) | History::Read(_) => None,
+            }
+        },
         Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::Execution(cause)) => Some(*cause),
         Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::LifecycleObservation(outcome)) => {
             use worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome as Outcome;

@@ -9,6 +9,7 @@ use worth_query_execution::facade::primary_graph::{
 mod advancement;
 mod authorization;
 mod binding;
+mod history;
 pub(super) use advancement::Step as SourceStep;
 pub(in crate::application_entry) use binding::sealed::Driver as SourceAssessmentDriver;
 pub use binding::WorthQuerySourceOperationBinding;
