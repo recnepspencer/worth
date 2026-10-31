@@ -14,8 +14,10 @@ mod request_fingerprint;
 ))]
 pub(in crate::physical_runtime) use idempotency::with_conflicting_binding_history;
 
-pub(in crate::physical_runtime) use handle::PhysicalMutationAttempt;
 pub use handle::PhysicalMutationHandle;
+pub(in crate::physical_runtime) use handle::{
+    ManagedPublicationRegistration, PhysicalMutationAttempt,
+};
 pub use idempotency::{
     PhysicalIdempotencyReopenFailure, PhysicalMutationBindingCompaction,
     PhysicalMutationIdempotencyIssuanceDenial, PhysicalMutationIdempotencyKey,

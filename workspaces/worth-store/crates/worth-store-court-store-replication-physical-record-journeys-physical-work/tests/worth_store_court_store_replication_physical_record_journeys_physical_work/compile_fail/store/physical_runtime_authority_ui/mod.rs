@@ -316,3 +316,5 @@ fn terminal_head_retirement_authority_is_owner_issued() {
 }
 
 mod owned_publication;
+
+mod owned_ordered_journal;

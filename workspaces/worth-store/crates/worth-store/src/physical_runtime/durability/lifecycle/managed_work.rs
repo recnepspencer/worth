@@ -93,9 +93,7 @@ impl PhysicalMutationRuntimeOwner {
     fn start(
         self: &Arc<Self>,
         prepared: PreparedPhysicalMutation,
-        anchored_step: Option<
-            Arc<crate::physical_runtime::anchored_records::publication::step_custody::AcceptedStep>,
-        >,
+        anchored_step: Option<crate::physical_runtime::durability::ManagedPublicationRegistration>,
     ) -> PhysicalMutationHandle {
         let identity = prepared.mutation_identity();
         let mut state = self.state();
@@ -106,7 +104,7 @@ impl PhysicalMutationRuntimeOwner {
                     Arc::downgrade(self),
                 );
             if let Some(step) = anchored_step {
-                attempt.register_anchored_step(step);
+                attempt.register_publication_step(step);
             }
             attempt.mark_runtime_closing();
             let handle = PhysicalMutationHandle::new(&attempt);
@@ -121,7 +119,7 @@ impl PhysicalMutationRuntimeOwner {
         if let Some(existing) = state.attempts.get(&identity).cloned() {
             drop(state);
             if let Some(step) = anchored_step {
-                existing.register_anchored_step(step);
+                existing.register_publication_step(step);
             }
             return PhysicalMutationHandle::new(&existing);
         }
@@ -130,7 +128,7 @@ impl PhysicalMutationRuntimeOwner {
             Arc::downgrade(self),
         );
         if let Some(step) = anchored_step {
-            attempt.register_anchored_step(step);
+            attempt.register_publication_step(step);
         }
         state.attempts.insert(identity, Arc::clone(&attempt));
         state.counters.record_started();

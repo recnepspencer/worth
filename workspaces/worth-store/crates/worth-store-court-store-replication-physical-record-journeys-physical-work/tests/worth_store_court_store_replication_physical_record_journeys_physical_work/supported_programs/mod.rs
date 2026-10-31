@@ -16,3 +16,5 @@ mod supported_admission;
 mod supported_physical_work;
 
 mod anchored_publication;
+
+mod owned_ordered_journal;

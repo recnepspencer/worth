@@ -8,6 +8,11 @@ use crate::physical_runtime::ordered_journal::OrderedJournalState;
 use crate::physical_runtime::{OrderedJournal, OrderedJournalDenial, OrderedJournalName};
 
 impl ServingPhysicalRuntime {
+    pub(in crate::physical_runtime) fn ordered_journal_owner(
+        &self,
+    ) -> std::sync::Arc<std::sync::Mutex<OrderedJournalState>> {
+        self.ordered_journals.clone()
+    }
     pub(in crate::physical_runtime) fn journal_registry(
         &self,
     ) -> &crate::physical_runtime::OrderedJournalRegistry {
