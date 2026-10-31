@@ -270,6 +270,13 @@ fn checkpoint_lineage_node_remap_denies_before_installation() {
         RecoveryMode::NormalRecoveryVerification,
     )
     .unwrap();
+    let mut wrong_generation = plan.clone();
+    let checkpoint = wrong_generation.checkpoint.as_mut().unwrap();
+    checkpoint.lineage.nodes_mut()[0].entity_id.generation.0 += 1;
+    let error = recover_error(execution, wrong_generation);
+    assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
+    assert!(error.detail.contains("does not name its exact entity"));
+
     plan.checkpoint
         .as_mut()
         .expect("checkpoint")
