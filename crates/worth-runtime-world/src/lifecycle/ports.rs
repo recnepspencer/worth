@@ -96,6 +96,13 @@ pub enum RuntimeWorldBranchCreationOutcome {
 pub(crate) trait RuntimeWorldObservationService:
     super::availability::RuntimeWorldAvailability
 {
+    fn readmitted_publication(
+        &self,
+        identity: &worth_foundational::facade::DurableCompositeCommitIdentity,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    >;
     fn readmit_product_branch_reference(
         &self,
         description: &crate::branch::ProductBranchReferenceDescription,

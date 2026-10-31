@@ -32,6 +32,7 @@ pub(crate) use frontiers::WorldIdentityFrontiers;
 pub use medium::{
     RuntimeWorldDurableMedium, WorldDurableHomeBinding, WorldDurableMediumDenial,
     WorldDurableRecoverySource, WorldPublicationObservation, WorldPublicationTaskPosture,
+    WorldRecoveredJournalRecord,
 };
 pub use readmission::WorldReadmissionDenial;
 pub(crate) use readmission::WorldRecoveredJournalState;

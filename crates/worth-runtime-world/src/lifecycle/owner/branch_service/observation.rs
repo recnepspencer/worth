@@ -14,6 +14,25 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn readmitted_publication(
+        &self,
+        identity: &worth_foundational::facade::DurableCompositeCommitIdentity,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    > {
+        use crate::history::WorldReadmittedPublicationDenial as Denial;
+        if !self.branch_service_is_available() {
+            return Err(Denial::OwnerUnavailable);
+        }
+        let _operation = self
+            .reserve_creation_operation()
+            .map_err(|()| Denial::OwnerUnavailable)?;
+        let identity =
+            crate::identity::readmission::readmit_commit(self.owner_identity(), *identity)
+                .ok_or(Denial::ForeignHome)?;
+        self.state.history.readmitted_publication(&identity)
+    }
     fn observe_root_product_branch(
         &self,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {

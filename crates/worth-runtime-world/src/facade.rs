@@ -7,7 +7,7 @@ pub use crate::durability::{
     RuntimeWorldDurableMedium, WorldDurableArtifact, WorldDurableFrameDenial,
     WorldDurableHomeBinding, WorldDurableMediumDenial, WorldDurableRecoverySource,
     WorldPublicationObservation, WorldPublicationTaskPosture, WorldReadmissionDenial,
-    WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
+    WorldRecoveredJournalRecord, WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
 };
 
 // Public signatures below name the already-issued component owner bundles and
@@ -67,7 +67,7 @@ pub use crate::history::{
     HistoryCatalogCounters, HistoryMetadataLedger, HistoryReclamationDenial, OrdinaryParent,
     RetiredBranchHistoryRelease, RuntimeWorldPerformedPublicationProtection,
     RuntimeWorldPublicationCursor, RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage,
-    RuntimeWorldPublicationRow,
+    RuntimeWorldPublicationRow, WorldReadmittedPublication, WorldReadmittedPublicationDenial,
 };
 
 pub use crate::identity::{

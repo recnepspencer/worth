@@ -21,6 +21,7 @@ pub(crate) use durable_movement::WorldProductMovementPermit;
 mod publication;
 #[cfg(test)]
 pub(crate) mod publication_unwind;
+mod readmission;
 mod retirement;
 mod successor_validation;
 pub(crate) use retirement::ProductBranchReferenceRetirement;

@@ -10,6 +10,7 @@ mod publication;
 mod publication_page;
 mod publication_protection;
 mod reachability;
+mod readmission;
 mod reservation;
 mod result_snapshot_cleanup;
 pub(crate) use reservation::InstalledRootCommitRollback;

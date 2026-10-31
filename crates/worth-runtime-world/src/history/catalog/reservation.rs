@@ -100,6 +100,26 @@ impl Drop for ReservedCompositeCommitCapacity {
 }
 
 impl ReservedCompositeCommitCapacity {
+    pub(crate) fn install_readmitted(
+        &mut self,
+        commit: Arc<CompositeRuntimeWorldCommit>,
+        pins: crate::retention::HistoryRetentionObligation,
+        record: Arc<crate::history::ReadmittedPublicationRecord>,
+    ) -> Result<(), CompositeHistoryCatalogDenial> {
+        let mut state = lock_state(&self.state);
+        self.validate_installation(&state, &commit, &pins)?;
+        promote_reserved_commit(
+            &mut state,
+            &self.identity,
+            self.slots.as_ref().expect("live reserved slots"),
+            commit,
+            Some(crate::history::PublicationEvidence::Readmitted(record)),
+            pins,
+        );
+        self.armed = false;
+        self.slots = None;
+        Ok(())
+    }
     pub(crate) fn publication_envelope(
         &self,
     ) -> Option<&Arc<crate::history::CanonicalPublicationEnvelope>> {
@@ -135,7 +155,9 @@ impl ReservedCompositeCommitCapacity {
             &self.identity,
             self.slots.as_ref().expect("live reserved slots"),
             commit,
-            self.publication.clone(),
+            self.publication
+                .clone()
+                .map(crate::history::PublicationEvidence::Live),
             pins,
         );
         self.armed = false;
@@ -165,7 +187,9 @@ impl ReservedCompositeCommitCapacity {
             &self.identity,
             self.slots.as_ref().expect("live reserved slots"),
             commit,
-            self.publication.clone(),
+            self.publication
+                .clone()
+                .map(crate::history::PublicationEvidence::Live),
             pins,
         );
         super::lock_index(&reachability).protect_reserved_slot(
@@ -231,7 +255,9 @@ impl ReservedCompositeCommitCapacity {
             &self.identity,
             self.slots.as_ref().expect("live reserved slots"),
             commit,
-            self.publication.clone(),
+            self.publication
+                .clone()
+                .map(crate::history::PublicationEvidence::Live),
             pins,
         );
         {
@@ -336,7 +362,7 @@ fn promote_reserved_commit(
     identity: &crate::identity::CompositeCommitIdentity,
     slots: &ReservedHistorySlots,
     commit: Arc<CompositeRuntimeWorldCommit>,
-    publication: Option<Arc<crate::history::CanonicalPublicationEnvelope>>,
+    publication: Option<crate::history::PublicationEvidence>,
     pins: crate::retention::HistoryRetentionObligation,
 ) -> Arc<CompositeRuntimeWorldCommit> {
     let reservation = state

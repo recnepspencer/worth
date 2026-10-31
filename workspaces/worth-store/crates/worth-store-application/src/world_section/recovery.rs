@@ -1,13 +1,15 @@
 use super::ApplicationWorldMedium;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::WorldDurableJournal;
-use worth_runtime_world::facade::{WorldDurableMediumDenial as Denial, WorldDurableRecoverySource};
+use worth_runtime_world::facade::{
+    WorldDurableMediumDenial as Denial, WorldDurableRecoverySource, WorldRecoveredJournalRecord,
+};
 use worth_store::physical_runtime::OrderedJournalName;
 pub(super) fn read(
     medium: &ApplicationWorldMedium,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<WorldDurableRecoverySource, Denial> {
-    Ok(WorldDurableRecoverySource::from_owner_bytes(
+    Ok(WorldDurableRecoverySource::from_owner_records(
         read_stream(medium, WorldDurableJournal::Branches, execution)?,
         read_stream(medium, WorldDurableJournal::Occurrences, execution)?,
         read_stream(medium, WorldDurableJournal::Custody, execution)?,
@@ -17,7 +19,7 @@ fn read_stream(
     medium: &ApplicationWorldMedium,
     stream: WorldDurableJournal,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<Vec<Vec<u8>>, Denial> {
+) -> Result<Vec<WorldRecoveredJournalRecord>, Denial> {
     execution.consult().map_err(Denial::Request)?;
     let journal = medium
         .serving
@@ -30,12 +32,15 @@ fn read_stream(
     let mut records = Vec::new();
     for position in 1..=head {
         execution.consult().map_err(Denial::Request)?;
-        records.push(
-            journal
-                .read(position, 64 << 10)
-                .map_err(|cause| Denial::Storage(format!("{cause:?}")))?
-                .into_bytes(),
-        );
+        let payload = journal
+            .read(position, 64 << 10)
+            .map_err(|cause| Denial::Storage(format!("{cause:?}")))?;
+        let entry = payload.entry();
+        records.push(WorldRecoveredJournalRecord::from_owner_record(
+            entry.position(),
+            entry.payload_sha256(),
+            payload.into_bytes(),
+        ));
     }
     Ok(records)
 }

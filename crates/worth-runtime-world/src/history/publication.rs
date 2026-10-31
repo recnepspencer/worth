@@ -2,6 +2,9 @@
 //! allocation; a caller's linear delivery claim never becomes its truth source.
 
 mod delivery;
+mod readmission;
+pub(crate) use readmission::{PublicationEvidence, ReadmittedPublicationRecord};
+pub use readmission::{WorldReadmittedPublication, WorldReadmittedPublicationDenial};
 
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};

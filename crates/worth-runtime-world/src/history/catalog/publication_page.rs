@@ -143,9 +143,13 @@ impl CompositeHistoryCatalog {
             examined += 1;
             last = Some(identity.clone());
             let entry = state.entries.get(identity).and_then(|slot| slot.get());
-            match entry
-                .and_then(|entry| entry.publication.as_ref().map(|envelope| (entry, envelope)))
-            {
+            match entry.and_then(|entry| {
+                entry
+                    .publication
+                    .as_ref()
+                    .and_then(|evidence| evidence.live())
+                    .map(|envelope| (entry, envelope))
+            }) {
                 Some((entry, envelope)) if envelope.facts().is_some() => {
                     lock_index(&state.reachability).increment_direct_protection(identity)?;
                     rows.push(RuntimeWorldPublicationRow {
@@ -158,7 +162,14 @@ impl CompositeHistoryCatalog {
                         ),
                     });
                 }
-                Some(_) | None if entry.is_none_or(|entry| entry.publication.is_some()) => {
+                Some(_) | None
+                    if entry.is_none_or(|entry| {
+                        entry
+                            .publication
+                            .as_ref()
+                            .is_some_and(|evidence| evidence.live().is_some())
+                    }) =>
+                {
                     pending = true
                 }
                 _ => {} // Root commits have no publication envelope.

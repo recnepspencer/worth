@@ -9,6 +9,13 @@ pub struct WorldNativeReadmissionCustody {
     pub(crate) root: Option<RecoveredRelationalBranchBasis>,
     pub(crate) publications:
         Vec<Option<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>>,
+    pub(crate) records: Vec<std::sync::Arc<crate::history::ReadmittedPublicationRecord>>,
+    pub(crate) history: Option<crate::history::CompositeHistoryCatalog>,
+    pub(crate) branches: Option<crate::branch::registry::ProductBranchRegistry>,
+    pub(crate) recovery: Option<crate::recovery::RecoveryCatalog>,
+    pub(crate) observations: Vec<crate::branch::ProductBranchObservation>,
+    pub(crate) slots: Vec<Option<crate::recovery::ReservedProductUnpublishedSlot>>,
+    pub(crate) capacities: Vec<crate::history::ReservedCompositeCommitCapacity>,
 }
 
 impl WorldNativeReadmissionCustody {
@@ -16,6 +23,13 @@ impl WorldNativeReadmissionCustody {
         Self {
             root: None,
             publications: Vec::new(),
+            records: Vec::new(),
+            history: None,
+            branches: None,
+            recovery: None,
+            observations: Vec::new(),
+            slots: Vec::new(),
+            capacities: Vec::new(),
         }
     }
     pub(crate) fn refuse(
@@ -30,11 +44,17 @@ impl WorldNativeReadmissionCustody {
 
     pub fn retains_root_admission(&self) -> bool {
         self.root.is_some()
+            || self
+                .branches
+                .as_ref()
+                .is_some_and(|branches| branches.root_cell().is_some())
     }
     pub fn retained_publication_admissions(&self) -> usize {
-        self.publications
-            .iter()
-            .filter(|publication| publication.is_some())
-            .count()
+        self.records.len()
+            + self
+                .publications
+                .iter()
+                .filter(|publication| publication.is_some())
+                .count()
     }
 }

@@ -48,16 +48,33 @@ pub enum WorldDurableMediumDenial {
 }
 #[derive(Debug)]
 pub struct WorldDurableRecoverySource {
-    pub(crate) branches: Vec<Vec<u8>>,
-    pub(crate) occurrences: Vec<Vec<u8>>,
-    pub(crate) custody: Vec<Vec<u8>>,
+    pub(crate) branches: Vec<WorldRecoveredJournalRecord>,
+    pub(crate) occurrences: Vec<WorldRecoveredJournalRecord>,
+    pub(crate) custody: Vec<WorldRecoveredJournalRecord>,
+}
+/// Source coordinates supplied by the admitted Home adapter. These values are
+/// untrusted input until World validates the owner frame and contiguous stream.
+#[derive(Debug, Clone)]
+pub struct WorldRecoveredJournalRecord {
+    pub(crate) position: u64,
+    pub(crate) digest: [u8; 32],
+    pub(crate) bytes: Vec<u8>,
+}
+impl WorldRecoveredJournalRecord {
+    pub fn from_owner_record(position: u64, digest: [u8; 32], bytes: Vec<u8>) -> Self {
+        Self {
+            position,
+            digest,
+            bytes,
+        }
+    }
 }
 impl WorldDurableRecoverySource {
     /// Untrusted owner bytes. Only World readmission can turn them into facts.
-    pub fn from_owner_bytes(
-        branches: Vec<Vec<u8>>,
-        occurrences: Vec<Vec<u8>>,
-        custody: Vec<Vec<u8>>,
+    pub fn from_owner_records(
+        branches: Vec<WorldRecoveredJournalRecord>,
+        occurrences: Vec<WorldRecoveredJournalRecord>,
+        custody: Vec<WorldRecoveredJournalRecord>,
     ) -> Self {
         Self {
             branches,
@@ -65,7 +82,7 @@ impl WorldDurableRecoverySource {
             custody,
         }
     }
-    pub(crate) fn stream(&self, journal: WorldDurableJournal) -> &[Vec<u8>] {
+    pub(crate) fn stream(&self, journal: WorldDurableJournal) -> &[WorldRecoveredJournalRecord] {
         match journal {
             WorldDurableJournal::Branches => &self.branches,
             WorldDurableJournal::Occurrences => &self.occurrences,

@@ -8,6 +8,17 @@ pub struct RuntimeWorldObservationPort {
     owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
 }
 impl RuntimeWorldObservationPort {
+    pub fn readmitted_publication(
+        &self,
+        identity: &worth_foundational::facade::DurableCompositeCommitIdentity,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        super::super::RuntimeWorldServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+    > {
+        self.service()?
+            .readmitted_publication(identity)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
     pub fn observe_root_product_branch(
         &self,
     ) -> Result<

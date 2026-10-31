@@ -41,8 +41,7 @@ where
         let binding = WorldDurableMediumBinding::new(medium);
         let source = binding.recover(request).map_err(Denial::Medium)?;
         let recovered = WorldRecoveredJournalState::readmit(source, binding.binding(), request)?;
-        if !recovered.occurrences.is_empty()
-            || recovered.branches.len() > 1
+        if recovered.branches.len() > 1
             || recovered.dispositions.values().any(|disposition| {
                 matches!(
                     disposition,

@@ -32,6 +32,8 @@ pub(crate) use publication::{
     CanonicalPublicationEnvelope, PerformedPublicationFacts, PreparedPublicationRecord,
     PublicationDeliveryClaim, PublicationRevision,
 };
+pub(crate) use publication::{PublicationEvidence, ReadmittedPublicationRecord};
+pub use publication::{WorldReadmittedPublication, WorldReadmittedPublicationDenial};
 #[cfg(test)]
 pub(crate) use reclamation::CompositeHistoryReclamationRequest;
 pub use reclamation::{HistoryReclamationDenial, RetiredBranchHistoryRelease};

@@ -7,7 +7,7 @@ use super::CompositeRuntimeWorldCommit;
 pub(crate) struct CompositeHistoryCatalogEntry {
     pub(super) pins: crate::retention::HistoryRetentionObligation,
     pub(super) commit: Arc<CompositeRuntimeWorldCommit>,
-    pub(super) publication: Option<Arc<crate::history::CanonicalPublicationEnvelope>>,
+    pub(super) publication: Option<crate::history::PublicationEvidence>,
     pub(super) metadata_charge: HistoryMetadataCharge,
 }
 

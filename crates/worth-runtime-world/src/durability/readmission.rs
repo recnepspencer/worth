@@ -4,6 +4,7 @@ use super::{
     DurableWorldHead, WorldDurableArtifact, WorldDurableHomeBinding, WorldDurableMediumDenial,
     WorldDurableRecoverySource, WorldIdentityFrontiers, WorldOpenAttemptRecord, WorldRecord,
 };
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use worth_foundational::facade::{
     CompositeAttemptAssociation, DurableCompositeCommitIdentity,
@@ -13,6 +14,10 @@ use worth_foundational::facade::{
 
 #[derive(Debug)]
 pub enum WorldReadmissionDenial {
+    JournalSourceMismatch,
+    OccurrenceEvidenceMismatch,
+    HistoryAdmission(crate::history::CompositeHistoryCatalogDenial),
+    HistoryRetention(crate::branch::RuntimeWorldBootstrapNoEffectCause),
     NativeCustody {
         cause: Box<WorldReadmissionDenial>,
         custody: Box<super::WorldNativeReadmissionCustody>,
@@ -62,6 +67,9 @@ pub(crate) struct WorldRecoveredJournalState {
     pub(crate) frontiers: WorldIdentityFrontiers,
     pub(crate) branches: Vec<WorldDurableArtifact>,
     pub(crate) occurrences: Vec<WorldDurableArtifact>,
+    pub(crate) occurrence_sources:
+        BTreeMap<DurableCompositePublicationAttemptIdentity, super::WorldRecoveredJournalRecord>,
+    pub(crate) history: BTreeMap<DurableCompositeCommitIdentity, DurableWorldHead>,
     pub(crate) opens: BTreeMap<DurableCompositePublicationAttemptIdentity, WorldOpenAttemptRecord>,
     pub(crate) dispositions:
         BTreeMap<DurableCompositePublicationAttemptIdentity, RecoveredCustodyDisposition>,
@@ -77,6 +85,8 @@ impl WorldRecoveredJournalState {
             frontiers: WorldIdentityFrontiers::default(),
             branches: Vec::new(),
             occurrences: Vec::new(),
+            occurrence_sources: BTreeMap::new(),
+            history: BTreeMap::new(),
             opens: BTreeMap::new(),
             dispositions: BTreeMap::new(),
         };
@@ -88,7 +98,13 @@ impl WorldRecoveredJournalState {
             WorldDurableJournal::Custody,
             WorldDurableJournal::Occurrences,
         ] {
-            for bytes in source.stream(journal) {
+            for (index, source) in source.stream(journal).iter().enumerate() {
+                if source.position != index as u64 + 1
+                    || <[u8; 32]>::from(Sha256::digest(&source.bytes)) != source.digest
+                {
+                    return Err(WorldReadmissionDenial::JournalSourceMismatch);
+                }
+                let bytes = &source.bytes;
                 execution.consult().map_err(|cause| {
                     WorldReadmissionDenial::Medium(WorldDurableMediumDenial::Request(cause))
                 })?;
@@ -170,12 +186,16 @@ impl WorldRecoveredJournalState {
                             return Err(WorldReadmissionDenial::ConflictingDisposition);
                         }
                         advance_head(&mut heads, &mut history, open)?;
+                        recovered
+                            .occurrence_sources
+                            .insert(open.association.attempt(), source.clone());
                         recovered.occurrences.push(artifact);
                     }
                 }
             }
         }
         recovered.validate_open_identities(&history)?;
+        recovered.history = history;
         Ok(recovered)
     }
 

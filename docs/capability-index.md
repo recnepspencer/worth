@@ -1068,9 +1068,19 @@ heads exist. This presence check grants no World proof from empty streams;
 already-accepted checkpoint recovery still settles and actually acknowledges
 its original task before Native close admission.
 
-Cold readmission currently supports one initial product branch with no World
-occurrences. Native source-backed recovery reconstructs the original predecessor
-and unpublished effect; `inspection_port().recovery_page` exposes a Recovered
+Cold readmission supports one initial product branch and its ordinary
+Relational-only occurrence chain. Each occurrence admits its exact original
+Native predecessor and successor from actual recovery; later Native advancement
+does not replace either historical root. World validates the actual journal
+positions, payload digests, association and recorded Native evidence, restores
+the original durable identities and head generations, and issues fresh local
+owner custody. `observation_port().readmitted_publication` takes a Foundational
+`DurableCompositeCommitIdentity` as lookup data and returns an owning protected
+view of that original occurrence and Native semantic result. It exposes no live
+`CommitResult`, snapshot, timing or `Performed` delivery; Native semantics do not
+reconstruct arbitrary application return values. Native source-backed recovery
+also reconstructs the exact predecessor and unpublished effect;
+`inspection_port().recovery_page` exposes a Recovered
 row, `recovery_port().inspect_recovered_effects` claims its original identities,
 and `release_recovered_effects` durably records release before dropping the real
 Native capability. Pending or refused release returns the same custody.
@@ -1078,8 +1088,10 @@ Released artifacts require explicit no-effect evidence or the complete original
 Native receipt, position and digest, checked against Native's actual inventory
 on reopen. The real filesystem child-process court kills after Native durability
 before the World occurrence, reopens and releases the original custody, then
-reopens with the same unmoved product head. World occurrence readmission,
-recovered continuation, general Signal/Bridge state, Host retry and World
+reopens with the same unmoved product head. The ordinary occurrence filesystem
+court additionally publishes twice, advances Native again, closes, reopens both
+historical semantic results and the original product head, then reopens again.
+Multiple-branch readmission, recovered continuation, general Signal/Bridge state, Host retry and World
 checkpoint coverage remain required for phase completion.
 See [Milestone 3](../plans/database-foundation/milestone-3.md)
 and the owning [Home attachment](../workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs).
