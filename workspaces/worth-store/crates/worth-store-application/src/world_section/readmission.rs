@@ -2,6 +2,7 @@
 use worth_execution::ExecutionRequest;
 use worth_proof::{AuthorityMarker, RelationalReadmitted, WorldReconciled};
 use worth_runtime_world::facade::RuntimeWorldOwner;
+#[cfg(feature = "certification-test-authority")]
 mod controls_for_test;
 mod refusal;
 pub use refusal::WorldHomeReadmissionRefused;

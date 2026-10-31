@@ -32,6 +32,19 @@ pub struct ApplicationHomeRecoveryCustody {
 }
 
 impl ApplicationHomeRecoveryCustody {
+    pub(crate) fn from_never_attached_home(context: crate::home_context::HomeContext) -> Self {
+        Self {
+            location: context.location,
+            descriptor: context.descriptor,
+            checkpoint: Err(crate::ApplicationHomeCheckpointDenial::NativeSectionNeverAttached),
+            physical: PhysicalCloseCustody::Retained(context.serving),
+            native: NativeCloseCustody::Released,
+            world_close_report: None,
+            checkpoint_owner: context.checkpoint,
+            world_publications: context.world_publications,
+        }
+    }
+
     pub(super) fn retained(
         context: crate::home_context::HomeContext,
         native: worth_store_relational::ClosingRelationalSection,

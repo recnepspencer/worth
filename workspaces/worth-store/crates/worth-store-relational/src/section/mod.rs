@@ -6,6 +6,8 @@ mod codec;
 #[cfg(feature = "certification-test-authority")]
 mod component_controls_for_test;
 mod readmission;
+mod unshared;
+pub use unshared::{UnrecoveredRelationalSection, UnsharedReadmittedRelationalSection};
 pub(crate) mod selection;
 pub use selection::RelationalCheckpointSelectionSource;
 

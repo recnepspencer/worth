@@ -14,6 +14,7 @@ mod home_controls_for_test;
 mod home_request;
 mod open;
 mod registry;
+mod relational_preparation;
 mod request_stage;
 mod resolve;
 #[cfg(test)]

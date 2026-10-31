@@ -83,6 +83,9 @@ pub fn admit_home(
         );
         Ok(HomeAdmitted::from_owner(AdmittedApplicationHome {
             context: HomeContext {
+                initialization: crate::relational_preparation::HomeInitializationOrigin::Available(
+                    recovered.origin,
+                ),
                 world_publications: world_slot.publications(),
                 world_close_report: None,
                 world_slot: Some(world_slot),

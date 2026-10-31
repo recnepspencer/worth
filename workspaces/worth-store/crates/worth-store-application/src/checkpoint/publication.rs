@@ -7,6 +7,9 @@ use worth_store::physical_runtime::{
 
 #[derive(Debug)]
 pub enum ApplicationHomeCheckpointDenial {
+    /// Pre-effect unavailable: no Native section, capture, or checkpoint task
+    /// ever existed for this failed construction.
+    NativeSectionNeverAttached,
     WorldSectionRequired,
     WorldJournalUnavailable(worth_store::physical_runtime::OrderedJournalDenial),
     WorldJournalRead(worth_store::physical_runtime::OrderedJournalReadFailure),

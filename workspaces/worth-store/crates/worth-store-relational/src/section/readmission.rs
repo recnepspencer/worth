@@ -7,6 +7,7 @@ use worth_store::physical_runtime::AnchoredRecordMembership;
 
 #[derive(Debug)]
 pub enum RelationalSectionReadmissionDenial {
+    InitialSchemaRuntimeMismatch,
     RuntimeSharedBeforeReadmission,
     MalformedSection,
     Execution(worth_execution::WorkCeilingDenial),
@@ -24,66 +25,91 @@ impl RelationalStoreSection {
         selected: Option<(&[u8], &AnchoredRecordMembership)>,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<(), RelationalSectionReadmissionDenial> {
-        let mut admitted = None;
-        let scope = execution.in_scope(|_| {
-            admitted = Some(self.readmit_in_scope(selected, execution));
-        });
-        match (scope, admitted) {
-            (Ok(()), Some(result)) => result,
-            (
-                Err(worth_execution::WorkCeilingDenial::Stopped(
-                    worth_execution::MapKernelStop::NestedStopped,
-                )),
-                Some(Err(cause)),
-            ) => Err(cause),
-            (Err(cause), _) => Err(RelationalSectionReadmissionDenial::Execution(cause)),
-            (Ok(()), None) => unreachable!("completed original-request native readmission"),
-        }
-    }
-
-    fn readmit_in_scope(
-        &mut self,
-        selected: Option<(&[u8], &AnchoredRecordMembership)>,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), RelationalSectionReadmissionDenial> {
-        use RelationalSectionReadmissionDenial as Denial;
-        let checkpoint = selected
-            .map(|(bytes, membership)| {
-                let checkpoint = super::codec::decode(bytes, execution)?;
-                self.cold_source
-                    .select_members(membership.version().generation(), membership.members());
-                Ok(checkpoint)
-            })
-            .transpose()?;
-        let covered = checkpoint.as_ref().map_or(0, |section| section.covered().0);
-        let transitions = checkpoint
-            .as_ref()
-            .map_or(0, |section| section.covered_transitions().0);
-        let tail = crate::recovered_history::journal_tail(&self.serving, covered)
-            .map_err(Denial::Journal)?;
-        let transitions = crate::recovered_transitions::transition_tail(&self.serving, transitions)
-            .map_err(Denial::Transitions)?;
-        let source = RelationalDurableRecoverySource::new(
-            checkpoint,
-            tail,
-            transitions,
-            self.cold_source.clone(),
-        );
-        let plan = self
-            .runtime
-            .durability()
-            .recovery_plan_from_source(
-                execution,
-                source,
-                RecoveryVerificationMode::NormalRecoveryVerification,
-            )
-            .map_err(Denial::Native)?;
-        let (_, authority) = std::sync::Arc::get_mut(&mut self.runtime)
-            .ok_or(Denial::RuntimeSharedBeforeReadmission)?
-            .durability_recovery()
-            .recover_with_authority(execution, plan)
-            .map_err(Denial::Native)?;
-        self.recovered = Some(authority);
+        let runtime = std::sync::Arc::get_mut(&mut self.runtime)
+            .ok_or(RelationalSectionReadmissionDenial::RuntimeSharedBeforeReadmission)?;
+        let (outcome, recovered) = recover_runtime(
+            runtime,
+            &self.cold_source,
+            &self.serving,
+            selected,
+            execution,
+        )?;
+        self.recovered = Some(recovered);
+        self.recovery_outcome = Some(outcome);
         Ok(())
     }
+}
+
+pub(super) fn recover_runtime(
+    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    cold_source: &std::sync::Arc<crate::cold_source::StoreColdSource>,
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+    selected: Option<(&[u8], &AnchoredRecordMembership)>,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<
+    (
+        worth_relational::facade::durability::RecoveryOutcome,
+        worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
+    ),
+    RelationalSectionReadmissionDenial,
+> {
+    let mut admitted = None;
+    let scope = execution.in_scope(|_| {
+        admitted = Some(recover_in_scope(
+            runtime,
+            cold_source,
+            serving,
+            selected,
+            execution,
+        ))
+    });
+    match (scope, admitted) {
+        (_, Some(Ok(completed))) => Ok(completed),
+        (_, Some(Err(cause))) => Err(cause),
+        (Err(cause), None) => Err(RelationalSectionReadmissionDenial::Execution(cause)),
+        (Ok(()), None) => unreachable!("completed original-request native readmission"),
+    }
+}
+fn recover_in_scope(
+    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    cold_source: &std::sync::Arc<crate::cold_source::StoreColdSource>,
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+    selected: Option<(&[u8], &AnchoredRecordMembership)>,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<
+    (
+        worth_relational::facade::durability::RecoveryOutcome,
+        worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
+    ),
+    RelationalSectionReadmissionDenial,
+> {
+    use RelationalSectionReadmissionDenial as Denial;
+    let checkpoint = selected
+        .map(|(bytes, membership)| {
+            let checkpoint = super::codec::decode(bytes, execution)?;
+            cold_source.select_members(membership.version().generation(), membership.members());
+            Ok(checkpoint)
+        })
+        .transpose()?;
+    let covered = checkpoint.as_ref().map_or(0, |section| section.covered().0);
+    let transitions = checkpoint
+        .as_ref()
+        .map_or(0, |section| section.covered_transitions().0);
+    let tail = crate::recovered_history::journal_tail(serving, covered).map_err(Denial::Journal)?;
+    let transitions = crate::recovered_transitions::transition_tail(serving, transitions)
+        .map_err(Denial::Transitions)?;
+    let source =
+        RelationalDurableRecoverySource::new(checkpoint, tail, transitions, cold_source.clone());
+    let plan = runtime
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            source,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .map_err(Denial::Native)?;
+    runtime
+        .durability_recovery()
+        .recover_with_authority(execution, plan)
+        .map_err(Denial::Native)
 }

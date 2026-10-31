@@ -9,6 +9,7 @@ use worth_store::physical_runtime::{AdmittedRecordPlacementPolicy, ServingPhysic
 pub struct RelationalStoreSection {
     pub(super) recovered:
         Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
+    pub(super) recovery_outcome: Option<worth_relational::facade::durability::RecoveryOutcome>,
     pub(super) runtime: Arc<RelationalRuntime>,
     pub(super) cold_source: Arc<crate::cold_source::StoreColdSource>,
     pub(super) serving: Arc<ServingPhysicalRuntime>,
@@ -41,20 +42,14 @@ impl RelationalStoreSection {
         cold_source: Arc<crate::cold_source::StoreColdSource>,
         checkpoint_selection: Arc<dyn super::RelationalCheckpointSelectionSource>,
     ) -> Result<Self, RelationalRuntimeConstructionDenial> {
-        let medium = crate::journal_medium::StoreJournalMedium::new(
-            serving.clone(),
-            placement,
-            cold_source.clone(),
-            checkpoint_selection.clone(),
-        );
-        let runtime = definition.build_durable(Box::new(medium))?;
-        Ok(Self {
-            recovered: None,
-            runtime: Arc::new(runtime),
-            cold_source,
+        super::unshared::AttachedRelationalRuntime::attach(
+            definition,
             serving,
+            placement,
+            cold_source,
             checkpoint_selection,
-        })
+        )
+        .map(|attached| attached.share(None, None))
     }
 
     pub fn runtime(&self) -> &RelationalRuntime {

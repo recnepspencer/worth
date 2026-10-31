@@ -21,6 +21,11 @@ pub use crate::open::physical_admission::{
     ApplicationHomePhysicalStage,
 };
 pub use crate::open::{admit_home, readmit_relational, recover_home, ApplicationHomeOpenRefusal};
+pub use crate::relational_preparation::{
+    attach_relational, ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,
+    RelationalAttachmentFailedHome, RelationalAttachmentRefused, RelationalHomeReadmissionRefused,
+    UnrecoveredApplicationHome, UnsharedReadmittedApplicationHome,
+};
 pub use crate::world_section::{
     readmit_world, ApplicationWorldDefinition, ApplicationWorldPorts, WorldHomeClosePosture,
     WorldHomeCloseRefused, WorldHomeReadmissionRefused, WorldReadmittedApplicationHome,

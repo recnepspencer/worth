@@ -141,6 +141,12 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn retained_commits(
+        &self,
+        candidates: &[crate::identity::CompositeCommitIdentity],
+    ) -> Vec<crate::identity::CompositeCommitIdentity> {
+        super::super::ports::RuntimeWorldLifecycleService::retained_commits(self, candidates)
+    }
     fn retire_changed_history(
         &self,
     ) -> Result<

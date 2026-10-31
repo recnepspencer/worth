@@ -7,6 +7,7 @@ use worth_store::physical_runtime::ServingPhysicalRuntime;
 
 pub struct ClosingRelationalSection {
     recovered: Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
+    recovery_outcome: Option<worth_relational::facade::durability::RecoveryOutcome>,
     runtime: PreparedRelationalRuntimeClose,
     cold_source: Arc<crate::cold_source::StoreColdSource>,
     serving: Arc<ServingPhysicalRuntime>,
@@ -25,6 +26,7 @@ impl RelationalStoreSection {
     ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
         let Self {
             recovered,
+            recovery_outcome,
             runtime,
             cold_source,
             serving,
@@ -36,6 +38,7 @@ impl RelationalStoreSection {
                 return Err((
                     Self {
                         recovered,
+                        recovery_outcome,
                         runtime,
                         cold_source,
                         serving,
@@ -48,6 +51,7 @@ impl RelationalStoreSection {
         match runtime.prepare_close() {
             Ok(runtime) => Ok(ClosingRelationalSection {
                 recovered,
+                recovery_outcome,
                 runtime,
                 cold_source,
                 serving,
@@ -58,6 +62,7 @@ impl RelationalStoreSection {
                 Err((
                     Self {
                         recovered,
+                        recovery_outcome,
                         runtime: Arc::new(refused.into_runtime()),
                         cold_source,
                         serving,
@@ -88,6 +93,7 @@ impl ClosingRelationalSection {
     pub fn resume(self) -> RelationalStoreSection {
         RelationalStoreSection {
             recovered: self.recovered,
+            recovery_outcome: self.recovery_outcome,
             runtime: Arc::new(self.runtime.resume()),
             cold_source: self.cold_source,
             serving: self.serving,

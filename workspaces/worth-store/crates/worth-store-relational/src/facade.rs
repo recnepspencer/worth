@@ -7,5 +7,6 @@ pub use crate::section::{
     ClosingRelationalSection, PreparedRelationalSection, RelationalCheckpointSelectionProtection,
     RelationalCheckpointSelectionSource, RelationalSectionCheckpointDenial,
     RelationalSectionCloseDenial, RelationalSectionReadmissionDenial, RelationalStoreSection,
+    UnrecoveredRelationalSection, UnsharedReadmittedRelationalSection,
 };
 pub use crate::transition_resolution::RelationalStoreTransitionFate;
