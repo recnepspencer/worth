@@ -78,6 +78,7 @@ impl CompositePublicationReady {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         cancellation: RuntimeWorldCancellationToken,
         clock: &crate::lifecycle::RuntimeWorldClock,
+        control: &crate::lifecycle::RuntimeWorldOperationControlForTest,
     ) -> WorldDurablePublicationOutcome {
         let (binding, subject) = match self.custody.finalize_durable_occurrence(evidence) {
             Ok(prepared) => prepared,
@@ -88,6 +89,9 @@ impl CompositePublicationReady {
         if binding.occurrence_unresolved() {
             return self.durable_recovery(WorldDurablePublicationDenial::Indeterminate);
         }
+        // Genuine Native evidence is retained; no product comparison, permit
+        // or occurrence submission has happened. Polling never repeats this.
+        control.before_product_compare_for_test();
         if self
             .custody
             .admit_durable_movement(&cell, &self.expected_head, subject.clone())

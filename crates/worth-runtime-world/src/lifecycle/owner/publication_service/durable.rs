@@ -73,6 +73,7 @@ where
             execution,
             cancellation.clone(),
             &self.state.clock,
+            &self.state.operation_control,
         )
     }
 }
