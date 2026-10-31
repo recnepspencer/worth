@@ -32,6 +32,7 @@ pub enum WorthQueryDocumentHistoryDenial {
     NativeBasis(RelationalBranchBasisDenial),
     HeadAdmission(RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>),
     Read(WorthQueryManagedIndexDenial),
+    Paging(super::WorthQueryHistoryPageDenial),
     Metadata(crate::domain_computation::primary_graph::WorthQueryApplicationHistoryDenial),
     MetadataCapabilityInstallation(
         worth_query_installation::facade::WorthQueryApplicationCapabilityInstallationDenial,

@@ -28,6 +28,7 @@ mod discard;
 mod finish;
 mod handoff;
 mod metadata;
+mod paging;
 mod progression;
 mod sealing;
 pub use finish::{WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome};

@@ -22,6 +22,10 @@ workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/cr
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/handoff.rs
 # Recording parks at actual capture/adoption and bounds real request allocation.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/observation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/page_pause.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/budget.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/metadata.rs

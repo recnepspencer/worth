@@ -247,6 +247,35 @@ keep that returned edit and retry it with fresh authority. Once an occurrence
 has been delivered, its step descriptor remains owned descriptive evidence.
 See the [compiled metadata, retry and revocation cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/metadata.rs).
 
+### Page completed document steps
+
+Call `document.history_page(&request, limits, after.as_ref())` with positive
+`WorthQueryHistoryPageLimits` bounds for returned entries, examined entries and
+owned metadata bytes. `history_page_governed(&request, capability, operation,
+input, limits, after.as_ref())` supplies the separate metadata purpose. These
+calls execute the original model READ and current metadata policy before
+checking cursors, storage limits or journal entries.
+
+Rows arrive in creation order. Each sealed step identifies its parent, so the
+consumer can derive child lists and layout without making that cache authority.
+`row.retained_source_at_read()` describes exact source custody at assembly. It
+does not retain historical payloads or grant payload READ, preview or mutation
+permission. Dropping a page releases its own metadata backing; it does not close
+the document or invalidate another page's descriptions.
+
+Use `page.continuation()` for the next call. Foreign and changed-view cursors
+refuse explicitly; they never restart silently. A successful edit changes the
+view, while private reservations and discarded attempts leave it unchanged.
+`edit.history_page(..)` continues to show that completed selected view.
+`examined_entries()` counts visited existing map entries, not skipped ordinal
+gaps. `admitted_backing_bytes()` reports a conservative buffer/label quote,
+including shared label backing, rather than physical allocation traffic.
+
+On allocation or request refusal, keep the original cursor and retry with fresh
+permission and sufficient limits. Source movement or cancellation during
+assembly discards the staged page. See the [compiled page journeys](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/mod.rs)
+and [assembly handoff cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs).
+
 ### Record an edit and retain its original outcome
 
 Use the attached document to construct a fresh edit for a declared operation.

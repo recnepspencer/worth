@@ -12,6 +12,8 @@ use crate::domain_computation::primary_graph::{
 };
 use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::ExecutionRequest;
+#[path = "journal/paging.rs"]
+mod paging;
 
 pub(super) struct RecordedNode {
     pub(super) step: WorthQueryHistoryStep,
@@ -56,6 +58,8 @@ pub(in crate::domain_computation::primary_graph) struct HistoryJournal<'runtime,
     current: WorthQueryHistoryNodeId,
     next: u64,
     next_transition: u64,
+    view_generation: u64,
+    completed_end: u64,
     pending: Option<WorthQueryHistoryNodeId>,
     nodes: BTreeMap<u64, HistoryNode>,
     attempts: BTreeMap<[u8; 32], HistoryAttempt>,
@@ -77,6 +81,7 @@ pub(super) struct ReservedHistoryRecord {
     pub(super) parent: WorthQueryHistoryNodeId,
     pub(super) transition: u64,
     pub(super) key: [u8; 32],
+    view_after: u64,
 }
 
 impl<'runtime, S> HistoryJournal<'runtime, S> {
@@ -113,6 +118,8 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             current,
             next: 1,
             next_transition: 0,
+            view_generation: 0,
+            completed_end: 1,
             pending: None,
             nodes,
             attempts: BTreeMap::new(),
@@ -158,6 +165,10 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             .checked_add(1)
             .ok_or(Denial::RecordingIdentityExhausted)?;
         let key = meaning.canonical_key();
+        let view_after = self
+            .view_generation
+            .checked_add(1)
+            .ok_or(Denial::RecordingIdentityExhausted)?;
         // Every real tree slot is inserted before any candidate creation or operation effect.
         // Failure while acquiring the grants drops only new grants, leaving the journal intact.
         let node_allocation = self
@@ -221,6 +232,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             parent: self.current,
             transition,
             key,
+            view_after,
         })
     }
 
@@ -267,6 +279,8 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             .head = Some(previous);
         self.access(Access::Selection);
         self.current = reserved.node;
+        self.completed_end = reserved.node.ordinal + 1; // Successor was admitted by reserve.
+        self.view_generation = reserved.view_after;
         self.pending = None;
     }
 

@@ -32,7 +32,7 @@ pub(in crate::application_entry::mutation) fn request_stop(denial: &Request) -> 
                 | History::HeadDiverged | History::RecordingIdentityExhausted | History::AttemptInFlight
                 | History::IntentDrift | History::ForeignRecording | History::UnsupportedOperation
                 | History::ReceiptMismatch | History::CandidateSelection(_) | History::Adoption(_)
-                | History::HeadAdmission(_) | History::Read(_) | History::MetadataCapabilityInstallation(_) => None,
+                | History::HeadAdmission(_) | History::Read(_) | History::MetadataCapabilityInstallation(_) | History::Paging(_) => None,
             }
         },
         Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::Execution(cause)) => Some(*cause),

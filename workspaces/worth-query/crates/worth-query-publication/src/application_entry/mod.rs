@@ -48,7 +48,9 @@ pub use history::{
     WorthQueryHistoryEditAdvance, WorthQueryHistoryEditBuilder, WorthQueryHistoryEditCaptureDenial,
     WorthQueryHistoryEditCaptureFailure, WorthQueryHistoryEditDenial,
     WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome,
-    WorthQueryHistoryEditPosture, WorthQueryHistoryNodeId, WorthQueryHistoryStep,
+    WorthQueryHistoryEditPosture, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
+    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
+    WorthQueryHistoryPageRow, WorthQueryHistoryStep,
 };
 mod live;
 mod mandatory_review;

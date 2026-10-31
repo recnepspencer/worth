@@ -40,7 +40,10 @@ pub mod document_history {
         WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
         WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryOperation,
         WorthQueryDocumentHistoryOperationConstraint, WorthQueryDocumentHistoryRecordPreparation,
-        WorthQueryDocumentHistoryReservation, WorthQueryHistoryNodeId, WorthQueryHistoryStep,
+        WorthQueryDocumentHistoryReservation, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
+        WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
+        WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
+        WorthQueryHistoryStep,
     };
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::{

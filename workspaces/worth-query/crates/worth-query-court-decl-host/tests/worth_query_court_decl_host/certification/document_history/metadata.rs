@@ -14,7 +14,7 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
     document_history::GovernedRetentionHistory as History, record_history::capability,
 };
 
-fn governed(host: &App) -> Document<'_, History> {
+pub(super) fn governed(host: &App) -> Document<'_, History> {
     let owned = head(host);
     let scope = request_scope();
     let principal = authenticate_operator(host.runtime().installed_schema(), &scope);

@@ -79,6 +79,8 @@ mod edit;
 mod edit_builder;
 mod metadata;
 mod observation;
+mod page_pause;
+mod paging;
 mod read;
 #[doc(hidden)]
 pub use edit::WorthQueryHistoryEditHandoffPauseForTest;
@@ -98,7 +100,9 @@ pub use denial::{
 pub use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial;
 pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
-    WorthQueryDocumentHistoryClosingDenial, WorthQueryHistoryNodeId, WorthQueryHistoryStep,
+    WorthQueryDocumentHistoryClosingDenial, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
+    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
+    WorthQueryHistoryPageRow, WorthQueryHistoryStep,
 };
 pub use worth_query_installation::facade::WorthQueryDocumentHistoryInstallationDenialKind;
 

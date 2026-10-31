@@ -12,6 +12,30 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef},
 };
 
+/// Only a completed ordinary READ with the independent metadata decision can
+/// create this final correspondence check. It stays within its original phase.
+pub(super) struct CompletedMetadataRead<'phase, 'scope> {
+    source: pending::PendingDocumentRead,
+    phase: &'phase WorthQueryAdvancementPhase<'scope>,
+}
+impl CompletedMetadataRead<'_, '_> {
+    pub(super) fn confirm<S: ApplicationSchema, H: ApplicationHistoryBinding<S>, T>(
+        self,
+        document: &WorthQueryDocumentHistory<'_, S, H>,
+        value: T,
+    ) -> Result<T, Denial> {
+        if self.source.model() != document.model {
+            return Err(Denial::ForeignModel);
+        }
+        if self.source.identity() != document.expected {
+            return Err(Denial::HeadDiverged);
+        }
+        self.source
+            .confirm(self.phase, document.application(), document.branch(), value)
+            .map_err(|(_, cause)| cause)
+    }
+}
+
 impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistoryRead<'_, S, H>
 {
@@ -66,13 +90,13 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         Ok(self)
     }
 
-    pub(super) fn current_step(
+    pub(super) fn complete_metadata_read<'phase, 'scope>(
         mut self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
-        phase: &WorthQueryAdvancementPhase<'_>,
+        phase: &'phase WorthQueryAdvancementPhase<'scope>,
         document: &WorthQueryDocumentHistory<'_, S, H>,
         access: &WorthQueryProgramPublicationAccess,
-    ) -> Result<WorthQueryHistoryStep, Denial>
+    ) -> Result<CompletedMetadataRead<'phase, 'scope>, Denial>
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
@@ -110,11 +134,12 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::InstalledBindingMismatch);
         }
         self.plan.history_metadata = Some(metadata);
+        let source = pending::PendingDocumentRead::capture(&self.plan);
         // The original binding owns projection, body/filter denials, completion
         // and cleanup. Its common current-security validation consumes this
         // carried decision before the original query body may read.
         let _read = runtime.read_document_history(phase, access, document, self)?;
-        Ok(document.current_history_step(access).clone())
+        Ok(CompletedMetadataRead { source, phase })
     }
 }
 
@@ -129,6 +154,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
-        read.current_step(self, phase, document, access)
+        let completed = read.complete_metadata_read(self, phase, document, access)?;
+        completed.confirm(document, document.current_history_step(access).clone())
     }
 }

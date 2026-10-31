@@ -1,6 +1,7 @@
 //! A pending exact model capture leaves only after ordinary query completion.
 mod metadata;
 mod operation;
+mod paging;
 mod pending;
 
 use super::{
@@ -159,6 +160,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             binding,
             journal,
             capture_pause: None,
+            page_pause: None,
             marker: std::marker::PhantomData,
         };
         match pending.confirm(

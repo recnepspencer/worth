@@ -81,7 +81,9 @@ pub use product_operation::document_history::{
     WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryOperationConstraint,
     WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
     WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
-    WorthQueryHistoryNodeId, WorthQueryHistoryStep,
+    WorthQueryHistoryNodeId, WorthQueryHistoryPage, WorthQueryHistoryPageAssemblyPauseForTest,
+    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
+    WorthQueryHistoryPageRow, WorthQueryHistoryStep,
 };
 pub(in crate::domain_computation) use product_operation::SharedSelectedProductOperation;
 mod program_occurrence;

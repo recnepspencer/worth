@@ -144,3 +144,37 @@ fn append_probes_only_local_records_as_retained_history_grows() {
     }
     close(&host, untouched, 1);
 }
+
+#[test]
+fn a_tiny_page_visits_only_its_admitted_prefix_at_short_and_longer_histories() {
+    use std::num::NonZeroUsize;
+    use worth_query_host::facade::application_entry::WorthQueryHistoryPageLimits;
+    let host = publish_on_first_program();
+    let scope = request_scope();
+    let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    let limits = WorthQueryHistoryPageLimits {
+        maximum_entries: NonZeroUsize::MIN,
+        maximum_examined_entries: NonZeroUsize::MIN,
+        maximum_owned_bytes: NonZeroUsize::new(16 * 1024).unwrap(),
+    };
+    let mut samples = Vec::new();
+    for depth in [1, 15] {
+        let mut document = filled(&host, depth);
+        let observed = document.observe_history_enrollment_for_test();
+        let page = document.history_page(&request, limits, None).unwrap();
+        let visits = observed.snapshot().node_probes;
+        drop(observed);
+        assert_eq!(page.rows().len(), 1);
+        assert_eq!(page.examined_entries(), 1);
+        assert!(page.rows()[0].step().parent().is_none());
+        assert!(page.continuation().is_some());
+        samples.push((visits, page.admitted_backing_bytes()));
+        close(&host, document, depth + 1);
+    }
+    assert!(samples[0].0 > 0);
+    assert_eq!(
+        samples[0], samples[1],
+        "neither metadata rows nor their backing may scale with all old steps"
+    );
+}

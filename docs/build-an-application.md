@@ -1961,6 +1961,25 @@ returned edit on refusal. An authorized retry returns its original step without
 repeating the edit. See the [compiled metadata and retry journey](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/metadata.rs)
 and [metadata declarations](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs).
 
+List completed steps with `document.history_page(&request, limits, after.as_ref())`.
+`WorthQueryHistoryPageLimits` requires positive `maximum_entries`,
+`maximum_examined_entries` and `maximum_owned_bytes`. Rows carry a sealed step
+with its parent, label and exact source description. `retained_source_at_read()`
+means the document held that source when this admitted page was assembled; the
+row does not hold a payload lease or promise later preview availability.
+
+Keep `page.continuation()` for the next fresh read. A cursor belongs to one
+document and completed view; a completed edit invalidates it with a typed
+`StaleCursor`, while a foreign cursor returns `ForeignCursor`. A refusal leaves
+the input cursor unchanged. Pending or discarded edits do not create page rows
+or change continuation hints. `edit.history_page(..)` lists the still-selected
+completed view during such work. Drop pages when finished to release their
+metadata backing; derived layout data can be rebuilt from fresh pages.
+Governed metadata uses `history_page_governed(&request, capability, operation,
+input, limits, after.as_ref())`. Both the original READ and current metadata
+permission run before cursor or storage diagnostics. See the
+[compiled bounded-page journeys](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/mod.rs).
+
 To store the selected basis as application data, serialize
 `selected.describe_basis()` before releasing the selection. After loading that
 record through an ordinary READ request, deserialize it as

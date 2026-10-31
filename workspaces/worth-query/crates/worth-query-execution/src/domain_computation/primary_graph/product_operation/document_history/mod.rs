@@ -11,6 +11,9 @@ mod journal;
 mod model;
 mod observation;
 mod operation_context;
+mod page_pause;
+mod paging;
+mod receiver_pause;
 mod reservation;
 mod sealing;
 mod step;
@@ -37,6 +40,12 @@ pub(in crate::domain_computation::primary_graph) use model::HistoryModelIdentity
 pub use observation::{
     WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
 };
+#[doc(hidden)]
+pub use page_pause::WorthQueryHistoryPageAssemblyPauseForTest;
+pub use paging::{
+    WorthQueryHistoryPage, WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial,
+    WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
+};
 pub use step::{WorthQueryHistoryNodeId, WorthQueryHistoryStep};
 
 use super::WorthQueryOwnedProductHead;
@@ -57,7 +66,9 @@ pub struct WorthQueryDocumentHistory<
     pub(in crate::domain_computation::primary_graph) binding: ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph) journal: HistoryJournal<'runtime, S>,
     pub(in crate::domain_computation::primary_graph) capture_pause:
-        Option<std::sync::Arc<capture_pause::CapturePause>>,
+        Option<std::sync::Arc<receiver_pause::ReceiverPause>>,
+    pub(in crate::domain_computation::primary_graph) page_pause:
+        Option<std::sync::Arc<receiver_pause::ReceiverPause>>,
     pub(in crate::domain_computation::primary_graph) marker: std::marker::PhantomData<fn() -> H>,
 }
 

@@ -10,7 +10,7 @@ use worth_query_declaration::facade::{
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryHistoryEnrollmentReportForTest {
-    /// Point probes/inserts, including misses; excludes std BTree internal comparisons.
+    /// Point accesses and visited range entries, including misses; excludes std BTree comparisons.
     pub node_probes: u64,
     pub attempt_probes: u64,
     pub custody_probes: u64,
