@@ -199,7 +199,7 @@ where
         use crate::recovery::RuntimeWorldSettledRelationalAdoptionDenial as Denial;
         if self.state.durable.is_some() {
             return Err(Denial::Recovery(
-                crate::recovery::RuntimeWorldRecoveryDenial::DurableDispositionRequired,
+                crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired,
             ));
         }
 
@@ -246,7 +246,7 @@ where
         crate::recovery::RuntimeWorldRecoveryDenial,
     > {
         if self.state.durable.is_some() {
-            return Err(crate::recovery::RuntimeWorldRecoveryDenial::DurableDispositionRequired);
+            return Err(crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired);
         }
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
@@ -274,7 +274,7 @@ where
         effects: ProductUnpublishedOwnerEffects,
     ) -> Result<RecoveryContinuationContract, crate::recovery::RuntimeWorldRecoveryDenial> {
         if self.state.durable.is_some() {
-            return Err(crate::recovery::RuntimeWorldRecoveryDenial::DurableDispositionRequired);
+            return Err(crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired);
         }
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()

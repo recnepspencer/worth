@@ -1063,6 +1063,18 @@ and exact process identity, then checks its retained Home binding. Only genuine
 memory ownership returns `None`; unavailable, foreign or inconsistent ownership
 returns its typed refusal before any I/O. Publication still authenticates through
 its original effectful preparation doors.
+Live directory preparation abandonment retains its original World and Query
+custody and offers `Inspect` plus `ReopenRequired`. Its live release/continuation
+also returns `RuntimeWorldRecoveryDenial::ReopenRequired`; neither a zero effect
+count nor an empty live inventory proves no effect. End current Home/process
+ownership and reopen under Store's mutation lease. The closed pre-service D8
+recipe supplies the actual Native recovery authority to World's complete
+associated inventory admission before reconciliation, including empty World
+journals. That authority checks its exact runtime; it is historical recovery
+evidence, not a live publication fence. Recovered custody keeps its distinct
+durable-before-live disposition operations. Full public recovered Query service
+and cold retry remain separate acceptance work.
+
 World lifecycle `close(request, &actual_owner)` uses the caller's original request, nonwaiting
 admission, and the existing publication frontier. Before sealing, contention or
 interruption preserves Open. After sealing, the same retained task owns each

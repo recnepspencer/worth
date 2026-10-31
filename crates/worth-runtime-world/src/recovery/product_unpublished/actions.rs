@@ -14,7 +14,23 @@ pub(crate) struct RetainedNextActions {
 }
 
 impl RetainedNextActions {
-    pub(crate) fn from_vec(actions: Vec<ProductUnpublishedNextAction>) -> Self {
+    /// Actual retained owner custody decides whether live continuation exists.
+    pub(crate) fn from_resources(
+        resources: &crate::publication::ActiveAttemptResources,
+        progress: &CompositeAttemptProgress,
+        cause: ProductUnpublishedCause,
+    ) -> Self {
+        if resources.durable_open.is_some() {
+            let mut actions =
+                [ProductUnpublishedNextAction::Inspect; RETAINED_NEXT_ACTION_CAPACITY];
+            actions[1] = ProductUnpublishedNextAction::ReopenRequired;
+            Self { actions, length: 2 }
+        } else {
+            Self::from_vec(next_actions_for_progress(progress, cause))
+        }
+    }
+
+    fn from_vec(actions: Vec<ProductUnpublishedNextAction>) -> Self {
         assert!(
             actions.len() <= RETAINED_NEXT_ACTION_CAPACITY,
             "retained recovery actions exceed the fixed contract bound"
@@ -32,12 +48,11 @@ impl RetainedNextActions {
     }
 }
 
-/// The single authority for what a retained owner-effect record permits next.
-/// Every retained record, recovery custody transition, and close report derives
-/// its list here, so two records that retain the same owner progress can never
-/// advertise different continuations. The derivation is total: every
-/// `CompositeAttemptProgress` shape yields a list, and the list never exceeds
-/// the fixed contract bound.
+/// Memory continuation rules, used only after actual retained resources have
+/// excluded durable-open custody.
+/// The derivation is total for Memory progress and never exceeds the fixed
+/// contract bound. Record constructors and refreshes use `from_resources` so
+/// durable custody cannot accidentally advertise these live Memory actions.
 pub(crate) fn next_actions_for_progress(
     progress: &CompositeAttemptProgress,
     cause: ProductUnpublishedCause,

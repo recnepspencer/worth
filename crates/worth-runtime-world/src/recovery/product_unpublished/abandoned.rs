@@ -9,8 +9,7 @@ impl ProductUnpublishedOwnerEffectsRecord {
         deadline: Option<RuntimeWorldInstant>,
         cause: ProductUnpublishedCause,
     ) -> Arc<Self> {
-        let next_actions =
-            RetainedNextActions::from_vec(next_actions_for_progress(&facts.progress, cause));
+        let next_actions = RetainedNextActions::from_resources(&resources, &facts.progress, cause);
         let owner_effect_count = facts.progress.owner_effect_count();
         let live_obligations = resources.live_obligations();
         Arc::new(Self {

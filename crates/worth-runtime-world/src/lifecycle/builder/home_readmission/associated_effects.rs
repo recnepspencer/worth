@@ -11,6 +11,7 @@ use worth_relational::facade::durability::{
 
 pub(super) fn readmit(
     native: &worth_relational::facade::runtime::RelationalRuntime,
+    native_recovery: &worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
     recovered: &WorldRecoveredJournalState,
     binding: &WorldDurableHomeBinding,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -19,9 +20,8 @@ pub(super) fn readmit(
     Denial,
 > {
     let mut effects = BTreeMap::new();
-    for subject in native
-        .durability_authority()
-        .discover_all_associated_effects(execution)
+    for subject in native_recovery
+        .discover_recovered_associated_effects(execution, native)
         .map_err(Denial::NativeDiscovery)?
     {
         let Some(bytes) = subject

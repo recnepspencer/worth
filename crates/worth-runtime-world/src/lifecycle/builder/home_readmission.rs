@@ -69,7 +69,13 @@ where
         {
             return Err(Denial::ProgramRevisionMismatch);
         }
-        let effects = associated_effects::readmit(native, &recovered, binding.binding(), request)?;
+        let effects = associated_effects::readmit(
+            native,
+            native_recovery,
+            &recovered,
+            binding.binding(),
+            request,
+        )?;
         let execution =
             InstalledExecution::try_new(self.execution_authority, self.execution_policy)
                 .map_err(Denial::ExecutionInstallation)?;

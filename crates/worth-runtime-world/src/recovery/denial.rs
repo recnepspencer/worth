@@ -2,7 +2,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldRecoveryDenial {
     RecoveredCustodyRequired,
-    DurableDispositionRequired,
+    ReopenRequired,
     OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),
     ForeignHandle,
     MissingRecord,

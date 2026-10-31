@@ -25,6 +25,7 @@ pub(crate) use record_inputs::RetainedAttemptFacts;
 
 #[path = "product_unpublished/actions.rs"]
 mod actions;
+#[cfg(test)]
 pub(crate) use actions::next_actions_for_progress;
 pub(crate) use actions::RetainedNextActions;
 

@@ -5,6 +5,7 @@ pub enum ProductUnpublishedNextAction {
     SettleOwnerEffects,
     ReleaseObligations,
     Inspect,
+    ReopenRequired,
     StartFreshCompositePublication,
     CloseOwner,
 }
