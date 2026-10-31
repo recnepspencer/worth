@@ -77,10 +77,10 @@ jobs:
       - name: Test build identity issuance
         run: python -m unittest discover -s scripts/ci -p test_application_build.py
       - name: Compile and run configured Query and Bank doctests
-        run: python scripts/ci/query_gate.py doc
+        run: env -u CARGO_INCREMENTAL python scripts/ci/query_gate.py doc
       - name: Run the observable mixed workflow consumer
         run: >-
-          python scripts/application_build.py cargo run --manifest-path workspaces/worth-query/Cargo.toml
+          env -u CARGO_INCREMENTAL python scripts/application_build.py cargo run --manifest-path workspaces/worth-query/Cargo.toml
           -p worth-query-certification --example observable_workflow
       - name: Preserve failed gate logs and results
         if: failure()
@@ -109,6 +109,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.99.1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Cache Cargo sources and tool builds
         uses: actions/cache@v4
         with:
@@ -119,6 +122,8 @@ jobs:
           key: ${{ runner.os }}-boundary-tools-1.99.1-${{ hashFiles('tools/boundary-check/Cargo.lock', 'tools/agent-context/Cargo.lock', 'tools/boundary-check/src/**', 'tools/agent-context/src/**') }}
           restore-keys: |
             ${{ runner.os }}-boundary-tools-1.99.1-
+      - name: Fetch locked boundary metadata inputs
+        run: python scripts/ci/prepare_boundary_dependencies.py
       # The explicit phase-end and landing constitution entrypoint:
       # crate boundaries, facades, facade docs and agent context.
       - name: Prepare constitution tools
@@ -167,17 +172,17 @@ jobs:
       # Isolate topology's process-wide controls while running independent courts
       # concurrently; the same runner includes owning-consumer and parameter courts.
       - name: Prove restored accepted outputs avoid producer contact
-        run: python scripts/ci/query_gate.py fixture
+        run: env -u CARGO_INCREMENTAL python scripts/ci/query_gate.py fixture
       - name: Prove public output-role documentation contracts
         run: >-
-          python scripts/application_build.py cargo test --doc
+          env -u CARGO_INCREMENTAL python scripts/application_build.py cargo test --doc
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-topology-entry
       # The external consumer journey: publication, reconstruction, output
       # preservation and optional output roles through the public facades.
       - name: Run the public consumer journey
         run: >-
-          time python scripts/application_build.py cargo run
+          time env -u CARGO_INCREMENTAL python scripts/application_build.py cargo run
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-consumer-root
       - name: Preserve failed court logs and results

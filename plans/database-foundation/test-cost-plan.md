@@ -596,3 +596,31 @@ Independent review found a dirty-path design flaw: comparing HEAD directly to
 the working tree hides a staged edit canceled by an unstaged edit. Preserve both
 dimensions through the shared module's separate cached/worktree diffs, plus
 untracked files. A real Git fixture asserts that this `MM` source stays selected.
+
+### Hosted startup repair: preparation and noncompiling telemetry
+
+Actual master `38e679ec4a` hosted run 41144881903 failed before qualification:
+the boundary checker lacked `allocator-api2` for offline metadata; the toolchain
+action exported `CARGO_INCREMENTAL=0`, which all three documentation owners
+correctly refused; the fixture's declaration stdout contained a build-started
+record followed by its valid version-1 unit graph. These are CI setup/framing
+defects. Do not change checker offline policy or qualification environment guards.
+
+Preserve downloaded raw job logs and the original uploaded declaration under
+`target/test-cost/hosted-startup-41144881903/`. A pinned noncompiling probe isolates
+`--timings` as the cause of the extra lifecycle record. Remove timing telemetry
+only from `command_for`'s declaration subprocess; the actual build command and
+strict single-JSON graph parser remain unchanged. Test command identity, preserved
+compiler flags and rejection of extra JSON; run the actual affected fixture's
+repaired noncompiling declaration, not a runtime matrix.
+
+At the five owned Linux CI qualification invocations, remove only the inherited
+`CARGO_INCREMENTAL` variable with `env -u`. Retain all underlying commands and
+committed profiles. For the boundary job, `prepare_boundary_dependencies.py`
+reads the existing road1 policy's workspace declarations and test-workspace
+inventory, then performs one locked fetch per unique required workspace before
+the unchanged offline check. Its source includes the already-required UI metadata
+graph; fetching dependencies executes no UI build or test. Add no workspace
+registry. Fail on missing manifests/locks, preserve Cargo errors and stop on its
+original failure code. Prove preparation and command/environment routing with
+fixtures and a dry run. Hosted clean-runner success remains unrun locally.
