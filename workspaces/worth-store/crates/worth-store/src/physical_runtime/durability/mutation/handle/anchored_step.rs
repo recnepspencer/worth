@@ -74,13 +74,34 @@ impl PhysicalMutationAttempt {
         fact: &PhysicalMutationTerminalFact,
         failure: Option<crate::physical_runtime::AnchoredRecordStepSettlementFailure>,
     ) {
-        let custody = self
-            .anchored_step
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .take();
+        let (custody, journal) = {
+            let mut retained = self.anchored_step.lock().unwrap_or_else(|p| p.into_inner());
+            match retained.as_ref() {
+                Some(ManagedPublicationCustody::Journal(shared)) => (None, Some(shared.clone())),
+                _ => (retained.take(), None),
+            }
+        };
         if let Some(custody) = custody {
             custody.finish(fact, failure);
+        }
+        if let Some(journal) = journal {
+            journal.finish(fact, failure);
+        }
+    }
+    pub(super) fn publish_journal_visibility(&self) {
+        let custody = {
+            let mut retained = self.anchored_step.lock().unwrap_or_else(|p| p.into_inner());
+            if matches!(
+                retained.as_ref(),
+                Some(ManagedPublicationCustody::Journal(_))
+            ) {
+                retained.take()
+            } else {
+                None
+            }
+        };
+        if let Some(ManagedPublicationCustody::Journal(shared)) = custody {
+            shared.mark_terminal_visible();
         }
     }
 }

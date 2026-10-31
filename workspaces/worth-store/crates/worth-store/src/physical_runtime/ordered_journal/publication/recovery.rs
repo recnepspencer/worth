@@ -6,6 +6,7 @@ pub struct OrderedJournalPublicationRecovery {
     pub(super) shared: Arc<JournalPublicationShared>,
 }
 pub enum OrderedJournalPublicationResume {
+    Committed(OrderedJournalCommitted),
     Ready {
         operation: OrderedJournalPublicationOperation,
         recovery: OrderedJournalPublicationRecovery,
@@ -32,11 +33,14 @@ impl OrderedJournalPublicationRecovery {
         self.shared.observe()
     }
     pub fn resume(self) -> OrderedJournalPublicationResume {
-        let mut s = self.shared.state();
-        if s.terminal.is_some() {
-            drop(s);
-            return OrderedJournalPublicationResume::Terminal(self.observe());
+        let observed = self.observe();
+        if observed.terminal().is_some() {
+            if let Some(committed) = self.shared.readmit_committed() {
+                return OrderedJournalPublicationResume::Committed(committed);
+            }
+            return OrderedJournalPublicationResume::Terminal(observed);
         }
+        let mut s = self.shared.state();
         if s.endpoint_live {
             drop(s);
             return OrderedJournalPublicationResume::Busy(self);

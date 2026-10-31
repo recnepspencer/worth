@@ -144,7 +144,6 @@ impl OrderedJournal<'_> {
                 input: publication.input_memory.take(),
                 interruption,
                 preparing: false,
-                submitted: false,
                 stopped: false,
                 live: true,
                 recovery_alive: true,
@@ -154,9 +153,11 @@ impl OrderedJournal<'_> {
                 attempt: Weak::new(),
                 existing: None,
                 refusal: None,
+                unresolved_duplicate: false,
                 fact: None,
                 settling: false,
                 terminal: None,
+                visibility: JournalTerminalVisibility::AwaitingBasePublication,
             }),
         });
         owner.lock().unwrap_or_else(|p| p.into_inner()).active = Some(Arc::downgrade(&shared));

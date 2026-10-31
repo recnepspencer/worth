@@ -40,6 +40,7 @@ pub struct OrderedJournalPublicationTerminal {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OrderedJournalTerminalFailure {
+    UnresolvedDuplicate,
     Settlement(AnchoredRecordStepSettlementFailure),
     CompletedWithoutRecord,
 }
@@ -104,6 +105,8 @@ impl OrderedJournalPublicationObservation {
 }
 #[derive(Debug)]
 pub enum OrderedJournalOperationFailure {
+    CompletionReadmissionMismatch,
+    UnresolvedDuplicate,
     Publication(OrderedJournalPublicationFailure),
     Busy,
     ForeignReceiver,

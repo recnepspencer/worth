@@ -47,12 +47,17 @@ pub(in crate::physical_runtime) struct JournalPublicationShared {
     pub(super) owner: Weak<Mutex<OrderedJournalState>>,
     pub(super) state: Mutex<JournalProgress>,
 }
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum JournalTerminalVisibility {
+    AwaitingBasePublication,
+    Published,
+    WorkerLost,
+}
 pub(super) struct JournalProgress {
     pub(super) plan: Option<crate::physical_runtime::record_serving::AnchoredRecordAppend>,
     pub(super) input: Option<worth_execution::ExecutionMemoryReservation>,
     pub(super) interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
     pub(super) preparing: bool,
-    pub(super) submitted: bool,
     pub(super) stopped: bool,
     pub(super) live: bool,
     pub(super) recovery_alive: bool,
@@ -63,9 +68,11 @@ pub(super) struct JournalProgress {
     pub(super) existing:
         Option<Arc<crate::physical_runtime::durability::ExistingPhysicalMutationObservation>>,
     pub(super) refusal: Option<crate::physical_runtime::PhysicalPreSealCancellationDenial>,
+    pub(super) unresolved_duplicate: bool,
     pub(super) fact: Option<PhysicalMutationTerminalFact>,
     pub(super) settling: bool,
     pub(super) terminal: Option<Arc<OrderedJournalPublicationTerminal>>,
+    pub(super) visibility: JournalTerminalVisibility,
 }
 impl JournalPublicationShared {
     pub(super) fn state(&self) -> MutexGuard<'_, JournalProgress> {
@@ -84,7 +91,8 @@ impl JournalPublicationShared {
         }
         let inert = {
             let state = self.state();
-            state.terminal.is_some() || (state.stopped && !state.submitted && !state.preparing)
+            state.terminal.is_some()
+                || (state.stopped && state.mutation.is_none() && !state.preparing)
         };
         if inert {
             return Ok(());
@@ -101,12 +109,13 @@ impl JournalPublicationShared {
     }
     pub(super) fn observe(&self) -> OrderedJournalPublicationObservation {
         self.observe_existing();
+        let terminal = self.visible_terminal();
         let state = self.state();
         OrderedJournalPublicationObservation {
             source: self.source,
             mutation: state.mutation,
             stopped: state.stopped,
-            terminal: state.terminal.clone(),
+            terminal,
         }
     }
     pub(super) fn stop(&self) {

@@ -916,7 +916,9 @@ returns a move-only operation and strong recovery. Move the encoder's existing
 when present. Store the recovery outside disposable execution results before
 calling consuming `step`. `resume` returns the same recovery alongside its unique
 Ready or Stopped endpoint; reinstall that recovery before lending the endpoint.
-`Recovery::stop` permanently fences advancement. Poll actual settlement before
+`Recovery::stop` permanently fences advancement. Consuming recovery `resume`
+readmits a clean, fully visible actual terminal as `Committed`; descriptive
+stopped settlement alone cannot mint that carrier. Poll actual settlement before
 consulting a late caller stop. Only Store-issued `OrderedJournalCommitted` carries
 an actual selected entry; source/terminal observations are descriptive.
 The journal keeps its existing frame, spine, ordering and Signal policy. Reads,

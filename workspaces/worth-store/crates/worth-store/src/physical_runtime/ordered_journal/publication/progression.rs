@@ -24,8 +24,8 @@ impl OrderedJournalPublicationOperation {
     pub fn step(mut self, journal: &OrderedJournal<'_>) -> OrderedJournalPublicationStep {
         let result = catch_unwind(AssertUnwindSafe(|| {
             self.shared.require_receiver(journal)?;
-            let submitted = self.shared.state().submitted;
-            if !submitted {
+            let registered = self.shared.state().mutation.is_some();
+            if !registered {
                 if self.shared.state().stopped {
                     return Err(OrderedJournalOperationFailure::Stopped);
                 }
@@ -36,15 +36,19 @@ impl OrderedJournalPublicationOperation {
         match result {
             Ok(Ok(false)) => OrderedJournalPublicationStep::Pending(self),
             Ok(Ok(true)) => {
-                let terminal =
-                    self.shared.state().terminal.clone().expect(
-                        "an advancing endpoint completes only from actual journal terminal",
+                let Some(committed) = self.shared.readmit_committed() else {
+                    return OrderedJournalPublicationStep::Failed(
+                        OrderedJournalPublicationFailureCustody {
+                            stopped: self.stop(),
+                            cause: OrderedJournalOperationFailure::CompletionReadmissionMismatch,
+                        },
                     );
+                };
                 self.shared.state().endpoint_live = false;
                 if let Some(r) = self.custody.take() {
                     let _ = r.terminate(Disposition::Published);
                 }
-                OrderedJournalPublicationStep::Completed(OrderedJournalCommitted { terminal })
+                OrderedJournalPublicationStep::Completed(committed)
             }
             result => {
                 let cause = match result {
@@ -93,23 +97,31 @@ fn submit(
     let stopped = {
         let mut s = shared.state();
         s.mutation = Some(identity);
-        s.submitted = true;
         s.stopped
     };
     match prepared {
-        PreparedDurableRecordAppend::Terminal(fact) => shared.finish(&fact, None),
+        PreparedDurableRecordAppend::Prepared(prepared)
+            if prepared.disposition()==crate::physical_runtime::PhysicalMutationAdmissionDisposition::DuplicateUnresolved => {
+            // Joining identity is not permission to replay its unresolved work.
+            let existing=prepared.observe_existing_execution().map(Arc::new);
+            let retired={let mut s=shared.state();s.unresolved_duplicate=true;s.existing=existing;(s.input.take(),s.interruption.take())};
+            if let Some(owner)=shared.owner.upgrade(){owner.lock().unwrap_or_else(|p|p.into_inner()).unresolved.insert(shared.source.journal,shared.source.position);}
+            drop(prepared);drop(retired);
+            return Err(OrderedJournalOperationFailure::UnresolvedDuplicate);
+        }
+        PreparedDurableRecordAppend::Terminal(fact) => {shared.finish(&fact,None);shared.mark_terminal_visible();},
         PreparedDurableRecordAppend::Prepared(prepared) if stopped => {
             match journal
                 .runtime
                 .record_submission()
                 .cancel_prepared_before_group_seal(prepared)
             {
-                PhysicalPreSealCancellationOutcome::ProvenNoEffect(fate) => shared.finish(
+                PhysicalPreSealCancellationOutcome::ProvenNoEffect(fate) => {shared.finish(
                     &PhysicalMutationTerminalFact::from_outcome(
                         PhysicalMutationOutcome::ProvenNoEffect(fate),
                     ),
                     None,
-                ),
+                );shared.mark_terminal_visible();},
                 PhysicalPreSealCancellationOutcome::NotCancelled { prepared, cause } => {
                     let existing = prepared.observe_existing_execution().map(Arc::new);
                     let retired = {

@@ -223,16 +223,20 @@ impl PhysicalMutationAttempt {
     }
 
     pub(in crate::physical_runtime) fn publish_terminal(&self) {
-        self.interruption
+        let interruption = self
+            .interruption
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .take();
+        drop(interruption);
         let mut state = self.state();
         state
             .progress
             .enter(PhysicalMutationProgressPhase::Terminal);
         state.terminal_visible = true;
         self.changed.notify_all();
+        drop(state);
+        self.publish_journal_visibility();
     }
 
     pub(in crate::physical_runtime) fn record_completed_unobserved_on_completion(
