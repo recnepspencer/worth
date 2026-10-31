@@ -72,13 +72,26 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
         .runtime()
         .observe_branch(&home.relational().runtime().main_branch_identity())
         .unwrap();
-    let close = match home.close(&execution) {
-        Ok(close) => close,
+    let sealed = match home.seal_world(&execution) {
+        Ok(sealed) => sealed,
         Err(refused) => panic!(
             "quiescent bootstrapped World must close: {:?}",
             refused.reason()
         ),
     };
+    assert_eq!(sealed.home_identity(), identity);
+    assert_eq!(sealed.incarnation(), incarnation);
+    let _actual_world_report = sealed.world_close_report();
+    match crate::durable_run::open(directory.path(), &execution) {
+        Err(worth_store_application::ApplicationHomeOpenRefusal::Physical(refused)) => {
+            assert_eq!(
+                refused.kind(),
+                worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended
+            );
+        }
+        _ => panic!("sealed World retains the SAME Home lease before Native teardown"),
+    }
+    let close = sealed.finish_close(&execution);
     let recovery = match close {
         ApplicationHomeCloseOutcome::CloseRefused {
             reason: ApplicationHomeCloseDenial::Relational(RelationalSectionCloseDenial::Native(

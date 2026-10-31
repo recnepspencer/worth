@@ -31,15 +31,13 @@ impl WorldSealedApplicationHome {
             .expect("actual World close selected this phase")
     }
     pub fn finish_close(
-        mut self,
+        self,
         request: &ExecutionRequest<'_, '_>,
     ) -> crate::ApplicationHomeCloseOutcome {
-        if let Some(composition) = self.composition.take() {
-            composition.close();
-        }
         // Existing after_world_close custody preserves RecoveryRequired even
         // when Native is still genuinely serving or external reads remain.
-        self.home.close(request)
+        crate::ApplicationHomeRecoveryCustody::after_world_close(self.home, self.composition)
+            .try_release(request)
     }
 }
 

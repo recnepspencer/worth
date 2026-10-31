@@ -14,6 +14,7 @@ mod query_root;
 mod readmission;
 pub use query_root::ApplicationHomeQueryRootDenial;
 mod recovery;
+pub(crate) use attachment::ApplicationHomeBridgeComposition;
 pub(crate) use attachment::UnclaimedWorldSlot;
 pub use readmission::{readmit_query_world, ApplicationHomeQueryCompositionDenial};
 pub use readmission::{readmit_world, WorldHomeReadmissionRefused, WorldReadmittedApplicationHome};

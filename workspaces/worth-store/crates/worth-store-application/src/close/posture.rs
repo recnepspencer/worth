@@ -27,6 +27,7 @@ pub struct ApplicationHomeRecoveryCustody {
     physical: PhysicalCloseCustody,
     native: NativeCloseCustody,
     world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
+    world_composition: Option<crate::world_section::ApplicationHomeBridgeComposition>,
     checkpoint_owner: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
     world_publications: Arc<crate::world_section::WorldPublications>,
 }
@@ -50,6 +51,7 @@ impl ApplicationHomeRecoveryCustody {
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Released,
             world_close_report: None,
+            world_composition: None,
             checkpoint_owner: context.checkpoint,
             world_publications: context.world_publications,
         }
@@ -70,12 +72,16 @@ impl ApplicationHomeRecoveryCustody {
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Prepared(native),
             world_close_report: context.world_close_report,
+            world_composition: None,
             checkpoint_owner: context.checkpoint,
             world_publications: context.world_publications,
         }
     }
 
-    pub(crate) fn after_world_close(home: crate::ReadmittedApplicationHome) -> Self {
+    pub(crate) fn after_world_close(
+        home: crate::ReadmittedApplicationHome,
+        world_composition: Option<crate::world_section::ApplicationHomeBridgeComposition>,
+    ) -> Self {
         let crate::ReadmittedApplicationHome {
             context,
             relational,
@@ -87,6 +93,7 @@ impl ApplicationHomeRecoveryCustody {
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Serving(relational),
             world_close_report: context.world_close_report,
+            world_composition,
             checkpoint_owner: context.checkpoint,
             world_publications: context.world_publications,
         }
@@ -182,6 +189,12 @@ impl ApplicationHomeRecoveryCustody {
     ) -> ApplicationHomeCloseOutcome {
         if let Err(cause) = interrupted(execution) {
             return self.refused(ApplicationHomeCloseDenial::Execution(cause));
+        }
+        if let Some(composition) = self.world_composition.take() {
+            if let Err(composition) = composition.try_close() {
+                self.world_composition = Some(composition);
+                return self.refused(ApplicationHomeCloseDenial::WorldCompositionRetained);
+            }
         }
         if matches!(self.native, NativeCloseCustody::Serving(_)) {
             if let Err(cause) = self.settle_retained_checkpoint(execution) {

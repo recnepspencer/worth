@@ -65,7 +65,8 @@ fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_a
                         | worth_store_application::ApplicationHomeOpenRefusal::Relational(_)
                         | worth_store_application::ApplicationHomeOpenRefusal::World(_)
                         | worth_store_application::ApplicationHomeOpenRefusal::BridgeSource(_)
-                        | worth_store_application::ApplicationHomeOpenRefusal::Bridge(_),
+                        | worth_store_application::ApplicationHomeOpenRefusal::Bridge(_)
+                        | worth_store_application::ApplicationHomeOpenRefusal::ConditionalBridge(_),
                     ) => Some(3),
                     Err(
                         worth_store_application::ApplicationHomeOpenRefusal::Physical(_)

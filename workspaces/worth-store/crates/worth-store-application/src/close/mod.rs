@@ -23,6 +23,7 @@ pub enum ApplicationHomeCloseOutcome {
 
 #[derive(Debug)]
 pub enum ApplicationHomeCloseDenial {
+    WorldCompositionRetained,
     CheckpointSettlement(crate::ApplicationHomeCheckpointDenial),
     WorldResultSnapshot(
         worth_relational::facade::branch::RelationalCommitResultSnapshotReleaseDenial,
@@ -72,7 +73,7 @@ impl crate::ReadmittedApplicationHome {
         start: start::PhysicalCloseStart,
     ) -> ApplicationHomeCloseOutcome {
         if self.context.world_close_report.is_some() {
-            return ApplicationHomeRecoveryCustody::after_world_close(self)
+            return ApplicationHomeRecoveryCustody::after_world_close(self, None)
                 .release_started(execution, start);
         }
         if let Err(reason) = posture::interrupted(execution) {

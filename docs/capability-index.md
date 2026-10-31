@@ -992,6 +992,28 @@ existing physical mutation worker; no World acknowledgment runs in that worker.
 
 ### Compose World with an admitted application Home
 
+The closed Query/Home preparation recipe attaches an `UnrecoveredApplicationHome`
+before Native is shared. Query installs its real initial schema through the
+named mutable loan, then consuming `readmit` checks that installation receipt
+before the one Native recovery. `UnsharedReadmittedApplicationHome` lends the
+same raw Native, recovered authority and complete recovery outcome for Query
+finalization; `share` creates the first Native Arc. `initialize_new_home`
+consumes the actual Store new-Home opportunity before invoking the one Host
+recipe. Existing artifacts refuse that recipe; an interrupted initialization
+does not acquire another opportunity. Raw preparation failures keep their
+actual Home and expose consuming close with `HomePreparationIncomplete`, without
+attempting a checkpoint of incomplete preparation.
+
+`readmit_query_world` accepts `ApplicationHomeWorldDefinition`, containing only
+unattached Bridge mappings and configured resources. Store composes the same
+actual Native source, ordinary Bridge and InitialEmpty sealed assembly once.
+Its closed composition getter supplies only those retained objects to Query.
+`select_query_root` observes the actual stored World root or advances the new
+Home's original durable bootstrap. The origin opportunity alone is no proof of
+completed initialization or a selected root. This is a producer integration
+seam; public Directory Query service still requires the actual Host recipe and
+its integration evidence.
+
 Store Application's `readmit_world` consumes the concrete Native-readmitted
 Home and an `ApplicationWorldDefinition`. The private attachment injects the
 same actual Native runtime into World and Bridge. The resulting
@@ -1009,6 +1031,13 @@ its complete associated-effect inventory. Failed admission returns
 slot; `into_home` explicitly cleans up refused component custody and returns
 that Native-readmitted Home. Attached memory bootstrap, legacy publication and
 branch mutation doors refuse before effects.
+The consuming `seal_world` retains the actual World close report and advances
+the same World-owned result cleanup before dropping World. A refused seal
+retries through `try_seal_world`. Host can then release its Query observations
+before `finish_close` attempts Native teardown. Shared conditional assembly
+custody returns `WorldCompositionRetained` in the same Home recovery object;
+retry uses actual ownership admission and runs conditional cleanup outside its
+assembly lock. A sealed World never resumes Serving.
 `publication_port().begin_durable_bootstrap_root(request, creation, native_basis,
 signal_basis)` validates the actual current Signal owner and supplies the same
 private Bridge's baseline. Its retained bootstrap can be advanced through
