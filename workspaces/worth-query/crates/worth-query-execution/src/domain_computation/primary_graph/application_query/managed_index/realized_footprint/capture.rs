@@ -33,6 +33,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     pub root: &'a ManagedSourceRoot<S, I>,
     pub observation: &'a Arc<ManagedIndexSourceObservation>,
     pub parameters: &'a Parameters,
+    pub governance: &'a crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
     pub probe: &'a AspectValue,
     pub selected: &'a ReceivedSelection,
     pub allocation: &'a Arc<SourceFactsAllocation>,
@@ -58,15 +59,14 @@ where
         root,
         observation,
         parameters: actual_parameters,
+        governance,
         probe,
         selected,
         allocation,
     } = input;
     // Only the installed complete full-projection contract can close all tracked
     // fields, root predicates, nested endpoints and ordering within this Source.
-    if association.access_contract().meaning().parent_disclosure_posture()
-        != worth_query_declaration::facade::application_query::ApplicationQueryDisclosurePosture::Public
-        || association
+    if association
         .access_contract()
         .meaning()
         .predicate_profile()
@@ -89,6 +89,11 @@ where
     if !parameters.matches_probe_borrow(actual_parameters, probe) {
         return Err(Denial::ForeignSelection);
     }
+    let audience = governance.retain_managed_influence(execution, parent, association, actual_parameters, allocation)
+        .map_err(|cause| match cause {
+            crate::domain_computation::authorization::application_disclosure::WorthQueryRetainedQueryInfluenceDenial::ForeignAdmission => Denial::ForeignSelection,
+            crate::domain_computation::authorization::application_disclosure::WorthQueryRetainedQueryInfluenceDenial::Execution(cause) => Denial::Execution(cause),
+        })?;
     let candidates = controlled(execution, |control| {
         CapturedCandidateRows::capture(execution, &root.rows, selected, control)
     })
@@ -108,12 +113,14 @@ where
         .map_err(|cause| Denial::Work(cause.into()))?;
     let material = MaterialCompletion::new(execution, allocation);
     material.arc::<CapturedIndexInfluence<S, I>>()?;
+    material.arc::<crate::domain_computation::authorization::application_disclosure::WorthQueryRetainedQueryInfluence>()?;
     material.arc::<CapturedManagedInfluence>()?;
     let support = Arc::new(CapturedIndexInfluence {
         adapter: Arc::clone(&root.adapter),
         original: Arc::clone(observation),
         scope: source.scope(),
         parameters,
+        audience: Arc::new(audience),
         candidates,
         _coverage: Arc::clone(coverage),
         _admitted_source: Arc::clone(source),

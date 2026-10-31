@@ -113,29 +113,45 @@ impl WorkflowRecordedActorObservation {
         relational: &[u8; 32],
     ) -> [u8; 32] {
         let mut digest = Sha256::new();
-        digest.update(b"worth.query.native-recorded-role.v1");
-        digest.update(relational);
+        self.visit_identity_material(relational, &mut |bytes| {
+            digest.update(bytes);
+            Ok::<_, std::convert::Infallible>(())
+        })
+        .expect("hashing borrowed actor material is infallible");
+        digest.finalize().into()
+    }
+    /// This owner supplies its exact original-source identity material. A
+    /// retaining caller admits each borrowed chunk before processing it.
+    pub(in crate::domain_computation) fn visit_identity_material<E>(
+        &self,
+        relational: &[u8; 32],
+        append: &mut impl FnMut(&[u8]) -> Result<(), E>,
+    ) -> Result<(), E> {
+        append(b"worth.query.native-recorded-role.v1")?;
+        append(relational)?;
         let requirement = self.requirement.persistence_identity();
-        digest.update((requirement.len() as u64).to_le_bytes());
-        digest.update(requirement.as_bytes());
+        append(&(requirement.len() as u64).to_le_bytes())?;
+        append(requirement.as_bytes())?;
         match self.actor {
-            None => digest.update([0]),
+            None => append(&[0])?,
             Some(actor) => {
-                digest.update([1]);
-                digest.update(actor.partition_value().to_le_bytes());
-                digest.update(actor.local_slot_value().to_le_bytes());
-                digest.update(actor.generation_value().to_le_bytes());
+                append(&[1])?;
+                append(&actor.partition_value().to_le_bytes())?;
+                append(&actor.local_slot_value().to_le_bytes())?;
+                append(&actor.generation_value().to_le_bytes())?;
             }
         }
-        digest.update([u8::from(self.record.is_some())]);
+        append(&[u8::from(self.record.is_some())])?;
         if let Some(record) = self.record {
-            digest.update(record.partition_value().to_le_bytes());
-            digest.update(record.local_slot_value().to_le_bytes());
-            digest.update(record.generation_value().to_le_bytes());
+            append(&record.partition_value().to_le_bytes())?;
+            append(&record.local_slot_value().to_le_bytes())?;
+            append(&record.generation_value().to_le_bytes())?;
         }
-        digest.update((self.dependencies.wire().len() as u64).to_le_bytes());
-        digest.update(self.dependencies.wire());
-        digest.finalize().into()
+        append(&(self.dependencies.wire().len() as u64).to_le_bytes())?;
+        for chunk in self.dependencies.wire().chunks(4096) {
+            append(chunk)?;
+        }
+        Ok(())
     }
     pub(in crate::domain_computation) fn same_original_source(&self, other: &Self) -> bool {
         self.requirement == other.requirement

@@ -1,5 +1,6 @@
 //! One erased entrance on the same typed installed provider allocation.
 use super::{InstalledIndexProvider, TypedIndexProvider};
+use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
 use crate::domain_computation::primary_graph::application_query::{
     output_source_observation::SourceQueryReaderAccess, ApplicationQueryNativeAccess,
     WorthQueryObservedScopeSelector,
@@ -47,6 +48,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         selector: &WorthQueryObservedScopeSelector,
         probe: &AspectValue,
         parameters: &Parameters,
+        governance: &WorthQueryApplicationQueryGovernance,
         allocation: &Arc<SourceFactsAllocation>,
     ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial>;
     #[allow(clippy::too_many_arguments)]
@@ -61,6 +63,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         selector: &WorthQueryObservedScopeSelector,
         probe: &AspectValue,
         parameters: &Parameters,
+        governance: &WorthQueryApplicationQueryGovernance,
         allocation: &Arc<SourceFactsAllocation>,
         native: &mut ApplicationQueryNativeAccess<'_>,
     ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial>;
@@ -92,6 +95,7 @@ where
         selector: &WorthQueryObservedScopeSelector,
         probe: &AspectValue,
         parameters: &Parameters,
+        governance: &WorthQueryApplicationQueryGovernance,
         allocation: &Arc<SourceFactsAllocation>,
     ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial> {
         if !self.installed.admits_association(association) {
@@ -129,6 +133,7 @@ where
                 &adapter,
                 probe,
                 parameters,
+                governance,
                 allocation,
                 &mut ApplicationQueryNativeAccess::acquire(),
             );
@@ -170,6 +175,7 @@ where
         selector: &WorthQueryObservedScopeSelector,
         probe: &AspectValue,
         parameters: &Parameters,
+        governance: &WorthQueryApplicationQueryGovernance,
         allocation: &Arc<SourceFactsAllocation>,
         native: &mut ApplicationQueryNativeAccess<'_>,
     ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial> {
@@ -188,6 +194,7 @@ where
             &adapter,
             probe,
             parameters,
+            governance,
             allocation,
             native,
         )

@@ -21,6 +21,7 @@ struct CapturedIndexInfluence<S: ApplicationSchema, I: ApplicationManagedIndexBi
     original: Arc<ManagedIndexSourceObservation>,
     scope: worth_relational::facade::identity::EntityId,
     parameters: Arc<RetainedPredicateProbe>,
+    audience: Arc<crate::domain_computation::authorization::application_disclosure::WorthQueryRetainedQueryInfluence>,
     candidates: CapturedCandidateRows,
     _coverage: Arc<RetainedCoverage>,
     _admitted_source: Arc<WorthQueryCompletedSourceRead>,

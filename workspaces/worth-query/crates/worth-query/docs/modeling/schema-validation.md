@@ -379,14 +379,18 @@ full admitted parameters and all exact decisions. Target equality uses the same
 complete forward receiver, actual Native cell/installation correspondence and
 shared immutable complete candidate bodies. The commit receiver pins that exact
 checked target. Raw frames, result rows and diagnostics cannot mint this support.
-Governed Parents remain conservative until passive capability/purpose binding is
-carried. Qualified Source semantic identity now uses complete projected candidate
+Governed Parents qualify only with actual session-bound passive full capability-
+use and admitted disclosure meaning, retained by the existing authorization owner
+under the exact installed Parent. No old READ or capability decision is retained;
+fresh public readers still reauthorize. Qualified Source semantic identity uses complete projected candidate
 content and full admitted parameters, with actual captured-body equality and
 separate current-invocation custody. Real producer reuse after irrelevant edits
 keeps the original committed receipt and freshly admits output READ/disclosure.
 Exact-current retained managed reads require actual Native/World correspondence;
 moved historical reads still refuse. Qualified selected membership can also feed
-the existing canonical producer-input cutoff. Complete candidate IDs/dispositions,
+the existing canonical producer-input cutoff for the supported Public producer
+pipeline. Governed producer/output-demand readmission remains unqualified here.
+Complete candidate IDs/dispositions,
 outer field/relation shape and actual invocation affinity remain checked; input,
 edition, context, handler facts and output witness must still pass. Conservative
 stable registration retains full verification and genuine output projection,

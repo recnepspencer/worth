@@ -11,6 +11,7 @@ use super::operation_progression::{
 };
 
 mod context;
+pub(super) mod material;
 mod use_identity;
 pub(in crate::domain_computation) use use_identity::WorthQueryCapabilityUseIdentity;
 mod portable;

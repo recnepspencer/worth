@@ -224,6 +224,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 &context.selector,
                 probe,
                 &plan.parameters,
+                &plan.governance,
                 allocation,
             )
             .map_err(ReceiverCause::Provider)?;

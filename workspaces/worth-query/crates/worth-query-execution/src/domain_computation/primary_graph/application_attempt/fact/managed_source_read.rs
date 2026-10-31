@@ -20,6 +20,7 @@ pub(in crate::domain_computation::primary_graph) struct ManagedSourceReadKey {
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct ManagedInfluenceOrigin {
     pub parameters: [u8; 32],
+    pub audience: [u8; 32],
     pub content: worth_foundational::facade::ProjectedCandidateContentV1,
 }
 
@@ -65,6 +66,7 @@ impl ManagedSourceRead {
                 scope,
                 influence: influence.as_ref().map(|capture| ManagedInfluenceOrigin {
                     parameters,
+                    audience: capture.audience(),
                     content: capture.content(),
                 }),
             },
@@ -119,6 +121,7 @@ impl ManagedSourceRead {
         if self.key.obligation != other.key.obligation
             || self.key.scope != other.key.scope
             || left_origin.parameters != right_origin.parameters
+            || left_origin.audience != right_origin.audience
         {
             return Ok(false);
         }

@@ -78,6 +78,7 @@ where
         &selector,
         probe,
         &plan.parameters,
+        &plan.governance,
         &allocation,
         native,
     )?;

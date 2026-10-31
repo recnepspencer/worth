@@ -24,6 +24,7 @@ pub(in crate::domain_computation::primary_graph) trait RetainedManagedInfluence:
     fn as_any(&self) -> &dyn std::any::Any;
     fn comparison_work(&self) -> u64;
     fn content(&self) -> worth_foundational::facade::ProjectedCandidateContentV1;
+    fn audience(&self) -> [u8; 32];
     fn same_inputs(
         &self,
         other: &dyn RetainedManagedInfluence,
@@ -73,6 +74,9 @@ impl CapturedManagedInfluence {
         &self,
     ) -> worth_foundational::facade::ProjectedCandidateContentV1 {
         self.support.content()
+    }
+    pub(in crate::domain_computation::primary_graph) fn audience(&self) -> [u8; 32] {
+        self.support.audience()
     }
     /// A false checkpoint cannot be swallowed into success by an erased callee.
     pub(in crate::domain_computation::primary_graph) fn same_inputs<E>(

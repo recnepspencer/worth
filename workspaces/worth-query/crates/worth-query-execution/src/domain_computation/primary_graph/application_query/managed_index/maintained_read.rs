@@ -6,6 +6,7 @@ use super::{
     source::service::ManagedSourceRoot,
     source_image::SourceBinding,
 };
+use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
 use crate::domain_computation::{
     primary_graph::{
         application_attempt::ManagedSourceRead,
@@ -47,6 +48,7 @@ pub(super) fn select<'a, 'request, 'authority, S, I>(
     adapter: &Arc<dyn InstalledIndexProvider<S, I>>,
     probe: &AspectValue,
     parameters: &Parameters,
+    governance: &WorthQueryApplicationQueryGovernance,
     allocation: &Arc<SourceFactsAllocation>,
     native: &mut ApplicationQueryNativeAccess<'_>,
 ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial>
@@ -112,6 +114,7 @@ where
             root,
             observation: &observation,
             parameters,
+            governance,
             probe,
             selected: &slots,
             allocation,

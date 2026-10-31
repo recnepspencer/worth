@@ -2211,3 +2211,22 @@ substitution and later relevant changes refuse. The
 filtered176-test consumer run,26 focused owner tests and explicit exclusions.
 This does not close Phase4; field tracing, correction support/history
 and governed influence remain unfinished.
+
+### Phase4 governed influence slice
+
+The [boundary review](milestone-9.19-phase4-governed-boundary-review.md) and
+[implementation plan](milestone-9.19-phase4-governed-plan.md) carry actual governed
+admission meaning through complete realized capture. The existing paid passive
+full-use owner and actual admitted disclosure value are retained after exact
+session/query/capability/posture correspondence; no old READ grant is retained.
+Audience meaning enters qualified origin, dependency identity and canonical fact
+material as well as full captured comparison. Genuine protected expectations
+preserve unrelated edits and refuse relevant/entrant/rejected-body movement while
+omitted fields stay omitted; fresh READ and revocation gates remain independent.
+The [verification receipt](milestone-9.19-phase4-governed-evidence.md) records
+protected4/4, filtered consumer177/177, focused owner51/51 and fresh prefix growth
+invoices, with explicit limits. Governed producer/output-demand readmission and
+canonical cutoff remain unqualified (selected governed execution still refuses);
+prior producer receipts apply to Public pipelines. Field tracing, correction
+support/history and later public/private qualification remain open; this does
+not close Phase4.

@@ -86,6 +86,24 @@ impl WorthQueryCapabilityUseIdentity {
             _allocation: allocation.clone(),
         })
     }
+    pub(in crate::domain_computation) fn descriptor<E>(
+        &self,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+        overflow: &dyn Fn() -> E,
+    ) -> Result<[u8; 32], E> {
+        super::material::descriptor(&self.request, admit, overflow)
+    }
+    pub(in crate::domain_computation) fn same_use<E>(
+        &self,
+        other: &Self,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+    ) -> Result<bool, E> {
+        admit(self.comparison_work)?;
+        admit(other.comparison_work)?;
+        let equal = self.request.matches_use(&other.request);
+        admit(0)?;
+        Ok(equal)
+    }
     pub(in crate::domain_computation) fn matches(
         &self,
         authorization: &WorthQueryRetainedCapabilityAuthorization,

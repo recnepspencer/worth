@@ -33,6 +33,9 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Retai
     fn content(&self) -> worth_foundational::facade::ProjectedCandidateContentV1 {
         self.candidates.content()
     }
+    fn audience(&self) -> [u8; 32] {
+        self.audience.descriptor()
+    }
     fn same_inputs(
         &self,
         other: &dyn RetainedManagedInfluence,
@@ -53,6 +56,7 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Retai
                 .parent()
                 .same_association(other.parameters.parent())
             && self.parameters.parameters().bindings() == other.parameters.parameters().bindings()
+            && self.audience.same_meaning(&other.audience, checkpoint)
             && match purpose {
                 CapturedInfluenceComparison::Content => self.candidates.same_captured(
                     &other.candidates,

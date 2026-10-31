@@ -5901,13 +5901,18 @@ values reconstructed in new material.
 The commit receiver retains and atomically pins the checked target Native Source
 observation. A writer after revalidation refuses at the existing Native basis
 check. No returned DTO, digest or old observation substitutes for that pin.
-Governed Parents and unsupported projection profiles retain the conservative
-whole-Source posture. Public reads, watches and pages still require fresh READ
-and disclosure admission; internal consistency verification exposes no rows.
+Unsupported projection profiles retain the conservative whole-Source posture.
+A complete governed Parent also qualifies when the actual admitted governance
+owner retains passive full capability-use and disclosure correspondence. That
+capture checks its real session, capability, query/parameters, principal/scope
+and exact installed Parent; it holds no old authorization or READ grant. Public
+reads, watches and pages still require fresh READ and disclosure admission;
+internal consistency verification exposes no rows.
 
-At this qualified Public profile, semantic Source identity covers the complete
-candidate cut, full projected content and exact dispositions, including rejected
-candidates. An unrelated Source edit can preserve genuine generated-output reuse.
+Qualified semantic Source identity covers the complete candidate cut, full
+projected content and exact dispositions, including rejected candidates. In the
+Public producer pipeline, an unrelated Source edit can preserve genuine generated-
+output reuse.
 Every demand still admits fresh principal/scope/READ and disclosure, verifies the
 retained output at the actual target, and keeps the original Native expectation.
 A reused committed output can report `Performed` with its original historical
@@ -5929,8 +5934,20 @@ equality links or downstream discharges. Later relevant Source/output changes
 still refuse delivery. Generation substitution cannot reuse a prior selected-membership key;
 incomplete/restored or unqualified captures cannot supply one.
 
-This profile retains full candidate inputs; it does not trace narrower field use,
-qualify correction history or governed influence.
+A governed observation preserves its ordinary omission receipts while retaining
+hidden candidate influence. Its source expectation is descriptive input to the
+separately admitted mutation; it supplies no current Query grant. Passive use
+includes actual action/purpose/context and admitted disclosure meaning. Distinct
+Public/Governed uses cannot collapse into one canonical Source obligation, and a
+changed rejected body still refuses even when disclosed exact rows are unchanged.
+Fresh grant revocation or independent READ refusal still stops the next public
+query/watch before provider callbacks or metadata. Governed producer/output-demand
+readmission and canonical input-cutoff integration remain unqualified here; the
+selected governed execution mode still refuses that pipeline. The producer reuse
+and cutoff results above apply to the supported Public pipeline.
+
+This profile retains full candidate inputs; it does not trace narrower field use
+or qualify correction history.
 Successful regeneration after changed inputs depends on the declared producer
 lifecycle; an Initial-only/Create operation cannot replace a prior live output.
 Keep the observation until the mutation consumes it, then reread and reassess
@@ -5938,7 +5955,8 @@ if equality cannot be proved.
 Reuse the operation's idempotency identity for a recorded retry; it does not
 repeat the completed mutation. See the [currentness evidence](../plans/WORTH-query/milestone-9.19-phase4-currentness-evidence.md) and
 [semantic reuse plan](../plans/WORTH-query/milestone-9.19-phase4-semantic-reuse-plan.md) and
-[selected-membership plan](../plans/WORTH-query/milestone-9.19-phase4-membership-plan.md).
+[selected-membership plan](../plans/WORTH-query/milestone-9.19-phase4-membership-plan.md) and
+[governed influence plan](../plans/WORTH-query/milestone-9.19-phase4-governed-plan.md).
 
 The maintained prefix and geometry courts also exercise genuine equal-value
 rename/move commits. A watch may remain Pending or deliver unchanged rows;

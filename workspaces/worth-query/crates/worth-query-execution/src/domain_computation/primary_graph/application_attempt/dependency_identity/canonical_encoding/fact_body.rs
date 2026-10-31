@@ -36,6 +36,12 @@ pub(super) fn append_fact(
             if let Some(origin) = observation.key().influence {
                 push(
                     entries,
+                    format!("{prefix}.admitted-query-influence-v1"),
+                    CanonicalBasisEntryKind::Value,
+                    CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(origin.audience)),
+                );
+                push(
+                    entries,
                     format!("{prefix}.projected-candidate-content-v1"),
                     CanonicalBasisEntryKind::Value,
                     CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(

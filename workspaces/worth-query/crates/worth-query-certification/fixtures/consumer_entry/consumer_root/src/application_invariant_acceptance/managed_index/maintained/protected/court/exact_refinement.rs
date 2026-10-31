@@ -67,8 +67,12 @@ fn run() {
             )
             .unwrap();
         assert_eq!(rows.rows().len(), count);
-        assert!(!rows.result_set_observation().unwrap().has_verified_realized_footprint(),
-            "governed inputs retain conservative whole-Source consistency until passive purpose/capability binding is carried");
+        assert!(
+            rows.result_set_observation()
+                .unwrap()
+                .has_verified_realized_footprint(),
+            "actual admitted governed meaning accompanies this qualified complete capture"
+        );
         if count == 1 {
             assert!(matches!(
                 &rows.rows()[0].name,

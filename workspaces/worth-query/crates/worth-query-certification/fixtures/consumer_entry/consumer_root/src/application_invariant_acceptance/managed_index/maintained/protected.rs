@@ -3,6 +3,7 @@
 pub(super) mod access;
 #[cfg(test)]
 mod court;
+pub(super) mod expectation;
 mod page;
 mod query;
 mod seed;
@@ -28,5 +29,6 @@ pub(super) fn declare(
         .application_query_binding::<query::AliasBinding>()
         .application_query(query::blocked_definition())
         .application_query_binding::<query::BlockedBinding>()
+        .application_mutation_binding::<expectation::Binding>()
 }
 pub(super) use seed::populate;
