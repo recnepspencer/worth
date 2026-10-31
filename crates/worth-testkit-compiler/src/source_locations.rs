@@ -27,27 +27,24 @@ impl SourceContext {
         let mut owner_name = None;
         for (offset, _) in source.match_indices("/tests/") {
             let tail = &source[offset + 7..];
-            if let Some((_, tail)) = tail.split_once('/') {
-                if let Some(tail) = tail.strip_prefix("sources/") {
-                    if let Some((owner, _)) = tail.split_once('/') {
-                        let length = source.len() - tail.len() + owner.len() + 1;
-                        fixtures = Some(source[..length].to_owned());
-                        relative_fixtures = Some(source[offset + 1..length].to_owned());
-                        owner_name = Some(owner.replace('_', "-"));
-                        break;
-                    }
-                }
+            if let Some((_, tail)) = tail.split_once('/')
+                && let Some(tail) = tail.strip_prefix("sources/")
+                && let Some((owner, _)) = tail.split_once('/')
+            {
+                let length = source.len() - tail.len() + owner.len() + 1;
+                fixtures = Some(source[..length].to_owned());
+                relative_fixtures = Some(source[offset + 1..length].to_owned());
+                owner_name = Some(owner.replace('_', "-"));
+                break;
             }
         }
-        if fixtures.is_none() {
-            if let Some((prefix, _)) = source.split_once("/assets/") {
-                if let Some((_, name)) = prefix.rsplit_once("/crates/worth-testkit-") {
-                    if !name.contains('/') {
-                        fixtures = Some(format!("{prefix}/assets/"));
-                        owner_name = Some(format!("worth-{name}"));
-                    }
-                }
-            }
+        if fixtures.is_none()
+            && let Some((prefix, _)) = source.split_once("/assets/")
+            && let Some((_, name)) = prefix.rsplit_once("/crates/worth-testkit-")
+            && !name.contains('/')
+        {
+            fixtures = Some(format!("{prefix}/assets/"));
+            owner_name = Some(format!("worth-{name}"));
         }
         let workspace = source
             .rsplit_once("/crates/")
@@ -109,10 +106,10 @@ impl SourceContext {
             }
         }
         let key = source_key(Path::new(path));
-        if key.split('/').any(|part| matches!(part, "." | "..")) {
-            if let Some(resolved) = self.resolve_module_path(&key) {
-                return self.path(&resolved);
-            }
+        if key.split('/').any(|part| matches!(part, "." | ".."))
+            && let Some(resolved) = self.resolve_module_path(&key)
+        {
+            return self.path(&resolved);
         }
         if let Some(relative) = self
             .relative_fixtures
@@ -141,14 +138,12 @@ impl SourceContext {
         if let Some(relative) = rust_library(&key) {
             return format!("$RUST/{relative}");
         }
-        if let Some((_, tail)) = key.split_once("/registry/src/") {
-            if let Some((registry, relative)) = tail.split_once('/') {
-                if let Some((_, hash)) = registry.rsplit_once('-') {
-                    if hex(hash, 16) {
-                        return format!("$CARGO/{relative}");
-                    }
-                }
-            }
+        if let Some((_, tail)) = key.split_once("/registry/src/")
+            && let Some((registry, relative)) = tail.split_once('/')
+            && let Some((_, hash)) = registry.rsplit_once('-')
+            && hex(hash, 16)
+        {
+            return format!("$CARGO/{relative}");
         }
         key
     }
@@ -189,14 +184,13 @@ impl SourceContext {
 
 fn split_coordinates(value: &str) -> (&str, &str) {
     let mut parts = value.rsplitn(3, ':');
-    if let (Some(column), Some(line), Some(path)) = (parts.next(), parts.next(), parts.next()) {
-        if !column.is_empty()
-            && !line.is_empty()
-            && column.bytes().all(|byte| byte.is_ascii_digit())
-            && line.bytes().all(|byte| byte.is_ascii_digit())
-        {
-            return (path, &value[path.len()..]);
-        }
+    if let (Some(column), Some(line), Some(path)) = (parts.next(), parts.next(), parts.next())
+        && !column.is_empty()
+        && !line.is_empty()
+        && column.bytes().all(|byte| byte.is_ascii_digit())
+        && line.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return (path, &value[path.len()..]);
     }
     (value, "")
 }
