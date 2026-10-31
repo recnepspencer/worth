@@ -7,6 +7,11 @@ world-home workspaces/worth-store/crates/worth-store-application/src/tests/world
 native-home-composition workspaces/worth-store/crates/worth-store-application/src/world_section/attachment.rs
 native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
 native-world-readmission workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/transition.rs
+# Actual no-pending Home carrier: closed Host completion and exact genuine courts.
+application-home-owner-admission workspaces/worth-query/crates/worth-query-host/src/application_home/opening.rs
+application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/journal_absence.rs
+application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/unresolved.rs
 # Recovery-affine inventory: one production consumer and one authentic admission court.
 native-recovered-inventory crates/worth-runtime-world/src/lifecycle/builder/home_readmission/associated_effects.rs
 native-recovered-inventory crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recovered_associated_effects.rs

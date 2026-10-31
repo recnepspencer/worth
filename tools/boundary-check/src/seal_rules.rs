@@ -32,6 +32,8 @@ const FACTORIES: &[&str] = &[
     "prepare_query_publication_without_signal",
     "bind_query_native_proposal",
     "complete_query_native_preparation",
+    "readmit_no_pending_owners",
+    "into_no_pending_home",
 ];
 fn owner(input: &Inputs, path: &str) -> Option<String> {
     input
@@ -252,6 +254,11 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                     (
                         "native-world-readmission",
                         "workspaces/worth-store/crates/worth-store-relational/",
+                    )
+                } else if matches!(*name, "readmit_no_pending_owners" | "into_no_pending_home") {
+                    (
+                        "application-home-owner-admission",
+                        "workspaces/worth-store/crates/worth-store-application/",
                     )
                 } else if *name == "discover_recovered_associated_effects" {
                     ("native-recovered-inventory", "crates/worth-relational/")

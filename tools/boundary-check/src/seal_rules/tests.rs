@@ -142,6 +142,11 @@ fn certification_factory_callers_are_class_and_file_exact() {
         ("world_composition_runtime", "native-home-composition"),
         ("world_recovery_authority", "native-world-readmission"),
         (
+            "readmit_no_pending_owners",
+            "application-home-owner-admission",
+        ),
+        ("into_no_pending_home", "application-home-owner-admission"),
+        (
             "discover_recovered_associated_effects",
             "native-recovered-inventory",
         ),
