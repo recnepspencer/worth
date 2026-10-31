@@ -10,6 +10,7 @@ mod advancement;
 mod authorization;
 mod binding;
 pub(super) use advancement::Step as SourceStep;
+pub(in crate::application_entry) use binding::sealed::Driver as SourceAssessmentDriver;
 pub use binding::WorthQuerySourceOperationBinding;
 mod completion;
 mod handoff_control;

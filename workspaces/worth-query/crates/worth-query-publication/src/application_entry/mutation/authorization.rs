@@ -39,12 +39,13 @@ type MutationScope<Schema, Binding> =
     <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<
         Schema,
     >>::Scope;
-type AdmittedMutation<Schema, Binding> = WorthQueryAdmittedApplicationOperation<
-    Schema,
-    <Binding as ApplicationMutationBinding<Schema>>::Operation,
-    <Binding as ApplicationMutationBinding<Schema>>::Input,
-    MutationScope<Schema, Binding>,
->;
+pub(in crate::application_entry) type AdmittedMutation<Schema, Binding> =
+    WorthQueryAdmittedApplicationOperation<
+        Schema,
+        <Binding as ApplicationMutationBinding<Schema>>::Operation,
+        <Binding as ApplicationMutationBinding<Schema>>::Input,
+        MutationScope<Schema, Binding>,
+    >;
 
 pub struct PreparedMutation<Schema, Binding>
 where

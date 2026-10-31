@@ -16,6 +16,7 @@ use worth_query_execution::facade::application_installation::{
 mod sealed {
     pub trait Mode {}
 }
+mod assessment;
 impl sealed::Mode for ApplicationSourceCompletion {}
 impl sealed::Mode for ApplicationRetainedCommit {}
 /// Sealed no-output delivery choices preserve ordinary versus retained native commit outcomes.
@@ -189,34 +190,6 @@ where
     MutationInput<S, I>: Clone + Send + Sync,
     MutationScope<S, I>: ApplicationMutationScopeResolution<S, MutationPrincipal<S, I>>,
 {
-    pub(super) fn assess_current_authorization(
-        &self,
-        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    ) -> Result<WorthQueryCurrentAuthorizationAssessment, WorthQueryApplicationRequestMutationDenial>
-    {
-        request
-            .application
-            .with_application_advancement(request.scope, |phase| {
-                let (selected, _owner) = self.select(&phase, request)?;
-                let input = self
-                    .description
-                    .encoded_input
-                    .as_ref()
-                    .map_err(|cause| {
-                        WorthQueryApplicationRequestMutationDenial::Identity(
-                            ApplicationMutationIdentityDenial::Input(cause.clone()),
-                        )
-                    })?
-                    .clone();
-                let mut native = self
-                    .description
-                    .request_view(request, &self.installed_action);
-                self.bind_workflow_view(&mut native, false);
-                super::super::mutation::assess_owned(&phase, &native, input, &selected)
-            })
-            .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
-    }
-
     pub fn execute_in_advancement(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

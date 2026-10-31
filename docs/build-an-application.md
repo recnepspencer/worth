@@ -1870,7 +1870,11 @@ model's ordinary READ intent and register an `ApplicationHistoryDefinition` in
 its contribution. On the head's branch call
 `request.attach_history::<Binding>(&phase, head, model_read)`. The returned
 document owns the slot; `document.read(&request)` freshly admits the original
-model READ. An externally changed head or recreated model refuses. Close with
+model READ. For an original retained no-output action,
+`document.assess_edit(&request, &operation)` observes current READ/action
+authorization, declared operation membership and exact model/head correspondence.
+It borrows both owners and grants no execution permission. An externally changed
+head or recreated model refuses. Close with
 `document.close(&phase)` and retain any live-document or retired-cleanup failure.
 See [attach a model and read its owned head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#attach-a-model-and-read-its-owned-head).
 

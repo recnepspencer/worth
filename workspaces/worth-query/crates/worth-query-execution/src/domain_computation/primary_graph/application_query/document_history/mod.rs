@@ -1,5 +1,6 @@
 //! A pending exact model capture leaves only after ordinary query completion.
 mod current_head;
+mod operation;
 mod pending;
 
 use super::{

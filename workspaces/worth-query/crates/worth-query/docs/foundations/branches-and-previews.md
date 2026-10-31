@@ -182,6 +182,23 @@ Each call runs current ordinary READ admission. A foreign runtime, recreated
 model or externally changed head refuses; equal field values do not repair a
 changed head. No rows are issued on a divergence refusal.
 
+For a retained no-output action, use `document.assess_edit(&request, &operation)`
+to observe whether that original action currently belongs to this document.
+The call completes the document's ordinary READ, freshly authorizes the action,
+and checks its full model identity, declared operation membership and exact
+selected head. An action for a different document or branch refuses even when
+the model types and field values match. Both owners remain available after
+success or refusal.
+
+```rust,ignore
+let request = runtime.request(&principal, &scope);
+let eligibility = document.assess_edit(&request, &operation)?;
+```
+
+Use the observation to update action availability. It claims no idempotency key,
+runs no handler and consumes no workflow grant. It grants no permission to
+execute; ordinary action execution still requires fresh authorization.
+
 Close under a phase from the owning host. `Retained { document, denial }` keeps
 the live document after a refusal before retirement. `Retired { branch,
 failure }` carries actual cleanup after retirement; retain and retry
@@ -190,6 +207,9 @@ failure }` carries actual cleanup after retirement; retain and retry
 The [compiled declaration](../../../worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs)
 and [compiled attachment cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/attachment.rs)
 show two model heads, current reads, equal-value divergence and explicit close.
+The [compiled edit-assessment cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/assessment.rs)
+show ordinary action construction, model and membership refusals, fresh request
+authority, unchanged model values and disposal of both owners.
 
 ### Store an expected basis and select it again
 

@@ -12,6 +12,7 @@ use worth_query_declaration::facade::{
         ApplicationHistoryAccessBinding, ApplicationHistoryBinding,
         ErasedApplicationHistoryDefinition,
     },
+    application_operation::ApplicationMutationBinding,
     application_query::ApplicationQueryBinding,
     application_schema::{ApplicationSchema, ApplicationSchemaBindingIdentity},
 };
@@ -37,6 +38,12 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         &self,
     ) -> &WorthQueryInstalledApplicationQueryBinding<S, ApplicationHistoryAccessBinding<S, H>> {
         &self.access
+    }
+
+    /// Compare the full installed operation meaning, rather than its authored name.
+    pub fn contains_operation<M: ApplicationMutationBinding<S>>(&self) -> bool {
+        let descriptor = M::descriptor();
+        self.compiled.descriptor.operations().contains(&descriptor)
     }
 }
 

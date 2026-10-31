@@ -13,6 +13,21 @@ pub(in crate::domain_computation::primary_graph) struct HistoryModelIdentity {
 }
 
 impl HistoryModelIdentity {
+    pub(in crate::domain_computation::primary_graph) fn matches_operation<S, O, I, E>(
+        &self,
+        admitted: &crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
+            S,
+            O,
+            I,
+            E,
+        >,
+    ) -> bool {
+        self.entity == admitted.scope_entity_id()
+            && self.kind == admitted.scope_entity_kind()
+            && self.runtime == admitted.runtime_authority()
+            && &self.binding == admitted.binding_identity()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_resolved<S, E>(
         resolved: &WorthQueryApplicationEntityIdentity<S, E>,
     ) -> Self {

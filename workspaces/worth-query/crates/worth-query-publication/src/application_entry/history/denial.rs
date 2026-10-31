@@ -10,6 +10,7 @@ pub enum WorthQueryApplicationHistoryDenial {
     ForeignRuntime,
     Installation(WorthQueryDocumentHistoryInstallationDenial),
     Query(super::super::WorthQueryApplicationRequestQueryDenial),
+    Mutation(super::super::WorthQueryApplicationRequestMutationDenial),
     Document(WorthQueryDocumentHistoryDenial),
     ExecutionRequest(WorthQueryAdvancementDenial),
 }

@@ -5,6 +5,7 @@ mod mode_construction;
 pub(super) mod native_publication;
 mod source_admission;
 mod source_only;
+pub(in crate::application_entry) use source_only::SourceAssessmentDriver;
 mod workflow;
 mod workflow_birth;
 pub use cleanup::{WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt};

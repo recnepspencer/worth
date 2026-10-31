@@ -1,4 +1,5 @@
 //! Ordinary admitted model attachment and reads retain Execution's actual head owner.
+mod assessment;
 mod attachment;
 mod close;
 mod denial;

@@ -12,6 +12,10 @@ pub enum WorthQueryDocumentHistoryDenial {
     InstalledBindingMismatch,
     UnsupportedReadMode,
     ForeignModel,
+    OperationNotDeclared,
+    OperationAdmission(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ),
     HeadDiverged,
     Stopped(WorthQueryAdvancementDenial),
     NativeBasis(RelationalBranchBasisDenial),
