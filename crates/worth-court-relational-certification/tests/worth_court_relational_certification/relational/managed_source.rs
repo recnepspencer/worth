@@ -20,78 +20,15 @@ use worth_relational::facade::{
     transactions::*,
 };
 
+mod authored_fields;
 mod context;
 mod derived_admission;
 mod history;
 mod journal;
+mod registry;
+pub(crate) use registry::registry;
 #[path = "managed_source/owner.rs"]
 pub(crate) mod owner;
-
-pub(crate) fn registry() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
-    let mut registry = RelationalSchemaRegistry::new();
-    let schema = SchemaId("managed-source-court".into());
-    for (kind, name) in [(1, "directory"), (4, "item")] {
-        registry = registry
-            .register_entity_kind(EntityKindRegistration {
-                kind_id: KindId(kind),
-                kind_name: name.into(),
-                schema_id: schema.clone(),
-                schema_version_id: SchemaVersionId(1),
-                aspect_contract_declarations: Default::default(),
-            })
-            .unwrap();
-    }
-    registry = registry
-        .register_relation_kind(RelationKindRegistration {
-            kind_id: KindId(2),
-            kind_name: "contains".into(),
-            schema_id: schema.clone(),
-            schema_version_id: SchemaVersionId(1),
-            cross_context_policy: CrossContextPolicy::Forbid,
-            cascade_delete_policy: CascadeDeletePolicy::RetainDanglingForAudit,
-            aspect_contract_declarations: Default::default(),
-            relation_integrity: RelationIntegrityDeclarations::new(
-                vec![EndpointKindContractDeclaration {
-                    contract_id: "contains-endpoints".into(),
-                    allowed_source_kinds: vec![KindId(1)],
-                    allowed_target_kinds: vec![KindId(4)],
-                    self_edges_allowed: false,
-                    cross_context_policy: CrossContextPolicy::Forbid,
-                }],
-                vec![],
-                vec![],
-                vec![],
-                vec![],
-            ),
-        })
-        .unwrap();
-    let identity = DerivedRelationIdentity {
-        schema,
-        version: SchemaVersionId(1),
-        name: "directory-items".into(),
-    };
-    registry = registry
-        .register_derived_relations(vec![DerivedRelationDefinitionParts {
-            identity: identity.clone(),
-            from: KindId(1).into(),
-            to: KindId(4).into(),
-            nodes: vec![DerivedRelationNode::Stored {
-                relation: KindId(2),
-                from: KindId(1),
-                to: KindId(4),
-            }],
-            laws: None,
-        }])
-        .unwrap();
-    let program = registry
-        .bind_managed_index_source(
-            &registry.derived_relation(&identity).unwrap(),
-            vec![],
-            vec![],
-        )
-        .unwrap();
-    (registry, program)
-}
 
 pub(crate) fn created(kind: u32, label: &str) -> CreatedEntityRef {
     CreatedEntityRef {

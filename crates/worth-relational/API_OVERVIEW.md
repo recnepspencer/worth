@@ -326,15 +326,20 @@ so genuine create/delete/coupling changes schedule fresh preparation.
 ## Managed Source authored impact candidates
 
 `authored_managed_source_selector(execution, &program, scope)` accepts an actual
-installed membership-only Source program (no fields or projection routes) and a
-full-generation scope. The opaque selector is live roster metadata. It admits no
+installed Source program and a full-generation scope. Supported projections use
+its existing scalar-valued Struct fields and direct/Reverse endpoint routes;
+this does not add scalar-aspect or deeper Source reads. The opaque selector is live roster metadata. It admits no
 Source READ, principal, Query dependency proof or mutation eligibility.
 
 `authored_managed_source_history_cursor(execution, &original_basis,
 selected_target, &[selector])` uses the existing authored-history page lifecycle.
 It emits complete conservative canonical impact candidates in the open interval
-of a single-parent selected prefix. Actual authored lifecycle and relation
-incidence include endpoint no-ops and transient membership. A shared-row scope
+of a single-parent selected prefix. Actual authored lifecycle, field commands and relation incidence include no-op
+fields, whole-aspect operations and transient membership. Actual canonical
+publication changes and adjacency also cover owner-induced physical changes.
+Field commands are limited to kinds with actual declared row/endpoint fields;
+disjoint fields/aspects on those kinds can remain conservative candidates.
+Membership-only programs omit entity scalar-only commands. A shared-row scope
 can be included when only its neighbor's edge was authored; these candidates do
 not establish exact Query relevance or performed cancellation.
 
@@ -346,4 +351,4 @@ preparation, without advancing the cursor. Explicit generation rebuild may
 succeed with marked gaps; managed admission still refuses those intervals.
 Merge, schema and materialization transitions have no supported coverage in
 this profile. Ordinary authored record/index/adjacency history keeps its own
-contract. Full scalar/indirect profiles and Query correction are separate work.
+contract. Query relevance, performed cancellation and paired-support correction remain separate work.

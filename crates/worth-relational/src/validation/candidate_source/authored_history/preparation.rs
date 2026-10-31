@@ -1,7 +1,7 @@
-//! Complete conservative scope candidates from actual authored membership inputs.
+//! Complete conservative scope candidates from actual authored and physical inputs.
 use super::{
-    admission, catalog::membership_profile, collection::AuthoredMembership, ManagedSourceImpactKey,
-    ManagedSourceImpactRows, PreparedMembershipHistory,
+    admission, collection::AuthoredSourceInputs, ManagedSourceImpactKey, ManagedSourceImpactRows,
+    PreparedSourceImpactHistory,
 };
 use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
 use crate::branch::SelectedRelationalBranchRead;
@@ -26,7 +26,7 @@ pub(in crate::validation::candidate_source) fn prepare(
     selected: SelectedRelationalBranchRead<'_>,
     proposal: &crate::mvcc::RelationalMutationProposalIdentity,
     authored: Option<&MergedCommitPlan>,
-) -> Result<Option<Arc<PreparedMembershipHistory>>, Denial> {
+) -> Result<Option<Arc<PreparedSourceImpactHistory>>, Denial> {
     let catalog = &runtime
         .schema_contract_runtime
         .custom_invariant_registries
@@ -34,9 +34,7 @@ pub(in crate::validation::candidate_source) fn prepare(
     let Some(plan) = authored else {
         return Ok(None);
     };
-    if !catalog.has_membership_programs()
-        || draft.source_interpretation.materialization_mode().is_some()
-    {
+    if !catalog.has_programs() || draft.source_interpretation.materialization_mode().is_some() {
         return Ok(None);
     }
     let before = InvariantStateView::new(&selected, selected.version_id());
@@ -53,7 +51,7 @@ pub(in crate::validation::candidate_source) fn prepare(
     let mut result = None;
     super::super::applied::stage::prepare(execution, |budget| {
         let Some(input) =
-            AuthoredMembership::collect(execution, budget, draft, plan, &before, &after)?
+            AuthoredSourceInputs::collect(execution, budget, draft, plan, &before, &after)?
         else {
             return Ok(());
         };
@@ -75,13 +73,8 @@ pub(in crate::validation::candidate_source) fn prepare(
         for registration in registrations {
             for program in registration.managed_sources.iter() {
                 admission::work(budget, 1)?;
-                if !membership_profile(program) {
-                    continue;
-                }
                 admission::work(budget, catalog.len())?;
-                let slot = catalog
-                    .membership_slot(program)
-                    .map_err(|_| Denial::ForeignSource)?;
+                let slot = catalog.slot(program).map_err(|_| Denial::ForeignSource)?;
                 admission::ordered(budget, seen.len(), size_of::<usize>())?;
                 if seen.contains_key(&slot) {
                     continue;
@@ -138,9 +131,9 @@ pub(in crate::validation::candidate_source) fn prepare(
         }
         let basis = draft.source_interpretation.physical_basis();
         let branch = basis.identity().branch_id();
-        let memory = admission::header::<PreparedMembershipHistory>(execution, branch.0.len())?;
+        let memory = admission::header::<PreparedSourceImpactHistory>(execution, branch.0.len())?;
         admission::work(budget, branch.0.len())?;
-        result = Some(Arc::new(PreparedMembershipHistory {
+        result = Some(Arc::new(PreparedSourceImpactHistory {
             catalog: catalog.clone(),
             runtime: basis.identity().runtime_instance_id(),
             branch: branch.clone(),
@@ -160,7 +153,7 @@ fn source_records(
     execution: ExecutionRequest<'_, '_>,
     budget: &CustomPreparationBudget,
     program: &ManagedIndexSourceProgram,
-    input: &AuthoredMembership,
+    input: &AuthoredSourceInputs,
     before: &InvariantStateView<'_>,
     after: &InvariantStateView<'_>,
 ) -> Result<Vec<RecordRef>, Denial> {
@@ -178,17 +171,19 @@ fn source_records(
     records.try_reserve_exact(count).map_err(|_| {
         admission::storage(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
     })?;
-    for (record, _) in input.records.iter() {
+    for (record, usage) in input.records.iter() {
         let RecordRef::Entity(id) = record else {
             continue;
         };
         admission::work(budget, 2)?;
-        if [before.entity_metadata(*id), after.entity_metadata(*id)]
+        for metadata in [before.entity_metadata(*id), after.entity_metadata(*id)]
             .into_iter()
             .flatten()
-            .any(|metadata| program.includes_entity_kind(metadata.kind_id))
         {
-            records.push(record.clone());
+            if usage.includes(program, metadata.kind_id, budget)? {
+                records.push(record.clone());
+                break;
+            }
         }
     }
     execution

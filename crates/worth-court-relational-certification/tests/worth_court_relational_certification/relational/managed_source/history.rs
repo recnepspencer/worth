@@ -120,7 +120,7 @@ fn run_court(
     );
     run(&runtime, &program, ExecutionRequest::serial(&host));
 }
-fn edge(scope: EntityId, row: EntityId, label: &str) -> MutationIntent {
+pub(super) fn edge(scope: EntityId, row: EntityId, label: &str) -> MutationIntent {
     MutationIntent::Create(CreateIntent::Relation(RelationSpec {
         partition_id: PartitionId::main(),
         kind_id: KindId(2),
@@ -130,7 +130,12 @@ fn edge(scope: EntityId, row: EntityId, label: &str) -> MutationIntent {
         fields: Default::default(),
     }))
 }
-fn edge_id(outcome: &CommitResult, scope: EntityId, row: EntityId, label: &str) -> RelationId {
+pub(super) fn edge_id(
+    outcome: &CommitResult,
+    scope: EntityId,
+    row: EntityId,
+    label: &str,
+) -> RelationId {
     outcome
         .created_relation(&CreatedRelationRef {
             partition_id: PartitionId::main(),
@@ -141,7 +146,7 @@ fn edge_id(outcome: &CommitResult, scope: EntityId, row: EntityId, label: &str) 
         })
         .unwrap()
 }
-fn endpoints(
+pub(super) fn endpoints(
     runtime: &RelationalRuntime,
     execution: ExecutionRequest<'_, '_>,
     relation: RelationId,
@@ -361,19 +366,18 @@ fn managed_history_selector_requires_actual_program_and_full_generation_scope() 
 }
 
 #[test]
-fn managed_history_explicitly_refuses_registered_endpoint_projection_profiles() {
+fn managed_history_selector_accepts_registered_endpoint_projection_profiles() {
     run_court(
         HistoryProfile::EndpointProjection,
         |runtime, program, execution| {
             assert!(!program.projection_routes().is_empty());
-            assert!(matches!(
-                runtime.authored_managed_source_selector(
+            assert!(runtime
+                .authored_managed_source_selector(
                     execution,
                     program,
                     EntityId::new(PartitionId::main(), 7, 1)
-                ),
-                Err(RelationalAuthoredWriteDenial::UnsupportedManagedSourceSelector)
-            ));
+                )
+                .is_ok());
         },
     );
 }

@@ -201,7 +201,7 @@ pub(super) fn prepare_publication_phase(
         None
     };
     let canonical_commit_envelope = canonical_commit_envelope.freeze_with_managed_source_history(
-        source_interpretation.prepared_membership_history(),
+        source_interpretation.prepared_source_impact_history(),
         *execution,
     )?;
     let clone_mode = working_state.clone_mode();

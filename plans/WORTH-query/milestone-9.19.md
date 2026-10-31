@@ -2274,3 +2274,22 @@ Phases5/6.
 The [Native membership-history receipt](milestone-9.19-phase4-membership-history-evidence.md)
 records precise candidate, interruption and cold-gap evidence and its current
 qualification limits.
+
+
+### Phase4 declared-field and endpoint history prerequisite
+
+The [boundary review](milestone-9.19-phase4-projected-history-boundary-review.md)
+and [plan](milestone-9.19-phase4-projected-history-plan.md) extend the same Native
+history substrate to existing scalar-valued Struct fields and direct endpoint
+projections. Actual field/whole-aspect no-op commands join canonical publication
+deltas and actual incidence, including audit-retained physical changes. Fixed
+lifecycle/field flags preserve membership-only entity-scalar omission; complete
+existing old/new pullback owns routing. Disjoint fields on declared field kinds
+can remain conservative candidates, with no exact field-path relevance claim.
+Live-only typed gaps and Query's historical refusal remain. Query relevance,
+performed cancellation, paired support and field tracing are still required;
+this does not close Phase4 or qualify Phases5/6.
+
+
+The [declared-field history receipt](milestone-9.19-phase4-projected-history-evidence.md)
+records actual conservative candidate courts and their qualification limits.

@@ -69,8 +69,9 @@ impl RelationalRuntime {
             Selection::Ordinary(selectors),
         )
     }
-    /// Complete conservative impact candidates for membership-only Source scopes.
-    /// Shared-row scopes may appear without an authored local edge. These pages
+    /// Complete conservative impact candidates for installed Source scopes.
+    /// Shared-row scopes and disjoint fields on declared field kinds can appear.
+    /// These pages
     /// prove neither exact query relevance nor correction cancellation.
     pub fn authored_managed_source_history_cursor(
         &self,

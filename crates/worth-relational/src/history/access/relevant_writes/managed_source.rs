@@ -6,8 +6,9 @@ use crate::validation::candidate_source::ManagedIndexSourceProgram;
 use worth_execution::ExecutionRequest;
 
 impl RelationalRuntime {
-    /// Issue a membership-only impact-candidate coordinate. Shared-row scopes
-    /// can be conservatively included without an authored local edge. No principal, row,
+    /// Issue a declared Source impact-candidate coordinate. Shared-row scopes
+    /// and disjoint fields on declared field kinds can be conservative candidates.
+    /// No principal, row,
     /// Query proof, mutation eligibility or Source READ is admitted here.
     pub fn authored_managed_source_selector(
         &self,

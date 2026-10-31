@@ -46,7 +46,7 @@ pub(crate) struct NativeManagedSourceInterpretation {
     restoration: Option<NativeSourceRestorationOrigin>,
     pub(super) prepared: std::sync::OnceLock<super::staged::PreparedManagedIndexSources>,
     pub(super) authored_history:
-        std::sync::OnceLock<Option<Arc<super::authored_history::PreparedMembershipHistory>>>,
+        std::sync::OnceLock<Option<Arc<super::authored_history::PreparedSourceImpactHistory>>>,
     pub(super) context: std::sync::OnceLock<super::context::BoundSourceContext>,
 }
 
@@ -146,9 +146,9 @@ impl PartialEq for NativeSourceInterpretationIdentity {
 impl Eq for NativeSourceInterpretationIdentity {}
 
 impl NativeManagedSourceInterpretation {
-    pub(crate) fn prepared_membership_history(
+    pub(crate) fn prepared_source_impact_history(
         &self,
-    ) -> Option<Arc<super::authored_history::PreparedMembershipHistory>> {
+    ) -> Option<Arc<super::authored_history::PreparedSourceImpactHistory>> {
         self.authored_history
             .get()
             .and_then(|history| history.as_ref())

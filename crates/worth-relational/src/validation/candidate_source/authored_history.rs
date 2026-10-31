@@ -1,4 +1,4 @@
-//! Original-authored membership impact, separate from semantic maintenance effects.
+//! Authored and physical Source impact, separate from semantic maintenance effects.
 pub(crate) mod catalog;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
@@ -8,6 +8,8 @@ use std::sync::Arc;
 use worth_execution::{ChargedBytes, ExecutionOrderedMap};
 mod admission;
 mod collection;
+mod record_use;
+pub(crate) use record_use::AuthoredSourceRecordUse;
 
 /// Original authored incidence on the actual selected/working pair. This is
 /// not a published semantic adjacency delta and may describe a no-op.
@@ -42,13 +44,13 @@ impl ChargedBytes for ManagedSourceImpactRows {
     } // Cells retain their original grants.
 }
 #[derive(Debug)]
-pub(crate) struct PreparedMembershipHistory {
+pub(crate) struct PreparedSourceImpactHistory {
     pub(crate) catalog: Arc<SourceHistoryCatalog>,
     pub(crate) runtime: u64,
     pub(crate) branch: BranchId,
     pub(crate) parent: Option<CommitId>,
     pub(crate) proposed: VersionId,
-    pub(crate) records: ExecutionOrderedMap<RecordRef, ()>,
+    pub(crate) records: ExecutionOrderedMap<RecordRef, AuthoredSourceRecordUse>,
     pub(crate) incidence: ExecutionOrderedMap<RelationId, AuthoredSourceIncidence>,
     pub(crate) impacts: ExecutionOrderedMap<ManagedSourceImpactKey, ManagedSourceImpactRows>,
     pub(crate) _memory: Option<worth_execution::ExecutionMemoryReservation>,

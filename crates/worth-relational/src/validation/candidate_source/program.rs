@@ -113,14 +113,6 @@ impl ManagedIndexSourceProgram {
         self.paths().flat_map(|path| path.physical_sources())
     }
 
-    pub(crate) fn includes_entity_kind(&self, kind: KindId) -> bool {
-        kind == self.scope_kind()
-            || kind == self.row_kind()
-            || self
-                .physical_sources()
-                .any(|&(_, from, to)| kind == from || kind == to)
-    }
-
     pub(crate) fn require_access(
         &self,
         access: &CustomInvariantAccessContract,

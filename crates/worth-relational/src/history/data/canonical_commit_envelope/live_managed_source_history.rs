@@ -1,13 +1,13 @@
 //! Disposable live metadata; never canonical serialized truth or Source authority.
 use super::{CanonicalCommitAuthorityKind, CanonicalCommitEnvelope};
-use crate::validation::candidate_source::authored_history::PreparedMembershipHistory;
+use crate::validation::candidate_source::authored_history::PreparedSourceImpactHistory;
 use std::sync::{Arc, Weak};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 #[derive(Default)]
 pub(crate) struct LiveManagedSourceHistory(Option<Arc<BoundHistory>>);
 struct BoundHistory {
-    prepared: Arc<PreparedMembershipHistory>,
+    prepared: Arc<PreparedSourceImpactHistory>,
     owner: Weak<CanonicalCommitEnvelope>,
     _memory: Option<ExecutionMemoryReservation>,
 }
@@ -35,7 +35,7 @@ impl Eq for LiveManagedSourceHistory {}
 impl LiveManagedSourceHistory {
     pub(crate) fn verified<'a>(
         envelope: &'a Arc<CanonicalCommitEnvelope>,
-    ) -> Option<&'a PreparedMembershipHistory> {
+    ) -> Option<&'a PreparedSourceImpactHistory> {
         let live = envelope.live_managed_source_history.0.as_ref()?;
         let owner = live.owner.upgrade()?;
         if !Arc::ptr_eq(&owner, envelope) {
@@ -49,7 +49,7 @@ impl CanonicalCommitEnvelope {
     /// The final immutable envelope binds its entire receipt/schema/plan at once.
     pub(crate) fn freeze_with_managed_source_history(
         mut self,
-        prepared: Option<Arc<PreparedMembershipHistory>>,
+        prepared: Option<Arc<PreparedSourceImpactHistory>>,
         execution: ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, crate::transactions::data::TransactionCommitError> {
         let prepared = prepared.filter(|packet| packet_matches(packet, &self));
@@ -79,7 +79,10 @@ impl CanonicalCommitEnvelope {
         }))
     }
 }
-fn packet_matches(packet: &PreparedMembershipHistory, envelope: &CanonicalCommitEnvelope) -> bool {
+fn packet_matches(
+    packet: &PreparedSourceImpactHistory,
+    envelope: &CanonicalCommitEnvelope,
+) -> bool {
     let parent_matches = match packet.parent {
         None => envelope.commit.parents.is_empty(),
         Some(parent) => envelope.commit.parents.as_slice() == [parent],

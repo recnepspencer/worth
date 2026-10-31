@@ -1,5 +1,5 @@
-//! Authored lifecycle and endpoint incidence, including equal-value endpoint writes.
-use super::{admission, AuthoredSourceIncidence};
+//! Authored lifecycle/field commands and actual physical incidence, including no-ops.
+use super::{admission, AuthoredSourceIncidence, AuthoredSourceRecordUse as Use};
 use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
 use crate::authority::mutation::{AdjacencyDelta, AdjacencyDeltaKind};
 use crate::derived_relation::DerivedRelationReadDenial;
@@ -13,11 +13,13 @@ use crate::validation::custom_rule::CustomPreparationBudget;
 use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
-pub(super) struct AuthoredMembership {
-    pub(super) records: ExecutionOrderedMap<RecordRef, ()>,
+mod physical;
+
+pub(super) struct AuthoredSourceInputs {
+    pub(super) records: ExecutionOrderedMap<RecordRef, Use>,
     pub(super) incidence: ExecutionOrderedMap<RelationId, AuthoredSourceIncidence>,
 }
-impl AuthoredMembership {
+impl AuthoredSourceInputs {
     pub(super) fn collect(
         execution: ExecutionRequest<'_, '_>,
         budget: &CustomPreparationBudget,
@@ -33,7 +35,9 @@ impl AuthoredMembership {
         for allocation in draft.identities.records.canonical() {
             admission::work(budget, 1)?;
             match allocation.record() {
-                record @ RecordRef::Entity(_) => result.record(execution, budget, record)?,
+                record @ RecordRef::Entity(_) => {
+                    result.record(execution, budget, record, Use::LIFECYCLE)?
+                }
                 RecordRef::Relation(id) => {
                     result.relation(execution, budget, *id, before, after)?
                 }
@@ -42,12 +46,38 @@ impl AuthoredMembership {
         for intent in &plan.merged_intents {
             admission::work(budget, 1)?;
             match intent {
-                MutationIntent::Entity(Entity::Replace(value)) => {
-                    result.record(execution, budget, &RecordRef::Entity(value.entity_id))?
+                MutationIntent::Entity(Entity::UpdateFields(value)) => {
+                    if !value.fields.is_empty() {
+                        result.record(
+                            execution,
+                            budget,
+                            &RecordRef::Entity(value.entity_id),
+                            Use::FIELDS,
+                        )?;
+                    }
                 }
-                MutationIntent::Entity(Entity::Delete(value)) => {
-                    result.record(execution, budget, &RecordRef::Entity(value.entity_id))?
+                MutationIntent::Entity(Entity::ApplyAspectPatch(value)) => {
+                    if !value.aspect_patch.operations().is_empty() {
+                        result.record(
+                            execution,
+                            budget,
+                            &RecordRef::Entity(value.entity_id),
+                            Use::FIELDS,
+                        )?;
+                    }
                 }
+                MutationIntent::Entity(Entity::Replace(value)) => result.record(
+                    execution,
+                    budget,
+                    &RecordRef::Entity(value.entity_id),
+                    Use::LIFECYCLE,
+                )?,
+                MutationIntent::Entity(Entity::Delete(value)) => result.record(
+                    execution,
+                    budget,
+                    &RecordRef::Entity(value.entity_id),
+                    Use::LIFECYCLE,
+                )?,
                 MutationIntent::Relation(Relation::UpdateEndpoints(value)) => {
                     result.relation(execution, budget, value.relation_id, before, after)?
                 }
@@ -61,6 +91,9 @@ impl AuthoredMembership {
                 | MutationIntent::Relation(_) => {}
             }
         }
+        if !result.physical(execution, budget, draft, before, after)? {
+            return Ok(None);
+        }
         Ok(Some(result))
     }
     fn record(
@@ -68,10 +101,18 @@ impl AuthoredMembership {
         execution: ExecutionRequest<'_, '_>,
         budget: &CustomPreparationBudget,
         record: &RecordRef,
+        usage: Use,
     ) -> Result<(), Denial> {
         admission::ordered(budget, self.records.len(), size_of::<RecordRef>())?;
+        let usage = self
+            .records
+            .get(record)
+            .copied()
+            .unwrap_or_default()
+            .union(usage);
+        admission::ordered(budget, self.records.len(), size_of::<RecordRef>())?;
         self.records
-            .insert_cloned_native_for_request(record, &(), execution)
+            .insert_cloned_native_for_request(record, &usage, execution)
             .map_err(admission::map)
     }
     fn relation(
@@ -82,6 +123,10 @@ impl AuthoredMembership {
         before: &InvariantStateView<'_>,
         after: &InvariantStateView<'_>,
     ) -> Result<(), Denial> {
+        admission::ordered(budget, self.incidence.len(), size_of::<RelationId>())?;
+        if self.incidence.contains_key(&id) {
+            return Ok(());
+        }
         admission::work(budget, 2)?;
         let old = before.relation_metadata(id);
         let new = after.relation_metadata(id);

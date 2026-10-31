@@ -931,13 +931,17 @@ unavailable canonical evidence retain typed refusals under the original request.
 ### Native managed Source impact history
 
 Native `authored_managed_source_selector` accepts the actual installed
-membership-only program and full-generation scope; use
+Source program and full-generation scope; use
 `authored_managed_source_history_cursor` with genuine original/selected bases
 and the existing staged page lifecycle. This is complete conservative canonical
-impact-candidate history, including actual endpoint no-ops and transient
-membership; shared-row neighbors may be candidates. It supplies no exact Query
-relevance, READ grant or correction cancellation. Full scalar/projected profiles,
-merges and schema/materialization transitions are not covered. Live envelope
+impact-candidate history, including actual field/whole-aspect no-ops, endpoint
+writes and transient membership, unioned with actual physical publication changes.
+Existing scalar-valued Struct fields and direct/Reverse endpoint routes are
+supported. Shared-row neighbors and disjoint fields on declared field kinds can
+remain conservative candidates; membership-only programs omit entity scalar-only
+commands. It supplies no exact Query
+relevance, READ grant or correction cancellation. Arbitrary scalar-aspect/deeper Source reads, merges and schema/materialization
+transitions are not covered. Live envelope
 custody is required: deep clone, decoded recovery and journal settlement cannot
 recreate sidecar issuance, and missing metadata refuses as
 `IncompleteManagedSourceHistory`. See the [Native API contract](../crates/worth-relational/API_OVERVIEW.md#managed-source-authored-impact-candidates)
