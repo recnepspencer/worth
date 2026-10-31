@@ -193,7 +193,8 @@ preserve catalog/history meaning without acquiring another runtime's durable
 publication authority. Definition admission precedes genuine owner-derived
 generation build/demand; no generation image is invented as authoritative data.
 
-Make the delta required in BOTH Native canonical projections. Cut over Native
+Make the delta required in Full, Authoritative and Checkpoint envelope
+projections, including embedded checkpoint-envelope serialization. Cut over Native
 artifact v3 to v4 and Native checkpoint CHK16 to CHK17; older development
 formats refuse before effects. Missing required catalog information cannot
 mean an empty catalog. Preserve the Store Relational section's WSRCKPT1
