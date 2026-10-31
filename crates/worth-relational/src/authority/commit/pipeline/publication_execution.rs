@@ -71,6 +71,7 @@ pub(super) fn prepare_commit_publication_execution(
     required_output_materialization: Option<
         std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>,
     >,
+    caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
 ) -> Result<PreparedCommitPublicationExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::PublicationPreparation)?;
     let (
@@ -100,6 +101,7 @@ pub(super) fn prepare_commit_publication_execution(
             execution,
             runtime,
             PreparePublicationPhaseInput {
+                caller_association,
                 recovered_codec_publication_custody,
                 required_output_publication,
                 required_output_materialization,
@@ -258,6 +260,9 @@ pub(crate) struct PreparedCommitPublicationCompletion {
 }
 
 impl PreparedCommitPublicationExecution {
+    pub(crate) fn caller_association(&self) -> Option<crate::mvcc::RelationalCallerAssociation> {
+        self.publication.caller_association()
+    }
     pub(crate) fn descriptive_touches(
         &self,
     ) -> &crate::history::data::RelationalDescriptiveTouchGraph {

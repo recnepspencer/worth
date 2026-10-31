@@ -15,6 +15,7 @@ use crate::transactions::data::{MergedCommitPlan, PublishedMergeExecutionAuthori
 
 #[derive(Deserialize)]
 pub(crate) struct CanonicalEnvelopeWire<'a> {
+    caller_association: Option<super::super::RelationalCallerAssociation>,
     required_output_codec_retirements:
         Vec<std::sync::Arc<super::CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
@@ -88,6 +89,7 @@ impl CanonicalEnvelopeWire<'_> {
         }
         let symbol_texts = self.symbol_texts.readmit(execution)?;
         let envelope = super::CanonicalCommitEnvelope {
+            caller_association: self.caller_association,
             required_output_codec_retirements: self.required_output_codec_retirements,
             required_output_origin: self.required_output_origin,
             required_output_materialization: self.required_output_materialization,

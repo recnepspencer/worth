@@ -39,6 +39,9 @@ pub(crate) struct PreparedIndexRefreshBasis {
 }
 
 impl PreparedRelationalPublication {
+    pub(crate) fn caller_association(&self) -> Option<&crate::mvcc::RelationalCallerAssociation> {
+        self.publication.envelope.caller_association()
+    }
     pub(crate) fn envelope_residency(
         &self,
     ) -> Arc<crate::history::RelationalCommitEnvelopeResidency> {

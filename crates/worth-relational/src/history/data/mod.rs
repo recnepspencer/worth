@@ -2,8 +2,10 @@ mod aspect_history;
 mod replay_retention_denial;
 pub use replay_retention_denial::RelationalReplayRetentionDenial;
 mod branch_creation;
+mod caller_association;
 mod canonical_commit_allocation;
 mod canonical_commit_envelope;
+pub use caller_association::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 mod codec_retirement_closure;
 mod codec_retirement_preservation;
 pub(crate) use codec_retirement_closure::{

@@ -49,6 +49,7 @@ pub(crate) use required_output_origin::{
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalCommitEnvelope {
+    pub(crate) caller_association: Option<super::RelationalCallerAssociation>,
     pub(crate) required_output_codec_retirements:
         Vec<std::sync::Arc<CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
@@ -132,6 +133,7 @@ impl CanonicalCommitEnvelope {
         descriptor_semantics_version: DescriptorSemanticsVersion,
     ) -> Self {
         Self {
+            caller_association: None,
             authored_index_writes: CanonicalAuthoredIndexWrites::default(),
             required_output_codec_retirements: Vec::new(),
             required_output_origin: None,
@@ -164,6 +166,10 @@ impl CanonicalCommitEnvelope {
 
     pub fn lineage_event_ids(&self) -> &[u64] {
         self.lineage.lineage_event_ids()
+    }
+
+    pub fn caller_association(&self) -> Option<&super::RelationalCallerAssociation> {
+        self.caller_association.as_ref()
     }
 
     pub fn descriptive_touches(&self) -> &RelationalDescriptiveTouchGraph {

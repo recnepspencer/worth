@@ -16,6 +16,7 @@ pub(super) enum CommitAuthorityInput {
 
 #[derive(Debug)]
 pub(crate) struct AuthoritativeCommitContext {
+    pub(super) caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
     pub(super) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
     pub(super) required_output_materialization:
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
@@ -65,6 +66,7 @@ impl AuthoritativeCommitContext {
         candidate: crate::mvcc::ValidatedRelationalProposal,
     ) -> Self {
         let crate::mvcc::ValidatedRelationalProposal {
+            caller_association,
             required_output_publication,
             required_output_materialization,
             mutation_authority,
@@ -96,6 +98,7 @@ impl AuthoritativeCommitContext {
                 )
             });
         Self {
+            caller_association,
             required_output_publication,
             required_output_materialization,
             commit_work_budget,
@@ -156,6 +159,7 @@ impl AuthoritativeCommitContext {
         validate_merge_context_proof(&validation_input, &merge_plan)?;
 
         Ok(Self {
+            caller_association: None,
             required_output_publication: None,
             required_output_materialization: None,
             commit_work_budget: None,

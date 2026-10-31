@@ -49,6 +49,7 @@ impl RelationalMutationInvariantEvidence {
 /// Construction is private to `RelationalTransaction::validate`. Committing it
 /// rechecks the exact branch-qualified validation basis before publication.
 pub struct ValidatedRelationalProposal {
+    pub(crate) caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
     pub(crate) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
     pub(crate) required_output_materialization:
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,

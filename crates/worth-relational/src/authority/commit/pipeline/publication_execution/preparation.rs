@@ -49,6 +49,9 @@ pub(super) struct PreparedPublicationCompletion {
 }
 
 impl PreparedPublicationPhase {
+    pub(super) fn caller_association(&self) -> Option<crate::mvcc::RelationalCallerAssociation> {
+        self.prepared_history.caller_association().cloned()
+    }
     pub(super) fn descriptive_touches(
         &self,
     ) -> &crate::history::data::RelationalDescriptiveTouchGraph {
@@ -108,6 +111,7 @@ impl PreparedPublicationPhase {
 }
 
 pub(super) struct PreparePublicationPhaseInput<'a> {
+    pub(super) caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
     pub(super) recovered_codec_publication_custody:
         Option<Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     pub(super) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
@@ -137,6 +141,7 @@ pub(super) fn prepare_publication_phase(
     input: PreparePublicationPhaseInput<'_>,
 ) -> Result<PreparedPublicationPhase, TransactionCommitError> {
     let PreparePublicationPhaseInput {
+        caller_association,
         recovered_codec_publication_custody,
         required_output_publication,
         required_output_materialization,
@@ -197,6 +202,7 @@ pub(super) fn prepare_publication_phase(
     } else {
         None
     };
+    canonical_commit_envelope.caller_association = caller_association;
     let canonical_commit_envelope = Arc::new(canonical_commit_envelope);
     let clone_mode = working_state.clone_mode();
     let committed_partitions = working_state.into_partition_commits().1;

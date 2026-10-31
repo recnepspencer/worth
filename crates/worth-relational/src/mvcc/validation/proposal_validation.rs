@@ -156,6 +156,7 @@ impl RelationalPreparationRuntime {
             crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
         )?;
         Ok(ValidatedRelationalProposal {
+            caller_association: None,
             required_output_publication: None,
             required_output_materialization: None,
             commit_work_budget: self.commit_work_budget.clone(),

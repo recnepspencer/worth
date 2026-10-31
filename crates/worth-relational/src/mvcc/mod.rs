@@ -1,4 +1,5 @@
 mod observation;
+pub use crate::history::data::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) mod publication;
 mod transaction;
 #[cfg(test)]

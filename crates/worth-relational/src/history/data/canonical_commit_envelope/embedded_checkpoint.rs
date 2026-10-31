@@ -22,6 +22,7 @@ impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
         S: serde::Serializer,
     {
         let CanonicalCommitEnvelope {
+            caller_association,
             authored_index_writes,
             required_output_codec_retirements,
             required_output_origin,
@@ -50,8 +51,9 @@ impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
             schema_reconciliation_descriptor,
             descriptor_semantics_version,
         } = self.envelope;
-        let field_count = 26 + usize::from(!authored_index_writes.is_unavailable());
+        let field_count = 27 + usize::from(!authored_index_writes.is_unavailable());
         let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
+        fields.serialize_field("caller_association", caller_association)?;
         if !authored_index_writes.is_unavailable() {
             fields.serialize_field("authored_index_writes", authored_index_writes)?;
         }
