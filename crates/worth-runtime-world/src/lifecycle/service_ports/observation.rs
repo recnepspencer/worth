@@ -8,6 +8,15 @@ pub struct RuntimeWorldObservationPort {
     owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
 }
 impl RuntimeWorldObservationPort {
+    /// Lookup coordinates are durable data; an old process-issued identity is
+    /// not a current-owner capability and cannot cross this boundary.
+    ///
+    /// ```compile_fail,E0308
+    /// use worth_runtime_world::facade::{RuntimeWorldObservationPort, CompositeCommitIdentity};
+    /// fn stale(port: &RuntimeWorldObservationPort, old: &CompositeCommitIdentity) {
+    ///     let _ = port.readmitted_publication(old);
+    /// }
+    /// ```
     pub fn readmitted_publication(
         &self,
         identity: &worth_foundational::facade::DurableCompositeCommitIdentity,

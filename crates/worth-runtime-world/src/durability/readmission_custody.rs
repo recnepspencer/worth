@@ -49,6 +49,19 @@ impl WorldNativeReadmissionCustody {
                 .as_ref()
                 .is_some_and(|branches| branches.root_cell().is_some())
     }
+    /// Actual private materialization retained by this refusal. These are
+    /// descriptive owner observations, never a Serving World or Native result.
+    pub fn retained_history_snapshot(
+        &self,
+    ) -> Option<crate::inspection::RuntimeWorldHistorySnapshot> {
+        self.history.as_ref().map(|history| history.snapshot())
+    }
+    pub fn retained_product_head(&self) -> Option<crate::branch::ProductBranchReferenceSnapshot> {
+        self.branches
+            .as_ref()?
+            .root_cell()
+            .map(|cell| cell.atomic_snapshot())
+    }
     pub fn retained_publication_admissions(&self) -> usize {
         self.records.len()
             + self

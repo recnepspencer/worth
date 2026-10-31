@@ -12,11 +12,30 @@ fn original_world_attempt_child() {
     let fixture = open(std::path::Path::new(&location), &execution);
     let bootstrap = fixture.bootstrap_root(&execution);
     let cancellation = RuntimeWorldCancellationSource::new();
+    let prefix = match std::env::var(PREFIX).as_deref() {
+        Ok("two") => 2,
+        Err(_) => 0,
+        _ => panic!("unknown real publication prefix"),
+    };
+    let mut expected = bootstrap.product_branch().clone();
+    drop(bootstrap);
+    for round in 0..prefix {
+        let prepared = fixture.prepare_publication(
+            &execution,
+            expected.clone(),
+            crate::batches::create(round),
+            &cancellation.token(),
+        );
+        let mut performed = fixture
+            .publish(&execution, prepared, &cancellation.token())
+            .consume();
+        expected = performed.take_successor_observation().unwrap();
+    }
     std::fs::write(markers.join("handler-runs"), "1").unwrap();
     let prepared = fixture.prepare_publication(
         &execution,
-        bootstrap.product_branch().clone(),
-        crate::batches::create(0),
+        expected.clone(),
+        crate::batches::create(prefix),
         &cancellation.token(),
     );
     // These are the actual issued values, never inferred from equal counters.
@@ -25,9 +44,9 @@ fn original_world_attempt_child() {
         prepared.attempt_identity().ordinal(),
         prepared.reserved_commit_identity().ordinal(),
         prepared.unpublished_recovery_handle().identity().ordinal(),
-        bootstrap.product_branch().selected_commit().ordinal(),
-        bootstrap.product_branch().lifecycle_incarnation().ordinal(),
-        bootstrap.product_branch().branch_identity().name().as_str(),
+        expected.selected_commit().ordinal(),
+        expected.lifecycle_incarnation().ordinal(),
+        expected.branch_identity().name().as_str(),
         fixture.home.home_identity(),
         fixture.home.incarnation(),
     );
@@ -71,14 +90,17 @@ fn original_world_attempt_child() {
         let inspection = fixture.home.world().inspection_port();
         assert_eq!(
             inspection.history_snapshot().unwrap().installed_commits(),
-            1
+            prefix + 1
         );
-        assert!(inspection
-            .performed_publication_page(None, maximum())
-            .unwrap()
-            .rows()
-            .is_empty());
-        assert_eq!(bootstrap.product_branch().reference_generation().get(), 0);
+        assert_eq!(
+            inspection
+                .performed_publication_page(None, maximum())
+                .unwrap()
+                .rows()
+                .len(),
+            prefix
+        );
+        assert_eq!(expected.reference_generation().get(), prefix as u64);
         crate::killed_child::announce(
             &markers.join("ready"),
             b"Native durable; World occurrence absent",

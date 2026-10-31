@@ -1091,6 +1091,10 @@ before the World occurrence, reopens and releases the original custody, then
 reopens with the same unmoved product head. The ordinary occurrence filesystem
 court additionally publishes twice, advances Native again, closes, reopens both
 historical semantic results and the original product head, then reopens again.
+Its bounded history-capacity control retains the actual partial catalog,
+admitted Native capabilities and same Home lease until explicit cleanup. The
+existing kill child also covers a later unpublished Native effect whose exact
+World predecessor is generation 2; release and second reopen preserve that head.
 Multiple-branch readmission, recovered continuation, general Signal/Bridge state, Host retry and World
 checkpoint coverage remain required for phase completion.
 See [Milestone 3](../plans/database-foundation/milestone-3.md)

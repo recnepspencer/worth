@@ -72,6 +72,23 @@ pub enum WorldReadmittedPublicationDenial {
 /// An owning read of original recovered meaning. Its exact history protection
 /// and catalog keep the SAME record and Native leases alive across head moves.
 /// There is no live result, snapshot, timing or publication method.
+///
+/// ```compile_fail,E0308
+/// use worth_runtime_world::facade::{WorldReadmittedPublication, PerformedCompositePublication};
+/// fn live_delivery(value: WorldReadmittedPublication) -> PerformedCompositePublication { value }
+/// ```
+///
+/// ```compile_fail,E0599
+/// use worth_runtime_world::facade::WorldReadmittedPublication;
+/// fn live_result(value: WorldReadmittedPublication) { value.into_live_result(); }
+/// ```
+///
+/// ```
+/// use worth_runtime_world::facade::WorldReadmittedPublication;
+/// fn original_meaning(value: &WorldReadmittedPublication) {
+///     let _ = (value.before(), value.after(), value.native_receipt(), value.semantic_result());
+/// }
+/// ```
 #[derive(Debug)]
 pub struct WorldReadmittedPublication {
     pub(crate) record: Arc<ReadmittedPublicationRecord>,

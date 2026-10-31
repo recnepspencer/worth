@@ -101,6 +101,28 @@ fn ordinary_occurrences_reopen_original_history_after_later_native_advance() {
     assert!(fixture.home.incarnation() > first_incarnation);
     let observation = fixture.home.world().observation_port();
     let current = observation.observe_root_product_branch().unwrap();
+    let wrong_slot = worth_foundational::facade::DurableWorldOwnerIdentity::from_recorded(
+        identity,
+        worth_foundational::facade::WorldOwnerSlotIdentity::from_recorded(1),
+    );
+    assert!(matches!(
+        observation.readmitted_publication(&DurableCompositeCommitIdentity::from_recorded(
+            wrong_slot, 1
+        )),
+        Err(RuntimeWorldServiceDenial::Denied(
+            WorldReadmittedPublicationDenial::ForeignHome
+        ))
+    ));
+    let missing = DurableCompositeCommitIdentity::from_recorded(
+        current.owner_identity().durable().unwrap(),
+        u64::MAX,
+    );
+    assert!(matches!(
+        observation.readmitted_publication(&missing),
+        Err(RuntimeWorldServiceDenial::Denied(
+            WorldReadmittedPublicationDenial::NotReadmitted
+        ))
+    ));
     assert_eq!(current.reference_generation().get(), 2);
     assert_eq!(
         current.branch_identity().name().as_str(),
@@ -187,4 +209,123 @@ fn ordinary_occurrences_reopen_original_history_after_later_native_advance() {
     );
     drop(current);
     close(fixture.home, &execution);
+}
+
+#[test]
+fn late_history_refusal_retains_actual_partial_root_caps_and_home_lease_until_cleanup() {
+    use worth_store_application::{ApplicationHomeOpenRefusal, ApplicationHomePhysicalRefusalKind};
+    use worth_store_testkit_application_oracle::{home_opening, world_home};
+    let directory = tempfile::tempdir().unwrap();
+    let request = crate::workload::serial_request();
+    let execution = ExecutionRequest::serial(&request);
+    let fixture = open(directory.path(), &execution);
+    let identity = fixture.home.home_identity();
+    let bootstrap = fixture.bootstrap_root(&execution);
+    let mut expected = bootstrap.product_branch().clone();
+    drop(bootstrap);
+    let cancellation = RuntimeWorldCancellationSource::new();
+    for round in 0..2 {
+        let prepared = fixture.prepare_publication(
+            &execution,
+            expected.clone(),
+            crate::batches::create(round),
+            &cancellation.token(),
+        );
+        let mut consumed = fixture
+            .publish(&execution, prepared, &cancellation.token())
+            .consume();
+        expected = consumed.take_successor_observation().unwrap();
+    }
+    let final_commit = expected.selected_commit().ordinal();
+    drop(expected);
+    close(fixture.home, &execution);
+    let refused = match world_home::open_with_retained_history_limit(
+        home_opening::request(
+            directory.path(),
+            crate::workload::runtime_builder(crate::schema_transition::SOURCE),
+        ),
+        &execution,
+        2,
+    ) {
+        Err(world_home::WorldHomeFixtureRefusal::World(refused)) => refused,
+        _ => panic!("actual World history limit must refuse the third installed commit"),
+    };
+    assert_eq!(refused.home_identity(), identity);
+    match refused.reason() {
+        ApplicationHomeOpenRefusal::World(WorldReadmissionDenial::NativeCustody {
+            cause,
+            custody,
+        }) => {
+            assert!(matches!(
+                cause.as_ref(),
+                WorldReadmissionDenial::HistoryAdmission(
+                    CompositeHistoryCatalogDenial::CommitCapacityExhausted { maximum: 2 }
+                )
+            ));
+            assert!(custody.retains_root_admission());
+            assert_eq!(custody.retained_publication_admissions(), 2);
+            assert_eq!(
+                custody
+                    .retained_history_snapshot()
+                    .unwrap()
+                    .installed_commits(),
+                2
+            );
+            assert_eq!(
+                custody
+                    .retained_product_head()
+                    .unwrap()
+                    .reference_generation()
+                    .get(),
+                1
+            );
+        }
+        other => panic!("late refusal must own actual earlier admissions: {other:?}"),
+    }
+    match open_refusal(directory.path(), &execution) {
+        world_home::WorldHomeFixtureRefusal::Home(ApplicationHomeOpenRefusal::Physical(
+            refused,
+        )) => assert_eq!(
+            refused.kind(),
+            ApplicationHomePhysicalRefusalKind::MutationOwnerContended
+        ),
+        other => panic!("same owning refusal must retain the Home lease: {other:?}"),
+    }
+    // Explicit cleanup releases the actual staged catalog/caps. It returns
+    // the SAME Native-readmitted Home, without fabricating a World stage.
+    assert!(matches!(
+        refused.into_home().close(&execution),
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
+            ..
+        }
+    ));
+    let fixture = open(directory.path(), &execution);
+    assert_eq!(fixture.home.home_identity(), identity);
+    let head = fixture
+        .home
+        .world()
+        .observation_port()
+        .observe_root_product_branch()
+        .unwrap();
+    assert_eq!(head.reference_generation().get(), 2);
+    assert_eq!(head.selected_commit().ordinal(), final_commit);
+    drop(head);
+    close(fixture.home, &execution);
+}
+
+fn open_refusal(
+    location: &std::path::Path,
+    execution: &ExecutionRequest<'_, '_>,
+) -> worth_store_testkit_application_oracle::world_home::WorldHomeFixtureRefusal {
+    match worth_store_testkit_application_oracle::world_home::open(
+        worth_store_testkit_application_oracle::home_opening::request(
+            location,
+            crate::workload::runtime_builder(crate::schema_transition::SOURCE),
+        ),
+        execution,
+    ) {
+        Err(refused) => refused,
+        Ok(_) => panic!("competing Home unexpectedly acquired the lease"),
+    }
 }

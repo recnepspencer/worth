@@ -3,8 +3,10 @@ use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::*;
 use worth_store_application::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseOutcome};
 mod child;
+mod published_predecessor;
 const LOCATION: &str = "WORTH_WORLD_RELEASE_HOME";
 const MARKERS: &str = "WORTH_WORLD_RELEASE_MARKERS";
+const PREFIX: &str = "WORTH_WORLD_RELEASE_PUBLISHED_PREFIX";
 const CHILD: &str =
     "process::application::world_durable_release::child::original_world_attempt_child";
 

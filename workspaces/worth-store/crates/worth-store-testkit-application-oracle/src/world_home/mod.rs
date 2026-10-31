@@ -75,6 +75,24 @@ pub fn open(
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<WorldHomeFixture, WorldHomeFixtureRefusal> {
     let (definition, signal) = definition::authored();
+    open_definition(request, execution, definition, signal)
+}
+
+pub fn open_with_retained_history_limit(
+    request: ApplicationHomeRequest,
+    execution: &ExecutionRequest<'_, '_>,
+    limit: u64,
+) -> Result<WorldHomeFixture, WorldHomeFixtureRefusal> {
+    let (definition, signal) = definition::authored_with_history_limit(limit);
+    open_definition(request, execution, definition, signal)
+}
+
+fn open_definition(
+    request: ApplicationHomeRequest,
+    execution: &ExecutionRequest<'_, '_>,
+    definition: worth_store_application::ApplicationWorldDefinition<(), (), (), (), ()>,
+    signal: SignalRuntime<(), (), (), (), ()>,
+) -> Result<WorldHomeFixture, WorldHomeFixtureRefusal> {
     let mut opened = None;
     let scope = execution.in_scope(|_| {
         opened = Some((|| {

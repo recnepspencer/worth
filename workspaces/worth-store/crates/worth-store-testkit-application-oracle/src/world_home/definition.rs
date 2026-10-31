@@ -31,6 +31,14 @@ pub(super) fn authored() -> (
     ApplicationWorldDefinition<(), (), (), (), ()>,
     SignalRuntime<(), (), (), (), ()>,
 ) {
+    authored_with_history_limit(16)
+}
+pub(super) fn authored_with_history_limit(
+    limit: u64,
+) -> (
+    ApplicationWorldDefinition<(), (), (), (), ()>,
+    SignalRuntime<(), (), (), (), ()>,
+) {
     let graph = SignalGraph::new();
     let mut signal = SignalRuntime::builder(graph)
         .with_domains::<()>()
@@ -65,7 +73,7 @@ pub(super) fn authored() -> (
     let world = RuntimeWorldOwner::builder()
         .with_signal_services(services)
         .with_signal_definition_publication(definitions)
-        .with_budgets(budgets())
+        .with_budgets(budgets(limit))
         .with_clock(RuntimeWorldClock::from_source(Clock))
         .with_execution_policy(ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
@@ -78,13 +86,13 @@ pub(super) fn authored() -> (
     )
 }
 
-fn budgets() -> RuntimeWorldBudgets {
+fn budgets(limit: u64) -> RuntimeWorldBudgets {
     RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
         branches: RuntimeWorldBranchBudgetInstallation {
             live_product_branches: 4,
         },
         history: RuntimeWorldHistoryBudgetInstallation {
-            retained_composite_commits: 16,
+            retained_composite_commits: limit,
             history_metadata_bytes: 1 << 20,
         },
         observations: RuntimeWorldObservationBudgetInstallation {
