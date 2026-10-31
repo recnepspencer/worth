@@ -79,6 +79,11 @@ where
             self.bootstrap
                 .managed_indexes
                 .validate_complete(&self.state.installed)?;
+            self.bootstrap.readmit_home_initial_program(
+                phase,
+                &root,
+                &self.state.support.initial_revision,
+            )?;
             let relational = self
                 .bootstrap
                 .graph

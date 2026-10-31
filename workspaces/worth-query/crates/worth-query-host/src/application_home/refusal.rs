@@ -1,0 +1,131 @@
+//! Opening refusals keep the exact Query preparation and physical Home phase.
+use super::runtime::DirectoryHome;
+use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
+use worth_query_execution::facade::{
+    application_home_integration::*, application_installation::WorthQueryInMemoryApplicationDenial,
+    primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+};
+use worth_store_application::*;
+
+pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaComposition, Program> {
+    Preparation(WorthQueryInMemoryApplicationDenial),
+    Binding {
+        query: PreparedHomeApplication<Schema, Program>,
+        cause: worth_query_installation::facade::WorthQueryHomeBindingDenial,
+    },
+    Physical {
+        query: PreparedHomeApplication<Schema, Program>,
+        cause: ApplicationHomeOpenRefusal,
+    },
+    RelationalAttachment {
+        query: PreparedHomeApplication<Schema, Program>,
+        home: RelationalAttachmentRefused,
+    },
+    NativeInstallation {
+        query: QueryHomeNativeInstallationRefused<Schema, Program>,
+        home: UnrecoveredApplicationHome,
+    },
+    NativeReadmission {
+        query: PreparedHomeNativeMeaning<Schema, Program>,
+        home: RelationalHomeReadmissionRefused,
+    },
+    QueryPublicationReadmissionRequired {
+        query: PreparedHomeNativeMeaning<Schema, Program>,
+        home: ApplicationHomeInitializationRefused,
+    },
+    NativeFinalization {
+        query: QueryHomeNativeReadmissionRefused<Schema, Program>,
+        home: UnsharedReadmittedApplicationHome,
+    },
+    BridgeDefinition {
+        query: ReadmittedHomeNativeMeaning<Schema, Program>,
+        home: UnsharedReadmittedApplicationHome,
+        cause: WorthQueryPrimaryGraphInstallationDenial,
+    },
+    WorldReadmission {
+        query: ReadmittedHomeNativeMeaning<Schema, Program>,
+        home: WorldHomeReadmissionRefused,
+    },
+    Composition {
+        query: ReadmittedHomeNativeMeaning<Schema, Program>,
+        home: DirectoryHome,
+        cause: ApplicationHomeQueryCompositionDenial,
+    },
+    SourceAttachment {
+        query: QueryHomeSourceAttachmentRefused<Schema, Program>,
+        home: DirectoryHome,
+    },
+    InitialState {
+        query: PreparedHomeQueryRuntime<Schema, Program>,
+        home: DirectoryHome,
+        cause: QueryHomeInitialStateDenial,
+    },
+    SeedPublication {
+        query: PreparedHomeQueryRuntime<Schema, Program>,
+        home: DirectoryHome,
+        cause: WorthQueryPrimaryGraphInstallationDenial,
+    },
+    WorldRoot {
+        query: PreparedHomeQueryRuntime<Schema, Program>,
+        home: DirectoryHome,
+        cause: ApplicationHomeQueryRootDenial,
+    },
+    QueryAttachment {
+        query: QueryHomeWorldAttachmentRefused<Schema, Program>,
+        home: DirectoryHome,
+    },
+    CustodyReadmission {
+        query: ReadmittedHomeQueryService<Schema, Program>,
+        home: DirectoryHome,
+        cause: HomeCustodyReadmissionDenial,
+    },
+}
+
+#[derive(Debug)]
+pub enum HomeCustodyReadmissionDenial {
+    Execution(worth_execution::WorkCeilingDenial),
+    WorldUnavailable(RuntimeWorldOwnerUnavailable),
+    RetainedWorldCustody {
+        installed: usize,
+        reserved: usize,
+        abandoned: usize,
+        updating: usize,
+    },
+}
+
+impl<Schema: ApplicationSchemaComposition, Program> std::fmt::Debug
+    for WorthQueryApplicationHomeOpenRefused<Schema, Program>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("WorthQueryApplicationHomeOpenRefused")
+            .field(&self.detail())
+            .finish()
+    }
+}
+impl<Schema: ApplicationSchemaComposition, Program>
+    WorthQueryApplicationHomeOpenRefused<Schema, Program>
+{
+    pub fn detail(&self) -> String {
+        match self {
+            Self::Preparation(cause) => format!("{cause:?}"),
+            Self::Binding { cause, .. } => format!("{cause:?}"),
+            Self::Physical { cause, .. } => format!("{cause:?}"),
+            Self::RelationalAttachment { home, .. } => format!("{home:?}"),
+            Self::NativeInstallation { query, .. } => query.reason().to_string(),
+            Self::NativeReadmission { home, .. } => format!("{:?}", home.reason()),
+            Self::QueryPublicationReadmissionRequired { home, .. } => {
+                format!("{:?}", home.reason())
+            }
+            Self::NativeFinalization { query, .. } => query.reason().to_string(),
+            Self::BridgeDefinition { cause, .. } => cause.to_string(),
+            Self::WorldReadmission { home, .. } => format!("{:?}", home.reason()),
+            Self::Composition { cause, .. } => format!("{cause:?}"),
+            Self::SourceAttachment { query, .. } => query.reason().to_string(),
+            Self::InitialState { cause, .. } => format!("{cause:?}"),
+            Self::SeedPublication { cause, .. } => cause.to_string(),
+            Self::WorldRoot { cause, .. } => format!("{cause:?}"),
+            Self::QueryAttachment { query, .. } => query.detail(),
+            Self::CustodyReadmission { cause, .. } => format!("{cause:?}"),
+        }
+    }
+}

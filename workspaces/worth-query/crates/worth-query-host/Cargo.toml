@@ -9,6 +9,10 @@ description = "Query host audience facade over the production authority graph."
 publish = false
 
 [dependencies]
+worth-store-application = { path = "../../../worth-store/crates/worth-store-application" }
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-proof = { path = "../../../../crates/worth-proof" }
 worth-query-admission = { path = "../worth-query-admission" }
 worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-execution = { path = "../worth-query-execution" }

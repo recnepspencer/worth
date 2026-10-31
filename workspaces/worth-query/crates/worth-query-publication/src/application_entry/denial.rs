@@ -113,6 +113,12 @@ impl std::error::Error for WorthQueryApplicationRequestQueryDenial {}
 /// The kind of a `WorthQueryApplicationRequestMutationDenial`, without its detail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationRequestMutationDenialKind {
+    DurableStateAdmission(
+        worth_query_execution::facade::product::WorthQueryDurableStateAdmissionDenial,
+    ),
+    DurableBindingAdmission(
+        worth_query_installation::facade::WorthQueryApplicationOperationInstallationDenialKind,
+    ),
     /// Request admission refused before any application effect.
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
@@ -263,6 +269,14 @@ impl WorthQueryApplicationRequestMutationDenial {
             }
             Self::Handler(MutationHandlerExecutionDenial::HandlerNotInstalled) => {
                 WorthQueryApplicationRequestMutationDenialKind::HandlerNotInstalled
+            }
+            Self::Handler(MutationHandlerExecutionDenial::DurableStateAdmission(cause)) => {
+                WorthQueryApplicationRequestMutationDenialKind::DurableStateAdmission(*cause)
+            }
+            Self::Handler(MutationHandlerExecutionDenial::DurableBindingAdmission(cause)) => {
+                WorthQueryApplicationRequestMutationDenialKind::DurableBindingAdmission(
+                    cause.kind(),
+                )
             }
             Self::ExecutionRequest(cause) => {
                 WorthQueryApplicationRequestMutationDenialKind::ExecutionRequest(*cause)

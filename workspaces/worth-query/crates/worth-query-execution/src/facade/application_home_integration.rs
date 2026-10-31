@@ -5,3 +5,4 @@ pub use crate::domain_computation::primary_graph::application_installation::home
     QueryHomeNativeReadmissionRefused, QueryHomeSourceAttachmentRefused,
     QueryHomeWorldAttachmentRefused, ReadmittedHomeNativeMeaning, ReadmittedHomeQueryService,
 };
+pub use worth_runtime_world::facade::RuntimeWorldOwnerUnavailable;
