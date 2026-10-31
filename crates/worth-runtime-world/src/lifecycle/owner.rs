@@ -41,11 +41,11 @@ pub use owned_async_product::{
     RuntimeWorldOwnedAsyncRevalidationDenial,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RuntimeWorldBootstrapState {
     Unperformed,
     InProgress,
     Performed,
+    Pending(Arc<bootstrap::WorldDurableBootstrapCustody>),
 }
 
 /// The sole managed Runtime World owner. All identity, budget, component,

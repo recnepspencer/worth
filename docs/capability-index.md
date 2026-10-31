@@ -944,10 +944,21 @@ attachment requires actual known-new Home origin. Existing Homes refuse
 `NativeReadmissionRequired` until Native supplies source-backed historical
 basis and associated-effect readmission. Attached memory bootstrap, legacy
 publication, branch mutation and disposition doors refuse before effects.
+`publication_port().begin_durable_bootstrap_root(request, creation, native_basis,
+signal_basis)` validates the actual current Signal owner and supplies the same
+private Bridge's baseline. Its retained bootstrap can be advanced through
+`advance_durable_bootstrap_root(request)`. The existing bootstrap state keeps the
+original pre-install history, pins and branch cell across pending calls. World
+artifact v2 carries Native's explicit recorded component and the actual program
+revision; older Branch grammar refuses. Root installation follows the actual
+sealed journal acknowledgement. The focused filesystem Home court covers this
+bootstrap and actual root/history/Bridge release, followed by Native-only reopen;
+it grants no cold World seed or historical readmission claim.
+
 World's durable open retains its original identities and one Native preparation,
 but its prepared wrapper does not yet expose execution. Attached checkpoint
 refuses `WorldSectionRequired`; close reports that checkpoint failure. Durable
-bootstrap, occurrence/disposition recovery, World checkpoint coverage and the
+bootstrap qualification, occurrence/disposition recovery, World checkpoint coverage and the
 filesystem process-death journey remain required before a usable durable World
 or phase-completion claim. See [Milestone 3](../plans/database-foundation/milestone-3.md)
 and the owning [Home attachment](../workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs).

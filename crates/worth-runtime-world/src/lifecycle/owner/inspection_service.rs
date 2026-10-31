@@ -12,12 +12,14 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     fn bootstrap_is_complete(&self) -> bool {
-        *self
-            .state
-            .bootstrap
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            == super::RuntimeWorldBootstrapState::Performed
+        matches!(
+            *self
+                .state
+                .bootstrap
+                .lock()
+                .unwrap_or_else(|error| error.into_inner()),
+            super::RuntimeWorldBootstrapState::Performed
+        )
     }
     fn history_snapshot(&self) -> RuntimeWorldHistorySnapshot {
         self.state.history.snapshot()

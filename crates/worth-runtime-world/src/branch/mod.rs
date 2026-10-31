@@ -1,4 +1,6 @@
 mod bootstrap;
+mod durable_bootstrap;
+pub use durable_bootstrap::{WorldDurableBootstrapOutcome, WorldDurableBootstrapRefusal};
 mod creation;
 mod currentness_scope;
 mod custody;

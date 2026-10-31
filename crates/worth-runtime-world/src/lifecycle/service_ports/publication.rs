@@ -12,6 +12,7 @@ use crate::publication::{
 use std::sync::{Arc, Weak};
 use worth_signal::facade::{SignalError, SignalTransaction};
 
+mod bootstrap;
 mod conditional_recovery;
 mod open_attempt;
 

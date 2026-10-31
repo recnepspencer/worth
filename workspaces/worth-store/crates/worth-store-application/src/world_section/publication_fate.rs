@@ -12,7 +12,7 @@ pub(super) fn committed(_committed: &OrderedJournalCommitted) -> WorldPublicatio
 pub(super) fn terminal(
     terminal: &OrderedJournalPublicationTerminal,
 ) -> WorldPublicationObservation {
-    if terminal.failure().is_none() && terminal.published().is_some() {
+    if terminal.published().is_some() {
         return WorldPublicationObservation::EvidenceRequired;
     }
     let detail = Denial::Storage(format!("{terminal:?}"));

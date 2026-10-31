@@ -33,6 +33,7 @@ impl WorldIdentityFrontiers {
                 head,
                 bootstrap,
                 relational: _,
+                program_revision: _,
             } => {
                 include(
                     &mut self.branch,

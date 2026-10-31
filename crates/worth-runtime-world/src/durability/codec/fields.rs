@@ -154,6 +154,14 @@ impl<'a> Read<'a> {
             digest: self.fixed()?,
         })
     }
+    pub(super) fn recorded_component(
+        &mut self,
+    ) -> Result<worth_relational::facade::branch::RecordedRelationalComponentReference, Denial>
+    {
+        let recorded = serde_json::from_slice(self.bytes).map_err(|_| Denial::Malformed)?;
+        self.bytes = &[];
+        Ok(recorded)
+    }
     pub(in crate::durability) fn finished(self) -> Result<(), Denial> {
         if self.bytes.is_empty() {
             Ok(())

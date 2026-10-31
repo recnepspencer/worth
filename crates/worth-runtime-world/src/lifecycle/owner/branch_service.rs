@@ -35,7 +35,7 @@ where
             .bootstrap
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if *bootstrap != super::RuntimeWorldBootstrapState::Performed {
+        if !matches!(*bootstrap, super::RuntimeWorldBootstrapState::Performed) {
             return false;
         }
         self.state

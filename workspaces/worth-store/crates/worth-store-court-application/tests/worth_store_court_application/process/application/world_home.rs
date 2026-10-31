@@ -1,4 +1,4 @@
-//! One real composition/close prerequisite. This World has no root/history yet.
+//! Actual filesystem bootstrap and root/history/Bridge release through Home.
 use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::RuntimeWorldOwnerLifecycleObservation;
 use worth_store_application::{
@@ -19,6 +19,16 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
     );
     let fixture = worth_store_testkit_application_oracle::world_home::open(opening, &execution)
         .expect("actual filesystem Home composes the same Native owner and Bridge");
+    let bootstrap = fixture.bootstrap_root(&execution);
+    assert_eq!(
+        bootstrap.product_branch().branch_identity().name().as_str(),
+        "Original World Root"
+    );
+    assert_eq!(bootstrap.product_branch().reference_generation().get(), 0);
+    // Only the World retains these root/history pins after this external
+    // bootstrap observation is dropped. An additional Native read below
+    // separately exercises genuine external custody.
+    drop(bootstrap);
     let home = fixture.home;
     let identity = home.home_identity();
     let incarnation = home.incarnation();
@@ -41,7 +51,7 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
     let close = match home.close(&execution) {
         Ok(close) => close,
         Err(refused) => panic!(
-            "quiescent unbootstrapped World must close: {:?}",
+            "quiescent bootstrapped World must close: {:?}",
             refused.reason()
         ),
     };

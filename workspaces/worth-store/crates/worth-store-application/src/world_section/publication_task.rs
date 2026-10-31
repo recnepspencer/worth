@@ -162,7 +162,7 @@ impl WorldPublicationTask {
     pub(super) fn resume(&self) {
         let recovery = {
             let mut s = self.state.lock().unwrap_or_else(|e| e.into_inner());
-            if s.endpoint.is_some() {
+            if s.endpoint.is_some() && !matches!(s.endpoint, Some(Endpoint::Terminal(_))) {
                 return;
             }
             s.recovery.take()
@@ -171,6 +171,7 @@ impl WorldPublicationTask {
             return;
         };
         match recovery.resume() {
+            OrderedJournalPublicationResume::Committed(committed) => self.committed(committed),
             OrderedJournalPublicationResume::Ready {
                 operation,
                 recovery,
@@ -235,6 +236,12 @@ impl WorldPublicationTask {
             }
             endpoint = Endpoint::Terminal(terminal);
         }
+        self.restore(endpoint);
+        // This method is invoked outside disposable R. Consume the SAME
+        // retained recovery to obtain the physical owner's sealed completion,
+        // rather than promote its terminal description into a World witness.
+        self.resume();
+        let endpoint = self.take_endpoint()?;
         let invalid = self.state.lock().unwrap_or_else(|e| e.into_inner()).invalid;
         let result = if invalid {
             Some(WorldPublicationObservation::Finished(

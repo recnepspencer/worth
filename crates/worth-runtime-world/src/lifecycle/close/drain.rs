@@ -24,7 +24,9 @@ where
         .bootstrap
         .lock()
         .unwrap_or_else(|error| error.into_inner());
-    if *bootstrap == RuntimeWorldBootstrapState::InProgress {
+    if matches!(*bootstrap, RuntimeWorldBootstrapState::InProgress)
+        || matches!(&*bootstrap, RuntimeWorldBootstrapState::Pending(pending) if pending.is_driving())
+    {
         return Err(RuntimeWorldCloseDenial::AlreadyClosing);
     }
     // Publish the queued waiter before blocking so the transition from "no

@@ -48,7 +48,8 @@ pub use crate::branch::{
     ProductExactHistoryPage, RecoveredRuntimeWorldRootAuthority, RelationalBranchCreationPlan,
     RuntimeWorldBootstrapIntent, RuntimeWorldBootstrapNoEffectCause, RuntimeWorldBootstrapOutcome,
     RuntimeWorldBranchAdmissionDenial, RuntimeWorldBranchRetirementDenial,
-    SignalBranchCreationPlan, PRODUCT_BRANCH_REFERENCE_DESCRIPTION_VERSION,
+    SignalBranchCreationPlan, WorldDurableBootstrapOutcome, WorldDurableBootstrapRefusal,
+    PRODUCT_BRANCH_REFERENCE_DESCRIPTION_VERSION,
 };
 
 pub use crate::budget::{

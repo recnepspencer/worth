@@ -11,6 +11,7 @@ mod publication_page;
 mod publication_protection;
 mod reachability;
 mod reservation;
+pub(crate) use reservation::InstalledRootCommitRollback;
 mod slots;
 mod support;
 mod traversal;

@@ -8,7 +8,7 @@ use worth_foundational::facade::{
 };
 pub const WORLD_ARTIFACT_PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.world.artifact");
-pub const WORLD_ARTIFACT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(1);
+pub const WORLD_ARTIFACT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(2);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct DurableWorldHead {
@@ -44,7 +44,8 @@ pub(crate) enum WorldRecord {
     Branch {
         head: DurableWorldHead,
         bootstrap: worth_foundational::facade::DurableWorldBootstrapAttemptIdentity,
-        relational: WorldRelationalEvidence,
+        program_revision: [u8; 32],
+        relational: worth_relational::facade::branch::RecordedRelationalComponentReference,
     },
     OpenAttempt(WorldOpenAttemptRecord),
     Occurrence {

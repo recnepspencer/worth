@@ -122,32 +122,33 @@ impl ProductBranchRegistryReservation {
         Ok(witness)
     }
 
-    pub(crate) fn install_root(
-        mut self,
+    pub(crate) fn install_root_borrowed(
+        &mut self,
         name: ProductBranchName,
         branch: ProductBranchIdentity,
         lifecycle: ProductBranchIncarnation,
-        cell: ProductBranchReferenceCell,
-    ) -> Result<(), (Self, ProductBranchRegistryDenial)> {
-        let snapshot = cell.atomic_snapshot();
-        let mut cell = Some(cell);
+        cell: &mut Option<ProductBranchReferenceCell>,
+    ) -> Result<(), ProductBranchRegistryDenial> {
+        let snapshot = cell
+            .as_ref()
+            .expect("original root destination")
+            .atomic_snapshot();
         let mut installed = BranchInstallation {
             name,
             branch,
             lifecycle,
-            cell: &mut cell,
+            cell,
             snapshot,
             retirement_boundary: None,
         };
         if let Err(denial) = self.admits_installation(&installed, true) {
-            return Err((self, denial));
+            return Err(denial);
         }
         let registry = self.registry.clone();
-        let result = self.insert_installed(
+        self.insert_installed(
             &mut registry.state.lock().unwrap_or_else(|e| e.into_inner()),
             &mut installed,
-        );
-        result.map_err(|denial| (self, denial))
+        )
     }
 
     /// Keep the destination in the owner's lease through validation and the
@@ -266,11 +267,15 @@ impl ProductBranchRegistryReservation {
         }
         // Exact lookup storage and branch capacity were admitted before effects.
         // The ordered visit index grows on insertion under this same custody lock.
+        installed
+            .cell
+            .as_ref()
+            .expect("validated destination remains borrowed")
+            .seat_head(true);
         let cell = installed
             .cell
             .take()
             .expect("validated destination remains borrowed");
-        cell.seat_head(true);
         state.entries.insert(
             installed.branch.clone(),
             ProductBranchRegistryEntry {
