@@ -219,3 +219,60 @@ fn cold_backing_accepts_keyed_edits(authored: &[(usize, Box2Coordinates)]) {
     values.insert(91, moved);
     parity(&tree, root, &values);
 }
+
+#[test]
+fn keyed_box_relocation_reuses_live_cells_across_rank_changes_and_singletons() {
+    let mut tree = Tree::default();
+    let mut values = BTreeMap::new();
+    let mut root = None;
+    for source in 0..33 {
+        let x = 4 * source as i64;
+        let raw = bounds([x, 0], [x + 2, 0]);
+        root = Some(insert_box_source(root, source, Box2::new(raw).unwrap(), &mut tree).unwrap());
+        values.insert(source, raw);
+    }
+    let old = tree.clone();
+    let old_root = root;
+    let old_values = values.clone();
+    let leaf = tree.leaves[&0];
+    let slots = tree.nodes.len();
+    let live = tree.nodes.iter().flatten().count();
+    for (x, y) in [
+        (-100, 0),
+        (1_000, 0),
+        (50, 1_000_000),
+        (50, -1_000_000),
+        (0, 0),
+        (64, 0),
+    ] {
+        let raw = bounds([x, y], [x + 2, y]);
+        root =
+            Some(replace_box_source(root.unwrap(), 0, Box2::new(raw).unwrap(), &mut tree).unwrap());
+        values.insert(0, raw);
+        assert_eq!(
+            tree.leaves[&0], leaf,
+            "relocation keeps its actual still-live leaf coordinate"
+        );
+        assert_eq!(
+            tree.nodes.len(),
+            slots,
+            "no new storage slot is appended for a bounds rekey"
+        );
+        assert_eq!(
+            tree.nodes.iter().flatten().count(),
+            live,
+            "detached cells are not retired/reissued"
+        );
+        assert!(tree.nodes.iter().all(Option::is_some));
+        parity(&tree, root, &values);
+    }
+    parity(&old, old_root, &old_values);
+    let mut singleton = Tree::default();
+    let raw = bounds([0, 0], [0, 0]);
+    let root = insert_box_source(None, 7, Box2::new(raw).unwrap(), &mut singleton).unwrap();
+    let moved = bounds([i64::MIN, i64::MAX], [i64::MIN, i64::MAX]);
+    let after = replace_box_source(root, 7, Box2::new(moved).unwrap(), &mut singleton).unwrap();
+    assert_eq!(after, root);
+    assert_eq!(singleton.nodes.len(), 1);
+    parity(&singleton, Some(after), &BTreeMap::from([(7, moved)]));
+}

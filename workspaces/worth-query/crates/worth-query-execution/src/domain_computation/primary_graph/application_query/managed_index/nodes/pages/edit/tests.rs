@@ -227,10 +227,16 @@ fn working_page_batch_seals_shared_directory_ancestors_once() {
         growth.replace(513 * PAGE_SIZE, Some(97), control)?;
         let allocations = Rc::clone(&growth.sealed_branches);
         let growth = growth.seal(control)?;
-        assert_eq!(allocations.get(), 11,
-            "nine ancestors above adjacent new leaves, the new root, and one old-root embedding cell");
-        assert_eq!(growth.height, 10);
-        assert!(std::ptr::eq(base.page_values(0, control)?.unwrap(), growth.page_values(0, control)?.unwrap()));
+        assert_eq!(
+            allocations.get(),
+            2,
+            "one adjacent-page branch and one root; absent bit levels have no cells"
+        );
+        assert_eq!(growth.root.as_ref().unwrap().height, 10);
+        assert!(std::ptr::eq(
+            base.page_values(0, control)?.unwrap(),
+            growth.page_values(0, control)?.unwrap()
+        ));
         drop(growth);
         let mut left = PageEdit::new(base.clone(), execution);
         let mut right = PageEdit::new(base.clone(), execution);
@@ -272,7 +278,6 @@ fn working_page_batch_seals_shared_directory_ancestors_once() {
             0,
             "empty growth allocates no final or discarded wrappers"
         );
-        assert_eq!(empty_growth.height, base.height);
         assert!(Arc::ptr_eq(
             empty_growth.root.as_ref().unwrap(),
             base.root.as_ref().unwrap()

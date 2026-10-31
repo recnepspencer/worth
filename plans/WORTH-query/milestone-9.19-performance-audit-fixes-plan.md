@@ -45,10 +45,16 @@ Required repairs and current evidence:
    Existing collinear/keyed edit cases remain green within managed50/50;
    Candidates9/9 passes. Morton grouping is an ordinary heuristic with no universal
    cheap-empty-query, overlap selectivity or production CAD adoption claim.
-7. Churn: separate stable identity from physical placement, reuse/compact safely or
-   use an equivalent bounded-live structural representation. Small live indexes
-   must not silently inherit ever-issued-coordinate traversal cost. Preserve old
-   snapshots, sibling edits, failed edits and non-ABA identity guarantees.
+7. **Verified and independently cleared:** [Compressed live directory](milestone-9.19-live-directory-plan.md)
+   keeps NodeLineage monotonic, uses aligned-prefix checks and unary collapse,
+   and retains at most P leaves/P-1 branches for P live pages. Owner8/8 proves
+   label-gap-invariant work/memory, genuine4096-ID churn, old/sibling identities
+   and original refusal cleanup. The measured large geometry regression exposed
+   adjacent bounds-rekey churn; extraction/reinsertion now reuses its actual
+   still-live leaf/parent instead of retiring/appending them. Keyed edit2/2 and
+   managed51/51 pass. Fresh prefix1k/2k/+4096 and geometry1k/2k/+50k all pass their
+   unchanged whole-SDK guards. Candidates9/9 and repository gates pass. Retained
+   snapshots keep their lawful shares; no universal log(P)/all-history bound.
 
 Each repair needs an owner/boundary review, saved concrete plan, focused honest
 runtime evidence, independent qa-loop/qa-tests/code-quality-qa clearance and a

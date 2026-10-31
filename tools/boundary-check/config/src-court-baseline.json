@@ -2165,6 +2165,7 @@
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/sibling_delivery_tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/invocation/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests/churn.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/cold/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},

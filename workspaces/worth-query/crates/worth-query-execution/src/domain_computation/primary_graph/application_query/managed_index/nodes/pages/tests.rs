@@ -14,6 +14,8 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 
+mod churn;
+
 fn request(cancel: &CancellationSource) -> SerialRequest {
     SerialRequest::from_policy(
         &ExecutionRequestPolicy::new(
@@ -28,15 +30,12 @@ fn request(cancel: &CancellationSource) -> SerialRequest {
 
 fn leaf_at(pages: &NodePages<u64>, page: usize) -> &Arc<Directory<u64>> {
     let mut current = pages.root.as_ref().unwrap();
-    let mut height = pages.height;
     while let Entry::Branch { left, right } = &current.entry {
-        height -= 1;
-        current = if page & (1 << height) == 0 {
-            left.as_ref()
+        current = if page & (1 << (current.height - 1)) == 0 {
+            left
         } else {
-            right.as_ref()
-        }
-        .unwrap();
+            right
+        };
     }
     current
 }

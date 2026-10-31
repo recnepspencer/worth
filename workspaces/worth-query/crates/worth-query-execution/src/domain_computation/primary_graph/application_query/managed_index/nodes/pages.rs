@@ -13,27 +13,25 @@ pub(in super::super) use edit::PageEdit;
 
 pub(in super::super) struct NodePages<Node> {
     root: Option<Arc<Directory<Node>>>,
-    height: u32,
 }
 
 struct Directory<Node> {
+    prefix: usize,
+    height: u32,
     entry: Entry<Node>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 enum Entry<Node> {
     Page(ExecutionArray<Option<Node>>),
     Branch {
-        left: Option<Arc<Directory<Node>>>,
-        right: Option<Arc<Directory<Node>>>,
+        left: Arc<Directory<Node>>,
+        right: Arc<Directory<Node>>,
     },
 }
 
 impl<Node> Default for NodePages<Node> {
     fn default() -> Self {
-        Self {
-            root: None,
-            height: 0,
-        }
+        Self { root: None }
     }
 }
 
@@ -41,7 +39,6 @@ impl<Node> Clone for NodePages<Node> {
     fn clone(&self) -> Self {
         Self {
             root: self.root.clone(),
-            height: self.height,
         }
     }
 }
@@ -58,7 +55,7 @@ impl<Node: Copy> NodePages<Node> {
             .ok_or_else(|| control.refuse(Stop::CapacityOverflow))?
             .trailing_zeros();
         let root = build(execution, scratch, 0, height, control)?;
-        Ok(Self { root, height })
+        Ok(Self { root })
     }
 
     pub(in super::super) fn get(
@@ -76,22 +73,20 @@ impl<Node: Copy> NodePages<Node> {
         page: usize,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Option<&ExecutionArray<Option<Node>>>, Stop> {
-        if page.checked_shr(self.height).unwrap_or(0) > 0 {
-            return Ok(None);
-        }
         let mut current = self.root.as_deref();
-        let mut height = self.height;
         while let Some(directory) = current {
             control.checkpoint(1)?;
+            if page >> directory.height != directory.prefix >> directory.height {
+                return Ok(None);
+            }
             match &directory.entry {
                 Entry::Page(values) => return Ok(Some(values)),
                 Entry::Branch { left, right } => {
-                    height -= 1;
-                    current = if page & (1 << height) == 0 {
-                        left.as_deref()
+                    current = Some(if page & (1 << (directory.height - 1)) == 0 {
+                        left.as_ref()
                     } else {
-                        right.as_deref()
-                    };
+                        right.as_ref()
+                    });
                 }
             }
         }
@@ -102,10 +97,14 @@ impl<Node: Copy> NodePages<Node> {
 fn retain<Node>(
     execution: &ExecutionRequest<'_, '_>,
     entry: Entry<Node>,
+    prefix: usize,
+    height: u32,
     control: &WorthQueryManagedIndexControl<'_>,
 ) -> Result<Arc<Directory<Node>>, Stop> {
     let memory = header_memory::<Directory<Node>>(execution, control)?;
     Ok(Arc::new(Directory {
+        prefix,
+        height,
         entry,
         _memory: memory,
     }))
@@ -143,6 +142,7 @@ fn build<Node: Copy>(
     if height == 0 {
         return page(
             execution,
+            start,
             |index| scratch.get(start * PAGE_SIZE + index).and_then(Cell::get),
             control,
         );
@@ -164,15 +164,28 @@ fn branch<Node>(
     right: Option<Arc<Directory<Node>>>,
     control: &WorthQueryManagedIndexControl<'_>,
 ) -> Result<Option<Arc<Directory<Node>>>, Stop> {
-    if left.is_none() && right.is_none() {
-        Ok(None)
-    } else {
-        retain(execution, Entry::Branch { left, right }, control).map(Some)
+    match (left, right) {
+        (Some(left), Some(right)) => {
+            let height = usize::BITS - (left.prefix ^ right.prefix).leading_zeros();
+            debug_assert!(left.height < height && right.height < height);
+            // Page keys come from ordinal>>PAGE_BITS, so height is below word width.
+            let prefix = left.prefix & (usize::MAX << height);
+            retain(
+                execution,
+                Entry::Branch { left, right },
+                prefix,
+                height,
+                control,
+            )
+            .map(Some)
+        }
+        (child, None) | (None, child) => Ok(child),
     }
 }
 
 fn page<Node: Copy>(
     execution: &ExecutionRequest<'_, '_>,
+    key: usize,
     value: impl Fn(usize) -> Option<Node>,
     control: &WorthQueryManagedIndexControl<'_>,
 ) -> Result<Option<Arc<Directory<Node>>>, Stop> {
@@ -191,7 +204,7 @@ fn page<Node: Copy>(
         .seal()
         .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
     if occupied {
-        retain(execution, Entry::Page(values), control).map(Some)
+        retain(execution, Entry::Page(values), key, 0, control).map(Some)
     } else {
         Ok(None)
     }

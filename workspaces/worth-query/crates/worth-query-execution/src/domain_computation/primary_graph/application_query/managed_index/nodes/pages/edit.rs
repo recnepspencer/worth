@@ -117,27 +117,28 @@ impl<'a, Node: Copy> PageEdit<'a, Node> {
         if self.touched.is_empty() {
             return Ok(self.base);
         }
-        let mut height = self.base.height;
+        let mut ordered =
+            ExecutionRequestArrayBuilder::allocate(self.execution, self.touched.len())
+                .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
         for (key, page) in self.touched.iter() {
             control.checkpoint(1)?;
-            if page.open.borrow().occupied != 0 {
-                height = height.max(usize::BITS - key.leading_zeros());
-            }
+            ordered
+                .push((*key, page.as_ref()))
+                .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
         }
+        let ordered = ordered
+            .seal()
+            .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
         let root = seal::Batch {
-            pages: self
-                .touched
-                .iter()
-                .take_while(|(key, _)| **key >> height == 0)
-                .peekable(),
+            pages: ordered.elements(),
             execution: self.execution,
             control,
             #[cfg(test)]
             allocations: &self.sealed_branches,
         }
-        .subtree(self.base, 0, height)?;
+        .subtree(self.base.root, 0..self.touched.len())?;
         control.poll()?;
-        Ok(NodePages { root, height })
+        Ok(NodePages { root })
     }
 }
 

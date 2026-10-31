@@ -1696,6 +1696,21 @@ Candidates9/9 pass. This repairs the demonstrated grouping defect; it promises
 no universal spatial selectivity or production CAD adoption. Churn and remaining
 Phase3/4/5/6 work stay open. Independent qa-loop, qa-tests and code-quality-qa review clears this slice.
 
+The [live-directory slice](milestone-9.19-live-directory-plan.md) preserves genuine
+monotonic node IDs while compressing physical page branches around live cells.
+Owner8/8 proves label-gap-independent work/memory, genuine4096-issue two-live-node
+churn, non-ABA old/sibling identities and refusal cleanup. The ordered temporary
+SDK scratch array is funded by the original request; no Source authority or
+retained second truth is introduced. Managed50/50, Candidates9/9 and fresh large
+prefix guards pass. The actual large geometry run exposed avoidable rekey ID/cell
+churn; the shared extraction/insertion path now reuses its detached actual leaf
+and immediate parent. Keyed edit2/2 and managed51/51 pass. Fresh geometry1k/2k/+50k
+invoices are refusal2204462/2321871/3256889 and commit1971205/2101351/3031788;
+all unchanged25%/50%/8x guards pass. Independent qa-loop, qa-tests and code-quality-qa
+review clears all six original audit findings plus churn at this tested contract. Historical snapshots retain their
+lawful shares. This supplies no predicate routing, refinement, narrowed footprint
+or later-phase completion.
+
 The [recorded-coverage slice](milestone-9.19-phase3-recorded-coverage-plan.md)
 records and verifies actual visited/pruned cuts and their matched-slot bijection.
 Public and maintained selection receivers and Native invariant projections consume

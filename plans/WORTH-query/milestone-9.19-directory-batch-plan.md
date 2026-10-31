@@ -95,3 +95,13 @@ advisories/0 scan errors pass. The existing large-world invoices were not rerun
 for this physical allocation repair; the public small geometry locality and real
 prefix guards are included in the49 passing cases. Independent qa-loop, qa-tests and code-quality-qa review clears this dedicated
 slice without an outstanding scoped blocker. Churn and other milestone work remain open.
+
+## Subsequent live-directory refinement
+
+The11 sparse branches/324/641 dense seal invoices above are historical evidence
+for02af20aec5. The [compressed live directory](milestone-9.19-live-directory-plan.md)
+removes unary bit levels while retaining one batch and65/128 dense branch
+allocations. Sparse growth needs2 actual branches; the paid ordered scratch array
+changes dense seal invoices to4724/9329, still within the unchanged2.1x guard.
+This is a later representation/cost refinement; do not read the historical counts
+as current-shape assertions. Its large/public/reviewer gates govern acceptance.

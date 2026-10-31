@@ -655,6 +655,24 @@
       "test": "working_page_batch_refusal_preserves_predecessor_and_releases_partial_seal",
       "audit": "Query 9.19 directory-batch private-owner placement ruling by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-directory-batch-plan.md.",
       "private_subject": "Original SDK work refusal after actual partial PageEdit seal progress, unchanged predecessor/sibling, scratch-grant release and funded same-data fresh-request retry; no synthetic Source or publication authority."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests/churn.rs",
+      "test": "compressed_live_pages_skip_historical_coordinate_gaps_and_collapse_retirements",
+      "audit": "Query 9.19 live-directory private-owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-live-directory-plan.md.",
+      "private_subject": "Physical compressed-directory fixed-live-page gap invoices/memory, maximum/nonzero page prefixes, retirement collapse, missing-page rejection and paid old/sibling Arc isolation; no Source or qualified root."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests/churn.rs",
+      "test": "genuine_node_churn_keeps_live_backing_bounded_without_reusing_issued_ids",
+      "audit": "Query 9.19 live-directory private-owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-live-directory-plan.md.",
+      "private_subject": "Actual descriptive NodeLineage/NodeWriter4096-issue churn with two live nodes, old and sibling IDs, original SDK final lookup/edit work and grant release; existing parent reserves namespace, no Source/read authority synthesized."
     }
   ]
 }

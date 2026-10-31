@@ -27,7 +27,16 @@ pub fn insert_box_source<S: BoxEditStorage>(
     bounds: Box2,
     storage: &mut S,
 ) -> Result<S::Id, S::Stop> {
-    insert(root, source, bounds, 0, storage)
+    insert(
+        root,
+        Incoming {
+            source,
+            bounds,
+            reused: None,
+        },
+        0,
+        storage,
+    )
 }
 
 pub fn remove_box_source<S: BoxEditStorage>(
@@ -36,10 +45,15 @@ pub fn remove_box_source<S: BoxEditStorage>(
     storage: &mut S,
 ) -> Result<Option<S::Id>, S::Stop> {
     let bounds = storage.source_bounds(source)?;
-    remove(root, source, bounds, 0, storage)
+    let detached = extract(root, source, bounds, 0, storage)?;
+    storage.remove(detached.leaf)?;
+    if let Some(parent) = detached.parent {
+        storage.remove(parent)?;
+    }
+    Ok(detached.root)
 }
 
-/// A changed spatial key retires/reinserts the leaf on bounded AVL paths.
+/// A changed spatial key relocates actual live cells on bounded AVL paths.
 pub fn replace_box_source<S: BoxEditStorage>(
     root: S::Id,
     source: S::Source,
@@ -50,8 +64,33 @@ pub fn replace_box_source<S: BoxEditStorage>(
     if before == bounds {
         return Ok(root);
     }
-    let root = remove(root, source, before, 0, storage)?;
-    insert(root, source, bounds, 0, storage)
+    let detached = extract(root, source, before, 0, storage)?;
+    storage.replace(detached.leaf, leaf(source, bounds))?;
+    match (detached.root, detached.parent) {
+        (None, None) => Ok(detached.leaf),
+        (Some(root), Some(parent)) => insert(
+            Some(root),
+            Incoming {
+                source,
+                bounds,
+                reused: Some((detached.leaf, parent)),
+            },
+            0,
+            storage,
+        ),
+        _ => Err(storage.invalid()),
+    }
+}
+// Consumed along one insertion path; reused cells were detached, never retired.
+struct Incoming<Id, Source> {
+    source: Source,
+    bounds: Box2,
+    reused: Option<(Id, Id)>,
+}
+struct Detached<Id> {
+    root: Option<Id>,
+    leaf: Id,
+    parent: Option<Id>,
 }
 
 fn leaf<Id, Source: Copy>(source: Source, bounds: Box2) -> BoxNode<Id, Source> {
@@ -66,13 +105,16 @@ fn leaf<Id, Source: Copy>(source: Source, bounds: Box2) -> BoxNode<Id, Source> {
 
 fn insert<S: BoxEditStorage>(
     root: Option<S::Id>,
-    source: S::Source,
-    bounds: Box2,
+    incoming: Incoming<S::Id, S::Source>,
     depth: u32,
     storage: &mut S,
 ) -> Result<S::Id, S::Stop> {
     checkpoint(depth, storage)?;
+    let (source, bounds) = (incoming.source, incoming.bounds);
     let Some(id) = root else {
+        if incoming.reused.is_some() {
+            return Err(storage.invalid());
+        }
         return storage.append(leaf(source, bounds));
     };
     let node = storage.read(id)?;
@@ -81,26 +123,29 @@ fn insert<S: BoxEditStorage>(
             if source == previous {
                 return Err(storage.invalid());
             }
-            let added = storage.append(leaf(source, bounds))?;
+            let (added, parent) = match incoming.reused {
+                Some((leaf, parent)) => (leaf, Some(parent)),
+                None => (storage.append(leaf(source, bounds))?, None),
+            };
             let (left, right) = if key(bounds, source) < key(node.bounds, previous) {
                 (added, id)
             } else {
                 (id, added)
             };
-            return append_branch(left, right, storage);
+            return match parent {
+                Some(parent) => {
+                    write_branch(parent, left, right, storage)?;
+                    Ok(parent)
+                }
+                None => append_branch(left, right, storage),
+            };
         }
         BoxNodeLinks::Branch { left, right } => {
             let left_node = storage.read(left)?;
             if key(bounds, source) <= key(left_node.last_bounds, left_node.last_source) {
-                (
-                    insert(Some(left), source, bounds, depth + 1, storage)?,
-                    right,
-                )
+                (insert(Some(left), incoming, depth + 1, storage)?, right)
             } else {
-                (
-                    left,
-                    insert(Some(right), source, bounds, depth + 1, storage)?,
-                )
+                (left, insert(Some(right), incoming, depth + 1, storage)?)
             }
         }
     };
@@ -108,13 +153,13 @@ fn insert<S: BoxEditStorage>(
     balance(id, storage)
 }
 
-fn remove<S: BoxEditStorage>(
+fn extract<S: BoxEditStorage>(
     id: S::Id,
     source: S::Source,
     bounds: Box2,
     depth: u32,
     storage: &mut S,
-) -> Result<Option<S::Id>, S::Stop> {
+) -> Result<Detached<S::Id>, S::Stop> {
     checkpoint(depth, storage)?;
     let node = storage.read(id)?;
     let (left, right) = match node.links {
@@ -122,34 +167,37 @@ fn remove<S: BoxEditStorage>(
             if source != previous {
                 return Err(storage.invalid());
             }
-            storage.remove(id)?;
-            return Ok(None);
+            return Ok(Detached {
+                root: None,
+                leaf: id,
+                parent: None,
+            });
         }
         BoxNodeLinks::Branch { left, right } => (left, right),
     };
     let left_node = storage.read(left)?;
-    let (left, right) = if key(bounds, source) <= key(left_node.last_bounds, left_node.last_source)
-    {
-        (
-            remove(left, source, bounds, depth + 1, storage)?,
-            Some(right),
-        )
-    } else {
-        (
-            Some(left),
-            remove(right, source, bounds, depth + 1, storage)?,
-        )
-    };
-    match (left, right) {
+    let (mut detached, left, right) =
+        if key(bounds, source) <= key(left_node.last_bounds, left_node.last_source) {
+            let detached = extract(left, source, bounds, depth + 1, storage)?;
+            let remaining = detached.root;
+            (detached, remaining, Some(right))
+        } else {
+            let detached = extract(right, source, bounds, depth + 1, storage)?;
+            let remaining = detached.root;
+            (detached, Some(left), remaining)
+        };
+    detached.root = match (left, right) {
         (Some(left), Some(right)) => {
             write_branch(id, left, right, storage)?;
-            balance(id, storage).map(Some)
+            Some(balance(id, storage)?)
         }
         (None, sibling) | (sibling, None) => {
-            storage.remove(id)?;
-            Ok(sibling)
+            debug_assert!(detached.parent.is_none());
+            detached.parent = Some(id);
+            sibling
         }
-    }
+    };
+    Ok(detached)
 }
 
 fn checkpoint<S: BoxEditStorage>(depth: u32, storage: &mut S) -> Result<(), S::Stop> {
