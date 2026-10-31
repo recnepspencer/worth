@@ -160,6 +160,12 @@ Register the definition inside the same application contribution as its READ
 and mutation bindings. Installation checks their actual typed contracts and
 model scope. Matching identity text alone cannot substitute another binding.
 
+To carry the declaration in a package archive, export the package's typed records
+and pass its schema view to `encode_record_frame`. `WorthQueryPackageArchiveRecordDecoder`
+preserves the full READ binding, metadata policy, model domain and authored
+operation order and labels. Installation still resolves the original typed
+bindings. Attach a live document from an admitted model head as below.
+
 Transfer a genuine owned head through the ordinary request on that branch:
 
 ```rust,ignore

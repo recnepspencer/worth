@@ -13,6 +13,7 @@ mod capability;
 mod component_set;
 mod derived_component_set;
 mod derived_relation;
+mod document_history;
 mod history;
 mod inspection;
 mod invariant;
@@ -30,6 +31,7 @@ mod source_disclosure;
 mod vocabulary;
 
 fn require_supported_field_codec(member: &ApplicationSchemaMember) -> Result<(), Denial> {
+    document_history::require_shape(member)?;
     managed_index::require_shape(member)?;
     projected_member_domain::require_shape(member)?;
     inspection::require_shape(member)?;
@@ -61,6 +63,7 @@ pub(super) fn require_encoding_contract(
     if matches!(
         member,
         ApplicationSchemaMember::ManagedIndex { .. }
+            | ApplicationSchemaMember::ApplicationHistory { .. }
             | ApplicationSchemaMember::ApplicationInvariant { .. }
             | ApplicationSchemaMember::ProjectedMemberDomain { .. }
             | ApplicationSchemaMember::ApplicationQueryInspection { .. }
@@ -96,6 +99,9 @@ pub(super) fn write(
     }
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::ApplicationHistory { definition } => {
+            document_history::write(output, definition)
+        }
         ApplicationSchemaMember::ManagedIndex { definition } => {
             managed_index::write(output, definition)
         }
@@ -180,6 +186,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        51 => document_history::decode(input, budget),
         50 => Ok(ApplicationSchemaMember::ScalarAspectField {
             entity: input.text()?.to_owned(),
             aspect: input.text()?.to_owned(),
@@ -221,6 +228,7 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::ApplicationHistory { .. } => 51,
         ApplicationSchemaMember::ScalarAspectField { .. } => 50,
         ApplicationSchemaMember::ManagedIndex { .. } => 48,
         ApplicationSchemaMember::ProjectedMemberDomain { .. } => 44,
