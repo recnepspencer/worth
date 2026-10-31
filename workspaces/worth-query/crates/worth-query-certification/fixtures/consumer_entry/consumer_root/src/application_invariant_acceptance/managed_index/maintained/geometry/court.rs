@@ -20,6 +20,7 @@ mod affinity;
 mod cancellation;
 mod close;
 mod cold;
+mod exact_refinement;
 mod growth;
 mod rebuild;
 mod rewiring;

@@ -84,6 +84,7 @@ where
             root.source.material.as_ref(),
             probe,
             parent,
+            association.access_contract().meaning().match_posture(),
         );
     let (selection, callback) = session
         .call(|actual| state.adapter.candidates(actual, frame))

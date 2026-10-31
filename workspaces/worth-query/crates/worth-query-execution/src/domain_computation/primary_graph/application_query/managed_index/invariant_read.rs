@@ -66,6 +66,7 @@ pub(in crate::domain_computation::primary_graph) fn query<S, I>(
     source: &ManagedIndexSourceRead<'_>,
     program: &worth_relational::facade::runtime::ManagedIndexSourceProgram,
     posture: ReadPosture,
+    match_posture: worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture,
     probe: &WorthQueryManagedIndexProbeValue<S, I>,
 ) -> Result<Vec<ManagedSourceValue<S, I>>, WorthQueryManagedIndexInvariantDenial>
 where
@@ -89,7 +90,7 @@ where
     let budget = source.read_budget();
     let probe = I::ProbeBinding::encode(probe).map_err(Denial::Probe)?;
     let frame = crate::domain_computation::primary_graph::access_strategy::coverage::CoverageFrame::invariant(
-        root.rows.view(&root.bindings, Some(&budget)), &root.nodes, root, &probe, source, posture,
+        root.rows.view(&root.bindings, Some(&budget)), &root.nodes, root, &probe, source, posture, match_posture,
     );
     let selection = root
         .adapter

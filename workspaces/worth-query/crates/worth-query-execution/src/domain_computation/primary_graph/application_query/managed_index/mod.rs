@@ -18,9 +18,11 @@ mod nodes;
 pub(in crate::domain_computation::primary_graph::application_query) mod predicate;
 pub(in crate::domain_computation::primary_graph) use predicate::WatchSlot;
 mod provider;
+pub(in crate::domain_computation::primary_graph) mod refinement;
 pub use predicate::{
     WorthQueryManagedIndexPredicateProvider, WorthQueryManagedIndexPredicateSummary,
 };
+pub use refinement::WorthQueryManagedIndexRefinementProvider;
 mod provider_failure;
 mod receiver;
 pub(in crate::domain_computation::primary_graph::application_query) mod retention;

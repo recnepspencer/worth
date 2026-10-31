@@ -15,6 +15,7 @@ mod prefix;
 mod protected;
 #[path = "query.rs"]
 mod query;
+mod refinement;
 mod rule;
 mod schema;
 
@@ -22,3 +23,12 @@ const PREFIX_MEMBERSHIP: worth_query_decl::facade::application_query::Applicatio
     worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;
 
 const SOURCE_MAX_RESULTS: usize = 8192;
+
+const PREFIX_REFINEMENT: Option<
+    worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
+> = Some(
+    worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement::row_local(
+        "managed-catalog.exact-name",
+        1,
+    ),
+);

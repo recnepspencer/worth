@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::application_query::{
     WorthQueryApplicationProjection,
 };
 use std::marker::PhantomData;
+use worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture as MatchPosture;
 use worth_query_declaration::facade::{
     application_query::{ApplicationManagedIndexBinding, ApplicationQueryBinding},
     application_schema::{ApplicationSchema, ApplicationSchemaBindingIdentity},
@@ -63,6 +64,7 @@ impl<S: ApplicationSchema> WorthQueryApplicationInvariantScopePlanner<'_, '_, S>
 pub struct WorthQueryInvariantManagedIndexPair<'loan, 'runtime, S, I> {
     context: &'loan worth_relational::facade::runtime::CustomInvariantExecutionContext<'runtime>,
     prepared: &'loan WorthQueryPreparedInvariantManagedIndex<S, I>,
+    match_posture: MatchPosture,
 }
 pub struct WorthQueryInvariantManagedIndexRead<'loan, 'runtime, S, I> {
     pair: WorthQueryInvariantManagedIndexPair<'loan, 'runtime, S, I>,
@@ -75,6 +77,20 @@ impl<'borrow, 'runtime, S: ApplicationSchema>
         &'loan self,
         prepared: &'loan WorthQueryPreparedInvariantManagedIndex<S, I>,
     ) -> Result<WorthQueryInvariantManagedIndexPair<'loan, 'runtime, S, I>, Denial> {
+        self.managed_index_with_posture(prepared, MatchPosture::Candidates)
+    }
+    /// Explicit exact-domain access; a missing executable contract refuses at read.
+    pub fn refined_managed_index<'loan, I: ApplicationManagedIndexBinding<S>>(
+        &'loan self,
+        prepared: &'loan WorthQueryPreparedInvariantManagedIndex<S, I>,
+    ) -> Result<WorthQueryInvariantManagedIndexPair<'loan, 'runtime, S, I>, Denial> {
+        self.managed_index_with_posture(prepared, MatchPosture::Refined)
+    }
+    fn managed_index_with_posture<'loan, I: ApplicationManagedIndexBinding<S>>(
+        &'loan self,
+        prepared: &'loan WorthQueryPreparedInvariantManagedIndex<S, I>,
+        match_posture: MatchPosture,
+    ) -> Result<WorthQueryInvariantManagedIndexPair<'loan, 'runtime, S, I>, Denial> {
         if self.binding_identity != prepared.binding.binding_identity {
             return Err(Denial::ForeignSource);
         }
@@ -84,6 +100,7 @@ impl<'borrow, 'runtime, S: ApplicationSchema>
         Ok(WorthQueryInvariantManagedIndexPair {
             context: self.lower,
             prepared,
+            match_posture,
         })
     }
 }
@@ -93,6 +110,7 @@ impl<'loan, 'runtime, S, I> WorthQueryInvariantManagedIndexPair<'loan, 'runtime,
             pair: Self {
                 context: self.context,
                 prepared: self.prepared,
+                match_posture: self.match_posture,
             },
             posture: invariant_read::ReadPosture::Committed,
         }
@@ -102,6 +120,7 @@ impl<'loan, 'runtime, S, I> WorthQueryInvariantManagedIndexPair<'loan, 'runtime,
             pair: Self {
                 context: self.context,
                 prepared: self.prepared,
+                match_posture: self.match_posture,
             },
             posture: invariant_read::ReadPosture::Proposed,
         }
@@ -126,6 +145,7 @@ where
                     &source,
                     &self.pair.prepared.binding.program,
                     self.posture,
+                    self.pair.match_posture,
                     probe,
                 )
             })

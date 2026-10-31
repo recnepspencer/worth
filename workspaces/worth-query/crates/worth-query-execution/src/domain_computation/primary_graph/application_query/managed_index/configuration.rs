@@ -19,6 +19,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
 struct ConfiguredProvider<S> {
     name: String,
+    refinement: bool,
     adapter: Box<dyn Any + Send + Sync>,
     belongs_to: fn(&dyn Any, &WorthQueryInstalledApplicationSchema<S>) -> bool,
     executor: Arc<dyn ErasedIndexExecutor<S>>,
@@ -95,6 +96,13 @@ impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
             }
         }
         for member in schema.installed_declaration().members() {
+            if let ApplicationSchemaMember::ApplicationQuery { definition } = member
+                && let Some(selection) = definition.managed_index()
+                && selection.posture() == worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture::Refined
+                && !self.in_registration_order().any(|entry| entry.name == selection.parts().index && entry.refinement) {
+                return Err(Denial::new(Kind::MissingManagedIndexRefinement, &selection.parts().index));
+            }
+
             if let ApplicationSchemaMember::ManagedIndex { definition } = member
                 && !self
                     .in_registration_order()
@@ -116,12 +124,13 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         schema: &WorthQueryInstalledApplicationSchema<S>,
         owner: &str,
         provider: P,
+        refinement: Option<super::refinement::RefinementCallbacks<S, I, P>>,
     ) -> Result<(), Denial>
     where
         I: ApplicationManagedIndexBinding<S>,
         P: WorthQueryManagedIndexProvider<S, I>,
     {
-        self.register_shared::<I, P>(schema, owner, Arc::new(provider), None)
+        self.register_shared::<I, P>(schema, owner, Arc::new(provider), None, refinement)
     }
 
     pub(in crate::domain_computation::primary_graph) fn register_predicate<I, P>(
@@ -129,6 +138,7 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         schema: &WorthQueryInstalledApplicationSchema<S>,
         owner: &str,
         provider: P,
+        refinement: Option<super::refinement::RefinementCallbacks<S, I, P>>,
     ) -> Result<(), Denial>
     where
         I: ApplicationManagedIndexBinding<S>,
@@ -142,8 +152,9 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
             installed,
             provider: Arc::clone(&provider),
             bindings: schema.value_bindings().clone(),
+            refinement,
         });
-        self.register_shared::<I, P>(schema, owner, provider, Some(predicate))
+        self.register_shared::<I, P>(schema, owner, provider, Some(predicate), refinement)
     }
 
     fn register_shared<I, P>(
@@ -152,6 +163,7 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         owner: &str,
         provider: Arc<P>,
         predicate: Option<Arc<dyn super::predicate::PredicateFactory>>,
+        refinement: Option<super::refinement::RefinementCallbacks<S, I, P>>,
     ) -> Result<(), Denial>
     where
         I: ApplicationManagedIndexBinding<S>,
@@ -166,6 +178,14 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
         let installed = schema
             .installed_managed_index::<I>()
             .map_err(|_| Denial::new(Kind::ManagedIndexProviderMeaningMismatch, I::NAME))?;
+        if refinement.is_some_and(|actual| {
+            installed.definition().refinement() != Some(&actual.meaning.meaning())
+        }) {
+            return Err(Denial::new(
+                Kind::ManagedIndexProviderMeaningMismatch,
+                I::NAME,
+            ));
+        }
         let contribution = schema
             .contributions()
             .get(owner)
@@ -186,6 +206,7 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
             installed,
             provider,
             predicate,
+            refinement,
             coverage: crate::domain_computation::primary_graph::access_strategy::coverage::CoverageVerifier::new(),
             bindings: schema.value_bindings().clone(),
         });
@@ -198,6 +219,7 @@ impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
             index_type,
             ConfiguredProvider {
                 name: I::NAME.to_owned(),
+                refinement: refinement.is_some(),
                 adapter: Box::new(adapter),
                 belongs_to: configured_in::<S, I>,
                 executor,

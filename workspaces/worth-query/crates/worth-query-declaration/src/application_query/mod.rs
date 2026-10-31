@@ -19,6 +19,10 @@ mod inspection;
 mod lane_eligibility;
 mod live_cause;
 mod managed_index;
+pub use managed_index::{
+    ApplicationManagedIndexMatchPosture, ApplicationManagedIndexRefinement,
+    ApplicationManagedIndexRefinementMeaning, WorthQueryPortableManagedIndexRefinementParts,
+};
 mod marker_identity;
 pub use managed_index::{
     ApplicationInvariantManagedIndexSource, ApplicationManagedIndexBinding,

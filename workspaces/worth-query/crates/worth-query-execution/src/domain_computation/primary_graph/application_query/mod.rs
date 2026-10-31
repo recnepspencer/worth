@@ -51,9 +51,9 @@ pub use managed_index::{
     WorthQueryManagedIndexPredicateProvider, WorthQueryManagedIndexPredicateSummary,
     WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
     WorthQueryManagedIndexProviderFailure, WorthQueryManagedIndexProviderStop,
-    WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceChange,
-    WorthQueryManagedIndexSourceRow, WorthQueryManagedIndexSourceRows,
-    WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop,
+    WorthQueryManagedIndexRefinementProvider, WorthQueryManagedIndexRefusal,
+    WorthQueryManagedIndexSourceChange, WorthQueryManagedIndexSourceRow,
+    WorthQueryManagedIndexSourceRows, WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop,
     WorthQueryManagedIndexSummarySources, WorthQueryManagedIndexTextReadDenial,
     WorthQueryManagedIndexWorkDenial,
 };

@@ -27,10 +27,14 @@ pub(super) fn validate_influence<Schema, Query, Parameters, QueryResult, Scope, 
     results: &BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
     admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
 ) -> Result<(), CompilationStop<E>> {
-    // A managed Live Parent's implicit provider inputs can affect notification
-    // presence. The watch receiver additionally requires the exact installed
-    // Source/Parent projection profile; neither premise substitutes for the other.
-    if query.lanes().live_enabled() && query.read_graph().managed_index_selection().is_some() {
+    // Implicit managed inputs influence observable membership. Exact Parents
+    // require the same closure even without a Live lane; installation separately
+    // verifies their complete Source/Parent projection correspondence.
+    let managed_inputs = query.read_graph().managed_index_selection().is_some_and(|selection| {
+        query.lanes().live_enabled() || selection.posture() ==
+            worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture::Refined
+    });
+    if managed_inputs {
         for projection in query.read_graph().projections() {
             admit_cone(admit)?;
             require_field_influence(

@@ -14,6 +14,7 @@ use worth_query_host::facade::primary_graph::*;
 #[cfg(test)]
 pub(super) mod cost_stages;
 mod predicate;
+mod refinement;
 mod storage;
 #[cfg(test)]
 mod summary_fault;
@@ -25,6 +26,14 @@ impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     const NAME: &'static str = "maintained_geometry_boxes";
     const PROVIDER: &'static str = "maintained-geometry.closed-box2.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const REFINEMENT: Option<
+        worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
+    > = Some(
+        worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement::row_local(
+            "maintained-geometry.closed-segment-box",
+            1,
+        ),
+    );
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
     const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =

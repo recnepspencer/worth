@@ -3,6 +3,7 @@ use super::{
     super::{prefix, query as source, schema::*},
     access,
 };
+pub(super) mod exact;
 use worth_query_decl::facade::{application_query::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -30,6 +31,8 @@ fn definition_for<
 >(
     reference: ApplicationQueryReference<Catalog, Q, source::Parameters, Row, Directory>,
     name_influence: ApplicationQueryInfluenceContract,
+    refined: bool,
+    live: bool,
 ) -> ApplicationQueryDefinition<Catalog, Q, source::Parameters, Row, Directory> {
     let all = ApplicationQueryInfluenceContract::permit_all();
     let hidden =
@@ -44,7 +47,7 @@ fn definition_for<
     .disclose_field_by(source::identity::<Q>(), access::encoded(), all.clone())
     .disclose_field_by(source::name::<Q>(), hidden, all.clone())
     .disclose_field_by(source::enabled::<Q>(), access::encoded(), all);
-    ApplicationQueryDefinitionBuilder::declare(reference)
+    let builder = ApplicationQueryDefinitionBuilder::declare(reference)
         .root(Item::reference())
         .scope(Directory::reference())
         .result_shape(
@@ -59,9 +62,18 @@ fn definition_for<
         .cardinality(ApplicationQueryCardinality::Many)
         .disclosure(disclosure)
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
-        .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
-        .requires_ability(access::ReadBoxRows::reference())
-        .managed_index(prefix::PrefixIndex::reference(), probe::<Q>())
+        .lanes(if live {
+            ApplicationQueryLaneEligibility::one_shot().with_live()
+        } else {
+            ApplicationQueryLaneEligibility::one_shot()
+        })
+        .requires_ability(access::ReadBoxRows::reference());
+    let builder = if refined {
+        builder.managed_index_refined(prefix::PrefixIndex::reference(), probe::<Q>())
+    } else {
+        builder.managed_index(prefix::PrefixIndex::reference(), probe::<Q>())
+    };
+    builder
         .parameter(enabled::<Q>())
         .where_equal(ItemEnabled::reference(), enabled::<Q>())
         .order_by(
@@ -76,6 +88,8 @@ pub fn definition() -> ApplicationQueryDefinition<Catalog, Query, source::Parame
     definition_for(
         Query::reference(),
         ApplicationQueryInfluenceContract::permit_all(),
+        false,
+        true,
     )
 }
 pub fn blocked_definition(
@@ -87,6 +101,8 @@ pub fn blocked_definition(
                 .into_iter()
                 .filter(|surface| *surface != ApplicationQueryObservableInfluence::LiveMembership),
         ),
+        false,
+        true,
     )
 }
 impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection<Catalog, Q>

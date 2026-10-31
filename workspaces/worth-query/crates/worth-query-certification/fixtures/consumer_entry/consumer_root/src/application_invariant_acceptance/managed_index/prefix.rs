@@ -20,6 +20,8 @@ mod storage;
 pub use installed_version::IncompatibleVersion;
 #[path = "prefix/predicate.rs"]
 mod predicate;
+#[path = "prefix/refinement.rs"]
+mod refinement;
 #[path = "prefix/structure.rs"]
 pub(super) mod structure;
 #[path = "prefix/summary.rs"]
@@ -37,6 +39,9 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const NAME: &'static str = "catalog_prefix_index";
     const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const REFINEMENT: Option<
+        worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
+    > = super::PREFIX_REFINEMENT;
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
     const MEMBERSHIP:
@@ -56,6 +61,12 @@ fn text_denial(cause: WorthQueryManagedIndexTextReadDenial) -> Stop {
 }
 #[derive(Default)]
 pub struct Calls {
+    #[cfg(test)]
+    pub omit_refinement: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub reject_refinement: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub after_refinement: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     #[cfg(test)]
     pub predicate_regions: AtomicUsize,
     #[cfg(test)]

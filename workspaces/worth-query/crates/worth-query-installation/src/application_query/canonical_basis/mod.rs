@@ -111,5 +111,23 @@ fn append_managed_index(
             text("managed-index.index", &parts.index),
             text("managed-index.probe-parameter", &parts.probe_parameter),
         ]);
+        if let Some(refinement) = selection.refinement() {
+            let refinement = refinement.parts();
+            entries.extend([
+                unsigned(
+                    "managed-index.refinement.version",
+                    refinement.semantic_version.into(),
+                ),
+                text("managed-index.refinement.identity", &refinement.identity),
+                unsigned(
+                    "managed-index.refinement.domain-version",
+                    refinement.version as usize,
+                ),
+                text(
+                    "managed-index.refinement.inputs",
+                    "row-local-source-projection",
+                ),
+            ]);
+        }
     }
 }

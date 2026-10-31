@@ -87,7 +87,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     _allocation: Arc<SourceFactsAllocation>,
 }
-pub(super) struct TypedSourceService<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P>
+pub(super) struct TypedSourceService<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P: WorthQueryManagedIndexProvider<S,I>>
 {
     pub(super) provider: Arc<TypedIndexProvider<S, I, P>>,
     pub(super) program: Program,

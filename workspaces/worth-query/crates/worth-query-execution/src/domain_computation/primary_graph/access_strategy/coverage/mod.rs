@@ -1,4 +1,5 @@
 //! Framework-owned traversal completes before any candidate result is returned.
+mod refinement;
 mod traversal;
 pub(in crate::domain_computation::primary_graph) use traversal::visit;
 mod frame;
@@ -59,6 +60,7 @@ impl CoverageVerifier {
                 proof,
                 frontier,
                 nodes: Arc::clone(frame.nodes),
+                refinement: None,
                 _allocation: allocation,
             })),
         })
@@ -100,6 +102,14 @@ impl<'a, 'loan> CandidateSelection<'a, 'loan> {
         if (complete || expected.requires_complete()) && self.coverage.is_none() {
             return Err(control.refuse(Stop::IncompleteCoverage).into());
         }
+        if expected.posture == worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture::Candidates
+            && self.coverage.as_ref().is_some_and(|coverage| coverage.refinement.is_some()) {
+            return Err(control.refuse(Stop::ForeignCoverage).into());
+        }
+        if expected.posture == worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture::Refined
+            && !self.coverage.as_ref().is_some_and(|coverage| coverage.refinement.is_some()) {
+            return Err(control.refuse(Stop::IncompleteRefinement).into());
+        }
         Ok(ReceivedSelection {
             slots: self.slots,
             coverage: self.coverage,
@@ -126,6 +136,7 @@ impl ReceivedSelection {
     }
 }
 pub(in crate::domain_computation::primary_graph) struct RetainedCoverage {
+    refinement: Option<refinement::RetainedRefinement>,
     proof: worth_proof::AdmittedManagedIndexCoverage,
     frontier: RecordedFrontier,
     nodes: Arc<dyn Any + Send + Sync>,

@@ -87,6 +87,7 @@ where
             root,
             probe,
             parent,
+            association.access_contract().meaning().match_posture(),
         );
     let (selection, callback) = purpose
         .call(|actual| adapter.candidates(actual, frame))

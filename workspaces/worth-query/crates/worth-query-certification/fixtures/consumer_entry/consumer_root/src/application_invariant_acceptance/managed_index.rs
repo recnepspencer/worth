@@ -19,3 +19,7 @@ const PREFIX_MEMBERSHIP: worth_query_decl::facade::application_query::Applicatio
     worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
 
 const SOURCE_MAX_RESULTS: usize = 16;
+
+const PREFIX_REFINEMENT: Option<
+    worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
+> = None;

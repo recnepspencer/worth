@@ -24,6 +24,8 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     BindingNotInstalled,
     /// A declared managed index has no configured executable provider.
     MissingManagedIndexProvider,
+    /// Exact access requires its separately declared executable refiner.
+    MissingManagedIndexRefinement,
     /// A managed provider differs from its exact installed contract or version.
     ManagedIndexProviderMeaningMismatch,
     /// A managed index was configured more than once.

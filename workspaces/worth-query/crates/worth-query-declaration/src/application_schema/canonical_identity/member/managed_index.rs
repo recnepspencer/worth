@@ -25,6 +25,25 @@ pub(super) fn append(
             parts.membership.canonical_token(),
         );
     }
+    if let Some(refinement) = definition.refinement() {
+        let refinement = refinement.parts();
+        basis.u64(
+            format!("{prefix}.refinement.version"),
+            refinement.semantic_version.into(),
+        );
+        basis.text(
+            format!("{prefix}.refinement.identity"),
+            &refinement.identity,
+        );
+        basis.u32(
+            format!("{prefix}.refinement.domain-version"),
+            refinement.version,
+        );
+        basis.text(
+            format!("{prefix}.refinement.inputs"),
+            "row-local-source-projection",
+        );
+    }
     basis.text(format!("{prefix}.entity"), &parts.entity);
     for (name, value) in parts.source.binding.canonical_fields() {
         basis.text(format!("{prefix}.source.{name}"), value);

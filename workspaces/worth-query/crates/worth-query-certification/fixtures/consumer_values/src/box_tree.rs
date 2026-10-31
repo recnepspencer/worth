@@ -9,11 +9,13 @@ pub use order::compare_box_bounds;
 pub enum BoxIndexDenial {
     Bounds(BoundsDenial),
     InvalidTopology,
+    SegmentContact(crate::SegmentBoxDenial),
 }
 impl std::fmt::Display for BoxIndexDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Bounds(cause) => std::fmt::Display::fmt(cause, formatter),
+            Self::SegmentContact(cause) => std::fmt::Display::fmt(cause, formatter),
             Self::InvalidTopology => formatter.write_str("invalid finite box tree"),
         }
     }
@@ -22,6 +24,7 @@ impl std::error::Error for BoxIndexDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Bounds(cause) => Some(cause),
+            Self::SegmentContact(cause) => Some(cause),
             Self::InvalidTopology => None,
         }
     }

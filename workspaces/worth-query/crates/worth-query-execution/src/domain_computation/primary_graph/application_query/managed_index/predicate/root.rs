@@ -61,12 +61,14 @@ pub(in crate::domain_computation::primary_graph::application_query) trait Predic
 pub(in crate::domain_computation::primary_graph::application_query::managed_index) struct TypedPredicateFactory<
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,
-    P,
+    P: Provider<S, I>,
 > {
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) installed:
         Installed<S, I>,
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) provider:
         Arc<P>,
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) refinement:
+        Option<super::super::refinement::RefinementCallbacks<S, I, P>>,
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) bindings:
         Bindings,
 }
@@ -77,6 +79,7 @@ struct TypedPredicateRoot<
 > {
     installed: Installed<S, I>,
     provider: Arc<P>,
+    refinement: Option<super::super::refinement::RefinementCallbacks<S, I, P>>,
     bindings: Bindings,
     tree: Mutex<PredicateTree<Arc<RetainedPredicateProbe>, (), P::PredicateSummary>>,
     _allocation: Arc<SourceFactsAllocation>,
@@ -85,7 +88,8 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P: Provider<S, 
     for TypedPredicateFactory<S, I, P>
 {
     fn admits(&self, parent: &Parent) -> bool {
-        self.installed.admits_association(parent)
+        (parent.access_contract().meaning().match_posture() != worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture::Refined || self.refinement.is_some())
+            && self.installed.admits_association(parent)
             && parent
                 .access_contract()
                 .meaning()
@@ -101,6 +105,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P: Provider<S, 
             installed: self.installed.clone(),
             provider: self.provider.clone(),
             bindings: self.bindings.clone(),
+            refinement: self.refinement,
             tree: Mutex::new(PredicateTree::default()),
             _allocation: allocation,
         }))
@@ -135,6 +140,10 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P: Provider<S, 
                 control,
                 self.provider.validate_probe(&own, control),
             )?;
+            if probe.parent.access_contract().meaning().match_posture() == worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture::Refined {
+                let refine = self.refinement.as_ref().ok_or_else(|| control.refuse(Stop::RefinementUnavailable))?;
+                provider_result(execution, control, (refine.validate)(&self.provider, &own, control))?;
+            }
             let summary = provider_result(
                 execution,
                 control,
@@ -219,14 +228,20 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P: Provider<S, 
                             )
                         },
                         &mut |slot, probe, _| {
+                            let refined = probe.parent.access_contract().meaning().match_posture() == worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture::Refined;
                             let probe = decode::<S, I>(probe, control, session)?;
-                            if provider_result(
+                            let candidate = provider_result(
                                 execution,
                                 control,
                                 self.provider
                                     .matches_source(rows.get(source)?, &probe, control),
-                            )? {
-                                receive(slot, control)?;
+                            )?;
+                            if candidate {
+                                let matches = if refined {
+                                    let refine = self.refinement.as_ref().ok_or_else(|| control.refuse(Stop::RefinementUnavailable))?;
+                                    provider_result(execution, control, (refine.evaluate)(&self.provider, rows.get(source)?, &probe, control))?
+                                } else { true };
+                                if matches { receive(slot, control)?; }
                             }
                             Ok(())
                         },

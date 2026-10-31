@@ -44,11 +44,15 @@ where
     ) -> Result<Arc<dyn Any + Send + Sync>, WorthQueryManagedIndexWorkDenial>;
 }
 
-pub(super) struct TypedIndexProvider<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P>
-{
+pub(super) struct TypedIndexProvider<
+    S: ApplicationSchema,
+    I: ApplicationManagedIndexBinding<S>,
+    P: WorthQueryManagedIndexProvider<S, I>,
+> {
     pub(super) installed: WorthQueryInstalledManagedIndex<S, I>,
     pub(super) provider: Arc<P>,
     pub(super) predicate: Option<Arc<dyn super::predicate::PredicateFactory>>,
+    pub(super) refinement: Option<refinement::RefinementCallbacks<S, I, P>>,
     pub(super) coverage: CoverageVerifier,
     pub(super) bindings:
         worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
@@ -117,6 +121,12 @@ where
                     self.provider.validate_probe(&probe, control),
                 )?;
             }
+            let refinement = if frame.posture == worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture::Refined {
+                if !complete { return Err(control.refuse(WorthQueryManagedIndexStop::MembershipUnavailable).into()); }
+                let callbacks = self.refinement.as_ref().ok_or_else(|| control.refuse(WorthQueryManagedIndexStop::RefinementUnavailable))?;
+                provider_result(execution, control, (callbacks.validate)(&self.provider, &probe, control))?;
+                Some(callbacks)
+            } else { None };
             let mut candidates =
                 WorthQueryManagedIndexCandidateWriter::allocate(execution, &source, control)?;
             let mut frontier = RecordedFrontier::new();
@@ -193,7 +203,7 @@ where
             source.check()?;
             let slots = candidates.finish(execution)?;
             if complete {
-                self.coverage.complete(
+                let selected = self.coverage.complete(
                     execution,
                     frame,
                     nodes.structure.as_ref().unwrap(),
@@ -201,7 +211,24 @@ where
                     I::MEMBERSHIP == Membership::CheckedSummarySourceTree,
                     slots,
                     control,
-                )
+                )?;
+                let selected = match refinement {
+                    Some(callbacks) => selected.refine(execution, control, |slot| {
+                        provider_result(
+                            execution,
+                            control,
+                            (callbacks.evaluate)(
+                                &self.provider,
+                                source.get(slot)?,
+                                &probe,
+                                control,
+                            ),
+                        )
+                    })?,
+                    None => selected,
+                };
+                source.check()?;
+                Ok(selected)
             } else {
                 Ok(CandidateSelection::conservative(frame, slots))
             }

@@ -21,6 +21,9 @@ pub trait ApplicationManagedIndexBinding<Schema: ApplicationSchema>: Sized + 'st
     const MEMBERSHIP: super::ApplicationManagedIndexMembership =
         super::ApplicationManagedIndexMembership::Candidates;
 
+    /// Optional exact row-local domain meaning, separately requested by consumers.
+    const REFINEMENT: Option<super::ApplicationManagedIndexRefinement> = None;
+
     #[doc(hidden)]
     fn descriptor() -> super::ApplicationManagedIndexBindingDescriptor {
         super::ApplicationManagedIndexBindingDescriptor::of::<Schema, Self>()

@@ -5760,9 +5760,10 @@ elevation, related/field/magnitude/cardinality and context. It retains no old
 grant or decision authority. Revocation and READ denial leave a queued
 notification unacknowledged; a fresh lawful regrant can deliver it.
 
-A governed managed Live Parent must explicitly permit membership influence,
-including `LiveMembership`, for every Parent scalar projection through its
-internal field-use rules. The exact installed Source/Parent projection profile
+A governed managed Live Parent, and every governed exact-refined Parent even
+without Live, must explicitly permit membership influence for every Parent
+scalar projection through its internal field-use rules. Live additionally
+requires `LiveMembership`. The exact installed Source/Parent projection profile
 then covers implicit provider inputs such as names and bounds. Projecting or
 omitting a value does not itself grant membership influence. A permitted hidden
 field remains omitted by the ordinary final projector and current disclosure
@@ -5770,9 +5771,42 @@ receipt; a missing influence permission refuses before provider execution.
 Broader Source/projection profiles must extend this closure before admission.
 
 Untracked inputs, candidate-only membership, public-cache-only Sources and
-continuations refuse this watch entrance. Tracked exact refinement and protected
-continuation qualification remain unfinished Phase 3 work. No verified
-narrowed footprint is issued by these traversal or watch strategies.
+continuations refuse this watch entrance. Protected continuation qualification
+remains unfinished Phase 3 work. No verified narrowed footprint is issued by
+these traversal or watch strategies.
+
+For a domain predicate narrower than candidate membership, declare an optional
+`ApplicationManagedIndexRefinement::row_local("domain.identity", version)` in
+`Index::REFINEMENT`. Implement `WorthQueryManagedIndexRefinementProvider` on the
+same provider with matching `REFINEMENT_IDENTITY` and `REFINEMENT_VERSION`, a
+required `validate_refinement_probe`, and `refine_source`. The callbacks receive
+only the same typed probe, genuine complete Source row projection (including its
+projected relations), and original control. No roster or external reader is
+available. Qualify that exact acceptance implies candidate acceptance.
+
+Install that provider with
+`setup.managed_index_provider::<Index, _>(provider).with_refinement().install()?`.
+Add `.with_predicate_routing()` before `.install()` when it supports watches.
+These optional mechanics share the actual provider object and Source. Select
+exact access explicitly with `.managed_index_refined(Index::reference(), probe())`
+in a Parent definition, or `context.refined_managed_index(&prepared)` for Native
+committed/proposed reads. Existing `.managed_index` entrances keep their
+candidate meaning. Missing contracts, executables, complete candidate coverage,
+or compatible Source/Parent projection profiles refuse exact access.
+
+Query verifies the complete candidate cut first, then evaluates every candidate
+once. It retains the original cut, all accepted/rejected dispositions and the
+accepted subset before releasing exact results. Probe validation still runs for
+an empty candidate set. Domain refusal or interruption refuses the whole result.
+Each retained watch uses its actual Parent's candidate or refined mode during
+before/after routing; equal probes keep distinct registrations. Current full
+Parent read, ordering, disclosure and ordinary Source dependencies still apply.
+
+The maintained fixture separately qualifies exact name equality and closed
+segment/rectangle contact against prefix/AABB candidates. Segment endpoints must
+be genuine point regions in the fixture's declared integer length unit and XY
+frame; non-point regions refuse. This numerical predicate supplies no CAD
+topology or private adoption evidence.
 
 Indexed results retain complete positive, empty and ordering dependencies from
 the original Source, including nonmatching rows. The ordinary `expect_source`
@@ -5816,6 +5850,9 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const NAME: &'static str = "catalog_prefix_index";
     const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const REFINEMENT: Option<
+        worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
+    > = super::PREFIX_REFINEMENT;
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
     const MEMBERSHIP:

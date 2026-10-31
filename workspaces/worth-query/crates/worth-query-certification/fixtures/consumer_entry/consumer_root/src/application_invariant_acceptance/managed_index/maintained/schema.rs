@@ -59,7 +59,12 @@ pub(super) fn declare(
                 prefix::PrefixIndex,
             >::new()),
     )));
-    protected::declare(schema)
+    protected::declare(
+        schema
+            .application_query(super::refinement::definition())
+            .application_query_binding::<super::refinement::ExactBinding>()
+            .invariant(super::refinement::rule::definition()),
+    )
 }
 
 worth_query_entity!(pub ExternalMapping for Catalog);

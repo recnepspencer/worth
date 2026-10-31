@@ -1,7 +1,9 @@
 #![forbid(unsafe_code)]
 
 mod box2;
+mod segment_box;
 pub use box2::{BoundsDenial, Box2, Box2Coordinates};
+pub use segment_box::{endpoint_segment_intersects_box, segment_intersects_box, SegmentBoxDenial};
 mod box_tree;
 pub use box_tree::{
     build_box_tree, compare_box_bounds, insert_box_source, query_box_tree, remove_box_source,

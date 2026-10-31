@@ -34,7 +34,7 @@ worth_query_portable_type!(EndSlot => "maintained-geometry.end-slot.v1");
 worth_query_portable_type!(StartRegionSlot => "maintained-geometry.start-region-slot.v1");
 worth_query_portable_type!(EndRegionSlot => "maintained-geometry.end-region-slot.v1");
 
-fn identity<Q>() -> ApplicationQueryResultFieldRef<
+pub(super) fn identity<Q>() -> ApplicationQueryResultFieldRef<
     Q,
     IdentitySlot,
     Catalog,
@@ -117,7 +117,7 @@ fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
 }
 // compiled-example: end
 
-fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding>>(
+pub(super) fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding>>(
     reference: ApplicationQueryReference<Catalog, Q, Parameters, Row, Directory>,
     lanes: ApplicationQueryLaneEligibility,
 ) -> ApplicationQueryDefinitionBuilder<Catalog, Q, Parameters, Row, Directory> {

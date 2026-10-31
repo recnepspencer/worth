@@ -1609,6 +1609,21 @@ adapter rewrite or CAD cutover is required here.
 
 ### Phase 3: Complete Membership, Exact Refinement And Disclosure
 
+The [row-local exact-refinement slice](milestone-9.19-phase3-exact-refinement-plan.md)
+now binds separately versioned optional domain contracts and explicit candidate/
+refined access through declaration, canonical identity, archive, installation,
+public reads, Native committed/proposed correctness and inverse-routed watches.
+The existing provider/Source object is shared. Query verifies the complete
+candidate cut before retaining every exact disposition and accepted subset.
+Actual finite courts qualify prefix equality and closed segment/rectangle
+contact, candidate-stable exact transitions, original refusal/cancellation,
+missing executable installation, and hidden non-Live governed influence.
+The Native exact-name rule preserves a typed same-scope committed/proposed
+witness in its actual violation; it does not relabel the reserved prefix rule.
+Full original Source dependencies remain conservative. Continuation qualification
+and Phases4-6 remain unfinished; this does not close Phase3 or prove private CAD
+adoption.
+
 The [governed-watch extension](milestone-9.19-phase3-governed-watch-plan.md)
 adds fresh capability/optional approval and independent READ admission to the
 same complete maintained Parent watch receiver. Its canonical influence closure
@@ -1617,8 +1632,8 @@ correspondence. Opaque retained capability-use metadata preserves full original
 purpose/request semantics and funding without keeping a grant or decision as
 authority. Genuine revoke/regrant and READ-denial retries preserve queued B,
 while current disclosure keeps permitted hidden fields omitted. This extends
-the supported watch profiles; tracked domain exact refinement, protected
-continuation qualification and Phases4-6 remain unfinished.
+the supported watch profiles; protected continuation qualification and
+Phases4-6 remain unfinished.
 
 The [supported maintained Parent watch slice](milestone-9.19-phase3-predicate-watch-plan.md)
 now supplies inverse routing for complete Public prefix and closed-box Parents.
@@ -1631,8 +1646,8 @@ Projected root refinements conservatively route by provider candidate membership
 Real public courts cover empty entrants, deletion/recreation, unchanged-candidate
 refinement, locality, read/registration interference, pending/adoption, sibling
 isolation, original cancellation and exact B/C ACK separation. This is a supported
-profile slice: tracked domain exact refinement, protected/continuation qualification
-and the remaining Phase 3 requirements below are still unfinished. It issues no
+profile slice: protected/continuation qualification and the remaining Phase 3
+requirements below are still unfinished. It issues no
 narrowed footprint authority and does not close Phases 3-6.
 
 The first slice now binds a versioned BinarySourceTree profile and admits the

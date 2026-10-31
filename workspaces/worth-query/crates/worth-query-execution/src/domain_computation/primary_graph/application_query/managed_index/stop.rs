@@ -8,6 +8,8 @@ pub enum WorthQueryManagedIndexStop {
     ForeignCoverage,
     IncompleteCoverage,
     MembershipUnavailable,
+    RefinementUnavailable,
+    IncompleteRefinement,
     IncompleteTraversal,
     SummaryUnavailable,
     SummaryMismatch,

@@ -57,6 +57,10 @@ impl WorthQueryInstalledManagedIndexAccessContract {
             maximum_source_results: source.limits().maximum_results().get(),
             predicate_profile: super::matching::compile(recipe, source, parent),
         });
+        if meaning.match_posture() == worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture::Refined
+            && meaning.predicate_profile.is_err() {
+            return Err(super::denied(super::Kind::ManagedIndexParentUnsupported, &recipe.meaning().parts().name));
+        }
         let obligations = bind_managed_index_obligations(&meaning).map_err(|cause| {
             super::super::denial::graph_obligation_denial(&recipe.meaning().parts().name, cause)
         })?;
@@ -94,6 +98,15 @@ impl WorthQueryInstalledManagedIndexAccessContract {
 }
 
 impl WorthQueryInstalledManagedIndexReadMeaning {
+    pub fn match_posture(
+        &self,
+    ) -> worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture
+    {
+        self.parent_graph
+            .managed_index_selection()
+            .expect("managed access has its compiled selector")
+            .posture()
+    }
     /// The compiled tracked full-Parent profile; still requires a maintained
     /// Source, actual provider association, and fresh read admission at use.
     pub fn predicate_profile(

@@ -9,6 +9,7 @@ mod encoding_budget;
 mod foundational_aspect;
 mod foundational_value;
 mod frame;
+mod managed_index_refinement;
 mod native_aspect_contract;
 mod operation_body;
 mod operation_component_read;

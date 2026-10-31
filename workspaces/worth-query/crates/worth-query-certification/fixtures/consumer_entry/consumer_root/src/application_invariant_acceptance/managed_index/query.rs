@@ -72,7 +72,7 @@ pub fn enabled<Q>() -> ApplicationQueryResultFieldRef<
 > {
     ApplicationQueryResultFieldRef::new("enabled", ItemEnabled::reference())
 }
-fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding>>(
+pub(super) fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding>>(
     reference: ApplicationQueryReference<Catalog, Q, Parameters, ItemRow, Directory>,
     lanes: ApplicationQueryLaneEligibility,
 ) -> ApplicationQueryDefinitionBuilder<Catalog, Q, Parameters, ItemRow, Directory> {

@@ -51,12 +51,32 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
         geometry::configure(configuration.geometry, setup)?;
         generated::configure(setup)?;
         geometry::generated::configure(setup)?;
-        setup.managed_index_with_predicate_routing::<prefix::PrefixIndex, _>(prefix::Provider(
-            configuration.prefix,
-        ))?;
+        #[cfg(test)]
+        let omit_refinement = configuration
+            .prefix
+            .omit_refinement
+            .load(std::sync::atomic::Ordering::SeqCst);
+        #[cfg(not(test))]
+        let omit_refinement = false;
+        let registration = setup
+            .managed_index_provider::<prefix::PrefixIndex, _>(prefix::Provider(
+                configuration.prefix,
+            ))
+            .with_predicate_routing();
+        let registration = if omit_refinement {
+            registration
+        } else {
+            registration.with_refinement()
+        };
+        registration.install()?;
         setup.handler::<mutation::Binding, _>(Handler(configuration.decision_read))?;
         setup.handler::<authoring::Binding, _>(authoring::Handler)?;
         setup.handler::<protected::status::Binding, _>(protected::status::Handler)?;
+        setup.invariant(
+            super::refinement::rule::ExactName::reference(),
+            ApplicationInvariantExecutionPoint::CommitBoundary,
+            super::refinement::rule::resolve,
+        )?;
         setup.invariant(
             rule::ReservedName::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
@@ -84,7 +104,13 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 ApplicationSharedRuleRef<Catalog, geometry::rule::ProbeContact>,
                 ApplicationCommitBoundary,
             >,
-            ApplicationRuleLeaf,
+            ApplicationRuleList<
+                ApplicationRuleAt<
+                    ApplicationSharedRuleRef<Catalog, super::refinement::rule::ExactName>,
+                    ApplicationCommitBoundary,
+                >,
+                ApplicationRuleLeaf,
+            >,
         >,
     >;
     const IDENTITY: ApplicationProgramIdentity =
@@ -174,7 +200,8 @@ fn install_configured_with_limits(
     geometry: geometry::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
 ) -> Host {
-    let world = install_root(prefix, Arc::clone(&rules), decision_read, geometry, limits);
+    let world = try_install_root(prefix, Arc::clone(&rules), decision_read, geometry, limits)
+        .expect("the genuine maintained catalog installs before public use");
     authoring::populate(&world, &rules);
     rules.records.lock().unwrap().clear();
     world
@@ -203,17 +230,26 @@ pub(super) fn install_growth(
     )
 }
 
-fn install_root(
+fn try_install_root(
     prefix: Arc<prefix::Calls>,
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
-) -> Host {
+) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
     let declaration = Catalog::declaration().unwrap();
     in_memory_program(
-        ApplicationProgramAuthoring::<Catalog, Program>::begin().with_schema(&declaration).validated_program().unwrap(),
-        declaration, (Configuration { prefix, rules, decision_read, geometry },),
+        ApplicationProgramAuthoring::<Catalog, Program>::begin()
+            .with_schema(&declaration)
+            .validated_program()
+            .unwrap(),
+        declaration,
+        (Configuration {
+            prefix,
+            rules,
+            decision_read,
+            geometry,
+        },),
         ApplicationBuildIdentity::parse("19191919-1919-4919-8919-191919191919").unwrap(),
         limits,
         |_, graph, installed| {
@@ -221,12 +257,30 @@ fn install_root(
                 WorthQueryApplicationPrincipalKey::new("catalog-reader").unwrap(), 1u64,
                 super::super::super::authentication::external_identity(),
                 worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
-            graph.bind_entity(WorthQueryApplicationEntitySeed::new(Directory::reference(),
-                WorthQueryApplicationEntityKey::new("catalog").unwrap())
+            graph.bind_entity(
+                WorthQueryApplicationEntitySeed::new(
+                    Directory::reference(),
+                    WorthQueryApplicationEntityKey::new("catalog").unwrap(),
+                )
                 .field(DirectoryIdentity::reference(), "catalog".to_owned())
-                .field(DirectoryNote::reference(), String::new()))?;
+                .field(DirectoryNote::reference(), String::new()),
+            )?;
             protected::populate(graph)?;
             Ok(())
         },
-    ).expect("the genuine maintained catalog installs before public use")
+    )
+}
+
+#[cfg(test)]
+pub(super) fn try_install_unpopulated(
+    prefix: Arc<prefix::Calls>,
+    rules: Arc<rule::Calls>,
+) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+    try_install_root(
+        prefix,
+        rules,
+        DecisionRead::Declared,
+        geometry::Configuration::default(),
+        super::super::super::resources::application_limits(),
+    )
 }

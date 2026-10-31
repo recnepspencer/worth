@@ -14,6 +14,10 @@ pub(super) fn declare(
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
     let schema = status::declare(access::declare(schema));
     schema
+        .application_query(query::exact::definition())
+        .application_query_binding::<query::exact::Binding>()
+        .application_query(query::exact::blocked_definition())
+        .application_query_binding::<query::exact::BlockedBinding>()
         .application_query(query::definition())
         .application_query_binding::<query::Binding>()
         .application_query_binding::<query::AliasBinding>()

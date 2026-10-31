@@ -65,5 +65,9 @@ impl ApplicationManagedIndexBindingDescriptor {
             && self.probe_binding_type() == selection.probe_binding_type
             && self.meaning().parts().probe == selection.probe
             && self.meaning().parts().name == selection.selection.parts().index
+            && (selection.selection.posture()
+                == super::ApplicationManagedIndexMatchPosture::Candidates
+                || (selection.selection.refinement().is_some()
+                    && self.meaning().refinement() == selection.selection.refinement()))
     }
 }

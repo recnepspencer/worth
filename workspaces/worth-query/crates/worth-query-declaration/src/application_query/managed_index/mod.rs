@@ -6,6 +6,11 @@ pub use invariant_source::ApplicationInvariantManagedIndexSource;
 mod definition;
 mod probe;
 mod reference;
+mod refinement;
+pub use refinement::{
+    ApplicationManagedIndexMatchPosture, ApplicationManagedIndexRefinement,
+    ApplicationManagedIndexRefinementMeaning, WorthQueryPortableManagedIndexRefinementParts,
+};
 mod selection;
 mod selection_recipe;
 pub use selection_recipe::ApplicationManagedIndexSelectionRecipe;

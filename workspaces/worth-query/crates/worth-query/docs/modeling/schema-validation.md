@@ -350,3 +350,28 @@ show both the committed DecisionReader and installed candidate reader audiences.
 - [Historical Basis, Diff, And Comparison Queries](../capabilities/historical-diff-and-basis.md)
 
 
+
+### Explicit row-local exact managed reads
+
+A separately versioned refinement contract extends complete candidate membership.
+The ordinary candidate entrance preserves its meaning. Parent definitions select
+`managed_index_refined`; Native correctness rules select
+`context.refined_managed_index(&prepared)` before committed/proposed queries.
+Both reach the same installed typed adapter over the actual Source/root and
+original read loan. Requested mode participates in borrowed invocation identity.
+
+Query completes and verifies candidate traversal first. A separate controlled
+pass evaluates each candidate Source row once, retaining the original candidate
+cut and all dispositions. Only then is the exact-size accepted subset sealed and
+released. Empty sets still require exact-probe validation; missing executables,
+domain refusal, decode failure or interruption refuse the entire exact result.
+Projected related endpoint rows remain within the declared same-row contract;
+roster/external reads are unsupported. The installed full Source/Parent profile
+and canonical disclosure influence closure cover implicit inputs, including
+non-Live governed membership. Watch routing uses each retained Parent's actual
+mode and the same domain evaluator on genuine before/after rows.
+
+This Phase3 support retains complete original Source dependencies. The retained
+rows/dispositions are no field-access trace or Phase4 realized footprint. See the
+[application guide](../../../../../../docs/build-an-application.md#construct-committed-provider-indexes)
+for ordinary Decl/Host setup, explicit access and the qualified fixture limits.

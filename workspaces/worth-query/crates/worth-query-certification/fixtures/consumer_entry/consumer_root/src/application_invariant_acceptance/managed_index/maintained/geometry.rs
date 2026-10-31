@@ -5,6 +5,7 @@ mod court;
 pub(super) mod generated;
 pub(super) mod provider;
 pub(super) mod query;
+pub(super) mod refinement;
 pub(super) mod refresh;
 pub(super) mod rule;
 mod schema;
@@ -42,6 +43,8 @@ pub(super) fn declare(
         schema::declare(schema)
             .application_query(query::source_definition())
             .application_query_binding::<query::SourceBinding>()
+            .application_query(refinement::definition())
+            .application_query_binding::<refinement::Binding>()
             .application_query(query::box_definition())
             .application_query_binding::<query::BoxBinding>()
             .managed_index(ApplicationManagedIndexDefinition::<
@@ -55,9 +58,13 @@ pub(super) fn configure(
     configuration: Configuration,
     setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    setup.managed_index_with_predicate_routing::<provider::BoxIndex, _>(provider::Provider(
-        Arc::clone(&configuration.provider),
-    ))?;
+    setup
+        .managed_index_provider::<provider::BoxIndex, _>(provider::Provider(Arc::clone(
+            &configuration.provider,
+        )))
+        .with_predicate_routing()
+        .with_refinement()
+        .install()?;
     setup.handler::<authoring::Binding, _>(authoring::Handler(configuration.provider))?;
     setup.handler::<refresh::Binding, _>(refresh::Handler)?;
     setup.invariant(
