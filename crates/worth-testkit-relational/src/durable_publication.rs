@@ -135,3 +135,5 @@ mod recovery;
 pub use checkpoint::{capture, original, original_with_retained_successor, Original};
 pub use recorded_assertions::assert_recorded_basis;
 pub use recovery::source_journey;
+
+pub mod initial_schema;

@@ -1,5 +1,6 @@
 //! Public Native durability workflows, independent of source-unit privacy.
 mod associated_effects;
+mod initial_schema_recovery;
 mod recorded_basis;
 mod recorded_component_checkpoint;
 mod recorded_component_recovery;

@@ -73,7 +73,6 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         native_bytes_read: usize,
     ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
     {
-        let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
         let native_envelopes_readmitted = checkpoint.envelopes.len();
         let plan = crate::durability::access::native_checkpoint_recovery_plan(
             self.runtime,
@@ -85,8 +84,6 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
             work.native_bytes_read = Some(native_bytes_read);
             work.native_envelopes_readmitted = Some(native_envelopes_readmitted);
         }
-        self.runtime
-            .restore_initial_schema_authority_after_recovery(initial_schema_authority);
         Ok((outcome, recovered))
     }
 
@@ -109,8 +106,14 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
     {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let admitted = admit_recovery_or_emit(self.runtime, plan)?;
+        let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
         let mut material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        // Source replay reconstructs durable data, not the installed executors.
+        // Preserve this owner's actual sealed inventory before runtime cutover.
+        material
+            .restored
+            .restore_initial_schema_authority_after_recovery(initial_schema_authority);
         declared_schema::require_declared_schema_of_recovered_main(&material.restored)?;
         move_durable_medium(self.runtime, &mut material.restored)?;
         let (outcome, recovered_roots) = publish_recovered_runtime(self.runtime, material);
