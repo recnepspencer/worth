@@ -15,6 +15,7 @@ use crate::transactions::data::{MergedCommitPlan, PublishedMergeExecutionAuthori
 
 #[derive(Deserialize)]
 pub(crate) struct CanonicalEnvelopeWire<'a> {
+    semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
     caller_association: Option<super::super::RelationalCallerAssociation>,
     required_output_codec_retirements:
         Vec<std::sync::Arc<super::CanonicalRequiredOutputCodecRetirement>>,
@@ -88,7 +89,7 @@ impl CanonicalEnvelopeWire<'_> {
             );
         }
         let symbol_texts = self.symbol_texts.readmit(execution)?;
-        let envelope = super::CanonicalCommitEnvelope {
+        let body = super::CanonicalCommitEnvelopeBody {
             caller_association: self.caller_association,
             required_output_codec_retirements: self.required_output_codec_retirements,
             required_output_origin: self.required_output_origin,
@@ -117,6 +118,10 @@ impl CanonicalEnvelopeWire<'_> {
             schema_continuation_descriptor: self.schema_continuation_descriptor,
             schema_reconciliation_descriptor: self.schema_reconciliation_descriptor,
             descriptor_semantics_version: self.descriptor_semantics_version,
+        };
+        let envelope = super::CanonicalCommitEnvelope {
+            body,
+            semantic_result: self.semantic_result,
         };
         if !envelope.codec_retirement_headers_valid() {
             return Err(

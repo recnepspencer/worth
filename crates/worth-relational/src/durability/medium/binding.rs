@@ -130,6 +130,7 @@ impl RelationalDurableMediumBinding {
         let artifact = RelationalCanonicalCommitArtifact::from_positioned(&commit, policy)
             .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
         let entry = crate::history::RelationalCommitIndexEntry {
+            association_discovery: commit.envelope().association_discovery(),
             commit: commit.commit.clone(),
             position: commit.position(),
             root: roots.clone(),

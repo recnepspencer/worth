@@ -11,7 +11,7 @@ use worth_execution::MapKernelContext;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn capture(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     history: &crate::runtime::RelationalPreparationHistory,
     basis: &AdmittedRelationalBranchBasis,
     state: &WorkingState,

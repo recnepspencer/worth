@@ -1,4 +1,14 @@
 //! Transaction vocabulary exposed to Relational consumers.
+pub use crate::transactions::data::{
+    RelationalCommitPublicationMeaning, RelationalCommitSemanticResult,
+    RelationalCommitSemanticResultRefusal, RelationalCommitStructuralMeaning,
+    RelationalCreatedEndpoint, RelationalCreatedEntityCorrespondence, RelationalCreatedEntityKey,
+    RelationalCreatedRelationCorrespondence, RelationalCreatedRelationKey,
+    RelationalInvariantCheckMeaning, RelationalInvariantCustomProvenanceMeaning,
+    RelationalInvariantDecisionMeaning, RelationalInvariantExecutionMeaning,
+    RelationalInvariantMetadataMeaning, RelationalInvariantProofScopeMeaning,
+    RelationalValidationPreparationFailure,
+};
 
 pub use crate::execution::RelationalExecutionDenialCause;
 

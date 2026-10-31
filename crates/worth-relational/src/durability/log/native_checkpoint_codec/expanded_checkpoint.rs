@@ -52,7 +52,9 @@ pub(super) fn expand(
         {
             return Err(corrupt("checkpoint commit index digest mismatch").into());
         }
-        if commit.commit != entry.commit || commit.envelope().schema_version != entry.schema_version
+        if commit.commit != entry.commit
+            || commit.envelope().schema_version != entry.schema_version
+            || commit.envelope().association_discovery() != entry.association_discovery
         {
             return Err(corrupt("checkpoint commit index identity mismatch").into());
         }

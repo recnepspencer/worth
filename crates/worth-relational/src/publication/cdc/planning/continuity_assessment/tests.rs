@@ -100,19 +100,20 @@ fn envelope_with_continuation(
     fingerprint: SchemaBoundaryFingerprint,
     continuation: SchemaContinuationClassification,
 ) -> crate::history::data::PositionedCanonicalCommit {
-    envelope.schema_continuation_descriptor = Some(SchemaContinuationDescriptor::new(
-        fingerprint,
-        SchemaBridgeDescriptor::new(
+    envelope.body_mut_for_test().schema_continuation_descriptor =
+        Some(SchemaContinuationDescriptor::new(
             fingerprint,
-            DescriptorSemanticsVersion::default(),
-            DescriptorCanonicalBasisVersion::default(),
-            continuation,
-            SchemaBridgeabilityClassification::SubscriberVisible,
-            HistoricalInterpretationSensitivity::NotSensitive,
-            vec![SchemaStratum::PublicationContract],
-        ),
-        1,
-    ));
+            SchemaBridgeDescriptor::new(
+                fingerprint,
+                DescriptorSemanticsVersion::default(),
+                DescriptorCanonicalBasisVersion::default(),
+                continuation,
+                SchemaBridgeabilityClassification::SubscriberVisible,
+                HistoricalInterpretationSensitivity::NotSensitive,
+                vec![SchemaStratum::PublicationContract],
+            ),
+            1,
+        ));
     crate::history::data::PositionedCanonicalCommit::for_test(
         position,
         std::sync::Arc::new(envelope),

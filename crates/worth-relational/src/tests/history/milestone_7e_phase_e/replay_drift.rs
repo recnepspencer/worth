@@ -14,6 +14,7 @@ fn replay_rebuild_denies_summary_and_packet_drift() {
         .map(|envelope| envelope.as_ref().clone())
         .expect("canonical envelope");
     envelope
+        .body_mut_for_test()
         .merge_execution_authority
         .as_mut()
         .expect("merge execution authority")
@@ -21,12 +22,14 @@ fn replay_rebuild_denies_summary_and_packet_drift() {
         .execution_digest = "forged-summary-digest".to_string();
 
     assert!(!envelope
+        .body_mut_for_test()
         .merge_execution_authority
         .as_ref()
         .expect("merge execution authority")
         .retains_consistent_proof_packet_authority());
 
     envelope
+        .body_mut_for_test()
         .merge_execution_authority
         .as_mut()
         .expect("merge execution authority")
@@ -41,6 +44,7 @@ fn replay_rebuild_denies_summary_and_packet_drift() {
     )
     .expect("admitted normalized request");
     assert!(!envelope
+        .body_mut_for_test()
         .merge_execution_authority
         .as_ref()
         .expect("merge execution authority")

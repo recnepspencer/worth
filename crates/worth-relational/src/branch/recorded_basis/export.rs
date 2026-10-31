@@ -48,6 +48,7 @@ impl RelationalRuntime {
                 let artifact_digest = match cell.journal_index() {
                     Some(entry) => {
                         if entry.commit != envelope.commit
+                            || entry.association_discovery != envelope.association_discovery()
                             || entry.position != positioned.position()
                             || &entry.root != target.roots()
                         {

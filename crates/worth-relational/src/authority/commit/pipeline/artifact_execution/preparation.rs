@@ -31,7 +31,7 @@ pub(in crate::authority::commit::pipeline) struct PublicationPreparation {
 pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
     artifacts: crate::storage::overlay::PublicationArtifacts,
     changed_records: Vec<RecordRef>,
-    canonical_commit_envelope: crate::history::data::CanonicalCommitEnvelope,
+    canonical_commit_envelope: crate::history::data::CanonicalCommitEnvelopeDraft,
     adjacency_deltas: Vec<crate::authority::mutation::AdjacencyDelta>,
     lineage_nodes: Vec<crate::lineage::data::LineageNode>,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
@@ -215,7 +215,7 @@ struct PublicationAuthorityInput<'a> {
 
 struct PreparedPublicationAuthority {
     artifacts: crate::storage::overlay::PublicationArtifacts,
-    canonical_commit_envelope: crate::history::data::CanonicalCommitEnvelope,
+    canonical_commit_envelope: crate::history::data::CanonicalCommitEnvelopeDraft,
     lineage_event_count: usize,
     lineage_nodes: Vec<crate::lineage::data::LineageNode>,
 }
@@ -377,7 +377,7 @@ impl PublicationFinalizeArtifacts {
     ) -> (
         crate::storage::overlay::PublicationArtifacts,
         Vec<RecordRef>,
-        crate::history::data::CanonicalCommitEnvelope,
+        crate::history::data::CanonicalCommitEnvelopeDraft,
         Vec<crate::authority::mutation::AdjacencyDelta>,
         Vec<crate::lineage::data::LineageNode>,
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,

@@ -63,7 +63,7 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
 }
 
 fn envelope_input() -> CanonicalCommitEnvelope {
-    CanonicalCommitEnvelope::new(
+    let draft = crate::history::data::CanonicalCommitEnvelopeDraft::new(
         RelationalCommitReceipt {
             commit_id: CommitId(1),
             version_id: VersionId(1),
@@ -105,5 +105,19 @@ fn envelope_input() -> CanonicalCommitEnvelope {
         None,
         None,
         DescriptorSemanticsVersion(1),
-    )
+    );
+    // Pure predicate/inspection input: keep an actual original semantic image,
+    // then edit only this test body. No publication or readmission is claimed.
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = crate::tests::support::runtime_with_test_schema();
+    let produced = crate::tests::support::create_entity_outcome(
+        execution,
+        &runtime,
+        "predicate-semantic-source",
+    );
+    let mut envelope = produced.envelope().clone();
+    *envelope.body_mut_for_test() = (*draft).clone();
+    crate::tests::support::release_test_commit_snapshot(&runtime, &produced);
+    envelope
 }

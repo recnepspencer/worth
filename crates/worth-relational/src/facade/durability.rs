@@ -32,7 +32,9 @@ pub use crate::durability::{
     RecoveredCheckpointTransitionError, RecoveredRelationalBranchBasis,
     RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
 };
+pub use crate::history::data::RelationalAssociationDiscovery;
 pub use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
+pub use crate::transactions::data::RecoveredRelationalSemanticResult;
 
 pub use crate::durability::data::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,

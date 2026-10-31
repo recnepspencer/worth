@@ -312,6 +312,7 @@ impl RelationalCommitEnvelopeResidency {
                 _ => failure(Cause::Damaged).into(),
             })?.into_positioned();
         if admitted.commit != entry.commit
+            || admitted.envelope().association_discovery() != entry.association_discovery
             || admitted.schema_version != entry.schema_version
             || entry.root.schema_root()
                 != &crate::schema::data::schema_authority_snapshot_digest_bytes(

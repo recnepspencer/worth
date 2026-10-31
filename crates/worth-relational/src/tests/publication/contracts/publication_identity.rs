@@ -20,7 +20,7 @@ fn publication_rejects_envelope_identity_drift_before_any_effect() {
     let before_catalog = runtime.history.catalog_len();
 
     let mut mismatched_commit = envelope.as_ref().clone();
-    mismatched_commit.commit.commit_id.0 += 100;
+    mismatched_commit.body_mut_for_test().commit.commit_id.0 += 100;
     let error = runtime
         .mvcc_publication_authority()
         .validate_versioned_publication(receipt.commit_id, &receipt, &binding, &mismatched_commit)
@@ -30,7 +30,7 @@ fn publication_rejects_envelope_identity_drift_before_any_effect() {
     assert_eq!(runtime.history.catalog_len(), before_catalog);
 
     let mut mismatched_branch = envelope.as_ref().clone();
-    mismatched_branch.branch_context = BranchId("other".to_owned());
+    mismatched_branch.body_mut_for_test().branch_context = BranchId("other".to_owned());
     let error = runtime
         .mvcc_publication_authority()
         .validate_versioned_publication(receipt.commit_id, &receipt, &binding, &mismatched_branch)
@@ -103,7 +103,7 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
     let commit_id = runtime.history.preview_next_commit_id();
     let version_id = runtime.history.preview_next_version_id();
     let mut future_envelope = committed.publication().envelope.as_ref().clone();
-    future_envelope.commit = crate::history::data::RelationalCommitReceipt {
+    future_envelope.body_mut_for_test().commit = crate::history::data::RelationalCommitReceipt {
         commit_id,
         version_id,
         branch_id: BranchId("main".to_owned()),
@@ -159,7 +159,7 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
         .mvcc_publication_authority()
         .prepare_commit(
             commit_id,
-            future_envelope.commit.clone(),
+            future_envelope.body_mut_for_test().commit.clone(),
             &binding,
             &selected_branch_state,
             delta,

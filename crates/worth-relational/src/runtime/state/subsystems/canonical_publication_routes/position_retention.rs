@@ -81,7 +81,7 @@ mod tests {
         assert_eq!(rebound.position(), sealed.position());
         assert!(Arc::ptr_eq(rebound.canonical_arc(), &copy));
         let mut different = copy.as_ref().clone();
-        different.commit.commit_id.0 += 1;
+        different.body_mut_for_test().commit.commit_id.0 += 1;
         assert!(CanonicalPositionAdmission::equivalent(&sealed, Arc::new(different)).is_err());
     }
 }

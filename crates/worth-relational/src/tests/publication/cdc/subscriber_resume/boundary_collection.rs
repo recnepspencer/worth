@@ -21,7 +21,9 @@ fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
     let fingerprint_b = SchemaBoundaryFingerprint::new([2_u8; 32]);
 
     let mut first_envelope = first.envelope().clone();
-    first_envelope.schema_continuation_descriptor = Some(SchemaContinuationDescriptor::new(
+    first_envelope
+        .body_mut_for_test()
+        .schema_continuation_descriptor = Some(SchemaContinuationDescriptor::new(
         fingerprint_a,
         SchemaBridgeDescriptor::new(
             fingerprint_a,
@@ -36,11 +38,17 @@ fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
     ));
 
     let mut second_envelope = second.envelope().clone();
-    second_envelope.schema_continuation_descriptor =
-        first_envelope.schema_continuation_descriptor.clone();
+    second_envelope
+        .body_mut_for_test()
+        .schema_continuation_descriptor = first_envelope
+        .body_mut_for_test()
+        .schema_continuation_descriptor
+        .clone();
 
     let mut third_envelope = third.envelope().clone();
-    third_envelope.schema_continuation_descriptor = Some(SchemaContinuationDescriptor::new(
+    third_envelope
+        .body_mut_for_test()
+        .schema_continuation_descriptor = Some(SchemaContinuationDescriptor::new(
         fingerprint_b,
         SchemaBridgeDescriptor::new(
             fingerprint_b,

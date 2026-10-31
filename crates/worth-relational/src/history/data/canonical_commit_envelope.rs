@@ -47,8 +47,58 @@ pub(crate) use required_output_origin::{
     CanonicalRequiredOutputRelation,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+mod draft;
+mod wire_projection;
+pub(crate) use draft::CanonicalCommitEnvelopeDraft;
+
+/// A complete immutable envelope. Its semantic image exists before it can be
+/// serialized, shared or registered for publication.
+///
+/// ```compile_fail,E0594
+/// use worth_relational::facade::replay::CanonicalCommitEnvelope;
+/// fn cannot_replace_receipt(envelope: &mut CanonicalCommitEnvelope) {
+///     envelope.commit.version_id.0 += 1;
+/// }
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CanonicalCommitEnvelope {
+    #[serde(flatten)]
+    body: CanonicalCommitEnvelopeBody,
+    semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
+}
+
+impl std::ops::Deref for CanonicalCommitEnvelope {
+    type Target = CanonicalCommitEnvelopeBody;
+    fn deref(&self) -> &Self::Target {
+        &self.body
+    }
+}
+
+impl Serialize for CanonicalCommitEnvelope {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        wire_projection::serialize(self, serializer, wire_projection::EnvelopeProjection::Full)
+    }
+}
+
+impl CanonicalCommitEnvelope {
+    pub fn semantic_result(&self) -> &crate::transactions::data::RelationalCommitSemanticResult {
+        &self.semantic_result
+    }
+
+    pub(crate) fn semantic_result_arc(
+        &self,
+    ) -> std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult> {
+        self.semantic_result.clone()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn body_mut_for_test(&mut self) -> &mut CanonicalCommitEnvelopeBody {
+        &mut self.body
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct CanonicalCommitEnvelopeBody {
     pub(crate) caller_association: Option<super::RelationalCallerAssociation>,
     pub(crate) required_output_codec_retirements:
         Vec<std::sync::Arc<CanonicalRequiredOutputCodecRetirement>>,
@@ -109,61 +159,7 @@ pub(crate) struct CommittedRecordChange<'a> {
     pub record: &'a PublishedAuthoritativeRecordPatch,
 }
 
-impl CanonicalCommitEnvelope {
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
-        commit: RelationalCommitReceipt,
-        branch_context: BranchId,
-        authority_kind: CanonicalCommitAuthorityKind,
-        strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
-        merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
-        merge_parent_branches: Vec<BranchId>,
-        merge_base_commits: Vec<CommitId>,
-        schema_version: SchemaVersionId,
-        schema_authority: SchemaAuthoritySnapshot,
-        merged_plan: MergedCommitPlan,
-        patch: CanonicalAuthoritativePatch,
-        descriptive_touches: RelationalDescriptiveTouchGraph,
-        diagnostics_summary: RelationalDiagnosticArtifact,
-        lineage: PublishedLineageArtifact,
-        derived_index_artifacts: DerivedIndexArtifacts,
-        schema_transition: Option<SchemaTransitionArtifact>,
-        schema_continuation_descriptor: Option<SchemaContinuationDescriptor>,
-        schema_reconciliation_descriptor: Option<SchemaReconciliationDescriptor>,
-        descriptor_semantics_version: DescriptorSemanticsVersion,
-    ) -> Self {
-        Self {
-            caller_association: None,
-            authored_index_writes: CanonicalAuthoredIndexWrites::default(),
-            required_output_codec_retirements: Vec::new(),
-            required_output_origin: None,
-            required_output_materialization: None,
-            commit,
-            branch_context,
-            branch_cell_checkpoint: None,
-            authority_kind,
-            strategy_artifacts,
-            merge_execution_authority,
-            merge_parent_branches,
-            merge_base_commits,
-            schema_version,
-            schema_authority,
-            merged_plan,
-            record_allocations: Vec::new(),
-            symbol_texts: Default::default(),
-            revision_symbol_references: Vec::new(),
-            patch,
-            descriptive_touches,
-            diagnostics_summary,
-            lineage,
-            derived_index_artifacts,
-            schema_transition,
-            schema_continuation_descriptor,
-            schema_reconciliation_descriptor,
-            descriptor_semantics_version,
-        }
-    }
-
+impl CanonicalCommitEnvelopeBody {
     pub fn lineage_event_ids(&self) -> &[u64] {
         self.lineage.lineage_event_ids()
     }

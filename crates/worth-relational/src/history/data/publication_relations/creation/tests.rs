@@ -194,7 +194,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     forged_origin.relations.push(claim);
     forged_origin.relations.sort_unstable_by_key(|row| row.id);
     let mut forged = birth_envelope.as_ref().clone();
-    forged.required_output_origin = Some(Arc::new(forged_origin));
+    forged.body_mut_for_test().required_output_origin = Some(Arc::new(forged_origin));
     let denied = run(
         execution,
         &edition,
@@ -212,6 +212,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
 
     let mut contradictory_endpoints = birth_envelope.as_ref().clone();
     contradictory_endpoints
+        .body_mut_for_test()
         .patch
         .authoritative_record_patches
         .iter_mut()
@@ -236,6 +237,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     );
     let mut missing = birth_envelope.as_ref().clone();
     let patch = missing
+        .body_mut_for_test()
         .patch
         .authoritative_record_patches
         .iter_mut()
@@ -277,6 +279,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     );
     let mut contradictory = missing.clone();
     contradictory
+        .body_mut_for_test()
         .patch
         .authoritative_record_patches
         .iter_mut()
@@ -300,6 +303,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         "a contradictory native structural kind cannot support custody"
     );
     missing
+        .body_mut_for_test()
         .patch
         .authoritative_record_patches
         .iter_mut()

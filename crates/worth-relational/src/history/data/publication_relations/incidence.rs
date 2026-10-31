@@ -1,6 +1,7 @@
 //! Reached incidence distinguishes ownership from independently committed references.
 use super::{
-    charge, creation, endpoints, CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin, Stop,
+    charge, creation, endpoints, CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody,
+    CanonicalRequiredOutputOrigin, Stop,
 };
 use crate::branch::RelationalBranchRoot;
 use crate::identity::data::VersionId;
@@ -15,7 +16,7 @@ pub(super) fn validate(
     state: &dyn CurrentPartitionAccess,
     root: &RelationalBranchRoot,
     origin: &CanonicalRequiredOutputOrigin,
-    current: Option<&CanonicalCommitEnvelope>,
+    current: Option<&CanonicalCommitEnvelopeBody>,
     lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,

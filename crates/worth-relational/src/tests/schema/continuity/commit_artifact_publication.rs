@@ -119,9 +119,15 @@ fn explicit_schema_transition_is_lowered_into_canonical_commit_artifacts() {
         .allocation_inventory()
         .authoritative_nested_bytes;
     let mut omitted_schema_authority = outcome.envelope().clone();
-    omitted_schema_authority.schema_transition = None;
-    omitted_schema_authority.schema_continuation_descriptor = None;
-    omitted_schema_authority.schema_reconciliation_descriptor = None;
+    omitted_schema_authority
+        .body_mut_for_test()
+        .schema_transition = None;
+    omitted_schema_authority
+        .body_mut_for_test()
+        .schema_continuation_descriptor = None;
+    omitted_schema_authority
+        .body_mut_for_test()
+        .schema_reconciliation_descriptor = None;
     assert!(
         populated_nested_bytes
             > omitted_schema_authority

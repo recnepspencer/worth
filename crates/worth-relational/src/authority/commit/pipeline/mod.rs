@@ -16,6 +16,7 @@ mod publication_execution;
 mod rejection;
 mod request_resources;
 mod result_assembly;
+mod semantic_result;
 mod snapshot_validation;
 
 pub(crate) use authority_context::AuthoritativeCommitContext;

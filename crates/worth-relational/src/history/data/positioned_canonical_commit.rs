@@ -51,8 +51,8 @@ impl PositionedCanonicalCommit {
     }
 
     #[cfg(test)]
-    pub(crate) fn envelope_mut_for_test(&mut self) -> &mut CanonicalCommitEnvelope {
-        Arc::make_mut(&mut self.canonical)
+    pub(crate) fn envelope_mut_for_test(&mut self) -> &mut super::CanonicalCommitEnvelopeBody {
+        Arc::make_mut(&mut self.canonical).body_mut_for_test()
     }
 }
 

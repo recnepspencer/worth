@@ -279,9 +279,11 @@ fn corrupt_replay_keeps_its_durability_failure() {
     let plan = plan_from_bytes(&source, &bytes);
     let mut envelope = plan.tail_log[0].envelope().clone();
     // A merge without its required execution authority is corrupt evidence.
+    let branch_context = envelope.branch_context.clone();
     envelope
+        .body_mut_for_test()
         .merge_parent_branches
-        .push(envelope.branch_context.clone());
+        .push(branch_context);
     let mut target = runtime_with_test_schema();
     let host = crate::test_execution_policy::serial_request();
     let error = super::effect::replay_merge_commit(

@@ -64,7 +64,7 @@ impl<'runtime> HistoryAuthority<'runtime> {
             return false;
         };
         let mut replacement = envelope.as_ref().clone();
-        mutate(&mut replacement.patch);
+        mutate(&mut replacement.body_mut_for_test().patch);
         let payload = std::sync::Arc::from(replacement.encode_authoritative_payload().unwrap());
         self.runtime.history.with_ledger_mut(|ledger| {
             ledger.commit_envelopes.insert(
@@ -82,7 +82,7 @@ impl<'runtime> HistoryAuthority<'runtime> {
     pub(crate) fn tamper_commit_envelope_for_test(
         &self,
         commit_id: crate::history::data::CommitId,
-        mutate: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelope),
+        mutate: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
     ) -> bool {
         let Some(envelope) = self.runtime.history.recorded_commit_envelope(commit_id) else {
             return false;
@@ -96,10 +96,10 @@ impl<'runtime> HistoryAuthority<'runtime> {
                 .into_iter()
                 .filter(|generation| generation.source_commit_id == commit_id)
                 .collect::<Vec<_>>();
-            replacement.derived_index_artifacts =
+            replacement.body_mut_for_test().derived_index_artifacts =
                 crate::indexes::data::DerivedIndexArtifacts::new(generations);
         }
-        mutate(&mut replacement);
+        mutate(replacement.body_mut_for_test());
         let payload = std::sync::Arc::from(replacement.encode_authoritative_payload().unwrap());
         self.runtime.history.with_ledger_mut(|ledger| {
             ledger.commit_envelopes.insert(

@@ -183,6 +183,7 @@ impl RelationalCommitArtifact {
     ) -> Result<Self, RelationalCommitArtifactDenial> {
         if let Some(commit) = &admitted
             && (commit.position() != entry.position || commit.commit != entry.commit
+                || commit.envelope().association_discovery() != entry.association_discovery
                 || commit.schema_version != entry.schema_version
                 || entry.root.schema_root() != &crate::schema::data::schema_authority_snapshot_digest_bytes(&commit.schema_authority)
                 || crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::positioned_payload_digest(commit)

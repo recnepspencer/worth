@@ -2,7 +2,7 @@
 use super::*;
 
 pub(super) fn validate<'a>(
-    candidate: &CanonicalCommitEnvelope,
+    candidate: &CanonicalCommitEnvelopeBody,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     basis: &AdmittedRelationalBranchBasis,
     predecessor: &'a crate::mvcc::RelationalRequiredOutputPublication,

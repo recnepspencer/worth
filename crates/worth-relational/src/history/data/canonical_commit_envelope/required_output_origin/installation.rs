@@ -8,7 +8,7 @@ mod predecessor;
 mod retained_origin;
 use retained_origin::compare_retained_origin;
 
-impl CanonicalCommitEnvelope {
+impl CanonicalCommitEnvelopeBody {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn install_required_output_origin(
         &mut self,
@@ -341,7 +341,7 @@ fn relation_context(
     stop: crate::history::data::CodecRetirementClosureStop,
     stage: &str,
     basis: &AdmittedRelationalBranchBasis,
-    candidate: &CanonicalCommitEnvelope,
+    candidate: &CanonicalCommitEnvelopeBody,
 ) -> TransactionCommitError {
     match stop {
         crate::history::data::CodecRetirementClosureStop::Request(cause) => origin_request(cause),

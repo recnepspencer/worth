@@ -286,7 +286,7 @@ fn cold_boundary_rosters_refuse_missing_owned_edge_and_foreign_sibling_claim() {
 fn edit_publication(
     checkpoint: &mut crate::durability::data::DurableCheckpoint,
     commit: crate::history::data::CommitId,
-    edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelope),
+    edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
 ) {
     let entry = checkpoint
         .envelopes

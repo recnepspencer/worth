@@ -3,7 +3,7 @@ mod empty_binding;
 pub(super) use empty_binding::EmptyBindingSummary;
 
 use super::{Operation, Value};
-use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::schema::data::LoweredAspectContractPlan;
 use worth_foundational::facade::{
@@ -254,7 +254,7 @@ impl UnsupportedPayload {
     pub(in super::super) fn entity_detail(
         self,
         header: &'static str,
-        envelope: &CanonicalCommitEnvelope,
+        envelope: &CanonicalCommitEnvelopeBody,
         id: EntityId,
         plan: &LoweredAspectContractPlan,
         member_ordinal: Option<usize>,
@@ -272,7 +272,7 @@ impl UnsupportedPayload {
 
     pub(in super::super) fn relation_detail(
         self,
-        envelope: &CanonicalCommitEnvelope,
+        envelope: &CanonicalCommitEnvelopeBody,
         id: RelationId,
         kind: KindId,
     ) -> String {

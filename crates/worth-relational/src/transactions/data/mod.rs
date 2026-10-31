@@ -6,6 +6,17 @@ mod commit_log;
 mod intents;
 mod mutation_planning;
 mod outcomes;
+pub use outcomes::{
+    RecoveredRelationalSemanticResult, RelationalCommitPublicationMeaning,
+    RelationalCommitSemanticResult, RelationalCommitSemanticResultRefusal,
+    RelationalCommitStructuralMeaning, RelationalCreatedEndpoint,
+    RelationalCreatedEntityCorrespondence, RelationalCreatedEntityKey,
+    RelationalCreatedRelationCorrespondence, RelationalCreatedRelationKey,
+    RelationalInvariantCheckMeaning, RelationalInvariantCustomProvenanceMeaning,
+    RelationalInvariantDecisionMeaning, RelationalInvariantExecutionMeaning,
+    RelationalInvariantMetadataMeaning, RelationalInvariantProofScopeMeaning,
+    RelationalValidationPreparationFailure,
+};
 mod primitives;
 
 pub(crate) use aspect_field_patch::validate_planned_aspect_field_locator;

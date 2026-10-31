@@ -15,3 +15,5 @@ pub(crate) use continuity::{
     lower_schema_transition, validate_schema_continuity_bundle, validate_schema_transition,
     SchemaContinuityBundleIssue, ValidatedSchemaContinuityBundle,
 };
+
+pub(crate) use continuity::validate_schema_continuity_body;

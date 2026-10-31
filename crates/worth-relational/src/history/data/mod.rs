@@ -1,4 +1,6 @@
 mod aspect_history;
+mod association_discovery;
+pub use association_discovery::RelationalAssociationDiscovery;
 mod replay_retention_denial;
 pub use replay_retention_denial::RelationalReplayRetentionDenial;
 mod branch_creation;
@@ -39,7 +41,6 @@ pub use aspect_history::{
     LineageAspectHistory, LineageAspectHistoryQueryResult, LineageAspectResolutionDigest,
 };
 pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
-pub(crate) use canonical_commit_envelope::CanonicalOutputPublication;
 pub(crate) use canonical_commit_envelope::{
     AuthoritativeArtifactEnvelopeRef, CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites,
     CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
@@ -53,6 +54,9 @@ pub use canonical_commit_envelope::{
     CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouch,
     RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision, RelationalReplayRecord,
     RelationalTouchAdjacencyDirection, ReplaySchemaVersion,
+};
+pub(crate) use canonical_commit_envelope::{
+    CanonicalCommitEnvelopeBody, CanonicalCommitEnvelopeDraft, CanonicalOutputPublication,
 };
 pub use canonical_record_allocation::RecordAllocationClass;
 pub(crate) use canonical_record_allocation::{CanonicalRecordAllocation, RecordAllocationOrigin};

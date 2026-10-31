@@ -81,15 +81,15 @@ fn frame_defects_refuse_before_decoding_each_with_its_own_refusal() {
         Refusal::Frame(FrameRefusal::UnrecognizedMagic)
     ));
 
-    let mut future_version = frame.bytes.clone();
-    future_version[VERSION].copy_from_slice(&2_u16.to_le_bytes());
-    assert!(matches!(
-        refusal(&future_version, execution),
-        Refusal::Frame(FrameRefusal::UnsupportedVersion {
-            found: 2,
-            supported: 1
-        })
-    ));
+    for old_version in [1_u16, 2] {
+        let mut old = frame.bytes.clone();
+        old[VERSION].copy_from_slice(&old_version.to_le_bytes());
+        assert!(matches!(
+            refusal(&old, execution),
+            Refusal::Frame(FrameRefusal::UnsupportedVersion { found, supported: 3 })
+                if found == old_version
+        ));
+    }
 
     let truncated_payload = &frame.bytes[..frame.bytes.len() - 1];
     assert!(matches!(

@@ -5,6 +5,7 @@ mod branch_root_content_binding;
 mod branch_root_schema_binding;
 mod branch_root_shared_target_binding;
 mod branch_transition;
+mod caller_association;
 mod canonical_artifact_neutrality;
 mod canonical_commit_artifact;
 mod checkpoint_recovery;
@@ -25,6 +26,7 @@ mod record_allocation_recovery;
 mod rejected_and_parent_closure;
 mod retention_inspection_store;
 mod schema_transition_continuity;
+mod semantic_result;
 mod tail_checkpoint_validation;
 
 use crate::diagnostics::data::RelationalDiagnosticValue;

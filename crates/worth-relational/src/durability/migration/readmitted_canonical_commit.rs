@@ -87,7 +87,9 @@ impl ReadmittedCanonicalCommit {
     }
 
     #[cfg(test)]
-    pub(crate) fn envelope_mut_for_test(&mut self) -> &mut CanonicalCommitEnvelope {
+    pub(crate) fn envelope_mut_for_test(
+        &mut self,
+    ) -> &mut crate::history::data::CanonicalCommitEnvelopeBody {
         self.journal = None;
         self.positioned.envelope_mut_for_test()
     }

@@ -190,7 +190,9 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
         .excluded_allocation_inventory()
         .diagnostic_bytes;
     let mut omitted_checkpoint = envelope.clone();
-    omitted_checkpoint.branch_cell_checkpoint = None;
+    omitted_checkpoint
+        .body_mut_for_test()
+        .branch_cell_checkpoint = None;
     assert!(
         envelope.allocation_inventory().authoritative_nested_bytes
             > omitted_checkpoint
@@ -199,25 +201,29 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
         "the populated branch-cell checkpoint owns canonical nested bytes",
     );
     let nested_text = "nested-diagnostic-payload".repeat(256);
-    envelope.diagnostics_summary.entries.push(
-        RelationalDiagnosticsEntry::new(
-            DiagnosticCode::CommitPublished,
-            nested_text.clone(),
-            RelationalDiagnosticFields::from_diagnostic_value(RelationalDiagnosticValue::object([
-                (
-                    "nested",
-                    RelationalDiagnosticValue::array([
-                        RelationalDiagnosticValue::string(nested_text),
-                        RelationalDiagnosticValue::object([(
-                            "leaf",
-                            RelationalDiagnosticValue::CanonicalBytes(vec![7; 2_048]),
-                        )]),
-                    ]),
+    envelope
+        .body_mut_for_test()
+        .diagnostics_summary
+        .entries
+        .push(
+            RelationalDiagnosticsEntry::new(
+                DiagnosticCode::CommitPublished,
+                nested_text.clone(),
+                RelationalDiagnosticFields::from_diagnostic_value(
+                    RelationalDiagnosticValue::object([(
+                        "nested",
+                        RelationalDiagnosticValue::array([
+                            RelationalDiagnosticValue::string(nested_text),
+                            RelationalDiagnosticValue::object([(
+                                "leaf",
+                                RelationalDiagnosticValue::CanonicalBytes(vec![7; 2_048]),
+                            )]),
+                        ]),
+                    )]),
                 ),
-            ])),
-        )
-        .canonicalized(),
-    );
+            )
+            .canonicalized(),
+        );
     let artifact = RelationalCommitArtifact::from_envelope(Arc::new(envelope))
         .expect("the owner seals the canonical payload allocation");
 
@@ -272,7 +278,7 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
         .map(|envelope| envelope.as_ref().clone())
         .expect("the performed commit owns one canonical envelope")
         .clone();
-    envelope.derived_index_artifacts = DerivedIndexArtifacts::default();
+    envelope.body_mut_for_test().derived_index_artifacts = DerivedIndexArtifacts::default();
     let baseline = RelationalCommitArtifact::from_envelope(Arc::new(envelope.clone()))
         .expect("baseline canonical authority payload encodes");
     let baseline_allocations = baseline.authoritative_allocation_observations();
@@ -281,19 +287,20 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
         .excluded_allocation_inventory()
         .optional_cache_bytes;
 
-    envelope.derived_index_artifacts = DerivedIndexArtifacts::new(vec![DerivedIndexGeneration {
-        generation_id: DerivedIndexGenerationId(9_001),
-        index_id: DerivedIndexId(7_001),
-        source_commit_id: committed.commit.commit_id,
-        source_branch_id: committed.commit.branch_id.clone(),
-        applicability: DerivedIndexApplicability {
-            branch_id: committed.commit.branch_id.clone(),
-            version_id: committed.commit.version_id,
-            schema_version: envelope.schema_version,
-        },
-        status: DerivedIndexPublicationStatus::Published,
-        entries: DerivedIndexEntries::EntityField(Default::default()),
-    }]);
+    envelope.body_mut_for_test().derived_index_artifacts =
+        DerivedIndexArtifacts::new(vec![DerivedIndexGeneration {
+            generation_id: DerivedIndexGenerationId(9_001),
+            index_id: DerivedIndexId(7_001),
+            source_commit_id: committed.commit.commit_id,
+            source_branch_id: committed.commit.branch_id.clone(),
+            applicability: DerivedIndexApplicability {
+                branch_id: committed.commit.branch_id.clone(),
+                version_id: committed.commit.version_id,
+                schema_version: envelope.schema_version,
+            },
+            status: DerivedIndexPublicationStatus::Published,
+            entries: DerivedIndexEntries::EntityField(Default::default()),
+        }]);
     let perturbed = RelationalCommitArtifact::from_envelope(Arc::new(envelope))
         .expect("derived artifacts remain outside canonical authority encoding");
 

@@ -101,6 +101,8 @@ pub(super) fn prepare_commit_publication_execution(
             execution,
             runtime,
             PreparePublicationPhaseInput {
+                structural: &public_structural_summary,
+                validation: &invariant_executions,
                 caller_association,
                 recovered_codec_publication_custody,
                 required_output_publication,

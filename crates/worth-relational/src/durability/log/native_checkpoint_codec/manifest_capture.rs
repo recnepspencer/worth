@@ -67,6 +67,7 @@ impl CapturedManifest {
                 .ok_or_else(|| corrupt("checkpoint commit lacks its catalog descriptor"))?;
             if let Some(existing) = commits.get(&positioned.position()) {
                 if existing.commit != envelope.commit
+                    || existing.association_discovery != envelope.association_discovery()
                     || &existing.root != root
                     || existing.schema_version != envelope.schema_version
                 {
@@ -83,6 +84,7 @@ impl CapturedManifest {
                 commits.insert(
                     positioned.position(),
                     crate::history::RelationalCommitIndexEntry {
+                        association_discovery: envelope.association_discovery(),
                         commit: envelope.commit.clone(),
                         position: positioned.position(),
                         root: root.clone(),

@@ -1,11 +1,8 @@
-use crate::history::data::CanonicalCommitEnvelope;
 use crate::schema::data::{
     DescriptorSemanticsVersion, LoweredSchemaTransitionPlan, SchemaContinuationDescriptor,
     SchemaReconciliationDescriptor, SchemaTransitionArtifact,
 };
-use crate::schema::{
-    lower_schema_transition, validate_schema_continuity_bundle, validate_schema_transition,
-};
+use crate::schema::{lower_schema_transition, validate_schema_transition};
 use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
 #[path = "schema_continuity_diagnostics/mod.rs"]
 mod diagnostics;
@@ -366,9 +363,9 @@ pub(crate) fn validate_schema_continuity_publication(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     branch_id: &crate::history::data::BranchId,
     _plan: &SchemaContinuityPlan,
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &crate::history::data::CanonicalCommitEnvelopeBody,
 ) -> Result<(), TransactionCommitError> {
-    let validated_bundle = validate_schema_continuity_bundle(envelope).map_err(|issue| {
+    crate::schema::validate_schema_continuity_body(envelope).map_err(|issue| {
         schema_continuity_conflict_from_issue(
             runtime,
             branch_id,
@@ -377,12 +374,6 @@ pub(crate) fn validate_schema_continuity_publication(
             envelope,
         )
     })?;
-    let _ = (
-        validated_bundle.envelope(),
-        validated_bundle.transition(),
-        validated_bundle.continuation(),
-        validated_bundle.reconciliation(),
-    );
 
     Ok(())
 }

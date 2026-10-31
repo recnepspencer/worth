@@ -61,12 +61,14 @@ fn envelope_index_affinity_requires_admission_before_installation() {
     let id = build(execution, &runtime, index.index_id, &committed);
     let actual = runtime.indexes.generation(id).unwrap();
     let mut envelope = committed.envelope().clone();
-    envelope.derived_index_artifacts = DerivedIndexArtifacts::new(vec![actual.as_ref().clone()]);
+    envelope.body_mut_for_test().derived_index_artifacts =
+        DerivedIndexArtifacts::new(vec![actual.as_ref().clone()]);
     crate::durability::derived_index_artifacts::admit_envelope_derived_index_artifacts(&envelope)
         .unwrap();
     let mut malformed = actual.as_ref().clone();
     malformed.applicability.branch_id = BranchId("foreign-envelope-branch".into());
-    envelope.derived_index_artifacts = DerivedIndexArtifacts::new(vec![malformed]);
+    envelope.body_mut_for_test().derived_index_artifacts =
+        DerivedIndexArtifacts::new(vec![malformed]);
     let error = crate::durability::derived_index_artifacts::admit_envelope_derived_index_artifacts(
         &envelope,
     )

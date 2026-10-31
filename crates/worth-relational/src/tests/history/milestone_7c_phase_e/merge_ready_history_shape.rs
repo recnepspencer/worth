@@ -18,6 +18,7 @@ fn execute_prepared_merge_produces_merge_ready_history_shape() {
         .expect("canonical merge envelope");
     let merge_authority = envelope
         .merge_execution_authority
+        .as_ref()
         .expect("published merge execution authority");
 
     assert_eq!(

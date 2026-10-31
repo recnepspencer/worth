@@ -98,7 +98,7 @@ fn index_rebuild_requires_live_verified_canonical_evidence() {
     // optional-field-absent legacy wire without JSON's bounded Value numbers;
     // it is a codec fixture, not newly admitted historical evidence.
     let mut old_shape = decoded;
-    old_shape.authored_index_writes = Default::default();
+    old_shape.body_mut_for_test().authored_index_writes = Default::default();
     let legacy_bytes = rmp_serde::to_vec_named(&old_shape).unwrap();
     let legacy: crate::history::data::CanonicalCommitEnvelope =
         rmp_serde::from_slice(&legacy_bytes).unwrap();

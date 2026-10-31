@@ -38,6 +38,7 @@ pub(super) fn install(
             .into());
         }
         let entry = RelationalCommitIndexEntry {
+            association_discovery: positioned.envelope().association_discovery(),
             commit: positioned.commit.clone(),
             position: positioned.position(),
             root: artifact.roots().clone(),

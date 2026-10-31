@@ -20,7 +20,11 @@ fn strategy_artifacts_are_bound_into_the_committed_root() {
         entity,
     );
     let (root, mut envelope) = committed_root_and_envelope(&runtime, outcome.commit.commit_id);
-    assert!(envelope.strategy_artifacts.take().is_some());
+    assert!(envelope
+        .body_mut_for_test()
+        .strategy_artifacts
+        .take()
+        .is_some());
 
     assert_axis_mutation_rejected(&runtime, &root, envelope, "strategy artifacts");
 }
@@ -61,7 +65,11 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
         .expect("governed merge executes");
     let (root, mut envelope) =
         committed_root_and_envelope(&runtime, outcome.commit.commit.commit_id);
-    assert!(envelope.merge_execution_authority.take().is_some());
+    assert!(envelope
+        .body_mut_for_test()
+        .merge_execution_authority
+        .take()
+        .is_some());
 
     assert_axis_mutation_rejected(&runtime, &root, envelope, "merge execution authority");
 }
@@ -101,13 +109,22 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
     let (root, envelope) = committed_root_and_envelope(&runtime, outcome.commit.commit_id);
 
     let mut transition = envelope.clone();
-    assert!(transition.schema_transition.take().is_some());
+    assert!(transition
+        .body_mut_for_test()
+        .schema_transition
+        .take()
+        .is_some());
     assert_axis_mutation_rejected(&runtime, &root, transition, "schema transition");
     let mut continuation = envelope.clone();
-    assert!(continuation.schema_continuation_descriptor.take().is_some());
+    assert!(continuation
+        .body_mut_for_test()
+        .schema_continuation_descriptor
+        .take()
+        .is_some());
     assert_axis_mutation_rejected(&runtime, &root, continuation, "continuation descriptor");
     let mut reconciliation = envelope;
     assert!(reconciliation
+        .body_mut_for_test()
         .schema_reconciliation_descriptor
         .take()
         .is_some());

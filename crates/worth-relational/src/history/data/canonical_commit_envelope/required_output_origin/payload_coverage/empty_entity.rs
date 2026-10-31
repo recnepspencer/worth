@@ -2,13 +2,13 @@
 use super::{
     charge, denial::EmptyBindingSummary, OutputPayloadCoverageFailure, UnsupportedPayload,
 };
-use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::schema::data::LoweredAspectContractPlan;
 use worth_execution::MapKernelContext;
 use worth_foundational::facade::{AbsenceLaw, AspectBinding, AspectShape};
 
 pub(super) fn validate(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     plan: &LoweredAspectContractPlan,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), OutputPayloadCoverageFailure> {

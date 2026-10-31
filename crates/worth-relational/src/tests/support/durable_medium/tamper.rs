@@ -6,7 +6,7 @@ use std::sync::Arc;
 use super::TestDurableMedium;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::RelationalNativeCheckpoint;
-use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
+use crate::history::data::{CanonicalCommitEnvelopeBody, PositionedCanonicalCommit};
 use crate::publication::patch::data::PatchStreamPosition;
 
 /// Offset of the artifact header's commit-id field. The payload digest does
@@ -76,7 +76,7 @@ impl TestDurableMedium {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: crate::history::data::CommitId,
-        edit: impl FnOnce(&mut CanonicalCommitEnvelope),
+        edit: impl FnOnce(&mut CanonicalCommitEnvelopeBody),
     ) {
         let position = self
             .positions()
@@ -97,7 +97,7 @@ impl TestDurableMedium {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         position: PatchStreamPosition,
-        edit: impl FnOnce(&mut CanonicalCommitEnvelope),
+        edit: impl FnOnce(&mut CanonicalCommitEnvelopeBody),
     ) {
         let mut journal = self.journal();
         let readmitted = RelationalCanonicalCommitArtifact::readmit(
@@ -108,7 +108,7 @@ impl TestDurableMedium {
         )
         .expect("the medium's own artifact readmits before it is rewritten");
         let mut envelope = readmitted.envelope().clone();
-        edit(&mut envelope);
+        edit(envelope.body_mut_for_test());
         let rewritten = RelationalCanonicalCommitArtifact::from_positioned(
             &PositionedCanonicalCommit::for_test(position, Arc::new(envelope)),
             execution.allocation_policy(),

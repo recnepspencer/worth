@@ -59,7 +59,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     assert_eq!(origin.dependency_identity, [3; 32]);
     let entity = origin.outputs[0];
     let mut copied = performed.canonical_commit().clone();
-    copied.commit.commit_id.0 += 1;
+    copied.body_mut_for_test().commit.commit_id.0 += 1;
     let copied_refusal = copied.validate_output_membership_header();
     assert!(
         copied_refusal.is_err(),

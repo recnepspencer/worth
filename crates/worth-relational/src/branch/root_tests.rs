@@ -64,7 +64,10 @@ fn relink_rejects_schema_authority_mutation() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (runtime, root, mut envelope) = committed_root_and_envelope(execution);
-    envelope.schema_authority.primary_schema_id = Some(SchemaId("mutated-schema".to_owned()));
+    envelope
+        .body_mut_for_test()
+        .schema_authority
+        .primary_schema_id = Some(SchemaId("mutated-schema".to_owned()));
 
     let denial = root
         .relink_canonical_envelope(
@@ -85,7 +88,11 @@ fn relink_rejects_visibility_tuple_mutation() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (runtime, root, mut envelope) = committed_root_and_envelope(execution);
-    envelope.patch.authoritative_record_patches[0].contains_opaque_aspect ^= true;
+    envelope
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .contains_opaque_aspect ^= true;
 
     let denial = root
         .relink_canonical_envelope(
@@ -107,7 +114,11 @@ fn completeness_recomputes_visibility_commitment() {
 
     let (runtime, root, mut altered_envelope) = committed_root_and_envelope(execution);
     assert!(root.is_complete(&runtime.services.symbols.interner_snapshot()));
-    altered_envelope.patch.authoritative_record_patches[0].contains_opaque_aspect ^= true;
+    altered_envelope
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .contains_opaque_aspect ^= true;
     let mut corrupted = root.as_ref().clone();
     let committed = corrupted
         .committed
@@ -152,62 +163,76 @@ fn visibility_commitment_binds_every_visible_tuple_axis() {
 
     let mut mutants = Vec::new();
     let mut commit = envelope.clone();
-    commit.commit.commit_id = CommitId(commit.commit.commit_id.0 + 1);
+    commit.body_mut_for_test().commit.commit_id =
+        CommitId(commit.body_mut_for_test().commit.commit_id.0 + 1);
     mutants.push(("commit", commit));
     let mut version = envelope.clone();
-    version.commit.version_id.0 += 1;
+    version.body_mut_for_test().commit.version_id.0 += 1;
     mutants.push(("version", version));
     let mut parents = envelope.clone();
-    parents.commit.parents = vec![CommitId(41), CommitId(43)];
+    parents.body_mut_for_test().commit.parents = vec![CommitId(41), CommitId(43)];
     mutants.push(("ordered parents", parents.clone()));
-    parents.commit.parents.reverse();
+    parents.body_mut_for_test().commit.parents.reverse();
     mutants.push(("parent order", parents));
     let mut branch = envelope.clone();
-    branch.branch_context = BranchId("visibility-mutant".to_owned());
+    branch.body_mut_for_test().branch_context = BranchId("visibility-mutant".to_owned());
     mutants.push(("branch", branch));
     let mut receipt_branch = envelope.clone();
-    receipt_branch.commit.branch_id = BranchId("receipt-branch-mutant".to_owned());
+    receipt_branch.body_mut_for_test().commit.branch_id =
+        BranchId("receipt-branch-mutant".to_owned());
     mutants.push(("receipt branch", receipt_branch));
     let mut checkpoint = envelope.clone();
-    checkpoint.branch_cell_checkpoint = None;
+    checkpoint.body_mut_for_test().branch_cell_checkpoint = None;
     mutants.push(("branch checkpoint", checkpoint));
     let mut authority_kind = envelope.clone();
-    authority_kind.authority_kind =
+    authority_kind.body_mut_for_test().authority_kind =
         crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
     mutants.push(("authority kind", authority_kind));
     let mut merge_parents = envelope.clone();
     merge_parents
+        .body_mut_for_test()
         .merge_parent_branches
         .push(BranchId("merge-mutant".to_owned()));
     mutants.push(("merge branches", merge_parents));
     let mut merge_bases = envelope.clone();
-    merge_bases.merge_base_commits.push(CommitId(47));
+    merge_bases
+        .body_mut_for_test()
+        .merge_base_commits
+        .push(CommitId(47));
     mutants.push(("merge bases", merge_bases));
     let mut schema_version = envelope.clone();
-    schema_version.schema_version.0 += 1;
+    schema_version.body_mut_for_test().schema_version.0 += 1;
     mutants.push(("schema version", schema_version));
     let mut schema_authority = envelope.clone();
-    schema_authority.schema_authority.primary_schema_id =
-        Some(SchemaId("visibility-mutant".to_owned()));
+    schema_authority
+        .body_mut_for_test()
+        .schema_authority
+        .primary_schema_id = Some(SchemaId("visibility-mutant".to_owned()));
     mutants.push(("schema authority", schema_authority));
     let mut plan = envelope.clone();
-    plan.merged_plan.transaction_id.0 += 1;
+    plan.body_mut_for_test().merged_plan.transaction_id.0 += 1;
     mutants.push(("merged plan", plan));
     let mut allocations = envelope.clone();
     assert!(!allocations.record_allocations().is_empty());
-    allocations.install_record_allocations(Vec::new());
+    allocations
+        .body_mut_for_test()
+        .install_record_allocations(Vec::new());
     mutants.push(("record allocations", allocations));
     let mut patch = envelope.clone();
-    patch.patch.authoritative_record_patches[0].contains_opaque_aspect ^= true;
+    patch.body_mut_for_test().patch.authoritative_record_patches[0].contains_opaque_aspect ^= true;
     mutants.push(("patch", patch));
     let mut lineage = envelope.clone();
     lineage
+        .body_mut_for_test()
         .published_lineage_mut_for_test()
         .lineage_events_mut()[0]
         .event_id += 1;
     mutants.push(("lineage", lineage));
     let mut descriptor_semantics = envelope.clone();
-    descriptor_semantics.descriptor_semantics_version.0 += 1;
+    descriptor_semantics
+        .body_mut_for_test()
+        .descriptor_semantics_version
+        .0 += 1;
     mutants.push(("descriptor semantics", descriptor_semantics));
 
     for (axis, mutant) in mutants {

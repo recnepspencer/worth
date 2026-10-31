@@ -141,6 +141,33 @@ If you find yourself reaching into crate internals instead of
 [`facade`](./src/facade.rs), you are probably leaving the intended public
 surface.
 
+## Opaque caller association
+
+`facade::mvcc::RelationalCallerAssociation::from_bytes` accepts nonempty opaque
+bytes of at most 4096 bytes. Bind them by consuming a validated proposal with
+`bind_caller_association` before the existing `prepare_validated_proposal` call;
+binding twice refuses and a prepared candidate cannot be rebound. Candidate
+`caller_association()` observes its retained sealed payload; the canonical
+envelope exposes the same immutable bytes. Native preserves the caller's bytes
+without interpreting them or granting completion authority. Canonical artifact
+v3 and native checkpoint CHK15 retain the field through journal and embedded or
+cold checkpoint recovery. Older artifact and checkpoint versions refuse rather
+than acquiring the new grammar implicitly. Association bytes or successful
+artifact decoding alone establish no durable World effect or product movement.
+
+The canonical envelope also requires the original immutable
+`facade::transactions::RelationalCommitSemanticResult`. Native produces it once
+before sealing the envelope and shares that same value with the live result.
+It retains canonical create names and assigned identities, ordered changed
+records, structural/schema/history/change/aspect meaning, actual publication
+counts, and original validation checks and decisions. It has no live snapshot,
+timing, work measurements, publication status, journal position or self-digest.
+Each checkpoint commit index explicitly records `RelationalAssociationDiscovery`
+from the same envelope, so discovery need not demand unrelated cold bodies.
+Missing semantic images or discovery fields refuse. Artifact v1/v2 and
+checkpoint CHK13/CHK14 refuse cleanly. These data fields establish neither
+source-backed recovery nor recovered publication authority on their own.
+
 ## Record a current Native component
 
 `owner_component_services().basis_port().export_recorded_current_component`

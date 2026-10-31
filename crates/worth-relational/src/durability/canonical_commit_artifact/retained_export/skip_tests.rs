@@ -57,6 +57,7 @@ fn seeking_past_an_acknowledged_index_prefix_never_demands_its_journal_bodies() 
                 .find(|owner| owner.identity().commit_id() == artifact.commit_id())
                 .unwrap();
             let entry = crate::history::RelationalCommitIndexEntry {
+                association_discovery: owner.resident_envelope().unwrap().association_discovery(),
                 commit: owner.receipt(),
                 position: artifact.position(),
                 root: owner.roots().clone(),

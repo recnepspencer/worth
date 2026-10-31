@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct RelationalCommitIndexEntry {
+    pub(crate) association_discovery: crate::history::data::RelationalAssociationDiscovery,
     // The receipt carries id, version, parents and branch, without the payload.
     pub(crate) commit: RelationalCommitReceipt,
     pub(crate) position: PatchStreamPosition,

@@ -1,6 +1,7 @@
 //! One native relation association court for retained before, candidate and cold images.
 use super::{
-    CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin, CodecRetirementClosureStop as Stop,
+    CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody, CanonicalRequiredOutputOrigin,
+    CodecRetirementClosureStop as Stop,
 };
 use crate::branch::RelationalBranchRoot;
 use crate::history::data::CommitId;
@@ -21,7 +22,7 @@ pub(super) fn validate(
     root: &RelationalBranchRoot,
     candidate: Option<&WorkingState>,
     origin: &CanonicalRequiredOutputOrigin,
-    current: Option<&CanonicalCommitEnvelope>,
+    current: Option<&CanonicalCommitEnvelopeBody>,
     lookup_commit: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
     lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
     maximum_hops: usize,
@@ -138,7 +139,7 @@ pub(super) fn charge(context: &mut MapKernelContext<'_, '_>, work: usize) -> Res
 }
 
 pub(super) fn writes(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     id: RelationId,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {

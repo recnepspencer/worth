@@ -111,6 +111,8 @@ impl PreparedPublicationPhase {
 }
 
 pub(super) struct PreparePublicationPhaseInput<'a> {
+    pub(super) structural: &'a crate::transactions::data::CommitStructuralSummary,
+    pub(super) validation: &'a [crate::validation::engine::InvariantExecutionResult],
     pub(super) caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
     pub(super) recovered_codec_publication_custody:
         Option<Arc<crate::durability::RecoveredCodecPublicationCustody>>,
@@ -141,6 +143,8 @@ pub(super) fn prepare_publication_phase(
     input: PreparePublicationPhaseInput<'_>,
 ) -> Result<PreparedPublicationPhase, TransactionCommitError> {
     let PreparePublicationPhaseInput {
+        structural,
+        validation,
         caller_association,
         recovered_codec_publication_custody,
         required_output_publication,
@@ -203,6 +207,24 @@ pub(super) fn prepare_publication_phase(
         None
     };
     canonical_commit_envelope.caller_association = caller_association;
+    let semantic_result = super::super::semantic_result::prepare_semantic_result(
+        runtime,
+        super::super::semantic_result::SemanticResultInput {
+            structural,
+            validation,
+            entities: created_entities,
+            relations: created_relations,
+            log: commit_log,
+            changed: &changed_records,
+            envelope: &canonical_commit_envelope,
+        },
+    )?;
+    let canonical_commit_envelope =
+        canonical_commit_envelope
+            .seal(semantic_result)
+            .map_err(|refusal| {
+                crate::mvcc::origin_denial(format!("semantic envelope seal: {refusal:?}"))
+            })?;
     let canonical_commit_envelope = Arc::new(canonical_commit_envelope);
     let clone_mode = working_state.clone_mode();
     let committed_partitions = working_state.into_partition_commits().1;

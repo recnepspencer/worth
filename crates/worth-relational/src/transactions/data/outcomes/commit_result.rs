@@ -1,3 +1,4 @@
+mod seal;
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::performance::data::RuntimeComplexityCounters;
@@ -107,6 +108,7 @@ pub struct CommitExecution {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitResult {
+    semantic_result: Arc<crate::transactions::data::RelationalCommitSemanticResult>,
     outcome: CommitOutcome,
     summary: CommitSummary,
     structural_summary: CommitStructuralSummary,
@@ -158,41 +160,17 @@ impl CommitOutcome {
 }
 
 impl CommitResult {
+    /// The same immutable original semantic value sealed in this publication.
+    pub fn semantic_result(&self) -> &crate::transactions::data::RelationalCommitSemanticResult {
+        &self.semantic_result
+    }
+
     /// Seals one authoritative commit result together with the create-reference
     /// correspondence produced by that same commit execution.
     ///
     /// The commit pipeline is the sole minter of the sealed input. Every result
     /// axis remains private so no caller can detach or replace part of the
     /// authoritative association after construction.
-    pub(crate) fn from_authoritative_commit(
-        seal: crate::authority::commit::CommitResultSeal,
-    ) -> Self {
-        let (
-            outcome,
-            summary,
-            structural_summary,
-            schema_summary,
-            publication,
-            validation,
-            execution,
-            created_entities,
-            created_relations,
-            late_interruption,
-        ) = seal.into_parts();
-        Self {
-            outcome,
-            summary,
-            structural_summary,
-            schema_summary,
-            publication,
-            validation,
-            execution,
-            created_entities,
-            created_relations,
-            late_interruption,
-        }
-    }
-
     pub fn outcome(&self) -> &CommitOutcome {
         &self.outcome
     }

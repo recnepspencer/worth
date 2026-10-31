@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+mod semantic;
 
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::symbols::data::StringInterner;

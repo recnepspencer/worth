@@ -1,4 +1,4 @@
-use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::identity::data::{EntityId, RelationId};
 use crate::publication::patch::data::{
     PublishedAuthoritativePatchOperation as Operation, PublishedAuthoritativePatchValue as Value,
@@ -31,7 +31,7 @@ impl From<&str> for OutputPayloadCoverageFailure {
 /// Every native key/value comparison is admitted before it runs. This proof
 /// walks present aspects against actual operations, then exact present fields.
 pub(super) fn validate_created_output_payload(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     id: EntityId,
     plan: &LoweredAspectContractPlan,
     payload: Option<&AuthoritativeRecordAspectState>,
@@ -57,7 +57,7 @@ pub(super) fn validate_created_output_payload(
 }
 
 pub(super) fn validate_created_relation_payload(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     id: RelationId,
     payload: Option<&AuthoritativeRecordAspectState>,
     context: &mut MapKernelContext<'_, '_>,
@@ -76,7 +76,7 @@ pub(super) fn validate_created_relation_payload(
 }
 
 fn validate_created_payload(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     target: &RecordRef,
     entity_plan: Option<&LoweredAspectContractPlan>,
     payload: Option<&AuthoritativeRecordAspectState>,

@@ -48,7 +48,7 @@ pub(super) fn schema_continuity_conflict_from_issue(
     branch_id: &crate::history::data::BranchId,
     transition: Option<&SchemaTransitionArtifact>,
     issue: SchemaContinuityBundleIssue,
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &crate::history::data::CanonicalCommitEnvelopeBody,
 ) -> TransactionCommitError {
     if descriptor_version_mismatch_issue(&issue) {
         runtime
@@ -144,7 +144,7 @@ fn descriptor_version_mismatch_issue(issue: &SchemaContinuityBundleIssue) -> boo
 fn schema_continuity_conflict_class(
     issue: SchemaContinuityBundleIssue,
     transition: Option<&SchemaTransitionArtifact>,
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &crate::history::data::CanonicalCommitEnvelopeBody,
 ) -> ConflictClass {
     match issue {
         SchemaContinuityBundleIssue::IncompleteBundle

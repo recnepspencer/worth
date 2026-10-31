@@ -1,4 +1,4 @@
-use super::CanonicalCommitEnvelope;
+use super::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
 use crate::transactions::data::MutationIntent;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -9,6 +9,20 @@ pub(crate) struct CanonicalCommitEnvelopeAllocationInventory {
 }
 
 impl CanonicalCommitEnvelope {
+    pub(crate) fn allocation_inventory(&self) -> CanonicalCommitEnvelopeAllocationInventory {
+        let mut inventory = CanonicalCommitEnvelopeBody::allocation_inventory(self);
+        // The same immutable image is shared by the live result and this
+        // canonical artifact. Its retained body uses the existing canonical
+        // nested-field footprint policy exactly once in this owner inventory.
+        inventory.authoritative_nested_bytes = inventory
+            .authoritative_nested_bytes
+            .saturating_add(std::mem::size_of_val(self.semantic_result()) as u64)
+            .saturating_add(canonical_nested_bytes(self.semantic_result()));
+        inventory
+    }
+}
+
+impl CanonicalCommitEnvelopeBody {
     pub(crate) fn allocation_inventory(&self) -> CanonicalCommitEnvelopeAllocationInventory {
         let commit_parents = vector_capacity_bytes(&self.commit.parents);
         let merge_parent_storage = vector_capacity_bytes(&self.merge_parent_branches);
@@ -98,12 +112,14 @@ impl CanonicalCommitEnvelope {
 fn optional_canonical_nested_bytes<T: serde::Serialize>(value: &Option<T>) -> u64 {
     value
         .as_ref()
-        .map(|value| {
-            rmp_serde::to_vec(value)
-                .expect(/* Proof: Production callers reach this private function only through RelationalCommitArtifact: from_envelope first calls encode_canonical_payload successfully on every optional authority record below; cold demand likewise validates authoritative_payload_digest before exposing the immutable Arc. The same closed derived-Serialize fields cannot introduce a new serialization refusal when encoded as their nested Option values into Vec. */ "canonical authority fields are serializable")
-                .len() as u64
-        })
+        .map(|value| canonical_nested_bytes(value))
         .unwrap_or(0)
+}
+
+fn canonical_nested_bytes<T: serde::Serialize>(value: &T) -> u64 {
+    rmp_serde::to_vec(value)
+        .expect(/* Proof: Artifact construction first successfully encodes this same immutable canonical envelope, including its mandatory semantic image. Cold demand verifies that encoding before exposing the Arc. The closed fields cannot introduce a new serialization refusal in this nested footprint projection. */ "canonical authority fields are serializable")
+        .len() as u64
 }
 
 fn vector_capacity_bytes<T>(values: &Vec<T>) -> u64 {

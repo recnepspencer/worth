@@ -1,5 +1,8 @@
 //! Exact native creation position and canonical allocations classify relation custody.
-use super::{charge, writes, CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin, Stop};
+use super::{
+    charge, writes, CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody,
+    CanonicalRequiredOutputOrigin, Stop,
+};
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
 use crate::publication::patch::data::RecordStructuralChange;
 use crate::storage::overlay::{current_relation_partition_source_for_slot, CurrentPartitionAccess};
@@ -12,7 +15,7 @@ pub(super) fn validate(
     state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
-    current: Option<&CanonicalCommitEnvelope>,
+    current: Option<&CanonicalCommitEnvelopeBody>,
     lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
@@ -40,7 +43,7 @@ fn ownership_at_creation(
     state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
-    current: Option<&CanonicalCommitEnvelope>,
+    current: Option<&CanonicalCommitEnvelopeBody>,
     lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
@@ -130,7 +133,7 @@ fn ownership_at_creation(
 
 #[allow(clippy::too_many_arguments)]
 fn classify(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     selected: &CanonicalRequiredOutputOrigin,
     id: RelationId,
     native_birth: Option<(KindId, EntityId, EntityId)>,

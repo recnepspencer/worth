@@ -251,8 +251,8 @@ fn graft_disconnected_branch_head(
         .expect("source envelope")
         .as_ref()
         .clone();
-    envelope.commit = orphan_head.clone();
-    envelope.branch_context = branch_id.clone();
+    envelope.body_mut_for_test().commit = orphan_head.clone();
+    envelope.body_mut_for_test().branch_context = branch_id.clone();
 
     runtime
         .history
@@ -284,7 +284,7 @@ fn graft_disconnected_branch_head(
     let payload = Arc::from(envelope.encode_authoritative_payload().unwrap());
     runtime.history.with_ledger_mut(|ledger| {
         ledger.commit_envelopes.insert(
-            envelope.commit.commit_id,
+            envelope.body_mut_for_test().commit.commit_id,
             Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
                 Arc::new(envelope),
                 payload,
