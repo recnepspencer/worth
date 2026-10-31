@@ -6,6 +6,7 @@ mod recording;
 
 use worth_query_host::facade::{
     application_entry::{WorthQueryApplicationHistoryDocument, WorthQueryApplicationRequestExt},
+    primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
     product::WorthQueryOwnedProductHead,
 };
 use worth_query_testkit_document_retention::facade::document_retention_model::{
@@ -19,18 +20,21 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 };
 
 type App = DocumentRetentionRuntime<RetentionProgramP0>;
+type Runtime = WorthQueryPrimaryGraphApplicationRuntime<DocumentRetentionSchema>;
 type Document<'a, H = RetentionHistory> =
     WorthQueryApplicationHistoryDocument<'a, DocumentRetentionSchema, H>;
 
-fn head(host: &App) -> WorthQueryOwnedProductHead<'_, DocumentRetentionSchema> {
+fn head(host: &Runtime) -> WorthQueryOwnedProductHead<'_, DocumentRetentionSchema> {
+    head_from(host, host.current_world())
+}
+
+fn head_from(
+    host: &Runtime,
+    source: worth_query_host::facade::product::WorthQueryProductBranch,
+) -> WorthQueryOwnedProductHead<'_, DocumentRetentionSchema> {
     host.with_host_advancement(|phase| {
-        let selected = host
-            .runtime()
-            .on_branch(host.current_world())
-            .select(&phase)
-            .unwrap();
-        host.runtime()
-            .branches()
+        let selected = host.on_branch(source).select(&phase).unwrap();
+        host.branches()
             .fork_expected(selected)
             .unwrap()
             .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
@@ -42,15 +46,14 @@ fn head(host: &App) -> WorthQueryOwnedProductHead<'_, DocumentRetentionSchema> {
 }
 
 fn attach<'a>(
-    host: &'a App,
+    host: &'a Runtime,
     head: WorthQueryOwnedProductHead<'a, DocumentRetentionSchema>,
     identity: &str,
 ) -> Document<'a> {
     let scope = request_scope();
-    let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
+    let principal = authenticate_operator(host.installed_schema(), &scope);
     host.with_host_advancement(|phase| {
-        host.runtime()
-            .request(&principal, &scope)
+        host.request(&principal, &scope)
             .on_branch(head.branch())
             .attach_history::<RetentionHistory>(
                 &phase,
@@ -64,11 +67,11 @@ fn attach<'a>(
     .unwrap()
 }
 
-fn value(host: &App, document: &Document<'_>) -> u64 {
+fn value(host: &Runtime, document: &Document<'_>) -> u64 {
     let scope = request_scope();
-    let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
+    let principal = authenticate_operator(host.installed_schema(), &scope);
     document
-        .read(&host.runtime().request(&principal, &scope))
+        .read(&host.request(&principal, &scope))
         .unwrap()
         .rows()[0]
         .retention_days

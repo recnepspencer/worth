@@ -183,6 +183,14 @@ Each call runs current ordinary READ admission. A foreign runtime, recreated
 model or externally changed head refuses; equal field values do not repair a
 changed head. No rows are issued on a divergence refusal.
 
+A model retired and recreated under the same lookup name needs a new attached
+document. Admit and own its new head through ordinary selection and forking;
+copied names and step descriptors cannot transfer the old document's custody.
+If the old document still owns the source branch, acquire the new head before
+closing it. The [compiled model-recreation journey](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/model_lifecycle.rs)
+shows ordinary retirement/creation, old-document refusal, a fresh attachment
+and a successful edit on the replacement model.
+
 For a retained no-output action, use `document.assess_edit(&request, &operation)`
 to observe whether that original action currently belongs to this document.
 The call completes the document's ordinary READ, freshly authorizes the action,

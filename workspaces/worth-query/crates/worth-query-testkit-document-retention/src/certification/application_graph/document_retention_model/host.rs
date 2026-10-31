@@ -94,6 +94,9 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
         setup.handler::<super::actor_generation::ActorLifecycleBinding, _>(
             super::actor_generation::ActorLifecycleHandler,
         )?;
+        setup.handler::<super::model_lifecycle::ModelLifecycleBinding, _>(
+            super::model_lifecycle::ModelLifecycleHandler,
+        )?;
         setup.handler::<super::record_history::reaffirm::Binding, _>(
             super::record_history::reaffirm::Handler,
         )?;
@@ -256,11 +259,20 @@ where
                 DocumentRetentionSchema,
             >,
 {
+    let model_lifecycle = super::model_lifecycle::validated_model_lifecycle_program();
+    let roster = roster.support(super::actor_generation::validated_actor_program());
+    // Lifecycle actions retain their own program meaning. The initial program
+    // is already installed, so do not roster that same validated meaning twice.
+    let roster = if initial.identity() == model_lifecycle.identity()
+        && initial.revision() == model_lifecycle.revision()
+    {
+        roster
+    } else {
+        roster.support(model_lifecycle)
+    };
     in_memory_rostered_program(
         initial,
-        // The installed lifecycle binding is owned by this explicitly rostered
-        // program, not implicitly added to P0/P1 or the alternative programs.
-        roster.support(super::actor_generation::validated_actor_program()),
+        roster,
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),

@@ -8,6 +8,7 @@ use worth_query_host::facade::{
     },
     declaration::{
         application_history::ApplicationHistoryBinding,
+        application_program::ApplicationProgramDefinition,
         application_program::{ApplicationActionReference, ApplicationRootComposition},
     },
 };
@@ -22,6 +23,7 @@ mod capture_race;
 mod closing;
 mod handoff;
 mod journeys;
+mod model_lifecycle;
 mod preconditions;
 mod recovery;
 mod refusals;
@@ -33,14 +35,8 @@ type Action = ApplicationActionReference<
     SetRetentionBinding,
     RetentionCompletion,
 >;
-type Edit<'a, H = RetentionHistory> = WorthQueryHistoryEdit<
-    'a,
-    DocumentRetentionSchema,
-    H,
-    SetRetentionIntent,
-    RetentionProgramP0,
-    Action,
->;
+type Edit<'a, H = RetentionHistory, P = RetentionProgramP0> =
+    WorthQueryHistoryEdit<'a, DocumentRetentionSchema, H, SetRetentionIntent, P, Action>;
 
 fn begin<'a>(host: &App, document: Document<'a>, identity: &str, days: u64, key: u64) -> Edit<'a> {
     let scope = request_scope();
@@ -58,14 +54,15 @@ fn begin<'a>(host: &App, document: Document<'a>, identity: &str, days: u64, key:
         .unwrap_or_else(|(_, cause)| panic!("declared action constructs: {cause:?}"))
 }
 
-fn ready<'a, H>(host: &App, mut edit: Edit<'a, H>) -> Edit<'a, H>
+fn ready<'a, H, P>(host: &Runtime, mut edit: Edit<'a, H, P>) -> Edit<'a, H, P>
 where
     H: ApplicationHistoryBinding<DocumentRetentionSchema, Access = DocumentRetentionRead>,
+    P: ApplicationProgramDefinition<DocumentRetentionSchema>,
 {
     for _ in 0..16 {
         let scope = request_scope();
-        let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
-        edit = match edit.advance(&host.runtime().request(&principal, &scope)) {
+        let principal = authenticate_operator(host.installed_schema(), &scope);
+        edit = match edit.advance(&host.request(&principal, &scope)) {
             Advance::Progress(edit) => edit,
             Advance::Ready(edit) => return edit,
             Advance::Refused { denial, .. } => panic!("lawful edit refused: {denial:?}"),
@@ -74,17 +71,18 @@ where
     panic!("bounded ordinary source edit did not become ready")
 }
 
-fn finish<'a, H>(
-    host: &App,
-    edit: Edit<'a, H>,
+fn finish<'a, H, P>(
+    host: &Runtime,
+    edit: Edit<'a, H, P>,
     days: u64,
 ) -> (Document<'a, H>, WorthQueryHistoryStep)
 where
     H: ApplicationHistoryBinding<DocumentRetentionSchema, Access = DocumentRetentionRead>,
+    P: ApplicationProgramDefinition<DocumentRetentionSchema>,
 {
     let scope = request_scope();
-    let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
     let finished = edit.finish(&request).unwrap();
     let Outcome::Recorded {
         step, completion, ..
@@ -118,7 +116,7 @@ where
 }
 
 fn close<H: ApplicationHistoryBinding<DocumentRetentionSchema>>(
-    host: &App,
+    host: &Runtime,
     document: Document<'_, H>,
     heads: usize,
 ) {
@@ -126,5 +124,5 @@ fn close<H: ApplicationHistoryBinding<DocumentRetentionSchema>>(
         .with_host_advancement(|phase| document.close(&phase).unwrap())
         .unwrap();
     assert_eq!(receipt.closed_heads(), heads);
-    assert!(host.runtime().branches().pending_cleanup().is_empty());
+    assert!(host.branches().pending_cleanup().is_empty());
 }

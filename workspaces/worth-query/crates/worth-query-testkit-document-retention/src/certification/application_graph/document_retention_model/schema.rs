@@ -43,6 +43,7 @@ worth_query_application_contribution! {
         corrections: [super::correctable_retention::RestoreReviewedRetention],
         members: |schema| {
             let schema = super::document_history::declare(schema);
+            let schema = super::model_lifecycle::declare(schema);
             let schema = schema
                 .entity(ExternalMapping::reference())
                 .entity(Principal::reference())
