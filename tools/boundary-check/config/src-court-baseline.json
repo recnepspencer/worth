@@ -909,7 +909,7 @@
 {"source":"crates/worth-relational/src/tests/transactions/core/transaction_resource_budgets.rs","module":"file","roots":["RelationalRuntime"]},
 {"source":"crates/worth-relational/src/tests/transactions/core/visibility_aspect_versions.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/transactions/admission/bulk.rs","module":"tests","roots":["ExecutionRequest"]},
-{"source":"crates/worth-relational/src/transactions/data/outcomes/commit_result/snapshot_cleanup_tests.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-relational/src/transactions/data/outcomes/commit_result/snapshot_cleanup_tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/validation/custom_rule/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/validation/custom_rule/tests/touched_scope_tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/validation/custom_rule/tests/touched_scope_tests/entity_deletes.rs","module":"file","roots":["ExecutionRequest"]},
@@ -2997,5 +2997,13 @@
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/publication_tests.rs","module":"file","roots":["ExecutionAuthority"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/publication_tests/affinity.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"workspaces/worth-query/crates/worth-query-installation/src/application_operation/contracts/graph_touches/tests.rs","module":"file","roots":["WorthQueryInstalledPackageIndex"]},
-{"source":"workspaces/worth-query/crates/worth-query-installation/src/application_schema/native_contract/compilation/scalar_aspect/tests/installed_read_scope.rs","module":"file","roots":["WorthQueryInstalledPackageIndex"]}
+{"source":"workspaces/worth-query/crates/worth-query-installation/src/application_schema/native_contract/compilation/scalar_aspect/tests/installed_read_scope.rs","module":"file","roots":["WorthQueryInstalledPackageIndex"]},
+{"source":"crates/worth-runtime-world/src/branch/retirement_tests/observation_budget/unrestricted.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-runtime-world/src/history/catalog/reachability/close_retirement.rs","module":"tests","roots":["ExecutionRequest"]},
+{"source":"crates/worth-runtime-world/src/lifecycle/close/drain.rs","module":"tests","roots":["ExecutionRequest"]},
+{"source":"crates/worth-runtime-world/src/lifecycle/owner/operation/preparation_tests/creation.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-runtime-world/src/lifecycle/owner_tests.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-runtime-world/src/lifecycle/owner_tests/admission_race.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-runtime-world/src/lifecycle/owner_tests/bootstrap_boundary.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs","module":"file","roots":["ExecutionRequest"]}
 ]

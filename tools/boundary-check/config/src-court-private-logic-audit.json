@@ -572,6 +572,171 @@
       ],
       "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
       "private_subject": "Direct private ConditionalExecutionHistory::capture consumes genuine executed Signal evidence; real optional capacity refusal is tolerated while cancellation remains a request stop. Ordinary eviction and owner-close journeys moved to public court."
+    },
+    {
+      "source": "crates/worth-relational/src/branch/basis_registry/retirement_tests.rs",
+      "test": "branch::basis_registry::retirement_tests::result_snapshot_cleanup_basis_registry_contention_keeps_original_lease",
+      "constructors": [
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against d36ec2140736, 2026-10-31; fresh native_result_cleanup_source_review approved only these original-result retirement units, no public workflow or new factory audience.",
+      "private_subject": "Holds the actual private retained-state mutex and inspects its issued key, registration identity, OnceLock lease extraction and retirement/disarm state. This proves contention preserves the original owner lease, not a public snapshot description."
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/lane/retirement/tests.rs",
+      "test": "history::retention::lane::retirement::tests::result_snapshot_cleanup_lane_contention_keeps_original_obligation",
+      "constructors": [
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against d36ec2140736, 2026-10-31; fresh native_result_cleanup_source_review approved only these original-result retirement units, no public workflow or new factory audience.",
+      "private_subject": "Holds the actual private lane mutex and compares the original obligation id, retained root inventory and terminal/disarmed state through Busy and retry; external placement would require a new owner-mutation test door."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs",
+      "test": "runtime::state::subsystems::visibility::snapshot_handles::published_registry::original_cleanup::tests::result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competing_task",
+      "constructors": [
+        "crate::tests::support::durable_runtime_with_test_schema",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::ExecutionRequest::serial"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against d36ec2140736, 2026-10-31; fresh native_result_cleanup_source_review approved only these original-result retirement units, no public workflow or new factory audience.",
+      "private_subject": "Holds the actual published registry and original release-cell phase mutexes, observes exact removal/capacity once, and joins a competing task with real closeout. A Weak is derived from the original issued binding root without an extra retained test root/basis; head movement/deletion/reclamation preserves it while pending, and actual retirement plus reclamation expires that same Weak."
+    },
+    {
+      "source": "crates/worth-relational/src/transactions/data/outcomes/commit_result/snapshot_cleanup_tests.rs",
+      "test": "transactions::data::outcomes::commit_result::snapshot_cleanup_tests::result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy",
+      "constructors": [
+        "crate::tests::support::durable_runtime_with_test_schema",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::ExecutionRequest::serial",
+        "crate::runtime::RelationalRuntime::admitted"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against d36ec2140736, 2026-10-31; fresh native_result_cleanup_source_review approved only these original-result retirement units, no public workflow or new factory audience.",
+      "private_subject": "Constructs the real private admitted runtime view from its original state binding and admission guard, proving that matching owner/state metadata without authentic Owner tenure cannot advance original-result retirement. No counterfeit public runtime or mutable extraction door is introduced."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/branch/retirement_tests/observation_budget/unrestricted.rs",
+      "test": "lifecycle::owner::branch_service::tests::observation_budget::unrestricted::no_policy_world_keeps_distinct_originals_history_and_final_drop_custody",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "fixture.owner_inputs",
+        "TestOwner::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Directly reserves actual private publication/recovery slots, inspects observation/component/history/branch ledgers, retains the real retention owner across final World Drop, and proves independent original observations survive close. Public descriptions cannot supply these ledgers or final-owner oracle."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/history/catalog/reachability/close_retirement.rs",
+      "test": "history::catalog::reachability::close_retirement::tests::head_close_tail_busy_is_atomic_and_success_disarms_original_drop",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "fixture::installed_root",
+        "fixture::install_ordinary",
+        "ProductBranchReferenceCell::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Holds the actual private target and dirty-tail record mutexes and snapshots direct/seated/frontier/counter state. Exercises the real cell through component-pair success, history Busy and original Stop, then the same cell retry and disarmed Drop without a second decrement."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/close/drain.rs",
+      "test": "lifecycle::close::drain::tests::close_finish_busy_retains_same_root_task_and_original_report",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "owner",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "RuntimeWorldOwnerRoot::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Invokes private admit/drain_heads/finish_report, retains the exact Root-owned close.progress Arc and stored report address, and holds the actual lifecycle mutex while finish and normal close return Busy. No reconstruction or blocking restoration can satisfy this oracle."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/close/drain.rs",
+      "test": "lifecycle::close::drain::tests::close_poison_retains_actual_task_and_never_restores_serving",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "owner",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "RuntimeWorldOwnerRoot::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Poisons the actual private close-task mutex, verifies typed CloseProgressPoisoned and the identical retained task Arc, and inspects the private Closing state. External placement would require a new production task/poison control."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/operation/preparation_tests/creation.rs",
+      "test": "lifecycle::owner::operation::preparation_tests::creation::closed_owner_rejects_creation_preparation_without_consuming_capacity",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "setup",
+        "setup_with_custody",
+        "setup_with_fixture",
+        "RuntimeWorldOwnerRoot::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Exercises private RuntimeWorldPreparationService::prepare_creation and reservation_counts, distinguishing availability-before-intent lowering and proving history/recovery/pin/publication capacities and operation accounting remain unchanged."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner_tests.rs",
+      "test": "lifecycle::owner::tests::closed_owner_rejects_preparation_without_consuming_capacity",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "RuntimeWorldOwnerRoot::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Calls private prepare_publication after close and compares actual history, recovery, unique-pin/acquisition and publication reservation ledgers; the separate public-only close/bootstrap workflow is no longer in this source file."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner_tests.rs",
+      "test": "lifecycle::owner::tests::owner_reservation_owns_all_real_capacity_and_drops_it_as_one_attempt",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::branch::reference_test_fixture::real_fixture",
+        "RuntimeWorldOwnerRoot::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Retains the real private publication reservation, checks every actual capacity and operation ledger through close refusal and exact reservation destruction, then proves all those owner ledgers release together."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner_tests/admission_race.rs",
+      "test": "lifecycle::owner::tests::admission_race::admitted_attempt_refuses_close_and_closed_owner_refuses_a_new_attempt",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "setup",
+        "TestOwner::new"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Uses private RuntimeWorldPreparationService::prepare_publication and its real reservation lifecycle; actual admitted work refuses close and the same private prepare entry refuses after closure. It claims sequential exclusion, not the removed queued-mutex race."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner_tests/bootstrap_boundary.rs",
+      "test": "lifecycle::owner::tests::bootstrap_boundary::close_refuses_busy_admission_then_excludes_bootstrap",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "empty_world",
+        "RuntimeWorldOwner::builder"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Holds the actual private operation mutex during nonwaiting close, proving Busy leaves the original owner available; after releasing that exact guard, close excludes bootstrap. No blanket approval is given to unrelated public workflows in the file."
+    },
+    {
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports.rs",
+      "test": "lifecycle::owner::execution_service::tests::public_ports::query_home_selection_never_downgrades_an_unavailable_root_to_memory",
+      "constructors": [
+        "public_world",
+        "RuntimeWorldOwner::builder"
+      ],
+      "audit": "Coordinator exact private-owner placement against reviewed World 49973bf522 + corrected 7edd46a74a + getter d7625a7ccd, 2026-10-31; fresh world_request_close_source_review approved only the named private oracles. The public-only close/bootstrap workflow moved to the existing World court; no new factory audience or additional root class is granted.",
+      "private_subject": "Controls the actual private close contract through Closing/Closed, retains the same Root after public-owner loss, and checks owner capacity while exercising the read-only getter. This distinguishes genuine memory from unavailable ownership without a new production close-state test door."
     }
   ]
 }

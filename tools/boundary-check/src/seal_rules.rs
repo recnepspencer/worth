@@ -27,6 +27,7 @@ const FACTORIES: &[&str] = &[
     "attach_unrecovered_home",
     "home_schema_installation_runtime",
     "home_query_finalization_parts",
+    "query_publication_home_binding",
     "prepare_query_publication_without_signal",
     "bind_query_native_proposal",
     "complete_query_native_preparation",
@@ -298,7 +299,8 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                     )
                 } else if matches!(
                     *name,
-                    "prepare_query_publication_without_signal"
+                    "query_publication_home_binding"
+                        | "prepare_query_publication_without_signal"
                         | "bind_query_native_proposal"
                         | "complete_query_native_preparation"
                 ) {

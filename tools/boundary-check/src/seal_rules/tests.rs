@@ -167,6 +167,10 @@ fn certification_factory_callers_are_class_and_file_exact() {
             "native-home-query-finalization",
         ),
         (
+            "query_publication_home_binding",
+            "query-world-commit-preparation",
+        ),
+        (
             "prepare_query_publication_without_signal",
             "query-world-commit-preparation",
         ),
