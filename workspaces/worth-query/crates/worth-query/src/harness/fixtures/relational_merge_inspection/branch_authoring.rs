@@ -3,7 +3,7 @@ use super::*;
 
 pub(super) fn create_entity_on_branch(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     name: &str,
     branch_id: BranchId,
 ) -> EntityId {
@@ -31,7 +31,7 @@ pub(super) fn create_entity_on_branch(
 
 pub(super) fn update_entity_on_branch(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     entity_id: EntityId,
     name: &str,
     branch_id: BranchId,
@@ -56,7 +56,7 @@ pub(super) fn update_entity_on_branch(
 
 pub(super) fn delete_entity_on_branch(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     entity_id: EntityId,
     branch_id: BranchId,
 ) {
@@ -76,7 +76,7 @@ pub(super) fn delete_entity_on_branch(
 
 pub(super) fn create_relation_on_branch(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     source: EntityId,
     target: EntityId,
     client_key: &str,
@@ -109,7 +109,7 @@ pub(super) fn create_relation_on_branch(
 
 pub(super) fn delete_relation_on_branch(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     relation_id: RelationId,
     branch_id: BranchId,
 ) {
@@ -127,7 +127,7 @@ pub(super) fn delete_relation_on_branch(
     release_commit_snapshot(runtime, &outcome);
 }
 
-fn release_commit_snapshot(runtime: &mut RelationalRuntime, outcome: &CommitResult) {
+fn release_commit_snapshot(runtime: &RelationalRuntime, outcome: &CommitResult) {
     runtime
         .snapshots()
         .release_snapshot(&outcome.snapshot)

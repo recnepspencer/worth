@@ -113,7 +113,7 @@ pub(super) fn replace_support_grantor_with_custodian(
         .kind;
     let handle = graph.integration_handle();
     let selected = world.selected_product(&(phase_custody).test_host_request());
-    let grantor = handle.with_runtime_mut(execution, |runtime| {
+    let grantor = handle.with_runtime(execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
 
         runtime

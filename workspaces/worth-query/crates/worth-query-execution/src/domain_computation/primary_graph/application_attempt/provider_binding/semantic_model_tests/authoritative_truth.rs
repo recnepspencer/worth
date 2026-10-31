@@ -106,7 +106,7 @@ fn created_relation(
 
 fn commit_entities(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     alpha: &AspectFieldLocator,
     beta: &AspectFieldLocator,
 ) -> CommittedEntities {
@@ -175,7 +175,7 @@ fn issued_entity(
 
 fn commit_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     seed: RelationSeed<'_>,
 ) -> worth_relational::facade::transactions::CommitResult {
     commit(
@@ -204,7 +204,7 @@ struct RelationSeed<'a> {
 
 fn commit<const N: usize>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     name: &str,
     intents: [MutationIntent; N],
 ) -> worth_relational::facade::transactions::CommitResult {

@@ -277,7 +277,7 @@ fn topology_merge_registry() -> RelationalSchemaRegistry {
 
 fn create_branch_from_main(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch_name: &str,
 ) {
     crate::runtime::fork_branch_from_exact_source(

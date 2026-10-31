@@ -39,7 +39,7 @@ impl AggregateWorld {
     ) -> Result<(i64, u64), WorthQueryInvariantAggregateDenialKind> {
         let observed = Cell::new(None);
         let identity = self.relational_identity(phase_custody, branch);
-        let (_, basis) = self.authority.graph.with_runtime_mut(
+        let (_, basis) = self.authority.graph.with_runtime(
             &phase_custody.borrowed_request_for_test(),
             |runtime| {
                 runtime
@@ -136,32 +136,30 @@ impl AggregateWorld {
     ) {
         let identity = self.relational_identity(phase_custody, branch);
         let execution = phase_custody.borrowed_request_for_test();
-        self.authority
-            .graph
-            .with_runtime_mut(&execution, |runtime| {
-                let admitted = runtime
-                    .admit_branch_basis(&identity)
-                    .expect("the branch binding admits");
-                let mut transaction = runtime
-                    .begin_branch_transaction(
-                        &admitted,
-                        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                    )
-                    .expect("owner-admitted transaction context");
-                transaction
-                    .push_batch(
-                        WorkerIntentBatch::new(label).push(intent),
-                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                    )
-                    .expect("test staging stays within configured resource budgets");
-                let committed = transaction
-                    .commit(&execution, runtime)
-                    .expect("the branch commits");
-                crate::relational_snapshot_release::release_query_snapshot(
-                    runtime,
-                    &committed.snapshot,
-                );
-            });
+        self.authority.graph.with_runtime(&execution, |runtime| {
+            let admitted = runtime
+                .admit_branch_basis(&identity)
+                .expect("the branch binding admits");
+            let mut transaction = runtime
+                .begin_branch_transaction(
+                    &admitted,
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                )
+                .expect("owner-admitted transaction context");
+            transaction
+                .push_batch(
+                    WorkerIntentBatch::new(label).push(intent),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("test staging stays within configured resource budgets");
+            let committed = transaction
+                .commit(&execution, runtime)
+                .expect("the branch commits");
+            crate::relational_snapshot_release::release_query_snapshot(
+                runtime,
+                &committed.snapshot,
+            );
+        });
     }
 
     fn relational_identity(

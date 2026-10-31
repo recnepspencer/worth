@@ -1,8 +1,7 @@
 //! Linear repair custody for an unpublished, performed installation.
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCheckpoint, WorthQueryCheckpointCaptureDenial,
-    WorthQueryCheckpointCapturePolicy, WorthQueryPrimaryGraphIntegrationHandle,
-    WorthQueryPrimaryGraphPublication,
+    WorthQueryCheckpointCapturePolicy, WorthQueryPrimaryGraphPublication,
 };
 use worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority;
 
@@ -12,7 +11,7 @@ use worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority;
 /// this same capsule for another attempt.
 #[must_use = "repair the performed native transition or explicitly discard this unpublished installation"]
 pub struct WorthQueryCheckpointTransitionRecovery {
-    graph: WorthQueryPrimaryGraphIntegrationHandle,
+    graph: super::super::prepared_native::PreparedNativeGraph,
     publication: WorthQueryPrimaryGraphPublication,
     /// The acknowledged successor authority this capsule keeps in custody.
     _authority: RecoveredRelationalRuntimeAuthority,
@@ -35,7 +34,7 @@ impl std::fmt::Debug for WorthQueryCheckpointTransitionRecovery {
 
 impl WorthQueryCheckpointTransitionRecovery {
     pub(super) fn acknowledged(
-        graph: WorthQueryPrimaryGraphIntegrationHandle,
+        graph: super::super::prepared_native::PreparedNativeGraph,
         publication: WorthQueryPrimaryGraphPublication,
         authority: RecoveredRelationalRuntimeAuthority,
         outputs: super::preserved_outputs::PreservedOutputs,
@@ -57,7 +56,7 @@ impl WorthQueryCheckpointTransitionRecovery {
     }
 
     pub(super) fn finalization_stopped(
-        graph: WorthQueryPrimaryGraphIntegrationHandle,
+        graph: super::super::prepared_native::PreparedNativeGraph,
         publication: WorthQueryPrimaryGraphPublication,
         authority: RecoveredRelationalRuntimeAuthority,
         outputs: super::preserved_outputs::PreservedOutputs,

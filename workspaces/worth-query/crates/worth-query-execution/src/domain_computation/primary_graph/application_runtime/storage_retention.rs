@@ -77,7 +77,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             .primary_graph()
             .expect("installed primary graph")
             .integration_handle();
-        handle.with_query_runtime_mut(&execution, |runtime, _| {
+        handle.with_query_runtime(&execution, |runtime, _| {
             runtime
                 .retention()
                 .try_run_pass(&execution)

@@ -173,7 +173,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         }),
         Ok(ConsumedOutputVerification::ChangedUpstream),
     );
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime(request_execution, |runtime| {
         for selected in [before_handle, unrelated_handle, after_handle] {
             runtime.snapshots().release_snapshot(&selected).unwrap();
         }
@@ -299,7 +299,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         &product_before,
         "the denied C commit cannot move Product truth"
     );
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime(request_execution, |runtime| {
         runtime
             .snapshots()
             .release_snapshot(&head_before_handle)

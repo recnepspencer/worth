@@ -50,7 +50,7 @@ impl WorthQueryGraphReadOwnerPort {
         let selected_indexes = select_indexes(&self.layout);
         let read = self
             .source
-            .with_runtime_mut_unwind_isolated(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 #[cfg(test)]
                 let replacement = pin_control::snapshot();
                 #[cfg(test)]
@@ -79,14 +79,14 @@ impl WorthQueryGraphReadOwnerPort {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &ApplicationSchemaBindingIdentity,
-        read: impl FnOnce(&mut RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
+        read: impl FnOnce(&RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
     ) -> Result<T, WorthQueryGraphReadOwnerPortDenial> {
         if &self.binding != binding {
             return Err(WorthQueryGraphReadOwnerPortDenial::ForeignGraph);
         }
         Ok(self
             .source
-            .with_runtime_mut(execution, |runtime| read(runtime, &self.layout)))
+            .with_runtime(execution, |runtime| read(runtime, &self.layout)))
     }
 
     /// A decision projection already owns this runtime borrow. The port still
@@ -95,8 +95,8 @@ impl WorthQueryGraphReadOwnerPort {
     pub(super) fn execute_borrowed<T>(
         &self,
         binding: &ApplicationSchemaBindingIdentity,
-        runtime: &mut RelationalRuntime,
-        read: impl FnOnce(&mut RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
+        runtime: &RelationalRuntime,
+        read: impl FnOnce(&RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
     ) -> Result<T, WorthQueryGraphReadOwnerPortDenial> {
         if &self.binding != binding
             || runtime.main_branch_identity().runtime_instance_id()

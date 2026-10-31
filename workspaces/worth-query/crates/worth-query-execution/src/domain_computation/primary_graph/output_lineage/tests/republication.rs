@@ -139,7 +139,7 @@ std::iter::empty(),
 )
         .unwrap(),
     );
-    let (performed_witness, restored_witness, read_basis) = handle.with_runtime_mut(request_execution, |runtime| {
+    let (performed_witness, restored_witness, read_basis) = handle.with_runtime(request_execution, |runtime| {
         let basis = runtime
             .admit_branch_basis(&runtime.main_branch_identity())
             .unwrap();

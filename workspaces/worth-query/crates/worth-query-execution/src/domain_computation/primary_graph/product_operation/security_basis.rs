@@ -117,7 +117,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))?
                 .integration_handle();
             graph
-                .with_runtime_mut(execution, |runtime| {
+                .with_runtime(execution, |runtime| {
                     graph.ensure_primary_indexes_for_basis(
                         execution,
                         runtime,

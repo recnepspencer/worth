@@ -12,6 +12,7 @@ use crate::domain_computation::execution_runtime::product_world::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchCreationRecoveryCause {
+    OpenAttemptRetained,
     SiblingOwnerDenied,
     CallerAbandoned,
     SettlementPending,
@@ -62,6 +63,7 @@ impl WorthQueryProductBranchCreationRecoveryInspection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchRecoveryDenial {
+    DurableDispositionRequired,
     OwnerUnavailable,
     ForeignRecovery,
     Missing,
@@ -238,6 +240,9 @@ fn inspection(
 fn map_cause(cause: ProductUnpublishedCause) -> WorthQueryProductBranchCreationRecoveryCause {
     use ProductUnpublishedCause as Cause;
     match cause {
+        Cause::OpenAttemptRetained => {
+            WorthQueryProductBranchCreationRecoveryCause::OpenAttemptRetained
+        }
         Cause::SiblingOwnerDenied => {
             WorthQueryProductBranchCreationRecoveryCause::SiblingOwnerDenied
         }
@@ -293,6 +298,9 @@ pub(crate) fn map_recovery_denial(
 ) -> WorthQueryProductBranchRecoveryDenial {
     use RuntimeWorldRecoveryDenial as Denial;
     match denial {
+        Denial::DurableDispositionRequired => {
+            WorthQueryProductBranchRecoveryDenial::DurableDispositionRequired
+        }
         Denial::OwnerUnavailable(_) => WorthQueryProductBranchRecoveryDenial::OwnerUnavailable,
         Denial::ForeignHandle => WorthQueryProductBranchRecoveryDenial::ForeignRecovery,
         Denial::MissingRecord => WorthQueryProductBranchRecoveryDenial::Missing,

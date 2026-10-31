@@ -60,7 +60,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime(request_execution, |runtime| {
         let basis = runtime
             .admit_branch_basis(&runtime.main_branch_identity())
             .unwrap();

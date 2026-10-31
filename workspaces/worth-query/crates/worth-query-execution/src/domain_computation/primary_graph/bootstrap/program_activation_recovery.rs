@@ -7,45 +7,42 @@ use super::super::program_occurrence::{
     program_revision_rendering, WorthQueryProgramActivationCell,
 };
 use super::super::{
-    WorthQueryPrimaryGraph, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind,
+    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
 /// The phase witnesses the caller's request for the inline recovery read.
 pub(in crate::domain_computation::primary_graph) fn recover_program_activation<Schema>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
-    graph: &WorthQueryPrimaryGraph,
+    graph: &super::prepared_native::PreparedNativeGraph,
     roster: &WorthQueryProgramSupportRoster<Schema>,
     cell: &WorthQueryProgramActivationCell,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let phase_request = phase.execution_request();
     let execution = &phase_request;
     let layout = graph.layout.program_activation().clone();
-    let identity = graph
-        .integration_handle()
-        .with_runtime(execution, |runtime| {
-            let basis = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .map_err(|error| denial(format!("recovered branch basis refused: {error:?}")))?;
-            let branch = runtime
-                .read_truth()
-                .project_observation(&basis.observation())
-                .map_err(|error| denial(format!("recovered branch is unreadable: {error:?}")))?;
-            read_activation(
-                execution,
-                &branch,
-                &layout,
-                usize::MAX,
-                "recovered program activation is not in the admitted roster",
-                |rendering| {
-                    roster
-                        .entries()
-                        .iter()
-                        .any(|entry| program_revision_rendering(entry.revision()) == *rendering)
-                },
-            )
-            .map(|(identity, _)| identity)
-        })?;
+    let identity = graph.with_runtime(execution, |runtime| {
+        let basis = runtime
+            .admit_branch_basis(&runtime.main_branch_identity())
+            .map_err(|error| denial(format!("recovered branch basis refused: {error:?}")))?;
+        let branch = runtime
+            .read_truth()
+            .project_observation(&basis.observation())
+            .map_err(|error| denial(format!("recovered branch is unreadable: {error:?}")))?;
+        read_activation(
+            execution,
+            &branch,
+            &layout,
+            usize::MAX,
+            "recovered program activation is not in the admitted roster",
+            |rendering| {
+                roster
+                    .entries()
+                    .iter()
+                    .any(|entry| program_revision_rendering(entry.revision()) == *rendering)
+            },
+        )
+        .map(|(identity, _)| identity)
+    })?;
     cell.publish(identity)
         .map_err(|_| denial("recovered program activation was already published"))
 }

@@ -140,7 +140,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                 .kind;
             let edge = graph
                 .integration_handle()
-                .with_runtime_mut(request_execution, |runtime| {
+                .with_runtime(request_execution, |runtime| {
                     runtime
                         .read_truth()
                         .visible_relations_of_kind(

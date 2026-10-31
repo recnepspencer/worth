@@ -104,7 +104,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    let changed_output_equal = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); let request_execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_mut(request_execution, |runtime| {
+    let changed_output_equal = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); let request_execution = &host_custody.borrowed_request_for_test(); handle.with_runtime(request_execution, |runtime| {
         let before = snapshot(runtime);
         let truth = runtime.read_truth();
         let mut facts = vec![Fact::Entity {

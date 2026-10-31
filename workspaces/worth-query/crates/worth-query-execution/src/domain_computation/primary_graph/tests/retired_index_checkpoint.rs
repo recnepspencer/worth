@@ -152,7 +152,7 @@ pub(super) fn persist_as_the_retired_code_did(
         .clone();
     graph
         .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             let head = main_head(runtime);
             let retired = runtime
                 .index_authority()

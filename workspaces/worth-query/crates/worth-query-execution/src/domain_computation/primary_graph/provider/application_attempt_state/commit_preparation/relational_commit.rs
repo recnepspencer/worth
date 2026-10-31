@@ -40,13 +40,11 @@ pub(super) fn commit_owner_validated(
         allocation_policy,
     )?;
     let evidence = evidence_seal::seal(&execution, provider, &mut committed);
-    provider
-        .graph
-        .with_runtime_mut_unwind_isolated(&execution, |runtime| {
-            committed
-                .publish_and_encode(&execution, provider, runtime, evidence)
-                .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied)
-        })
+    provider.graph.with_runtime(&execution, |runtime| {
+        committed
+            .publish_and_encode(&execution, provider, runtime, evidence)
+            .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied)
+    })
 }
 
 /// The recovered World movement rejoins the same evidence and pending
@@ -61,11 +59,9 @@ pub(in crate::domain_computation::primary_graph::provider) fn publish_recovered(
     crate::domain_computation::WorthQueryProviderSessionFailure,
 > {
     let evidence = evidence_seal::seal(execution, provider, &mut committed);
-    provider
-        .graph
-        .with_runtime_mut_unwind_isolated(execution, |runtime| {
-            committed.publish_and_encode(execution, provider, runtime, evidence)
-        })
+    provider.graph.with_runtime(execution, |runtime| {
+        committed.publish_and_encode(execution, provider, runtime, evidence)
+    })
 }
 
 pub(in crate::domain_computation::primary_graph) use evidence_seal::{

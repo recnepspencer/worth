@@ -1,7 +1,5 @@
 //! Native contribution construction within already admitted bootstrap custody.
-use super::super::application_contribution::{
-    WorthQueryApplicationContributionTuple, WorthQueryConfiguredApplicationContributions,
-};
+use super::super::application_contribution::WorthQueryApplicationContributionTuple;
 use super::super::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
     WorthQueryPrimaryGraphInstallationDenial,
@@ -10,15 +8,10 @@ use super::{
     WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
     WorthQueryProgramAdmissionStep,
 };
-use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntimeInstaller;
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaComposition, ApplicationSchemaDeclaration,
 };
-use worth_query_installation::facade::{
-    WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
-    WorthQueryInstalledApplicationSchema, WorthQueryPortableDomainIdentity,
-    WorthQueryPortableDomainPackage,
-};
+use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 pub(super) fn in_memory_with_contributions_in_advancement<Schema, Contributions>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     declaration: ApplicationSchemaDeclaration<Schema>,
@@ -45,53 +38,18 @@ where
 {
     use WorthQueryInMemoryApplicationDenial as Denial;
 
-    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
-        Schema::OWNER,
-        Schema::MAJOR,
-        Schema::MINOR,
-    ));
-    let contracts =
-        Contributions::contracts(declaration.erased()).map_err(Denial::Contributions)?;
-    let package = contracts
-        .compose_package(package.application_schema(declaration.clone()))
-        .validate()
-        .map_err(Denial::Package)?;
-    let admitted = WorthQueryInstallationAdmissionProfile::new(
-        "primary-graph-in-memory",
-        "application-contributions",
-    )
-    .admit(package)
-    .map_err(Denial::Admission)?;
-    let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
-        .application_query_resources(limits.queries)
-        .output_demand_resources(limits.output_demands)
-        .install(WorthQueryInstallationGeneration::initial(), [admitted])
-        .map_err(Denial::Runtime)?
-        .into_parts();
-    let installed = runtime
-        .installed_packages()
-        .bind_application_schema(declaration)
-        .map_err(Denial::Schema)?;
-    if program_admission.is_none()
-        && installed
-            .installed_mutation_binding_inventory()
-            .any(|binding| binding.requires_workflow_authority())
-    {
-        return Err(Denial::WorkflowAuthorityRequiresProgram);
-    }
-    let admitted_program_support = match program_admission {
-        Some(admit) => Some(admit(&installed)?),
-        None => None,
-    };
-    if let Some(support) = &admitted_program_support {
-        contracts
-            .validate_required_features(&support.features)
-            .map_err(Denial::Contributions)?;
-    }
-    let configured = WorthQueryConfiguredApplicationContributions::<Schema>::configure::<
-        Contributions,
-    >(&installed, configuration, contracts)
-    .map_err(Denial::Contributions)?;
+    let super::prepared_meaning::PreparedInstalledMeaning {
+        runtime,
+        authority,
+        installed,
+        admitted_program_support,
+        configured,
+    } = super::prepared_meaning::prepare::<Schema, Contributions>(
+        declaration,
+        configuration,
+        &limits,
+        program_admission,
+    )?;
     let (mut invariants, handlers, producers, conditionals, resources, managed_indexes) =
         configured.into_parts().map_err(Denial::Contributions)?;
     conditionals
@@ -136,27 +94,17 @@ where
         .transpose()
         .map_err(|cause| Denial::Graph(cause.into_installation_denial()))?;
     let restoring = decoded_checkpoint.is_some();
-    let mut graph = match decoded_checkpoint.as_ref() {
-        Some(checkpoint) => authority.prepare_primary_graph_from_native_checkpoint_with_invariants(
+    let mut graph = authority
+        .prepare_native_graph(
             phase,
             &runtime,
             &installed,
             relational_runtime,
-            limits.world,
             invariants,
-            checkpoint,
+            decoded_checkpoint.as_ref(),
             checkpoint_transition.is_some(),
-        ),
-        None => authority.prepare_primary_graph_with_relational_runtime_and_invariants(
-            phase,
-            &runtime,
-            &installed,
-            relational_runtime,
-            limits.world,
-            invariants,
-        ),
-    }
-    .map_err(Denial::Graph)?;
+        )
+        .map_err(Denial::Graph)?;
     if checkpoint_transition.is_some()
         && decoded_checkpoint
             .as_ref()
@@ -170,12 +118,6 @@ where
             ),
         ));
     }
-    graph.mutation_handlers = handlers;
-    graph.resources = resources;
-    graph.managed_indexes = managed_indexes;
-    graph.program_activation = admitted_program_support
-        .as_ref()
-        .map(|_| activation.clone());
     // Seal the real configured executors before a recovered producer route can
     // justify retiring an old output. The same registry is published below.
     let producers = producers
@@ -187,9 +129,9 @@ where
         .map_err(Denial::Contributions)?;
     if restoring && let Some(support) = &admitted_program_support {
         if let Some(transition) = checkpoint_transition {
-            super::super::bootstrap::checkpoint_transition::transition_checkpoint(
+            graph = super::super::bootstrap::checkpoint_transition::transition_checkpoint(
                 phase,
-                &mut graph,
+                graph,
                 decoded_checkpoint.as_mut().expect("restoring checkpoint"),
                 super::super::bootstrap::checkpoint_transition::InstalledCheckpointTarget {
                     schema: &installed,
@@ -209,6 +151,17 @@ where
             .map_err(Denial::Graph)?;
         }
     }
+    // No source, Bridge registry or projection handle exists until all exclusive
+    // schema and legacy codec transition work above has completed.
+    let mut graph = graph
+        .into_bootstrap(&runtime, &installed, limits.world)
+        .map_err(Denial::Graph)?;
+    graph.mutation_handlers = handlers;
+    graph.resources = resources;
+    graph.managed_indexes = managed_indexes;
+    graph.program_activation = admitted_program_support
+        .as_ref()
+        .map(|_| activation.clone());
     if !restoring {
         if let Some(support) = &admitted_program_support {
             graph.program_activation_seed = Some(

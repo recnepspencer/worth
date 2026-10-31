@@ -168,7 +168,7 @@ impl WorthQueryPrimaryGraphProvider {
         let layout = self.graph.layout.provider_idempotency().clone();
         let product_affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
-        self.graph.with_runtime_mut_unwind_isolated(execution, |runtime| {
+        self.graph.with_runtime(execution, |runtime| {
             if binding.correction_identity().is_some()
                 && self.inspect_pending_correction_idempotency(binding.key_identity())
                     .is_some_and(|recorded| recorded != binding)

@@ -1,7 +1,7 @@
 use worth_relational::facade::runtime::RelationalRuntime;
 
 pub(super) fn release_commit_snapshot(
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
 ) {
     runtime

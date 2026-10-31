@@ -27,12 +27,12 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
         .clone();
     let fork = BranchId("stale-preflight-fork".to_owned());
 
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime(request_execution, |runtime| {
         let (_, source) = runtime
             .observe_fork_source(runtime.main_branch_identity().branch_id())
             .unwrap();
         runtime.fork_branch(fork.clone(), source).unwrap();
-        let prepare = |runtime: &mut RelationalRuntime, value: &str| {
+        let prepare = |runtime: &RelationalRuntime, value: &str| {
             let basis = runtime
                 .admit_branch_basis(&runtime.branch_identity(&fork).unwrap())
                 .unwrap();

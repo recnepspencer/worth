@@ -60,7 +60,7 @@ pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
         .application
         .primary_provider
         .graph
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             world
                 .application
                 .primary_provider

@@ -48,7 +48,7 @@ use worth_runtime_bridge::facade::{
 /// raw branch selector is passed into Relational's fork transition.
 pub(crate) fn fork_branch_from_exact_source(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     target_branch: BranchId,
     source_branch: &BranchId,
 ) -> Result<RelationalForkOutcome, RelationalBranchTransitionStop<RelationalForkDenial>> {

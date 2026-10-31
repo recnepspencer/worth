@@ -84,7 +84,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             let request_execution = &host_custody.borrowed_request_for_test();
-            handle.with_runtime_mut(request_execution, |runtime| {
+            handle.with_runtime(request_execution, |runtime| {
                 write_field(request_execution, runtime, account, label.clone(), "prime");
                 let (basis_handle, basis) = snapshot(runtime);
                 assert!(runtime

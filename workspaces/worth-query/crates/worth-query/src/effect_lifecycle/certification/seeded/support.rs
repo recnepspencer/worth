@@ -49,7 +49,7 @@ pub(super) fn relational_runtime_with_intent_strategy() -> RelationalRuntime {
 
 pub(super) fn create_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     name: &str,
     branch: BranchId,
 ) -> worth_relational::facade::identity::EntityId {
@@ -98,7 +98,7 @@ pub(super) fn create_entity(
 
 pub(super) fn fork_seed_branch_from_main(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch: &str,
 ) {
     crate::runtime::fork_branch_from_exact_source(

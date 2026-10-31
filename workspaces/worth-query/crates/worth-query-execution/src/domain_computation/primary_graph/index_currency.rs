@@ -41,7 +41,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     pub(crate) fn ensure_primary_indexes_for_basis(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &mut RelationalRuntime,
+        runtime: &RelationalRuntime,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
         execution

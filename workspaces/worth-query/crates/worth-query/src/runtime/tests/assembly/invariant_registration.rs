@@ -21,7 +21,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingInvariantWriteAuthorit
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
-        relational_runtime: Option<&mut RelationalRuntime>,
+        relational_runtime: Option<&RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         let relational_runtime = relational_runtime
@@ -63,7 +63,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingCatalogWriteAuthority 
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
-        relational_runtime: Option<&mut RelationalRuntime>,
+        relational_runtime: Option<&RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         let relational_runtime = relational_runtime

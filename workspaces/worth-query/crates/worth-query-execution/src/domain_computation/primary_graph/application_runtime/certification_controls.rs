@@ -173,7 +173,7 @@ where
     ) {
         self.primary_provider
             .graph
-            .with_runtime_mut(request_execution, |runtime| {
+            .with_runtime(request_execution, |runtime| {
                 let active = runtime.retention().active_snapshot_count();
                 let identity = runtime
                     .branch_identity(self.relational_branch_identity.branch_id())
@@ -206,7 +206,7 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle();
-        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
+        let candidate = handle.with_query_runtime(&execution, |runtime, layout| {
             let membership = runtime
                 .read_truth()
                 .visible_relations_of_kind(
@@ -267,7 +267,7 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle();
-        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
+        let candidate = handle.with_query_runtime(&execution, |runtime, layout| {
             let workflow = layout.workflow();
             let version = application_basis.snapshot_handle().version_id();
             let published = |kind| {

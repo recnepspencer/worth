@@ -42,7 +42,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
         return application
             .primary_provider
             .graph
-            .with_runtime_mut(&execution, |runtime| {
+            .with_runtime(&execution, |runtime| {
                 let snapshot =
                     open_exact_basis_snapshot(runtime, target.product().relational_basis())
                         .map_err(Denial::Basis)?;
@@ -61,7 +61,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
     let selection = application
         .primary_provider
         .graph
-        .with_runtime_mut(&execution, |runtime| {
+        .with_runtime(&execution, |runtime| {
             with_support_snapshots(
                 runtime,
                 original,
@@ -81,69 +81,67 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                 },
             )
         })?;
-    let occurrences =
-        application
-            .primary_provider
-            .graph
-            .with_runtime_mut(&execution, |runtime| {
-                let basis = target.product().relational_basis();
-                let commit = basis
-                    .observation()
-                    .commit_id()
-                    .ok_or(Denial::MissingTargetParent)?;
-                let selected = runtime
-                    .select_exact_commit(&basis.observation(), commit)
-                    .into_outcome()
-                    .map_err(|cause| Denial::RestoredSupport(Stop::Selection(cause)))?;
-                let mut cursor = runtime
-                    .authored_write_history_cursor(execution, original, selected, &selection.keys)
+    let occurrences = application
+        .primary_provider
+        .graph
+        .with_runtime(&execution, |runtime| {
+            let basis = target.product().relational_basis();
+            let commit = basis
+                .observation()
+                .commit_id()
+                .ok_or(Denial::MissingTargetParent)?;
+            let selected = runtime
+                .select_exact_commit(&basis.observation(), commit)
+                .into_outcome()
+                .map_err(|cause| Denial::RestoredSupport(Stop::Selection(cause)))?;
+            let mut cursor = runtime
+                .authored_write_history_cursor(execution, original, selected, &selection.keys)
+                .map_err(|cause| Denial::RestoredSupport(Stop::Native(cause)))
+                .inspect_err(|cause| correction_rejection("canonical-history", None, cause))?;
+            let mut occurrences = cancellation::Occurrences::default();
+            loop {
+                // A physical paging granule, not a semantic history ceiling.
+                let page = cursor
+                    .next_page(
+                        runtime,
+                        execution,
+                        RelationalAuthoredWritePageLimits {
+                            maximum_entries: NonZeroUsize::new(32).expect("positive page width"),
+                            maximum_source_visits: NonZeroUsize::new(32)
+                                .expect("positive page width"),
+                            maximum_owned_bytes: NonZeroUsize::new(usize::MAX)
+                                .expect("positive storage bound"),
+                        },
+                    )
                     .map_err(|cause| Denial::RestoredSupport(Stop::Native(cause)))
-                    .inspect_err(|cause| correction_rejection("canonical-history", None, cause))?;
-                let mut occurrences = cancellation::Occurrences::default();
-                loop {
-                    // A physical paging granule, not a semantic history ceiling.
-                    let page = cursor
-                        .next_page(
-                            runtime,
+                    .inspect_err(|cause| {
+                        correction_rejection("canonical-history-page", None, cause)
+                    })?;
+                for occurrence in page.entries() {
+                    // The occurrence shares admitted canonical material; only these
+                    // new immutable cells are quoted. No receipt payload is cloned.
+                    super::ordered_visit(execution, occurrences.len())
+                        .map_err(Denial::RestoredSupport)?;
+                    occurrences
+                        .insert_cloned_native_for_request(
+                            &occurrence.commit_id(),
+                            occurrence,
                             execution,
-                            RelationalAuthoredWritePageLimits {
-                                maximum_entries: NonZeroUsize::new(32)
-                                    .expect("positive page width"),
-                                maximum_source_visits: NonZeroUsize::new(32)
-                                    .expect("positive page width"),
-                                maximum_owned_bytes: NonZeroUsize::new(usize::MAX)
-                                    .expect("positive storage bound"),
-                            },
                         )
-                        .map_err(|cause| Denial::RestoredSupport(Stop::Native(cause)))
-                        .inspect_err(|cause| {
-                            correction_rejection("canonical-history-page", None, cause)
-                        })?;
-                    for occurrence in page.entries() {
-                        // The occurrence shares admitted canonical material; only these
-                        // new immutable cells are quoted. No receipt payload is cloned.
-                        super::ordered_visit(execution, occurrences.len())
-                            .map_err(Denial::RestoredSupport)?;
-                        occurrences
-                            .insert_cloned_native_for_request(
-                                &occurrence.commit_id(),
-                                occurrence,
-                                execution,
-                            )
-                            .map_err(|cause| Denial::RestoredSupport(Stop::Storage(cause)))?;
-                    }
-                    if page.is_complete() {
-                        break;
-                    }
+                        .map_err(|cause| Denial::RestoredSupport(Stop::Storage(cause)))?;
                 }
-                Ok::<_, Denial>(occurrences)
-            })?;
+                if page.is_complete() {
+                    break;
+                }
+            }
+            Ok::<_, Denial>(occurrences)
+        })?;
     cancellation::require(target, execution, &occurrences)
         .inspect_err(|cause| correction_rejection("canonical-cancellation", None, cause))?;
     application
         .primary_provider
         .graph
-        .with_runtime_mut(&execution, |runtime| {
+        .with_runtime(&execution, |runtime| {
             with_support_snapshots(
                 runtime,
                 original,
@@ -154,7 +152,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
 }
 
 fn with_support_snapshots<T>(
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     original: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     target: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     inspect: impl FnOnce(

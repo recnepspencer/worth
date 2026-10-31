@@ -69,7 +69,7 @@ fn equal_native_field_write_keeps_revision_and_downstream_clean_until_a_real_cha
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             let request_execution = &host_custody.borrowed_request_for_test();
-            handle.with_runtime_mut(request_execution, |runtime| {
+            handle.with_runtime(request_execution, |runtime| {
                 write_field(request_execution, runtime, entity, label, "prime");
                 let (before_handle, before) = snapshot(runtime);
                 let before_fact = field_fact(

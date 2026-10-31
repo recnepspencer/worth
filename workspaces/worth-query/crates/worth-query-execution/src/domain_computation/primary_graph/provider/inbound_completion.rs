@@ -165,7 +165,7 @@ impl WorthQueryPrimaryGraphProvider {
             )),
             fields: worth_relational::facade::transactions::AspectFieldPatch::from(fields),
         }));
-        self.graph.with_runtime_mut(execution, |runtime| {
+        self.graph.with_runtime(execution, |runtime| {
             let before = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
                 .map_err(|_| Denial::SnapshotUnavailable)?;
             let result = (|| {

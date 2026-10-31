@@ -32,7 +32,7 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
             let provider = &world.application.primary_provider;
             let request = phase.borrowed_request_for_test();
             let basis = selected.product().relational_basis();
-            provider.graph.with_runtime_mut(&request, |runtime| {
+            provider.graph.with_runtime(&request, |runtime| {
                 let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).unwrap();
                 let resolution = provider.resolve_aftermath_causality_in_snapshot(
                     &request, runtime, basis, &snapshot, &pending, None,

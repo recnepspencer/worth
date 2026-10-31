@@ -104,7 +104,7 @@ impl runtime::WorthQueryRuntimeWriteAuthorityAdapter for CommitThenDecline {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
-        relational_runtime: Option<&mut RelationalRuntime>,
+        relational_runtime: Option<&RelationalRuntime>,
         _mutation: runtime::WorthQueryBackendAdmissibleMutation,
     ) -> Result<runtime::WriteAuthorityExecutionReceipt, foundation::WorthQueryWorkspaceError> {
         let runtime = relational_runtime.expect("the primary graph owns the write");

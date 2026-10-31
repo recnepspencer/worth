@@ -19,9 +19,9 @@ fn currency_consumer(consumer: u8) {
         .integration_handle();
     let setup_host = crate::test_request_policy::serial_request();
     let setup = ExecutionRequest::serial(&setup_host);
-    handle.source_owner.with_runtime_mut(&setup,|runtime|{
+    handle.source_owner.with_runtime(&setup,|runtime|{
   commit_empty(&setup,runtime,"main");let (_,basis)=runtime.observe_branch(&runtime.main_branch_identity()).unwrap();
-  let discard=|runtime:&mut worth_relational::facade::runtime::RelationalRuntime|for index in handle.primary_index_ids.iter(){runtime.index_authority().discard_generations(worth_relational::facade::indexes::DerivedIndexDiscardRequest::all_bases(*index)).unwrap();};
+  let discard=|runtime:&worth_relational::facade::runtime::RelationalRuntime|for index in handle.primary_index_ids.iter(){runtime.index_authority().discard_generations(worth_relational::facade::indexes::DerivedIndexDiscardRequest::all_bases(*index)).unwrap();};
   discard(runtime);
   let (healthy,count)=with_request_consult_observer_for_test(|_|{},||handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis));healthy.unwrap();assert!(count>2);eprintln!("currency consults={count}");
   for k in 1..=count+1 {

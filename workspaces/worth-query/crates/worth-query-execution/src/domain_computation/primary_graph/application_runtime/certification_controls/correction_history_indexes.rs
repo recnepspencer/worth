@@ -22,7 +22,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             lineage.reversed_source_index,
             lineage.consumed_reversal_index,
         ];
-        Ok(graph.with_runtime_mut(&execution, |runtime| indexes.into_iter().map(|index| runtime.index_authority().discard_generations(worth_relational::facade::indexes::DerivedIndexDiscardRequest::all_bases(index)).expect("installed correction index").removed_generation_count()).sum()))
+        Ok(graph.with_runtime(&execution, |runtime| indexes.into_iter().map(|index| runtime.index_authority().discard_generations(worth_relational::facade::indexes::DerivedIndexDiscardRequest::all_bases(index)).expect("installed correction index").removed_generation_count()).sum()))
     }
 
     /// Uses the existing native reconstruction owner against an exactly selected basis.
@@ -51,7 +51,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             lineage.reversed_source_index,
             lineage.consumed_reversal_index,
         ];
-        graph.with_runtime_mut(&execution, |runtime| runtime.index_authority().refresh_for_basis(
+        graph.with_runtime(&execution, |runtime| runtime.index_authority().refresh_for_basis(
             worth_relational::facade::indexes::DerivedIndexBuildRequest {
                 source_commit_id: basis.observation().commit_id().expect("published correction basis"),
                 branch_id: basis.identity().branch_id().clone(), index_ids,

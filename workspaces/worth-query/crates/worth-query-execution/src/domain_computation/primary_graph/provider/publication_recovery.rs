@@ -3,7 +3,7 @@ use super::WorthQueryPrimaryGraphProvider;
 impl WorthQueryPrimaryGraphProvider {
     pub(super) fn repair_equivalent_publication_settlement(
         &self,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         committed: &super::WorthQueryPrimaryGraphCommittedApplication,
     ) -> Result<(), super::WorthQueryProviderIdempotencyResolutionDenial> {
         runtime

@@ -204,7 +204,7 @@ fn current_relation(
     let selected = world.selected_product(&(phase_custody).test_host_request());
     graph
         .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             let snapshot = selected.application_basis().snapshot_handle();
 
             runtime

@@ -92,7 +92,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         0,
     );
 
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime(request_execution, |runtime| {
         write_field(request_execution, runtime, entity, label.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let old_a_fact = field_fact(request_execution, runtime, &before_handle, entity, status.clone());
@@ -212,7 +212,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
     let a_source = source(OutputBindingIdentity::declared("StatusOutput"));
     let a0 = RecordedSettlementIdentity::retain(&a_source, coordinate, 0);
     let a1 = RecordedSettlementIdentity::retain(&a_source, coordinate, 1);
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime(request_execution, |runtime| {
         let (before_handle, before) = snapshot(runtime);
         let unchanged_fact = field_fact(request_execution, runtime, &before_handle, entity, label);
         register(owner, Arc::clone(&a0), Arc::from([unchanged_fact.clone()]), &before, OrdSet::new());

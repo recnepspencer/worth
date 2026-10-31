@@ -47,7 +47,7 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
         let handle = graph.integration_handle();
         let owner = &handle.source_owner.invalidation_owner;
         let execution = custody.borrowed_request_for_test();
-        handle.with_runtime_mut(&execution, |runtime| {
+        handle.with_runtime(&execution, |runtime| {
             let (original_handle, before) = snapshot(runtime);
             let original_fact = field_fact(&execution, runtime, &original_handle, entity, status.clone());
             register(owner, row.clone(), Arc::from([original_fact.clone()]), &before, OrdSet::new());

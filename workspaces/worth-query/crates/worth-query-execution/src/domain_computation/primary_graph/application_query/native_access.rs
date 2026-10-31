@@ -8,7 +8,7 @@ use worth_relational::facade::runtime::RelationalRuntime;
 
 pub(in crate::domain_computation::primary_graph) enum ApplicationQueryNativeAccess<'a> {
     Acquire,
-    Borrowed(&'a mut RelationalRuntime),
+    Borrowed(&'a RelationalRuntime),
 }
 
 impl<'a> ApplicationQueryNativeAccess<'a> {
@@ -18,7 +18,7 @@ impl<'a> ApplicationQueryNativeAccess<'a> {
 
     pub(in crate::domain_computation::primary_graph) fn borrowed(
         graph: &WorthQueryPrimaryGraph,
-        runtime: &'a mut RelationalRuntime,
+        runtime: &'a RelationalRuntime,
     ) -> Result<Self, super::WorthQueryApplicationQueryAdmissionDenial> {
         if graph.relational_runtime_instance_id()
             != runtime.main_branch_identity().runtime_instance_id()
@@ -31,15 +31,15 @@ impl<'a> ApplicationQueryNativeAccess<'a> {
         Ok(Self::Borrowed(runtime))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn with_runtime_mut<T, E>(
+    pub(in crate::domain_computation::primary_graph) fn with_runtime<T, E>(
         &mut self,
         graph: &WorthQueryPrimaryGraph,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         foreign: impl FnOnce() -> E,
-        read: impl FnOnce(&mut RelationalRuntime) -> Result<T, E>,
+        read: impl FnOnce(&RelationalRuntime) -> Result<T, E>,
     ) -> Result<T, E> {
         match self {
-            Self::Acquire => graph.with_runtime_mut(execution, read),
+            Self::Acquire => graph.with_runtime(execution, read),
             Self::Borrowed(runtime) => {
                 if graph.relational_runtime_instance_id()
                     != runtime.main_branch_identity().runtime_instance_id()
@@ -56,7 +56,7 @@ impl<'a> ApplicationQueryNativeAccess<'a> {
         work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
         basis: &crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
         read: impl FnOnce(
-            &mut RelationalRuntime,
+            &RelationalRuntime,
             &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<

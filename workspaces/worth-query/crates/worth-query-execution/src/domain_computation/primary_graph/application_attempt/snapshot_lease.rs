@@ -115,7 +115,7 @@ impl WorthQueryApplicationSnapshotLease {
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryApplicationSnapshotLeaseDenial> {
         let basis = product.relational_basis().clone();
-        let snapshot = handle.with_runtime_mut(execution, |runtime| {
+        let snapshot = handle.with_runtime(execution, |runtime| {
             let snapshot = runtime
                 .snapshots()
                 .snapshot_for_observation(&basis.observation())

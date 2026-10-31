@@ -187,7 +187,7 @@ fn history_runtime() -> RelationalRuntime {
 
 fn commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     name: &str,
 ) -> SnapshotHandle {
     let basis = runtime

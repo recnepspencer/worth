@@ -38,7 +38,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         indexes.extend([reads.instances, reads.transitions]);
     }
     let indexes = indexes.into_iter().collect::<Vec<_>>();
-    graph.with_runtime_mut(execution, |runtime| {
+    graph.with_runtime(execution, |runtime| {
         let before = super::super::super::super::exact_basis_access::open_exact_basis_snapshot(
             runtime, selected.product().relational_basis(),
         ).map_err(Denial::SelectorSnapshot)?;

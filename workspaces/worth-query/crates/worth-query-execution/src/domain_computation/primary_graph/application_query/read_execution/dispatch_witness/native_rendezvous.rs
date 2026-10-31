@@ -6,7 +6,7 @@ use crate::domain_computation::execution_runtime::product_world::ReadLockProbeFo
 pub(super) trait NativeReadRendezvousControl: Send + Sync {
     fn enter(&self, root: EntityId);
     fn exit(&self, root: EntityId);
-    fn while_owner_locked(
+    fn while_owner_borrowed(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         read: &mut dyn FnMut(),
@@ -27,7 +27,6 @@ struct NativeState {
     entered: std::collections::BTreeSet<EntityId>,
     held: usize,
     peak: usize,
-    owner_locked: usize,
     open: bool,
     watchdog_failed: bool,
     exits: std::collections::BTreeMap<EntityId, usize>,
@@ -66,7 +65,7 @@ impl DispatchWitness {
             previous,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn with_native_owner_lock_for_test<T>(
+    pub(in crate::domain_computation::primary_graph) fn with_native_owner_borrow_for_test<T>(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce() -> T,
@@ -76,7 +75,7 @@ impl DispatchWitness {
             Some(gate) => {
                 let mut read = Some(read);
                 let mut result = None;
-                gate.while_owner_locked(request, &mut || {
+                gate.while_owner_borrowed(request, &mut || {
                     result = Some(read.take().expect("the owner executes its closure once")());
                 });
                 result.expect("the owner executed its closure")
@@ -108,12 +107,12 @@ impl DispatchWitness {
     }
 }
 impl NativeReadRendezvousControl for NativeReadRendezvous {
-    fn while_owner_locked(
+    fn while_owner_borrowed(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         read: &mut dyn FnMut(),
     ) {
-        self.owner.with_owner_lock_for_test(request, read);
+        self.owner.with_owner_borrow_for_test(request, read);
     }
 
     fn release_snapshot(&self) {
@@ -129,9 +128,6 @@ impl NativeReadRendezvousControl for NativeReadRendezvous {
             state
                 .exit_acquisitions
                 .push((root, self.owner.acquisitions_for_test()));
-            if self.owner.is_locked_for_test() {
-                state.owner_locked += 1;
-            }
         }
     }
     fn enter(&self, root: EntityId) {
@@ -143,13 +139,6 @@ impl NativeReadRendezvousControl for NativeReadRendezvous {
             .initial_acquisitions
             .get_or_insert_with(|| self.owner.acquisitions_for_test());
         state.entered.insert(root);
-        // This fails the old lock-spanning read without leaving a peer waiting.
-        if self.owner.is_locked_for_test() {
-            state.owner_locked += 1;
-            state.open = true;
-            self.ready.notify_all();
-            return;
-        }
         state.workers.insert(std::thread::current().id());
         state.held += 1;
         state.peak = state.peak.max(state.held);
@@ -191,10 +180,7 @@ impl NativeReadRendezvousGuardForTest {
                 "owner acquired during rooted read {root:?}"
             );
         }
-        assert_eq!(
-            state.owner_locked, 0,
-            "a native read retained its owner's lock"
-        );
+
         assert_eq!(
             state.entered,
             std::collections::BTreeSet::from(self.gate.roots)

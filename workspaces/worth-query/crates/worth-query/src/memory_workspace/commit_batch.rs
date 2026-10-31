@@ -7,7 +7,7 @@ impl WorthQueryMemoryWorkspace {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         batch: WorkerIntentBatch,
     ) -> Result<(CommitResult, WorthQuerySnapshotIdentity), WorthQueryWorkspaceError> {
-        self.runtime.with_runtime_mut(execution, |runtime| {
+        self.runtime.with_runtime(execution, |runtime| {
             let branch = runtime.main_branch_identity();
             let basis = runtime
                 .admit_branch_basis(&branch)

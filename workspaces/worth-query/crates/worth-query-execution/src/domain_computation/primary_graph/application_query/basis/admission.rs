@@ -92,7 +92,7 @@ where
 {
     let graph = application.primary_provider.graph.clone();
     graph
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             graph.ensure_primary_indexes_for_basis(execution, runtime, &basis)
         })
         .map_err(map_index_currency_denial)?;

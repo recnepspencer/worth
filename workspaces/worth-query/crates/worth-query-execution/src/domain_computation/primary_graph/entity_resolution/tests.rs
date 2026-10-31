@@ -30,7 +30,7 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
 
             first_graph
                 .integration_handle()
-                .with_runtime_mut(&borrowed_execution, |_| {
+                .with_runtime(&borrowed_execution, |_| {
                     first_product
                         .application_basis()
                         .snapshot_handle()
@@ -49,7 +49,7 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
             );
             second_graph
                 .integration_handle()
-                .with_runtime_mut(&borrowed_execution, |runtime| {
+                .with_runtime(&borrowed_execution, |runtime| {
                     let snapshot = second_product.application_basis().snapshot_handle();
                     assert_eq!(snapshot.version_id(), first_version);
                     let denial = match installed.at_snapshot(
@@ -109,7 +109,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
 
             graph
                 .integration_handle()
-                .with_runtime_mut(&borrowed_execution, |runtime| {
+                .with_runtime(&borrowed_execution, |runtime| {
                     let head = runtime
                         .history()
                         .historical_latest_commit()
@@ -156,7 +156,7 @@ let execution = &borrowed_execution;
 let selected = world.selected_product(
             &(host_custody.phase_for_application(&world.application)).test_host_request(),
         );
-        graph.integration_handle().with_runtime_mut(&borrowed_execution, |runtime| {
+        graph.integration_handle().with_runtime(&borrowed_execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let truth = installed
             .at_snapshot( runtime, snapshot, WorthQueryPrincipalResolutionMode::Ordinary)

@@ -264,7 +264,7 @@ impl WorthQueryPrimaryGraphProvider {
             &WorthQueryAftermathCausalityLayout,
         ) -> Result<T, WorthQueryAftermathCausalityReadDenial>,
     ) -> Result<T, WorthQueryAftermathCausalityReadDenial> {
-        self.graph.with_runtime_mut(execution, |runtime| {
+        self.graph.with_runtime(execution, |runtime| {
             execution.consult().map_err(|cause| aftermath_read_stop(cause.into()))?;
             // The ordinary lane requires the existing native generation. Explicit reconstruction owns rebuilding.
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).map_err(|denial| aftermath_snapshot_denial(denial.into()))?;

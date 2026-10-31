@@ -30,7 +30,7 @@ pub(super) struct WorthQueryPublishedApplicationCommit {
 pub(super) fn publish(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {
@@ -52,7 +52,7 @@ pub(super) fn publish(
 fn publish_retained(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {

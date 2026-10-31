@@ -81,55 +81,50 @@ fn commit_only_other_outbox(
         worth_relational::facade::identity::PartitionId::main(),
     )
     .expect("committed outbox create binds");
-    provider
-        .graph
-        .with_runtime_mut(request_execution, |runtime| {
-            let mut transaction = {
-                let transaction_validation_input = runtime
-                    .admit_branch_basis(&runtime.main_branch_identity())
-                    .expect("main branch binding");
-                runtime
-                    .begin_branch_transaction(
-                        &transaction_validation_input,
-                        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                    )
-                    .expect("owner-admitted transaction context")
-            };
-            transaction
-                .push_batch(
-                    WorkerIntentBatch::new("outbox-resolution-owner-proof").push(committed_intent),
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    provider.graph.with_runtime(request_execution, |runtime| {
+        let mut transaction = {
+            let transaction_validation_input = runtime
+                .admit_branch_basis(&runtime.main_branch_identity())
+                .expect("main branch binding");
+            runtime
+                .begin_branch_transaction(
+                    &transaction_validation_input,
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
                 )
-                .expect("test staging stays within configured resource budgets");
-            let committed = transaction
-                .commit(request_execution, runtime)
-                .expect("the other outbox commits");
-            let expected_record_ref = RecordRef::Entity(
-                committed
-                    .created_entity(committed_pending.created_entity())
-                    .expect("the exact committed create has an owner-minted mapping"),
-            );
-            let evidence = CommittedOutboxResolutionEvidence {
-                committed_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit(
-                    Some(&committed_pending),
-                    &committed,
-                ),
-                requested_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit(
-                    Some(&requested),
-                    &committed,
-                ),
-                absent_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit(
-                    None, &committed,
-                ),
-                committed_pending,
-                expected_record_ref,
-            };
-            crate::relational_snapshot_release::release_query_snapshot(
-                runtime,
-                &committed.snapshot,
-            );
-            evidence
-        })
+                .expect("owner-admitted transaction context")
+        };
+        transaction
+            .push_batch(
+                WorkerIntentBatch::new("outbox-resolution-owner-proof").push(committed_intent),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("test staging stays within configured resource budgets");
+        let committed = transaction
+            .commit(request_execution, runtime)
+            .expect("the other outbox commits");
+        let expected_record_ref = RecordRef::Entity(
+            committed
+                .created_entity(committed_pending.created_entity())
+                .expect("the exact committed create has an owner-minted mapping"),
+        );
+        let evidence = CommittedOutboxResolutionEvidence {
+            committed_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit(
+                Some(&committed_pending),
+                &committed,
+            ),
+            requested_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit(
+                Some(&requested),
+                &committed,
+            ),
+            absent_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit(
+                None, &committed,
+            ),
+            committed_pending,
+            expected_record_ref,
+        };
+        crate::relational_snapshot_release::release_query_snapshot(runtime, &committed.snapshot);
+        evidence
+    })
 }
 
 fn record(identity: u64) -> WorthQueryDispatchOutboxRecord {

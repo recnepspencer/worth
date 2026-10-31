@@ -26,7 +26,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                 .field_locator("AggregateSource", "SourceFacts", "SourceAmount")
                 .unwrap()
                 .clone();
-            world.authority.graph.with_runtime_mut(&healthy, |runtime| {
+            world.authority.graph.with_runtime(&healthy, |runtime| {
                 let identity = runtime.main_branch_identity();
                 let (_, basis) = runtime.observe_branch(&identity).unwrap();
                 let before = runtime

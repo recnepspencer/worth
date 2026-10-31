@@ -72,7 +72,7 @@ impl Context {
                 .into_parts();
             let candidate = graph
                 .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     let mut transaction = runtime
                         .begin_branch_transaction(
                             product.relational_basis(),

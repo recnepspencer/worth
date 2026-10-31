@@ -20,7 +20,7 @@ impl WorthQueryObservedApplicationFactBasis {
     pub(in crate::domain_computation::primary_graph::provider) fn remains_equal_in(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<bool, crate::domain_computation::WorthQueryDecisionReadSetFailure> {
         let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
             runtime,

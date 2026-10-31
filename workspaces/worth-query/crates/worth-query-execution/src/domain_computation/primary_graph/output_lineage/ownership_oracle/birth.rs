@@ -65,7 +65,7 @@ pub(super) fn admit_genuine_all_create(runtime: &Application) {
                 posture: RequiredOutputRolePosture::Create,
                 target: EntityReference::Created(target.clone()),
             }];
-            let candidate = graph.with_query_runtime_mut(&execution, |native, layout| {
+            let candidate = graph.with_query_runtime(&execution, |native, layout| {
                 let fields = AspectFieldPatch::from(BTreeMap::from([
                     (
                         layout

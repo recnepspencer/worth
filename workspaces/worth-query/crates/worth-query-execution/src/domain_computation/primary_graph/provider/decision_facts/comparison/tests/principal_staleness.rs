@@ -23,7 +23,7 @@ impl WorthQueryPrimaryGraphProvider {
             fact,
             WorthQueryPrimaryGraphApplicationDecisionFact::Principal(_)
         ));
-        let snapshot = self.graph.with_runtime_mut(execution, |runtime| {
+        let snapshot = self.graph.with_runtime(execution, |runtime| {
             let (_, basis) = runtime
                 .observe_branch(&runtime.main_branch_identity())
                 .unwrap();

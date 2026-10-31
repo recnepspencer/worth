@@ -21,7 +21,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for TestWriteAuthority {
         &mut self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         let aspect_touches = mutation.declared_aspect_touches();
@@ -64,7 +64,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for DenyingWriteAuthority {
         &mut self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         _mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         Err(WorthQueryWorkspaceError::new(
@@ -80,7 +80,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for AuthorityLessWriteAuthority {
         &mut self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         let collection = mutation_collection(&mutation);
@@ -105,7 +105,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for CountingWriteAuthority {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         self.attempted_writes
@@ -125,7 +125,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for AtomicBatchCountingWriteAuthorit
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         self.attempted_writes
@@ -138,7 +138,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for AtomicBatchCountingWriteAuthorit
         &mut self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
-        _relational_runtime: Option<&mut RelationalRuntime>,
+        _relational_runtime: Option<&RelationalRuntime>,
         mutations: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WriteAuthorityExecutionReceipt>, WorthQueryWorkspaceError> {
         self.attempted_batches

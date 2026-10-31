@@ -58,7 +58,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime(request_execution, |runtime| {
         write_field(request_execution, runtime, entity, label, "prime")
     });
     let (before_handle, before, facts) = world
@@ -104,7 +104,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         SourceSettlementCurrentness::Clean
     ));
 
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime(request_execution, |runtime| {
         write_field(request_execution, runtime, entity, status, "closed")
     });
     let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
@@ -146,7 +146,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         SourceSettlementCurrentness::Dirty(ordinals) => assert_eq!(ordinals, OrdSet::unit(0)),
         _ => panic!("a registration stale at its own read basis starts dirty"),
     }
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime(request_execution, |runtime| {
         runtime
             .snapshots()
             .release_snapshot(&before_handle)

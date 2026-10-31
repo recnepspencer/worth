@@ -77,7 +77,7 @@ where
                 )
             })?;
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
-        graph.integration_handle().with_runtime_mut(execution, |runtime| {
+        graph.integration_handle().with_runtime(execution, |runtime| {
             let snapshot = security.snapshot_handle();
             if !authority
                 .principal()

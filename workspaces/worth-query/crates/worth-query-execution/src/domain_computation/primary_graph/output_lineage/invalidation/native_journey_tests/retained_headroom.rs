@@ -33,7 +33,7 @@ fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical
             .unwrap().clone();
         let handle = graph.integration_handle();
         let owner = &handle.source_owner.invalidation_owner;
-        handle.with_runtime_mut(execution, |runtime| {
+        handle.with_runtime(execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
             let original = field_fact(&custody.borrowed_request_for_test(), runtime,
                 &before_handle, entity, status.clone());

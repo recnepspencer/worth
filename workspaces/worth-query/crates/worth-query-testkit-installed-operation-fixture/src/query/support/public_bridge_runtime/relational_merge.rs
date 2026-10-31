@@ -53,7 +53,7 @@ pub fn public_relational_merge_runtime() -> RelationalRuntime {
 
 pub fn create_empty_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch: &str,
     key: &str,
 ) {

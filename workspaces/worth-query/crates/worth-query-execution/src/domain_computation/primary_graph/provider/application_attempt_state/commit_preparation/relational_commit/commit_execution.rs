@@ -115,7 +115,7 @@ pub(super) fn commit(
     provider.fault_port.candidate_ready_for_native_preparation();
     let mut candidate = provider
         .graph
-        .with_runtime_mut(&execution, |runtime| {
+        .with_runtime(&execution, |runtime| {
             runtime.prepare_validated_proposal(&execution, candidate)
         })
         .map_err(|error| {
@@ -295,7 +295,8 @@ fn world_no_effect(
             WorthQueryProviderSessionControlStopKind::TimedOut,
             "World publication deadline elapsed before effect",
         )),
-        NoEffectCause::ExecutionRequest(_)
+        NoEffectCause::DurableOpenRequired
+        | NoEffectCause::ExecutionRequest(_)
         | NoEffectCause::OwnerDeniedBeforeEffect
         | NoEffectCause::CorrespondenceRebindRequired
         | NoEffectCause::ReferenceGenerationExhausted
@@ -353,7 +354,7 @@ impl WorthQueryCommittedApplicationSession {
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider: &WorthQueryPrimaryGraphProvider,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         evidence: super::WorthQueryPrimaryGraphCommitEvidence,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,

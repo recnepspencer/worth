@@ -136,7 +136,7 @@ impl DuplicateWorld {
     fn lend(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mutate: impl FnOnce(&mut RelationalRuntime),
+        mutate: impl FnOnce(&RelationalRuntime),
     ) {
         self.graph
             .execute_mutation_with_index_refresh(request_execution, |relational| {
@@ -165,7 +165,7 @@ fn main_head(
 /// program write would be refused.
 fn create_duplicate_principal(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    relational: &mut RelationalRuntime,
+    relational: &RelationalRuntime,
     branch: &str,
 ) {
     let kind = principal_kind(relational);

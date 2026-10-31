@@ -47,7 +47,7 @@ pub(crate) fn completion_records(
         .application
         .primary_provider
         .graph
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             let snapshot =
                 super::super::super::super::exact_basis_access::open_exact_basis_snapshot(
                     runtime,

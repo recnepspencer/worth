@@ -153,7 +153,7 @@ impl WorthQueryManagedGraphWorkSession {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &WorthQueryApplicationBasisIdentity,
         read: impl FnOnce(
-            &mut worth_relational::facade::runtime::RelationalRuntime,
+            &worth_relational::facade::runtime::RelationalRuntime,
             &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<(T, WorthQuerySessionGraphReadProof), WorthQueryManagedGraphReadDenial> {
@@ -232,9 +232,9 @@ impl WorthQueryManagedGraphWorkSession {
     pub(in crate::domain_computation) fn execute_query_read_borrowed<T>(
         &self,
         basis: &WorthQueryApplicationBasisIdentity,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         read: impl FnOnce(
-            &mut worth_relational::facade::runtime::RelationalRuntime,
+            &worth_relational::facade::runtime::RelationalRuntime,
             &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<(T, WorthQuerySessionGraphReadProof), WorthQueryManagedGraphReadDenial> {
