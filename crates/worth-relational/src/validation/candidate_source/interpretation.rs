@@ -45,6 +45,8 @@ pub(crate) struct NativeManagedSourceInterpretation {
     materialization: Option<Arc<NativeMaterializationSource>>,
     restoration: Option<NativeSourceRestorationOrigin>,
     pub(super) prepared: std::sync::OnceLock<super::staged::PreparedManagedIndexSources>,
+    pub(super) authored_history:
+        std::sync::OnceLock<Option<Arc<super::authored_history::PreparedMembershipHistory>>>,
     pub(super) context: std::sync::OnceLock<super::context::BoundSourceContext>,
 }
 
@@ -62,6 +64,7 @@ impl NativeManagedSourceInterpretation {
             materialization: input.intent().materialization_source().cloned(),
             restoration: input.intent().restoration_origin().cloned(),
             prepared: std::sync::OnceLock::new(),
+            authored_history: std::sync::OnceLock::new(),
             context: std::sync::OnceLock::new(),
         })
     }
@@ -141,3 +144,14 @@ impl PartialEq for NativeSourceInterpretationIdentity {
     }
 }
 impl Eq for NativeSourceInterpretationIdentity {}
+
+impl NativeManagedSourceInterpretation {
+    pub(crate) fn prepared_membership_history(
+        &self,
+    ) -> Option<Arc<super::authored_history::PreparedMembershipHistory>> {
+        self.authored_history
+            .get()
+            .and_then(|history| history.as_ref())
+            .map(Arc::clone)
+    }
+}

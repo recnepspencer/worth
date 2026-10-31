@@ -11,8 +11,9 @@ mod merge_branch_basis_foundational;
 mod patch_stream_commit;
 pub(crate) mod relevant_writes;
 pub use relevant_writes::{
-    RelationalAuthoredEntityIndexDefinition, RelationalAuthoredWriteCursor,
-    RelationalAuthoredWriteDenial, RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
+    RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceSelector,
+    RelationalAuthoredWriteCursor, RelationalAuthoredWriteDenial,
+    RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
     RelationalAuthoredWritePageLimits, RelationalAuthoredWriteScope,
     RelationalAuthoredWriteSelector, RelationalPreparedAuthoredWritePage,
 };

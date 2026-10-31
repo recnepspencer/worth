@@ -2250,3 +2250,27 @@ predicate-revision refusals, with179/179 broad scoped consumer passes,39/39 focu
 owner passes and the unchanged original prefix work-growth guard. Four broad
 exclusions remain explicit; no large geometry-chain rerun or correction-history
 qualification is claimed.
+
+
+### Phase4 Native membership-history prerequisite
+
+The [boundary review](milestone-9.19-phase4-membership-history-boundary-review.md)
+and [plan](milestone-9.19-phase4-membership-history-plan.md) add a separate opaque
+Native selector and named entrance into the existing canonical authored cursor.
+Actual installed membership-only Source programs, original authored lifecycle/
+incidence and complete before/after pullback supply conservative impact
+candidates. Shared-row neighbors can be included; candidates alone establish
+neither exact relevance nor performed correction cancellation.
+
+Metadata is bound to the actual final canonical envelope and omitted from its
+canonical value/bytes. Deep Clone clears it; decoded recovery and journal
+settlement can leave typed historical gaps even while postings survive. Original
+requests fund preparation, retained coordinates and cursor work. Full scalar/
+projected history, Query relevance/cancellation/paired support and narrower field
+tracing remain required; this prerequisite does not close Phase4 or qualify
+Phases5/6.
+
+
+The [Native membership-history receipt](milestone-9.19-phase4-membership-history-evidence.md)
+records precise candidate, interruption and cold-gap evidence and its current
+qualification limits.

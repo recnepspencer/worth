@@ -22,6 +22,8 @@ use worth_relational::facade::{
 
 mod context;
 mod derived_admission;
+mod history;
+mod journal;
 #[path = "managed_source/owner.rs"]
 pub(crate) mod owner;
 

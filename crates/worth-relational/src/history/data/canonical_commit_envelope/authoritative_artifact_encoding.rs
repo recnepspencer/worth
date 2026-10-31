@@ -31,6 +31,7 @@ impl Serialize for AuthoritativeArtifactEnvelopeRef<'_> {
         S: serde::Serializer,
     {
         let CanonicalCommitEnvelope {
+            live_managed_source_history: _,
             authored_index_writes,
             required_output_codec_retirements,
             required_output_origin,

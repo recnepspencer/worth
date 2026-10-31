@@ -1,7 +1,9 @@
 //! Canonical authored writes, including writes whose semantic after-image is unchanged.
 mod cursor;
 mod maintenance;
+mod managed_source;
 mod page;
+pub(crate) mod posting_key;
 mod selection;
 
 pub use cursor::RelationalAuthoredWriteCursor;
@@ -10,8 +12,8 @@ pub use page::{
     RelationalAuthoredWritePageLimits, RelationalPreparedAuthoredWritePage,
 };
 pub use selection::{
-    RelationalAuthoredEntityIndexDefinition, RelationalAuthoredWriteScope,
-    RelationalAuthoredWriteSelector,
+    RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceSelector,
+    RelationalAuthoredWriteScope, RelationalAuthoredWriteSelector,
 };
 
 /// A missing derived generation or canonical occurrence never proves absence.
@@ -25,6 +27,9 @@ pub enum RelationalAuthoredWriteDenial {
     GenerationUnavailable,
     UnsupportedMergeInterval,
     IncompleteIndexHistory,
+    ForeignManagedSourceProgram,
+    UnsupportedManagedSourceSelector,
+    IncompleteManagedSourceHistory,
     IncompleteAdjacencyHistory {
         ordinal: u64,
         commit: crate::history::data::CommitId,

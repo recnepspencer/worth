@@ -321,3 +321,29 @@ inventory; original request stops refuse without a partial successful result.
 Application invariants must declare member/source applicability through Query's
 [typed factory binding](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#ordinary-invariant-component-reads)
 so genuine create/delete/coupling changes schedule fresh preparation.
+
+
+## Managed Source authored impact candidates
+
+`authored_managed_source_selector(execution, &program, scope)` accepts an actual
+installed membership-only Source program (no fields or projection routes) and a
+full-generation scope. The opaque selector is live roster metadata. It admits no
+Source READ, principal, Query dependency proof or mutation eligibility.
+
+`authored_managed_source_history_cursor(execution, &original_basis,
+selected_target, &[selector])` uses the existing authored-history page lifecycle.
+It emits complete conservative canonical impact candidates in the open interval
+of a single-parent selected prefix. Actual authored lifecycle and relation
+incidence include endpoint no-ops and transient membership. A shared-row scope
+can be included when only its neighbor's edge was authored; these candidates do
+not establish exact Query relevance or performed cancellation.
+
+Live metadata is bound to the actual frozen canonical envelope. Deep cloning,
+serialization and decoded recovery cannot recreate it. Memory history retains
+the envelope; journal settlement can release it while postings remain. Missing
+live metadata returns `IncompleteManagedSourceHistory`, including during page
+preparation, without advancing the cursor. Explicit generation rebuild may
+succeed with marked gaps; managed admission still refuses those intervals.
+Merge, schema and materialization transitions have no supported coverage in
+this profile. Ordinary authored record/index/adjacency history keeps its own
+contract. Full scalar/indirect profiles and Query correction are separate work.

@@ -1,7 +1,8 @@
 //! Project canonical authored intents, never the semantic-delta-only patch.
-use super::{AuthoredWriteGeneration, Denial, Key};
+use super::{AuthoredWriteGeneration, Denial};
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::history::RelationalAuthoredWriteScope as Scope;
+use crate::history::{AuthoredWritePostingKey, RelationalAuthoredWriteSelector as Key};
 use crate::transactions::data::{
     AspectFieldPatch, EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent,
 };
@@ -88,8 +89,12 @@ impl Projection<'_, '_, '_, '_, '_> {
         // Fund temporary key construction before cloning. The map separately
         // admits its persistent key copy; both coexist until this call returns.
         let _scratch = self.execution.reserve_retained_memory(bytes as u64)?;
-        self.generation
-            .append(self.execution, self.context, &make(), self.commit)
+        self.generation.append(
+            self.execution,
+            self.context,
+            &AuthoredWritePostingKey::Ordinary(make()),
+            self.commit,
+        )
     }
 
     fn lifecycle(&mut self, record: &RecordRef) -> Result<(), Denial> {

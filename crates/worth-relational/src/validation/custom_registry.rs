@@ -15,6 +15,8 @@ pub struct DuplicateCustomInvariantRegistration {
 pub(crate) struct FrozenCustomInvariantRegistry {
     registrations: Arc<[CustomInvariantRegistration]>,
     source_postings: crate::validation::candidate_source::routing::SourceProgramPostings,
+    pub(crate) source_history:
+        Arc<crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog>,
     index_by_identity_and_execution_point: Arc<
         BTreeMap<
             (
@@ -45,6 +47,7 @@ impl FrozenCustomInvariantRegistry {
             }
         }
         Ok(Self {
+            source_history: Arc::new(crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog::compile(&registrations)),
             source_postings:
                 crate::validation::candidate_source::routing::SourceProgramPostings::compile(
                     &registrations,

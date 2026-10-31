@@ -103,7 +103,13 @@ fn prepare_symbol_round(
                 source_interpretation,
             )?;
             let candidate = round.with_candidate_symbols(mutation.candidate_symbols());
-            mutation.prepare_managed_sources(*execution, &candidate, selected, &identity)?;
+            mutation.prepare_managed_sources(
+                *execution,
+                &candidate,
+                selected,
+                &identity,
+                (parent_count == 0).then_some(admitted.merged_plan()),
+            )?;
             let invariants = candidate.invariant_authority();
             let control = InvariantPreparationControl::for_transaction(
                 input,

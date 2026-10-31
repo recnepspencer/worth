@@ -21,7 +21,9 @@ use crate::transactions::data::{
 };
 
 mod authored_index_writes;
+mod live_managed_source_history;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
+pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 mod authoritative_artifact_encoding;
 mod embedded_checkpoint;
 mod payload_digest;
@@ -49,6 +51,9 @@ pub(crate) use required_output_origin::{
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalCommitEnvelope {
+    /// Live exact-envelope acceleration; deep Clone and all codecs omit it.
+    #[serde(skip)]
+    pub(crate) live_managed_source_history: LiveManagedSourceHistory,
     pub(crate) required_output_codec_retirements:
         Vec<std::sync::Arc<CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
@@ -133,6 +138,7 @@ impl CanonicalCommitEnvelope {
     ) -> Self {
         Self {
             authored_index_writes: CanonicalAuthoredIndexWrites::default(),
+            live_managed_source_history: LiveManagedSourceHistory::default(),
             required_output_codec_retirements: Vec::new(),
             required_output_origin: None,
             required_output_materialization: None,

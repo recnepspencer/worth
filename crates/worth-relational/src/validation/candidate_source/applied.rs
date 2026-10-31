@@ -17,7 +17,7 @@ use crate::validation::data::{
 use crate::validation::engine::state_view::InvariantStateView;
 use crate::validation::engine::{InvariantObservation, InvariantRuntimeView};
 use std::sync::Arc;
-mod stage;
+pub(super) mod stage;
 
 impl AppliedMutationDraft {
     pub(crate) fn prepare_managed_sources(
@@ -26,7 +26,19 @@ impl AppliedMutationDraft {
         runtime: &RelationalPreparationRuntime,
         selected: SelectedRelationalBranchRead<'_>,
         proposal: &crate::mvcc::RelationalMutationProposalIdentity,
+        authored: Option<&crate::transactions::data::MergedCommitPlan>,
     ) -> Result<(), TransactionCommitError> {
+        let history = super::authored_history::prepare(
+            self, execution, runtime, selected, proposal, authored,
+        )
+        .map_err(|cause| cause.into_commit_error(self.source_interpretation.physical_basis()))?;
+        self.source_interpretation
+            .authored_history
+            .set(history)
+            .map_err(|_| {
+                Denial::IncompletePreparation
+                    .into_commit_error(self.source_interpretation.physical_basis())
+            })?;
         prepare(self, execution, runtime, selected, proposal)
             .map_err(|cause| cause.into_commit_error(self.source_interpretation.physical_basis()))
     }

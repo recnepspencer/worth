@@ -108,6 +108,8 @@ impl PreparedPublicationPhase {
 }
 
 pub(super) struct PreparePublicationPhaseInput<'a> {
+    pub(super) source_interpretation:
+        &'a crate::validation::candidate_source::NativeManagedSourceInterpretation,
     pub(super) recovered_codec_publication_custody:
         Option<Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     pub(super) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
@@ -137,6 +139,7 @@ pub(super) fn prepare_publication_phase(
     input: PreparePublicationPhaseInput<'_>,
 ) -> Result<PreparedPublicationPhase, TransactionCommitError> {
     let PreparePublicationPhaseInput {
+        source_interpretation,
         recovered_codec_publication_custody,
         required_output_publication,
         required_output_materialization,
@@ -197,7 +200,10 @@ pub(super) fn prepare_publication_phase(
     } else {
         None
     };
-    let canonical_commit_envelope = Arc::new(canonical_commit_envelope);
+    let canonical_commit_envelope = canonical_commit_envelope.freeze_with_managed_source_history(
+        source_interpretation.prepared_membership_history(),
+        *execution,
+    )?;
     let clone_mode = working_state.clone_mode();
     let committed_partitions = working_state.into_partition_commits().1;
     runtime

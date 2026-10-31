@@ -926,3 +926,19 @@ and every actual Field coordinate, including authored no-ops. Strict original
 revision verification and canonical performed cancellation remain required;
 matching values alone do not authorize restoration. Unsupported shapes and
 unavailable canonical evidence retain typed refusals under the original request.
+
+
+### Native managed Source impact history
+
+Native `authored_managed_source_selector` accepts the actual installed
+membership-only program and full-generation scope; use
+`authored_managed_source_history_cursor` with genuine original/selected bases
+and the existing staged page lifecycle. This is complete conservative canonical
+impact-candidate history, including actual endpoint no-ops and transient
+membership; shared-row neighbors may be candidates. It supplies no exact Query
+relevance, READ grant or correction cancellation. Full scalar/projected profiles,
+merges and schema/materialization transitions are not covered. Live envelope
+custody is required: deep clone, decoded recovery and journal settlement cannot
+recreate sidecar issuance, and missing metadata refuses as
+`IncompleteManagedSourceHistory`. See the [Native API contract](../crates/worth-relational/API_OVERVIEW.md#managed-source-authored-impact-candidates)
+and [slice plan](../plans/WORTH-query/milestone-9.19-phase4-membership-history-plan.md).

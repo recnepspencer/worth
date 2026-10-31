@@ -88,6 +88,7 @@ impl CanonicalEnvelopeWire<'_> {
         }
         let symbol_texts = self.symbol_texts.readmit(execution)?;
         let envelope = super::CanonicalCommitEnvelope {
+            live_managed_source_history: super::LiveManagedSourceHistory::default(),
             required_output_codec_retirements: self.required_output_codec_retirements,
             required_output_origin: self.required_output_origin,
             required_output_materialization: self.required_output_materialization,

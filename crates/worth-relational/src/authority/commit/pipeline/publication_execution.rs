@@ -101,6 +101,7 @@ pub(super) fn prepare_commit_publication_execution(
             execution,
             runtime,
             PreparePublicationPhaseInput {
+                source_interpretation: &source_interpretation,
                 recovered_codec_publication_custody,
                 required_output_publication,
                 required_output_materialization,

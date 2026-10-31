@@ -1,8 +1,10 @@
+mod managed_source;
 use crate::history::data::RelationalTouchAdjacencyDirection;
 use crate::identity::data::{EntityId, KindId};
 use crate::indexes::data::DerivedIndexId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use crate::transactions::data::RecordRef;
+pub use managed_source::RelationalAuthoredManagedSourceSelector;
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, CanonicalFieldPath};
 
 /// Complete meaning of the supported installed entity-field index. Descriptive

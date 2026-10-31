@@ -6,7 +6,7 @@ use worth_execution::{ExecutionRequest, MapKernelStop, WorkCeilingDenial};
 fn request(cause: WorkCeilingDenial) -> Denial {
     DerivedRelationReadDenial::Request(cause.into()).into()
 }
-pub(super) fn prepare(
+pub(in crate::validation::candidate_source) fn prepare(
     execution: ExecutionRequest<'_, '_>,
     prepare: impl FnOnce(&CustomPreparationBudget) -> Result<(), Denial>,
 ) -> Result<(), Denial> {

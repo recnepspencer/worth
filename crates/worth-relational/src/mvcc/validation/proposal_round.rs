@@ -137,7 +137,16 @@ impl RelationalPreparationRuntime {
                         source_interpretation,
                     )?;
                     let runtime = round.with_candidate_symbols(mutation.candidate_symbols());
-                    mutation.prepare_managed_sources(*execution, &runtime, selected, &identity)?;
+                    mutation.prepare_managed_sources(
+                        *execution,
+                        &runtime,
+                        selected,
+                        &identity,
+                        validation_input
+                            .merge_parent_bases()
+                            .is_empty()
+                            .then_some(&prepared.merged_plan),
+                    )?;
                     let control =
                         crate::validation::engine::InvariantPreparationControl::for_transaction(
                             &validation_input,
