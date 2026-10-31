@@ -1,6 +1,12 @@
 //! Immutable vocabulary exchanged by durable owner ports.
 
 mod home_binding;
+mod world_identity;
+pub use world_identity::*;
+mod composite_attempt_association;
+pub use composite_attempt_association::{
+    CompositeAttemptAssociation, CompositeAttemptAssociationOwnerMismatch,
+};
 mod home_identity;
 mod home_incarnation;
 mod owner_family;

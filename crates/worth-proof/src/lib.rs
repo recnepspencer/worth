@@ -47,7 +47,7 @@ pub use crate::dx::{
 };
 pub use durable_publication::DurablyCommitted;
 pub use home_binding::AdmittedApplicationHomeBinding;
-pub use home_recovery::{HomeAdmitted, RelationalReadmitted, StoreRecovered};
+pub use home_recovery::{HomeAdmitted, RelationalReadmitted, StoreRecovered, WorldReconciled};
 pub use raw::PhaseMarker;
 pub use raw::{
     admit_ready_and_execute_recipe, apply_contextual_transition, apply_transition,

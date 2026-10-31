@@ -60,6 +60,8 @@
 //! ```
 
 mod home_admitted;
+mod world_reconciled;
+pub use world_reconciled::WorldReconciled;
 mod relational_readmitted;
 mod store_recovered;
 
