@@ -46,6 +46,7 @@ mod checkpoint;
 mod kernel_receipt;
 pub use kernel_receipt::{ExecutionKernelReceipt, ExecutionKernelReceiptStorage};
 mod framework_bytes;
+mod interruption_view;
 mod invoking_scope;
 pub(crate) use invoking_scope::{run_invoking_preparation, run_invoking_scope};
 mod nested;

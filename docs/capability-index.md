@@ -851,6 +851,15 @@ unavailable canonical evidence retain typed refusals under the original request.
 
 ### Retain an accepted physical Store close
 
+Platform workers already inside an admitted kernel can retain its immutable
+original cancellation lineage and absolute deadline through
+`MapKernelContext::retain_interruption_view(original_lease)`. Use the original
+borrowed lease for leased execution or `None` for serial execution. The move-only
+`ExecutionInterruptionView` supports `Send + Sync + 'static` ownership, including
+sharing the same view through `Arc`; `check_live()` grants no fresh execution,
+memory or work allowance. Its admitted backing stays charged until its final
+owner drops. See [Execution retained controls](../crates/worth-execution/README.md#original-request-retained-storage).
+
 The Store physical owner can start `PhysicalStoreCloseTask::start(serving)`.
 The one owned termination worker consumes the actual serving runtime and runs
 the existing close plan. Spawn refusal returns that runtime unstarted.
