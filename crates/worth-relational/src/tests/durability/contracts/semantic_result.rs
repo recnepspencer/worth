@@ -7,6 +7,8 @@ use crate::transactions::data::{
 };
 use worth_execution::ExecutionRequest;
 
+mod bulk;
+
 #[test]
 fn semantic_result_preserves_original_create_bindings_and_validation_meaning() {
     let host = crate::test_execution_policy::serial_request();

@@ -97,6 +97,14 @@ impl RelationalCommitSemanticResult {
         }
         let mut entities = BTreeMap::new();
         let mut records = BTreeSet::new();
+        let mut created_patches = BTreeMap::new();
+        for patch in &envelope.patch.authoritative_record_patches {
+            if patch.structural_change == RecordStructuralChange::Created {
+                // Preserve the previous first-created-patch lookup semantics;
+                // canonical patch admission separately validates patch order.
+                created_patches.entry(patch.target.clone()).or_insert(patch);
+            }
+        }
         for created in &self.created_entities {
             if created.key.partition != created.assigned.partition_id {
                 return Err(Refusal::CreatePartitionMismatch);
@@ -119,14 +127,8 @@ impl RelationalCommitSemanticResult {
             if !records.insert(RecordRef::Relation(created.assigned)) {
                 return Err(Refusal::ConflictingCreateCorrespondence);
             }
-            let birth = envelope
-                .patch
-                .authoritative_record_patches
-                .iter()
-                .find(|patch| {
-                    patch.target == RecordRef::Relation(created.assigned)
-                        && patch.structural_change == RecordStructuralChange::Created
-                })
+            let birth = created_patches
+                .get(&RecordRef::Relation(created.assigned))
                 .and_then(|patch| patch.relation_birth);
             if birth.is_none_or(|birth| {
                 birth.kind != created.key.kind || birth.source != source || birth.target != target
@@ -134,14 +136,10 @@ impl RelationalCommitSemanticResult {
                 return Err(Refusal::ConflictingCreateCorrespondence);
             }
         }
-        let actual = envelope
-            .patch
-            .authoritative_record_patches
+        if records
             .iter()
-            .filter(|patch| patch.structural_change == RecordStructuralChange::Created)
-            .map(|patch| patch.target.clone())
-            .collect::<BTreeSet<_>>();
-        if !records.is_subset(&actual) {
+            .any(|record| !created_patches.contains_key(record))
+        {
             return Err(Refusal::ConflictingCreateCorrespondence);
         }
         creations::validate_original_keys(self, envelope)?;
