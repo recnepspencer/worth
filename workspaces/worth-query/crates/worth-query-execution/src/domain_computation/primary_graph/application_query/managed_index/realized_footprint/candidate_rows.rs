@@ -86,7 +86,18 @@ impl CapturedCandidateRows {
             if !checkpoint(32)
                 || left_key != right_key
                 || left.accepted != right.accepted
-                || (!whole_source && !Arc::ptr_eq(&left.body, &right.body))
+                || (!whole_source
+                    && !Arc::ptr_eq(&left.body, &right.body)
+                    && !left
+                        .body
+                        .same_content(&right.body, &mut |work| {
+                            if checkpoint(work) {
+                                Ok(())
+                            } else {
+                                Err(())
+                            }
+                        })
+                        .unwrap_or(false))
             {
                 return false;
             }
@@ -136,10 +147,14 @@ impl CapturedCandidateRows {
             let current = rows
                 .entry(entity)
                 .ok_or_else(|| control.refuse(Stop::SourceSlotUnavailable))?;
-            // Sharing this immutable occurrence/projection/dependency body is a
-            // sufficient proof. Non-sharing is not a claim of unequal values.
             if !Arc::ptr_eq(&original.body, current) {
-                return Ok(false);
+                if original.body.content(control)? != current.content(control)?
+                    || !original
+                        .body
+                        .same_content(current, &mut |work| control.checkpoint(work))?
+                {
+                    return Ok(false);
+                }
             }
         }
         Ok(true)

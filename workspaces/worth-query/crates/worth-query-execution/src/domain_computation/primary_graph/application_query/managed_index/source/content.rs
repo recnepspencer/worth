@@ -51,3 +51,50 @@ impl Entry {
         Ok(value)
     }
 }
+
+impl Entry {
+    /// The caller supplies the original paid comparison checkpoint. A cached
+    /// commitment can reject a candidate, but can never establish equality.
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn same_content<
+        E,
+    >(
+        &self,
+        other: &Self,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+    ) -> Result<bool, E> {
+        admit(65)?;
+        if self.occurrence != other.occurrence
+            || self.dependencies.len() != other.dependencies.len()
+            || matches!((self.content.get(), other.content.get()), (Some(a), Some(b)) if a != b)
+        {
+            return Ok(false);
+        }
+        for (left, right) in self.dependencies.iter().zip(&other.dependencies) {
+            admit_dependency(left, admit)?;
+            admit_dependency(right, admit)?;
+            if left != right {
+                return Ok(false);
+            }
+        }
+        self.row.same_one_hop_content(&other.row, admit)
+    }
+}
+
+fn admit_dependency<E>(
+    dependency: &ViewDependency,
+    admit: &mut impl FnMut(u64) -> Result<(), E>,
+) -> Result<(), E> {
+    admit(32)?;
+    match dependency {
+        ViewDependency::Entity(_) | ViewDependency::Adjacency(..) => {}
+        ViewDependency::Aspect(_, aspect) => admit(aspect.as_str().len() as u64)?,
+        ViewDependency::Field(_, locator) => {
+            admit(locator.aspect().aspect_key().as_str().len() as u64)?;
+            for field in locator.field_path().fields() {
+                admit(1)?;
+                admit(field.as_str().len() as u64)?;
+            }
+        }
+    }
+    Ok(())
+}

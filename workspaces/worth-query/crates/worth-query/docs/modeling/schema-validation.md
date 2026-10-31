@@ -377,8 +377,15 @@ complete Public Native-maintained Parents with the installed full projection
 profile. It retains every actual candidate Entry, including rejected candidates,
 full admitted parameters and all exact decisions. Target equality uses the same
 complete forward receiver, actual Native cell/installation correspondence and
-shared immutable complete candidate bodies. The commit receiver pins that exact
-checked target. Raw frames, result rows and diagnostics cannot mint this support.
+complete candidate bodies. Shared bodies provide the fast path; nonshared bodies
+require paid exact occurrence, dependency and full one-hop projection comparison
+after commitment shortlisting. Full-generation identities, installed slots,
+predicate support and order remain mandatory. Independent ordinary field and
+adjacency revision facts remain required; populated observations can still refuse
+after managed content restoration, as can empty output whose ordinary root
+predicate actually read a changed field. Restored semantic values do not establish
+canonical authored-history cancellation; managed correction-history support
+remains unfinished. The commit receiver pins that exact checked target. Raw frames, result rows and diagnostics cannot mint this support.
 Governed Parents qualify only with actual session-bound passive full capability-
 use and admitted disclosure meaning, retained by the existing authorization owner
 under the exact installed Parent. No old READ or capability decision is retained;

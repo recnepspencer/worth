@@ -16,6 +16,7 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 
 pub(in crate::domain_computation::primary_graph::application_query::projection) mod comparison;
 pub(in crate::domain_computation::primary_graph::application_query) mod content;
+mod content_comparison;
 mod disclosure_boundary;
 mod field;
 

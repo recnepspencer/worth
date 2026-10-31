@@ -2230,3 +2230,23 @@ canonical cutoff remain unqualified (selected governed execution still refuses);
 prior producer receipts apply to Public pipelines. Field tracing, correction
 support/history and later public/private qualification remain open; this does
 not close Phase4.
+
+### Phase4 restored projected-content prerequisite
+
+The [boundary review](milestone-9.19-phase4-restored-content-boundary-review.md)
+and [plan](milestone-9.19-phase4-restored-content-plan.md) replace the conservative
+nonsharing refusal with paid exact comparison of genuine Native occurrences,
+dependency coordinates and full raw one-hop projected support. The shared-body
+fast path remains. Hashes only shortlist; complete target coverage, decisions,
+installation/Parent/parameter/audience correspondence and atomic pinning remain.
+This establishes semantic present-content equality after real restoration. It
+neither selects canonical authored history nor proves cancellation. Correction
+support/history, narrower field tracing and Phases5/6 remain unfinished; producer
+qualification remains Public-only.
+
+The [current receipt](milestone-9.19-phase4-restored-content-evidence.md) records
+paid full-body comparison, exact-reject restoration success and retained ordinary
+predicate-revision refusals, with179/179 broad scoped consumer passes,39/39 focused
+owner passes and the unchanged original prefix work-growth guard. Four broad
+exclusions remain explicit; no large geometry-chain rerun or correction-history
+qualification is claimed.

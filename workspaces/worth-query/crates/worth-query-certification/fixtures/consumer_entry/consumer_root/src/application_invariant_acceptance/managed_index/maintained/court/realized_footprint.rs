@@ -267,3 +267,5 @@ fn realized_footprint_keeps_two_distinct_probe_obligations_at_the_same_source_re
 }
 
 mod exact;
+
+mod restored_content;

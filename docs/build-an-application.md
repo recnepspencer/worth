@@ -5891,12 +5891,22 @@ inputs, root predicates, related endpoints, ordering and negative coverage.
 The ordinary `expect_source` and `expect_result_set` mutation entrances consume
 these observations under the current request. At the actual target image, Query
 uses the same installed forward provider and exact evaluator to verify complete
-candidate coverage again. Equal membership, exact decisions and shared immutable
-full candidate bodies can preserve an expectation across edits to noncandidates.
-A previously nonmatching record entering an empty range invalidates it. A changed
-candidate input prevents equality even if the returned exact rows stay empty.
-Nonshared bodies conservatively mean equality was not proved, including equal
-values reconstructed in new material.
+candidate coverage again. Equal membership, exact decisions and complete
+candidate bodies can preserve an expectation across edits to noncandidates or
+restoration of candidate content. Shared immutable bodies provide the fast path;
+otherwise Query pays for exact occurrence, dependency and full one-hop projection
+comparison. Commitments only shortlist that comparison. A previously nonmatching
+record entering an empty range invalidates it. A changed candidate input prevents
+equality even if the returned exact rows stay empty. Installed slot correspondence,
+full-generation relation/row identities, predicate support and order remain part
+of the comparison. Semantic restoration alone never proves canonical authored
+history cancellation; managed correction-history support remains unfinished.
+Independent ordinary field and adjacency revision facts still apply. Thus equal
+restored managed content does not guarantee that every populated observation
+remains eligible. Actual root-predicate reads keep their revision facts even
+when their output is empty. The restoration positive qualifies exact-refinement-
+rejected candidate support through a real mutation expectation; the separate
+populated and root-filter-empty courts preserve their independent refusals.
 
 The commit receiver retains and atomically pins the checked target Native Source
 observation. A writer after revalidation refuses at the existing Native basis
