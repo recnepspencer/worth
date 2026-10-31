@@ -73,7 +73,7 @@ where
         &self,
         intent: RuntimeWorldBootstrapIntent,
     ) -> RuntimeWorldBootstrapOutcome {
-        let mut prepared = match self.prepare_root(intent) {
+        let mut prepared = match self.prepare_memory_root(intent) {
             Ok(prepared) => prepared,
             Err(cause) => return no_effect(cause),
         };

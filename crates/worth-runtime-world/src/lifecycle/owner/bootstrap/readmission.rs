@@ -74,7 +74,7 @@ where
                 basis,
             };
             let mut prepared = self
-                .prepare_root_with_readmission(intent, Some(readmitted))
+                .prepare_readmitted_root(intent, readmitted)
                 .map_err(Denial::RootAdmission)?;
             // The branch frame was already selected through actual Home
             // recovery; installing its SAME identities performs no new I/O.

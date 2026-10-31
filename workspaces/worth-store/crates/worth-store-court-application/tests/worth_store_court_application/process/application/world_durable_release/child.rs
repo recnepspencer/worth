@@ -86,3 +86,85 @@ fn original_world_attempt_child() {
         crate::killed_child::park();
     });
 }
+
+#[test]
+fn pending_bootstrap_survives_original_request_unwind_and_installs_only_its_selected_root() {
+    let directory = tempfile::tempdir().unwrap();
+    let request = crate::workload::serial_request();
+    let execution = ExecutionRequest::serial(&request);
+    let fixture = open(directory.path(), &execution);
+    let cancellation = worth_execution::CancellationSource::new();
+    cancellation.cancel();
+    let stopped = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        cancellation.token(),
+        None,
+    );
+    assert!(matches!(
+        fixture.begin_bootstrap_root(&ExecutionRequest::serial(&stopped)),
+        WorldDurableBootstrapOutcome::Refused(_)
+    ));
+    assert_eq!(
+        fixture.home.world().lifecycle_observation(),
+        RuntimeWorldOwnerLifecycleObservation::Open
+    );
+    let gate = fixture.home.physical_serving_for_test()
+        .certification_pause_physical_mutation_at(
+            worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::AfterRootReplacement
+        );
+    let abandoned = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let original_request = crate::workload::serial_request();
+        let original = ExecutionRequest::serial(&original_request);
+        assert!(matches!(
+            fixture.begin_bootstrap_root(&original),
+            WorldDurableBootstrapOutcome::Pending
+        ));
+        assert!(
+            gate.await_arrival(),
+            "the original accepted World journal publication reached its actual seam"
+        );
+        panic!("unwind the original request after accepted bootstrap publication");
+    }));
+    assert!(abandoned.is_err());
+    assert!(
+        matches!(
+            fixture.begin_bootstrap_root(&execution),
+            WorldDurableBootstrapOutcome::Refused(_)
+        ),
+        "a competing begin cannot replace the same retained bootstrap"
+    );
+    gate.release();
+    let port = fixture.home.world().publication_port();
+    let backstop = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    let performed = loop {
+        match port.advance_durable_bootstrap_root(&execution) {
+            WorldDurableBootstrapOutcome::Performed(performed) => break performed,
+            WorldDurableBootstrapOutcome::Pending => {
+                assert!(std::time::Instant::now() < backstop);
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+            other => panic!("same selected bootstrap refused: {other:?}"),
+        }
+    };
+    assert_eq!(
+        performed.product_branch().branch_identity().name().as_str(),
+        "Original World Root"
+    );
+    assert_eq!(performed.product_branch().reference_generation().get(), 0);
+    assert_eq!(
+        fixture
+            .home
+            .world()
+            .inspection_port()
+            .history_snapshot()
+            .unwrap()
+            .installed_commits(),
+        1
+    );
+    assert!(matches!(
+        fixture.begin_bootstrap_root(&execution),
+        WorldDurableBootstrapOutcome::Refused(_)
+    ));
+    drop(performed);
+    close(fixture.home, &execution);
+}

@@ -4,8 +4,10 @@ use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::branch::{registry::ProductBranchRegistryReservation, ProductBranchName};
 use crate::history::InstalledRootCommitRollback;
 use crate::identity::RuntimeWorldBootstrapAttemptIdentity;
+mod phase;
+pub(super) use phase::{MemoryRoot, ReadmittedRoot, SelectedDurableRoot, UnselectedDurableRoot};
 
-pub(super) struct PreparedRoot {
+pub(super) struct PreparedRoot<Phase> {
     pub(super) attempt: RuntimeWorldBootstrapAttemptIdentity,
     pub(super) basis: AdmittedCompositeRuntimeWorldBasis,
     pub(super) observation: ProductBranchObservation,
@@ -14,6 +16,7 @@ pub(super) struct PreparedRoot {
     cell: Option<ProductBranchReferenceCell>,
     rollback: Option<InstalledRootCommitRollback>,
     recovered: bool,
+    phase: Phase,
 }
 
 pub(super) struct ReadmittedRootPreparation {
@@ -29,18 +32,37 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    pub(super) fn prepare_root(
+    pub(super) fn prepare_memory_root(
         &self,
         intent: RuntimeWorldBootstrapIntent,
-    ) -> Result<PreparedRoot, RuntimeWorldBootstrapNoEffectCause> {
-        self.prepare_root_with_readmission(intent, None)
+    ) -> Result<PreparedRoot<MemoryRoot>, RuntimeWorldBootstrapNoEffectCause> {
+        if self.state.durable.is_some() {
+            return Err(RuntimeWorldBootstrapNoEffectCause::DurableBootstrapRequired);
+        }
+        self.prepare_root_with_phase(intent, None, phase::memory())
     }
 
-    pub(super) fn prepare_root_with_readmission(
+    pub(super) fn prepare_durable_root(
+        &self,
+        intent: RuntimeWorldBootstrapIntent,
+    ) -> Result<PreparedRoot<UnselectedDurableRoot>, RuntimeWorldBootstrapNoEffectCause> {
+        self.prepare_root_with_phase(intent, None, phase::unselected())
+    }
+
+    pub(super) fn prepare_readmitted_root(
+        &self,
+        intent: RuntimeWorldBootstrapIntent,
+        readmitted: ReadmittedRootPreparation,
+    ) -> Result<PreparedRoot<ReadmittedRoot>, RuntimeWorldBootstrapNoEffectCause> {
+        self.prepare_root_with_phase(intent, Some(readmitted), phase::readmitted())
+    }
+
+    fn prepare_root_with_phase<Phase>(
         &self,
         intent: RuntimeWorldBootstrapIntent,
         readmitted: Option<ReadmittedRootPreparation>,
-    ) -> Result<PreparedRoot, RuntimeWorldBootstrapNoEffectCause> {
+        phase: Phase,
+    ) -> Result<PreparedRoot<Phase>, RuntimeWorldBootstrapNoEffectCause> {
         let cancellation = intent.cancellation().cloned();
         let (creation, relational, signal, correspondence, generation, posture) =
             intent.into_parts();
@@ -205,19 +227,50 @@ where
             cell: Some(cell),
             rollback: root_rollback,
             recovered: posture,
+            phase,
         })
     }
 }
-impl PreparedRoot {
+impl<Phase> PreparedRoot<Phase> {
     /// A durable selection may never roll its original staged history back.
-    pub(super) fn retain_selected_history(&mut self) {
+    fn retain_selected_history(&mut self) {
         if let Some(rollback) = self.rollback.take() {
             rollback.commit();
         }
     }
+    fn with_phase<Next>(self, phase: Next) -> PreparedRoot<Next> {
+        PreparedRoot {
+            attempt: self.attempt,
+            basis: self.basis,
+            observation: self.observation,
+            reservation: self.reservation,
+            name: self.name,
+            cell: self.cell,
+            rollback: self.rollback,
+            recovered: self.recovered,
+            phase,
+        }
+    }
+}
+impl PreparedRoot<UnselectedDurableRoot> {
+    pub(super) fn acknowledge(
+        self,
+        witness: worth_proof::DurablyCommitted<crate::durability::ActualWorldPublication>,
+        original: &crate::durability::WorldDurableArtifact,
+    ) -> PreparedRoot<SelectedDurableRoot> {
+        // Only field moves occur between consuming the witness and returning
+        // the same bundle; all fallible work starts after its loan retains it.
+        self.with_phase(phase::selected(witness, original))
+    }
+}
+impl<Phase: phase::RootInstallationPhase> PreparedRoot<Phase> {
     pub(super) fn install(
         &mut self,
     ) -> Result<PerformedRuntimeWorldBootstrap, RuntimeWorldBootstrapNoEffectCause> {
+        if self.phase.has_durable_selection() {
+            self.retain_selected_history();
+        }
+        self.phase.validate(&self.observation, &self.attempt)?;
         if self.cell.is_some() {
             self.reservation
                 .install_root_borrowed(

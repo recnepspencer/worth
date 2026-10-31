@@ -1,5 +1,8 @@
 //! The existing bootstrap phase retains one original destination across I/O.
-use super::{preparation::PreparedRoot, *};
+use super::{
+    preparation::{PreparedRoot, SelectedDurableRoot, UnselectedDurableRoot},
+    *,
+};
 use crate::branch::{
     WorldDurableBootstrapOutcome as Outcome, WorldDurableBootstrapRefusal as Refusal,
 };
@@ -18,9 +21,13 @@ use worth_proof::DurablyCommitted;
 pub(crate) struct WorldDurableBootstrapCustody {
     binding: Arc<WorldDurableMediumBinding>,
     subject: WorldDurableArtifact,
-    prepared: Mutex<Option<PreparedRoot>>,
+    prepared: Mutex<Option<RetainedBootstrapRoot>>,
     committed: Mutex<Option<DurablyCommitted<ActualWorldPublication>>>,
     driving: AtomicBool,
+}
+enum RetainedBootstrapRoot {
+    Unselected(PreparedRoot<UnselectedDurableRoot>),
+    Selected(PreparedRoot<SelectedDurableRoot>),
 }
 impl WorldDurableBootstrapCustody {
     pub(crate) fn is_driving(&self) -> bool {
@@ -41,7 +48,7 @@ impl Drop for BootstrapDriver {
 }
 struct PreparedRootLoan<'a> {
     custody: &'a WorldDurableBootstrapCustody,
-    prepared: Option<PreparedRoot>,
+    prepared: Option<RetainedBootstrapRoot>,
 }
 impl Drop for PreparedRootLoan<'_> {
     fn drop(&mut self) {
@@ -121,7 +128,7 @@ where
             Ok(native) => native,
             Err(cause) => return Outcome::Refused(Refusal::Native(cause)),
         };
-        let prepared = match self.prepare_root(intent) {
+        let prepared = match self.prepare_durable_root(intent) {
             Ok(prepared) => prepared,
             Err(cause) => return Outcome::Refused(Refusal::Preparation(cause)),
         };
@@ -171,7 +178,7 @@ where
         let pending = Arc::new(WorldDurableBootstrapCustody {
             binding: binding.clone(),
             subject,
-            prepared: Mutex::new(Some(prepared)),
+            prepared: Mutex::new(Some(RetainedBootstrapRoot::Unselected(prepared))),
             committed: Mutex::new(None),
             driving: AtomicBool::new(false),
         });
@@ -210,12 +217,20 @@ where
             driver
         };
         let pending = &driver.0;
-        let selected = pending
+        let acknowledged = pending
             .committed
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .is_some();
-        if !selected {
+        let selected = matches!(
+            pending
+                .prepared
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .as_ref(),
+            Some(RetainedBootstrapRoot::Selected(_))
+        );
+        if !acknowledged && !selected {
             match pending.binding.publish(&pending.subject, execution) {
                 Ok(witness) => {
                     *pending.committed.lock().unwrap_or_else(|e| e.into_inner()) = Some(witness)
@@ -251,11 +266,23 @@ where
                 .unwrap_or_else(|e| e.into_inner())
                 .take(),
         };
-        let prepared = loan
-            .prepared
-            .as_mut()
-            .expect("one original bootstrap driver");
-        prepared.retain_selected_history();
+        if matches!(loan.prepared, Some(RetainedBootstrapRoot::Unselected(_))) {
+            let witness = pending
+                .committed
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .take()
+                .expect("actual acknowledged original bootstrap");
+            let Some(RetainedBootstrapRoot::Unselected(prepared)) = loan.prepared.take() else {
+                unreachable!("the single driver retains the original unselected bundle");
+            };
+            loan.prepared = Some(RetainedBootstrapRoot::Selected(
+                prepared.acknowledge(witness, &pending.subject),
+            ));
+        }
+        let Some(RetainedBootstrapRoot::Selected(prepared)) = loan.prepared.as_mut() else {
+            unreachable!("only an actual consumed acknowledgement permits installation");
+        };
         match prepared.install() {
             Ok(performed) => {
                 let retired = std::mem::replace(

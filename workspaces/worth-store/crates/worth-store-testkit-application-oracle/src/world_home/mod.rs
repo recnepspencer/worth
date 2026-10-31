@@ -19,13 +19,11 @@ pub enum WorldHomeFixtureRefusal {
     World(worth_store_application::WorldHomeReadmissionRefused),
 }
 impl WorldHomeFixture {
-    pub fn bootstrap_root(
+    pub fn begin_bootstrap_root(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-    ) -> worth_runtime_world::facade::PerformedRuntimeWorldBootstrap {
-        use worth_runtime_world::facade::{
-            ProductBranchCreationIntent, WorldDurableBootstrapOutcome as Outcome,
-        };
+    ) -> worth_runtime_world::facade::WorldDurableBootstrapOutcome {
+        use worth_runtime_world::facade::ProductBranchCreationIntent;
         let native = self.home.relational().runtime();
         let (_, native_basis) = native
             .observe_branch(&native.main_branch_identity())
@@ -34,13 +32,23 @@ impl WorldHomeFixture {
             ._signal
             .observe_signal_branch_basis(self._signal.current_branch())
             .expect("actual retained Signal owner observes its current root");
+        self.home
+            .world()
+            .publication_port()
+            .begin_durable_bootstrap_root(
+                execution,
+                ProductBranchCreationIntent::named("Original World Root").unwrap(),
+                native_basis,
+                signal_basis,
+            )
+    }
+    pub fn bootstrap_root(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> worth_runtime_world::facade::PerformedRuntimeWorldBootstrap {
+        use worth_runtime_world::facade::WorldDurableBootstrapOutcome as Outcome;
         let port = self.home.world().publication_port();
-        let mut outcome = port.begin_durable_bootstrap_root(
-            execution,
-            ProductBranchCreationIntent::named("Original World Root").unwrap(),
-            native_basis,
-            signal_basis,
-        );
+        let mut outcome = self.begin_bootstrap_root(execution);
         let backstop = std::time::Instant::now() + std::time::Duration::from_secs(30);
         loop {
             match outcome {

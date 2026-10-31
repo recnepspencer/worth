@@ -162,6 +162,8 @@ guidance = "The Bridge owns the Relational adapter and depends on Relational; Re
 workspace_manifest = "Cargo.toml"
 sources = ["worth-runtime-world"]
 allowed_targets = [
+  "serde",
+  "serde_json",
   "sha2",
   "worth-execution",
   "worth-foundational",
@@ -171,7 +173,7 @@ allowed_targets = [
   "worth-signal",
   "trybuild",
 ]
-guidance = "Runtime World composes the one execution authority above the component runtimes and may depend only on that authority, foundational and proof contracts, component-owner and bridge facades; trybuild is test-only contract evidence"
+guidance = "Runtime World composes the one execution authority above component runtimes; serde/json and sha2 encode owner artifacts, with foundational/proof contracts and component-owner/bridge facades; trybuild is test-only contract evidence"
 
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
@@ -225,8 +227,9 @@ allowed_sources = [
   "worth-store-court-store-replication-physical-record-journeys-physical-work",
   "worth-store-court-store-replication",
   "worth-store-testkit-store",
+  "worth-store-testkit-application-oracle",
 ]
-guidance = "ordinary and recovery physical Signal composition remain behind Store-owned construction ports; the closed relocated test audience consumes only their clock, duration, aspect and subscription vocabulary"
+guidance = "physical Signal composition remains behind Store-owned construction ports; relocated courts consume vocabulary, while the application oracle retains the actual Signal owner for its real Home/World composition"
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"

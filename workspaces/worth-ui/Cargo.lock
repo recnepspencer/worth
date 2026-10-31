@@ -4730,6 +4730,7 @@ dependencies = [
 name = "worth-runtime-bridge"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serde_json",
  "sha2",
  "worth-execution",
@@ -4743,6 +4744,9 @@ dependencies = [
 name = "worth-runtime-world"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
