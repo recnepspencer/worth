@@ -317,7 +317,10 @@
           ],
           "sources": [
             "workspaces/worth-store/crates/worth-store-court-physical-integrity/tests/worth_store_court_physical_integrity/sources/worth_store_physical_integrity/ui/record_cannot_open_decoder.rs",
-            "workspaces/worth-store/crates/worth-store-court-physical-integrity/tests/worth_store_court_physical_integrity/sources/worth_store_physical_integrity/ui/untrusted_page_extent_cannot_project.rs"
+            "workspaces/worth-store/crates/worth-store-court-physical-integrity/tests/worth_store_court_physical_integrity/sources/worth_store_physical_integrity/ui/untrusted_page_extent_cannot_project.rs",
+            "workspaces/worth-store/crates/worth-store-court-physical-integrity/tests/worth_store_court_physical_integrity/sources/worth_store_physical_integrity/ui/family_substitution.rs",
+            "workspaces/worth-store/crates/worth-store-court-physical-integrity/tests/worth_store_court_physical_integrity/sources/worth_store_physical_integrity/ui/scope_substitution.rs",
+            "workspaces/worth-store/crates/worth-store-court-physical-integrity/tests/worth_store_court_physical_integrity/sources/worth_store_physical_integrity/ui/validated_view_cannot_open_decoder.rs"
           ]
         }
       ]
