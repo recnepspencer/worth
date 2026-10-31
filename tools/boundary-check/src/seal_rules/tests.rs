@@ -141,6 +141,10 @@ fn certification_factory_callers_are_class_and_file_exact() {
         ("readmit_world_home", "world-home"),
         ("world_composition_runtime", "native-home-composition"),
         ("world_recovery_authority", "native-world-readmission"),
+        (
+            "discover_recovered_associated_effects",
+            "native-recovered-inventory",
+        ),
         ("query_runtime_handle", "query-registered-native"),
         ("prepare_home_program", "query-home-preparation"),
         ("install_home_native_schema", "query-home-preparation"),

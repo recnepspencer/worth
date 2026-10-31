@@ -207,14 +207,15 @@ live release, settlement or a fresh publication. Memory records preserve
 their existing actions. Recovered custody keeps its distinct disposition
 operations. Replace `DurableDispositionRequired` with
 `RuntimeWorldRecoveryDenial::ReopenRequired` and add
-`ProductUnpublishedNextAction::ReopenRequired`; re-export both actual diagnostic
-data types through Query's declaration/Host facades, without a second wrapper
-or a Runtime World service port.
+`ProductUnpublishedNextAction::ReopenRequired`. Both actual diagnostic data
+types already reach the Host runtime facade; preserve that route without a
+second wrapper or a Runtime World service port. The declaration-only crate
+gains no execution dependency or runtime recovery audience.
 
 The caller-facing diagnostic surface is:
 
 ```rust
-use worth_query_decl::facade::{
+use worth_query_host::facade::primary_graph::{
     ProductUnpublishedNextAction, RuntimeWorldRecoveryDenial,
     WorthQueryProductUnpublishedRecovery,
 };
@@ -249,9 +250,12 @@ It accepts the original execution request and actual borrowed Native runtime,
 unconditionally checks exact recovery/runtime affinity, then obtains the full
 existing Native associated inventory. Reuse `RelationalAssociatedEffectRefusal`
 and its `ForeignRuntime` cause. It accepts no caller-supplied vector and returns
-no public absence witness. Its only outside-owner caller is World's existing
+no public absence witness. Its only production outside-owner caller is World's existing
 `lifecycle/builder/home_readmission/associated_effects.rs`, enforced by the
-construction caller seal.
+construction caller seal. The existing Native certification court's exact
+`relational/durable_publication/recovered_associated_effects.rs` file is also
+admitted solely for the genuine foreign/matching runtime admission cases;
+ordinary callers gain no inventory-admission audience.
 
 Pass the actual recovery authority through that private World inventory
 consumer before any reconciliation or empty-World return. Preserve discovery

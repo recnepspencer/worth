@@ -1,9 +1,15 @@
 # Closed callers recorded at the one-build inventory; owners are allowed by the rule.
 # D1/D17: only the concrete Native-readmitted Home may consume its private World slot.
 world-home workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
+# Exact private consumer-affinity unit, compiled only as readmission's cfg(test) child.
+world-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
 # D1: same Native owner Arc enters only the Home's private Bridge attachment.
 native-home-composition workspaces/worth-store/crates/worth-store-application/src/world_section/attachment.rs
 native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
+# Recovery-affine inventory: one production consumer and one authentic admission court.
+native-recovered-inventory crates/worth-runtime-world/src/lifecycle/builder/home_readmission/associated_effects.rs
+native-recovered-inventory crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recovered_associated_effects.rs
 # D1/D17: only Host opening composes the consuming fresh-Home Query stages.
 query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening.rs
 # The source attachment derives Native custody from the actual registered source.

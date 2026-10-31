@@ -14,6 +14,7 @@ const FACTORIES: &[&str] = &[
     "readmit_world_home",
     "world_composition_runtime",
     "world_recovery_authority",
+    "discover_recovered_associated_effects",
     "query_runtime_handle",
     "prepare_home_program",
     "install_home_native_schema",
@@ -252,6 +253,8 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                         "native-world-readmission",
                         "workspaces/worth-store/crates/worth-store-relational/",
                     )
+                } else if *name == "discover_recovered_associated_effects" {
+                    ("native-recovered-inventory", "crates/worth-relational/")
                 } else if *name == "world_composition_runtime" {
                     (
                         "native-home-composition",
