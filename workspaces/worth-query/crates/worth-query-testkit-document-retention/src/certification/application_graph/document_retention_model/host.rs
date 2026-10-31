@@ -56,6 +56,8 @@ pub use super::workflow::{
     UnlinkReviewRequirementHandler, WorkflowGrantStatusBinding, WorkflowGrantStatusHandler,
 };
 
+#[path = "host/auxiliary_programs.rs"]
+mod auxiliary_programs;
 #[path = "host/checkpoint_restore.rs"]
 pub mod checkpoint_restore;
 #[path = "host/trusted_time.rs"]
@@ -259,17 +261,7 @@ where
                 DocumentRetentionSchema,
             >,
 {
-    let model_lifecycle = super::model_lifecycle::validated_model_lifecycle_program();
-    let roster = roster.support(super::actor_generation::validated_actor_program());
-    // Lifecycle actions retain their own program meaning. The initial program
-    // is already installed, so do not roster that same validated meaning twice.
-    let roster = if initial.identity() == model_lifecycle.identity()
-        && initial.revision() == model_lifecycle.revision()
-    {
-        roster
-    } else {
-        roster.support(model_lifecycle)
-    };
+    let roster = auxiliary_programs::include(roster, initial.identity(), initial.revision());
     in_memory_rostered_program(
         initial,
         roster,

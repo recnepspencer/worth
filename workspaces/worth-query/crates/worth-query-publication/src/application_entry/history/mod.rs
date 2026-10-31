@@ -81,6 +81,8 @@ mod metadata;
 mod observation;
 mod page_pause;
 mod paging;
+mod preview;
+pub use preview::{WorthQueryApplicationHistoryPreview, WorthQueryHistoryPreviewResult};
 mod read;
 #[doc(hidden)]
 pub use edit::WorthQueryHistoryEditHandoffPauseForTest;

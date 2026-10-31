@@ -24,7 +24,7 @@ mod control_validation;
 mod controls;
 mod denial;
 mod document_history;
-pub use document_history::WorthQueryDocumentHistoryRead;
+pub use document_history::{WorthQueryDocumentHistoryRead, WorthQueryHistoryPreviewReadAdmission};
 pub(in crate::domain_computation::primary_graph) mod derived_view;
 mod disclosure;
 mod execution_shape;

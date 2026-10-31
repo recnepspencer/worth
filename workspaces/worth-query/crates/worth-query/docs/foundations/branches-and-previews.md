@@ -276,6 +276,20 @@ permission and sufficient limits. Source movement or cancellation during
 assembly discards the staged page. See the [compiled page journeys](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/mod.rs)
 and [assembly handoff cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs).
 
+### Read a historical step
+
+To inspect a recorded step, open `document.preview(&request, node_id)` and call
+`preview.read(&document, &request)`. The holder retains the exact historical
+World source, while every read uses the supplied document's current principal,
+scope, permissions and metadata purpose. Its query runs against the historical
+Native/Signal correspondence through the original installed query executor.
+`rows()`, `source()` and `basis()` describe that admitted result; they do not
+select a writable branch. Closing a holder or result releases its own custody.
+For governed metadata, pass the current capability to `preview_governed(..)`
+and `read_governed(..)`. An out-of-band change still causes document divergence;
+restoring a grant does not silently replace its expected model head.
+See the [compiled preview and independent-holder journeys](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/preview/mod.rs).
+
 ### Record an edit and retain its original outcome
 
 Use the attached document to construct a fresh edit for a declared operation.

@@ -14,6 +14,8 @@ use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::ExecutionRequest;
 #[path = "journal/paging.rs"]
 mod paging;
+#[path = "journal/preview.rs"]
+mod preview;
 
 pub(super) struct RecordedNode {
     pub(super) step: WorthQueryHistoryStep,

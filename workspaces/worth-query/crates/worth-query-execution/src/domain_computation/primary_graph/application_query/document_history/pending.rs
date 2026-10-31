@@ -42,7 +42,7 @@ impl PendingDocumentRead {
     }
 
     pub(super) fn confirm<S: ApplicationSchema, Value>(
-        self,
+        &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         branch: WorthQueryProductBranch,

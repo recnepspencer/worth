@@ -13,6 +13,7 @@ mod observation;
 mod operation_context;
 mod page_pause;
 mod paging;
+mod preview;
 mod receiver_pause;
 mod reservation;
 mod sealing;
@@ -46,6 +47,7 @@ pub use paging::{
     WorthQueryHistoryPage, WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial,
     WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
 };
+pub use preview::WorthQueryHistoryPreview;
 pub use step::{WorthQueryHistoryNodeId, WorthQueryHistoryStep};
 
 use super::WorthQueryOwnedProductHead;

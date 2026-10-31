@@ -19,8 +19,14 @@ pub(super) struct CompletedMetadataRead<'phase, 'scope> {
     phase: &'phase WorthQueryAdvancementPhase<'scope>,
 }
 impl CompletedMetadataRead<'_, '_> {
+    pub(super) fn phase(&self) -> &WorthQueryAdvancementPhase<'_> {
+        self.phase
+    }
+    pub(super) fn source(&self) -> &pending::PendingDocumentRead {
+        &self.source
+    }
     pub(super) fn confirm<S: ApplicationSchema, H: ApplicationHistoryBinding<S>, T>(
-        self,
+        &self,
         document: &WorthQueryDocumentHistory<'_, S, H>,
         value: T,
     ) -> Result<T, Denial> {
@@ -106,6 +112,10 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         if runtime.installed_schema().binding_identity() != *self.history.binding_identity()
             || document.binding != *self.history.binding_identity()
             || self.binding.query().identity() != self.history.access_binding().query().identity()
+            || self.plan.query.binding_observation().is_none()
+            || self.plan.query.binding_observation()
+                != self.history.access_binding().query().binding_observation()
+            || self.binding.query().binding_observation() != self.plan.query.binding_observation()
         {
             return Err(Denial::InstalledBindingMismatch);
         }

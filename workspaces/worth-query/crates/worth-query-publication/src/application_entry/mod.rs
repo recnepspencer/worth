@@ -42,15 +42,16 @@ pub use history::WorthQueryHistoryEditHandoffPauseForTest;
 pub use history::{
     WorthQueryApplicationHistoryAttachmentFailure, WorthQueryApplicationHistoryCloseFailure,
     WorthQueryApplicationHistoryDenial, WorthQueryApplicationHistoryDocument,
-    WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
-    WorthQueryDocumentHistoryClosingDenial, WorthQueryDocumentHistoryDenial,
-    WorthQueryDocumentHistoryInstallationDenialKind, WorthQueryHistoryEdit,
-    WorthQueryHistoryEditAdvance, WorthQueryHistoryEditBuilder, WorthQueryHistoryEditCaptureDenial,
-    WorthQueryHistoryEditCaptureFailure, WorthQueryHistoryEditDenial,
-    WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome,
-    WorthQueryHistoryEditPosture, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
-    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
-    WorthQueryHistoryPageRow, WorthQueryHistoryStep,
+    WorthQueryApplicationHistoryPreview, WorthQueryDocumentHistoryCloseReceipt,
+    WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
+    WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryInstallationDenialKind,
+    WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance, WorthQueryHistoryEditBuilder,
+    WorthQueryHistoryEditCaptureDenial, WorthQueryHistoryEditCaptureFailure,
+    WorthQueryHistoryEditDenial, WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish,
+    WorthQueryHistoryEditOutcome, WorthQueryHistoryEditPosture, WorthQueryHistoryNodeId,
+    WorthQueryHistoryPage, WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial,
+    WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow, WorthQueryHistoryPreviewResult,
+    WorthQueryHistoryStep,
 };
 mod live;
 mod mandatory_review;

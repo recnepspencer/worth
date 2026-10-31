@@ -3,6 +3,8 @@ mod metadata;
 mod operation;
 mod paging;
 mod pending;
+mod preview;
+pub use preview::WorthQueryHistoryPreviewReadAdmission;
 
 use super::{
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationOneShotResult,

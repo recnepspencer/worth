@@ -30,7 +30,9 @@ pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
 }
 
 pub mod document_history {
-    pub use crate::domain_computation::primary_graph::application_query::WorthQueryDocumentHistoryRead;
+    pub use crate::domain_computation::primary_graph::application_query::{
+        WorthQueryDocumentHistoryRead, WorthQueryHistoryPreviewReadAdmission,
+    };
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryCapturePauseForTest;
     pub use crate::domain_computation::primary_graph::{
@@ -43,7 +45,7 @@ pub mod document_history {
         WorthQueryDocumentHistoryReservation, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
         WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
         WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
-        WorthQueryHistoryStep,
+        WorthQueryHistoryPreview, WorthQueryHistoryStep,
     };
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::{

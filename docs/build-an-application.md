@@ -1980,6 +1980,17 @@ input, limits, after.as_ref())`. Both the original READ and current metadata
 permission run before cursor or storage diagnostics. See the
 [compiled bounded-page journeys](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/mod.rs).
 
+Open a historical holder with `document.preview(&request, node_id)?`. Read it
+with `preview.read(&document, &request)?`, supplying the actual current document
+on every call. Later edits can move that document while the holder keeps its
+original composite source. The result exposes admitted `rows()`, the exact
+descriptive `source()` and the actual Native `basis()` used by the query.
+The holder and result expose no retained-selection or mutation conversion.
+Call `result.close()` and `preview.close()` when finished; another independently
+opened holder remains usable. Governed metadata uses `preview_governed(..)` and
+`read_governed(..)` with its current capability purpose on each call. See the
+[compiled historical-read journey](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/preview/mod.rs).
+
 To store the selected basis as application data, serialize
 `selected.describe_basis()` before releasing the selection. After loading that
 record through an ordinary READ request, deserialize it as

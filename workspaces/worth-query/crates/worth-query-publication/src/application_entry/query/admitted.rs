@@ -2,6 +2,7 @@
 use super::*;
 use worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding;
 use worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationQueryPlan;
+use worth_query_execution::publication_boundary::document_history::WorthQueryHistoryPreviewReadAdmission;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
 mod governed;
@@ -23,6 +24,27 @@ where
     pub(in crate::application_entry) fn with_admitted_query<T>(
         self,
         phase: &AdvancementPhase<'_>,
+        perform: impl FnOnce(
+            &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+            &WorthQueryInstalledApplicationQueryBinding<Schema, Intent::Binding>,
+            &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+            RequestPlan<'_, Schema, Intent::Binding>,
+        ) -> Result<T, WorthQueryApplicationRequestQueryDenial>,
+    ) -> Result<T, WorthQueryApplicationRequestQueryDenial>
+    where
+        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                Schema,
+                <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            >,
+    {
+        self.with_admitted_preview_query(phase, None, perform)
+    }
+
+    pub(in crate::application_entry) fn with_admitted_preview_query<T>(
+        self,
+        phase: &AdvancementPhase<'_>,
+        preview: Option<&WorthQueryHistoryPreviewReadAdmission<'_, '_>>,
         perform: impl FnOnce(
             &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
             &WorthQueryInstalledApplicationQueryBinding<Schema, Intent::Binding>,
@@ -93,8 +115,16 @@ where
         let maximum_results = limits.maximum_results().min(query_maximum);
 
         let controls = WorthQueryProductQueryControls::new(maximum_results, self.scope);
-        let plan = match retained {
-            Some(retained) => selected.admit_retained_application_query(
+        let plan = match (preview, retained) {
+            (Some(preview), None) => selected.admit_document_preview_application_query(
+                phase,
+                preview,
+                binding.query(),
+                &access,
+                parameters,
+                controls,
+            ),
+            (None, Some(retained)) => selected.admit_retained_application_query(
                 phase,
                 retained,
                 binding.query(),
@@ -102,13 +132,14 @@ where
                 parameters,
                 controls,
             ),
-            None => selected.admit_application_query(
+            (None, None) => selected.admit_application_query(
                 phase,
                 binding.query(),
                 &access,
                 parameters,
                 controls,
             ),
+            (Some(_), Some(_)) => return Err(WorthQueryApplicationRequestQueryDenial::RequestMode),
         }
         .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
         let plan = if self.retain_expression_context {

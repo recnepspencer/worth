@@ -195,7 +195,7 @@ fn selected_metadata_and_cached_attempts_require_their_own_current_capability() 
     close(&host, done.document, 2);
 }
 
-fn grant(
+pub(super) fn grant(
     host: &App,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
     status: &str,
