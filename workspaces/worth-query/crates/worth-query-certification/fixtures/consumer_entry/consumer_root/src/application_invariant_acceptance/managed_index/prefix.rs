@@ -10,8 +10,14 @@ use worth_query_consumer_values::{
 use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::primary_graph::*;
 
+#[cfg(test)]
+#[path = "prefix/cost_stages.rs"]
+pub(super) mod cost_stages;
+#[path = "prefix/installed_version.rs"]
+mod installed_version;
 #[path = "prefix/storage.rs"]
 mod storage;
+pub use installed_version::IncompatibleVersion;
 #[path = "prefix/structure.rs"]
 pub(super) mod structure;
 #[path = "prefix/summary.rs"]
@@ -20,6 +26,7 @@ mod summary;
 #[path = "prefix/text_read.rs"]
 mod text_read;
 pub struct PrefixIndex;
+const OBSERVED_COORDINATES: usize = 8;
 // compiled-example: begin
 impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     type SourceBinding = query::SourceBinding;
@@ -48,6 +55,8 @@ fn text_denial(cause: WorthQueryManagedIndexTextReadDenial) -> Stop {
 #[derive(Default)]
 pub struct Calls {
     #[cfg(test)]
+    pub(super) cost_stages: cost_stages::CostStages,
+    #[cfg(test)]
     pub query_read_first: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub query_region_reads: AtomicUsize,
@@ -72,6 +81,7 @@ pub struct Calls {
     #[cfg(test)]
     pub(super) foreign_candidate: Mutex<Option<WorthQueryManagedIndexSourceSlot>>,
     pub matched_sources: AtomicUsize,
+    pub successful_matches: AtomicUsize,
     pub summary_comparisons: AtomicUsize,
     #[cfg(test)]
     pub(super) structure_fault: Mutex<structure::Fault>,
@@ -82,7 +92,7 @@ pub struct Calls {
     pub canonical_rows: AtomicUsize,
     // Consumer fixture observation, invoked only after a genuine first node write.
     pub after_first_node: Mutex<Option<Box<dyn FnOnce() + Send>>>,
-    pub canonical_coordinates: Mutex<[(u32, u64, u32); 8]>,
+    pub canonical_coordinates: Mutex<[(u32, u64, u32); OBSERVED_COORDINATES]>,
 }
 impl Calls {
     pub fn totals(&self) -> (usize, usize, usize) {
@@ -140,7 +150,12 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
                 .with_text(query::name(), |_| ())
                 .map_err(text_denial)?;
         }
-        summary::merge(parts, sources, control)
+        #[cfg(test)]
+        self.0.cost_stages.record(cost_stages::Stage::MergeBegin);
+        let result = summary::merge(parts, sources, control, &self.0);
+        #[cfg(test)]
+        self.0.cost_stages.record(cost_stages::Stage::MergeEnd);
+        result
     }
     fn node_summary(
         &self,
@@ -158,11 +173,16 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, Stop> {
         self.0.summary_comparisons.fetch_add(1, Ordering::SeqCst);
-        let result = summary::may_match(bounds, sources, probe, control)?;
+        #[cfg(test)]
+        self.0.cost_stages.record(cost_stages::Stage::BoundsBegin);
+        let result = summary::may_match(bounds, sources, probe, control, &self.0)?;
         #[cfg(test)]
         {
             for _ in 0..self.0.summary_repetitions.load(Ordering::SeqCst) {
-                assert_eq!(summary::may_match(bounds, sources, probe, control)?, result);
+                assert_eq!(
+                    summary::may_match(bounds, sources, probe, control, &self.0)?,
+                    result
+                );
             }
             if self.0.query_read_first.load(Ordering::SeqCst) {
                 sources
@@ -178,6 +198,8 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
                 self.0.query_region_reads.fetch_add(1, Ordering::SeqCst);
             }
         }
+        #[cfg(test)]
+        self.0.cost_stages.record(cost_stages::Stage::BoundsEnd);
         Ok(result)
     }
     fn node_capacity(
@@ -199,10 +221,6 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
         // This assertion uses genuine full-GEN row identities, never their labels.
         // The independent ordinary Source query deliberately has another order.
         let mut previous = None;
-        assert!(
-            sources.len() <= 8,
-            "the literal fixture observation is finite"
-        );
         for (ordinal, slot) in sources.slots().enumerate() {
             let slot = slot?;
             #[cfg(test)]
@@ -213,11 +231,13 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
             let actual = row.entity_id();
             assert!(previous.is_none_or(|previous| previous < actual));
             previous = Some(actual);
-            self.0.canonical_coordinates.lock().unwrap()[ordinal] = (
-                actual.partition_value(),
-                actual.local_slot_value(),
-                actual.generation_value(),
-            );
+            if ordinal < OBSERVED_COORDINATES {
+                self.0.canonical_coordinates.lock().unwrap()[ordinal] = (
+                    actual.partition_value(),
+                    actual.local_slot_value(),
+                    actual.generation_value(),
+                );
+            }
         }
         self.0.canonical_rows.store(sources.len(), Ordering::SeqCst);
         #[cfg(test)]
@@ -246,6 +266,8 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
         self.0.updates.fetch_add(1, Ordering::SeqCst);
+        #[cfg(test)]
+        self.0.cost_stages.record(cost_stages::Stage::UpdateBegin);
         #[cfg(test)]
         if *self.0.structure_fault.lock().unwrap() == structure::Fault::DuplicateChild {
             // A genuine value-only write of the exact predecessor node. Its
@@ -287,6 +309,8 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
                 )?);
             }
         }
+        #[cfg(test)]
+        self.0.cost_stages.record(cost_stages::Stage::UpdateEnd);
         Ok(root)
     }
     fn query(
@@ -350,42 +374,10 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
         }
         #[cfg(not(test))]
         let _ = previous;
-        Ok(order == worth_query_consumer_values::PrefixOrder::Matches)
-    }
-}
-
-/// A genuine incompatible executable version for the installation boundary twin.
-pub struct IncompatibleVersion(pub Provider);
-impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for IncompatibleVersion {
-    type Node = Node;
-    type Summary =
-        worth_query_consumer_values::PrefixSourceBounds<WorthQueryManagedIndexSourceSlot>;
-    type Denial = PrefixIndexDenial;
-    const IDENTITY: &'static str = PrefixIndex::PROVIDER;
-    const VERSION: u32 = 2;
-    fn node_capacity(
-        &self,
-        count: usize,
-        control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<usize, Stop> {
-        self.0.node_capacity(count, control)
-    }
-    fn build(
-        &self,
-        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
-        nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Node>,
-        control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
-        self.0.build(sources, nodes, control)
-    }
-    fn query(
-        &self,
-        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
-        nodes: &WorthQueryManagedIndexNodes<Node>,
-        probe: &query::Probe,
-        candidates: &mut WorthQueryManagedIndexCandidateWriter<'_>,
-        control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<(), Stop> {
-        self.0.query(sources, nodes, probe, candidates, control)
+        let matches = order == worth_query_consumer_values::PrefixOrder::Matches;
+        if matches {
+            self.0.successful_matches.fetch_add(1, Ordering::SeqCst);
+        }
+        Ok(matches)
     }
 }

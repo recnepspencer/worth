@@ -160,7 +160,7 @@ fn install_configured_with_limits(
     world
 }
 #[cfg(test)]
-pub(super) fn install_geometry_growth(
+pub(super) fn install_growth(
     prefix: Arc<prefix::Calls>,
     rules: Arc<rule::Calls>,
     geometry: geometry::Configuration,

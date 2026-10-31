@@ -123,8 +123,7 @@ where
                 let tree = nodes.structure.as_ref().ok_or_else(|| {
                     control.refuse(WorthQueryManagedIndexStop::MembershipUnavailable)
                 })?;
-                let context =
-                    source_structure::SummaryContext::new(tree, &source, control, *execution);
+                let context = source_structure::SummaryContext::new(tree, &source, control);
                 crate::domain_computation::primary_graph::access_strategy::coverage::visit(
                     tree,
                     nodes.nodes.root().map(|id| id.ordinal),

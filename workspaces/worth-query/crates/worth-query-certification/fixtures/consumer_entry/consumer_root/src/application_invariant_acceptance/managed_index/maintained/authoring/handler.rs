@@ -8,10 +8,16 @@ impl OperationHandler<Catalog, Binding> for Handler {
         edit: &Edit,
         reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
     ) -> HandlerResult<Decision, Denial> {
+        if let Edit::Items { items, .. } = edit {
+            if items.is_empty() || items.len() > MAX_ITEMS_PER_BATCH {
+                return HandlerResult::DomainDenied(Denial::InvalidBatch);
+            }
+        }
         let result = (|| {
             let scope = match edit {
                 Edit::Directory { .. } => "catalog",
                 Edit::Item { directory, .. }
+                | Edit::Items { directory, .. }
                 | Edit::Share { directory, .. }
                 | Edit::RetireItem { directory, .. } => directory,
             };
@@ -70,43 +76,54 @@ impl OperationHandler<Catalog, Binding> for Handler {
                         .initialize_field(&created, DirectoryNote::reference(), String::new())
                         .map_err(HandlerExecutionDenial::new)?;
                 }
-                Edit::Item {
-                    directory: key,
-                    identity,
-                    name,
-                } => {
-                    let created = writer
-                        .create_entity_in_context(
-                            &directory,
-                            Item::reference(),
-                            WorthQueryApplicationEntityKey::new(identity)
-                                .map_err(HandlerExecutionDenial::new)?,
-                        )
-                        .map_err(HandlerExecutionDenial::new)?;
-                    writer
-                        .initialize_field(&created, ItemIdentity::reference(), identity.clone())
-                        .map_err(HandlerExecutionDenial::new)?;
-                    writer
-                        .initialize_field(&created, ItemName::reference(), name.clone())
-                        .map_err(HandlerExecutionDenial::new)?;
-                    writer
-                        .initialize_field(&created, ItemEnabled::reference(), true)
-                        .map_err(HandlerExecutionDenial::new)?;
-                    writer
-                        .initialize_field(
-                            &created,
-                            bounds::ItemBounds::reference(),
-                            bounds::Coordinates::new(0, 0, 0, 0),
-                        )
-                        .map_err(HandlerExecutionDenial::new)?;
-                    writer
-                        .link(
-                            Contains::reference(),
-                            format!("{key}-{identity}"),
-                            &directory,
-                            &created,
-                        )
-                        .map_err(HandlerExecutionDenial::new)?;
+                Edit::Item { directory: key, .. } | Edit::Items { directory: key, .. } => {
+                    let one = if let Edit::Item { identity, name, .. } = edit {
+                        Some((identity, name))
+                    } else {
+                        None
+                    };
+                    let many = if let Edit::Items { items, .. } = edit {
+                        items.as_slice()
+                    } else {
+                        &[]
+                    };
+                    for (identity, name) in one
+                        .into_iter()
+                        .chain(many.iter().map(|item| (&item.identity, &item.name)))
+                    {
+                        let created = writer
+                            .create_entity_in_context(
+                                &directory,
+                                Item::reference(),
+                                WorthQueryApplicationEntityKey::new(identity)
+                                    .map_err(HandlerExecutionDenial::new)?,
+                            )
+                            .map_err(HandlerExecutionDenial::new)?;
+                        writer
+                            .initialize_field(&created, ItemIdentity::reference(), identity.clone())
+                            .map_err(HandlerExecutionDenial::new)?;
+                        writer
+                            .initialize_field(&created, ItemName::reference(), name.clone())
+                            .map_err(HandlerExecutionDenial::new)?;
+                        writer
+                            .initialize_field(&created, ItemEnabled::reference(), true)
+                            .map_err(HandlerExecutionDenial::new)?;
+                        writer
+                            .initialize_field(
+                                &created,
+                                bounds::ItemBounds::reference(),
+                                bounds::Coordinates::new(0, 0, 0, 0),
+                            )
+                            .map_err(HandlerExecutionDenial::new)?;
+                        writer
+                            .link(
+                                Contains::reference(),
+                                format!("{key}-{identity}"),
+                                &directory,
+                                &created,
+                            )
+                            .map_err(HandlerExecutionDenial::new)?;
+                    }
                 }
                 Edit::RetireItem { .. } => {
                     let target = writer

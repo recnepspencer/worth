@@ -581,42 +581,60 @@
     },
     {
       "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
-      "test": "summary_ancestry_reuses_sparse_parent_paths_with_original_paid_jumps",
-      "audit": "Exact Query 9.19 private ancestry owner placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-summary-ancestry-reuse-plan.md.",
-      "private_subject": "Derived numeric ancestor relation and measured parent callbacks through actual original SDK-controlled maps, paid private Arc headers and jump arrays. No SourceTree, SourceSlot, Native identity, Ready table or qualified-root witness is fabricated; real public courts verify root-positive/leaf-outside confinement and original query invoices."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
-      "test": "summary_ancestry_rejects_ready_siblings_unvisited_regions_and_false_roots",
-      "audit": "Exact Query 9.19 private ancestry owner placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-summary-ancestry-reuse-plan.md.",
-      "private_subject": "Derived numeric ancestor relation and measured parent callbacks through actual original SDK-controlled maps, paid private Arc headers and jump arrays. No SourceTree, SourceSlot, Native identity, Ready table or qualified-root witness is fabricated; real public courts verify root-positive/leaf-outside confinement and original query invoices."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
-      "test": "summary_ancestry_releases_partial_and_ready_stops_then_retries_same_graph",
-      "audit": "Exact Query 9.19 private ancestry owner placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-summary-ancestry-reuse-plan.md.",
-      "private_subject": "Derived numeric ancestor relation and measured parent callbacks through actual original SDK-controlled maps, paid private Arc headers and jump arrays. No SourceTree, SourceSlot, Native identity, Ready table or qualified-root witness is fabricated; real public courts verify root-positive/leaf-outside confinement and original query invoices."
-    },
-    {
-      "constructors": [
         "SerialRequest"
       ],
       "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/summary_support.rs",
       "test": "checked_summary_confines_row_resolution_to_the_actual_region",
       "audit": "Exact Query 9.19 public repeated-extrema invoice placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-summary-ancestry-reuse-plan.md.",
       "private_subject": "No private runtime subject or synthetic Source artifact: original SDK work-meter root around genuine installed public queries, with32/64 repeated summary operations within each actual Source8 query. Same supported integration observation pattern as geometry growth."
+    },
+    {
+      "constructors": [
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/prefix_growth.rs",
+      "test": "real_prefix_width_small_batches_and_sparse_queries_preserve_both_roots",
+      "audit": "Exact Query 9.19 public prefix-width invoice placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-prefix-width-qualification-plan.md.",
+      "private_subject": "No private runtime subject or synthetic Source: original SDK work meter around actual installed batch authoring, cold rebuild, public queries and two-scope candidate refusal/publication. Authored independent census and sparse oracle; separate accepted reports, no reconstructed cost ledger."
+    },
+    {
+      "constructors": [
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/prefix_growth.rs",
+      "test": "prefix_width_growth_keeps_local_edits_bounded_beside_unrelated_source_names",
+      "audit": "Exact Query 9.19 public prefix-width invoice placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-prefix-width-qualification-plan.md.",
+      "private_subject": "No private runtime subject or synthetic Source: original SDK work meter around actual installed batch authoring, cold rebuild, public queries and two-scope candidate refusal/publication. Authored independent census and sparse oracle; separate accepted reports, no reconstructed cost ledger."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
+      "test": "summary_membership_cache_reuses_region_facts_with_bounded_original_scratch",
+      "audit": "Exact Query 9.19 bounded region-membership owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-summary-membership-cost-repair-plan.md.",
+      "private_subject": "Numeric immutable parent relations and actual original SDK controls only; facts obtained by the real bounded helper, no fabricated SourceTree, Slot, Native identity or cached membership. Fixed4KiB scratch, distinct receiver/eviction behavior, actual miss/hit stops and same-graph fresh retry replace retired Ready/jump ownership claims."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
+      "test": "summary_membership_cache_separates_regions_and_keeps_saturated_fallback_lawful",
+      "audit": "Exact Query 9.19 bounded region-membership owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-summary-membership-cost-repair-plan.md.",
+      "private_subject": "Numeric immutable parent relations and actual original SDK controls only; facts obtained by the real bounded helper, no fabricated SourceTree, Slot, Native identity or cached membership. Fixed4KiB scratch, distinct receiver/eviction behavior, actual miss/hit stops and same-graph fresh retry replace retired Ready/jump ownership claims."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
+      "test": "summary_membership_cache_hits_honor_original_stops_and_same_graph_retries",
+      "audit": "Exact Query 9.19 bounded region-membership owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-summary-membership-cost-repair-plan.md.",
+      "private_subject": "Numeric immutable parent relations and actual original SDK controls only; facts obtained by the real bounded helper, no fabricated SourceTree, Slot, Native identity or cached membership. Fixed4KiB scratch, distinct receiver/eviction behavior, actual miss/hit stops and same-graph fresh retry replace retired Ready/jump ownership claims."
     }
   ]
 }

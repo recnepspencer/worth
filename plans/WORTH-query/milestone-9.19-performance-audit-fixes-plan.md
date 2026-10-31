@@ -20,10 +20,15 @@ Required repairs and current evidence:
 3. **Verified and independently cleared:** [Cold Source graph validation](milestone-9.19-cold-validation-plan.md): single DFS/BFS with visitation state, preserving
    Source bijection, connectivity/acyclicity and hostile/disconnected/skewed cases.
    Incremental checks continue for actual new edges.
-4. **Partially implemented:** [Borrow-confined decoded text](milestone-9.19-prefix-text-reuse-plan.md) removes repeated String decoding/copying and owned selector-key construction from current prefix paths. [Invocation-local ancestry reuse](milestone-9.19-summary-ancestry-reuse-plan.md) also replaces repeated parent walks with lazy paid jump metadata and preserves per-region lookup admission. Prefix scale evidence remains open. Prefix proof/key reuse: memoize within actual immutable invocation/root/version/
-   receiving audience; preserve region restriction and per-use admission. Qualify
-   prefix scale separately. Current fixture Source bound16 and observer bound8
-   must be repaired before large complete-census tests; sparse Parent cap16 stays.
+4. **Verified and independently cleared:** [Borrow-confined decoded text](milestone-9.19-prefix-text-reuse-plan.md)
+   removes repeated String decoding/copying and owned selector-key construction.
+   The initial jump interpreter failed the real small-width guard and is removed.
+   [Bounded per-region membership reuse](milestone-9.19-summary-membership-cost-repair-plan.md)
+   preserves per-use admission with four positive facts and paid fallback. Owner3/3,
+   actual small32/64 and [1k/2k/+4096 width qualification](milestone-9.19-prefix-width-qualification-plan.md)
+   pass unchanged25%/50% whole original SDK guards; no universal depth bound is
+   claimed. Source bound8192 and full cold validation remove fixture ceilings;
+   sparse Parent cap16 remains. Affected managed49/49 and Candidates9/9 pass.
 5. Directory updates: batch touched pages so each shared directory ancestor copies
    once, with original funding/controls and old-root/sibling isolation.
 6. Spatial grouping: improve demonstrated poor grouping using ordinary spatial

@@ -18,3 +18,5 @@ mod schema;
 const PREFIX_MEMBERSHIP:
     worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
     worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::Candidates;
+
+const SOURCE_MAX_RESULTS: usize = 16;

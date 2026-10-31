@@ -22,7 +22,7 @@ where
     I: ApplicationManagedIndexBinding<S>,
     P: WorthQueryManagedIndexProvider<S, I>,
 {
-    let context = SummaryContext::new(tree, source, control, *execution);
+    let context = SummaryContext::new(tree, source, control);
     summary_frontier::postorder(tree, affected, control, &mut |ordinal| {
         let region = tree.region(ordinal, control)?;
         let node = nodes

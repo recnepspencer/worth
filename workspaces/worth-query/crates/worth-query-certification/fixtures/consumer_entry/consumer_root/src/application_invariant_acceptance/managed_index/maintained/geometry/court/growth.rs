@@ -81,7 +81,7 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
     let rules = Arc::clone(&configuration.rules);
     let prefix_calls = Arc::new(prefix::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(Arc::clone(&prefix_calls)));
-    let world = host::install_geometry_growth(prefix_calls, prefix_rules, configuration);
+    let world = host::install_growth(prefix_calls, prefix_rules, configuration);
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);
     setup(&world, &principal, &scope);

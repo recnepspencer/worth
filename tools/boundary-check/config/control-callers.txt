@@ -491,3 +491,5 @@ crates/worth-runtime-bridge/ crates/worth-court-runtime-bridge/tests/worth_court
 # Read-only original SDK prefix attribution at exact real geometry mutation invoices.
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth/work_attribution.rs
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/scope_observation.rs
+
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/prefix_growth/work_attribution.rs

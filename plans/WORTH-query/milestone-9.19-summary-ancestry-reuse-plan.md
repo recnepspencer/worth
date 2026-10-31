@@ -137,3 +137,14 @@ Independent reviewer gave unconditional qa-loop, qa-tests and code-quality-qa
 clearance on the final code, tests, exact placement records and documentation.
 The 11 function advisories preserve coherent owners or inherited boundaries;
 no additional build or unrelated refactoring is required for this slice.
+
+## Superseded after real prefix-width measurement
+
+The jump-table implementation and its numeric evidence above describe commit
+10eb08d5d7. The real Source38/70 prefix-width guard subsequently failed without
+changed thresholds. The [bounded membership repair](milestone-9.19-summary-membership-cost-repair-plan.md)
+removes those maps, Pending/Ready states and jump allocations. Current ownership
+is four positive relation facts per immutable receiving region, with paid parent
+walk fallback on a miss or eviction. Distinct regions may repeat parent reads;
+no current all-parent-once or invocation-wide reuse claim follows from this plan.
+The replacement owner and actual large prefix evidence gate its acceptance.

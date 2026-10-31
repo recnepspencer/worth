@@ -204,7 +204,7 @@ worth_query_query_binding!(pub SourceBinding for ReadSource, schema Catalog,
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value source_scope, limits results 16
+    field DirectoryIdentity::reference(), value source_scope, limits results super::SOURCE_MAX_RESULTS
 );
 worth_query_query_binding!(pub PrefixBinding for FindPrefix, schema Catalog,
     identity "managed-catalog.prefix-binding.v1", input PrefixInputBinding,

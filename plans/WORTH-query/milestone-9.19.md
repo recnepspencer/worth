@@ -1664,14 +1664,19 @@ pass the actual Source/census/root handoff. Overall cold work still includes
 capture, paid ordered state and page depth; prefix reuse, batched directory
 updates, spatial grouping and churn remain required audit repairs.
 
-The [summary ancestry reuse slice](milestone-9.19-summary-ancestry-reuse-plan.md)
-shares lazy paid parent/jump interpretation within one actual immutable summary
-invocation. It preserves every receiving-region and current-row admission. Numeric
-owner 3/3 proves repeated paths use no additional parent reads; real B2 root-positive
-then leaf-outside denial and fixed-Source=8 repeated-summary invoices qualify the
-receiver handoff. Affected managed 48/48 and Candidates 9/9 pass, reusing the unchanged
-large box case from 833a83acf8. Prefix-width qualification remains open, along with
-the remaining audit repairs and later Phase 3 obligations.
+The initial [summary ancestry reuse slice](milestone-9.19-summary-ancestry-reuse-plan.md)
+used paid jump interpretation within one immutable invocation. Actual prefix-width
+measurement exposed excessive cost and failed the unchanged small guard. The
+[bounded membership repair](milestone-9.19-summary-membership-cost-repair-plan.md)
+replaces that metadata with four positive facts for each immutable receiving
+region and paid parent-walk fallback. Every current-request, genuine-slot and
+row admission remains per-use. Distinct regions can repeat parent reads; no
+invocation-wide all-parent-once bound is claimed. Replacement owner3/3, unchanged small32/64 guard and actual1k/2k/+4096 prefix
+qualification pass. Whole SDK refusal work is3393595/3612125/4055582 and commit
+work4324195/4651961/5006254, within unchanged25%/50% guards. Actual census,
+UTF-8/tie/sparse delivery, both-root denial and fresh commit pass. Affected managed
+49/49 (excluding the two separately qualified large cases) and Candidates9/9 pass.
+The other audit repairs and later Phase 3 obligations remain open.
 
 The [recorded-coverage slice](milestone-9.19-phase3-recorded-coverage-plan.md)
 records and verifies actual visited/pruned cuts and their matched-slot bijection.
@@ -1982,7 +1987,7 @@ now uses one actual image/invocation memo, canonical carried field keys and actu
 shared installed descriptors. Each lending use retains field/disclosure, nominal
 binding and original request checks. Current public managed courts pass 49/49,
 Candidates 9/9, installation 8/8 and the owned-result/lifetime-escape twins pass.
-[Ancestry reuse](milestone-9.19-summary-ancestry-reuse-plan.md) is now qualified at the actual summary receiver; prefix scale qualification remains open. These slices do not close
+[Bounded membership reuse](milestone-9.19-summary-membership-cost-repair-plan.md) supersedes the first jump-table implementation after actual width measurement; replacement owner3/3 and real prefix width guards now pass; see the [width evidence](milestone-9.19-prefix-width-qualification-plan.md). These slices do not close
 Phase 3 or the remaining performance audit repairs.
 
 ## Performance Contract

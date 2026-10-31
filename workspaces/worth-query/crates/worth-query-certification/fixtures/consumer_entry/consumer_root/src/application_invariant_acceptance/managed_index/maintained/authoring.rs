@@ -18,6 +18,10 @@ pub enum Edit {
         identity: String,
         name: String,
     },
+    Items {
+        directory: String,
+        items: Vec<ItemSeed>,
+    },
     RetireItem {
         directory: String,
         item: String,
@@ -27,10 +31,18 @@ pub enum Edit {
         item: String,
     },
 }
+pub const MAX_ITEMS_PER_BATCH: usize = 256;
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct ItemSeed {
+    pub identity: String,
+    pub name: String,
+}
 #[derive(Debug)]
 pub struct Changed;
 #[derive(Debug)]
-pub enum Denial {}
+pub enum Denial {
+    InvalidBatch,
+}
 pub struct Decision {
     directory: WorthQueryInvariantMutationTarget<Catalog, Directory>,
     item: Option<WorthQueryInvariantMutationTarget<Catalog, Item>>,

@@ -5703,9 +5703,11 @@ including a changed row for which the provider wrote no Node. A mismatch returns
 `WorthQueryManagedIndexSummarySources`. Its only row lookup accepts a genuine slot
 inside the current checked region; a same-Source slot outside that subtree returns
 `ForeignSummarySource`. Summary semantics cannot depend on an unrelated region.
-Query reuses paid ancestor paths within that actual immutable summary invocation.
-Each lookup still admits its receiving region and current request before lending
-a row; the first lookup may traverse its full ancestor chain.
+Each receiving summary callback keeps four positive membership facts for its
+immutable region. A paid parent walk may stop at an already proved descendant;
+eviction falls back to the actual parent chain. Every lookup still checks the
+original request, resolves the genuine slot in the current Source and admits the
+row before lending it. A miss may traverse its full ancestor chain.
 
 The pure provider owns its enclosure and comparison algebra. Query uses that
 qualified summary premise to skip precisely its actual subtree, then applies

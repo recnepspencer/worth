@@ -12,6 +12,7 @@ use worth_query_host::facade::{
 mod cancellation;
 mod decision_scope;
 mod membership;
+mod prefix_growth;
 mod retirement;
 mod source_structure;
 mod summary_support;

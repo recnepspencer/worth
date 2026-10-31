@@ -13,7 +13,7 @@ fn journey(vertices: u32) {
     let calls = Arc::new(provider::Calls::default());
     let config = Configuration::new(calls.clone());
     let prefixes = Arc::new(prefix::Calls::default());
-    let world = host::install_geometry_growth(
+    let world = host::install_growth(
         prefixes.clone(),
         Arc::new(prefix_rule::Calls::new(prefixes)),
         config,
