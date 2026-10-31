@@ -124,6 +124,134 @@ Product-branch and custody-disposition artifacts are separate. Their retention
 is Authoritative. Live obligations use owner custody plus LinearResource,
 not an expiring receipt cache.
 
+## Native index catalog durability prerequisite
+
+Existing-Home Query readmission requires actual recovered Native index
+definitions. The Native catalog is owner-issued persistent configuration and
+ID provenance: registration order matters, duplicate equivalent definitions
+are lawful, and canonical authored writes reference these identities. It is
+not derivable from Native schema authority or from Query's expected shapes.
+Generation images remain derived data. Tail-only recovery currently loses the
+catalog, while close may lawfully have no checkpoint. Close-time checkpointing
+alone cannot close this boundary.
+
+The decisive courtroom uses a real filesystem Store Home with no selected
+checkpoint. Register actual field, ordering/join and untouched non-Query
+definitions, including equivalent definitions at distinct IDs; commit ordinary
+Native records, release/drop the original owner and reopen from the actual
+canonical and transition tails. Require exact original definitions/IDs,
+subsequent allocator continuity, genuine record reads and owner generation
+build/demand. A same-live-runtime lookup is not recovery evidence. Removing
+the catalog from the authoritative projection must make this journey fail.
+
+Put one required, privately constructed `CanonicalIndexDefinitionDelta` in
+the existing Native canonical envelope BEFORE its one seal/Arc/artifact/route
+construction. Its wire meaning is `base_next_index_id: u64`,
+`next_index_id: u64`, and the ordered actual
+`definitions: Vec<DerivedIndexDefinition>`. These frontiers copy the existing
+issued-ID range; they allocate no new identities. Preserve every name, kind,
+scoping value and ID, including distinct duplicate definitions. There is no
+separate catalog journal, artifact, Query registration fallback, caller vector
+or second preparation algorithm. Live IndexCatalogCoverage incarnation/epoch
+must remain nonserialized and be freshly constructed after recovery.
+
+Read accepted coverage BEFORE freezing the live catalog. Capture the actual
+immutable catalog Arc and next issued ID under the SAME indexing-state read;
+use that SAME snapshot for both delta and authored-index-write preparation.
+The first actual canonical commit carries the full uncovered prefix. Later
+commits traverse only its uncovered issued-ID range. Registration remains
+process-local until covered by a real committed canonical publication or an
+actually selected checkpoint. Concurrent later registration never changes an
+already prepared delta.
+
+Retain accepted coverage on the EXISTING PerformedPublicationNode as
+`max(previous effective catalog frontier, this captured delta's next ID)`.
+Assign that fact only inside the existing actual committed cutover, and apply
+the same monotone rule in `link_recovered`. Preparation reads the actual head
+node directly in O(1), not refresh_index, history scans or envelope body demand.
+Its baseline is the maximum of this accepted node fact and the required
+catalog frontier in the existing genuinely acknowledged checkpoint selection.
+Do not add an allocator, shadow acknowledgement counter, registry, scheduler,
+worker, live ownership mode or source-independent progress authority.
+
+Prepared, refused, no-effect and indeterminate outcomes do not advance accepted
+coverage. Preserve the original frozen payload and existing unresolved
+publication custody. Actual committed cutover acknowledges only its captured
+prefix, never a newer live next ID. Older concurrent candidates may repeat
+equal overlapping definitions; exact equal overlap is idempotent and progress
+cannot regress. Gaps and conflicting definitions at an existing ID refuse.
+Admit the actual source payload before recovery replay consumes its IDs.
+Carry its ORIGINAL delta privately through the existing recovery context into
+the one preparation path; do not regenerate a reply from the restored catalog.
+Preserve original bytes, digest, position and receipt.
+
+The catalog is global across branches. Do not prune sibling-only definitions
+or validate the entire inventory against every individual replay branch's
+schema. Keep existing ordered replay of both tails. Branch transitions alone
+do not persist pending registrations; a covering canonical commit does. Forks
+preserve catalog/history meaning without acquiring another runtime's durable
+publication authority. Definition admission precedes genuine owner-derived
+generation build/demand; no generation image is invented as authoritative data.
+
+Make the delta required in BOTH Native canonical projections. Cut over Native
+artifact v3 to v4 and Native checkpoint CHK16 to CHK17; older development
+formats refuse before effects. Missing required catalog information cannot
+mean an empty catalog. Preserve the Store Relational section's WSRCKPT1
+version-3 outer format, registry and owner directions: Store carries opaque
+Native bytes and never gains a Native schema/header parser or raw getter.
+
+Checkpoint definitions AND their required next-ID frontier come from the SAME
+captured index state. The current later definitions_snapshot reread is cut
+over, since registration does not take the canonical checkpoint gate. Validate
+monotonicity in canonical position, transition position AND catalog frontier
+through existing source-bound publication validation before Home acceptance
+and through actual acknowledgement. Otherwise an older catalog-only capture
+at the same canonical/transition positions could erase newly selected meaning.
+
+The Store cold-directory restore seeds its actual existing checkpoint
+selection. Expanded checkpoint restoration has no RelationalCheckpointDirectory;
+do not fabricate one or treat an unacknowledged live checkpoint as selected.
+Safe one-time equal-overlap re-emission after expanded restore is allowed as
+declared reconstructive work. A failed checkpoint cannot acknowledge its
+captured definitions. A canonical publication overlapping a selected checkpoint
+remains admissible only when exact shared definitions agree.
+
+Destination topology under `crates/worth-relational/src/`:
+
+```text
+history/data/canonical_commit_envelope/index_catalog.rs [create: private wire meaning]
+runtime/state/subsystems/indexing/catalog_publication.rs [create: actual snapshot/range admission]
+authority/commit/pipeline/artifact_execution/index_catalog.rs [create: request-bound preparation]
+durability/authority/runtime_rebuild/index_catalog.rs [create: source admission/original carry]
+existing performed stream/preparation binding [revise: accepted carrier projection]
+existing artifact/checkpoint codecs/capture/selection [revise: required grammar and one capture]
+```
+
+Keep catalog meaning, preparation, accepted publication and recovery at their
+existing authority owners; add no empty successor modules. No new public
+authority API is required. Query continues using existing recovered-definition
+lookup. Update the Native README's registration/recovery semantics and format
+compatibility and the affected provider documentation against real exports.
+
+Unchanged ordinary preparation compares scalars and emits an empty delta.
+Changed extraction costs O(log catalog size + introduced/overlap definitions
+and their bytes), without copying/serializing the full inventory on every
+ordinary commit. New retained allocations use the original request and
+existing reservation mechanisms. Checkpoint/recovery may traverse the catalog;
+registration's existing immutable-catalog replacement cost is not an ordinary
+commit cost claim. No hard wall-clock, whole-close or D11 claim follows.
+
+Before integration prove reverse preparation/commit ordering on different
+branches, registration after capture, checkpoint-only definitions overlapping
+an older frozen tail, same-position checkpoint regression refusal, failed
+checkpoint plus tail recovery, expanded-checkpoint overlap, missing/gapped/
+conflicting deltas, old-format refusal and actual no-effect/uncertain posture.
+Use genuine producer/custody boundaries and existing controls; no fabricated
+positive catalog authority or frontier assignment substitutes. Run focused
+owner/real filesystem courts, format, scoped caps, boundary/context and fresh
+independent source QA. Existing Query readmission remains unqualified until
+this prerequisite is integrated and its real recovery evidence passes.
+
 ## Recovery and service contract
 
 Store Application consumes named Proof stages in order:
