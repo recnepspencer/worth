@@ -116,6 +116,14 @@ the three named tests. Keep its Native builder/schema/ordinary commits,
 StoreJournalMedium, production external-member capture/preparation, anchored
 publication/read and recovery calls explicit in the review inventory. Split
 this fixture to obey the ordinary 400-line cap; do not add a test family.
+The registry's private production acquisition core may return its genuine
+registered guard to the source-local wrapper before opaque Native issuance;
+the same core supplies the named private negative affinity test. No public
+payload access is added. Same-Serving/different-registry validation must be
+tested independently of the earlier issuance check. A negative-only test may
+temporarily substitute another actual filesystem Serving Arc in that genuine
+guard, require ForeignCustody, then restore the original before Drop. This
+does not fabricate successful custody, counts or publication evidence.
 Use the existing
 `cold_source::test_store::initialize`: its `physical_record_journeys::media`
 qualifies actual filesystem media. Produce Native schema and ordinary
