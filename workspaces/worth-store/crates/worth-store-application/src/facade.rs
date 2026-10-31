@@ -24,10 +24,13 @@ pub use crate::open::{admit_home, readmit_relational, recover_home, ApplicationH
 pub use crate::relational_preparation::{
     attach_relational, ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,
     RelationalAttachmentFailedHome, RelationalAttachmentRefused, RelationalHomeReadmissionRefused,
-    UnrecoveredApplicationHome, UnsharedReadmittedApplicationHome,
+    UnrecoveredApplicationHome, UnrecoveredApplicationHomeCloseRefused,
+    UnsharedApplicationHomeCloseRefused, UnsharedReadmittedApplicationHome,
 };
 pub use crate::world_section::{
-    readmit_world, ApplicationWorldDefinition, ApplicationWorldPorts, WorldHomeClosePosture,
-    WorldHomeCloseRefused, WorldHomeReadmissionRefused, WorldReadmittedApplicationHome,
+    readmit_query_world, readmit_world, ApplicationHomeQueryCompositionDenial,
+    ApplicationHomeQueryRootDenial, ApplicationHomeWorldDefinition, ApplicationWorldDefinition,
+    ApplicationWorldPorts, WorldHomeClosePosture, WorldHomeCloseRefused,
+    WorldHomeReadmissionRefused, WorldReadmittedApplicationHome, WorldSealedApplicationHome,
 };
 pub use worth_foundational::facade::{HomeIdentity, HomeIncarnation};

@@ -12,6 +12,7 @@ autotests = false
 sha2 = "0.10"
 worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
 worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-signal = { path = "../../../../crates/worth-signal" }
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof = { path = "../../../../crates/worth-proof" }

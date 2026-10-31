@@ -54,6 +54,9 @@ pub struct WorldPreparedPublicationWithoutSignal {
     pub(crate) prepared: PreparedCompositePublicationWithoutSignal,
 }
 impl WorldPreparedPublicationWithoutSignal {
+    pub fn planned_successor(&self) -> &crate::publication::PlannedProductReferenceSuccessor {
+        self.prepared.planned_successor()
+    }
     /// Original issued identities, exposed only for descriptive correlation.
     pub fn attempt_identity(&self) -> &crate::identity::CompositePublicationAttemptIdentity {
         self.prepared.planned_successor().attempt_identity()
@@ -73,7 +76,47 @@ impl WorldPreparedPublicationWithoutSignal {
     }
 }
 
+/// Linear custody of the SAME opened attempt after its one proposal binding.
+/// The bound proposal is consumed by Native's existing preparation exactly once.
+#[derive(Debug)]
+pub struct WorldQueryNativePreparation {
+    open: WorldOpenedPublicationAttempt,
+}
+impl WorldQueryNativePreparation {
+    pub fn unpublished_recovery_handle(&self) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        self.open.unpublished_recovery_handle()
+    }
+    pub fn complete_query_native_preparation(
+        self,
+        candidate: PreparedRelationalCommitCandidate,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorldPreparedPublicationWithoutSignal, WorldNativePreparationRefusal> {
+        self.open.complete_native_preparation(candidate, request)
+    }
+    pub fn retain(self) -> crate::recovery::ProductUnpublishedOwnerEffects {
+        self.open.retain()
+    }
+}
+
 impl WorldOpenedPublicationAttempt {
+    /// Closed Query preparation consumes the actual open and original proposal.
+    /// Candidate-dependent Query work then uses Native's one prepared candidate.
+    pub fn bind_query_native_proposal(
+        self,
+        proposal: ValidatedRelationalProposal,
+    ) -> Result<
+        (WorldQueryNativePreparation, ValidatedRelationalProposal),
+        WorldNativePreparationRefusal,
+    > {
+        match self.bind_native_proposal(proposal) {
+            Ok(bound) => Ok((WorldQueryNativePreparation { open: self }, bound)),
+            Err(cause) => Err(WorldNativePreparationRefusal {
+                open: self,
+                cause: WorldNativePreparationDenial::Native(cause),
+            }),
+        }
+    }
+
     /// Consumes the one validated handler result before Native's existing
     /// preparation call. Association cannot be added to a sealed candidate.
     fn bind_native_proposal(

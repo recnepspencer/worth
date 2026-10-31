@@ -18,6 +18,7 @@ pub enum ApplicationHomeOpenRefusal {
     World(worth_runtime_world::facade::WorldReadmissionDenial),
     BridgeSource(worth_runtime_bridge::facade::RelationalBridgeSourceConfigurationError),
     Bridge(worth_runtime_bridge::facade::BridgeBuildError),
+    ConditionalBridge(worth_runtime_bridge::facade::BridgeConditionalDenial),
 }
 
 pub fn recover_home(

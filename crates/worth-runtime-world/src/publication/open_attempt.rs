@@ -10,7 +10,7 @@ use worth_execution::{ExecutionArray, ExecutionRequest};
 mod native_preparation;
 pub use native_preparation::{
     WorldNativePreparationDenial, WorldNativePreparationRefusal,
-    WorldPreparedPublicationWithoutSignal,
+    WorldPreparedPublicationWithoutSignal, WorldQueryNativePreparation,
 };
 #[derive(Debug)]
 pub enum WorldOpenAttemptRefusal {
@@ -42,6 +42,9 @@ pub struct WorldPendingOpenAttempt {
     pub(crate) deadline: Option<crate::lifecycle::RuntimeWorldInstant>,
 }
 impl WorldPendingOpenAttempt {
+    pub fn unpublished_recovery_handle(&self) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        self.custody.unpublished_recovery_handle()
+    }
     pub fn advance(mut self, execution: &ExecutionRequest<'_, '_>) -> WorldOpenAttemptOutcome {
         match self.binding.publish(&self.subject, execution) {
             Ok(committed) => {

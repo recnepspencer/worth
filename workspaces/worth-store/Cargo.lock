@@ -1456,6 +1456,7 @@ dependencies = [
  "worth-relational",
  "worth-runtime-bridge",
  "worth-runtime-world",
+ "worth-signal",
  "worth-store",
  "worth-store-physical-format",
  "worth-store-physical-integrity",

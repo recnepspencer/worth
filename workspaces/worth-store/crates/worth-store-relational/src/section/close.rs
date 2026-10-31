@@ -48,29 +48,62 @@ impl RelationalStoreSection {
                 ))
             }
         };
-        match runtime.prepare_close() {
-            Ok(runtime) => Ok(ClosingRelationalSection {
+        let attached = super::unshared::AttachedRelationalRuntime {
+            runtime,
+            cold_source,
+            serving,
+            checkpoint_selection,
+        };
+        match prepare_attached_close(attached, recovered, recovery_outcome) {
+            Ok(closing) => Ok(closing),
+            Err((attached, recovered, outcome, cause)) => {
+                Err((attached.share(recovered, outcome), cause))
+            }
+        }
+    }
+}
+
+pub(super) fn prepare_attached_close(
+    attached: super::unshared::AttachedRelationalRuntime,
+    recovered: Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
+    recovery_outcome: Option<worth_relational::facade::durability::RecoveryOutcome>,
+) -> Result<
+    ClosingRelationalSection,
+    (
+        super::unshared::AttachedRelationalRuntime,
+        Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
+        Option<worth_relational::facade::durability::RecoveryOutcome>,
+        RelationalSectionCloseDenial,
+    ),
+> {
+    let super::unshared::AttachedRelationalRuntime {
+        runtime,
+        cold_source,
+        serving,
+        checkpoint_selection,
+    } = attached;
+    match runtime.prepare_close() {
+        Ok(runtime) => Ok(ClosingRelationalSection {
+            runtime,
+            cold_source,
+            serving,
+            checkpoint_selection,
+            recovered,
+            recovery_outcome,
+        }),
+        Err(refused) => {
+            let cause = RelationalSectionCloseDenial::Native(refused.reason());
+            Err((
+                super::unshared::AttachedRelationalRuntime {
+                    runtime: refused.into_runtime(),
+                    cold_source,
+                    serving,
+                    checkpoint_selection,
+                },
                 recovered,
                 recovery_outcome,
-                runtime,
-                cold_source,
-                serving,
-                checkpoint_selection,
-            }),
-            Err(refused) => {
-                let reason = refused.reason();
-                Err((
-                    Self {
-                        recovered,
-                        recovery_outcome,
-                        runtime: Arc::new(refused.into_runtime()),
-                        cold_source,
-                        serving,
-                        checkpoint_selection,
-                    },
-                    RelationalSectionCloseDenial::Native(reason),
-                ))
-            }
+                cause,
+            ))
         }
     }
 }

@@ -8,6 +8,30 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    /// Return the original preparing bundle before any journal submission.
+    /// The closed Query caller retains it outside its disposable request first.
+    pub fn prepare_query_publication_without_signal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        expected: ProductBranchObservation,
+        change: worth_relational::facade::mvcc::RelationalTransactionIntent,
+        cancellation: &RuntimeWorldCancellationToken,
+        deadline: Option<RuntimeWorldInstant>,
+    ) -> Result<
+        crate::publication::WorldPendingOpenAttempt,
+        crate::publication::WorldOpenAttemptRefusal,
+    > {
+        let owner = self.service().map_err(|_| {
+            crate::publication::WorldOpenAttemptRefusal::Reservation(
+                NoEffectCompositePublication::new(
+                    NoEffectCause::OwnerUnavailable,
+                    Some(expected.clone()),
+                ),
+            )
+        })?;
+        owner.prepare_durable_open(execution, expected, change, cancellation, deadline)
+    }
+
     pub fn open_publication_without_signal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

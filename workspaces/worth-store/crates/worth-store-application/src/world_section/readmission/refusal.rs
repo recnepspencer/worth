@@ -2,6 +2,7 @@
 pub struct WorldHomeReadmissionRefused {
     pub(super) cause: crate::ApplicationHomeOpenRefusal,
     pub(super) home: Box<crate::ReadmittedApplicationHome>,
+    pub(super) composition: Option<super::super::attachment::ApplicationHomeBridgeComposition>,
 }
 
 impl std::fmt::Debug for WorldHomeReadmissionRefused {
@@ -30,8 +31,13 @@ impl WorldHomeReadmissionRefused {
     /// Explicit cleanup of the failed admission returns the SAME concrete
     /// Native-readmitted Home; it grants no reconciled World stage.
     pub fn into_home(self) -> crate::ReadmittedApplicationHome {
-        let Self { home, cause } = self;
+        let Self {
+            home,
+            cause,
+            composition,
+        } = self;
         drop(cause);
+        drop(composition);
         *home
     }
 }

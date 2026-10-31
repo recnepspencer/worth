@@ -81,7 +81,7 @@ pub use crate::publication::{
     WorldDurablePublicationDenial, WorldDurablePublicationOutcome, WorldNativePreparationDenial,
     WorldNativePreparationRefusal, WorldOpenAttemptOutcome, WorldOpenAttemptRefusal,
     WorldOpenedPublicationAttempt, WorldPendingDurablePublication, WorldPendingOpenAttempt,
-    WorldPreparedPublicationWithoutSignal,
+    WorldPreparedPublicationWithoutSignal, WorldQueryNativePreparation,
 };
 
 pub use crate::lifecycle::{

@@ -1,5 +1,7 @@
 //! Native schema installation and recovery remain exclusive until Query finishes.
 mod attachment;
+mod close;
+pub use close::{UnrecoveredApplicationHomeCloseRefused, UnsharedApplicationHomeCloseRefused};
 mod initialization;
 mod refusal;
 mod unrecovered;

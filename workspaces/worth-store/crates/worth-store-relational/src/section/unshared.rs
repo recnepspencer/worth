@@ -14,10 +14,10 @@ use worth_store::physical_runtime::{
 };
 
 pub(super) struct AttachedRelationalRuntime {
-    runtime: RelationalRuntime,
-    cold_source: Arc<crate::cold_source::StoreColdSource>,
-    serving: Arc<ServingPhysicalRuntime>,
-    checkpoint_selection: Arc<dyn RelationalCheckpointSelectionSource>,
+    pub(super) runtime: RelationalRuntime,
+    pub(super) cold_source: Arc<crate::cold_source::StoreColdSource>,
+    pub(super) serving: Arc<ServingPhysicalRuntime>,
+    pub(super) checkpoint_selection: Arc<dyn RelationalCheckpointSelectionSource>,
 }
 pub struct UnrecoveredRelationalSection {
     attached: AttachedRelationalRuntime,
@@ -67,6 +67,14 @@ impl AttachedRelationalRuntime {
 }
 
 impl UnrecoveredRelationalSection {
+    pub fn prepare_close(
+        self,
+    ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
+        match super::close::prepare_attached_close(self.attached, None, None) {
+            Ok(closing) => Ok(closing),
+            Err((attached, _, _, cause)) => Err((Self { attached }, cause)),
+        }
+    }
     pub fn attach_unrecovered_home(
         definition: RelationalRuntimeDefinition,
         serving: Arc<ServingPhysicalRuntime>,
@@ -134,6 +142,25 @@ impl UnrecoveredRelationalSection {
     }
 }
 impl UnsharedReadmittedRelationalSection {
+    pub fn prepare_close(
+        self,
+    ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
+        match super::close::prepare_attached_close(
+            self.attached,
+            Some(self.recovered),
+            Some(self.outcome),
+        ) {
+            Ok(closing) => Ok(closing),
+            Err((attached, recovered, outcome, cause)) => Err((
+                Self {
+                    attached,
+                    recovered: recovered.expect("same actual recovered authority"),
+                    outcome: outcome.expect("same actual recovery outcome"),
+                },
+                cause,
+            )),
+        }
+    }
     pub fn home_query_finalization_parts(
         &mut self,
     ) -> (

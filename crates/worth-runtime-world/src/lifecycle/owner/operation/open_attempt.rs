@@ -33,7 +33,7 @@ where
             Err(cause) => WorldOpenAttemptOutcome::Refused(cause),
         }
     }
-    fn prepare_durable_open(
+    pub(in crate::lifecycle) fn prepare_durable_open(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         expected: ProductBranchObservation,

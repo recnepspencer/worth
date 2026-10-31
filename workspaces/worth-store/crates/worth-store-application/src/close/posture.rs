@@ -32,6 +32,16 @@ pub struct ApplicationHomeRecoveryCustody {
 }
 
 impl ApplicationHomeRecoveryCustody {
+    pub(crate) fn from_pre_service_home(
+        context: crate::home_context::HomeContext,
+        native: worth_store_relational::ClosingRelationalSection,
+    ) -> Self {
+        Self::retained(
+            context,
+            native,
+            Err(crate::ApplicationHomeCheckpointDenial::HomePreparationIncomplete),
+        )
+    }
     pub(crate) fn from_never_attached_home(context: crate::home_context::HomeContext) -> Self {
         Self {
             location: context.location,

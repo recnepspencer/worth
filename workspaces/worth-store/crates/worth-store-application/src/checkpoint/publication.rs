@@ -10,6 +10,9 @@ pub enum ApplicationHomeCheckpointDenial {
     /// Pre-effect unavailable: no Native section, capture, or checkpoint task
     /// ever existed for this failed construction.
     NativeSectionNeverAttached,
+    /// Native readmission or pre-service Query initialization is incomplete;
+    /// no capture or checkpoint task is attempted by preparation cleanup.
+    HomePreparationIncomplete,
     WorldSectionRequired,
     WorldJournalUnavailable(worth_store::physical_runtime::OrderedJournalDenial),
     WorldJournalRead(worth_store::physical_runtime::OrderedJournalReadFailure),

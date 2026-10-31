@@ -10,6 +10,39 @@ pub enum WorldHomeClosePosture {
     RecoveryRequired(RuntimeWorldOwnerLifecycleObservation),
 }
 
+/// World has actually closed and dropped. Native teardown is deliberately
+/// delayed until the Host releases its Query/source/Bridge observations.
+pub struct WorldSealedApplicationHome {
+    home: crate::ReadmittedApplicationHome,
+    composition: Option<super::attachment::ApplicationHomeBridgeComposition>,
+}
+impl WorldSealedApplicationHome {
+    pub fn home_identity(&self) -> worth_foundational::facade::HomeIdentity {
+        self.home.home_identity()
+    }
+    pub fn incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
+        self.home.incarnation()
+    }
+    pub fn world_close_report(&self) -> &worth_runtime_world::facade::RuntimeWorldCloseReport {
+        self.home
+            .context
+            .world_close_report
+            .as_ref()
+            .expect("actual World close selected this phase")
+    }
+    pub fn finish_close(
+        mut self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> crate::ApplicationHomeCloseOutcome {
+        if let Some(composition) = self.composition.take() {
+            composition.close();
+        }
+        // Existing after_world_close custody preserves RecoveryRequired even
+        // when Native is still genuinely serving or external reads remain.
+        self.home.close(request)
+    }
+}
+
 pub struct WorldHomeCloseRefused<D, I, E, Ctx, T>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -62,6 +95,12 @@ where
     ) -> Result<crate::ApplicationHomeCloseOutcome, Self> {
         self.home.close(request)
     }
+    pub fn try_seal_world(
+        self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<WorldSealedApplicationHome, Self> {
+        self.home.seal_world(request)
+    }
 }
 
 impl<D, I, E, Ctx, T> WorldReadmittedApplicationHome<D, I, E, Ctx, T>
@@ -73,9 +112,17 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     pub fn close(
-        mut self,
+        self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<crate::ApplicationHomeCloseOutcome, WorldHomeCloseRefused<D, I, E, Ctx, T>> {
+        self.seal_world(request)
+            .map(|sealed| sealed.finish_close(request))
+    }
+
+    pub fn seal_world(
+        mut self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<WorldSealedApplicationHome, WorldHomeCloseRefused<D, I, E, Ctx, T>> {
         if let Err(cause) = crate::close::posture::interrupted(request) {
             return Err(WorldHomeCloseRefused {
                 home: self,
@@ -131,12 +178,13 @@ where
             home,
             world,
             world_cleanup,
+            composition,
         } = self;
         drop(world_cleanup);
         // Weak service ports and descriptive reports do not own this World.
         // Caller observations keep their own actual Native read custody, which
         // the unchanged Native close admission may still truthfully refuse.
         drop(world);
-        Ok(home.close(request))
+        Ok(WorldSealedApplicationHome { home, composition })
     }
 }
