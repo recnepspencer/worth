@@ -6,7 +6,8 @@ from compiler_units import CompilerUnitRefusal, attribute, declarations, failed_
 
 
 def unit(name, *, mode='check', features=(), dependencies=(), kind='lib'):
-    return {'pkg_id': name, 'target': {'name': name, 'kind': [kind], 'crate_types': [kind],
+    return {'pkg_id': name, 'target': {'name': name, 'kind': [kind],
+            'crate_types': ['bin' if kind == 'test' else kind],
             'src_path': f'{name}.rs', 'edition': '2024'}, 'mode': mode, 'platform': None,
             'features': list(features), 'profile': {'name': 'dev', 'opt_level': '0', 'debuginfo': 0,
             'debug_assertions': True, 'overflow_checks': True},
@@ -113,6 +114,61 @@ class CompilerUnitDeclarationTests(unittest.TestCase):
         for observed in changed:
             with self.subTest(observed=observed), self.assertRaises(CompilerUnitRefusal):
                 attribute(observed, declaration)
+
+    def test_checked_integration_target_uses_its_declared_test_profile_and_metadata_output(self):
+        row = unit('court', kind='test')
+        observed = event(row)
+        observed['profile']['test'] = True
+        declaration = {'units': declarations(graph(row)), 'compiler_inputs': 'flags'}
+        before = copy.deepcopy(declaration)
+        result = attribute(observed, declaration)
+        self.assertEqual(result['identity'], declaration['units'][0]['identity'])
+        self.assertEqual((result['mode'], result['output']), ('check', 'check'))
+        self.assertEqual(declaration, before)
+
+    def test_checked_integration_target_refuses_a_missing_test_flag(self):
+        row = unit('court', kind='test')
+        with self.assertRaises(CompilerUnitRefusal):
+            attribute(event(row), {'units': declarations(graph(row)), 'compiler_inputs': 'flags'})
+
+    def test_checked_integration_target_refuses_drift_in_every_compiler_profile_field(self):
+        row = unit('court', kind='test')
+        declaration = {'units': declarations(graph(row)), 'compiler_inputs': 'flags'}
+        changes = {'opt_level': '3', 'debuginfo': 2, 'debug_assertions': False, 'overflow_checks': False}
+        for field, value in changes.items():
+            observed = event(row)
+            observed['profile'].update(test=True, **{field: value})
+            with self.subTest(field=field), self.assertRaises(CompilerUnitRefusal):
+                attribute(observed, declaration)
+
+    def test_checked_library_test_build_remains_refused_without_a_declared_test_stage(self):
+        row = unit('owner')
+        row['target']['test'] = True  # Capability does not declare this compilation's test flag.
+        declaration = {'units': declarations(graph(row)), 'compiler_inputs': 'flags'}
+        observed = event(row)
+        self.assertEqual(attribute(observed, declaration)['mode'], 'check')
+        observed['profile']['test'] = True
+        with self.assertRaises(CompilerUnitRefusal):
+            attribute(observed, declaration)
+
+    def test_test_mode_library_still_requires_its_test_flag(self):
+        row = unit('owner', mode='test')
+        declaration = {'units': declarations(graph(row)), 'compiler_inputs': 'flags'}
+        observed = event(row, linked=True)
+        self.assertEqual(attribute(observed, declaration)['mode'], 'test')
+        observed['profile']['test'] = False
+        with self.assertRaises(CompilerUnitRefusal):
+            attribute(observed, declaration)
+
+    def test_checked_integration_target_refuses_ambiguous_required_dependency_graphs(self):
+        rows = declarations(graph(unit('root', dependencies=[1, 2]),
+            unit('court', kind='test', dependencies=[3]), unit('court', kind='test', dependencies=[4]),
+            unit('proof'), unit('proof', features=['cert'])))
+        observed = event(unit('court', kind='test'))
+        observed['profile']['test'] = True
+        self.assertNotEqual(rows[1]['identity'], rows[2]['identity'])
+        with self.assertRaises(CompilerUnitRefusal):
+            attribute(observed, {'units': rows, 'compiler_inputs': 'flags'})
 
     def test_ambiguous_declared_units_are_refused_without_using_filename_hashes(self):
         row = unit('owner', dependencies=[1])
