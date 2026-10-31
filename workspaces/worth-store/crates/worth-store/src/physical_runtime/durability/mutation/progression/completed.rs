@@ -41,6 +41,10 @@ impl CompletedPhysicalMutation {
         }
     }
 
+    pub(in crate::physical_runtime) fn retained_fact(&self) -> Arc<CompletedPhysicalMutationFact> {
+        self.fact.clone()
+    }
+
     pub fn mutation_identity(&self) -> PhysicalMutationIdentity {
         self.fact.mutation
     }

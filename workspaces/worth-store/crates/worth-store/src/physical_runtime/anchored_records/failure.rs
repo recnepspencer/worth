@@ -6,11 +6,16 @@ use crate::physical_runtime::{
     ProvenNoEffectPhysicalMutation, RecordAppendDenial, RecordReadError, RecordStreamFailure,
 };
 
-/// A publication that did not make its value durable. Only `Indeterminate`,
-/// `CompletedWithoutRecord` and `MemberWrite` may have had an effect, and
-/// only `Indeterminate` and `CompletedWithoutRecord` may have moved the anchor.
+/// A refused or interrupted publication. `OwnedPublication` retains actual
+/// prefix/terminal evidence and inspection custody. `MemberWrite` may leave
+/// unreferenced members; `Indeterminate` and `CompletedWithoutRecord` may
+/// have moved the anchor. Busy and admission refusals have no effects.
 #[non_exhaustive]
 pub enum AnchoredRecordPublicationFailure {
+    /// Another owned publication currently holds this door's serialization phase.
+    PublicationBusy,
+    /// Actual prefix/fate and inspection custody survive a stopped owner transition.
+    OwnedPublication(Box<super::AnchoredRecordPublicationFailureCustody>),
     ReservedForOrderedJournal,
     EmptyPayload,
     /// More members than `MAXIMUM_ANCHORED_RECORD_MEMBERS`. No effect.
@@ -77,6 +82,8 @@ pub enum AnchoredRecordMemberWriteFailure {
 impl std::fmt::Debug for AnchoredRecordPublicationFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::PublicationBusy => f.write_str("PublicationBusy"),
+            Self::OwnedPublication(_) => f.write_str("OwnedPublication"),
             Self::ReservedForOrderedJournal => f.write_str("ReservedForOrderedJournal"),
             Self::EmptyPayload => f.write_str("EmptyPayload"),
             Self::TooManyMembers { members } => f

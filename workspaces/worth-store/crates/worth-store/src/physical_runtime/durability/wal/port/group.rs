@@ -32,6 +32,8 @@ pub enum PhysicalWalGroupAppendOutcome {
 pub enum PhysicalWalGroupAppendFailureCause {
     RuntimeReleased,
     SignalClockUnavailable,
+    OriginalRequestCancelled,
+    OriginalRequestDeadlineElapsed,
     Reservation(PhysicalWalReservationDenial),
     PublicationGrowth,
     Append(PhysicalWalAppendFailureCause),
@@ -178,6 +180,20 @@ impl PhysicalWalAppendPort {
         else {
             return self.growth_denied(reserved);
         };
+        // This is the actual group-seal cutover, after reservation/charge and
+        // after the managed BeforeWalAppend gate. No clock conversion occurs.
+        if let Some(stop) = reserved.original_request_stop() {
+            drop(charged);
+            return PhysicalWalGroupAppendOutcome::NotAdmitted {
+                members: self.release_before_effect(reserved),
+                cause: match stop {
+                    worth_execution::MapKernelStop::DeadlineElapsed => {
+                        PhysicalWalGroupAppendFailureCause::OriginalRequestDeadlineElapsed
+                    }
+                    _ => PhysicalWalGroupAppendFailureCause::OriginalRequestCancelled,
+                },
+            };
+        }
         if !sealing_bindings.is_empty()
             && let Err(denial) = self.idempotency.seal_group(sealing_bindings)
             && !matches!(

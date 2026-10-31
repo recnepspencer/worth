@@ -11,6 +11,14 @@ impl RecordPublicationDirector {
         &self,
         attempt: &PhysicalMutationAttempt,
     ) -> Option<PhysicalMutationProvenNoEffectCause> {
+        if let Some(stop) = attempt.original_request_stop() {
+            return Some(match stop {
+                worth_execution::MapKernelStop::DeadlineElapsed => {
+                    PhysicalMutationProvenNoEffectCause::DeadlineElapsedBeforeGroupSeal
+                }
+                _ => PhysicalMutationProvenNoEffectCause::CancelledBeforeGroupSeal,
+            });
+        }
         if attempt.cancellation_requested() {
             return Some(PhysicalMutationProvenNoEffectCause::CancelledBeforeGroupSeal);
         }

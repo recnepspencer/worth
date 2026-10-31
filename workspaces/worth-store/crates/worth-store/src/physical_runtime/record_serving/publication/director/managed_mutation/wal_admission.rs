@@ -53,7 +53,14 @@ impl RecordPublicationDirector {
                 Ok(appended)
             }
             PhysicalWalGroupAppendOutcome::NotAdmitted { members, cause } => {
-                let broad = if cause == PhysicalWalGroupAppendFailureCause::PublicationGrowth {
+                let broad = if cause == PhysicalWalGroupAppendFailureCause::OriginalRequestCancelled
+                {
+                    Cause::CancelledBeforeGroupSeal
+                } else if cause
+                    == PhysicalWalGroupAppendFailureCause::OriginalRequestDeadlineElapsed
+                {
+                    Cause::DeadlineElapsedBeforeGroupSeal
+                } else if cause == PhysicalWalGroupAppendFailureCause::PublicationGrowth {
                     Cause::RetentionPressure
                 } else {
                     Cause::AdmissionDeniedBeforeGroupSeal

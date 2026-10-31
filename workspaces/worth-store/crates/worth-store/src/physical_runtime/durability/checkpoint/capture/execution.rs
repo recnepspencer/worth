@@ -32,12 +32,8 @@ impl PhysicalCheckpointCaptureOwner {
         let basis = admitted.basis;
         let custody = admitted.custody;
         let key = attempt.idempotency_key();
-        if attempt.cancellation_requested() {
-            return PhysicalCheckpointExecutionResult::no_effect(
-                basis.identity(),
-                key,
-                PhysicalCheckpointProvenNoEffectCause::CancelledBeforeCandidate,
-            );
+        if let Some(cause) = attempt.pre_publication_stop_cause(false) {
+            return PhysicalCheckpointExecutionResult::no_effect(basis.identity(), key, cause);
         }
         let candidate = match self.create_capture_candidate(basis, custody, attempt, key) {
             Ok(candidate) => candidate,
@@ -73,13 +69,8 @@ impl PhysicalCheckpointCaptureOwner {
             .map_err(|(cleanup, action)| {
                 initial_action_failure(cleanup, attempt, basis.identity(), key, action)
             })?;
-        if attempt.cancellation_requested() {
-            return Err(remove_created_candidate(
-                candidate,
-                attempt,
-                key,
-                PhysicalCheckpointProvenNoEffectCause::CancelledAndCandidateRemoved,
-            ));
+        if let Some(cause) = attempt.pre_publication_stop_cause(true) {
+            return Err(remove_created_candidate(candidate, attempt, key, cause));
         }
         Ok(candidate)
     }
@@ -100,13 +91,8 @@ pub(super) fn finish_capture_candidate(
     attempt: &PhysicalCheckpointAttempt,
     key: PhysicalCheckpointIdempotencyKey,
 ) -> Result<CapturedCheckpointCandidate, PhysicalCheckpointExecutionResult> {
-    if attempt.cancellation_requested() {
-        return Err(remove_created_candidate(
-            candidate,
-            attempt,
-            key,
-            PhysicalCheckpointProvenNoEffectCause::CancelledAndCandidateRemoved,
-        ));
+    if let Some(cause) = attempt.pre_publication_stop_cause(true) {
+        return Err(remove_created_candidate(candidate, attempt, key, cause));
     }
     candidate
         .finish(binding_compaction)
@@ -118,13 +104,8 @@ pub(super) fn synchronize_capture_candidate(
     attempt: &PhysicalCheckpointAttempt,
     key: PhysicalCheckpointIdempotencyKey,
 ) -> Result<DurableCheckpointCandidate, PhysicalCheckpointExecutionResult> {
-    if attempt.cancellation_requested() {
-        return Err(remove_captured_candidate(
-            captured,
-            attempt,
-            key,
-            PhysicalCheckpointProvenNoEffectCause::CancelledAndCandidateRemoved,
-        ));
+    if let Some(cause) = attempt.pre_publication_stop_cause(true) {
+        return Err(remove_captured_candidate(captured, attempt, key, cause));
     }
     attempt.enter(PhysicalCheckpointProgressPhase::CandidateSynchronization);
     captured

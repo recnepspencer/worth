@@ -47,47 +47,83 @@ impl DurableRecordAppendFailure {
     }
 }
 
+pub(in crate::physical_runtime) enum PreparedDurableRecordAppend {
+    Prepared(crate::physical_runtime::PreparedPhysicalMutation),
+    Terminal(crate::physical_runtime::PhysicalMutationTerminalFact),
+}
+
 impl DurableRecordAppend {
-    /// Issues the idempotency key, prepares and executes the durable append,
-    /// and returns the persisted records in batch order.
-    pub(in crate::physical_runtime) fn submit(
+    pub(in crate::physical_runtime) fn prepare(
         self,
         submission: &PhysicalRecordSubmission,
-    ) -> Result<Vec<PersistedRecordIdentity>, DurableRecordAppendFailure> {
-        type Failure = DurableRecordAppendFailure;
-        let records = self.batch.records.len();
+    ) -> Result<PreparedDurableRecordAppend, DurableRecordAppendFailure> {
+        self.prepare_with_interruption(submission, None)
+    }
+
+    pub(in crate::physical_runtime) fn prepare_with_interruption(
+        self,
+        submission: &PhysicalRecordSubmission,
+        interruption: Option<std::sync::Arc<worth_execution::ExecutionInterruptionView>>,
+    ) -> Result<PreparedDurableRecordAppend, DurableRecordAppendFailure> {
         let key = submission
             .issue_idempotency_key(PhysicalMutationIdempotencyMaterial::new(self.idempotency))
-            .map_err(Failure::Idempotency)?;
-        let request = PhysicalMutationRequest::platform_durable(key, self.deadline);
-        let completed = match submission
+            .map_err(DurableRecordAppendFailure::Idempotency)?;
+        let request = PhysicalMutationRequest::platform_durable(key, self.deadline)
+            .with_shared_interruption(interruption);
+        match submission
             .prepare_durable_append(self.batch, self.placement, request)
             .into_raw()
         {
             TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-                match prepared.execute() {
-                    PhysicalMutationOutcome::Completed(completed) => completed,
-                    PhysicalMutationOutcome::ProvenNoEffect(fate) => {
-                        return Err(Failure::ProvenNoEffect(fate))
-                    }
-                    PhysicalMutationOutcome::Indeterminate(fate) => {
-                        return Err(Failure::Indeterminate(fate))
-                    }
-                }
+                Ok(PreparedDurableRecordAppend::Prepared(prepared))
             }
-            TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Completed(done)) => done,
+            TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Completed(done)) => {
+                Ok(PreparedDurableRecordAppend::Terminal(
+                    crate::physical_runtime::PhysicalMutationTerminalFact::from_outcome(
+                        PhysicalMutationOutcome::Completed(done),
+                    ),
+                ))
+            }
             TransitionOutcome::Success(PhysicalMutationPreparationSuccess::ProvenNoEffect(
                 fate,
-            )) => return Err(Failure::ProvenNoEffect(fate)),
+            )) => Ok(PreparedDurableRecordAppend::Terminal(
+                crate::physical_runtime::PhysicalMutationTerminalFact::from_outcome(
+                    PhysicalMutationOutcome::ProvenNoEffect(fate),
+                ),
+            )),
             TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Indeterminate(fate)) => {
-                return Err(Failure::Indeterminate(fate))
+                Ok(PreparedDurableRecordAppend::Terminal(
+                    crate::physical_runtime::PhysicalMutationTerminalFact::from_outcome(
+                        PhysicalMutationOutcome::Indeterminate(fate),
+                    ),
+                ))
             }
-            other => return Err(Failure::Preparation(other.into())),
-        };
-        let persisted = completed.persisted_records();
-        if persisted.len() != records {
-            return Err(Failure::CompletedWithoutRecords);
+            other => Err(DurableRecordAppendFailure::Preparation(other.into())),
         }
-        Ok(persisted.to_vec())
+    }
+
+    /// Drives the same admission and managed attempt used by owned publication.
+    pub(in crate::physical_runtime) fn submit(
+        self,
+        submission: &PhysicalRecordSubmission,
+    ) -> Result<Vec<PersistedRecordIdentity>, DurableRecordAppendFailure> {
+        let records = self.batch.records.len();
+        let outcome = match self.prepare(submission)? {
+            PreparedDurableRecordAppend::Prepared(prepared) => prepared.execute(),
+            PreparedDurableRecordAppend::Terminal(fact) => fact.outcome(),
+        };
+        let completed = match outcome {
+            PhysicalMutationOutcome::Completed(done) => done,
+            PhysicalMutationOutcome::ProvenNoEffect(fate) => {
+                return Err(DurableRecordAppendFailure::ProvenNoEffect(fate))
+            }
+            PhysicalMutationOutcome::Indeterminate(fate) => {
+                return Err(DurableRecordAppendFailure::Indeterminate(fate))
+            }
+        };
+        if completed.persisted_records().len() != records {
+            return Err(DurableRecordAppendFailure::CompletedWithoutRecords);
+        }
+        Ok(completed.persisted_records().to_vec())
     }
 }

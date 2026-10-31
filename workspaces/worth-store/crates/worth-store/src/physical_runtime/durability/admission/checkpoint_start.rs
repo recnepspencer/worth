@@ -13,6 +13,8 @@ pub type PhysicalCheckpointStartOutcome = ProofOutcome<
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalCheckpointStartDenial {
+    OriginalRequestCancelled,
+    OriginalRequestDeadlineElapsed,
     NoDurableWalSource,
     DeadlineElapsed,
 }
