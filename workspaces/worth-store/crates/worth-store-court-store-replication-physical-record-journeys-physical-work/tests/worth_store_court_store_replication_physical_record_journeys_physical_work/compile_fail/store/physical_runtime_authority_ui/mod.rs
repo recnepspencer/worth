@@ -192,7 +192,11 @@ fn progression_requires_exact_predecessor_authority() {
 
 #[test]
 fn checkpoint_authority_is_compile_bound() {
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/checkpoint_capture_authority_is_sealed.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_uncoded_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/checkpoint_capture_authority_is_sealed.rs"),
+        "cannot construct",
+        &["CompletedPhysicalCheckpoint", "private fields"],
+    ).expect("prebuilt uncoded semantic compiler denial");
 }
 
 #[test]

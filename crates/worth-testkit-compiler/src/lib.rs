@@ -2,7 +2,8 @@
 //! This crate never launches a compiler. Snapshot checks retain complete rendered
 //! diagnostics, source identities, and every coordinate and detail asserted by
 //! the existing snapshots. External renderer masks follow those snapshots.
-//! Semantic checks bind a declared code and API symbols to one attributed error.
+//! Semantic checks bind a declared code or explicit uncoded cause and API symbols
+//! to one attributed error.
 
 mod denial;
 mod diagnostic_layout;
@@ -35,4 +36,4 @@ mod semantic_denial_tests;
 
 pub use denial::{denied, production_denial};
 pub use refusal::CompilerFixtureRefusal;
-pub use semantic_denial::certification_semantic_denial;
+pub use semantic_denial::{certification_semantic_denial, certification_uncoded_semantic_denial};
