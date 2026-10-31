@@ -30,6 +30,45 @@ pub(super) fn public_world() -> (
 }
 
 #[test]
+fn query_home_selection_never_downgrades_an_unavailable_root_to_memory() {
+    use crate::publication::WorldOpenAttemptRefusal as Refusal;
+    let (_fixture, owner, expected) = public_world();
+    let (_other_fixture, other, foreign) = public_world();
+    let port = owner.publication_port();
+    assert_eq!(
+        port.query_publication_home_binding(&expected).unwrap(),
+        None
+    );
+    assert!(matches!(
+        port.query_publication_home_binding(&foreign),
+        Err(Refusal::IdentityScope)
+    ));
+    let before = owner.root.state.publication_capacity.active();
+    // Actual private lifecycle state: ordinary service admission must not use
+    // a merely retained, partly closed root as evidence of live memory.
+    owner.root.state.close.lock().unwrap().begin().unwrap();
+    assert!(matches!(
+        port.query_publication_home_binding(&expected),
+        Err(Refusal::Reservation(refused)) if refused.cause() == NoEffectCause::OwnerUnavailable
+    ));
+    assert_eq!(owner.root.state.publication_capacity.active(), before);
+    owner.root.state.close.lock().unwrap().finish().unwrap();
+    assert!(matches!(
+        port.query_publication_home_binding(&expected),
+        Err(Refusal::Reservation(refused)) if refused.cause() == NoEffectCause::OwnerUnavailable
+    ));
+    let retained_root = other.root.clone();
+    let lost_port = other.publication_port();
+    drop(other);
+    assert!(!retained_root.owner_is_present());
+    assert!(matches!(
+        lost_port.query_publication_home_binding(&foreign),
+        Err(Refusal::Reservation(refused)) if refused.cause() == NoEffectCause::OwnerUnavailable
+    ));
+    assert_eq!(retained_root.state.publication_capacity.active(), 0);
+}
+
+#[test]
 fn public_ports_complete_publication_and_consumption_permanently_closes_delivery() {
     let (fixture, owner, expected) = public_world();
     let serial_request = worth_execution::SerialRequest::from_memory(

@@ -8,6 +8,36 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    /// Select the actual admitted Home binding. Only a live, consistently
+    /// memory-owned World returns None; unavailable or foreign owners refuse.
+    pub fn query_publication_home_binding(
+        &self,
+        expected: &ProductBranchObservation,
+    ) -> Result<
+        Option<worth_foundational::facade::DurableWorldOwnerIdentity>,
+        crate::publication::WorldOpenAttemptRefusal,
+    > {
+        use crate::publication::WorldOpenAttemptRefusal as Refusal;
+        let owner = self.service().map_err(|_| {
+            Refusal::Reservation(NoEffectCompositePublication::new(
+                NoEffectCause::OwnerUnavailable,
+                Some(expected.clone()),
+            ))
+        })?;
+        let identity = owner.owner_identity();
+        // Home scope equality alone does not establish this process admission.
+        if expected.owner_identity() != identity
+            || expected.owner_identity().get() != identity.get()
+        {
+            return Err(Refusal::IdentityScope);
+        }
+        match (identity.durable(), owner.state.durable.as_ref()) {
+            (None, None) => Ok(None),
+            (Some(home), Some(binding)) if binding.binding().owner() == home => Ok(Some(home)),
+            _ => Err(Refusal::IdentityScope),
+        }
+    }
+
     /// Return the original preparing bundle before any journal submission.
     /// The closed Query caller retains it outside its disposable request first.
     pub fn prepare_query_publication_without_signal(

@@ -1033,7 +1033,12 @@ its complete associated-effect inventory. Failed admission returns
 `WorldHomeReadmissionRefused`, retaining the same concrete Home, lease and World
 slot; `into_home` explicitly cleans up refused component custody and returns
 that Native-readmitted Home. Attached memory bootstrap, legacy publication and
-branch mutation doors refuse before effects.
+branch mutation doors refuse before effects. Query's closed
+`query_publication_home_binding(expected)` selector admits the actual live owner
+and exact process identity, then checks its retained Home binding. Only genuine
+memory ownership returns `None`; unavailable, foreign or inconsistent ownership
+returns its typed refusal before any I/O. Publication still authenticates through
+its original effectful preparation doors.
 World lifecycle `close(request, &actual_owner)` uses the caller's original request, nonwaiting
 admission, and the existing publication frontier. Before sealing, contention or
 interruption preserves Open. After sealing, the same retained task owns each
