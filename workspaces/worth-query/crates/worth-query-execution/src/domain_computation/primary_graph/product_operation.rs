@@ -3,6 +3,7 @@ mod shared_query_basis;
 pub(in crate::domain_computation::primary_graph) use shared_query_basis::SelectedQueryBasisRetentionStop;
 pub(in crate::domain_computation) use shared_query_basis::SharedSelectedProductOperation;
 mod branches;
+mod candidate_selectors;
 mod cleanup;
 mod close;
 mod conditional_definition;

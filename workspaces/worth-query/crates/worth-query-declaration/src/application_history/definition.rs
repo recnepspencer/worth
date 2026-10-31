@@ -10,6 +10,8 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use super::{
     ApplicationHistoryAccessBinding, ApplicationHistoryBinding,
     ApplicationHistoryBindingDescriptor, ApplicationHistoryModel,
+    ApplicationHistoryNavigationBinding, ApplicationHistoryNavigationBindingDescriptor,
+    ApplicationHistoryNavigationDeclaration,
 };
 
 /// One ordinary operation participating in the model's user history.
@@ -38,6 +40,7 @@ pub struct WorthQueryPortableApplicationHistoryParts {
     pub metadata_disclosure: ApplicationQueryDisclosureContract,
     pub model_domain: ApplicationHistoryModelDomain,
     pub operations: Vec<ApplicationHistoryOperation>,
+    pub navigation: Option<ApplicationHistoryNavigationDeclaration>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -53,6 +56,8 @@ pub enum ApplicationHistoryDefinitionDenial {
     MissingOperations,
     InvalidOperation,
     DuplicateOperation,
+    InvalidNavigation,
+    UnsupportedNavigationDomain,
 }
 
 impl ErasedApplicationHistoryDefinition {
@@ -67,6 +72,14 @@ impl ErasedApplicationHistoryDefinition {
     pub fn validate(&self) -> Result<(), ApplicationHistoryDefinitionDenial> {
         use ApplicationHistoryDefinitionDenial as Denial;
         let parts = &self.parts;
+        if let Some(navigation) = &parts.navigation {
+            if !navigation.is_valid() {
+                return Err(Denial::InvalidNavigation);
+            }
+            if parts.model_domain != ApplicationHistoryModelDomain::ScopeEntityRecord {
+                return Err(Denial::UnsupportedNavigationDomain);
+            }
+        }
         if !name_is_valid(&parts.identity) || !parts.history_type.is_valid() {
             return Err(Denial::InvalidIdentity);
         }
@@ -138,6 +151,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> ApplicationHistoryDe
                     metadata_disclosure,
                     model_domain: ApplicationHistoryModelDomain::WholeComposite,
                     operations: Vec::new(),
+                    navigation: None,
                 },
             ),
             descriptor: ApplicationHistoryBindingDescriptor::of::<S, H>(),
@@ -158,6 +172,17 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> ApplicationHistoryDe
     /// ```
     pub fn model_domain(mut self, domain: ApplicationHistoryModelDomain) -> Self {
         self.erased.parts.model_domain = domain;
+        self
+    }
+
+    /// Opt the declared scope entity's authoritative payload into snapshot
+    /// navigation. Requires `ScopeEntityRecord`; this does not include live
+    /// grants, other records, relations or Signal. Each request must separately
+    /// satisfy the installed READ, metadata and navigation capability policies.
+    pub fn navigation<N: ApplicationHistoryNavigationBinding<S, H>>(mut self) -> Self {
+        let navigation = ApplicationHistoryNavigationBindingDescriptor::of::<S, H, N>();
+        self.erased.parts.navigation = Some(navigation.declaration().clone());
+        self.descriptor.set_navigation(navigation);
         self
     }
 

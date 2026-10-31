@@ -3,6 +3,19 @@ use crate::domain_computation::primary_graph::structural_walk::memory;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
+pub(super) fn reserve_arc<T>(
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<Option<ExecutionMemoryReservation>, Cause> {
+    let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
+        .extend(std::alloc::Layout::new::<T>())
+        .map_err(|_| Cause::ChargedBytesOverflow)?;
+    memory::reserve(
+        execution,
+        execution.has_accounting(),
+        layout.pad_to_align().size() as u64,
+    )
+}
+
 #[derive(Debug)]
 pub(super) struct HistoryInsertionAllocation {
     _ticket: Option<ExecutionMemoryReservation>,

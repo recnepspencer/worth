@@ -2,6 +2,7 @@
 mod binding;
 mod definition;
 mod descriptor;
+mod navigation;
 
 pub use binding::{
     ApplicationHistoryAccessBinding, ApplicationHistoryBinding, ApplicationHistoryModel,
@@ -12,3 +13,7 @@ pub use definition::{
     WorthQueryPortableApplicationHistoryParts,
 };
 pub use descriptor::ApplicationHistoryBindingDescriptor;
+pub use navigation::{
+    ApplicationHistoryNavigationBinding, ApplicationHistoryNavigationBindingDescriptor,
+    ApplicationHistoryNavigationDeclaration, WorthQueryPortableApplicationHistoryNavigationParts,
+};

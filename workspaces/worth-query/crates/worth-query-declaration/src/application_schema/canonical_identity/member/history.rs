@@ -33,6 +33,11 @@ pub(super) fn append(
         worth_foundational::facade::CanonicalBasisEntryKind::Identity,
     );
     basis.usize(format!("{prefix}.operation-count"), parts.operations.len());
+    if let Some(navigation) = &parts.navigation {
+        for (field, value) in navigation.canonical_fields() {
+            basis.text(format!("{prefix}.snapshot-navigation.{field}"), value);
+        }
+    }
     for (index, operation) in parts.operations.iter().enumerate() {
         basis.text(
             format!("{prefix}.operation[{index}].binding"),

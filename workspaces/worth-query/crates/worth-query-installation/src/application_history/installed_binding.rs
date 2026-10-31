@@ -10,7 +10,7 @@ use std::{any::TypeId, marker::PhantomData, sync::Arc};
 use worth_query_declaration::facade::{
     application_history::{
         ApplicationHistoryAccessBinding, ApplicationHistoryBinding,
-        ErasedApplicationHistoryDefinition,
+        ApplicationHistoryNavigationBinding, ErasedApplicationHistoryDefinition,
     },
     application_operation::ApplicationMutationBinding,
     application_query::ApplicationQueryBinding,
@@ -38,6 +38,25 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         &self,
     ) -> &WorthQueryInstalledApplicationQueryBinding<S, ApplicationHistoryAccessBinding<S, H>> {
         &self.access
+    }
+
+    /// Compare the original typed recipe and every portable navigation field.
+    /// This establishes installation correspondence, never request permission.
+    pub fn contains_navigation<N: ApplicationHistoryNavigationBinding<S, H>>(&self) -> bool {
+        self.compiled
+            .descriptor
+            .navigation()
+            .is_some_and(|navigation| navigation.matches::<S, H, N>())
+    }
+
+    pub fn operation_descriptors(&self) -> &[worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor]{
+        self.compiled.descriptor.operations()
+    }
+
+    /// Static external-effect declarations on the actual participating operations.
+    /// This says nothing about current permission or retained output readiness.
+    pub fn has_external_operation(&self) -> bool {
+        self.compiled.has_external_operation
     }
 
     /// Compare the full installed operation meaning, rather than its authored name.

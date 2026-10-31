@@ -2005,6 +2005,18 @@ opened holder remains usable. Governed metadata uses `preview_governed(..)` and
 `read_governed(..)` with its current capability purpose on each call. See the
 [compiled historical-read journey](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/preview/mod.rs).
 
+To edit from an old node, explicitly declare an entity-record history domain and
+an `ApplicationHistoryNavigationBinding` with its separate NAV capability.
+Read `document.selection(&request)?`, then use
+`document.navigate::<Navigation>().checkout(node).expected_selection(expected)`
+and `.idempotency(click_key).prepare(&request)?`. Advance the returned owner with
+fresh requests, preserving it on pending work or refusal. Checkout creates a
+writable context and selects the existing node without adding an authored edit;
+the next edit becomes its child, preserving the original future. Current grants
+and other records outside the model remain current. Read the
+[checkout contract and supported component meaning](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#select-a-historical-step-for-editing)
+before enabling navigation. A retained preview or page supplies no NAV authority.
+
 To store the selected basis as application data, serialize
 `selected.describe_basis()` before releasing the selection. After loading that
 record through an ordinary READ request, deserialize it as

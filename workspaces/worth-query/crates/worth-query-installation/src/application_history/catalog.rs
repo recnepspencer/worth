@@ -17,6 +17,7 @@ pub(super) struct CompiledApplicationHistory {
     pub(super) schema: ApplicationSchemaBindingIdentity,
     pub(super) definition: ErasedApplicationHistoryDefinition,
     pub(super) descriptor: ApplicationHistoryBindingDescriptor,
+    pub(super) has_external_operation: bool,
 }
 
 #[derive(Default)]
@@ -53,6 +54,10 @@ impl WorthQueryInstalledApplicationHistoryCatalog {
                 || descriptor.history_type() != &parts.history_type
                 || !parts.access.matches_descriptor(descriptor.access())
                 || descriptor.operations().len() != parts.operations.len()
+                || descriptor
+                    .navigation()
+                    .map(|navigation| navigation.declaration())
+                    != parts.navigation.as_ref()
             {
                 return Err(Denial::new(Kind::BindingMeaningChanged, &parts.identity));
             }
@@ -83,6 +88,11 @@ impl WorthQueryInstalledApplicationHistoryCatalog {
                 schema: schema.binding_identity(),
                 definition: definition.clone(),
                 descriptor: descriptor.clone(),
+                has_external_operation: schema.installed_declaration().members().iter().any(|member| {
+                    matches!(member, ApplicationSchemaMember::OperationExternalEffect { operation, .. }
+                        if descriptor.operations().iter().any(|binding| binding.operation_name() == operation)
+                            || parts.navigation.as_ref().is_some_and(|navigation| navigation.parts().operation == *operation))
+                }),
             });
             if histories.insert(parts.identity.clone(), compiled).is_some() {
                 return Err(Denial::new(Kind::BindingMeaningChanged, &parts.identity));

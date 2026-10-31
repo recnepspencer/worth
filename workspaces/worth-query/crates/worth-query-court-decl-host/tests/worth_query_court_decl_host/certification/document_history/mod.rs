@@ -4,6 +4,7 @@ mod attachment;
 mod context;
 mod membership;
 mod metadata;
+mod navigation;
 mod paging;
 mod payload;
 mod preview;

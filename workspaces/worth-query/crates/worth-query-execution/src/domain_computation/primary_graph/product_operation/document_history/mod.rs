@@ -14,6 +14,14 @@ mod denial;
 mod disposal;
 mod journal;
 mod model;
+mod navigation;
+#[doc(hidden)]
+pub use navigation::WorthQueryHistoryNavigationPauseForTest;
+pub use navigation::{
+    WorthQueryDocumentHistoryNavigation, WorthQueryHistoryNavigationCompletion,
+    WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
+    WorthQueryHistoryNavigationPosture, WorthQueryHistorySelection,
+};
 mod observation;
 mod operation_context;
 mod page_pause;

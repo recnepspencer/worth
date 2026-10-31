@@ -294,7 +294,8 @@ the document or invalidate another page's descriptions.
 
 Use `page.continuation()` for the next call. Foreign and changed-view cursors
 refuse explicitly; they never restart silently. A successful edit changes the
-view, while private reservations and discarded attempts leave it unchanged.
+view, as does selecting another history node. Private reservations and discarded
+attempts leave it unchanged.
 `edit.history_page(..)` continues to show that completed selected view.
 `examined_entries()` counts visited existing map entries, not skipped ordinal
 gaps. `admitted_backing_bytes()` reports a conservative buffer/label quote,
@@ -324,6 +325,83 @@ For governed metadata, pass the current capability to `preview_governed(..)`
 and `read_governed(..)`. An out-of-band change still causes document divergence;
 restoring a grant does not silently replace its expected model head.
 See the [compiled preview and independent-holder journeys](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/preview/mod.rs).
+
+### Select a historical step for editing
+
+Declare snapshot navigation explicitly on a history binding with
+`.model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)` and
+`.navigation::<Navigation>()`. Implement
+`ApplicationHistoryNavigationBinding<Schema, History>` for `Navigation`. Supply
+its stable `IDENTITY`, installed `Capability` and `Operation`, structured `Input`
+and `InputBinding`, and a pure `input(&History::Access)` mapping. The capability
+request must resolve the same model scope as the history READ. Install that
+capability and operation through the ordinary schema declaration.
+The model kind must be separate from installed principal, principal-mapping and
+capability-grant roles; those live control records cannot be historical payload.
+
+READ and navigation are separate permissions. Listing or previewing a node does
+not authorize selecting it. Each preparation and advancement executes the
+original current model READ, metadata disclosure and current NAV admission.
+The navigation request reuses that READ's resolved principal; historical grants
+never supply current permission.
+
+Obtain a sealed description of the actual current selection before preparing:
+
+```rust,ignore
+let expected = document.selection(&request)?;
+let navigation = document.navigate::<Navigation>()
+    .checkout(node_id)
+    .expected_selection(expected)
+    .idempotency(click_key)
+    .prepare(&request)?;
+
+match navigation.advance(&request) {
+    WorthQueryHistoryNavigationAdvance::Selected(done) => {
+        show_selected(done.selection().step());
+    }
+    WorthQueryHistoryNavigationAdvance::Pending(owner) => retain_navigation(owner),
+    WorthQueryHistoryNavigationAdvance::Refused { cause, owner } => {
+        retain_navigation_error(cause, owner);
+    }
+}
+```
+
+The node identifies an immutable authored occurrence. The expected selection
+also identifies the actual current writable context. Checkout selects the
+node's retained model record into a new writable branch while preserving current
+records outside that model, including grants. It adopts the exact performed
+endpoint through the original head owner. A competing selection or changed
+candidate refuses rather than substituting a later equal-looking state.
+
+Navigation adds no authored node. An ordinary edit after selecting S1 becomes a
+child of S1; previously authored S2/S3 remain independently previewable and
+selectable. `done.selection().physical_endpoint()` describes the new writable
+context; `done.selection().step().endpoint()` still describes the original
+authored source.
+
+This entry supports an entity-record domain with an unchanged Signal basis,
+compatible installed program, no storage medium, and no relevant required
+outputs, workflow execution or external effects. Unsupported domain, program,
+output, workflow, external-effect or Signal meaning returns a typed
+`RequiresSemanticCorrection` eligibility refusal. Native source, schema and
+storage-medium incompatibilities retain their owning-component refusal. Use the
+ordinary semantic correction entry when the requested behavior requires
+compensation or reconciliation.
+
+Keep the owner on pending work or refusal. `discard(&request)` releases its real
+candidate obligations and returns the owner if cleanup refuses; it can release
+custody after NAV revocation. Dropping a handle leaves its obligations in the
+document, whose explicit close drains them. Cancellation after adoption cannot
+roll back the selected head: the owner reports `Selected` posture and a fresh
+authorized retry resolves its original result. Retrying a successful key after
+later navigation returns that original completion without moving the current
+selection. Changed expected selection or node under the same key refuses.
+
+For governed metadata, use `selection_governed(..)`,
+`prepare_governed(..)` and `advance_governed(..)` with the current metadata
+capability. Governed payload documents also repeat their original payload
+purpose. See the [compiled checkout and fork journey](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/mod.rs)
+and [owned retry cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/retries.rs).
 
 ### Refresh context after control changes
 

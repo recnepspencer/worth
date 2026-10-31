@@ -13,6 +13,12 @@ pub(in crate::domain_computation::primary_graph) struct HistoryModelIdentity {
 }
 
 impl HistoryModelIdentity {
+    pub(super) fn entity(&self) -> EntityId {
+        self.entity
+    }
+    pub(super) fn kind(&self) -> KindId {
+        self.kind
+    }
     pub(in crate::domain_computation::primary_graph) fn record(
         &self,
     ) -> worth_relational::facade::transactions::RecordRef {

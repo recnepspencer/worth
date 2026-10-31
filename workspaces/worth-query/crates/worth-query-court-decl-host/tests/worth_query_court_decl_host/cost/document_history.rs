@@ -178,3 +178,79 @@ fn a_tiny_page_visits_only_its_admitted_prefix_at_short_and_longer_histories() {
         "neither metadata rows nor their backing may scale with all old steps"
     );
 }
+
+#[test]
+fn nearby_and_distant_checkouts_validate_receiving_owners_without_replaying_intervening_edits() {
+    use std::num::NonZeroUsize;
+    use worth_query_host::facade::application_entry::{WorthQueryHistoryNavigationAdvance as Advance, WorthQueryHistoryPageLimits};
+    use worth_query_testkit_document_retention::facade::document_retention_model::document_history::navigation::Navigation;
+    let host = publish_on_first_program();
+    let mut document = filled(&host, 15);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let page = document
+        .history_page(
+            &request,
+            WorthQueryHistoryPageLimits {
+                maximum_entries: NonZeroUsize::new(16).unwrap(),
+                maximum_examined_entries: NonZeroUsize::new(16).unwrap(),
+                maximum_owned_bytes: NonZeroUsize::new(32 * 1024).unwrap(),
+            },
+            None,
+        )
+        .unwrap();
+    assert_eq!(page.rows().len(), 16);
+    let far = page.rows()[1].step().clone();
+    let near = page.rows()[13].step().clone();
+    drop(page);
+    // Both retained payloads are3, just like the current source. Only distance
+    // through genuine authored history differs; no commands need reexecution.
+    let mut samples = Vec::new();
+    for (offset, target) in [near, far].into_iter().enumerate() {
+        let expected = document.selection(&request).unwrap();
+        let observer = WorthQueryExecutionObservation::install_on_this_thread();
+        let journal_observer = document.observe_history_enrollment_for_test();
+        let _ = advancement_observations_on_this_thread_for_test();
+        let mut owner = document
+            .navigate::<Navigation>()
+            .checkout(target.id())
+            .expected_selection(expected)
+            .idempotency(0x9182_c700 + offset as u128)
+            .prepare(&request)
+            .unwrap();
+        let mut completed = None;
+        for _ in 0..16 {
+            owner = match owner.advance(&request) {
+                Advance::Pending(owner) => owner,
+                Advance::Selected(done) => {
+                    completed = Some(done);
+                    break;
+                }
+                Advance::Refused { cause, .. } => panic!("lawful checkout refused: {cause:?}"),
+            };
+        }
+        let completed = completed.expect("bounded actual navigation selects");
+        let native = advancement_observations_on_this_thread_for_test();
+        let journal = journal_observer.snapshot();
+        drop(journal_observer);
+        drop(observer);
+        assert_eq!(completed.selection().step(), &target);
+        assert_eq!(value(&host, &document), 3);
+        assert!(native.iter().all(|entry| entry.refusal.is_none()));
+        let work: u64 = native.iter().map(|entry| entry.report.charged_work()).sum();
+        assert!(work > 0);
+        assert!(journal.node_probes > 0);
+        eprintln!("checkout sample={offset}; journal={journal:?}; native_work={work}");
+        samples.push((journal.node_probes, work));
+    }
+    assert_eq!(
+        samples[0].0, samples[1].0,
+        "lookup must not traverse intervening history nodes"
+    );
+    assert!(
+        samples[1].1 <= samples[0].1 * 3,
+        "actual receiving-owner work must not replay the longer authored path"
+    );
+    close(&host, document, 18);
+}

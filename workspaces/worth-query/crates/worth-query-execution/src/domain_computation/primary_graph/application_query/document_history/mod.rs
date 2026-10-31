@@ -1,6 +1,8 @@
 //! A pending exact model capture leaves only after ordinary query completion.
 mod context;
 mod metadata;
+pub(in crate::domain_computation::primary_graph) use metadata::CompletedMetadataRead;
+mod navigation;
 mod operation;
 mod paging;
 mod pending;

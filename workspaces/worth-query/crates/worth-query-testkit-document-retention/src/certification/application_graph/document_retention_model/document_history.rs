@@ -15,8 +15,12 @@ use worth_query_decl::facade::{
     worth_query_portable_type,
 };
 
+#[path = "document_history/control_roles.rs"]
+pub mod control_roles;
 #[path = "document_history/matching_read.rs"]
 pub mod matching_read;
+#[path = "document_history/navigation.rs"]
+pub mod navigation;
 
 pub struct RetentionHistory;
 worth_query_portable_type!(RetentionHistory => "worth.query.document-retention.history.v1");
@@ -79,7 +83,7 @@ fn metadata_disclosure_for<
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema> {
-    schema.application_query(matching_read::definition())
+    control_roles::declare(navigation::declare(schema)).application_query(matching_read::definition())
         .application_query_binding::<matching_read::Binding>()
         .application_history(
             ApplicationHistoryDefinition::<DocumentRetentionSchema, matching_read::History>::for_binding(metadata_disclosure_for::<matching_read::History>())
@@ -87,6 +91,7 @@ pub fn declare(
         ).application_history(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, RetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())
             .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
+            .navigation::<navigation::Navigation>()
             .operation::<SetRetentionBinding>("Set retention"),
     ).application_history(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, DetailedRetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())
@@ -94,10 +99,12 @@ pub fn declare(
     ).application_history(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, GovernedRetentionHistory>::for_binding(metadata_disclosure())
             .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
+            .navigation::<navigation::Navigation>()
             .operation::<SetRetentionBinding>("Set retention"),
     ).application_history(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, GovernedPayloadRetentionHistory>::for_binding(metadata_disclosure_for::<GovernedPayloadRetentionHistory>())
             .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
+            .navigation::<navigation::GovernedPayloadNavigation>()
             .operation::<SetRetentionBinding>("Set retention"),
     )
 }

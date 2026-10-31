@@ -24,6 +24,7 @@ mod field_optionality;
 pub(in crate::domain_computation::primary_graph) use field_coordinate::InstalledFieldCoordinate;
 mod installation_primitives;
 mod kind_lookup;
+mod live_control_roles;
 mod member_domain;
 pub(in crate::domain_computation::primary_graph) use member_domain::MemberDomainBinding;
 mod native_outputs;
@@ -80,6 +81,7 @@ pub(in crate::domain_computation::primary_graph) use registry_lowering::{
 #[derive(Debug)]
 pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     principal_bindings: BTreeMap<String, WorthQueryPrimaryPrincipalBindingLayout>,
+    live_control_entity_kinds: BTreeSet<KindId>,
     authorization_selectors: authorization_selectors::WorthQueryAuthorizationSelectors,
     entity_kinds: BTreeMap<String, KindId>,
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
@@ -201,6 +203,7 @@ impl WorthQueryPrimaryGraphLayout {
             entity_kinds.values().copied().collect(),
         )?;
         let principal_bindings = lower_principal_bindings(schema, &entity_kinds, &relation_kinds)?;
+        let live_control_entity_kinds = live_control_roles::lower(schema, &entity_kinds)?;
         let (registry, projected_domains) = projected_member_domain::lower(
             registry,
             schema,
@@ -251,6 +254,7 @@ impl WorthQueryPrimaryGraphLayout {
         Ok((
             Self {
                 principal_bindings,
+                live_control_entity_kinds,
                 authorization_selectors,
                 entity_kinds,
                 relation_kinds: relation_layouts,

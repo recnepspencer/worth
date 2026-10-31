@@ -99,7 +99,7 @@ impl WorthQueryOutputDemandDenial {
     ) -> Result<(), super::WorthQueryOutputReadCloseDenial> {
         if let Some(cleanup) = self.cleanup.as_mut() {
             cleanup.close_read(phase, &mut |recovery| {
-                runtime.close_read_product_publication_recovery_in_advancement(phase, recovery)
+                runtime.close_product_publication_recovery_in_advancement(phase, recovery)
             })?;
         }
         Ok(())

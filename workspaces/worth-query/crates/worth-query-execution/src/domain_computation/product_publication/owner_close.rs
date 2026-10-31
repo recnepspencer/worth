@@ -1,4 +1,4 @@
-//! Close read-owned unpublished effects through their original native settlement.
+//! Close owned unpublished effects through their original native settlement.
 use super::{
     recovery::recovery_failure, WorthQueryProductUnpublishedRecovery as Recovery,
     WorthQueryProductUnpublishedRecoveryReleaseDenial as Denial,
@@ -13,8 +13,8 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::RuntimeWorldRecoveryDenial;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    /// This read-origin close never adopts the failed publication or repeats effects.
-    pub(in crate::domain_computation) fn close_read_product_publication_recovery_in_advancement(
+    /// Close original custody without adopting the failed publication or repeating effects.
+    pub(in crate::domain_computation) fn close_product_publication_recovery_in_advancement(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         recovery: Recovery,
@@ -29,13 +29,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 }
                 result => return result,
             };
-        let recovery = self.settle_read_recovery_in_advancement(phase, recovery)?;
+        let recovery = self.settle_recovery_in_advancement(phase, recovery)?;
         // The returned continuation's action list is descriptive. Only actual
         // native release can prove settlement and cleanup eligibility now.
         self.release_product_publication_recovery_in_advancement(phase, recovery, 0)
     }
 
-    fn settle_read_recovery_in_advancement(
+    fn settle_recovery_in_advancement(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         recovery: Recovery,

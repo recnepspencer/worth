@@ -14,22 +14,43 @@ use worth_query_declaration::facade::{
 
 /// Only a completed ordinary READ with the independent metadata decision can
 /// create this final correspondence check. It stays within its original phase.
-pub(super) struct CompletedMetadataRead<'phase, 'scope> {
+pub(in crate::domain_computation::primary_graph) struct CompletedMetadataRead<'phase, 'scope> {
     source: pending::PendingDocumentRead,
     phase: &'phase WorthQueryAdvancementPhase<'scope>,
+    history: std::any::TypeId,
+    principal: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
 }
 impl CompletedMetadataRead<'_, '_> {
-    pub(super) fn phase(&self) -> &WorthQueryAdvancementPhase<'_> {
+    pub(in crate::domain_computation::primary_graph) fn current_product(
+        &self,
+    ) -> &crate::basis::WorthQueryProductObservationLease {
+        self.source.product()
+    }
+    pub(in crate::domain_computation::primary_graph) fn phase(
+        &self,
+    ) -> &WorthQueryAdvancementPhase<'_> {
         self.phase
+    }
+    pub(in crate::domain_computation::primary_graph) fn principal(
+        &self,
+    ) -> crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding {
+        self.principal
     }
     pub(super) fn source(&self) -> &pending::PendingDocumentRead {
         &self.source
     }
-    pub(super) fn confirm<S: ApplicationSchema, H: ApplicationHistoryBinding<S>, T>(
+    pub(in crate::domain_computation::primary_graph) fn confirm<
+        S: ApplicationSchema,
+        H: ApplicationHistoryBinding<S>,
+        T,
+    >(
         &self,
         document: &WorthQueryDocumentHistory<'_, S, H>,
         value: T,
     ) -> Result<T, Denial> {
+        if self.history != std::any::TypeId::of::<H>() {
+            return Err(Denial::InstalledBindingMismatch);
+        }
         if self.source.model() != document.model {
             return Err(Denial::ForeignModel);
         }
@@ -159,6 +180,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         // The original binding owns projection, body/filter denials, completion
         // and cleanup. Its common current-security validation consumes this
         // carried decision before the original query body may read.
+        let principal = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.plan.principal.principal_entity_id());
         let (source, _read) = self.execute(runtime, phase)?;
         if source.model() != document.model {
             return Err(Denial::ForeignModel);
@@ -166,7 +188,12 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         source
             .confirm(phase, runtime, document.branch(), ())
             .map_err(|(_, cause)| cause)?;
-        Ok(CompletedMetadataRead { source, phase })
+        Ok(CompletedMetadataRead {
+            source,
+            phase,
+            history: std::any::TypeId::of::<H>(),
+            principal,
+        })
     }
 }
 
@@ -183,5 +210,20 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         let completed = read.complete_metadata_read(self, phase, document, access)?;
         completed.confirm(document, document.current_history_step(access))
+    }
+
+    pub fn read_document_history_selection<H: ApplicationHistoryBinding<S>>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        access: &WorthQueryProgramPublicationAccess,
+        document: &WorthQueryDocumentHistory<'_, S, H>,
+        read: WorthQueryDocumentHistoryRead<'_, S, H>,
+    ) -> Result<crate::domain_computation::primary_graph::WorthQueryHistorySelection, Denial>
+    where
+        Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
+    {
+        let completed = read.complete_metadata_read(self, phase, document, access)?;
+        let selection = document.current_history_selection(access);
+        completed.confirm(document, selection)
     }
 }

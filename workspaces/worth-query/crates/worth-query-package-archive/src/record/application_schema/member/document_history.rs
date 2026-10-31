@@ -1,4 +1,4 @@
-//! Member51/v1 carries declared history meaning, never live document custody.
+//! Member51 carries declared history meaning, never live document custody.
 use super::super::{query_binding_reference, wire_vocabulary};
 use super::*;
 use crate::record::{
@@ -6,8 +6,9 @@ use crate::record::{
     sequence::{decode_sequence, write_sequence},
 };
 use worth_query_declaration::facade::application_history::{
-    ApplicationHistoryModelDomain as Domain, ApplicationHistoryOperation,
-    ErasedApplicationHistoryDefinition as Definition,
+    ApplicationHistoryModelDomain as Domain, ApplicationHistoryNavigationDeclaration,
+    ApplicationHistoryOperation, ErasedApplicationHistoryDefinition as Definition,
+    WorthQueryPortableApplicationHistoryNavigationParts as NavigationParts,
     WorthQueryPortableApplicationHistoryParts as Parts,
 };
 
@@ -25,7 +26,7 @@ pub(super) fn write(
     definition: &Definition,
 ) -> Result<(), Denial> {
     let parts = definition.parts();
-    output.u16(1)?;
+    output.u16(if parts.navigation.is_some() { 2 } else { 1 })?;
     output.u16(match parts.model_domain {
         Domain::WholeComposite => 1,
         Domain::ScopeEntityRecord => 2,
@@ -38,14 +39,24 @@ pub(super) fn write(
     write_sequence(output, &parts.operations, |output, operation| {
         output.text(&operation.binding)?;
         output.text(&operation.label)
-    })
+    })?;
+    if let Some(navigation) = &parts.navigation {
+        let navigation = navigation.parts();
+        output.text(&navigation.binding)?;
+        output.text(&navigation.capability)?;
+        wire_vocabulary::write_type_identity(output, &navigation.capability_type)?;
+        output.text(&navigation.operation)?;
+        wire_vocabulary::write_type_identity(output, &navigation.input_type)?;
+    }
+    Ok(())
 }
 
 pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
-    if input.u16()? != 1 {
+    let version = input.u16()?;
+    if !matches!(version, 1 | 2) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     budget.require_nesting_depth(2)?;
@@ -64,6 +75,19 @@ pub(super) fn decode(
             label: input.text()?.to_owned(),
         })
     })?;
+    let navigation = if version == 2 {
+        Some(
+            ApplicationHistoryNavigationDeclaration::from_untrusted_parts(NavigationParts {
+                binding: input.text()?.to_owned(),
+                capability: input.text()?.to_owned(),
+                capability_type: wire_vocabulary::decode_type_identity(input)?,
+                operation: input.text()?.to_owned(),
+                input_type: wire_vocabulary::decode_type_identity(input)?,
+            }),
+        )
+    } else {
+        None
+    };
     let member = ApplicationSchemaMember::ApplicationHistory {
         definition: Definition::from_untrusted_parts(Parts {
             identity,
@@ -72,6 +96,7 @@ pub(super) fn decode(
             metadata_disclosure,
             model_domain,
             operations,
+            navigation,
         }),
     };
     require_shape(&member)?;

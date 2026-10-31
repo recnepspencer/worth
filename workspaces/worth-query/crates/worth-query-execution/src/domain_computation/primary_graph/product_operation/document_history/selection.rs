@@ -2,18 +2,19 @@
 use super::{journal::HistoryJournal, WorthQueryDocumentHistoryDenial as Denial};
 use crate::{
     basis::{WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease},
-    domain_computation::primary_graph::{structural_walk::memory, WorthQueryOwnedProductHead},
+    domain_computation::primary_graph::WorthQueryOwnedProductHead,
 };
 use std::sync::{Arc, Mutex, MutexGuard};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 pub(in crate::domain_computation::primary_graph) struct HistorySelection<'runtime, S> {
     pub head: WorthQueryOwnedProductHead<'runtime, S>,
     pub expected: WorthQueryProductBranchReadIdentity,
     pub physical_source: WorthQueryProductObservationLease,
     pub journal: HistoryJournal<'runtime, S>,
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) navigation:
+        super::navigation::NavigationJournal<'runtime, S>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct HistorySelectionCell<'runtime, S> {
@@ -31,16 +32,7 @@ impl<'runtime, S: ApplicationSchema> HistorySelectionCell<'runtime, S> {
             crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         >,
     ) -> Result<Arc<Self>, (WorthQueryOwnedProductHead<'runtime, S>, Denial)> {
-        // Arc's two counters and aligned cell storage have the original payer.
-        let layout = std::alloc::Layout::new::<[usize; 2]>()
-            .extend(std::alloc::Layout::new::<Self>())
-            .map(|(layout, _)| layout.pad_to_align());
-        let allocation = layout
-            .map_err(|_| Cause::ChargedBytesOverflow)
-            .and_then(|layout| {
-                memory::reserve(execution, execution.has_accounting(), layout.size() as u64)
-            });
-        let allocation = match allocation {
+        let allocation = match super::allocation::reserve_arc::<Self>(execution) {
             Ok(allocation) => allocation,
             Err(cause) => return Err((head, Denial::Recording(cause))),
         };
@@ -59,6 +51,7 @@ impl<'runtime, S: ApplicationSchema> HistorySelectionCell<'runtime, S> {
                 expected,
                 physical_source: source,
                 journal,
+                navigation: super::navigation::NavigationJournal::new(),
             })),
             _allocation: allocation,
         }))
@@ -76,6 +69,14 @@ impl<'runtime, S: ApplicationSchema> HistorySelectionCell<'runtime, S> {
                 .lock()
                 .unwrap_or_else(|poison| poison.into_inner()),
         )
+    }
+
+    pub(super) fn live(&self) -> Option<HistorySelectionGuard<'_, 'runtime, S>> {
+        let guard = self
+            .state
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner());
+        guard.is_some().then_some(HistorySelectionGuard(guard))
     }
 
     /// The move-only document is the sole closing owner. Take custody under the

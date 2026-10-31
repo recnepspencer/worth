@@ -50,10 +50,11 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             head,
             journal,
             physical_source,
+            navigation,
             ..
         } = self.selection.take();
         drop(physical_source);
-        match WorthQueryDocumentHistoryClosing::new(head, journal).retry(phase) {
+        match WorthQueryDocumentHistoryClosing::new(head, journal, navigation).retry(phase) {
             Ok(receipt) => Ok(receipt),
             Err(closing) => match closing.into_terminal_cleanup() {
                 Ok((branch, failure)) => {

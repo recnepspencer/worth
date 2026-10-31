@@ -7,6 +7,10 @@ pub use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap
 pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<DocumentRetentionSchema>) {
     for (grant, action) in [
         (
+            super::super::document_history::navigation::GRANT,
+            <super::super::document_history::navigation::NavigationCapability as super::capability::Role>::ACTION,
+        ),
+        (
             "record-history-payload-grant",
             "read-record-history-subject",
         ),
@@ -24,4 +28,5 @@ pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<DocumentRetentionSchema>
             &["document-retention-operator"],
         );
     }
+    super::super::document_history::control_roles::seed(graph);
 }

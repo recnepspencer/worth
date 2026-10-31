@@ -64,6 +64,7 @@ pub enum WorthQueryDocumentHistoryClosingDenial<'a> {
     Execution(&'a WorthQueryAdvancementDenial),
     Head(&'a WorthQueryApplicationProductBranchCloseDenial),
     Cleanup(&'a WorthQueryApplicationProductBranchCleanupDenial),
+    Navigation(&'a super::WorthQueryHistoryNavigationDenial),
 }
 
 /// A closing document cannot read, edit, navigate or become a live document again.
@@ -76,16 +77,20 @@ pub struct WorthQueryDocumentHistoryClosing<'runtime, S> {
     opening_denial: Option<WorthQueryAdvancementDenial>,
     closed: usize,
     last: Option<ClosedHead>,
+    navigation: super::navigation::NavigationDisposal<'runtime, S>,
+    navigation_denial: Option<super::WorthQueryHistoryNavigationDenial>,
 }
 
 impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, S> {
     pub(super) fn new(
         current: WorthQueryOwnedProductHead<'runtime, S>,
         journal: HistoryJournal<'runtime, S>,
+        navigation: super::navigation::NavigationJournal<'runtime, S>,
     ) -> Self {
         // Drop every document-owned read pin before retiring any of its heads.
         // Native close/retry occurs only after these resource drops have finished.
         let past = journal.into_disposal();
+        let navigation = navigation.into_disposal();
         Self {
             application: current.application(),
             current: Some(current),
@@ -94,12 +99,17 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
             opening_denial: None,
             closed: 0,
             last: None,
+            navigation,
+            navigation_denial: None,
         }
     }
 
     pub fn denial(&self) -> Option<WorthQueryDocumentHistoryClosingDenial<'_>> {
         if let Some(denial) = &self.opening_denial {
             return Some(WorthQueryDocumentHistoryClosingDenial::Execution(denial));
+        }
+        if let Some(denial) = &self.navigation_denial {
+            return Some(WorthQueryDocumentHistoryClosingDenial::Navigation(denial));
         }
         match self.pending.as_ref()? {
             PendingHead::Live { denial, .. } => {
@@ -120,6 +130,14 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
             return Err(self);
         }
         self.opening_denial = None;
+        self.navigation_denial = None;
+        match self.navigation.retry(phase) {
+            Ok(closed) => self.closed += closed,
+            Err(cause) => {
+                self.navigation_denial = Some(cause);
+                return Err(self);
+            }
+        }
         loop {
             if let Some(pending) = self.pending.take() {
                 match pending {
@@ -193,6 +211,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
         Self,
     > {
         if self.current.is_none()
+            && self.navigation.is_empty()
             && self.past.len() == 0
             && matches!(self.pending, Some(PendingHead::Retired { .. }))
         {

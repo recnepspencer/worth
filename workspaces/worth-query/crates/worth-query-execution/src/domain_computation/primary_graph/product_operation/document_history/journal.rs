@@ -12,6 +12,8 @@ use crate::domain_computation::primary_graph::{
 };
 use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::ExecutionRequest;
+#[path = "journal/navigation.rs"]
+mod navigation;
 #[path = "journal/paging.rs"]
 mod paging;
 #[path = "journal/preview.rs"]

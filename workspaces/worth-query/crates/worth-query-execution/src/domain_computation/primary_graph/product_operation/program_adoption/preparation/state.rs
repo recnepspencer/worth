@@ -234,7 +234,11 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             .prepare_branch_transaction(execution, transaction)
             .map_err(map_relational_preparation_denial)
     })?;
-    super::selector_indexes::prepare(execution, selected, &mut candidate)?;
+    super::super::super::candidate_selectors::prepare(execution, selected, &mut candidate)
+        .map_err(|cause| match cause {
+            super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial::Snapshot(cause) => WorthQueryBranchAdoptionPreparationDenial::SelectorSnapshot(cause),
+            super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial::Maintenance(cause) => WorthQueryBranchAdoptionPreparationDenial::SelectorMaintenance(cause),
+        })?;
     let successor_observation_requested = false;
     let recovery = selected.product().publication_binding().recovery();
     let disposition = selected

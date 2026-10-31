@@ -1,6 +1,9 @@
 use std::any::TypeId;
 
-use super::{ApplicationHistoryAccessBinding, ApplicationHistoryBinding};
+use super::{
+    ApplicationHistoryAccessBinding, ApplicationHistoryBinding,
+    ApplicationHistoryNavigationBindingDescriptor,
+};
 use crate::application_operation::ApplicationMutationBindingDescriptor;
 use crate::application_query::{ApplicationQueryBinding, ApplicationQueryBindingDescriptor};
 use crate::application_schema::ApplicationSchema;
@@ -14,6 +17,7 @@ pub struct ApplicationHistoryBindingDescriptor {
     history_type: WorthQueryPortableTypeIdentity,
     access: ApplicationQueryBindingDescriptor,
     operations: Vec<ApplicationMutationBindingDescriptor>,
+    navigation: Option<ApplicationHistoryNavigationBindingDescriptor>,
 }
 
 impl ApplicationHistoryBindingDescriptor {
@@ -24,11 +28,23 @@ impl ApplicationHistoryBindingDescriptor {
             history_type: H::PORTABLE_TYPE_IDENTITY,
             access: ApplicationHistoryAccessBinding::<S, H>::descriptor(),
             operations: Vec::new(),
+            navigation: None,
         }
     }
 
     pub(super) fn push_operation(&mut self, operation: ApplicationMutationBindingDescriptor) {
         self.operations.push(operation);
+    }
+
+    pub(super) fn set_navigation(
+        &mut self,
+        navigation: ApplicationHistoryNavigationBindingDescriptor,
+    ) {
+        self.navigation = Some(navigation);
+    }
+
+    pub fn navigation(&self) -> Option<&ApplicationHistoryNavigationBindingDescriptor> {
+        self.navigation.as_ref()
     }
 
     pub const fn binding_type(&self) -> TypeId {

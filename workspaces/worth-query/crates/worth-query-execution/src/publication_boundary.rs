@@ -35,18 +35,23 @@ pub mod document_history {
     };
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryCapturePauseForTest;
+    #[doc(hidden)]
+    pub use crate::domain_computation::primary_graph::WorthQueryHistoryNavigationPauseForTest;
     pub use crate::domain_computation::primary_graph::{
         WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,
         WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryCandidateDenial,
         WorthQueryDocumentHistoryCloseFailure, WorthQueryDocumentHistoryCloseReceipt,
         WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
-        WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryOperation,
-        WorthQueryDocumentHistoryOperationConstraint, WorthQueryDocumentHistoryRecordPreparation,
-        WorthQueryDocumentHistoryReservation, WorthQueryHistoryContextRefreshDenial,
-        WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryContextRefreshPauseForTest,
-        WorthQueryHistoryNodeId, WorthQueryHistoryPage, WorthQueryHistoryPageAssemblyPauseForTest,
-        WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
-        WorthQueryHistoryPageRow, WorthQueryHistoryPreview, WorthQueryHistoryStep,
+        WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryNavigation,
+        WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryOperationConstraint,
+        WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
+        WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
+        WorthQueryHistoryContextRefreshPauseForTest, WorthQueryHistoryNavigationCompletion,
+        WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
+        WorthQueryHistoryNavigationPosture, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
+        WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
+        WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
+        WorthQueryHistoryPreview, WorthQueryHistorySelection, WorthQueryHistoryStep,
     };
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::{
