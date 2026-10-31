@@ -3,6 +3,11 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::{Arc, Mutex, Weak};
 use std::thread::JoinHandle;
 
+mod start_port;
+mod worker;
+pub(in crate::physical_runtime) use start_port::ExistingPhysicalMutationObservation;
+use worker::run_worker;
+
 use super::PhysicalMutationShutdown;
 use crate::physical_runtime::{
     IndeterminatePhysicalMutation, PhysicalMutationHandle, PhysicalMutationIndeterminateStage,
@@ -331,69 +336,3 @@ impl PhysicalMutationRuntimeOwner {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
-
-impl PhysicalMutationStartPort {
-    pub(in crate::physical_runtime) fn with_interruption(
-        mut self,
-        interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
-    ) -> Self {
-        self.interruption = interruption;
-        self
-    }
-    pub(in crate::physical_runtime) fn interruption(
-        &self,
-    ) -> Option<Arc<worth_execution::ExecutionInterruptionView>> {
-        self.interruption.clone()
-    }
-    pub(in crate::physical_runtime) fn original_request_stop(
-        &self,
-    ) -> Option<worth_execution::MapKernelStop> {
-        self.interruption
-            .as_ref()
-            .and_then(|view| view.check_live().err())
-    }
-
-    pub(in crate::physical_runtime) fn start(
-        &self,
-        prepared: PreparedPhysicalMutation,
-    ) -> PhysicalMutationHandle {
-        self.start_registered(prepared, None)
-    }
-
-    pub(in crate::physical_runtime) fn start_registered(
-        &self,
-        prepared: PreparedPhysicalMutation,
-        step: Option<
-            Arc<crate::physical_runtime::anchored_records::publication::step_custody::AcceptedStep>,
-        >,
-    ) -> PhysicalMutationHandle {
-        let Some(owner) = self.owner.upgrade() else {
-            let identity = prepared.mutation_identity();
-            let attempt =
-                crate::physical_runtime::durability::mutation::PhysicalMutationAttempt::new(
-                    &prepared,
-                    Weak::new(),
-                );
-            if let Some(step) = step {
-                attempt.register_anchored_step(step);
-            }
-            attempt.mark_stale();
-            attempt.install_terminal(PhysicalMutationTerminalFact::Indeterminate(
-                IndeterminatePhysicalMutation::possible_effect(
-                    identity,
-                    prepared.idempotency_identity(),
-                    prepared.request_fingerprint(),
-                    PhysicalMutationIndeterminateStage::RuntimeUnavailable,
-                    0,
-                ),
-            ));
-            attempt.finish_preserved_anchored_step();
-            attempt.publish_terminal();
-            return PhysicalMutationHandle::new(&attempt);
-        };
-        owner.start(prepared, step)
-    }
-}
-
-mod worker;
-use worker::run_worker;

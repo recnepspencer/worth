@@ -1,6 +1,12 @@
 use super::PreparedPhysicalMutation;
 
 impl PreparedPhysicalMutation {
+    pub(in crate::physical_runtime) fn observe_existing_execution(
+        &self,
+    ) -> Option<crate::physical_runtime::durability::ExistingPhysicalMutationObservation> {
+        self.start.observe_existing(self)
+    }
+
     pub(in crate::physical_runtime) fn interruption(
         &self,
     ) -> Option<std::sync::Arc<worth_execution::ExecutionInterruptionView>> {

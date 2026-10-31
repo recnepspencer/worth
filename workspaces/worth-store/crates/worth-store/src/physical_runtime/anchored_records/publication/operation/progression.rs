@@ -177,7 +177,7 @@ fn submit_next(
     if stopped {
         match prepared {
             PreparedDurableRecordAppend::Prepared(prepared) => {
-                settle_unstarted(records, prepared, &step)
+                settle_unstarted(records, prepared, &step)?
             }
             PreparedDurableRecordAppend::Terminal(fact) => step.finish(&fact, None),
         }
@@ -193,7 +193,7 @@ fn submit_next(
         if let Some(cause) = cause {
             match prepared {
                 PreparedDurableRecordAppend::Prepared(prepared) => {
-                    settle_unstarted(records, prepared, &step)
+                    settle_unstarted(records, prepared, &step)?
                 }
                 PreparedDurableRecordAppend::Terminal(fact) => step.finish(&fact, None),
             }
@@ -213,7 +213,7 @@ fn settle_unstarted(
     records: &AnchoredRecords<'_>,
     prepared: crate::physical_runtime::PreparedPhysicalMutation,
     step: &AcceptedStep,
-) {
+) -> Result<(), AnchoredRecordOperationFailure> {
     match records
         .runtime
         .record_submission()
@@ -228,9 +228,15 @@ fn settle_unstarted(
             ),
         crate::physical_runtime::PhysicalPreSealCancellationOutcome::NotCancelled {
             prepared,
-            ..
-        } => step.hold_unstarted(prepared),
+            cause,
+        } => {
+            step.refuse_unstarted(prepared, cause);
+            return Err(AnchoredRecordOperationFailure::StepSettlement(
+                AnchoredRecordStepSettlementFailure::UnstartedCancellationRefused(cause),
+            ));
+        }
     }
+    Ok(())
 }
 
 pub(super) fn settle_accepted(
@@ -242,9 +248,9 @@ pub(super) fn settle_accepted(
         return Ok(true);
     };
     let Some(terminal) = step.terminal() else {
-        if step.has_unstarted() {
+        if let Some(cause) = step.unstarted_refusal_without_attempt() {
             return Err(AnchoredRecordOperationFailure::StepSettlement(
-                AnchoredRecordStepSettlementFailure::WorkerUnavailable,
+                AnchoredRecordStepSettlementFailure::UnstartedCancellationRefused(cause),
             ));
         }
         return Ok(false);

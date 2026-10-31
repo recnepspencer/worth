@@ -71,6 +71,7 @@ pub enum AnchoredRecordStepSettlementFailure {
     TerminalDeliveryPanicked,
     ProtectionReleasePanicked,
     WorkerUnavailable,
+    UnstartedCancellationRefused(crate::physical_runtime::PhysicalPreSealCancellationDenial),
 }
 
 pub struct AnchoredRecordStepRetention {
@@ -105,6 +106,7 @@ impl AnchoredRecordStepRegistration {
         self.step.mutation
     }
     pub fn terminal(&self) -> Option<Arc<AnchoredRecordStepTerminal>> {
+        self.step.observe_existing_terminal();
         self.step.observed_terminal()
     }
     pub fn completed_member_batches(&self) -> usize {
@@ -154,7 +156,8 @@ struct AcceptedStepState {
     terminal: Option<Arc<AnchoredRecordStepTerminal>>,
     settled: bool,
     fact: Option<PhysicalMutationTerminalFact>,
-    unstarted: Option<crate::physical_runtime::PreparedPhysicalMutation>,
+    unstarted_refusal: Option<crate::physical_runtime::PhysicalPreSealCancellationDenial>,
+    existing: Option<Arc<crate::physical_runtime::durability::ExistingPhysicalMutationObservation>>,
     owner: Weak<Mutex<super::super::AnchoredRecordState>>,
 }
 impl AcceptedStep {
@@ -178,7 +181,8 @@ impl AcceptedStep {
                 terminal: None,
                 settled: false,
                 fact: None,
-                unstarted: None,
+                unstarted_refusal: None,
+                existing: None,
                 owner,
             }),
         })
@@ -282,14 +286,42 @@ impl AcceptedStep {
             None
         }
     }
-    pub(super) fn hold_unstarted(
+    pub(super) fn refuse_unstarted(
         &self,
         prepared: crate::physical_runtime::PreparedPhysicalMutation,
+        cause: crate::physical_runtime::PhysicalPreSealCancellationDenial,
     ) {
-        self.state().unstarted = Some(prepared);
+        let existing = prepared.observe_existing_execution().map(Arc::new);
+        {
+            let mut state = self.state();
+            state.unstarted_refusal = Some(cause);
+            state.existing = existing;
+        }
+        // No execution uses this duplicate input. Retire its bytes and view
+        // outside every owner lock; the original attempt owns its own input.
+        drop(prepared);
     }
-    pub(super) fn has_unstarted(&self) -> bool {
-        self.state().unstarted.is_some()
+    pub(super) fn unstarted_refusal_without_attempt(
+        &self,
+    ) -> Option<crate::physical_runtime::PhysicalPreSealCancellationDenial> {
+        let state = self.state();
+        state.unstarted_refusal.filter(|_| state.existing.is_none())
+    }
+    fn observe_existing_terminal(&self) {
+        let (existing, refusal) = {
+            let state = self.state();
+            (state.existing.clone(), state.unstarted_refusal)
+        };
+        if let Some(existing) = existing
+            && let Some(fact) = existing.terminal()
+        {
+            self.finish(
+                &fact,
+                refusal.map(AnchoredRecordStepSettlementFailure::UnstartedCancellationRefused),
+            );
+            let retired = self.state().existing.take();
+            drop(retired);
+        }
     }
     pub(super) fn mutation_identity(&self) -> PhysicalMutationIdentity {
         self.mutation
@@ -301,6 +333,7 @@ impl AcceptedStep {
         }
     }
     pub(super) fn terminal(&self) -> Option<Arc<AnchoredRecordStepTerminal>> {
+        self.observe_existing_terminal();
         let attempt = self.state().attempt.upgrade();
         if let Some(attempt) = attempt.as_ref()
             && let Some(fact) = attempt.visible_terminal_fact()
