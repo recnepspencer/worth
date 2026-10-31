@@ -5,12 +5,13 @@ use crate::durability::medium::RelationalDurableColdSource;
 use crate::history::data::RelationalCallerAssociation;
 use crate::history::{RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry};
 use crate::transactions::data::RecoveredRelationalSemanticResult;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
 mod readmission;
 
-/// A subject discovered from the actual Native catalog, retaining its exact
-/// source and index. It is not serializable or a publication capability.
+/// Exact discovered index and weak owner/source identities. The actual Native
+/// owner retains source custody; an observer cannot keep a closed Home serving.
+/// This is not serializable or a publication capability.
 ///
 /// ```compile_fail,E0277
 /// use worth_relational::facade::durability::RelationalAssociatedEffectSubject;
@@ -22,8 +23,8 @@ mod readmission;
 pub struct RelationalAssociatedEffectSubject {
     runtime_instance_id: u64,
     entry: Arc<RelationalCommitIndexEntry>,
-    source: Arc<dyn RelationalDurableColdSource>,
-    residency: Arc<RelationalCommitEnvelopeResidency>,
+    source: Weak<dyn RelationalDurableColdSource>,
+    residency: Weak<RelationalCommitEnvelopeResidency>,
 }
 
 impl RelationalAssociatedEffectSubject {
@@ -57,10 +58,14 @@ pub enum RelationalAssociatedEffectSettlement {
 pub struct ReadmittedRelationalAssociatedEffect {
     subject: RelationalAssociatedEffectSubject,
     semantic: RecoveredRelationalSemanticResult,
+    positioned: crate::history::data::PositionedCanonicalCommit,
     settlement: RelationalAssociatedEffectSettlement,
 }
 
 impl ReadmittedRelationalAssociatedEffect {
+    pub(super) fn source_envelope(&self) -> &crate::history::data::CanonicalCommitEnvelope {
+        self.positioned.envelope()
+    }
     pub fn subject(&self) -> &RelationalAssociatedEffectSubject {
         &self.subject
     }
@@ -72,8 +77,32 @@ impl ReadmittedRelationalAssociatedEffect {
     }
 }
 
+impl RelationalAssociatedEffectSubject {
+    pub(super) fn belongs_to_runtime(&self, runtime: &crate::runtime::RelationalRuntime) -> bool {
+        self.runtime_instance_id == runtime.runtime_instance_id()
+    }
+    pub(super) fn current_settlement(
+        &self,
+        runtime: &crate::runtime::RelationalRuntime,
+    ) -> Option<RelationalAssociatedEffectSettlement> {
+        if !self.belongs_to_runtime(runtime) || !runtime.owner_binding().accepts_operations() {
+            return None;
+        }
+        let residency = self.residency.upgrade()?;
+        let source = self.source.upgrade()?;
+        let (entry, actual_source) = residency.journal_placement()?;
+        if entry.as_ref() != self.entry.as_ref() || !Arc::ptr_eq(&actual_source, &source) {
+            return None;
+        }
+        runtime
+            .history
+            .associated_effect_settlement(&self.entry, &residency)
+    }
+}
+
 #[derive(Debug)]
 pub enum RelationalAssociatedEffectRefusal {
+    OwnerUnavailable,
     Recovery(RelationalRecoveryStop),
     AssociatedMemory {
         commit_id: crate::history::data::CommitId,
@@ -98,6 +127,11 @@ impl DurabilityAuthority<'_> {
         use RelationalAssociatedEffectRefusal as Refusal;
         crate::execution::check_request(execution)
             .map_err(|cause| Refusal::Recovery(RelationalRecoveryStop::Request(cause)))?;
+        let _operation = self
+            .runtime
+            .owner_binding()
+            .admit()
+            .ok_or(Refusal::OwnerUnavailable)?;
         // A performed publication may still await catalog settlement. Include
         // that same route's custody; missing catalog projection is not a fate.
         let mut cells = self
@@ -135,8 +169,8 @@ impl DurabilityAuthority<'_> {
             subjects.push(RelationalAssociatedEffectSubject {
                 runtime_instance_id: self.runtime.runtime_instance_id(),
                 entry,
-                source,
-                residency,
+                source: Arc::downgrade(&source),
+                residency: Arc::downgrade(&residency),
             });
         }
         subjects.sort_by_key(|subject| subject.position());

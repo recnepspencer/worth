@@ -786,6 +786,20 @@ missing registration never implies settled. These descriptions confer no
 recovered publication capability; see
 [readmit an associated Native effect](../crates/worth-relational/README.md#readmit-an-associated-native-effect).
 
+For actual reconstruction, `durability_recovery().recover_with_authority` returns
+the existing Native recovery authority. Its `admit_recorded_component` admits
+exact source-produced Empty or canonical images with actual observation pins;
+canonical Memory and missing/foreign/mismatched images refuse. Its
+`admit_recorded_publication` consumes the actual readmitted associated effect and
+original before/after references, verifies matching settled/recovered owner state,
+and acquires both real component leases before issuing the concrete
+`worth_proof::RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>`.
+Readonly observations use weak owner/source identities; the concrete phase owns
+real pins and transfers them once. Refusal retains source data and partial custody.
+Native never fabricates a live result. Exact cold historical checkpoint images
+and Store/World recovered adoption remain unfinished; see
+[admit an original recovered publication](../crates/worth-relational/README.md#admit-an-original-recovered-publication).
+
 ### Native record and aspect history pages
 
 The Relational owner provides a retained cursor inside one exact selected commit:

@@ -14,7 +14,16 @@ mod checkpoint_native_capture;
 mod checkpoint_transition;
 mod checkpointing;
 mod diagnostics;
+mod recorded_component_readmission;
+mod recovered_publication;
+pub use recovered_publication::{
+    RefusedRelationalPublicationReadmission, RelationalRecoveredPublicationAdmissionCause,
+    RelationalRecoveredPublicationCustody,
+};
 mod recovery;
+pub use recorded_component_readmission::{
+    RefusedRelationalRecordedComponent, RelationalRecordedComponentAdmissionCause,
+};
 mod runtime_rebuild;
 pub(crate) use runtime_rebuild::replay_commit_stop;
 
@@ -49,12 +58,15 @@ pub struct DurabilityRecoveryAuthority<'runtime> {
 }
 
 /// Linear evidence that this exact Relational runtime and its captured branch
-/// images were rebuilt from a verified native checkpoint. The value is
+/// images were reconstructed through an admitted Native recovery plan. Durable
+/// backing of each canonical effect is qualified separately from that plan's
+/// Memory or Journal residency. The value is
 /// owner-issued and deliberately non-serializable, so descriptive checkpoint
 /// presence or later branch movement cannot impersonate successful recovery.
 #[derive(Debug)]
 pub struct RecoveredRelationalRuntimeAuthority {
     runtime_instance_id: u64,
+    recovered_roots: runtime_rebuild::RecoveredRootInventory,
     recovered_branch_images: std::collections::BTreeMap<
         BranchId,
         (

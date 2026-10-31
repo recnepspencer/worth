@@ -28,7 +28,7 @@ use recovered_counter_capacity::{
 use recovered_lineage_artifacts::{
     reconcile_recovered_lineage_artifacts, validate_recovered_lineage_artifacts,
 };
-use root_inventory::RecoveredRootInventory;
+pub(super) use root_inventory::RecoveredRootInventory;
 
 /// The exclusive state of a runtime this rebuild constructed and has not yet
 /// handed to anyone.
@@ -56,6 +56,7 @@ pub(super) fn rebuild_runtime_from_plan(
         RelationalRuntime,
         crate::durability::data::RecoveryPlan,
         Option<crate::durability::data::CheckpointRestoreWork>,
+        RecoveredRootInventory,
     ),
     RelationalRecoveryStop,
 > {
@@ -211,6 +212,5 @@ pub(super) fn rebuild_runtime_from_plan(
 
     finalize_restored_runtime(execution, &mut restored)?;
     journal_residency::install(execution, &restored, &plan)?;
-    recovered_roots.finish();
-    Ok((restored, plan, checkpoint_work))
+    Ok((restored, plan, checkpoint_work, recovered_roots))
 }

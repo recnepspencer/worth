@@ -195,3 +195,37 @@ fn associated_effects_discover_cold_subject_without_reading_unrelated_history() 
     .unwrap();
     assert_eq!(selected_frame.envelope().semantic_result(), &semantic);
 }
+
+#[test]
+fn associated_effects_observers_do_not_keep_the_closed_source_owner_alive() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let runtime = durable_runtime_with_test_schema();
+    let association = Association::from_bytes(b"descriptive-observer-after-owner-close").unwrap();
+    let committed = runtime
+        .settle_performed_publication(perform(execution, &runtime, "observer", &association))
+        .unwrap();
+    let receipt = committed.commit.clone();
+    release_test_commit_snapshot(&runtime, &committed);
+    drop(committed);
+    let source = attached_durable_medium(&runtime).unwrap();
+    let weak = std::sync::Arc::downgrade(&source);
+    drop(source);
+    let subject = runtime
+        .durability_authority()
+        .discover_associated_effects(execution, &association)
+        .unwrap()
+        .pop()
+        .unwrap();
+    let effect = runtime
+        .durability_authority()
+        .readmit_associated_effect(execution, &subject)
+        .unwrap();
+    runtime.prepare_close().unwrap().finish();
+    assert!(
+        weak.upgrade().is_none(),
+        "description observers cannot retain the actual source/Serving owner"
+    );
+    assert_eq!(subject.receipt(), &receipt);
+    assert_eq!(effect.semantic_result().receipt(), &receipt);
+}

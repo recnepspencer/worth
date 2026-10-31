@@ -20,7 +20,9 @@ pub mod prelude;
 mod proof;
 pub mod raw;
 mod recipe;
+mod relational_publication_readmission;
 mod release;
+pub use relational_publication_readmission::RelationalPublicationReadmitted;
 mod source_observation;
 pub use application_publication::{
     AdmittedAuthoredOutputRetirement, AdmittedCheckpointProgramActivation,

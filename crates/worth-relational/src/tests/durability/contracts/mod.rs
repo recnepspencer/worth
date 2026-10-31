@@ -24,6 +24,8 @@ mod merge_replay_continuity;
 mod native_checkpoint;
 mod native_checkpoint_restore_benchmark;
 mod record_allocation_recovery;
+mod recorded_component_recovery;
+mod recovered_publication;
 mod rejected_and_parent_closure;
 mod retention_inspection_store;
 mod schema_transition_continuity;

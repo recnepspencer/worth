@@ -14,5 +14,6 @@ pub use crate::{
     AdmittedConditionalSourceObservation, AuthoritativeFamilyMember, AuthorityMarker,
     AuthorityWitness, CapabilityMarker, CapabilityWitness, CompositionFamilySymbol,
     ConditionalEvaluationSource, ConditionalSourceObservationAuthority,
-    ConditionalSourceObservationOwner, NonEmpty, Pair, Recipe, Unresolved,
+    ConditionalSourceObservationOwner, NonEmpty, Pair, Recipe, RelationalPublicationReadmitted,
+    Unresolved,
 };

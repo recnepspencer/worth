@@ -60,6 +60,14 @@ pub(crate) use draft::CanonicalCommitEnvelopeDraft;
 ///     envelope.commit.version_id.0 += 1;
 /// }
 /// ```
+///
+/// The shared unsealed body has no encoder without its complete semantic image:
+/// ```compile_fail,E0277
+/// use worth_relational::facade::replay::CanonicalCommitEnvelope;
+/// fn cannot_encode_an_incomplete_body(envelope: &CanonicalCommitEnvelope) {
+///     let _ = rmp_serde::to_vec_named(&**envelope);
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CanonicalCommitEnvelope {
     #[serde(flatten)]

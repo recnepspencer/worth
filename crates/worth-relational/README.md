@@ -192,17 +192,48 @@ with a descriptor. Foreign owners refuse.
 
 `durability_authority().discover_associated_effects(execution, &association)`
 selects actual catalog or performed-route subjects from their required discovery
-metadata. Unrelated cold bodies remain cold. Each returned subject retains the
-exact runtime, Journal index and source; associated Memory backing refuses.
+metadata. Unrelated cold bodies remain cold. Each returned subject records the
+exact runtime and Journal index with weak identities for the actual source and
+cell; the live Native owner retains their custody. Associated Memory refuses.
 `readmit_associated_effect(execution, &subject)` reads that source even when a
 body is resident, validates its full receipt, position, digest, association and
 schema/root metadata, and exposes the original immutable semantic image.
-Refusal leaves the borrowed original subject and source custody intact.
+Refusal leaves the borrowed original subject intact. Closed or unavailable
+owners refuse, and descriptive observers do not keep a closed Home serving.
 
 Settlement descriptions distinguish matching `PerformedPending` and
 `PerformedSettled` route flags from `CheckpointReadmitted` directory evidence.
 Missing registration is not settlement evidence. These read-only observations
 grant no recovered publication or product adoption authority.
+
+## Admit an original recovered publication
+
+`durability_recovery().recover_with_authority(execution, plan)` runs the existing
+reconstruction once and returns `RecoveredRelationalRuntimeAuthority` alongside
+the outcome. Its `admit_recorded_component(execution, &runtime, &recorded)` door
+admits an exact source-produced Empty or canonical image with real observation
+pins. This is distinct from its existing current-image admission. Canonical
+Memory, foreign runtimes, mismatched source fields and unavailable images refuse;
+no old runtime identity is rewritten and no latest root is substituted.
+
+`admit_recorded_publication(execution, &runtime, effect, &before, &after)` consumes
+an actual `ReadmittedRelationalAssociatedEffect`, validates its original
+predecessor and complete successor subject, and acquires actual component leases
+for both bases before returning
+`worth_proof::RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>`.
+The phase offers read-only `custody()` and one consuming transfer. Its private
+Native payload exposes the original semantic data and actual bases; consuming
+`into_retained_parts()` moves the effect and both basis/lease pairs to the next
+owner. Native creates no live `Performed`, `CommitResult`, snapshot or timing.
+Pending settlement must be completed by its existing actual owner first.
+An owning refusal preserves the original source image and any acquired pins;
+`into_effect()` explicitly releases partial new pins for a fresh request.
+
+Current exact-image admission covers source-produced Empty, checkpoint-current
+and bounded-tail images still available from the Native owner. Missing historical
+checkpoint root/reference images refuse. Full cold historical predecessor
+materialization and the concrete Store/World recovered-adoption journey remain
+separate unfinished work; this Native phase alone grants no product movement.
 
 ## Durability
 

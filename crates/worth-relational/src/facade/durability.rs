@@ -1,6 +1,7 @@
 pub use crate::durability::authority::{
-    ReadmittedRelationalAssociatedEffect, RelationalAssociatedEffectRefusal,
-    RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
+    ReadmittedRelationalAssociatedEffect, RefusedRelationalRecordedComponent,
+    RelationalAssociatedEffectRefusal, RelationalAssociatedEffectSettlement,
+    RelationalAssociatedEffectSubject, RelationalRecordedComponentAdmissionCause,
 };
 pub use crate::durability::branch_transition_artifact::{
     RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactDigest,
@@ -40,6 +41,10 @@ pub use crate::history::data::RelationalAssociationDiscovery;
 pub use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
 pub use crate::transactions::data::RecoveredRelationalSemanticResult;
 
+pub use crate::durability::authority::{
+    RefusedRelationalPublicationReadmission, RelationalRecoveredPublicationAdmissionCause,
+    RelationalRecoveredPublicationCustody,
+};
 pub use crate::durability::data::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
     CheckpointReservationAdvanceDenial, NativeCheckpointModelBytes, RelationalCheckpointInspection,
