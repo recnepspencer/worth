@@ -86,6 +86,12 @@ pub(crate) struct CompanionRegistrationEpoch<'a> {
 }
 
 impl CompanionRegistrationEpoch<'_> {
+    /// Close observes actual client lifetime, independently of the required
+    /// publication contract which continues to refuse writes until rebind.
+    pub(crate) fn has_live_close_client(&self) -> bool {
+        self._client.is_some()
+    }
+
     pub(crate) fn active(
         &self,
     ) -> Result<

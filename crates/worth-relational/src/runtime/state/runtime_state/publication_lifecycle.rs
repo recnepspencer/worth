@@ -49,7 +49,7 @@ impl RelationalRuntimePublicationOwner {
                 .lifecycle
                 .companion
                 .enter()
-                .is_ok_and(|epoch| matches!(epoch.active(), Ok(None)))
+                .is_ok_and(|epoch| !epoch.has_live_close_client())
     }
 
     pub(in crate::runtime) fn new() -> Self {

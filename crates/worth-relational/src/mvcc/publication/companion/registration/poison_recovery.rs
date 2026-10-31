@@ -137,6 +137,45 @@ fn enter_recovers_registry_poison() {
 
     recover(execution, Door::Enter);
 }
+
+#[test]
+fn close_ignores_dropped_companion_client_without_weakening_rebind() {
+    let runtime = runtime_with_test_schema();
+    let port = runtime.publication_companion_port();
+    let registration = port
+        .begin_required_registration()
+        .unwrap()
+        .activate(Arc::new(Unindexed))
+        .unwrap();
+    let refused = runtime.prepare_close().unwrap_err();
+    assert_eq!(
+        refused.reason(),
+        crate::runtime::RelationalRuntimeCloseDenial::PublicationCustodyRetained
+    );
+    let runtime = refused.into_runtime();
+    assert!(port
+        .publication
+        .companion_epoch()
+        .unwrap()
+        .active()
+        .unwrap()
+        .is_some());
+    drop(registration);
+    assert!(matches!(
+        port.publication.companion_epoch().unwrap().active(),
+        Err(PublicationCompanionRegistrationStop::RebindRequired)
+    ));
+    runtime.prepare_close().unwrap().finish();
+
+    let runtime = runtime_with_test_schema();
+    let port = runtime.publication_companion_port();
+    let _pending = port.begin_required_registration().unwrap();
+    assert!(matches!(
+        port.publication.companion_epoch().unwrap().active(),
+        Err(PublicationCompanionRegistrationStop::RebindRequired)
+    ));
+    runtime.prepare_close().unwrap().finish();
+}
 #[test]
 fn begin_recovers_registry_poison() {
     let host_request = crate::test_execution_policy::serial_request();
