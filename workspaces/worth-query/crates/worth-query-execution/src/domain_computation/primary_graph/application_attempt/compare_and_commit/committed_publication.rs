@@ -39,6 +39,13 @@ struct DescriptiveProductPublication {
 }
 
 impl WorthQueryCommittedProductPublication {
+    /// Canonical World facts remain available only from actual consumed custody.
+    pub(in crate::domain_computation::primary_graph) fn original_movement(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::ConsumedCompositePublication> {
+        self.performed().map(|receipt| receipt.publication())
+    }
+
     /// The original performed selection, without retaining its owner bases.
     /// Identity-only custody cannot supply the missing full basis.
     pub(in crate::domain_computation::primary_graph) fn observed_product_identity(

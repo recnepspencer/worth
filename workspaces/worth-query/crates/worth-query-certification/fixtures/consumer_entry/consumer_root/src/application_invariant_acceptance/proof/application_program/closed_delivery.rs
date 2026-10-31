@@ -17,6 +17,7 @@ use worth_query_topology_entry::{
 };
 mod construction;
 mod exact_observation;
+mod original_endpoint;
 mod qualification;
 mod selected_meaning;
 mod transitions;
@@ -272,10 +273,20 @@ fn settle_fixed(
     panic!("original finite fixed tree settles")
 }
 fn settle_tree(world: &World, request: &Request<'_, '_, '_>) -> Tree {
-    let mut operation = request
+    let operation = request
         .demand(PlanarOutputDemand::new("anchor-a"))
         .retain_program_outputs::<ConsumerProgram, ConsumerProgramRoot>(&world.application)
         .unwrap_or_else(|stop| panic!("tree construction: {:?}", stop.denial()));
+    settle_original_tree(operation, request)
+}
+fn settle_original_tree(
+    mut operation: worth_query_host::facade::application_entry::WorthQueryProgramOutputOperation<
+        ConsumerSchema,
+        ConsumerProgram,
+        ConsumerProgramRoot,
+    >,
+    request: &Request<'_, '_, '_>,
+) -> Tree {
     for _ in 0..256 {
         operation = match operation.advance(request) {
             TreeAdvance::Pending(next) => next,

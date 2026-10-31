@@ -49,7 +49,7 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
         &self,
     ) -> impl Iterator<
         Item = &worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement,
-    > {
+    > + Clone {
         std::iter::once(self.root.retained_settlement()).chain(
             self.outputs
                 .iter()

@@ -79,6 +79,17 @@ fn read_origin_rebuild_and_receiptless_reuse_qualify_the_original_complete_tree(
             "the original complete set itself must be noncurrent: {incomplete:?}"
         );
         let performed = closed.qualify_at(&request.at(&common)).unwrap();
+        let original_performed = closed.qualify_original(&request).unwrap();
+        assert_eq!(
+            original_performed.source_commit(),
+            opening.selected_commit()
+        );
+        assert_eq!(original_performed.root_output_commit(), &root);
+        assert_eq!(original_performed.output_commit(), common.selected_commit());
+        assert_eq!(
+            original_performed.root_posture(),
+            WorthQueryOutputSettlementPosture::Performed
+        );
         assert_eq!(performed.source_commit(), opening.selected_commit());
         assert_eq!(performed.root_output_commit(), &root);
         assert_eq!(performed.output_commit(), common.selected_commit());
@@ -125,6 +136,19 @@ fn read_origin_rebuild_and_receiptless_reuse_qualify_the_original_complete_tree(
             .qualify_at(&request.at(&reuse_output))
             .unwrap();
         assert_eq!(reused_fact.source_commit(), reuse_source.selected_commit());
+        let original_reused = closed_reused.qualify_original(&request).unwrap();
+        assert_eq!(
+            original_reused.source_commit(),
+            reuse_source.selected_commit()
+        );
+        assert_eq!(
+            original_reused.output_commit(),
+            reuse_output.selected_commit()
+        );
+        assert_eq!(
+            original_reused.root_posture(),
+            WorthQueryOutputSettlementPosture::StableReused
+        );
         assert_eq!(reused_fact.output_commit(), reuse_output.selected_commit());
         assert_eq!(
             reused_fact.root_posture(),
@@ -160,7 +184,7 @@ fn read_origin_rebuild_and_receiptless_reuse_qualify_the_original_complete_tree(
             "qualification and refusal never reconstruct or contact producers"
         );
         drop((closed, closed_reused, historical));
-        (performed, reused_fact)
+        (original_performed, original_reused)
     };
     let pending = world
         .application

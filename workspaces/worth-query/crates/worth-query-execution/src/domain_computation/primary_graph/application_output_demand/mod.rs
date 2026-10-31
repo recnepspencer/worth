@@ -5,6 +5,11 @@ pub(in crate::domain_computation::primary_graph) use registry::RunningSelectedEx
 mod completed_outputs;
 mod completed_read;
 mod completed_set;
+mod original_endpoint;
+mod original_outputs;
+pub use original_outputs::{
+    WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,
+};
 mod currentness;
 pub use completed_outputs::WorthQueryCompletedRequiredOutputs;
 pub use completed_read::WorthQueryCompletedReadOutputs;

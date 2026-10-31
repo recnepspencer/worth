@@ -29,6 +29,10 @@ pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
     WorthQueryProgramPublicationAccess { _private: () }
 }
 
+pub mod original_read_outputs {
+    pub use crate::domain_computation::primary_graph::WorthQueryOriginalReadOutputDenial;
+}
+
 pub mod document_history {
     pub use crate::domain_computation::primary_graph::application_query::{
         WorthQueryDocumentHistoryRead, WorthQueryHistoryPreviewReadAdmission,

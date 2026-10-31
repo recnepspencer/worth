@@ -4016,6 +4016,28 @@ Qualification never advances a producer or reopens cleanup. Refusal preserves
 the same closed carrier. Drop the carrier, facts and observations when finished
 to release their readonly history before closing the runtime.
 
+To qualify the original tree's own endpoint, call
+`closed_tree.qualify_original(&request)`. It follows the genuine retained output
+publications from the original read source, using World's exact before/after
+references, then checks the selected typed root and complete tree there. It
+never chooses an endpoint from the largest commit ordinal or a later current
+head. If no output publication follows the source, the endpoint stays at that
+source; retained or receiptless output reuse remains legal.
+
+The returned `WorthQueryCompletedOriginalReadOutputs` retains the original
+source, the genuine root read and the qualified endpoint separately. The root's
+producer correspondence remains bound to its own read basis. Ordinary
+`WorthQueryCompletedReadOutputs` cannot be converted into this original-endpoint
+fact. Both types are retrospective evidence and grant no selection permission.
+
+Later unrelated work can leave the original endpoint fully qualified while
+moving the current head elsewhere. An unrelated publication between original
+outputs cannot be used to connect their publication chain. If the reachable
+prefix cannot qualify the complete tree, or no original read retains its exact
+endpoint, qualification refuses and preserves the carrier. Qualification at an
+explicitly supplied later observation can still be lawful; use `qualify_at` for
+that distinct question. Neither call reruns producer work.
+
 A refusal for one carrier leaves every carrier closed and unchanged. Only a
 typed native `Superseded` (Fixed `Stale`, no-source `Currentness(Output(..))`
 of kind `Superseded`) tells the application to run a fresh operation for that
