@@ -10,7 +10,7 @@ use crate::tests::support::*;
 fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competing_task() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let result = Arc::new(create_entity_outcome(
         execution,
         &runtime,
@@ -24,7 +24,23 @@ fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competin
         .unwrap();
     let capacity = runtime.visibility.published_snapshot_capacity_binding();
     assert_eq!(capacity.occupied_handles(), 1);
-    let registry = &runtime.visibility.handles.published;
+    let registry = runtime.visibility.handles.published.clone();
+    let original_root = registry
+        .binding(result.snapshot.snapshot_id())
+        .map(|binding| Arc::downgrade(binding.basis.root()))
+        .unwrap();
+    let (_, fork_source) = runtime
+        .observe_fork_source(runtime.main_branch_identity().branch_id())
+        .unwrap();
+    let target = runtime
+        .fork_branch(
+            execution,
+            crate::history::data::BranchId("exact-cleanup-root".into()),
+            fork_source,
+        )
+        .unwrap()
+        .target_identity()
+        .clone();
     let locked = registry.entries.lock().unwrap();
     let Progress::Pending {
         task,
@@ -57,6 +73,13 @@ fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competin
     };
     assert!(matches!(*locked, PublishedSnapshotRetirement::Removed(_)));
     drop(locked);
+    create_entity(execution, &runtime, "move-original-root-off-main");
+    assert!(matches!(
+        runtime.delete_branch(execution, &target).unwrap(),
+        crate::branch::RelationalBranchDeletionOutcome::Deleted(_)
+    ));
+    runtime.run_branch_root_reclamation_pass();
+    assert!(original_root.upgrade().is_some(), "the exact original issued root survives head movement, branch removal and real reclamation while its binding awaits retirement");
     // A real original closeout joins this SAME pending retirement, rather than
     // changing the release fact into a second registration or second charge.
     drop(closeout);
@@ -70,5 +93,7 @@ fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competin
     ));
     assert_eq!(registry.count(), 0);
     assert_eq!(capacity.occupied_handles(), 0);
+    runtime.run_branch_root_reclamation_pass();
+    assert!(original_root.upgrade().is_none(), "the SAME original root is reclaimable only after actual binding retirement; no hidden test read/root lease pins it");
     runtime.prepare_close().unwrap().finish();
 }
