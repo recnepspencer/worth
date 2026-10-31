@@ -150,7 +150,7 @@ binding twice refuses and a prepared candidate cannot be rebound. Candidate
 `caller_association()` observes its retained sealed payload; the canonical
 envelope exposes the same immutable bytes. Native preserves the caller's bytes
 without interpreting them or granting completion authority. Canonical artifact
-v3 and native checkpoint CHK15 retain the field through journal and embedded or
+v3 and native checkpoint CHK16 retain the field through journal and embedded or
 cold checkpoint recovery. Older artifact and checkpoint versions refuse rather
 than acquiring the new grammar implicitly. Association bytes or successful
 artifact decoding alone establish no durable World effect or product movement.
@@ -165,7 +165,7 @@ timing, work measurements, publication status, journal position or self-digest.
 Each checkpoint commit index explicitly records `RelationalAssociationDiscovery`
 from the same envelope, so discovery need not demand unrelated cold bodies.
 Missing semantic images or discovery fields refuse. Artifact v1/v2 and
-checkpoint CHK13/CHK14 refuse cleanly. These data fields establish neither
+checkpoint CHK13/CHK14/CHK15 refuse cleanly. These data fields establish neither
 source-backed recovery nor recovered publication authority on their own.
 
 ## Record a current Native component
@@ -216,6 +216,14 @@ pins. This is distinct from its existing current-image admission. Canonical
 Memory, foreign runtimes, mismatched source fields and unavailable images refuse;
 no old runtime identity is rewritten and no latest root is substituted.
 
+If a crash preceded the caller's occurrence, use
+`recorded_publication_successor(execution, &runtime, &effect)` to describe the
+original successor. Native selects the same effect's exact source/index and an
+unambiguous original observation captured by this recovery, even after later
+Native advancement. Missing or ambiguous images refuse while the effect stays
+borrowed. This grants no basis, settlement or adoption authority and never uses
+the current head as a substitute.
+
 `admit_recorded_publication(execution, &runtime, effect, &before, &after)` consumes
 an actual `ReadmittedRelationalAssociatedEffect`, validates its original
 predecessor and complete successor subject, and acquires actual component leases
@@ -229,11 +237,23 @@ Pending settlement must be completed by its existing actual owner first.
 An owning refusal preserves the original source image and any acquired pins;
 `into_effect()` explicitly releases partial new pins for a fresh request.
 
-Current exact-image admission covers source-produced Empty, checkpoint-current
-and bounded-tail images still available from the Native owner. Missing historical
-checkpoint root/reference images refuse. Full cold historical predecessor
-materialization and the concrete Store/World recovered-adoption journey remain
-separate unfinished work; this Native phase alone grants no product movement.
+CHK16 records exact current observations and live external component obligations.
+Canonical root headers require `recorded_components`; explicit
+`retained_empty_components` bind Empty observations to their schema carriers.
+These fields come from the same actual observations that created the external
+leases, rather than an arbitrary descriptor or the previous checkpoint union.
+Capture retains those selected bases through encoding even if a caller releases
+its original lease. Plain observations and released external obligations do not
+become additional durable component obligations.
+
+Reopen installs current heads and retains historical component headers without
+reading their artifact bodies. Exact admission demands the original source
+artifact and immutable region directory, verifies all recorded commitments, and
+acquires real pins before exposure. Unrelated history remains cold; missing or
+mismatched selected material refuses. Checkpoint coverage alone grants no adoption.
+The concrete Store/World recovered-adoption journey and coherent cross-owner Home
+checkpoint cut remain separate integration obligations; this Native phase alone
+grants no product movement.
 
 ## Durability
 

@@ -115,7 +115,7 @@ impl crate::runtime::RelationalRuntime {
 
     /// Reclaim cold immutable branch roots through the history owner. This
     /// bounded maintenance pass never walks live references or commit history.
-    pub fn run_branch_root_reclamation_pass(&mut self) -> RelationalBranchRootReclamationOutcome {
+    pub fn run_branch_root_reclamation_pass(&self) -> RelationalBranchRootReclamationOutcome {
         self.history
             .reclaim_retired_branch_roots(self.config.storage.retention.reclaim_batch_size)
     }

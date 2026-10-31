@@ -90,7 +90,12 @@ pub(super) fn restore(
     history.advance_canonical_stream_floor(directory.manifest.covered_position);
     let mut roots = BTreeMap::new();
     let mut authorities = BTreeMap::new();
-    for image in &directory.manifest.roots {
+    for image in directory
+        .manifest
+        .roots
+        .iter()
+        .filter(|image| heads.contains_key(&image.commit_id))
+    {
         let envelope = heads
             .get(&image.commit_id)
             .cloned()

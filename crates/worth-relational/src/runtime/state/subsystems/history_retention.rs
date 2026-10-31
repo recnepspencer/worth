@@ -10,6 +10,18 @@ use crate::history::retention::{
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn external_checkpoint_components(
+        &self,
+    ) -> Vec<crate::branch::AdmittedRelationalBranchBasis> {
+        let mut components = self.retention_owner.checkpoint_components();
+        for cell in self.branch_cells.values() {
+            if let Ok(binding) = cell.head_retention().binding() {
+                components.extend(binding.checkpoint_components());
+            }
+        }
+        components
+    }
+
     pub(crate) fn retired_root_storage_inventory(
         &self,
     ) -> Vec<crate::history::retention::RelationalRetiredRootStorageSnapshot> {

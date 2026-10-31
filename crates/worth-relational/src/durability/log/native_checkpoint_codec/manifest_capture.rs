@@ -166,6 +166,7 @@ impl CapturedManifest {
                 index_definitions: checkpoint.index_definitions.clone(),
                 index_generation_frontier: checkpoint.index_generation_frontier,
                 roots: Vec::new(),
+                retained_empty_components: checkpoint.retained_empty_components.clone(),
                 mirror_schema: checkpoint.mirror_schema_digest,
                 mirror: Vec::new(),
                 history_dependencies: Vec::new(),
@@ -251,6 +252,11 @@ impl CapturedManifest {
             )?;
             roots.push(RelationalCheckpointRoot {
                 commit_id: root.commit_id,
+                recorded_components: checkpoint
+                    .recorded_components
+                    .get(&root.commit_id)
+                    .cloned()
+                    .ok_or_else(|| corrupt("root lacks component observations"))?,
                 schema_carrier_digest: root.schema_carrier_digest,
                 regions,
             });

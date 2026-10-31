@@ -194,6 +194,12 @@ pub(super) fn expand(
     let (derived_index_artifacts, derived_index_checkpoint, derived_index_checkpoint_format) =
         rmp_serde::from_slice(payload).map_err(|error| corrupt(error.to_string()))?;
     Ok(DurableCheckpoint {
+        recorded_components: manifest
+            .roots
+            .iter()
+            .map(|root| (root.commit_id, root.recorded_components.clone()))
+            .collect(),
+        retained_empty_components: manifest.retained_empty_components.clone(),
         directory: None,
         root_kind_images,
         mirror_kind_images,

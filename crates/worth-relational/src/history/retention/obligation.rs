@@ -158,15 +158,9 @@ pub(crate) struct RelationalExternalBasisRetentionObligation {
 impl RelationalExternalBasisRetentionObligation {
     pub(crate) fn acquire(
         binding: &super::RelationalBranchRetentionBinding,
-        root: Arc<RelationalBranchRoot>,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
     ) -> Result<Self, super::RelationalRetentionAcquisitionDenial> {
-        binding
-            .acquire(
-                RelationalRetentionObligationKind::ExternalComponentBasis,
-                vec![root],
-                None,
-            )
-            .map(|guard| Self { guard })
+        binding.acquire_component(basis).map(|guard| Self { guard })
     }
 
     pub(crate) fn owner_relationship(

@@ -254,58 +254,6 @@ impl HistorySubsystem {
         self.branch_cells.checkpoints()
     }
 
-    pub(crate) fn branch_root_checkpoints(
-        &self,
-    ) -> Result<Vec<crate::branch::RelationalBranchRootCheckpoint>, String> {
-        self.record_branch_population_scan();
-        let mut roots = BTreeMap::new();
-        for cell in self.branch_cells.values() {
-            let root = cell.root().ok_or_else(|| {
-                format!(
-                    "live branch `{}` has no complete owner root",
-                    cell.identity().branch_id().0
-                )
-            })?;
-            let commit_id = match cell.observation().target() {
-                FoundationalBranchTarget::Empty => {
-                    if root.id() != 0 || root.descriptor().is_some() {
-                        return Err(format!(
-                            "empty branch `{}` carries a committed root",
-                            cell.identity().branch_id().0
-                        ));
-                    }
-                    continue;
-                }
-                FoundationalBranchTarget::Basis(target) => {
-                    let commit_id = CommitId(target.selected_commit_id());
-                    if root.commit_id() != Some(commit_id) {
-                        return Err(format!(
-                            "committed branch `{}` root identity disagrees with its target",
-                            cell.identity().branch_id().0
-                        ));
-                    }
-                    commit_id
-                }
-            };
-            if let Some(existing) = roots.get(&commit_id) {
-                if !Arc::ptr_eq(existing, &root) {
-                    return Err(format!(
-                        "commit {} is represented by competing immutable roots",
-                        commit_id.0
-                    ));
-                }
-                continue;
-            }
-            roots.insert(commit_id, Arc::clone(&root));
-        }
-        Ok(roots
-            .into_iter()
-            .map(|(commit_id, root)| {
-                crate::branch::RelationalBranchRootCheckpoint::new(commit_id, root)
-            })
-            .collect())
-    }
-
     pub(crate) fn branch_ids_snapshot(&self) -> Vec<BranchId> {
         self.record_branch_population_scan();
         let mut branch_ids = self.branch_cells.keys();

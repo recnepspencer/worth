@@ -4,6 +4,8 @@ use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDenial};
 use crate::history::retention::RelationalBranchRetentionLease;
 
 mod admission;
+mod successor;
+pub use successor::RelationalRecordedSuccessorRefusal;
 mod subject;
 
 /// Only successful source/body/root admission constructs this concrete payload.
