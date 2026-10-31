@@ -1,11 +1,13 @@
 //! Live placement obligations and an owned, frozen checkpoint selection.
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, RwLock, Weak};
-use worth_relational::facade::durability::{
-    RelationalDurableMemberCustody, RelationalDurableMemberLocator,
-};
+use worth_relational::facade::durability::RelationalDurableMemberLocator;
 use worth_relational::facade::storage::RelationalStorageUnavailableCause as Cause;
 use worth_store::physical_runtime::ServingPhysicalRuntime;
+
+mod retirement;
+#[cfg(test)]
+mod retirement_tests;
 
 #[derive(Debug, Default)]
 struct CustodyState {
@@ -23,10 +25,11 @@ pub(super) struct MemberCustodyRegistry {
     state: Arc<RwLock<CustodyState>>,
 }
 
-struct MemberCustodyOwner {
-    _serving: Arc<ServingPhysicalRuntime>,
+pub(super) struct MemberCustodyOwner {
+    serving: Option<Arc<ServingPhysicalRuntime>>,
     state: Arc<RwLock<CustodyState>>,
     members: Vec<RelationalDurableMemberLocator>,
+    next: usize,
 }
 
 /// Lifetime-only protection. Clones protect the same frozen selection.
@@ -41,7 +44,7 @@ impl MemberCustodyRegistry {
         members: &[RelationalDurableMemberLocator],
         serving: Arc<ServingPhysicalRuntime>,
         validate: impl FnOnce(&[RelationalDurableMemberLocator]) -> Result<(), Cause>,
-    ) -> Result<RelationalDurableMemberCustody, Cause> {
+    ) -> Result<MemberCustodyOwner, Cause> {
         let mut selected = Vec::new();
         selected
             .try_reserve_exact(members.len())
@@ -72,11 +75,12 @@ impl MemberCustodyRegistry {
         for member in &selected {
             *state.counts.entry(*member).or_default() += 1;
         }
-        Ok(RelationalDurableMemberCustody::new(MemberCustodyOwner {
-            _serving: serving,
+        Ok(MemberCustodyOwner {
+            serving: Some(serving),
             state: self.state.clone(),
             members: selected,
-        }))
+            next: 0,
+        })
     }
 
     pub(super) fn protect_selection(
@@ -121,11 +125,14 @@ impl RetainedMemberPublication {
 
 impl Drop for MemberCustodyOwner {
     fn drop(&mut self) {
+        if self.next == self.members.len() {
+            return;
+        }
         let mut state = self
             .state
             .write()
             .unwrap_or_else(|error| error.into_inner());
-        for member in &self.members {
+        for member in &self.members[self.next..] {
             let count = state
                 .counts
                 .get_mut(member)
@@ -135,5 +142,6 @@ impl Drop for MemberCustodyOwner {
                 state.counts.remove(member);
             }
         }
+        self.next = self.members.len();
     }
 }

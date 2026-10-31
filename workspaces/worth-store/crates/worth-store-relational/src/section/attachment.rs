@@ -25,7 +25,7 @@ impl RelationalStoreSection {
         placement: AdmittedRecordPlacementPolicy,
         checkpoint_selection: Arc<dyn super::RelationalCheckpointSelectionSource>,
     ) -> Result<Self, RelationalRuntimeConstructionDenial> {
-        let cold_source = Arc::new(crate::cold_source::StoreColdSource::new(serving.clone()));
+        let cold_source = crate::cold_source::StoreColdSource::new(serving.clone());
         Self::attach_with_source(
             definition,
             serving,

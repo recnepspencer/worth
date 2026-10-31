@@ -28,8 +28,10 @@ pub use crate::durability::medium::{
     RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
     RelationalDurableCheckpointSource, RelationalDurableColdSource, RelationalDurableMedium,
     RelationalDurableMemberCustody, RelationalDurableMemberLocator,
-    RelationalDurablePublicationRefusal, RelationalDurableRecoverySource,
-    RelationalDurableTransitionReadFailure,
+    RelationalDurableMemberRetirement, RelationalDurableMemberRetirementObservation,
+    RelationalDurableMemberRetirementRefusal, RelationalDurablePublicationRefusal,
+    RelationalDurableRecoverySource, RelationalDurableTransitionReadFailure,
+    RetiredRelationalDurableMemberCustody,
 };
 pub use crate::durability::migration::ReadmittedCanonicalCommit;
 pub use crate::durability::{

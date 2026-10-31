@@ -24,7 +24,11 @@ mod cold_source;
 mod commit_publication;
 pub use cold_source::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 mod member_custody;
-pub use member_custody::RelationalDurableMemberCustody;
+pub use member_custody::{
+    RelationalDurableMemberCustody, RelationalDurableMemberRetirement,
+    RelationalDurableMemberRetirementObservation, RelationalDurableMemberRetirementRefusal,
+    RetiredRelationalDurableMemberCustody,
+};
 mod recovery_source;
 mod transition_read;
 mod unresolved;

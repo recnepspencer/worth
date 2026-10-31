@@ -2,7 +2,7 @@
 //! frames after Store has verified physical integrity and current membership.
 use std::sync::{
     atomic::{AtomicU64, Ordering},
-    Arc, RwLock,
+    Arc, RwLock, Weak,
 };
 
 use worth_relational::facade::durability::{
@@ -33,6 +33,7 @@ pub struct RelationalStoreColdReadCounters {
 }
 
 pub(crate) struct StoreColdSource {
+    weak_self: Weak<Self>,
     serving: Arc<ServingPhysicalRuntime>,
     members: RwLock<(
         u64,
@@ -53,8 +54,9 @@ impl std::fmt::Debug for StoreColdSource {
 }
 
 impl StoreColdSource {
-    pub(crate) fn new(serving: Arc<ServingPhysicalRuntime>) -> Self {
-        Self {
+    pub(crate) fn new(serving: Arc<ServingPhysicalRuntime>) -> Arc<Self> {
+        Arc::new_cyclic(|weak_self| Self {
+            weak_self: weak_self.clone(),
             serving,
             members: RwLock::new((0, Default::default())),
             custody: Default::default(),
@@ -62,7 +64,7 @@ impl StoreColdSource {
             commit_reads: AtomicU64::new(0),
             #[cfg(feature = "certification-test-authority")]
             commit_read_observer: None,
-        }
+        })
     }
     /// A verified selected membership supplied by open or completed publication.
     pub(crate) fn select_members(&self, generation: u64, members: &[AnchoredRecordMemberLocator]) {
@@ -95,11 +97,20 @@ impl StoreColdSource {
         }
     }
     #[cfg(feature = "certification-test-authority")]
-    pub(crate) fn observe_commit_reads(
-        &mut self,
+    pub(crate) fn new_with_commit_read_observer(
+        serving: Arc<ServingPhysicalRuntime>,
         observer: impl Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync + 'static,
-    ) {
-        self.commit_read_observer = Some(Box::new(observer));
+    ) -> Arc<Self> {
+        let observer = Box::new(observer);
+        Arc::new_cyclic(|weak_self| Self {
+            weak_self: weak_self.clone(),
+            serving,
+            members: RwLock::new((0, Default::default())),
+            custody: Default::default(),
+            member_reads: AtomicU64::new(0),
+            commit_reads: AtomicU64::new(0),
+            commit_read_observer: Some(observer),
+        })
     }
     pub(crate) fn protect_member_selection(
         &self,
@@ -116,13 +127,11 @@ impl StoreColdSource {
             .copied()
             .collect()
     }
-}
 
-impl RelationalDurableColdSource for StoreColdSource {
-    fn retain_members(
+    fn retain_custody_owner(
         &self,
         members: &[RelationalDurableMemberLocator],
-    ) -> Result<RelationalDurableMemberCustody, Cause> {
+    ) -> Result<member_custody::MemberCustodyOwner, Cause> {
         self.custody
             .retain(members, self.serving.clone(), |selected| {
                 let current = self
@@ -135,6 +144,34 @@ impl RelationalDurableColdSource for StoreColdSource {
                     Err(Cause::MissingMember)
                 }
             })
+    }
+}
+
+impl RelationalDurableColdSource for StoreColdSource {
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), worth_relational::facade::durability::RelationalDurableMemberRetirementRefusal>
+    {
+        self.validate_custody_owner(original)
+    }
+
+    fn advance_member_custody_retirement(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> worth_relational::facade::durability::RelationalDurableMemberRetirementObservation {
+        self.advance_custody_owner(execution, original)
+    }
+
+    fn retain_members(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+    ) -> Result<RelationalDurableMemberCustody, Cause> {
+        Ok(RelationalDurableMemberCustody::new_from_source(
+            self.retain_custody_owner(members)?,
+            self.weak_self.clone(),
+        ))
     }
 
     fn read_member(

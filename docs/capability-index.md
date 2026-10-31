@@ -803,6 +803,15 @@ and acquires both real component leases before issuing the concrete
 `worth_proof::RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>`.
 Readonly observations use weak owner/source identities; the concrete phase owns
 real pins and transfers them once. Refusal retains source data and partial custody.
+
+For one provider-issued placement registration, consume
+`RelationalDurableMemberCustody::into_retirement()` and retain the actual
+`RelationalDurableMemberRetirement` across Busy, Stopped and typed refusal.
+Advance borrows the original issuing source, whose weak allocation identity was
+captured at acquisition; unrelated callbacks cannot release the payload.
+Complete releases only this local share. Unknown opaque/composite providers
+refuse. Retired payload reclamation and generic Drop remain unbudgeted; this
+does not qualify whole cold close. See [provider custody retirement](../crates/worth-relational/README.md#retire-one-provider-member-custody-share).
 Native never fabricates a live result. CHK16 preserves required exact canonical
 component headers and explicit Empty/schema headers from current cells and live
 external component leases. One brief Native retention-owner cut linearizes external acquire/release/Drop

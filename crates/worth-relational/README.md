@@ -188,6 +188,31 @@ advances the branch. It preserves the original performed position and artifact
 digest; it neither selects the latest head nor pairs a caller-supplied result
 with a descriptor. Foreign owners refuse.
 
+## Retire one provider member-custody share
+
+`RelationalDurableMemberCustody::new_from_source(owner, issuing_weak_source)`
+binds the original provider payload to its actual source allocation. Consuming
+`into_retirement()` produces `RelationalDurableMemberRetirement`; retain it
+outside disposable callbacks and advance it with the original execution request
+and borrowed issuing source. Native checks issuance identity before callbacks or
+share consumption, without upgrading the Weak. Unknown `new(owner)` payloads
+and composite region exports return `UnsupportedProvider`; foreign sources and
+foreign custody refuse without replacing the original payload.
+
+`Complete` discharges this local share only. Another clone or independently
+retained cold reader continues protecting its original placement. After Complete,
+`into_retired()` returns opaque allocation custody; `reclaim()` and generic final
+Drop are explicitly unbudgeted. Incomplete Drop may run the original provider
+destructor and grants no close proof. Neither result establishes whole cold graph,
+Native, Home or physical close.
+
+The sized boxed-owner representation adds one acquisition allocation and one
+indirection. Advance allocates/reserves nothing, never waits for locks or destroys
+the original payload/last physical owner. A Store member step is O(log distinct
+members); BTreeMap removal may rebalance/deallocate nodes, and Arc share release
+may reclaim a small control allocation. These are not hard O(1) or wall-clock
+destructor bounds.
+
 ## Readmit an associated Native effect
 
 `durability_authority().discover_associated_effects(execution, &association)`

@@ -47,15 +47,11 @@ impl RelationalStoreSection {
             + Sync
             + 'static,
     ) -> Result<Self, RelationalRuntimeConstructionDenial> {
-        let mut source = crate::cold_source::StoreColdSource::new(serving.clone());
-        source.observe_commit_reads(observer);
-        Self::attach_with_source(
-            definition,
-            serving,
-            placement,
-            Arc::new(source),
-            checkpoint_selection,
-        )
+        let source = crate::cold_source::StoreColdSource::new_with_commit_read_observer(
+            serving.clone(),
+            observer,
+        );
+        Self::attach_with_source(definition, serving, placement, source, checkpoint_selection)
     }
 
     /// Replace native cells to dispute foreign carried-member placement. This

@@ -1,5 +1,32 @@
 # Relational home on Store
 
+## Cooperative release of one cold member registration
+
+Store's cold source issues the existing Native member-custody token with its
+weak source identity and original private guard. `into_retirement()` and
+`advance(&request, &issuing_source)` release one local share or one actual member
+at a time. Issuance identity is checked before callbacks; Store additionally
+checks the original registry and Serving Arc identities. Validation takes no
+locks or I/O; registry advancement uses `try_write`. Busy/stop/refusal retain the
+same original guard, member Vec and cursor, so retry cannot release a member
+twice. Other clones and independent cold readers keep their own protection.
+
+After the final member, including an originally empty registration, the guard's
+extra Serving Arc is detached while the exact source is borrowed. The disarmed
+original allocation remains opaque until explicit unbudgeted `reclaim()`.
+Ordinary incomplete Drop retires only the remaining suffix and is unbudgeted
+abandonment, not successful close. Legacy opaque and composite Native providers
+remain unsupported by this protocol.
+
+Acquisition adds one allocation and indirection. Each Store member step is
+O(log distinct registered members); node rebalancing/deallocation and small Arc
+control-allocation reclamation may occur. Advance performs no new allocation,
+reservation, rehash, shrink or arbitrary payload/final physical-owner Drop.
+This prerequisite qualifies one registration/share only, not cold graph,
+ApplicationHome or physical close. See the [Native facade](../../../../crates/worth-relational/README.md#retire-one-provider-member-custody-share).
+
+## Existing home format
+
 `RelationalStoreHome::open` owns physical recovery, descriptor admission and
 Relational readmission. It initializes a record family only when the lease
 holder proves it absent; existing partial or damaged stores are completed or

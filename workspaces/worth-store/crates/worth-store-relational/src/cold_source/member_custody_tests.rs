@@ -19,7 +19,7 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
     let execution = worth_execution::ExecutionRequest::serial(&request);
     let directory = tempfile::tempdir().unwrap();
     let serving = Arc::new(super::test_store::initialize(directory.path()));
-    let source = Arc::new(StoreColdSource::new(serving.clone()));
+    let source = StoreColdSource::new(serving.clone());
     let runtime = RelationalRuntimeApi::builder()
         .build()
         .expect("valid native runtime configuration");
