@@ -555,8 +555,13 @@ Some(ApplicationAuthoredCorrection::restore_retired::<
 ```
 
 Use `recorded_inverse_binding::<Self>(demand)` and capture the logical key plus
-the authored fields needed to rebuild the entity. Derive the restoring intent
-from `RecordedInverse(preimage)`. The ordinary handler allocates the successor,
+the authored fields needed to rebuild the entity. Retention selects the unique
+mutated record common to every demanded field locus, then requires exactly one
+admitted observation per locus on that record. Same-kind collateral records
+observed at only some demanded loci do not make that record ambiguous. A missing
+locus refuses capture; disjoint records, multiple complete records and duplicate
+observations on the selected record also refuse, even when values are equal.
+Derive the restoring intent from `RecordedInverse(preimage)`. The ordinary handler allocates the successor,
 initializes those values and binds its Create output. Native validation compares
 that actual allocation and initialized key with the original retired role and
 its captured key before publication. A mismatched key, unrelated deletion or

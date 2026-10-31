@@ -33,6 +33,7 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
             read_enabled: read!(ReadEnabled),
             ceiling: read!(Ceiling),
             calculated: read!(Calculated),
+            collateral: None,
         };
         if let Err(cause) = reader.entity(&parent, Number::reference()) {
             return HandlerResult::ExecutionDenied(cause);
