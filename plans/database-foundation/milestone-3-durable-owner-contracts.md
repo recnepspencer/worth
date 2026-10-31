@@ -165,6 +165,151 @@ Continue/release publishes world.custody before live disposition; released
 custody never reappears. Only Committed occurrence publication mints the exact
 subject-bound witness consumed by the product movement.
 
+### No pending owner admission before service
+
+The first existing-Home service slice supports zero retained recovery custody.
+It must not derive TransitionSettled from program activation equality, a
+support table, journal registration, an empty process-local Query store or
+successful Native recovery alone. Full D16 transition execution remains open.
+
+Under the continuously held Home mutation lease and closed pre-service
+composition, Store inspects these exact unsupported journals:
+`home.transitions`, `signal.definitions`, `signal.advances`,
+`query.obligations`, `query.dispatch`, and `query.corrections`. For each actual
+journal require `head() == None`, then accept only
+`resolve(1, [0; 32]) == NotCommitted { head: 0 }`. The digest is a
+nonauthoritative probe: the existing resolver does not compare it in the
+empty-journal branch. Existing sequential publication admits only head+1, so
+position 1 is the only lawful unresolved position of an empty journal.
+Entries, Unresolved, Conflict, inspection-required posture, failed lookup and
+read failure all refuse; no fallback converts them to absence. Consult the
+original execution request through this admission. Also require actual Native
+recovery with `codec_transition_pending() == false`. The selected checkpoint
+must retain its existing exact owner-section admission; unknown owner sections
+remain refused rather than silently ignored.
+
+This inspection is not a concurrent absence lock. No publisher for these
+unsupported families is exposed before service. Keep the closed Host and
+Store construction seals; do not expose the raw Serving runtime or an open
+journal publisher through this operation. Adding a supported owner requires
+its actual readmission and an intentional support-contract change.
+
+The consuming Store operation returns privately constructed, move-only
+`NoPendingApplicationHomeTransition`, retaining the SAME actual
+`WorldReadmittedApplicationHome<(), (), (), (), ()>` and therefore its original
+Home, incarnation and lease. It needs no new HomeContext fields, identity
+copies or Arc retention. Failure owns the same Home and exact typed cause.
+It offers no public conversion from descriptions and no Clone/Copy. Its
+consuming Home extraction is restricted to the closed Host completion.
+
+The concrete Host custody payload retains Query and the actual Home. After
+real custody admission, consume that payload, obtain the Store carrier and
+wrap the private Query-plus-carrier payload in TransitionSettled. Only consume
+that concrete specialization into the public Home service. Wire this gate
+into fresh service as well as the subsequent existing-Home path; remove the
+fresh-only comment as authority for transition settlement. A failed gate
+returns owned Query and Home custody before any public service escapes.
+
+The destination is `worth-store-application/src/open/readmission/transition.rs`
+for the persisted no-pending inspection, with the concrete carrier, refusal
+and source-local consuming method in
+`world_section/readmission/transition.rs`. That method borrows the private
+Home/Native context and moves the actual Home. Preserve private fields; add
+no public raw access to solve module visibility. The Host's
+existing `application_home/opening.rs` completion consumes the concrete result.
+The known D16 transition successor belongs under the same open/readmission
+axis; it may not reinterpret this absence carrier as completed migration.
+Keep the existing canonical version-3 journal declaration and its exhaustive
+required-empty classification together in `registry.rs`; add no second
+namespace list or general registry framework. Native and World journals keep
+their actual existing owner readmission and are not required empty.
+
+```rust,ignore
+impl WorldReadmittedApplicationHome<(), (), (), (), ()> {
+    pub fn readmit_no_pending_owners(
+        self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<NoPendingApplicationHomeTransition, ApplicationHomeOwnerAdmissionRefused>;
+}
+```
+
+The private carrier field is the same concrete WorldReadmittedApplicationHome.
+The owned refusal exposes its typed reason and consuming Home return for the
+existing failure-close route. Admit only the exact source-local transition
+file to Native recovery extraction, and only the exact Host completion to
+admission/carrier extraction. A public generic Proof wrapper cannot substitute
+for either private payload. No new proof type, ownership mode or publisher is
+introduced.
+
+The decisive negative proof uses the existing external Application court and
+its exact existing physical_serving_for_test control. It starts with an actual
+filesystem Home and genuine Native/World composition, publishes one real entry to each unsupported
+journal in turn, and verifies owned refusal rather than service. It must
+convict deletion of any one of the six checks. A genuine empty counterpart
+succeeds and moves the same Home/lease through the carrier. A stopped original
+request preserves the same owner; compile-time/caller-seal evidence denies
+forged construction and outside extraction. Prove unresolved-position refusal
+with actual admitted ambiguous publication while the durable head remains
+empty, requiring the exact new Store gate's typed refusal rather than an
+upstream open error. Current Store sections use normal
+`recovery_plan_from_source`/`recover_with_authority`, whose recovered authority
+always has no pending codec transition. The sole pending producer is the
+separate Native codec-transition restoration path, which cannot populate this
+Home carrier. Preserve and review that construction boundary, and retain the
+gate's pending-codec check as defensive future admission. Existing genuine
+Native transition controls and early changed-codec refusal do not claim to
+exercise this unreachable Store guard. Add no private authority replacement,
+synthetic transition flag or extraction door to make such a test pass.
+Do not invent an unresolved map in the fixture. Use exact
+caller additions to existing controls, with no new getter or private-test
+exception. Existing real Host Directory
+mutation and ownership-close controls must remain passing.
+
+### Existing Query publication readmission scope
+
+The next dependent slice reopens a genuinely initialized Directory Home,
+reads its latest acknowledged product state and closes it. ExistingArtifacts
+must consume the same Store refusal owner into that path; initialization,
+seed suppliers and business handlers never replay on reopen. Native index
+admission uses RequireRecovered, and an activation seed exists only on fresh
+initialization.
+
+A single Query-owned bootstrap publication record is required in the existing
+Native Query schema. Multi-batch seeding produces aggregate Query publication
+facts not present in World genesis. Complete all actual seeds and indexes,
+then commit the record before World bootstrap. World genesis binds that
+record-containing Native basis; the record's bootstrap locator still names
+the actual final seed commit. Persist portable admitted schema/program meaning
+and descriptive aggregate counts. Portable meaning here is the actual admitted
+ApplicationHomeBinding: package/schema CanonicalDigestIds, selected program
+identity/revision and complete closed-roster identities/revisions. Compare it
+exactly and perform actual Native schema/receipt and RequireRecovered index
+admission before rebinding the fresh installed identity. Do not duplicate the
+full member graph or facts-only archive representation. Never persist process identities, runtime snapshots,
+an extra receipt registry or a guessed current head. Rebind only after actual
+portable meaning and immutable Native commit admission.
+
+Both Query attachment preflight and product-source preparation must use the
+selected World root's relational basis. Native's latest head is insufficient:
+a genuine interrupted publication may leave Native at 9 and World at 8.
+That effect-bearing state retains actual World recovery custody and must
+remain owned and refused before service in this first slice. Public service
+at World 8 in that adversary requires real recovered Query binding/custody
+admission in the D9 successor, fencing the original key even though its Native
+9 binding is absent from World 8. Do not create an empty Query store to erase
+that obligation. Safe CommittedReceiptNotRetained is permitted where the actual
+durable binding exists but the original process receipt is not retained; it
+does not certify original-result retry. Full D8/D9/D11 closure remains open.
+
+Before new service can mint an outcome identity, D17 also requires scanning
+the actual latest-Native Query idempotency rows under the original request.
+Validate actual row shape, uniqueness and immutable Native creation receipts,
+then use the existing outcome identity restoration operation for every actual
+row. A future retry resolver alone is too late: a new process could otherwise
+mint an identity already present in durable state. This reconstructive scan
+does not change the selected-World basis for ordinary product reads, create
+another ledger or claim restoration of a missing process-local receipt.
+
 ### Live abandonment and recovered disposition
 
 Phases 3–4 use recovered-only disposition for a live directory preparation
