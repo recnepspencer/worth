@@ -29,6 +29,10 @@ pub use crate::branch::{
     ResolvedRelationalBasisDescriptor, SuspendRelationalMaterialization,
     RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };
+pub use crate::branch::{
+    RelationalRecordAdvanceDenial, RelationalRecordAdvanceLimits,
+    RelationalRecordAdvanceObservation,
+};
 pub use crate::history::retention::{
     RelationalBasisRetentionReason, RelationalBranchRetentionLease,
     RelationalBranchRetentionReleaseDenial, RelationalBranchRetentionReleaseReceipt,

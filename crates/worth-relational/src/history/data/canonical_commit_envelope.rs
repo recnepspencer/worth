@@ -236,6 +236,15 @@ impl CanonicalCommitEnvelope {
         touched
     }
 
+    /// Borrow authored targets too: an equal-valued authored update can have
+    /// no surviving field patch and still be a distinct record occurrence.
+    pub(crate) fn authored_intent_targets(&self) -> impl Iterator<Item = Option<RecordRef>> + '_ {
+        self.merged_plan
+            .merged_intents
+            .iter()
+            .map(intent_record_ref)
+    }
+
     /// Canonical bytes for owner truth only. Diagnostics and optional derived
     /// indexes have distinct lifecycle lanes and cannot perturb commit-byte
     /// accounting.

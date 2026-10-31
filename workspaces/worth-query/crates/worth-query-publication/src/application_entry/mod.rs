@@ -45,6 +45,7 @@ pub use history::{
     WorthQueryApplicationHistoryPreview, WorthQueryDocumentHistoryCloseReceipt,
     WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
     WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryInstallationDenialKind,
+    WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
     WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance, WorthQueryHistoryEditBuilder,
     WorthQueryHistoryEditCaptureDenial, WorthQueryHistoryEditCaptureFailure,
     WorthQueryHistoryEditDenial, WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish,

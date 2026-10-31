@@ -1,4 +1,5 @@
 //! A pending exact model capture leaves only after ordinary query completion.
+mod context;
 mod metadata;
 mod operation;
 mod paging;
@@ -159,10 +160,12 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             head,
             model: pending.model(),
             expected,
+            physical_source: pending.product().retained_clone(),
             binding,
             journal,
             capture_pause: None,
             page_pause: None,
+            context_pause: None,
             marker: std::marker::PhantomData,
         };
         match pending.confirm(

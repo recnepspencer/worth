@@ -13,6 +13,11 @@ pub(in crate::domain_computation::primary_graph) struct HistoryModelIdentity {
 }
 
 impl HistoryModelIdentity {
+    pub(in crate::domain_computation::primary_graph) fn record(
+        &self,
+    ) -> worth_relational::facade::transactions::RecordRef {
+        worth_relational::facade::transactions::RecordRef::Entity(self.entity)
+    }
     pub(super) fn matches_receipt(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,

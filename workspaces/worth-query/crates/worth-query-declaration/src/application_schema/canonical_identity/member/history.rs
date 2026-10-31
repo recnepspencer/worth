@@ -10,6 +10,17 @@ pub(super) fn append(
     basis.text(format!("{prefix}.kind"), "application-history");
     basis.text(format!("{prefix}.identity"), &parts.identity);
     basis.text(
+        format!("{prefix}.model-domain"),
+        match parts.model_domain {
+            crate::application_history::ApplicationHistoryModelDomain::WholeComposite => {
+                "whole-composite"
+            }
+            crate::application_history::ApplicationHistoryModelDomain::ScopeEntityRecord => {
+                "scope-entity-record"
+            }
+        },
+    );
+    basis.text(
         format!("{prefix}.history-type"),
         parts.history_type.as_str(),
     );

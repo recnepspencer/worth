@@ -7,7 +7,8 @@ pub use binding::{
     ApplicationHistoryAccessBinding, ApplicationHistoryBinding, ApplicationHistoryModel,
 };
 pub use definition::{
-    ApplicationHistoryDefinition, ApplicationHistoryDefinitionDenial, ApplicationHistoryOperation,
-    ErasedApplicationHistoryDefinition, WorthQueryPortableApplicationHistoryParts,
+    ApplicationHistoryDefinition, ApplicationHistoryDefinitionDenial,
+    ApplicationHistoryModelDomain, ApplicationHistoryOperation, ErasedApplicationHistoryDefinition,
+    WorthQueryPortableApplicationHistoryParts,
 };
 pub use descriptor::ApplicationHistoryBindingDescriptor;

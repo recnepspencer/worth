@@ -290,6 +290,36 @@ and `read_governed(..)`. An out-of-band change still causes document divergence;
 restoring a grant does not silently replace its expected model head.
 See the [compiled preview and independent-holder journeys](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/preview/mod.rs).
 
+### Refresh context after control changes
+
+For a model consisting of exactly its scope entity record, declare
+`.model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)` on its
+`ApplicationHistoryDefinition`. This domain includes that record's full
+generation. Related records, relations and Signal state are not added implicitly.
+The default `WholeComposite` domain requires the original physical source.
+
+After an outside control write, call
+`document.refresh_context(&request, limits)` explicitly. For governed metadata,
+use `refresh_context_governed(&request, capability, operation, input, limits)`.
+Set positive `maximum_commits`, `maximum_records` and `maximum_evidence_bytes`
+in `WorthQueryHistoryContextRefreshLimits`. These bound commit inspection,
+examined record-patch and intent slots, and scratch or cold-evidence acquisition.
+Resident evidence is borrowed. The original request's resource limits still apply.
+
+Refresh runs the ordinary model READ and the current metadata decision first.
+Native must prove that every intervening transition left the model record
+untouched, with the exact Signal basis unchanged. An equal-value write or a
+change followed by restoration still counts as model authorship and refuses.
+Missing evidence, unsupported transitions, exhausted bounds, cancellation and a
+source race refuse without replacing the document's expected context. Keep the
+same document and retry with appropriate bounds after a transient refusal.
+
+Success preserves the current step, its immutable endpoint and issued tree
+cursors. Existing preview holders still read their original sources under fresh
+current authority, and the next edit records a child of the same selected step.
+Restoring a revoked grant therefore requires both the real current grant and a
+successful explicit refresh; the old preview cannot authorize itself.
+
 ### Record an edit and retain its original outcome
 
 Use the attached document to construct a fresh edit for a declared operation.

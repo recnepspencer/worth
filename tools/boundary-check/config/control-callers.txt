@@ -436,6 +436,10 @@ crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_
 crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/reference_context/adversarial/operation_control/ordered_races/declarations.rs
 crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/reference_context/adversarial/operation_control/snapshot_progress/declarations.rs
 # Original witness payer court reads only the actual SDK scope-frame quote.
+# History context refresh uses its actual owner receiver and final-guard rendezvous.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/context/pause.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/handoff.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/governed.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/correction_witness/tests.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/tree_reapplication.rs

@@ -130,6 +130,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         // The exclusive document borrow is the document guard. Every destination
         // slot and every returned value exists before the actual head changes.
         self.expected = prepared.endpoint;
+        self.physical_source = prepared.exact;
         self.journal
             .complete(reserved.record, prepared.node, previous);
         Ok(prepared.returned)

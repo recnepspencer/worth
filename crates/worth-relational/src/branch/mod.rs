@@ -20,7 +20,12 @@ mod identity;
 mod lifecycle;
 mod materialization;
 mod owner_services;
+mod record_advance;
 mod reference;
+pub use record_advance::{
+    RelationalRecordAdvanceDenial, RelationalRecordAdvanceLimits,
+    RelationalRecordAdvanceObservation,
+};
 mod reference_publication_cell;
 mod reference_state;
 mod registry;

@@ -4,7 +4,9 @@ use super::{
     schema::DocumentRetentionSchema,
 };
 use worth_query_decl::facade::{
-    application_history::{ApplicationHistoryBinding, ApplicationHistoryDefinition},
+    application_history::{
+        ApplicationHistoryBinding, ApplicationHistoryDefinition, ApplicationHistoryModelDomain,
+    },
     application_query::{
         ApplicationHistoryMetadataFacet, ApplicationHistoryMetadataRef,
         ApplicationQueryDisclosureContract, ApplicationQueryInfluenceContract,
@@ -76,12 +78,14 @@ pub fn declare(
                 .operation::<SetRetentionBinding>("Set retention"),
         ).application_history(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, RetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())
+            .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
             .operation::<SetRetentionBinding>("Set retention"),
     ).application_history(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, DetailedRetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())
             .operation::<SetRetentionBinding>(detailed_edit_label()),
     ).application_history(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, GovernedRetentionHistory>::for_binding(metadata_disclosure())
+            .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
             .operation::<SetRetentionBinding>("Set retention"),
     )
 }

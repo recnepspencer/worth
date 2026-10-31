@@ -14,6 +14,8 @@ pub enum WorthQueryDocumentHistoryDenial {
     ForeignModel,
     ForeignHistoryNode,
     HistoryNodeUnavailable,
+    UnsupportedContextRefresh,
+    ContextRefresh(super::WorthQueryHistoryContextRefreshDenial),
     OperationNotDeclared,
     OperationAdmission(
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,

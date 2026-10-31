@@ -4,7 +4,12 @@ mod candidate;
 mod capture_pause;
 mod close;
 mod constraint;
+mod context;
+mod context_pause;
 mod current_head;
+pub use context::{WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits};
+#[doc(hidden)]
+pub use context_pause::WorthQueryHistoryContextRefreshPauseForTest;
 mod denial;
 mod disposal;
 mod journal;
@@ -65,11 +70,16 @@ pub struct WorthQueryDocumentHistory<
     pub(in crate::domain_computation::primary_graph) head: WorthQueryOwnedProductHead<'runtime, S>,
     pub(in crate::domain_computation::primary_graph) model: HistoryModelIdentity,
     pub(in crate::domain_computation::primary_graph) expected: WorthQueryProductBranchReadIdentity,
+    // One actual current physical context, distinct from immutable user-step endpoints.
+    pub(in crate::domain_computation::primary_graph) physical_source:
+        crate::basis::WorthQueryProductObservationLease,
     pub(in crate::domain_computation::primary_graph) binding: ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph) journal: HistoryJournal<'runtime, S>,
     pub(in crate::domain_computation::primary_graph) capture_pause:
         Option<std::sync::Arc<receiver_pause::ReceiverPause>>,
     pub(in crate::domain_computation::primary_graph) page_pause:
+        Option<std::sync::Arc<receiver_pause::ReceiverPause>>,
+    pub(in crate::domain_computation::primary_graph) context_pause:
         Option<std::sync::Arc<receiver_pause::ReceiverPause>>,
     pub(in crate::domain_computation::primary_graph) marker: std::marker::PhantomData<fn() -> H>,
 }

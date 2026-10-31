@@ -74,6 +74,7 @@
 mod assessment;
 mod attachment;
 mod close;
+mod context;
 mod denial;
 mod edit;
 mod edit_builder;
@@ -102,7 +103,8 @@ pub use denial::{
 pub use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial;
 pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
-    WorthQueryDocumentHistoryClosingDenial, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
+    WorthQueryDocumentHistoryClosingDenial, WorthQueryHistoryContextRefreshDenial,
+    WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
     WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
     WorthQueryHistoryPageRow, WorthQueryHistoryStep,
 };

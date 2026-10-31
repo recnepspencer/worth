@@ -42,10 +42,11 @@ pub mod document_history {
         WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
         WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryOperation,
         WorthQueryDocumentHistoryOperationConstraint, WorthQueryDocumentHistoryRecordPreparation,
-        WorthQueryDocumentHistoryReservation, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
-        WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
-        WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
-        WorthQueryHistoryPreview, WorthQueryHistoryStep,
+        WorthQueryDocumentHistoryReservation, WorthQueryHistoryContextRefreshDenial,
+        WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryContextRefreshPauseForTest,
+        WorthQueryHistoryNodeId, WorthQueryHistoryPage, WorthQueryHistoryPageAssemblyPauseForTest,
+        WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
+        WorthQueryHistoryPageRow, WorthQueryHistoryPreview, WorthQueryHistoryStep,
     };
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::{

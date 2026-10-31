@@ -19,6 +19,16 @@ pub struct ApplicationHistoryOperation {
     pub label: String,
 }
 
+/// The literal model boundary for explicit physical-context refresh.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum ApplicationHistoryModelDomain {
+    /// Every physical component remains part of the expected source.
+    WholeComposite,
+    /// Exactly the full-GEN Native scope entity record. Relations, other
+    /// records and Signal state are not inferred to belong to this domain.
+    ScopeEntityRecord,
+}
+
 /// Authority-free carriage. Installation must resolve the original typed recipes.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryPortableApplicationHistoryParts {
@@ -26,6 +36,7 @@ pub struct WorthQueryPortableApplicationHistoryParts {
     pub history_type: WorthQueryPortableTypeIdentity,
     pub access: ApplicationQueryBindingReference,
     pub metadata_disclosure: ApplicationQueryDisclosureContract,
+    pub model_domain: ApplicationHistoryModelDomain,
     pub operations: Vec<ApplicationHistoryOperation>,
 }
 
@@ -125,12 +136,29 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> ApplicationHistoryDe
                         ApplicationHistoryAccessBinding<S, H>,
                     >(),
                     metadata_disclosure,
+                    model_domain: ApplicationHistoryModelDomain::WholeComposite,
                     operations: Vec::new(),
                 },
             ),
             descriptor: ApplicationHistoryBindingDescriptor::of::<S, H>(),
             marker: PhantomData,
         }
+    }
+
+    /// Select the model boundary. `ScopeEntityRecord` permits bounded context
+    /// refresh only when Native proves no intervening authorship of that record.
+    /// Related records, relations and Signal state are not included implicitly.
+    /// ```
+    /// use worth_query_declaration::facade::{application_history::*, application_schema::ApplicationSchema};
+    /// fn record_domain<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
+    ///     definition: ApplicationHistoryDefinition<S, H>,
+    /// ) -> ApplicationHistoryDefinition<S, H> {
+    ///     definition.model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
+    /// }
+    /// ```
+    pub fn model_domain(mut self, domain: ApplicationHistoryModelDomain) -> Self {
+        self.erased.parts.model_domain = domain;
+        self
     }
 
     /// Only operations scoped to the READ binding's actual model type can join.

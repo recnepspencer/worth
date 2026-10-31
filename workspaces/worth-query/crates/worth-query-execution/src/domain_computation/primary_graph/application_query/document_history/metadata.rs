@@ -97,11 +97,28 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     }
 
     pub(super) fn complete_metadata_read<'phase, 'scope>(
-        mut self,
+        self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         phase: &'phase WorthQueryAdvancementPhase<'scope>,
         document: &WorthQueryDocumentHistory<'_, S, H>,
         access: &WorthQueryProgramPublicationAccess,
+    ) -> Result<CompletedMetadataRead<'phase, 'scope>, Denial>
+    where
+        Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
+    {
+        let completed = self.observe_metadata_read(runtime, phase, document, access)?;
+        if completed.source.identity() != document.expected {
+            return Err(Denial::HeadDiverged);
+        }
+        Ok(completed)
+    }
+
+    pub(super) fn observe_metadata_read<'phase, 'scope>(
+        mut self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        phase: &'phase WorthQueryAdvancementPhase<'scope>,
+        document: &WorthQueryDocumentHistory<'_, S, H>,
+        _access: &WorthQueryProgramPublicationAccess,
     ) -> Result<CompletedMetadataRead<'phase, 'scope>, Denial>
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
@@ -144,11 +161,16 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::InstalledBindingMismatch);
         }
         self.plan.history_metadata = Some(metadata);
-        let source = pending::PendingDocumentRead::capture(&self.plan);
         // The original binding owns projection, body/filter denials, completion
         // and cleanup. Its common current-security validation consumes this
         // carried decision before the original query body may read.
-        let _read = runtime.read_document_history(phase, access, document, self)?;
+        let (source, _read) = self.execute(runtime, phase)?;
+        if source.model() != document.model {
+            return Err(Denial::ForeignModel);
+        }
+        source
+            .confirm(phase, runtime, document.branch(), ())
+            .map_err(|(_, cause)| cause)?;
         Ok(CompletedMetadataRead { source, phase })
     }
 }

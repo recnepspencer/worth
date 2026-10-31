@@ -11,6 +11,9 @@ pub(super) struct PendingDocumentRead {
 }
 
 impl PendingDocumentRead {
+    pub(super) fn product(&self) -> &WorthQueryProductObservationLease {
+        &self.product
+    }
     pub(super) fn retained_source<S: ApplicationSchema>(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
