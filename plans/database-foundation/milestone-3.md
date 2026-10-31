@@ -178,19 +178,49 @@ durable backing.
 **D5. Owner effects carry their attempt association; custody dispositions are
 durable.**
 
+Before Native candidate preparation seals an envelope, World records an
+`OpenAttempt` in its existing `world.custody` journal. It retains the original,
+independently issued attempt, composite-commit and custody identities, exact
+expected product head, branch/incarnation, provenance, program revision and
+component intent. Only actual commitment of that open permits owner effects;
+no-effect or indeterminate opening starts none. The existing preparing-operation
+guard and reserved resources move through this progression once. Native consumes
+the original validated proposal once, binding its opaque association before the
+existing single preparation algorithm seals the candidate.
+
+After the open commits, preparation refusal, cancellation or unwind retains or
+terminalizes that same durable open; it cannot erase the record, claim total
+World no-effect, reissue its identities or replay a handler. Completion verifies
+the sealed candidate association against the original open and exact branch and
+incarnation before effects. Recovery resumes issuer frontiers beyond every
+durably recorded identity, including unfinished opens.
+
 Every owner effect published inside a composite attempt records the attempt's
 World-defined `CompositeAttemptAssociation`: the home-scoped attempt identity,
 product branch identity and incarnation. It sits in the owner's own artifact:
 
 - a Relational commit carries it in a Relational-owned, opaque, size-bounded
-  caller-association field of the canonical envelope (a new artifact version);
+  caller-association field. The canonical envelope also records the original
+  durable semantic result defined in Phase 4. Both are sealed during original
+  preparation, under canonical artifact v3 and native checkpoint CHK15;
 - a Signal advance carries it in its advance artifact (Phase 5);
 - later owners follow the same pattern.
+
+Relational's existing commit index carries required descriptive association
+discovery metadata derived from that same envelope: `Unassociated` or
+`Associated(original opaque association)`. An absent field is malformed
+current-format data, never `Unassociated`. This selects subjects for actual
+readmission; it grants no publication, settlement, root or recovery authority.
 
 Recovery joins owner effects to occurrences by association. An owner effect
 whose association has neither an occurrence nor a disposition is recovered as
 durable `ProductUnpublished` custody with cause
 `RecoveredWithoutProductMovement`.
+
+Its identity bundle and predecessor come from the original open. A purported
+World association with missing or inconsistent original-open evidence refuses
+recovery; it never manufactures the missing identities. An open alone does not
+prove that an owner effect happened.
 
 Continuing or releasing custody publishes a `RuntimeWorldCustodyDisposition`
 to `world.custody` before its live effect. Released custody therefore never
@@ -973,8 +1003,226 @@ re-executing anything.
 
 *Relational association*
 
-- The canonical envelope gains the caller-association field (D5) under a new
-  artifact version. Older artifact versions are refused (clean cutover).
+- The canonical envelope gains caller association and the original semantic
+  result under artifact v3; both authoritative and embedded checkpoint
+  projections carry them. CHK15 requires association discovery in its existing
+  commit directory. Earlier formats refuse before effects (clean cutover).
+
+**Native semantic result and recovery admission**
+
+The adversarial case is a Native effect that advanced its branch but never
+moved the product. After a kill, World must keep its original predecessor
+product basis while recovering that exact effect. Substituting Native's latest
+basis, fabricating a live result, or loading all historical bodies to discover
+associations fails this contract.
+
+One immutable, Native-owned `RelationalCommitSemanticResult` is assembled
+during original preparation, before envelope sealing. The same semantic value
+feeds live result assembly and the authoritative recorded image; live-only
+fields stay separate. Do not serialize `CommitResult`, `CommitLog` or
+`CommitSummary` wholesale, or introduce another result policy or ledger.
+
+The existing producer already has the needed data. `AssembledCommitExecution`
+owns structural summary, invariant executions, version, history and create
+bindings. `prepare_commit_publication_execution` combines these with the
+admitted log's semantic summaries and canonicalized changed records, then
+installs the semantic value before the existing envelope `Arc::new` seal.
+`CommitResultMaterial` and `CommitResultSeal` consume that same value for the
+live result. Source-backed recovery exposes a distinct
+`RecoveredRelationalSemanticResult`, not a live seal or result handle.
+
+The durable projection has this explicit field boundary:
+
+| Original source | Recorded semantic meaning | Excluded live or diagnostic data |
+|---|---|---|
+| Commit reference and version | Exact original receipt/version, bound to the enclosing envelope | Process-local transaction identity |
+| Created entity bindings | Every canonical correspondence: partition, kind, resolved client-key text to assigned `EntityId` | Process-local symbol representation and lookup estimates |
+| Created relation bindings | Every canonical correspondence: partition, kind, resolved client-key text, exact endpoints to assigned `RelationId` | Process-local symbol representation and lookup estimates |
+| Created endpoint reference | `Existing(EntityId)` or `Created(partition, kind, resolved client-key text)` | Guesses from allocation order, later state or patch contents |
+| Prepared changed records | Exact canonical ordered `Vec<RecordRef>` | A later graph scan |
+| Structural summary | Invariant groups, commit topology, ordered touched partitions, descriptor semantics version | Bulk entity/relation slots reserved |
+| Schema summary | Original transition and descriptor semantics version, consistent with the schema artifact | Current-policy reconstruction |
+| History summary | Target branch, requested/effective merge-parent counts, parent/merge-base counts, previous-head presence | Later branch state |
+| Change/aspect summaries | Original changed-record/adjacency and entity/relation aspect counts, touched aspects, opaque/zero-aspect structural deltas | Evaluation/emission traces |
+| Patch/publication summaries | Actual patch-record count represented once, lineage-event and merge-parent counts | Preparation limit, diagnostic-entry count, snapshot ID |
+| Validation executions and decisions | Original ordered metadata, checks, results and verdict meaning described below | Validator re-execution and process-local proposal identity |
+| Validation summary | Read-only projection of the retained original validation meaning | Independent counters or another accounting authority |
+| Retention | Authoritative root/member references and real owner pins remain in their existing owners | Timing, visit counts, charges and residency bookkeeping |
+| Execution, snapshot and diagnostics | Nothing | Snapshot handles/IDs, timing, complexity, work/CPU/allocation measurements, late interruption and omitted traces |
+
+Validation retains original execution point, observation kind, version/current
+version, consumed/applicable groups, declared cost class, disposition, plan
+contract and merged-plan presence. Preparation strategy/failure provenance and
+proof scope/widening causes may be retained as historical categories, never as
+current execution authority. Packet/traversal bookkeeping is excluded. Checks
+retain execution point, failure effect, rule, canonical witness, groups, declared
+cost class, custom provenance and complete verdict. Decisions retain those
+meanings and their original decision. Declared cost classes describe the original
+validation contract; they are not measured work. Process-local
+`proposal_identity` is excluded. Numerical verdict output keeps its original
+semantic value.
+
+Canonical reference text comes from the original admitted symbol dictionary,
+never display formatting of an unresolved symbol. Preserve every original
+correspondence's meaning. Exact/stable aliases of one canonical key must agree;
+conflicting assignments, missing text or incomplete semantics refuse preparation
+before effects. Readmission validates ordering, correspondence consistency,
+receipt/version/schema agreement, changed-record/count agreement and validation
+result/decision agreement. It does not run handlers or validators.
+
+There is no serialized `Published` flag or pre-recorded completion log event.
+Receipt/version can bind before sealing; assigned journal position comes from
+actual positioned evidence. Artifact digest is computed after encoding and is
+not placed inside its own semantic image. Actual publication or verified recovery
+source establishes commitment. Excluded live fields are unavailable after
+recovery, never zero-filled or invented.
+
+**Lazy association discovery (D12)**
+
+The existing `RelationalCommitIndexEntry` gains one required, non-optional
+`RelationalAssociationDiscovery` value, with variants `Unassociated` and
+`Associated(RelationalCallerAssociation)`. It is derived from the actual
+envelope when publication becomes indexed or its journal tail is readmitted.
+The existing checkpoint commit directory carries it without demanding cold
+envelopes. Missing metadata is malformed current-format data; no default can
+hide an associated effect. Existing index/envelope checks compare discovery
+whenever both are available.
+
+World selects original subjects from this admitted directory and its opens,
+occurrences and dispositions. Only selected artifact bodies and the predecessor
+and successor roots actually required are demanded. Their source artifact must
+match receipt, position, digest and exact association before capability issuance.
+Neither discovery metadata nor a memory-exported artifact certifies durable
+origin. Reopen cost is proportional to the manifest, bounded tails and demanded
+root/artifact material. Unrelated historical bodies stay cold. Ordinary
+publication performs no reconstruction scan. This adds no registry, control
+publication or accounting framework.
+
+**Exact Native references and recovered capability**
+
+Recorded component references distinguish:
+
+- `Empty`: branch identity, reference generation, truth version, lifecycle,
+  schema and visibility commitments; no commit, position, digest or zero receipt.
+- `Canonical`: original full receipt, position, artifact digest, root descriptor,
+  branch/reference axes, truth version, lifecycle, schema and visibility.
+
+Reuse Native's canonical runtime-frame conversion and
+`FoundationalBranchTarget::Empty`/`Basis` meanings. World records its predecessor
+before Native preparation; it cannot predict a future Native commit ID.
+Descriptions never admit a basis. No path rewrites an old runtime ID or falls
+back to the latest root.
+
+Extend the existing `DurabilityRecoveryAuthority` with
+`recover_with_authority(execution, plan)`, issuing existing
+`RecoveredRelationalRuntimeAuthority` only after actual reconstruction. Extend
+that owner with exact recorded-component/publication admission. Its existing
+current-image admission remains distinct. Select the exact Journal entry/source,
+release owner locks, demand and readmit that source's artifact, and compare all
+receipt/position/digest/association/schema/root/reference commitments. Admit the
+actual empty or canonical predecessor and successor through existing root/member
+owners, acquiring real observation/component pins before exposure. Missing
+historical material refuses; it does not justify a synthetic basis.
+
+Use one named move-only proof phase in `worth-proof`,
+`RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>`.
+Native owns the concrete private payload, its actual recovering runtime/source
+binding, original semantic result and admitted predecessor/successor bases/pins.
+Store/World bind home identity and incarnation through the actual private Home
+stage; Native need not interpret World's association or invent a Home binding.
+Only successful Native owner admission constructs the payload. World consumes
+that concrete specialization through a distinct recovered-adoption branch and
+moves custody into its existing retained owner. Generic markers, receipt data,
+index entries and caller-provided fate pairs cannot construct it. Refusal retains
+the original subject/evidence and any acquired custody.
+
+Settlement observations distinguish actual matching performed-but-pending and
+performed-and-settled route states. Existing pending repair acts on that same
+record/route and remains receipt-only; World's live result stays `None`.
+`CheckpointReadmitted` reports exact admitted directory/source coverage only,
+not a preserved live result or settlement event. It authorizes no adoption by
+itself. The capability requires actual source/body/root admission and the required
+recovered owner state and pins. Pending work must be settled by its existing owner
+before adoption; pending-record absence is never settlement proof.
+
+Memory-only backing, interruption, stale/foreign binding, source/index mismatch,
+wrong roots/schema/references, missing semantics and unavailable roots have typed
+refusals. Recovery neither republishes an effect nor executes a handler, constructs
+`PerformedRelationalCommit`, fabricates `CommitResultSeal`, or supplies a recovered
+`Arc<CommitResult>`. Arbitrary recovery bytes or public traits do not manufacture
+the concrete Store-private `WorldReconciled` Home stage.
+
+The destination within the existing owners is:
+
+```text
+worth-relational/src/
+  transactions/data/outcomes/
+    commit_semantic_result.rs                 # shared immutable meaning
+    commit_semantic_result/{creation_correspondence,validation}.rs
+    commit_result.rs                          # live-only seal plus same meaning
+  authority/commit/pipeline/
+    semantic_result.rs                        # original producer, before seal
+    publication_execution/preparation.rs      # install image before Arc seal
+    result_assembly.rs                        # consume same value
+  history/commit/index_entry.rs               # required discovery metadata
+  history/data/canonical_commit_envelope/     # both existing projections
+  durability/canonical_commit_artifact/       # v3 strict readmission
+  durability/log/native_checkpoint_codec/     # CHK15 strict directory/image
+  durability/authority/recovery/
+    recorded_component.rs                    # exact source-backed roots
+    recovered_publication.rs                 # private capability custody/minter
+  branch/{recorded_basis,canonical_runtime_frame}.rs
+  facade/durability.rs                        # narrow owner admission exports
+worth-proof/src/recovered_publication.rs      # legal consuming phase shape
+worth-runtime-world/src/
+  durability/                                # recorded basis/reconciliation
+  publication/recovered_adoption.rs           # consumes Native capability
+  recovery/product_unpublished/               # original composite custody
+worth-store-application/src/world_section/readmission.rs
+```
+
+These are current-slice destinations, not empty placeholders. Pure semantic
+definitions remain Native-owned; legal phase shape belongs in Proof; clocks,
+source, pins and `Drop` stay in Native runtime custody. World owns composite
+reconciliation; Store owns filesystem sequencing. No generic recovery bag or
+second authority is introduced.
+
+The intended new facade sequence is:
+
+```rust
+let (_, mut recovered) = native.durability_recovery()
+    .recover_with_authority(execution, plan)?;
+let subjects = recovered.associated_publication_subjects()?;
+let admitted = recovered.readmit_publication(
+    execution, original_subject, recorded_predecessor,
+)?;
+world.recovery().prepare_recovered_relational_adoption(
+    original_custody, admitted,
+)?;
+```
+
+Names describe the required new contract, not APIs that already exist. Discovery
+does not load historical bodies; only owner admission grants the capability.
+Continuation/release then follows the existing durable-disposition-before-live
+protocol. Recovery itself publishes no occurrence or disposition.
+
+Artifact v3/CHK15 are a clean undeployed-format cutover: older versions refuse
+before effects; no missing-field default, reinterpretation, in-place repair or
+automatic reinitialization. Implement shared semantic production/versioning,
+then exact source/historical admission, then World adoption, then the real
+filesystem journey within existing Phases 3-4.
+
+The decisive proof kills after Native commitment and before occurrence on both
+sides of the first Home checkpoint. Cover empty and cold canonical predecessors,
+a journal-tail effect, entity/relation correspondence and nontrivial validation
+meaning. Compare authored expectations and the original live semantic projection
+with recovered output; a same-encoder round trip is insufficient. Observe original
+identities/custody, unchanged handler invocation, no recovery-time republication,
+continuation or release, and a second reopen. Missing discovery/semantics,
+memory backing, stale/foreign sources, wrong roots and altered correspondence or
+validation must fail for the intended reason. Unrelated cold bodies stay cold;
+excluded live fields must be unavailable. Local Native tests do not qualify the
+filesystem World journey or complete either phase.
 
 *Idempotency and receipts (D9)*
 
@@ -984,7 +1232,10 @@ re-executing anything.
 
 | Receipt field | Durable source |
 |---|---|
-| commit id, position, digest, `CommitResult`, `changed_record_count` | Relational journal artifact, readmitted |
+| Commit receipt/id, version, journal position and artifact digest | Exact source-backed Relational artifact, readmitted and bound to admitted index/root evidence |
+| Original durable semantic result: create correspondences, changed records, structural/schema/history/change/aspect and validation meaning | `RelationalCommitSemanticResult` sealed in the original artifact |
+| `changed_record_count` | Exact recorded ordered changed records, consistent with recorded change summary |
+| Live `CommitResult`, process transaction/proposal identity, snapshot handle/ID, timings/complexity and late interruption | Not reconstructed. Recovered receipts expose distinct `RecoveredRelationalSemanticResult`; live-only fields are unavailable |
 | commit evidence: idempotency binding | Query idempotency binding row |
 | commit evidence: outbox seal | durable outbox rows in the same commit |
 | commit evidence: provider session binding | Not recovered: sessions are process-local and incarnation-fenced (D7). A recovered receipt carries the publishing home incarnation in its place, and nothing resolves through the old session. |
@@ -994,6 +1245,12 @@ re-executing anything.
 | exact output settlement | Query outcome row in the same commit (new field) |
 | aftermath causality | Relational causality rows |
 | publishing runtime | home identity and incarnation, recorded in the occurrence |
+
+Recovered equality means equality of this explicit durable semantic projection,
+not live execution observations. Receipt constructors consume the readmitted
+binding, World occurrence/custody and Native owner-admitted inputs; the derived
+evidence index grants no constructor authority. The existing capability index,
+build guide and Host README must explain this distinction and use the real facade.
 
 - These are deleted: the receipt authority of the evidence store,
   `CommittedReceiptNotRetained`, and the Server retry caches.
