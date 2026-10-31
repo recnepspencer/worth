@@ -27,8 +27,9 @@ pub struct ServingPhysicalRuntime {
     scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner,
     blob_declarations: std::sync::Mutex<()>,
     blob_index_publications: std::sync::Mutex<()>,
-    ordered_journals:
+    ordered_journals: std::sync::Arc<
         std::sync::Mutex<crate::physical_runtime::ordered_journal::OrderedJournalState>,
+    >,
     anchored_records:
         std::sync::Arc<std::sync::Mutex<crate::physical_runtime::AnchoredRecordState>>,
     anchored_membership: std::sync::Mutex<crate::physical_runtime::AnchoredMembershipCache>,
@@ -46,7 +47,7 @@ impl ServingPhysicalRuntime {
                 scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner::new(),
                 blob_declarations: std::sync::Mutex::new(()),
                 blob_index_publications: std::sync::Mutex::new(()),
-                ordered_journals: std::sync::Mutex::new(Default::default()),
+                ordered_journals: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
                 anchored_records: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
                 anchored_membership: std::sync::Mutex::new(Default::default()),
                 parts,

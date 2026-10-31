@@ -1,4 +1,5 @@
 mod anchored_step;
+pub(in crate::physical_runtime) use anchored_step::ManagedPublicationRegistration;
 use std::cell::Cell;
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, Weak};
 
@@ -24,7 +25,7 @@ pub(in crate::physical_runtime) struct PhysicalMutationAttempt {
     state: Mutex<PhysicalMutationAttemptState>,
     changed: Condvar,
     interruption: Mutex<Option<Arc<worth_execution::ExecutionInterruptionView>>>,
-    anchored_step: Mutex<Option<crate::physical_runtime::anchored_records::publication::step_custody::ManagedStepCustody>>,
+    anchored_step: Mutex<Option<anchored_step::ManagedPublicationCustody>>,
 }
 
 struct PhysicalMutationAttemptState {
@@ -198,7 +199,7 @@ impl PhysicalMutationAttempt {
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .as_ref()
-            .map(|custody| custody.step().clone());
+            .map(|custody| custody.recorder());
         if let Some(step) = step {
             step.preserve_fact(&terminal);
         }

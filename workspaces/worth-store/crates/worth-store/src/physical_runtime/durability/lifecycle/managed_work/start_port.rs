@@ -62,9 +62,7 @@ impl PhysicalMutationStartPort {
     pub(in crate::physical_runtime) fn start_registered(
         &self,
         prepared: PreparedPhysicalMutation,
-        step: Option<
-            Arc<crate::physical_runtime::anchored_records::publication::step_custody::AcceptedStep>,
-        >,
+        step: Option<crate::physical_runtime::durability::ManagedPublicationRegistration>,
     ) -> PhysicalMutationHandle {
         let Some(owner) = self.owner.upgrade() else {
             let identity = prepared.mutation_identity();
@@ -74,7 +72,7 @@ impl PhysicalMutationStartPort {
                     Weak::new(),
                 );
             if let Some(step) = step {
-                attempt.register_anchored_step(step);
+                attempt.register_publication_step(step);
             }
             attempt.mark_stale();
             attempt.install_terminal(PhysicalMutationTerminalFact::Indeterminate(

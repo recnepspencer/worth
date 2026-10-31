@@ -25,7 +25,27 @@ impl PreparedPhysicalMutation {
         >,
     ) -> crate::physical_runtime::PhysicalMutationHandle {
         let start = self.start.clone();
-        start.start_registered(self, Some(step))
+        start.start_registered(
+            self,
+            Some(
+                crate::physical_runtime::durability::ManagedPublicationRegistration::Anchored(step),
+            ),
+        )
+    }
+
+    pub(in crate::physical_runtime) fn start_ordered_journal(
+        self,
+        shared: std::sync::Arc<crate::physical_runtime::ordered_journal::JournalPublicationShared>,
+    ) -> crate::physical_runtime::PhysicalMutationHandle {
+        let start = self.start.clone();
+        start.start_registered(
+            self,
+            Some(
+                crate::physical_runtime::durability::ManagedPublicationRegistration::Journal(
+                    shared,
+                ),
+            ),
+        )
     }
 
     pub fn execute(self) -> crate::physical_runtime::PhysicalMutationOutcome {
