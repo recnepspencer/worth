@@ -2,14 +2,17 @@
 use super::*;
 pub(crate) struct AdvancementHost(AuthorizationWorld);
 impl AdvancementHost {
-    pub(crate) fn placement(
+    pub(crate) fn with_placement<R>(
         &self,
-    ) -> worth_runtime_world::facade::RuntimeWorldExecutionPlacement<'_> {
+        body: impl for<'owner> FnOnce(
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement<'owner>,
+        ) -> R,
+    ) -> R {
         self.0
             .application
             .product_runtime
-            .owner
-            .execution_placement()
+            .with_execution_placement(body)
+            .expect("the installed fixture World remains available")
     }
     pub(crate) fn install() -> Self {
         Self(installed_authorization_world(true))

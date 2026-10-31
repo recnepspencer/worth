@@ -16,6 +16,6 @@ impl crate::domain_computation::primary_graph::tests::fixture::AdvancementHost {
         &self,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        with_standalone_provider_test_advancement(self.placement(), body)
+        self.with_placement(|placement| with_standalone_provider_test_advancement(placement, body))
     }
 }

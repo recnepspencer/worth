@@ -4,6 +4,9 @@ use super::super::super::WorthQueryBootstrapAdvancementPhase;
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 use worth_runtime_world::facade::*;
+#[cfg(test)]
+#[path = "world/tests.rs"]
+mod tests;
 
 pub struct ReadmittedHomeQueryService<Schema, Program> {
     runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
@@ -73,10 +76,9 @@ where
                     &self.state.authority,
                     &self.state.installed,
                 )?;
-            let managed_indexes = self
-                .bootstrap
+            self.bootstrap
                 .managed_indexes
-                .take_complete(&self.state.installed)?;
+                .validate_complete(&self.state.installed)?;
             let relational = self
                 .bootstrap
                 .graph
@@ -113,30 +115,25 @@ where
                 participation,
                 authorization,
                 handlers,
-                managed_indexes,
                 product,
             ))
         })();
-        let (
-            publication,
-            provider,
-            participation,
-            authorization,
-            handlers,
-            managed_indexes,
-            product,
-        ) = match prepared {
-            Ok(prepared) => prepared,
-            Err(cause) => {
-                return Err(QueryHomeWorldAttachmentRefused {
-                    custody: HomeWorldAttachmentCustody::Prepared {
-                        _prepared: self,
-                        _root: root,
-                        cause,
-                    },
-                })
-            }
-        };
+        let (publication, provider, participation, authorization, handlers, product) =
+            match prepared {
+                Ok(prepared) => prepared,
+                Err(cause) => {
+                    return Err(QueryHomeWorldAttachmentRefused {
+                        custody: HomeWorldAttachmentCustody::Prepared {
+                            _prepared: self,
+                            _root: root,
+                            cause,
+                        },
+                    })
+                }
+            };
+        // The actual configured providers remain in the refused preparation
+        // through every fallible attachment check. Success transfers them once.
+        let managed_indexes = std::mem::take(&mut self.bootstrap.managed_indexes);
         let PreparedHomeQueryRuntime {
             state,
             bootstrap,

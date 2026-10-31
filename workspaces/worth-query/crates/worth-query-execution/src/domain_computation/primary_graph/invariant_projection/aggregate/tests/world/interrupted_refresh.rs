@@ -57,7 +57,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                     .unwrap();
                 let committed = transaction.commit(&healthy, runtime).unwrap();
                 let retained = world.authority.graph.aggregate_projections.lock().unwrap().clone();
-                let runtime_cell = std::cell::RefCell::new(&mut *runtime);
+                let runtime_cell = std::cell::RefCell::new(runtime);
                 crate::test_read_stops::every_consult_under(&healthy, |request| retained.clone().refresh_after_commit(request, &mut runtime_cell.borrow_mut(), &before, &committed.snapshot, committed.patch()), worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled, worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted);
                 let map = ExecutionMap::<_, u64>::from_keyless_partitions(BTreeMap::from([(
                     PartitionIdentity::new(0),
@@ -68,7 +68,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                     },
                 )]))
                 .unwrap();
-                let refresh_runtime = std::sync::Mutex::new(&mut *runtime);
+                let refresh_runtime = std::sync::Mutex::new(runtime);
                 let refreshed = std::sync::atomic::AtomicBool::new(false);
                 let (outcome, report) = healthy
                     .run(ExecutionWorkCeiling::new(Some(0)), |lease| {

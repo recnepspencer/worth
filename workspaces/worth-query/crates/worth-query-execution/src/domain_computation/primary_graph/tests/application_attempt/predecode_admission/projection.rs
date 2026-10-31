@@ -73,7 +73,8 @@ pub(super) fn try_with_reader<Output>(
     let affinity = admission.operation_scope_binding().clone();
     let context = std::cell::Cell::new(DecisionContextUse::default());
     let interruption = std::cell::Cell::new(None);
-    let execution = crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution::open(world.application.product_runtime().owner.execution_placement(), admission.publication_request());
+    world.application.product_runtime().with_execution_placement(|placement| {
+    let execution = crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution::open(placement, admission.publication_request());
     world
         .invariant
         .project_admitted_operation(
@@ -98,4 +99,5 @@ pub(super) fn try_with_reader<Output>(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .map(|completed| completed.into_parts().0)
+    }).expect("the installed projection World remains available")
 }
