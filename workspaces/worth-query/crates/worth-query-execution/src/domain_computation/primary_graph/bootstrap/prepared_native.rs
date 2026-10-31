@@ -4,7 +4,7 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt;
 
 pub(in crate::domain_computation::primary_graph) struct PreparedNativeGraph {
-    pub(in crate::domain_computation::primary_graph) native: RelationalRuntime,
+    pub(super) native: RelationalRuntime,
     pub(in crate::domain_computation::primary_graph) layout: Arc<WorthQueryPrimaryGraphLayout>,
     binding: ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph) application_publication:

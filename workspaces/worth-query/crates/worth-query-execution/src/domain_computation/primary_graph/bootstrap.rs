@@ -41,6 +41,7 @@ mod seed_batches;
 pub(super) mod unique_seed_values;
 use binding_denial::map_binding_denial_kind;
 mod truth_partition;
+mod typed_seed_binding;
 pub(super) use program_activation_recovery::recover_program_activation;
 use program_activation_seeding::commit_initial_program_activation;
 pub(super) use program_activation_seeding::WorthQueryProgramActivationSeed;
@@ -78,7 +79,7 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     last_seed_commit_id: Option<worth_relational::facade::history::CommitId>,
     seed_batch_failed: bool,
     pub(super) recovered_publication: Option<WorthQueryPrimaryGraphPublication>,
-    pub(super) recovered_relational_authority:
+    recovered_relational_authority:
         Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
     recovered_checkpoint_restore_work:
         Option<worth_relational::facade::durability::CheckpointRestoreWork>,

@@ -10,8 +10,8 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::KindId;
 
 use super::{
-    WorthQueryApplicationEntityKey, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
+    WorthQueryApplicationEntityKey, WorthQueryPrimaryGraphInstallationDenial,
+    WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
 /// One entity to seed into the primary graph at bootstrap: its kind, key, and
@@ -144,28 +144,6 @@ pub(in crate::domain_computation::primary_graph) struct TypedBootstrapRows {
     pub(super) relation_rows: Vec<WorthQueryTypedRelationBootstrapRow>,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
-    pub fn bind_entity<Entity>(
-        &mut self,
-        seed: WorthQueryApplicationEntitySeed<Schema, Entity>,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        self.typed_rows.bind_entity(
-            &self.graph.layout,
-            self.recovered_relational_authority.is_some(),
-            seed,
-        )
-    }
-    pub fn bind_relation<Relation, From, To>(
-        &mut self,
-        seed: WorthQueryApplicationRelationSeed<Schema, Relation, From, To>,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        self.typed_rows.bind_relation(
-            &self.graph.layout,
-            self.recovered_relational_authority.is_some(),
-            seed,
-        )
-    }
-}
 impl TypedBootstrapRows {
     pub(super) fn bind_entity<Schema: ApplicationSchema, Entity>(
         &mut self,
