@@ -3,6 +3,133 @@
 Specification: [Milestone 3](milestone-3.md), Phase 3, D1–D17; the Phase 4
 handoff and shared roadmap requirements also bind the work.
 
+## Cold member custody retirement prerequisite
+
+This prerequisite retires one actual source-issued registration, or one local
+share of it. It does not establish cold graph retirement, NativeClosed,
+ApplicationHome close, physical close, or completion of D11. The accepted
+Memory retirement path remains separate from cold provider obligations.
+
+The adversary is the original Store guard retaining selected checkpoint
+members while another independent cold reader remains live. Hold its actual
+registry lock, stop after a partial member release, switch sources, clone the
+original token, and finally abandon an incomplete task. Bypassing issuance
+identity must fail when an unrelated provider falsely returns Complete;
+neither callback on that provider may execute. A source with the same Serving
+runtime but a different registry is also foreign. Successful local release
+must preserve the other reader, actual cold reads and checkpoint generation.
+
+The Native facade keeps `RelationalDurableMemberCustody` opaque. Its existing
+`new(owner)` constructor remains supported but cannot issue bounded retirement
+for an unknown provider. Add `new_from_source(owner, Weak<dyn
+RelationalDurableColdSource>)`; the original owner and weak issuing-source
+identity reside together in one sized Arc cell containing the boxed original
+payload. Acquisition pays one additional allocation and indirection. Cloning
+custody retains the same actual registration, rather than registering again.
+
+Consuming `into_retirement()` returns a non-Clone
+`RelationalDurableMemberRetirement`. `advance(&mut self, &ExecutionRequest,
+&dyn RelationalDurableColdSource)` returns the typed observations Advanced,
+Busy, Stopped(original cause), Refused(typed cause), or Complete. The public
+refusal distinguishes UnsupportedProvider, ForeignSource and ForeignCustody;
+no callback may translate these into successful release. An already recorded
+Complete is observed without further callbacks or effects. Otherwise check the
+original request, then compare the borrowed source's data address against the
+retained issuing Weak's data address before any callback or shared-token
+consumption. Never upgrade the Weak: its retained allocation prevents address
+reuse without introducing a temporary last strong source owner into advance.
+
+The existing cold-source trait gains default-Unsupported provider callbacks:
+`validate_member_custody_retirement(&self, &(dyn Any + Send + Sync))` returns
+the typed refusal or success; `advance_member_custody_retirement(&self,
+&ExecutionRequest, &mut (dyn Any + Send + Sync))` returns the same typed
+advancement observations. Only the provider sees the borrowed opaque payload;
+there is no caller getter or downcast door. Store downcasts its original
+private guard and validates BOTH registry and Serving Arc identity before
+effects. Immutable validation performs no IO and acquires no locks; every
+advancement lock is nonwaiting. Every effectful call repeats issuance validation, preventing a source
+switch after partial progress.
+
+Use `Arc::into_inner` for atomic local-share release or unique-cell transfer,
+never `strong_count` to decide ownership. Complete for a nonlast share means
+only that this local token relinquished custody. For a unique guard, retain
+the original member Vec, registry, cursor and optional Serving Arc. A step
+uses `try_write` on the actual registry, decrements/removes one original member
+and advances the cursor under that same lock. Busy, stop and refusal retain
+the authentic remaining payload. On the final member detach the guard's extra
+Serving Arc while the matching borrowed Store source still owns Serving.
+Detach whenever the cursor reaches the original members.len(), including an
+originally empty registration.
+Keep the disarmed guard, original Vec and registry opaque until explicit
+unbudgeted reclamation. Ordinary Drop retires only the remaining suffix;
+incomplete task Drop is unbudgeted abandonment and proves no successful close.
+The composite Native `RegionMemberExport` remains UnsupportedProvider here.
+
+`into_retired()` returns the opaque retired custody only after Complete,
+otherwise returns the original task. `retired.reclaim()` is explicitly
+unbudgeted. Advancing performs no new allocation, reservation, rehash or
+shrink, arbitrary payload destruction or last physical-provider destruction.
+Each actual member step is O(log distinct registered members); BTreeMap
+removal may rebalance and deallocate nodes, and Arc share release may reclaim
+a small control allocation. There is no hard O(1), no-deallocation, or
+destructor wall-clock claim.
+
+Destination topology (existing parent modules remain canonical):
+
+```text
+worth-relational/src/durability/medium/
+  member_custody.rs                [revise: opaque acquisition/clone]
+  member_custody/retirement.rs     [create: consuming retirement protocol]
+  cold_source.rs                  [revise: provider callbacks]
+worth-store-relational/src/
+  cold_source.rs                  [revise: cyclic source construction]
+  cold_source/member_custody.rs    [revise: original guard/cursor]
+  cold_source/member_custody/retirement.rs [create: actual registry effects]
+  cold_source/member_custody/retirement_tests.rs [create: private proof]
+```
+
+Store's private `new(serving) -> Arc<Self>` uses `Arc::new_cyclic` and retains
+weak_self. The existing certification observer is supplied by private
+`new_with_commit_read_observer` before construction; remove its mutable
+postconstruction setter. Cut over all four existing construction sites in
+production attachment, certification observer attachment and the two private
+test modules. No public source extraction, new control, registry, worker,
+counter, scheduler, or ownership mode belongs in this prerequisite.
+
+The following exact three private tests are a narrow specification exception
+to Iteration Law 2's foreign-runtime construction prohibition. They live only
+in `worth-store-relational/src/cold_source/member_custody/retirement_tests.rs`:
+
+- `cold_source::member_custody::retirement_tests::selected_directory_guard_retirement_preserves_partial_custody_and_cold_reads`
+- `cold_source::member_custody::retirement_tests::issued_source_identity_refuses_fake_and_switched_sources_before_callbacks`
+- `cold_source::member_custody::retirement_tests::shared_local_retirement_preserves_other_owners_and_unbudgeted_drop_retires_only_remaining_suffix`
+
+These tests alone may construct genuine foreign Native/Store runtimes because
+the original guard, registry lock, cursor and detached Serving field cannot be
+observed through the public court without an extraction door. This grants no
+family exemption and no new public test access. Use the existing
+`cold_source::test_store::initialize`: its `physical_record_journeys::media`
+qualifies actual filesystem media. Produce Native schema and ordinary
+transactions, production section capture/encoding, actual anchored publication
+and selected membership, then production recovery with that same Store source.
+Read actual cold record/history data. Fabricated member bytes, locators,
+snapshots, authorities and registry-count-only success are insufficient.
+
+Cover registry Busy, partial stop/rejoin, fake-source and source-switch refusal
+before callbacks, same-Serving foreign registry, local shared release,
+remaining-suffix Drop exactly once, independent reader protection, retained
+physical protection after source loss and unchanged checkpoint generation.
+This is a filesystem provider integration proof, not an ApplicationHome proof.
+Update `crates/worth-relational/README.md`, `docs/capability-index.md` and
+`workspaces/worth-store/crates/worth-store-relational/README.md` with
+the facade, issuer affinity, local-share meaning, unsupported composite case,
+cost and unbudgeted reclamation. Verify those documents against actual exports.
+
+Implement acquisition/trait/progress first, then Store guard/construction
+cutover and honest fixtures, then run focused provider tests, relevant Native
+regressions, formatting, scoped line caps, boundary and context checks. Fresh
+independent source review must approve the coherent batch before integration.
+
 Baseline: `083ab6f50f`. The branch is `codex/m3-phase3-home`. The prior
 `codex/m3-production-host` branch and its requirements-tracing commit
 `1111d78663` remain preserved. This plan adopts that commit's distinction:
