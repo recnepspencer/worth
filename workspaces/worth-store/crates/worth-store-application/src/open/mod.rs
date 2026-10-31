@@ -83,6 +83,7 @@ pub fn admit_home(
         );
         Ok(HomeAdmitted::from_owner(AdmittedApplicationHome {
             context: HomeContext {
+                world_publications: world_slot.publications(),
                 world_close_report: None,
                 origin: recovered.origin,
                 world_slot: Some(world_slot),

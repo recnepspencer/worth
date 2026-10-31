@@ -44,8 +44,12 @@ impl UnclaimedWorldSlot {
                     *descriptor.binding.selected().revision().bytes(),
                 ),
                 placement: crate::open::physical_admission::placement(),
+                publications: Arc::new(super::WorldPublications::default()),
             },
         }
+    }
+    pub(crate) fn publications(&self) -> Arc<super::WorldPublications> {
+        self.medium.publications.clone()
     }
     pub(in crate::world_section) fn into_medium(self) -> super::ApplicationWorldMedium {
         self.medium

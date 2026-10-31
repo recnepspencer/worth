@@ -22,6 +22,8 @@ pub enum RuntimeWorldCloseDenial {
     AlreadyClosed,
     /// A declared in-flight critical section could not be drained.
     InFlightCriticalSection,
+    /// The Home retains an actual accepted journal job that can still settle.
+    DurablePublicationUnsettled,
 }
 
 use super::owner::RuntimeWorldOwnerRoot;

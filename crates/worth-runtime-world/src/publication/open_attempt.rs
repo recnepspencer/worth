@@ -24,6 +24,7 @@ pub enum WorldOpenAttemptOutcome {
     Opened(WorldOpenedPublicationAttempt),
     Pending(WorldPendingOpenAttempt),
     Unresolved(WorldPendingOpenAttempt),
+    EvidenceRequired(WorldPendingOpenAttempt),
     Refused(WorldOpenAttemptRefusal),
 }
 /// The same issued identities and capacities remain installed before any I/O.
@@ -52,6 +53,9 @@ impl WorldPendingOpenAttempt {
             }
             Err(WorldDurablePublicationStop::Unresolved) => {
                 WorldOpenAttemptOutcome::Unresolved(self)
+            }
+            Err(WorldDurablePublicationStop::EvidenceRequired) => {
+                WorldOpenAttemptOutcome::EvidenceRequired(self)
             }
             Err(WorldDurablePublicationStop::Refused(cause)) => {
                 self.custody.retain_durable_open(None);

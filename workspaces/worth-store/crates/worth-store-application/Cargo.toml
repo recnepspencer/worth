@@ -9,6 +9,7 @@ description = "The physical lifecycle and owner recovery progression of one appl
 autotests = false
 
 [dependencies]
+sha2 = "0.10"
 worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
 worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
 worth-execution = { path = "../../../../crates/worth-execution" }

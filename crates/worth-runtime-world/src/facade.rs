@@ -6,8 +6,8 @@
 pub use crate::durability::{
     RuntimeWorldDurableMedium, WorldDurableArtifact, WorldDurableFrameDenial,
     WorldDurableHomeBinding, WorldDurableMediumDenial, WorldDurableRecoverySource,
-    WorldPublicationObservation, WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL,
-    WORLD_ARTIFACT_VERSION,
+    WorldPublicationObservation, WorldPublicationTaskPosture, WorldReadmissionDenial,
+    WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
 };
 
 // Public signatures below name the already-issued component owner bundles and

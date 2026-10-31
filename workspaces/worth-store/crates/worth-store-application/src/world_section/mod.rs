@@ -6,7 +6,10 @@ pub use close::{WorldHomeClosePosture, WorldHomeCloseRefused};
 pub use definition::ApplicationWorldDefinition;
 mod ports;
 mod publication;
+mod publication_fate;
+mod publication_task;
 pub use ports::ApplicationWorldPorts;
+pub(crate) use publication_task::WorldPublications;
 mod readmission;
 mod recovery;
 pub(crate) use attachment::UnclaimedWorldSlot;
@@ -18,6 +21,7 @@ pub(crate) struct ApplicationWorldMedium {
     serving: Arc<ServingPhysicalRuntime>,
     binding: WorldDurableHomeBinding,
     placement: AdmittedRecordPlacementPolicy,
+    publications: Arc<WorldPublications>,
 }
 impl std::fmt::Debug for ApplicationWorldMedium {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -29,6 +33,9 @@ impl std::fmt::Debug for ApplicationWorldMedium {
 impl worth_runtime_world::facade::RuntimeWorldDurableMedium for ApplicationWorldMedium {
     fn binding(&self) -> &WorldDurableHomeBinding {
         &self.binding
+    }
+    fn publication_task_posture(&self) -> worth_runtime_world::facade::WorldPublicationTaskPosture {
+        self.publications.posture()
     }
     fn recover(
         &self,

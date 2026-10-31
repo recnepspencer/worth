@@ -82,6 +82,13 @@ where
                 reason: crate::ApplicationHomeCloseDenial::Execution(cause),
             });
         }
+        // Stop and observe accepted work outside World's admission locks. The
+        // actual World close then rechecks these SAME slots under its existing
+        // operation gate, so another admission cannot race check and seal.
+        self.home
+            .context
+            .world_publications
+            .settle_for_close(&self.home.context.serving);
         let report = match self.world.lifecycle_port().close() {
             Ok(report) => report,
             Err(cause) => {

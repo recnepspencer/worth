@@ -75,12 +75,24 @@ impl WorldDurableRecoverySource {
 #[derive(Debug)]
 pub enum WorldPublicationObservation {
     Pending,
+    /// Selection is known, but the actual owner-issued committed carrier has
+    /// not been readmitted. This does not describe an unknown physical fate.
+    EvidenceRequired,
     Finished(DurablePublicationFate<WorldDurableMediumDenial>),
+}
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum WorldPublicationTaskPosture {
+    Unsettled,
+    Terminal,
 }
 /// Trusted owner port implemented by Store Application's private adapter.
 /// An arbitrary implementation does not authenticate filesystem ownership.
 pub trait RuntimeWorldDurableMedium: Debug + Send + Sync {
     fn binding(&self) -> &WorldDurableHomeBinding;
+    /// A no-I/O snapshot of the actual retained task slots. Terminal includes
+    /// terminal indeterminate custody: it permits teardown, never serving or
+    /// a NoEffect conclusion. Home retains those tasks through physical close.
+    fn publication_task_posture(&self) -> WorldPublicationTaskPosture;
     fn recover(
         &self,
         execution: &ExecutionRequest<'_, '_>,

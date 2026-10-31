@@ -42,6 +42,15 @@ where
         operation.active,
         state.recovery.reserved_slots(),
     )?;
+    // The SAME operation gate excludes publication admission until Closing.
+    // This reads only actual task-slot state; no Store I/O occurs under it.
+    if state
+        .durable
+        .as_ref()
+        .is_some_and(|binding| binding.publication_unsettled())
+    {
+        return Err(RuntimeWorldCloseDenial::DurablePublicationUnsettled);
+    }
     let retained_records = enumerate_retained_records(state)?;
     let mut close = state
         .close

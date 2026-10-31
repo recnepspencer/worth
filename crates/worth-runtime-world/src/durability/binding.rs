@@ -24,13 +24,19 @@ pub(crate) enum WorldDurablePublicationStop {
     Pending,
     Refused(WorldDurableMediumDenial),
     Unresolved,
+    EvidenceRequired,
     Busy,
 }
 #[derive(Debug, Default)]
 struct JournalFlight {
     subject: Option<WorldDurableArtifact>,
     in_caller: bool,
-    unresolved: bool,
+    barrier: Option<PublicationBarrier>,
+}
+#[derive(Debug, Clone, Copy)]
+enum PublicationBarrier {
+    PhysicalIndeterminate,
+    EvidenceRequired,
 }
 #[derive(Debug, Default)]
 struct PublicationGates {
@@ -75,7 +81,16 @@ impl WorldDurableMediumBinding {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .occurrences
-            .unresolved
+            .barrier
+            .is_some()
+    }
+    pub(crate) fn publication_unsettled(&self) -> bool {
+        let gates = self.gates.lock().unwrap_or_else(|e| e.into_inner());
+        if gates.branches.in_caller || gates.custody.in_caller || gates.occurrences.in_caller {
+            return true;
+        }
+        drop(gates);
+        self.medium.publication_task_posture() == super::WorldPublicationTaskPosture::Unsettled
     }
     pub(crate) fn publish(
         self: &Arc<Self>,
@@ -85,8 +100,15 @@ impl WorldDurableMediumBinding {
         {
             let mut gates = self.gates.lock().unwrap_or_else(|e| e.into_inner());
             let flight = gates.journal(subject.journal());
-            if flight.unresolved {
-                return Err(WorldDurablePublicationStop::Unresolved);
+            if let Some(barrier) = flight.barrier {
+                return Err(match barrier {
+                    PublicationBarrier::PhysicalIndeterminate => {
+                        WorldDurablePublicationStop::Unresolved
+                    }
+                    PublicationBarrier::EvidenceRequired => {
+                        WorldDurablePublicationStop::EvidenceRequired
+                    }
+                });
             }
             if flight.in_caller {
                 return Err(WorldDurablePublicationStop::Busy);
@@ -113,6 +135,10 @@ impl WorldDurableMediumBinding {
             flight.in_caller = false;
             match observation {
                 WorldPublicationObservation::Pending => Err(WorldDurablePublicationStop::Pending),
+                WorldPublicationObservation::EvidenceRequired => {
+                    flight.barrier = Some(PublicationBarrier::EvidenceRequired);
+                    Err(WorldDurablePublicationStop::EvidenceRequired)
+                }
                 WorldPublicationObservation::Finished(DurablePublicationFate::Committed) => {
                     let original = flight
                         .subject
@@ -131,7 +157,7 @@ impl WorldDurableMediumBinding {
                 WorldPublicationObservation::Finished(DurablePublicationFate::Indeterminate {
                     detail: _,
                 }) => {
-                    flight.unresolved = true;
+                    flight.barrier = Some(PublicationBarrier::PhysicalIndeterminate);
                     Err(WorldDurablePublicationStop::Unresolved)
                 }
             }
@@ -150,7 +176,7 @@ impl Drop for PublicationUnwind {
         if self.armed {
             let mut gates = self.binding.gates.lock().unwrap_or_else(|e| e.into_inner());
             let flight = gates.journal(self.subject.journal());
-            flight.unresolved = true;
+            flight.barrier = Some(PublicationBarrier::PhysicalIndeterminate);
             flight.in_caller = false;
         }
     }

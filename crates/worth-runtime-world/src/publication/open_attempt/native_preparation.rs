@@ -13,7 +13,7 @@ pub enum WorldNativePreparationDenial {
     Native(worth_relational::facade::transactions::TransactionCommitError),
     MissingAssociation,
     ForeignAssociation,
-    Lowering(crate::publication::NoEffectCompositePublication),
+    Lowering(crate::publication::NoEffectCause),
 }
 
 /// Refusal retains the same committed open, independently issued identities,
@@ -139,7 +139,7 @@ impl WorldOpenedPublicationAttempt {
             Err(cause) => {
                 return Err(WorldNativePreparationRefusal {
                     open: self,
-                    cause: WorldNativePreparationDenial::Lowering(cause),
+                    cause: WorldNativePreparationDenial::Lowering(cause.cause()),
                 })
             }
         };

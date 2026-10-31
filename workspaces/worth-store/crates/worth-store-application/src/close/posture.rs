@@ -28,6 +28,7 @@ pub struct ApplicationHomeRecoveryCustody {
     native: NativeCloseCustody,
     world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
     checkpoint_owner: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
+    world_publications: Arc<crate::world_section::WorldPublications>,
 }
 
 impl ApplicationHomeRecoveryCustody {
@@ -47,6 +48,7 @@ impl ApplicationHomeRecoveryCustody {
             native: NativeCloseCustody::Prepared(native),
             world_close_report: context.world_close_report,
             checkpoint_owner: context.checkpoint,
+            world_publications: context.world_publications,
         }
     }
 
@@ -63,6 +65,7 @@ impl ApplicationHomeRecoveryCustody {
             native: NativeCloseCustody::Serving(relational),
             world_close_report: context.world_close_report,
             checkpoint_owner: context.checkpoint,
+            world_publications: context.world_publications,
         }
     }
 
@@ -70,6 +73,11 @@ impl ApplicationHomeRecoveryCustody {
         &self,
     ) -> Option<&worth_runtime_world::facade::RuntimeWorldCloseReport> {
         self.world_close_report.as_ref()
+    }
+    pub fn world_publication_posture(
+        &self,
+    ) -> worth_runtime_world::facade::WorldPublicationTaskPosture {
+        self.world_publications.posture()
     }
 
     pub fn location(&self) -> &std::path::Path {

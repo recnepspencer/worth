@@ -106,15 +106,18 @@ impl ProductBranchReferenceCell {
             _retention_transfer: successor_receipt,
         };
         let publication = publication.map(|record| record.stage(&movement));
-        let acknowledged_subject = permit.map(|_| current.movement.consume_committed());
         let seated = current
             .protection
             .as_ref()
             .is_some_and(ProductBranchHeadProtection::history_is_seated);
-        let mut successor = successor_slot
+        successor_slot
+            .as_mut()
+            .expect("successor stays in original custody through history seating")
+            .seat_history(seated);
+        let acknowledged_subject = permit.map(|_| current.movement.consume_committed());
+        let successor = successor_slot
             .take()
             .expect("validated successor custody moves only at the cell swap");
-        successor.seat_history(seated);
         let old_image = std::mem::replace(
             &mut *current,
             ProductBranchReferenceImage {

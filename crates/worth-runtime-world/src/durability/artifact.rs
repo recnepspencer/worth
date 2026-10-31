@@ -101,7 +101,9 @@ pub struct WorldDurableArtifact {
     bytes: Arc<worth_execution::ExecutionArray<u8>>,
 }
 impl WorldDurableArtifact {
-    pub(crate) fn same_subject(&self, other: &Self) -> bool {
+    /// Whether both values retain the same original owner-framed allocation.
+    /// This correlation grants no publication or recovery authority.
+    pub fn same_subject(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.bytes, &other.bytes)
     }
     pub(crate) fn from_record(

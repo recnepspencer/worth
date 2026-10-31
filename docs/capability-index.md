@@ -915,3 +915,29 @@ The journal keeps its existing frame, spine, ordering and Signal policy. Reads,
 encoding, allocation and short substrate locks remain cooperative rather than
 hard real-time. Accepted current-step custody survives observer loss through the
 existing physical mutation worker; no World acknowledgment runs in that worker.
+
+### Compose World with an admitted application Home
+
+Store Application's `readmit_world` consumes the concrete Native-readmitted
+Home and an `ApplicationWorldDefinition`. The private attachment injects the
+same actual Native runtime into World and Bridge. The resulting
+`WorldReadmittedApplicationHome::world()` borrows existing publication,
+branch/history observation, inspection and recovery ports; only Home owns
+World's lifecycle. Use that Home's `close` and retain its actual refusal or
+recovery custody for retry. Accepted World journal tasks stay in the same
+Home custody through physical teardown. Close stops and settles accepted work;
+unsettled work refuses close. Terminal indeterminate evidence permits teardown
+and reopen, while keeping runtime publication admission fenced.
+
+This is an incomplete lower composition seam. Current successful World
+attachment requires actual known-new Home origin. Existing Homes refuse
+`NativeReadmissionRequired` until Native supplies source-backed historical
+basis and associated-effect readmission. Attached memory bootstrap, legacy
+publication, branch mutation and disposition doors refuse before effects.
+World's durable open retains its original identities and one Native preparation,
+but its prepared wrapper does not yet expose execution. Attached checkpoint
+refuses `WorldSectionRequired`; close reports that checkpoint failure. Durable
+bootstrap, occurrence/disposition recovery, World checkpoint coverage and the
+filesystem process-death journey remain required before a usable durable World
+or phase-completion claim. See [Milestone 3](../plans/database-foundation/milestone-3.md)
+and the owning [Home attachment](../workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs).
