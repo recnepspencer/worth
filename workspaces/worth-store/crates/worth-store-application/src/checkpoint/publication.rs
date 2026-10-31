@@ -8,6 +8,8 @@ use worth_store::physical_runtime::{
 #[derive(Debug)]
 pub enum ApplicationHomeCheckpointDenial {
     WorldSectionRequired,
+    WorldJournalUnavailable(worth_store::physical_runtime::OrderedJournalDenial),
+    WorldJournalRead(worth_store::physical_runtime::OrderedJournalReadFailure),
     Unavailable(AnchoredRecordsDenial),
     Read(AnchoredRecordReadFailure),
     Manifest(super::HomeManifestDenial),

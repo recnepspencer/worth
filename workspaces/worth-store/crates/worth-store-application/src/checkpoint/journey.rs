@@ -21,6 +21,8 @@ pub(crate) fn checkpoint(
     if let Some(attempt) = owner.pending() {
         return Err(Denial::RecoveryRequired(attempt.observation()));
     }
+    execution.consult().map_err(Denial::Execution)?;
+    super::world_coverage::refuse_uncovered_world(serving)?;
     let mut retained = None;
     let mut returned = None;
     let mut caller_driver = None;

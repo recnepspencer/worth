@@ -95,7 +95,14 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
     assert_eq!(reopened.home_identity(), identity);
     assert!(reopened.incarnation() > incarnation);
     assert!(matches!(
+        reopened.checkpoint(&execution),
+        Err(ApplicationHomeCheckpointDenial::WorldSectionRequired)
+    ));
+    assert!(matches!(
         reopened.close(&execution),
-        ApplicationHomeCloseOutcome::Closed { .. }
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
+            ..
+        }
     ));
 }

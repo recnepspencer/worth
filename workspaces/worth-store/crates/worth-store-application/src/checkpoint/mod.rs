@@ -9,6 +9,7 @@ mod physical_start;
 mod preparation;
 pub(crate) mod publication;
 pub(crate) mod step_custody;
+mod world_coverage;
 
 pub(crate) use manifest::SelectedHomeManifest;
 pub use manifest::{HomeManifestDenial, HOME_CHECKPOINT_PROTOCOL, HOME_CHECKPOINT_VERSION};

@@ -957,7 +957,10 @@ it grants no cold World seed or historical readmission claim.
 
 World's durable open retains its original identities and one Native preparation,
 but its prepared wrapper does not yet expose execution. Attached checkpoint
-refuses `WorldSectionRequired`; close reports that checkpoint failure. Durable
+refuses `WorldSectionRequired`; close reports that checkpoint failure. Native-only
+reopened Home checkpoint also refuses before capture when actual World journal
+heads exist. This presence check grants no World proof from empty streams;
+already-accepted checkpoint recovery still settles its original task. Durable
 bootstrap qualification, occurrence/disposition recovery, World checkpoint coverage and the
 filesystem process-death journey remain required before a usable durable World
 or phase-completion claim. See [Milestone 3](../plans/database-foundation/milestone-3.md)
