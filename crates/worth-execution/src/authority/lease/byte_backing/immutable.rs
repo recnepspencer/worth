@@ -28,7 +28,7 @@ impl ExecutionImmutableBytes {
             backing: Backing::External(bytes),
         }
     }
-    pub(super) fn from_owned(backing: OwnedFixedBacking<u8>) -> Self {
+    pub(in super::super) fn from_owned(backing: OwnedFixedBacking<u8>) -> Self {
         Self {
             backing: Backing::Allocated(Arc::new(backing)),
         }

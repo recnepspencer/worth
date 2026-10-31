@@ -175,6 +175,14 @@ Their genuine receipts carry original checkpoint prefixes; a value that lacks
 the required cost qualification must execute again. See
 [retained native results](../crates/worth-execution/README.md#retained-native-results).
 
+Platform pre-effect entries use `ExecutionRequest::prepare_native` to prepare
+dependent values under one supplied request: standalone entry establishes its
+existing SDK scope once, while active same-lineage carriage reuses the actual
+meter and its remaining allowance. Propagate both typed execution and domain
+failures before publication. This port does not retain an already performed
+effect through interruption. See
+[Execution request entry](../crates/worth-execution/README.md).
+
 Platform-owned ordered retained metadata uses `ExecutionOrderedMap<K, V>`:
 shared-root cloning and canonical iteration preserve original custody.
 Retain the returned root while reading or applying later edits. `accounted_bytes()`

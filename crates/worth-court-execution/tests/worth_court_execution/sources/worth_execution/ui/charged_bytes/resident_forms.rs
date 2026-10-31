@@ -9,7 +9,7 @@ enum Resident {
     Unit,
     Tuple(String, Vec<Tuple>),
     Named {
-        skipped: Option<Box<String>>,
+        skipped: Option<Box<Tuple>>,
         flag: bool,
     },
 }
@@ -38,14 +38,21 @@ struct WithSkippedStorage {
     resident: Vec<String>,
 }
 pub(crate) fn main() {
+    let _empty_resident_contract: fn(&Never) -> u64 = Never::additional_charged_bytes;
     assert_eq!(Unit.additional_charged_bytes(), 0);
     assert_eq!(Resident::Unit.additional_charged_bytes(), 0);
     let _ = Resident::Tuple(String::new(), vec![]).additional_charged_bytes();
-    let _ = Resident::Named {
-        skipped: None,
+    let outer = String::from("boxed resident");
+    let inner = String::from("nested owned string");
+    let expected = std::mem::size_of::<Tuple>()
+        + outer.capacity()
+        + std::mem::size_of::<[Option<String>; 2]>()
+        + inner.capacity();
+    let nested = Resident::Named {
+        skipped: Some(Box::new(Tuple(outer, Box::new([Some(inner), None])))),
         flag: true,
-    }
-    .additional_charged_bytes();
+    };
+    assert_eq!(nested.additional_charged_bytes(), expected as u64);
     let _ = OpaqueOwnerValue {
         owner: Opaque(vec![1, 2]),
     }

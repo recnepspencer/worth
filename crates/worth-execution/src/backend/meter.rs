@@ -18,14 +18,8 @@ thread_local! {
     static ACTIVE_METER: RefCell<Vec<Rc<RefCell<KernelState>>>> = const { RefCell::new(Vec::new()) };
 }
 
-pub(crate) fn active_serial_memory() -> Option<SerialMemoryBudget> {
-    ACTIVE_METER.with(|active| {
-        active
-            .borrow()
-            .last()
-            .and_then(|meter| meter.borrow().limits.serial_memory.clone())
-    })
-}
+mod request_observation;
+pub(crate) use request_observation::{active_deadline, active_serial_memory};
 
 pub(crate) fn active_stop() -> Option<KernelStop> {
     ACTIVE_METER.with(|active| {
@@ -53,7 +47,7 @@ mod kernel_receipt;
 pub use kernel_receipt::{ExecutionKernelReceipt, ExecutionKernelReceiptStorage};
 mod framework_bytes;
 mod invoking_scope;
-pub(crate) use invoking_scope::run_invoking_scope;
+pub(crate) use invoking_scope::{run_invoking_preparation, run_invoking_scope};
 mod nested;
 mod nested_stop;
 mod prepared_context;
