@@ -17,9 +17,9 @@ pub use crate::durability::data::{
     CheckpointCoverage, CheckpointRestoreWork, DurabilityError, DurableCheckpoint,
     NativeCheckpointSectionBytes, PartitionCheckpointImage, RecoveryAuthorityContinuityCheck,
     RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryCoverage,
-    RecoveryFailureClass, RecoveryPlan, RecoveryVerificationMode, RecoveryVerificationOutcome,
-    RecoveryVerificationPlan, RelationIntegrityContractFamily, RelationalCheckpointArtifactPolicy,
-    RelationalCheckpointMember, RelationalNativeCheckpoint,
+    RecoveryFailureClass, RecoveryOutcome, RecoveryPlan, RecoveryVerificationMode,
+    RecoveryVerificationOutcome, RecoveryVerificationPlan, RelationIntegrityContractFamily,
+    RelationalCheckpointArtifactPolicy, RelationalCheckpointMember, RelationalNativeCheckpoint,
     RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop,
 };
 pub use crate::durability::medium::{
