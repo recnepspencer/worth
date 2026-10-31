@@ -8,6 +8,17 @@ pub struct RuntimeWorldObservationPort {
     owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
 }
 impl RuntimeWorldObservationPort {
+    pub fn observe_root_product_branch(
+        &self,
+    ) -> Result<
+        crate::branch::ProductBranchObservation,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .observe_root_product_branch()
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
     /// Resolve transported coordinates through this owner's live reference.
     /// The immutable selected commit supplies its exact component tuple.
     pub fn readmit_product_branch_reference(

@@ -14,6 +14,25 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn observe_root_product_branch(
+        &self,
+    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
+        crate::lifecycle::read_observation::record_read();
+        if !self.branch_service_is_available() {
+            return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
+        }
+        let _operation = self
+            .reserve_creation_operation()
+            .map_err(|()| RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)?;
+        let cell = self
+            .state
+            .branches
+            .root_cell()
+            .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
+        cell.observe(&self.state.history, &self.state.retention)
+            .map_err(super::map_observation_denial)
+    }
+
     fn readmit_product_branch_reference(
         &self,
         description: &crate::branch::ProductBranchReferenceDescription,

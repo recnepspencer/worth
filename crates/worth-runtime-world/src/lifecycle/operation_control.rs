@@ -204,6 +204,21 @@ impl Drop for RuntimeWorldProductComparePauseForTest {
 }
 
 // Law 1, reach: issuance belongs to this sealed control file.
+impl<D, I, E, Ctx, T> super::RuntimeWorldPublicationPort<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    E: Send + Sync + 'static,
+    Ctx: Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    pub fn world_operation_control_for_test(
+        &self,
+    ) -> Result<RuntimeWorldOperationControlForTest, super::RuntimeWorldOwnerUnavailable> {
+        Ok(self.service()?.state.operation_control.clone())
+    }
+}
+
 impl<D, I, E, Ctx, T> super::RuntimeWorldOwner<D, I, E, Ctx, T>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,

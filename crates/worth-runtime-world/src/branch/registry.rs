@@ -135,7 +135,6 @@ impl ProductBranchRegistry {
         ))
     }
 
-    #[cfg(test)]
     pub(crate) fn root_cell(&self) -> Option<ProductBranchReferenceCell> {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         state

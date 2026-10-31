@@ -141,6 +141,24 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn retire_changed_history(
+        &self,
+    ) -> Result<
+        Vec<crate::identity::CompositeCommitIdentity>,
+        crate::history::HistoryReclamationDenial,
+    > {
+        super::super::ports::RuntimeWorldLifecycleService::retire_changed_history(self)
+    }
+    fn release_retired_branch_history(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, crate::history::HistoryReclamationDenial>
+    {
+        super::super::ports::RuntimeWorldLifecycleService::release_retired_branch_history(
+            self, from,
+        )
+    }
+
     fn inspect_recovered_effects(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,

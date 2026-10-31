@@ -15,7 +15,9 @@ use worth_signal::facade::{SignalError, SignalTransaction};
 mod bootstrap;
 mod conditional_recovery;
 mod durable;
+mod execution;
 mod open_attempt;
+mod owned_async;
 
 /// Executes the concrete component-owner progression and exact product CAS.
 pub struct RuntimeWorldPublicationPort<D, I, E, Ctx, T>
@@ -53,7 +55,7 @@ where
     pub(in crate::lifecycle) fn new(owner: Weak<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>) -> Self {
         Self { owner }
     }
-    fn service(
+    pub(in crate::lifecycle) fn service(
         &self,
     ) -> Result<Arc<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>, RuntimeWorldOwnerUnavailable> {
         let service = self

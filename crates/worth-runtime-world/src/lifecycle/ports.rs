@@ -114,6 +114,9 @@ pub(crate) trait RuntimeWorldObservationService:
         branch: &ProductBranchIdentity,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
 
+    fn observe_root_product_branch(
+        &self,
+    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
     fn observe_product_branch_occurrence(
         &self,
         occurrence: crate::identity::ProductBranchIncarnation,
@@ -301,6 +304,13 @@ pub(crate) trait RuntimeWorldProductPublicationService {
 pub(crate) trait RuntimeWorldRecoveryService:
     super::availability::RuntimeWorldAvailability
 {
+    fn retire_changed_history(
+        &self,
+    ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
+    fn release_retired_branch_history(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial>;
     fn inspect_recovered_effects(
         &self,
         handle: &crate::recovery::ProductUnpublishedRecoveryHandle,

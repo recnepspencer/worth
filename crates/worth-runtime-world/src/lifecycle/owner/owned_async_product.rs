@@ -4,6 +4,8 @@ use super::RuntimeWorldOwnerRoot;
 
 #[derive(Debug)]
 pub enum RuntimeWorldOwnedAsyncRequestAdmissionDenial {
+    OwnerUnavailable,
+    DurablePublicationRequired,
     ForeignOwner,
     RelationalSourceMismatch,
     NoCommittedSource,
@@ -20,6 +22,8 @@ pub enum RuntimeWorldOwnedAsyncRevalidationDenial {
 
 #[derive(Debug)]
 pub enum RuntimeWorldOwnedAsyncManagedRevalidationDenial {
+    OwnerUnavailable,
+    DurablePublicationRequired,
     ForeignOwner,
     RelationalSourceMismatch,
     NoCommittedSource,
@@ -28,6 +32,7 @@ pub enum RuntimeWorldOwnedAsyncManagedRevalidationDenial {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RuntimeWorldOwnedAsyncProductValidationDenial {
+    DurablePublicationRequired,
     ForeignOwner,
     RelationalSourceMismatch,
     NoCommittedSource,
@@ -78,6 +83,9 @@ where
         let truth = self
             .validate_owned_async_product(observation, relational_source)
             .map_err(|cause| match cause {
+                RuntimeWorldOwnedAsyncProductValidationDenial::DurablePublicationRequired => {
+                    RuntimeWorldOwnedAsyncManagedRevalidationDenial::DurablePublicationRequired
+                }
                 RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner => {
                     RuntimeWorldOwnedAsyncManagedRevalidationDenial::ForeignOwner
                 }
@@ -202,6 +210,9 @@ where
         observation: &ProductBranchObservation,
         relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
     ) -> Result<(), RuntimeWorldOwnedAsyncProductValidationDenial> {
+        if self.state.durable.is_some() {
+            return Err(RuntimeWorldOwnedAsyncProductValidationDenial::DurablePublicationRequired);
+        }
         if observation.owner_identity() != self.owner_identity() {
             return Err(RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner);
         }
@@ -216,6 +227,9 @@ fn request_product_denial(
     denial: RuntimeWorldOwnedAsyncProductValidationDenial,
 ) -> RuntimeWorldOwnedAsyncRequestAdmissionDenial {
     match denial {
+        RuntimeWorldOwnedAsyncProductValidationDenial::DurablePublicationRequired => {
+            RuntimeWorldOwnedAsyncRequestAdmissionDenial::DurablePublicationRequired
+        }
         RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner => {
             RuntimeWorldOwnedAsyncRequestAdmissionDenial::ForeignOwner
         }

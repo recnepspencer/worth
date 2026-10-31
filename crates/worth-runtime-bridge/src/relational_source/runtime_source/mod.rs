@@ -16,6 +16,7 @@ mod retained_entity_projection;
 mod retained_snapshot;
 mod selected_commit_resolution;
 mod snapshot_reads;
+mod source_adapter;
 mod source_profile;
 
 pub use branch_head_bindings::{
@@ -54,6 +55,12 @@ pub enum RelationalBridgeSourceConfigurationError {
 }
 
 impl RuntimeBridgeRelationalSource {
+    /// Closed Query attachment borrows this source's authentic existing handle.
+    /// Runtime/profile equality cannot construct a replacement source binding.
+    pub fn query_runtime_handle(&self) -> RelationalRuntimeHandle {
+        self.runtime.clone()
+    }
+
     pub fn for_graph_role(
         runtime: Arc<RelationalRuntime>,
         graph_role: impl Into<Arc<str>>,

@@ -9,6 +9,26 @@ pub struct RuntimeWorldRecoveryPort {
     owner: Weak<dyn RuntimeWorldRecoveryService + Send + Sync>,
 }
 impl RuntimeWorldRecoveryPort {
+    pub fn retire_changed_history(
+        &self,
+    ) -> Result<
+        Vec<crate::identity::CompositeCommitIdentity>,
+        crate::history::HistoryReclamationDenial,
+    > {
+        self.service()
+            .map_err(crate::history::HistoryReclamationDenial::OwnerUnavailable)?
+            .retire_changed_history()
+    }
+    pub fn release_retired_branch_history(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, crate::history::HistoryReclamationDenial>
+    {
+        self.service()
+            .map_err(crate::history::HistoryReclamationDenial::OwnerUnavailable)?
+            .release_retired_branch_history(from)
+    }
+
     pub fn inspect_recovered_effects(
         &self,
         handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
