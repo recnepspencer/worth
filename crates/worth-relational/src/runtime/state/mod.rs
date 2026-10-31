@@ -15,6 +15,9 @@ pub(crate) use runtime_state::{
     RelationalPendingSettlementReservation, RelationalSettlementClaim,
     RelationalSettlementReservationDenial, ReservedRelationalSettlement,
 };
+pub use runtime_state::{
+    PreparedRelationalRuntimeClose, RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
+};
 pub(in crate::runtime) use runtime_state::{
     RelationalRuntimeOwner, RelationalRuntimePublicationOwner,
 };

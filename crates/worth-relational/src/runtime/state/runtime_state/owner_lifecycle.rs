@@ -64,6 +64,24 @@ impl RelationalRuntimeOwner {
 }
 
 impl RelationalRuntimeOwnerBinding {
+    pub(super) fn stop_if_quiescent(&self) -> bool {
+        self.lifecycle
+            .accepting_operations
+            .store(false, Ordering::Release);
+        if self.lifecycle.in_flight.load(Ordering::Acquire) == 0 {
+            true
+        } else {
+            self.resume_admission();
+            false
+        }
+    }
+
+    pub(super) fn resume_admission(&self) {
+        self.lifecycle
+            .accepting_operations
+            .store(true, Ordering::Release);
+    }
+
     /// Stop admitting operations and wait for the admitted ones to return.
     ///
     /// This is owner authority, so it stays reachable only inside the runtime

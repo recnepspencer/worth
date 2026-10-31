@@ -20,6 +20,8 @@ mod member_custody;
 #[cfg(test)]
 mod member_custody_tests;
 #[cfg(test)]
+mod test_store;
+#[cfg(test)]
 mod tests;
 pub(crate) use member_custody::RetainedMemberPublication;
 
@@ -146,7 +148,7 @@ impl RelationalDurableColdSource for StoreColdSource {
             .serving
             .anchored_records()
             .map_err(|_| Cause::SourceUnavailable)?;
-        let anchor = AnchoredRecordName::new("relational.checkpoint").expect("static anchor");
+        let anchor = AnchoredRecordName::new("home.checkpoint").expect("static anchor");
         let placed = self
             .members
             .read()

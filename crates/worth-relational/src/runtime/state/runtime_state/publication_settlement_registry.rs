@@ -53,6 +53,10 @@ pub(crate) struct RelationalPendingSettlementReservation {
 }
 
 impl RelationalPublicationSettlementRegistry {
+    pub(super) fn has_pending(&self) -> bool {
+        !self.records().is_empty()
+    }
+
     /// Reserve capacity and install one pending record before the publication
     /// critical section.
     pub(crate) fn reserve(

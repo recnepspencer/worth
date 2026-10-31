@@ -74,17 +74,22 @@ workspaces/worth-store/crates/worth-store-relational/
   src/{journal_medium,recovered_history,recovered_transitions}.rs
   src/cold_source.rs               # existing placement/demand owner
   src/cold_source/                 # existing member custody and its courts
-workspaces/worth-store/crates/worth-store-application-oracle/
-  tests/worth_store_application_oracle.rs
-  tests/worth_store_application_oracle/
-    {home_lifecycle,checkpoint,relational_section,transition,retry,process}/
+workspaces/worth-store/crates/worth-store-testkit-application-oracle/
+  src/lib.rs                       # fixture/reference wiring, no tests
+  src/home_opening.rs              # genuinely shared authored opening inputs
+workspaces/worth-store/crates/worth-store-court-application/
+  tests/worth_store_court_application.rs  # canonical standard harness
+  tests/worth_store_court_application/process/
+    {application,relational}/       # assertions and child reexecution
 ```
 
 Braced filenames declare separate responsibility files, not bucket modules.
 Only implemented owners/operations get bodies; later phases extend the
 declared slots rather than adding dead placeholder variants. Parent `mod.rs`
 files wire or compose their one operation and stay within the line cap.
-Oracle cases split by the behavior they dispute; reference model, schema,
+The testkit is a library with no test or integration target; the court is a
+dependency leaf whose name follows the actual application frontier. Oracle
+cases split by the behavior they dispute; reference model, schema,
 batch authoring and process dispatch have their own named owners.
 
 Shared value definitions live in
@@ -206,6 +211,31 @@ journey remains the joint Phase 3/4 gate.
 | Shared semantics | Real open/commit/checkpoint/close/reopen preserves artifacts and graph state; recovery invokes no handler. |
 | D17 progression | Missing, foreign and reused stage proofs fail compilation; partial opening cannot construct service. |
 
+Close interruption claims map D11 and Architectural Law 22 to
+`cancellation_after_drain_retains_the_running_close_and_resume_releases_its_lease`,
+`deadline_after_drain_retains_the_running_close_and_resume_releases_its_lease`,
+and `physical_close_worker_failure_retains_actual_inspection_evidence` in the
+Application court. The last preserves actual Store failure evidence and never
+infers closed state or lease release from a panic. Native custody refusal maps
+to `performed_publication_custody_refuses_close_until_its_real_settlement`.
+
+Original-request accounting maps Law 22 and D17 to
+`descriptor_admission_bills_both_frames_to_one_unwrapped_original_request`,
+`descriptor_admission_bills_both_frames_to_one_unwrapped_leased_request`, and
+`descriptor_admission_preserves_original_cancellation_before_any_descriptor_or_commit_effect`.
+The leased case exposed a product gap: quoted/actual work/span was 493/493/493,
+while an unwrapped 492-unit original lease was accepted. Pre-effect entry now
+uses Execution's `prepare_native`: standalone entry binds the original scope
+once; active same-lineage carriage reuses actual invoking settlement without
+another meter or allowance. The unchanged one-short, funded and original
+cancellation assertions now pass. `active_preparation_uses_prior_work_and_does_not_charge_a_second_report`
+protects remaining work; `preparation_keeps_inherited_refusals_and_settles_only_its_own_questions`
+protects request-stop ownership; `active_preparation_retains_untaken_computation_causes_and_permits_explicit_take`
+protects computation-stop custody. Effectful native readmission does not use
+this preparation port. Earlier publication/checkpoint interruption
+also needs owned capture/member/serialization custody and the original clock;
+the passing after-drain cases do not prove that earlier boundary.
+
 Use pinned checkout compiler/configuration and existing runners. Capture exact
 command/head/state/times/exit/counts. Run affected checks and named cases once
 per coherent batch, then only invalidated cases after correction. Run explicit
@@ -218,3 +248,20 @@ Only controlled timing comparisons need an exclusive agreed window. Do not
 run ignored tests, Query-scale, worth-ui or unrelated exhaustive campaigns.
 The full media/process oracle runs once at joint final certification after
 its inputs are final. Each implementation batch gets fresh independent review.
+
+### Native component fixture claim boundary
+
+The shared opening fixture admits a genuinely authored fixed Query schema,
+validated program and closed support roster. It proves that descriptor
+admission crosses the real Query authority boundary. Its independently supplied
+Relational definition retains its own native schema registry. Native component
+scripts, media faults and reference histories prove native readmission and
+publication, not continuation of that fixed Query program or an application
+whose actual authored inputs differ. `ReadmittedApplicationHome` is a partial
+native state, with no World/Query recovery proof or application service door.
+
+The eventual Host composition retains the actual installed schema, selected
+validated program and closed roster used to admit its binding. Descriptive
+binding data consumed into the descriptor cannot reconstruct that authority.
+Application-program continuation courts must use their actual authored inputs;
+the fixed native-component fixture cannot stand in for them.

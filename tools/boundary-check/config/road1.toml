@@ -239,9 +239,43 @@ guidance = "generic Signal cannot import Store composition or Store-owned physic
 workspace_manifest = "workspaces/worth-query/Cargo.toml"
 sources = []
 source_prefixes = ["worth-query"]
+exclude_sources = ["worth-query-host"]
 forbidden_targets = []
 forbidden_target_prefixes = ["worth-store"]
-guidance = "Query defines checkpoint handoff and readmission contracts but cannot import Store persistence or reconstruction authority"
+guidance = "M3 D1: only Query Host composes Store Application; other Query packages cannot import Store persistence or reconstruction authority"
+
+[[source_dependency_allowlists]]
+workspace_manifest = "workspaces/worth-query/Cargo.toml"
+sources = ["worth-query-host"]
+allowed_targets = ["worth-query-admission", "worth-query-declaration", "worth-query-execution", "worth-query-installation", "worth-query-publication", "worth-query-decl", "worth-runtime-bridge", "worth-execution", "worth-harness", "worth-foundational", "worth-relational", "worth-store-application"]
+guidance = "M3 D1: Host may compose only Store Application, never another Store implementation owner"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates/worth-query-host/src"
+exclude_paths = ["workspaces/worth-query/crates/worth-query-host/src/application_home"]
+forbidden_identifiers = ["worth_store_application"]
+guidance = "M3 D1: only Host's application_home production composition names Store Application"
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+sources = []
+source_prefixes = ["worth-store"]
+exclude_sources = ["worth-store-application", "worth-store-testkit-application-oracle", "worth-store-court-application"]
+forbidden_targets = []
+forbidden_target_prefixes = ["worth-query"]
+guidance = "M3 D1: physical-only Store owners and courts stay Query-independent; application composition and its closed oracle own the application seam"
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+sources = ["worth-store-application"]
+forbidden_targets = ["worth-query-host"]
+guidance = "M3 D1: Store Application implements owner ports and cannot depend on its Host composition root"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-store/crates/worth-store-application/src"
+exclude_paths = ["workspaces/worth-store/crates/worth-store-application/src/tests"]
+forbidden_identifiers = ["worth_query_testkit_installation"]
+guidance = "The genuine authored Query binding fixture is test-only and cannot supply production Home authority"
 
 [[source_identifier_denials]]
 root = "workspaces/worth-store/crates/worth-store/src/physical_runtime/work"

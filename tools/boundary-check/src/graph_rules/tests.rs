@@ -208,3 +208,26 @@ fn product_dependencies_on_testkits_are_dev_only() {
             .any(|d| d.message.contains("testkit authority")));
     }
 }
+
+#[test]
+fn dependency_exclusion_names_one_composition_owner_without_excluding_its_neighbors() {
+    let rule = toml::from_str("sources=[]\nsource_prefixes=['query-']\nexclude_sources=['query-host']\nforbidden_targets=[]\nforbidden_target_prefixes=['store-']").unwrap();
+    for (name, denied) in [
+        ("query-host", false),
+        ("query-host-extra", true),
+        ("query-engine", true),
+    ] {
+        let package = Package {
+            name: name.into(),
+            dependencies: vec![Dependency {
+                name: "store-application".into(),
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        assert_eq!(
+            !dependencies("dependency_denials", &rule, &package).is_empty(),
+            denied
+        );
+    }
+}

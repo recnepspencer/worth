@@ -210,6 +210,7 @@ checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
  "block-buffer",
  "crypto-common",
+ "subtle",
 ]
 
 [[package]]
@@ -327,8 +328,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "r-efi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -348,6 +351,15 @@ name = "hashbrown"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
+
+[[package]]
+name = "hmac"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
+dependencies = [
+ "digest",
+]
 
 [[package]]
 name = "im"
@@ -804,6 +816,12 @@ version = "0.1.0"
 dependencies = [
  "serde_json",
 ]
+
+[[package]]
+name = "subtle"
+version = "2.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
@@ -1288,6 +1306,41 @@ name = "worth-proof"
 version = "0.1.0"
 
 [[package]]
+name = "worth-query-declaration"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+ "worth-foundational",
+]
+
+[[package]]
+name = "worth-query-installation"
+version = "0.1.0"
+dependencies = [
+ "getrandom",
+ "hmac",
+ "serde",
+ "sha2",
+ "subtle",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query-declaration",
+ "zeroize",
+]
+
+[[package]]
+name = "worth-query-testkit-installation"
+version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+ "worth-proof",
+ "worth-query-declaration",
+ "worth-query-installation",
+]
+
+[[package]]
 name = "worth-relational"
 version = "0.1.0"
 dependencies = [
@@ -1358,6 +1411,24 @@ version = "0.1.0"
 dependencies = [
  "worth-store-contracts",
  "worth-store-extensions",
+]
+
+[[package]]
+name = "worth-store-application"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query-installation",
+ "worth-query-testkit-installation",
+ "worth-relational",
+ "worth-store",
+ "worth-store-physical-format",
+ "worth-store-physical-integrity",
+ "worth-store-recovery-runtime",
+ "worth-store-relational",
 ]
 
 [[package]]
@@ -1489,6 +1560,25 @@ name = "worth-store-contracts"
 version = "0.1.0"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "worth-store-court-application"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "tempfile",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-store",
+ "worth-store-application",
+ "worth-store-physical-format",
+ "worth-store-relational",
+ "worth-store-testkit-application-oracle",
+ "worth-store-testkit-executables",
+ "worth-store-testkit-sweep",
 ]
 
 [[package]]
@@ -1799,23 +1889,6 @@ dependencies = [
  "worth-store-test-support",
  "worth-store-testkit-executables",
  "worth-store-testkit-store",
-]
-
-[[package]]
-name = "worth-store-court-relational"
-version = "0.1.0"
-dependencies = [
- "sha2",
- "tempfile",
- "worth-execution",
- "worth-foundational",
- "worth-proof",
- "worth-relational",
- "worth-store",
- "worth-store-physical-format",
- "worth-store-relational",
- "worth-store-testkit-executables",
- "worth-store-testkit-sweep",
 ]
 
 [[package]]
@@ -2275,7 +2348,7 @@ dependencies = [
  "worth-store",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
- "worth-store-recovery-runtime",
+ "worth-store-testkit-store",
 ]
 
 [[package]]
@@ -2369,6 +2442,20 @@ dependencies = [
  "worth-store-recovery-runtime",
  "worth-store-security",
  "worth-store-wal",
+]
+
+[[package]]
+name = "worth-store-testkit-application-oracle"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query-testkit-installation",
+ "worth-relational",
+ "worth-store",
+ "worth-store-application",
+ "worth-store-relational",
 ]
 
 [[package]]
@@ -2471,6 +2558,12 @@ dependencies = [
  "quote",
  "syn 2.0.119",
 ]
+
+[[package]]
+name = "zeroize"
+version = "1.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e13084392c5e4bc371903e2935a5eaeed24905a7511356b883835e18a78f6879"
 
 [[package]]
 name = "zmij"

@@ -1,0 +1,35 @@
+[package]
+workspace = "../.."
+name = "worth-store-application"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "The physical lifecycle and owner recovery progression of one application home."
+autotests = false
+
+[dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-proof = { path = "../../../../crates/worth-proof" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-query-installation = { path = "../../../worth-query/crates/worth-query-installation" }
+worth-store.workspace = true
+worth-store-relational.workspace = true
+worth-store-physical-format.workspace = true
+worth-store-physical-integrity.workspace = true
+worth-store-recovery-runtime.workspace = true
+
+[dev-dependencies]
+worth-query-testkit-installation = { path = "../../../worth-query/crates/worth-query-testkit-installation" }
+tempfile = "3"
+
+[features]
+certification-test-authority = [
+    "worth-store/certification-test-authority",
+    "worth-store-relational/certification-test-authority",
+    "worth-store-recovery-runtime/certification-test-authority",
+]
+
+[lints]
+workspace = true

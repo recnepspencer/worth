@@ -2,3 +2,5 @@
 #[allow(dead_code, unused_imports)]
 #[path = "installation_contracts.rs"]
 pub mod installation_contracts;
+
+pub mod application_home_binding;

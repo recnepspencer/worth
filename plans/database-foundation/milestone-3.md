@@ -118,8 +118,11 @@ outside `worth-contracts`. The ruling has three parts:
 - **`worth-store-application`** may depend on the owner crates whose ports it
   implements: Relational, World, Signal, Bridge, and the Query crates that
   define Query-owned artifacts. It must never depend on `worth-query-host`.
-- **`worth-store-application-oracle`** (D14) may depend on `worth-query-host`
-  and `worth-store-application`. No production crate may depend on it.
+- **`worth-store-testkit-application-oracle`** (D14) is the fixture/reference
+  library and may depend on `worth-query-host` and `worth-store-application`.
+  It has no tests or integration target. `worth-store-court-application` is
+  the canonical standard-harness leaf containing assertions and child-process
+  reexecution. No production crate may depend on either package.
 
 **Build cost.** From now on, the Store workspace builds the Query, World and
 Signal stacks for its application crates, and the host builds the Store
@@ -370,7 +373,8 @@ with this path.
   step and product movement is a Store publication, so Store's mutation seams
   interrupt every owner boundary.
 - **Oracle location.** The host oracle lives in
-  `worth-store-application-oracle`. Its children re-execute the test binary,
+  `worth-store-court-application`, using the fixture/reference library
+  `worth-store-testkit-application-oracle`. Court children re-execute the test binary,
   as Milestone 2's relational_home children do, and run the real production
   host.
 - **Derived-state door.** Discarding derived state uses a sealed certification
@@ -821,7 +825,8 @@ home.
 - Create `worth-store-application` and apply the D1 boundary ruling.
 - Delete `RelationalStoreHome`. Its tests and the Milestone 2 relational_home
   oracle move to the application home's Relational section in
-  `worth-store-application-oracle`.
+  `worth-store-court-application`, using
+  `worth-store-testkit-application-oracle` for shared authored fixtures.
 - Record the measured build-time impact on every lane in the phase evidence
   (D1).
 
@@ -919,7 +924,8 @@ use memory-only homes or the interim checkpoint path, as the audit lists.
 - **Memory-only.** Memory-only mode passes its existing semantic suites through
   the new call.
 
-**Oracle extension.** `worth-store-application-oracle` covers home open,
+**Oracle extension.** `worth-store-court-application`, using the shared
+`worth-store-testkit-application-oracle` library, covers home open,
 initialization, reopen, program transition, automatic checkpoint and close.
 That includes the media sweep and process kills at every Store seam of each,
 and recovery interruption at every stage.

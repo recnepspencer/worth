@@ -17,6 +17,14 @@ pub(in crate::runtime) struct RelationalRuntimeCloseAuthority {
 }
 
 impl RelationalRuntimeCloseAuthority {
+    pub(super) fn stop_if_quiescent(&self) -> bool {
+        self.lifecycle.stop_if_quiescent()
+    }
+
+    pub(super) fn resume_admission(&self) {
+        self.lifecycle.resume_admission();
+    }
+
     pub(super) fn new(
         _runtime_instance_id: u64,
         lifecycle: RelationalRuntimeOwnerBinding,

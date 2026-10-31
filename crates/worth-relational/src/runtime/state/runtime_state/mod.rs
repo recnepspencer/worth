@@ -8,6 +8,7 @@ mod owner_lifecycle;
 mod partition_edition_access;
 mod preparation_round;
 mod preparation_runtime;
+mod prepared_close;
 mod publication_lifecycle;
 mod publication_settlement_registry;
 mod tenure;
@@ -31,6 +32,9 @@ pub(crate) use owner_lifecycle::{
 };
 pub(crate) use preparation_runtime::RelationalPreparationOwnerBinding;
 pub(crate) use preparation_runtime::RelationalPreparationRuntime;
+pub use prepared_close::{
+    PreparedRelationalRuntimeClose, RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
+};
 pub(in crate::runtime) use publication_lifecycle::RelationalRuntimePublicationOwner;
 pub(crate) use publication_lifecycle::{
     RelationalCandidateRegistrationDenial, RelationalRuntimePublicationBinding,

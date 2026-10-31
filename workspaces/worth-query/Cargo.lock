@@ -1156,6 +1156,7 @@ name = "worth-query-testkit-installation"
 version = "0.1.0"
 dependencies = [
  "worth-foundational",
+ "worth-proof",
  "worth-query-declaration",
  "worth-query-installation",
 ]

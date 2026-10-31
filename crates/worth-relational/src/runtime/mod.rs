@@ -9,6 +9,9 @@ mod interruption_counters;
 mod operation_control;
 mod schema_transition_admission;
 mod state;
+pub use state::{
+    PreparedRelationalRuntimeClose, RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
+};
 
 pub use crate::config::data::RelationalRuntimeConfig;
 pub use crate::durability::data::RecoveryOutcome;

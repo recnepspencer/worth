@@ -8,14 +8,8 @@ use worth_store::physical_runtime::{
 #[test]
 fn cold_port_reads_current_members_carried_members_and_bounded_journal_payloads() {
     let directory = tempfile::tempdir().unwrap();
-    let serving = Arc::new(
-        crate::physical_store::initialize(
-            directory.path(),
-            crate::physical_store::PhysicalOpening::production(),
-        )
-        .unwrap(),
-    );
-    let anchor = AnchoredRecordName::new("relational.checkpoint").unwrap();
+    let serving = Arc::new(super::test_store::initialize(directory.path()));
+    let anchor = AnchoredRecordName::new("home.checkpoint").unwrap();
     let payload = b"one region's framed bytes".to_vec();
     let key = Sha256::digest(&payload).into();
     let locator = RelationalDurableMemberLocator {
@@ -31,7 +25,7 @@ fn cold_port_reads_current_members_carried_members_and_bounded_journal_payloads(
                     anchor,
                     generation,
                     vec![generation as u8 + 1],
-                    crate::physical_store::placement(),
+                    worth_store_testkit_store::fixture::placement(),
                     PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
                 )
                 .with_members(members),
@@ -69,7 +63,7 @@ fn cold_port_reads_current_members_carried_members_and_bounded_journal_payloads(
         .publish(OrderedJournalPublication::new(
             1,
             commit.clone(),
-            crate::physical_store::placement(),
+            worth_store_testkit_store::fixture::placement(),
             PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
         ))
         .unwrap();

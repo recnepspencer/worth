@@ -34,6 +34,24 @@ pub(crate) enum RelationalCandidateRegistrationDenial {
 }
 
 impl RelationalRuntimePublicationOwner {
+    pub(super) fn has_live_publication_custody(&self) -> bool {
+        self.binding.reap_expired_candidates();
+        !self
+            .binding
+            .lifecycle
+            .candidates
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .is_empty()
+            || self.binding.lifecycle.settlements.has_pending()
+            || !self
+                .binding
+                .lifecycle
+                .companion
+                .enter()
+                .is_ok_and(|epoch| matches!(epoch.active(), Ok(None)))
+    }
+
     pub(in crate::runtime) fn new() -> Self {
         Self::with_companion(crate::mvcc::publication::CompanionRegistry::new())
     }

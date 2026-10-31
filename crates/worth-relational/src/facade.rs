@@ -232,6 +232,9 @@ pub mod runtime {
         SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
         VisibilityReadContext, VisibilityRetentionAuthority,
     };
+    pub use crate::runtime::{
+        PreparedRelationalRuntimeClose, RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
+    };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,
         RelationReadRecord, RelationalFieldPresence, RelationalFieldRevision, RelationalReadView,
