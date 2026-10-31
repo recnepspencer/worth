@@ -200,6 +200,13 @@ to `world.custody` before its live effect. Released custody therefore never
 reappears on reopen. Open custody is carried in World's checkpoint section
 (D12). Nothing is folded silently into a new root or re-executed.
 
+For Phases 3–4, abandoning a live directory preparation retains its actual
+Query/World custody and answers `ReopenRequired`; it does not grant live
+no-effect release. Completed Native recovery and complete associated-effect
+reconciliation establish the recovered fate. The exact authority, next-action
+and production-court contract is in
+[Shared durable owner contracts](milestone-3-durable-owner-contracts.md#live-abandonment-and-recovered-disposition).
+
 **D6. Durable, home-scoped identities.**
 
 Every identity that a durable artifact or durable row records becomes

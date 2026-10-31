@@ -165,6 +165,136 @@ Continue/release publishes world.custody before live disposition; released
 custody never reappears. Only Committed occurrence publication mints the exact
 subject-bound witness consumed by the product movement.
 
+### Live abandonment and recovered disposition
+
+Phases 3–4 use recovered-only disposition for a live directory preparation
+that cannot complete. Its next action and attempted live continuation/release
+answer `ReopenRequired`. The original Query entry and World custody remain
+owned. Explicit `try_into_recovery` abandons the World phase; it does not
+discard the Native proposal/candidate retained separately in that entry,
+release the business key, or establish absence of a Native effect.
+
+The distinguishing production court starts an ordinary Host mutation, pauses
+after its one genuine Native preparation and Query fences, then cancels the
+original request. A duplicate must observe the same recovery identity without
+invoking the handler or taking the original checkout. After explicit handoff,
+inspection and live release must retain the same custody and advertise
+`ReopenRequired`. A post-Native-effect panic must retain the actual effect and
+leave the World head unchanged. Neither case may manufacture a no-effect
+classification from a count, a stage, or an empty live discovery result.
+
+The court then ends the current Home/process, reopens the same directory in a
+fresh process under Store's mutation lease, and reconciles the complete
+original association without invoking the handler. Recovered release must
+publish the original `Released` subject before removing custody. Kill before
+and after that publication, and interrupt recovery: released custody must
+never reappear. A fresh same-key operation is admitted after actual recovered
+no-effect disposition. Effect-bearing custody must preserve its original
+receipt, position, digest and retained result; it never becomes `OpenOnly`.
+
+`ReopenRequired` is a caller action, not permission to erase custody. Retain
+stable request/correlation data, end ownership of the current Home, and reopen
+through the Host. Old recovery handles are incarnation-fenced; obtain claims
+from the newly readmitted Home. Close must retain/refuse accepted custody or
+return its actual owned recovery posture. Generic disposal and the explicit
+preparation handoff remain unbudgeted; neither reports successful disposition.
+The Host README and `docs/build-an-application.md` must explain this procedure
+and lease contention while the old Home remains owned.
+
+World derives a live record's action from its actual retained durable-open
+custody. Such a record offers inspection and `ReopenRequired`, rather than
+live release, settlement or a fresh publication. Memory records preserve
+their existing actions. Recovered custody keeps its distinct disposition
+operations. Replace `DurableDispositionRequired` with
+`RuntimeWorldRecoveryDenial::ReopenRequired` and add
+`ProductUnpublishedNextAction::ReopenRequired`; re-export both actual diagnostic
+data types through Query's declaration/Host facades, without a second wrapper
+or a Runtime World service port.
+
+The caller-facing diagnostic surface is:
+
+```rust
+use worth_query_decl::facade::{
+    ProductUnpublishedNextAction, RuntimeWorldRecoveryDenial,
+    WorthQueryProductUnpublishedRecovery,
+};
+
+fn needs_reopen(
+    claim: &WorthQueryProductUnpublishedRecovery,
+) -> Result<bool, RuntimeWorldRecoveryDenial> {
+    Ok(claim.inspect()?.next_actions()
+        .contains(&ProductUnpublishedNextAction::ReopenRequired))
+}
+```
+
+### Native inventory admission inside D8
+
+Use the existing `RecoveredRelationalRuntimeAuthority`. It proves genuine
+reconstruction of one exact Native runtime and captured roots. It does not
+prove continued quiescence or authorize live no-effect release. A discard
+report, association bytes, a handle and ordinary discovery remain descriptions.
+Another independently validated proposal can carry the same association bytes;
+discarding one candidate cannot fence publication by all such proposals.
+
+The not-yet-exposed production D8 composition supplies the exclusion boundary:
+Store reads the selected Native checkpoint and both complete uncovered tails;
+Host then immediately readmits World before initialization or service. Keep
+the exact caller seals on native recovery extraction and World readmission.
+The public partial-Home type alone is insufficient, since it exposes ordinary
+Native methods when consumed.
+
+Add `RecoveredRelationalRuntimeAuthority::discover_recovered_associated_effects`
+in `worth-relational/src/durability/authority/recovered_associated_effects.rs`.
+It accepts the original execution request and actual borrowed Native runtime,
+unconditionally checks exact recovery/runtime affinity, then obtains the full
+existing Native associated inventory. Reuse `RelationalAssociatedEffectRefusal`
+and its `ForeignRuntime` cause. It accepts no caller-supplied vector and returns
+no public absence witness. Its only outside-owner caller is World's existing
+`lifecycle/builder/home_readmission/associated_effects.rs`, enforced by the
+construction caller seal.
+
+Pass the actual recovery authority through that private World inventory
+consumer before any reconciliation or empty-World return. Preserve discovery
+of both catalog and performed-publication residency, source validation,
+duplicate/orphan/foreign association refusal and unsettled-effect refusal.
+Only private complete reconciliation may derive an absent recovered effect
+and construct the existing `RecoveredNativeCustody::OpenOnly`.
+`NoNativeEffect` names that semantic condition here; it is not a new public
+proof type or an implementation claim about a symbol of that name.
+
+The destination remains the existing owner topology:
+
+```text
+worth-relational/src/durability/authority/
+  associated_effects.rs                 existing descriptive discovery
+  recovered_associated_effects.rs       new recovery/runtime inventory admission
+worth-runtime-world/src/lifecycle/builder/home_readmission/
+  associated_effects.rs                 consumes the actual recovery authority
+  reconcile.rs                         private complete fate classification
+worth-runtime-world/src/recovery/
+  product_unpublished/actions.rs        actual live-custody next actions
+  recovered_publication/release.rs      existing durable-before-live disposition
+worth-query-execution/src/domain_computation/product_publication/
+  preparation_pending.rs               explicit handoff and retained ownership
+  recovery.rs                          caller-facing reopen/recovery diagnostics
+```
+
+Implement in authority order: Native affinity admission, World inventory
+cutover, exact construction seal, then explicit World/Query reopen diagnostics
+and Host documentation. The negative admission court uses an actual live
+Native runtime, genuine recovery authority belonging to another runtime, and
+an empty World source. It must refuse before World construction or absence
+classification; the exact same-runtime recovered counterpart must succeed.
+A source-seal control must reject an ordinary outside caller of the inventory
+admission. These local controls complement the fresh-process production court;
+neither substitutes for the other.
+
+Pure terminal preparation refusal removes its exact business entry. Its opaque
+owner may retain actual partial reservations until unbudgeted disposal, so
+physical resource availability can still refuse another operation. Only an
+early refusal before those reservations supports a fresh-commit-while-held
+claim. Do not generalize that local proof to later resource-owning refusals.
+
 ## Eventual World write boundary
 
 No worker is assigned here. Before assignment, implement/review the shared
