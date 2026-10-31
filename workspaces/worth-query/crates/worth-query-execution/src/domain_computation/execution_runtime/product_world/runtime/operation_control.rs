@@ -4,6 +4,9 @@ impl WorthQueryProductRuntime {
     pub(crate) fn operation_control_for_test(
         &self,
     ) -> worth_runtime_world::facade::RuntimeWorldOperationControlForTest {
-        self.owner.world_operation_control_for_test()
+        self.owner
+            .publication_port()
+            .world_operation_control_for_test()
+            .expect("the installed World admits its actual operation control")
     }
 }

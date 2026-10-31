@@ -7,22 +7,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        let world = std::sync::Arc::clone(&self.product_runtime.owner);
-        let execution = QueryRequestExecution::open_control(
-            world.execution_placement(),
-            worth_execution::CancellationToken::new(),
-            None,
-        );
-        execution.run_advancement(
-            Some(world.owner_identity()),
-            Some(
-                self.product_runtime
-                    .source
-                    .authoritative_source_profile()
-                    .runtime_instance_id(),
-            ),
-            body,
-        )
+        self.product_runtime.with_execution_placement(|placement| {
+            let execution = QueryRequestExecution::open_control(
+                placement,
+                worth_execution::CancellationToken::new(),
+                None,
+            );
+            execution.run_advancement(
+                Some(self.product_runtime.owner.owner_identity()),
+                Some(
+                    self.product_runtime
+                        .source
+                        .authoritative_source_profile()
+                        .runtime_instance_id(),
+                ),
+                body,
+            )
+        })?
     }
 
     /// Runs one host call funded as `allocation_policy` says. Under
@@ -74,29 +75,26 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        let world = std::sync::Arc::clone(&self.product_runtime.owner);
-        let execution = match allocation_policy {
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
-                QueryRequestExecution::open_control(
-                    world.execution_placement(),
-                    cancellation,
-                    deadline,
-                )
-            }
-            worth_execution::ExecutionAllocationPolicy::Execution(lease) => {
-                QueryRequestExecution::under_lease(lease, cancellation, deadline)
-            }
-        };
-        execution.run_advancement(
-            Some(world.owner_identity()),
-            Some(
-                self.product_runtime
-                    .source
-                    .authoritative_source_profile()
-                    .runtime_instance_id(),
-            ),
-            body,
-        )
+        self.product_runtime.with_execution_placement(|placement| {
+            let execution = match allocation_policy {
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
+                    QueryRequestExecution::open_control(placement, cancellation, deadline)
+                }
+                worth_execution::ExecutionAllocationPolicy::Execution(lease) => {
+                    QueryRequestExecution::under_lease(lease, cancellation, deadline)
+                }
+            };
+            execution.run_advancement(
+                Some(self.product_runtime.owner.owner_identity()),
+                Some(
+                    self.product_runtime
+                        .source
+                        .authoritative_source_profile()
+                        .runtime_instance_id(),
+                ),
+                body,
+            )
+        })?
     }
 
     /// Checks borrowed advancement custody before a Publication entry reader.
@@ -119,18 +117,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        let world = std::sync::Arc::clone(&self.product_runtime.owner);
-        let execution = QueryRequestExecution::open(world.execution_placement(), request);
-        execution.run_advancement(
-            Some(world.owner_identity()),
-            Some(
-                self.product_runtime
-                    .source
-                    .authoritative_source_profile()
-                    .runtime_instance_id(),
-            ),
-            body,
-        )
+        self.product_runtime.with_execution_placement(|placement| {
+            let execution = QueryRequestExecution::open(placement, request);
+            execution.run_advancement(
+                Some(self.product_runtime.owner.owner_identity()),
+                Some(
+                    self.product_runtime
+                        .source
+                        .authoritative_source_profile()
+                        .runtime_instance_id(),
+                ),
+                body,
+            )
+        })?
     }
 }
 
@@ -167,19 +166,16 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        QueryRequestExecution::open_control(
-            self.owner.execution_placement(),
-            cancellation,
-            deadline,
-        )
-        .run_advancement(
-            Some(self.owner.owner_identity()),
-            Some(
-                self.source
-                    .authoritative_source_profile()
-                    .runtime_instance_id(),
-            ),
-            body,
-        )
+        self.with_execution_placement(|placement| {
+            QueryRequestExecution::open_control(placement, cancellation, deadline).run_advancement(
+                Some(self.owner.owner_identity()),
+                Some(
+                    self.source
+                        .authoritative_source_profile()
+                        .runtime_instance_id(),
+                ),
+                body,
+            )
+        })?
     }
 }

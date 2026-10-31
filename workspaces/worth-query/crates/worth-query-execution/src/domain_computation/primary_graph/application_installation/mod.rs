@@ -2,6 +2,8 @@
 
 mod checkpoint_lineage;
 mod construction;
+mod contribution_preparation;
+pub(crate) mod home_preparation;
 mod prepared_meaning;
 use construction::in_memory_with_contributions_in_advancement;
 mod denial;

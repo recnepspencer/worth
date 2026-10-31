@@ -9,7 +9,7 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 pub(super) fn assemble_application_runtime<Schema>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
-    graph: PublishedApplicationGraph<
+    mut graph: PublishedApplicationGraph<
         crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge,
     >,
     installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
@@ -37,12 +37,41 @@ where
                 format!("Product source admission: {denial:?}"),
             ))?,
         &mut graph.bridge.conditional_lifecycle(),
-        graph.product_world_resources,
-        graph.recovered_relational_authority,
+        graph.product_world_resources.clone(),
+        graph.recovered_relational_authority.take(),
     ).map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
         WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
         denial.detail(),
     ))?;
+    Ok(assemble_application_runtime_with_product(
+        graph,
+        installed_schema,
+        authorization,
+        authorization_clock,
+        conditional_operations,
+        mutation_handlers,
+        mutation_projection,
+        output_producer_routes,
+        output_readiness_routes,
+        product_runtime,
+    ))
+}
+
+pub(super) fn assemble_application_runtime_with_product<Schema>(
+    graph: PublishedApplicationGraph<crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge>,
+    installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
+    authorization: WorthQueryInstalledAuthorizationRegistry,
+    authorization_clock: WorthQueryRuntimeClock,
+    conditional_operations: crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
+    mutation_handlers: crate::domain_computation::primary_graph::handler::InstalledMutationHandlerRegistry<Schema>,
+    mutation_projection: crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionAuthority<Schema>,
+    output_producer_routes: crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputProducerRoutes,
+    output_readiness_routes: crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
+    product_runtime: crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+) -> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
     graph
         .primary_provider
         .install_world_history(&product_runtime);
@@ -83,7 +112,7 @@ where
             std::sync::Arc::clone(&authorization_clock),
         ),
     );
-    Ok(WorthQueryPrimaryGraphApplicationRuntime {
+    WorthQueryPrimaryGraphApplicationRuntime {
         runtime: graph.runtime,
         installed_schema,
         application_readiness_schema_token,
@@ -130,5 +159,5 @@ where
         managed_indexes: Default::default(),
             workflow_coverage: Default::default(),
             signing_owners: Default::default(),
-    })
+    }
 }

@@ -120,7 +120,7 @@ pub(super) fn finish(
         .graph
         .native
         .readmit_recovered_initial_schema_installation(
-            graph.invariant_installation_receipt.clone(),
+            graph.meaning.invariant_installation_receipt.clone(),
         );
     check_original()?;
     let receipt = receipt.map_err(|error| {
@@ -136,6 +136,6 @@ pub(super) fn finish(
     check_original()?;
     indexes?;
     graph.graph.bind_application_publication(&receipt);
-    graph.invariant_installation_receipt = receipt;
+    graph.meaning.invariant_installation_receipt = receipt;
     Ok(())
 }

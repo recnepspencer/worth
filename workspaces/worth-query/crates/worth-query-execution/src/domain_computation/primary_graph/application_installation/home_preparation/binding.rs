@@ -1,0 +1,66 @@
+//! Home descriptors are admitted by the actual installed schema and closed roster.
+use super::*;
+use worth_foundational::facade::{ApplicationHomeBinding, CanonicalDigestId, HomeProgramBinding};
+use worth_proof::AdmittedApplicationHomeBinding;
+use worth_query_installation::facade::{
+    WorthQueryHomeBindingAdmission, WorthQueryHomeBindingDenial,
+};
+
+impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Schema, Program> {
+    pub fn admitted_home_binding(
+        &self,
+    ) -> Result<
+        AdmittedApplicationHomeBinding<WorthQueryHomeBindingAdmission>,
+        WorthQueryHomeBindingDenial,
+    > {
+        let installed = &self.state.installed;
+        let binding = installed.binding_identity();
+        let programs = self
+            .state
+            .support
+            .roster
+            .entries()
+            .iter()
+            .map(|entry| {
+                HomeProgramBinding::new(
+                    entry.identity().as_str().to_owned(),
+                    CanonicalDigestId::new(*entry.revision().as_bytes()),
+                )
+            })
+            .collect::<Vec<_>>();
+        let selected = programs
+            .iter()
+            .find(|entry| {
+                entry.revision()
+                    == CanonicalDigestId::new(*self.state.support.initial_revision.as_bytes())
+            })
+            .cloned()
+            .ok_or(WorthQueryHomeBindingDenial::SelectedProgramNotRostered)?;
+        let description = ApplicationHomeBinding::new(
+            *binding.package_identity(),
+            *binding.schema_identity(),
+            selected,
+            programs,
+        )
+        .map_err(|_| WorthQueryHomeBindingDenial::DescriptionMismatch)?;
+        installed.admit_home_binding(
+            &self.state.support.roster,
+            &self.state.support.initial_revision,
+            description,
+        )
+    }
+}
+
+impl<Schema: ApplicationSchemaComposition, Program> ReadmittedHomeNativeMeaning<Schema, Program> {
+    pub fn home_bridge_definition(
+        &self,
+    ) -> Result<
+        worth_runtime_bridge::facade::UnattachedRelationalBridgeBuilder,
+        WorthQueryPrimaryGraphInstallationDenial,
+    > {
+        super::super::super::managed_bridge::home_definition::prepare_home_bridge_definition(
+            &self.state.installed,
+            &self.schema.layout,
+        )
+    }
+}

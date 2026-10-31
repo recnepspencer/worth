@@ -347,3 +347,7 @@ pub mod integration {
 
 pub use crate::domain_computation::primary_graph::application_query::WorthQueryDerivedPairReadPlans;
 pub use worth_execution::ExecutionRequest;
+
+/// Mechanically closed Host Home composition; applications use Query Host.
+#[doc(hidden)]
+pub mod application_home_integration;

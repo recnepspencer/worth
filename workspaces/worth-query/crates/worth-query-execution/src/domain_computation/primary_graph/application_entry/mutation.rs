@@ -3,7 +3,9 @@ use worth_query_installation::facade::ApplicationSchema;
 
 pub use super::super::handler::{CandidateWriter, DecisionReader, HandlerInterruption};
 mod decision_plan;
+mod durable_capability;
 pub use decision_plan::WorthQueryDecisionPlan;
+pub use durable_capability::WorthQueryOperationDurableCapability;
 mod completed_candidate;
 mod execution;
 mod execution_report;
@@ -71,6 +73,16 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    /// Immutable capabilities of this installed handler implementation.
+    /// Omission leaves an opaque supplier unknown to directory admission.
+    /// Memory-only execution does not impose a durability contract.
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]>
+    where
+        Self: Sized,
+    {
+        None
+    }
+
     fn decide(
         &self,
         input: &Binding::Input,

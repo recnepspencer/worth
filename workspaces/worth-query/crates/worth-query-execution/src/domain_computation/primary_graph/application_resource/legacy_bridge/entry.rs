@@ -51,6 +51,8 @@ impl WorthQueryOwnedAsyncRuntimeServices<'_> {
         self.require_installed(&source.lowered)?;
         self.require_selected(selected)?;
         let native = admit().map_err(|cause| match cause {
+            WorldDenial::OwnerUnavailable => Denial::OwnerUnavailable,
+            WorldDenial::DurablePublicationRequired => Denial::DurablePublicationRequired,
             WorldDenial::ForeignOwner | WorldDenial::RelationalSourceMismatch => {
                 Denial::ProductSelectionMismatch
             }

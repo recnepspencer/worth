@@ -55,6 +55,11 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
                 value: Arc::new(TypedHandlerSlot::<Schema, Binding> {
                     handler: Arc::new(handler),
                 }),
+                durable_capabilities: if origin == HandlerOrigin::CompiledBody {
+                    Some(&[])
+                } else {
+                    Handler::declared_durable_capabilities()
+                },
                 origin,
             },
         );

@@ -6,7 +6,7 @@ pub use checkpoint_transition::{
     in_memory_rostered_program_from_checkpoint_with_transition,
     in_memory_rostered_program_from_checkpoint_with_transition_in_advancement,
 };
-mod assembly;
+pub(in crate::domain_computation::primary_graph) mod assembly;
 mod conditional;
 mod construction;
 mod demand;

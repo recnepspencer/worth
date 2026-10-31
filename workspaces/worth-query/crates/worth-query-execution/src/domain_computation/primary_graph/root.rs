@@ -48,10 +48,19 @@ impl WorthQueryPrimaryGraph {
         runtime: RelationalRuntime,
         invalidation_resources: crate::domain_computation::execution_runtime::WorthQueryInvalidationResources,
     ) -> Self {
-        let relational_runtime_instance_id = runtime.runtime_instance_id();
         let source_owner =
             WorthQueryRelationalSourceOwner::new(runtime, "primary", invalidation_resources)
                 .expect("the installed primary graph role is canonical");
+        Self::from_installed_source(runtime_authority, binding_identity, layout, source_owner)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn from_installed_source(
+        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        binding_identity: ApplicationSchemaBindingIdentity,
+        layout: Arc<WorthQueryPrimaryGraphLayout>,
+        source_owner: WorthQueryRelationalSourceOwner,
+    ) -> Self {
+        let relational_runtime_instance_id = source_owner.runtime_instance_id;
         Self {
             application_publication: None,
             runtime_authority,

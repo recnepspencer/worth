@@ -101,23 +101,36 @@ where
     ) -> Result<
         (
             WorthQueryApplicationInvariantFactories<Schema>,
-            PendingMutationHandlerRegistry<Schema>,
-            super::producer::PendingProducerRegistry<Schema>,
-            PendingConditionalRegistry<Schema>,
-            super::super::application_resource::installation::PendingResourceRegistry<Schema>,
-            super::super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
+            PreparedApplicationRuntimeContributions<Schema>,
         ),
         WorthQueryPrimaryGraphInstallationDenial,
     > {
         Ok((
             self.factories,
-            self.handlers,
-            self.producers,
-            self.conditionals,
-            self.resources,
-            self.managed_indexes,
+            PreparedApplicationRuntimeContributions {
+                handlers: self.handlers,
+                producers: self.producers,
+                conditionals: self.conditionals,
+                resources: self.resources,
+                managed_indexes: self.managed_indexes,
+            },
         ))
     }
+}
+
+pub(in crate::domain_computation::primary_graph) struct PreparedApplicationRuntimeContributions<
+    Schema: ApplicationSchema,
+> {
+    pub(in crate::domain_computation::primary_graph) handlers:
+        PendingMutationHandlerRegistry<Schema>,
+    pub(in crate::domain_computation::primary_graph) producers:
+        super::producer::PendingProducerRegistry<Schema>,
+    pub(in crate::domain_computation::primary_graph) conditionals:
+        PendingConditionalRegistry<Schema>,
+    pub(in crate::domain_computation::primary_graph) resources:
+        super::super::application_resource::installation::PendingResourceRegistry<Schema>,
+    pub(in crate::domain_computation::primary_graph) managed_indexes:
+        super::super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
 }
 
 fn validate_inventory<Schema: ApplicationSchema>(

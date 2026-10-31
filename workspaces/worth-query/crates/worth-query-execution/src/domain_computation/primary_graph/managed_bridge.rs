@@ -5,22 +5,18 @@ use worth_runtime_bridge::facade::{
     AspectKeySelector, BridgeAspectRegistration, BridgeAspectRegistrationId,
     BridgeConditionalRuntimeBuilder, BridgeDeliveryReceipt, BridgeMappingId,
     BridgeMappingRegistration, BridgeRuntimePolicy, BridgeSealedRuntimeAssembly,
-    BridgeSourceAdapter, BridgeSourceCapability, BridgeSourceCapabilitySet,
-    BridgeTruthViewSelector, CoarseRoutingMode, InvalidationSink, MappingSelector, RuntimeBridge,
-    RuntimeBridgeBuilder, RuntimeBridgeRelationalSource, SignalBridgeSinkError,
-    SignalInvalidationScope, SliceWideningPolicy, SnapshotReadContract, SnapshotReadSource,
-    SourceDeclaration, SourceDeclarationIdentity, SubscriptionSliceKind, TruthDeltaSurfaceKind,
-    TruthPatchScope, TruthPatchTargetSelector, TruthSnapshotIdentity, TruthSnapshotReader,
+    BridgeSourceCapability, BridgeSourceCapabilitySet, BridgeTruthViewSelector, CoarseRoutingMode,
+    InvalidationSink, MappingSelector, RuntimeBridge, RuntimeBridgeBuilder,
+    RuntimeBridgeRelationalSource, SignalBridgeSinkError, SignalInvalidationScope,
+    SliceWideningPolicy, SnapshotReadContract, SourceDeclaration, SourceDeclarationIdentity,
+    SubscriptionSliceKind, TruthDeltaSurfaceKind, TruthPatchScope, TruthPatchTargetSelector,
 };
+
+pub(in crate::domain_computation::primary_graph) mod home_definition;
 
 use super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
-
-#[derive(Clone)]
-struct WorthQueryApplicationBridgeSource {
-    source: RuntimeBridgeRelationalSource,
-}
 
 struct WorthQueryApplicationGranularOnlySink;
 
@@ -58,6 +54,16 @@ pub(crate) struct WorthQueryInstalledApplicationBridge {
 }
 
 impl WorthQueryInstalledApplicationBridge {
+    pub(in crate::domain_computation::primary_graph) fn attach_home_bridge(
+        ordinary: RuntimeBridge,
+        conditional: std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
+    ) -> Self {
+        Self {
+            ordinary,
+            conditional,
+        }
+    }
+
     pub(super) fn ordinary(&self) -> &RuntimeBridge {
         &self.ordinary
     }
@@ -114,34 +120,10 @@ pub(super) fn build_application_runtime_bridge<Schema>(
 where
     Schema: ApplicationSchema,
 {
-    let mut mappings = application_mappings(schema, layout)?;
-    let first = mappings.next().ok_or_else(|| {
-        bridge_denial("installed application schema has no bridge-readable fields")
-    })?;
-    let builder = RuntimeBridgeBuilder::new()
-        .with_policy(BridgeRuntimePolicy::operational())
+    home_definition::prepare_home_bridge_definition(schema, layout)?
         .with_relational_source(source.clone())
         .with_truth_branch_head_source(source.clone())
-        .with_source_adapter(WorthQueryApplicationBridgeSource { source })
-        .with_signal_sink(WorthQueryApplicationGranularOnlySink)
-        .register_source(SourceDeclaration::new(
-            SourceDeclarationIdentity::from_stable_name("primary-application-source"),
-            BridgeTruthViewSelector::branch_head(
-                super::application_branch::primary_truth_branch_identity(),
-            ),
-            BridgeSourceCapabilitySet::new(vec![
-                BridgeSourceCapability::SnapshotRead,
-                BridgeSourceCapability::BranchRead,
-            ]),
-        ))
-        .register_aspect_mapping(first.aspect)
-        .register_mapping(first.routing);
-    mappings
-        .fold(builder, |builder, mapping| {
-            builder
-                .register_aspect_mapping(mapping.aspect)
-                .register_mapping(mapping.routing)
-        })
+        .with_source_adapter(source)
         .build()
         .map_err(|error| bridge_denial(format!("{error:?}")))
 }
@@ -233,26 +215,6 @@ where
         })
         .collect::<Result<Vec<_>, _>>()
         .map(Vec::into_iter)
-}
-
-impl BridgeSourceAdapter for WorthQueryApplicationBridgeSource {
-    fn declared_capabilities(&self) -> BridgeSourceCapabilitySet {
-        BridgeSourceCapabilitySet::new(vec![
-            BridgeSourceCapability::SnapshotRead,
-            BridgeSourceCapability::BranchRead,
-        ])
-    }
-
-    fn open_snapshot(
-        &self,
-        identity: &TruthSnapshotIdentity,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        Box<dyn TruthSnapshotReader>,
-        worth_runtime_bridge::facade::RelationalBridgeSourceError,
-    > {
-        SnapshotReadSource::open_snapshot(&self.source, identity, execution)
-    }
 }
 
 impl InvalidationSink for WorthQueryApplicationGranularOnlySink {

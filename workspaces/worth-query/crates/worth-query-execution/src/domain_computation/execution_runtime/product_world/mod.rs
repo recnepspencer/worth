@@ -1,5 +1,7 @@
 pub(crate) mod activation;
 mod admission;
+mod durable_admission;
+pub use durable_admission::WorthQueryDurableStateAdmissionDenial;
 mod application_publication;
 mod bootstrap;
 mod branch_close;
@@ -7,6 +9,7 @@ mod clock;
 mod conditional_recovery;
 mod creation;
 mod history;
+mod home_attachment;
 mod installation_denial;
 mod owned_async;
 mod owner_cleanup;
@@ -21,6 +24,7 @@ mod shared_root;
 mod source_head;
 mod source_installation;
 mod source_owner;
+mod world_ports;
 
 pub(crate) use branch_close::WorthQueryProductBranchCloseScope;
 pub use branch_close::{WorthQueryProductBranchCloseDenial, WorthQueryProductBranchCloseReceipt};

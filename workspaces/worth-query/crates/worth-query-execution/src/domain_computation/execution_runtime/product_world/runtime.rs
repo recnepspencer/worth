@@ -1,8 +1,6 @@
 use worth_relational::facade::branch::RelationalBranchLifecyclePort;
 use worth_runtime_bridge::facade::RuntimeBridgeRelationalSource;
-use worth_runtime_world::facade::{
-    ProductBranchIdentity, ProductBranchIncarnation, RuntimeWorldOwner,
-};
+use worth_runtime_world::facade::{ProductBranchIdentity, ProductBranchIncarnation};
 
 use std::sync::Arc;
 
@@ -24,7 +22,9 @@ pub(crate) struct WorthQueryProductRootIdentity {
 pub struct WorthQueryProductRuntime {
     pub(super) named_read_probe: Arc<super::read_consult::NamedReadProbe>,
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
-    pub(crate) owner: Arc<RuntimeWorldOwner<(), (), (), (), ()>>,
+    pub(in crate::domain_computation) directory_support:
+        Option<fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>>,
+    pub(crate) owner: super::world_ports::WorthQueryProductWorldPorts,
     pub(crate) source: RuntimeBridgeRelationalSource,
     pub(crate) activations: Arc<WorthQueryProductActivationRegistry>,
     pub(crate) clock: WorthQueryProductWorldClock,
@@ -53,7 +53,7 @@ impl WorthQueryProductRuntime {
     }
 
     pub(crate) fn from_parts(
-        owner: RuntimeWorldOwner<(), (), (), (), ()>,
+        owner: super::world_ports::WorthQueryProductWorldPorts,
         source: RuntimeBridgeRelationalSource,
         activations: WorthQueryProductActivationRegistry,
         clock: WorthQueryProductWorldClock,
@@ -70,7 +70,8 @@ impl WorthQueryProductRuntime {
         #[cfg(not(test))]
         let _ = default_branch;
         Self {
-            owner: Arc::new(owner),
+            owner,
+            directory_support: None,
             adoption_preparation: Arc::default(),
             named_read_probe: Arc::default(),
             source,

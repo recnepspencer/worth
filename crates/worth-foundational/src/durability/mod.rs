@@ -13,6 +13,8 @@ mod home_identity;
 mod home_incarnation;
 mod owner_family;
 mod retention_class;
+mod state_family;
+pub use state_family::DurableStateFamily;
 #[cfg(test)]
 mod tests;
 

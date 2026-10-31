@@ -96,6 +96,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryMutationHandlerWork::NotStarted,
             ));
         }
+        if let Err(denial) = self.admit_directory_mutation::<Binding>() {
+            return Err(WorthQueryMutationHandlerExecutionReport::new(
+                Err(denial),
+                WorthQueryMutationHandlerWork::NotStarted,
+            ));
+        }
         let handler = match self.mutation_handler_for_attempt::<Binding>() {
             Ok(installed) => installed,
             Err(denial) => {

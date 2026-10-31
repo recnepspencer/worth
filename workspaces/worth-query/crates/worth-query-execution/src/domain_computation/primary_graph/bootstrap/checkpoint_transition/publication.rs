@@ -48,11 +48,15 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
     let installed = target.schema;
     let support = target.program;
     let layout = graph.graph.layout.clone();
-    let mut recovered = graph.recovered_relational_authority.take().ok_or_else(|| {
-        WorthQueryInMemoryApplicationDenial::Graph(denial(
-            "checkpoint transition has no recovered native authority",
-        ))
-    })?;
+    let mut recovered = graph
+        .meaning
+        .recovered_relational_authority
+        .take()
+        .ok_or_else(|| {
+            WorthQueryInMemoryApplicationDenial::Graph(denial(
+                "checkpoint transition has no recovered native authority",
+            ))
+        })?;
     let codec_pending = recovered.codec_transition_pending();
     let expected = AspectValue::String(InternedString::from(transition.predecessor.0.as_str()));
     let (basis, identity, records) = graph
@@ -125,7 +129,8 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
         .finish()
         .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
     if codec_pending
-        && (!graph.typed_rows.entity_rows.is_empty() || !graph.typed_rows.relation_rows.is_empty())
+        && (!graph.meaning.typed_rows.entity_rows.is_empty()
+            || !graph.meaning.typed_rows.relation_rows.is_empty())
     {
         return Err(WorthQueryInMemoryApplicationDenial::Graph(denial(
             "codec-only recovery cannot append unclassified authored rows",
@@ -150,8 +155,8 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
     }
     batch = append_typed_rows(
         batch,
-        std::mem::take(&mut graph.typed_rows.entity_rows),
-        std::mem::take(&mut graph.typed_rows.relation_rows),
+        std::mem::take(&mut graph.meaning.typed_rows.entity_rows),
+        std::mem::take(&mut graph.meaning.typed_rows.relation_rows),
     );
     for entity_id in records.entities {
         if recovered.codec_transition_retires(entity_id) {
@@ -223,10 +228,11 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
     let recovery = std::rc::Rc::clone(&transition.recovery);
     let capture_policy = transition.capture_policy;
     let codec_pending = graph
+        .meaning
         .recovered_relational_authority
         .as_ref()
         .is_some_and(|authority| authority.codec_transition_pending());
-    let publication = graph.recovered_publication.clone().ok_or_else(|| {
+    let publication = graph.meaning.recovered_publication.clone().ok_or_else(|| {
         WorthQueryInMemoryApplicationDenial::Graph(denial(
             "checkpoint transition has no original native bootstrap publication",
         ))
@@ -281,7 +287,7 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
             )
         }
     }
-    graph.recovered_relational_authority = Some(successor);
+    graph.meaning.recovered_relational_authority = Some(successor);
     cell.confirm_checkpoint_candidate().map_err(|_| {
         WorthQueryInMemoryApplicationDenial::Graph(denial(
             "checkpoint activation confirmation refused",

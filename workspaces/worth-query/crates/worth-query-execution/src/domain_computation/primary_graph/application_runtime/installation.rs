@@ -2,6 +2,7 @@
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
 mod assembly;
+pub(in crate::domain_computation::primary_graph) mod home_attachment;
 mod input;
 use super::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,

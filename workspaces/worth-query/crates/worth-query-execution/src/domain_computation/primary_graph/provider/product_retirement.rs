@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldLifecyclePort};
+use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldRecoveryPort};
 
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryReleasedHistoryFollower;
@@ -121,7 +121,7 @@ impl WorthQueryReleasedHistoryFollower for WorthQueryPrimaryGraphProvider {
 /// The World commits of `candidates` history still retains. A World that is
 /// not attached or cannot answer keeps them all; nothing is lost but capacity.
 fn retained_among(
-    world: Option<&RuntimeWorldLifecyclePort>,
+    world: Option<&RuntimeWorldRecoveryPort>,
     candidates: &[CompositeCommitIdentity],
 ) -> BTreeSet<CompositeCommitIdentity> {
     world

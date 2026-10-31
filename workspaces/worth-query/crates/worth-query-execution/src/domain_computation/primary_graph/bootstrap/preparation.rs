@@ -117,49 +117,17 @@ impl WorthQueryExecutionInstallationAuthority {
     > {
         let execution = phase.execution_request();
 
-        if !self.belongs_to(runtime) {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime,
-                "execution installation authority belongs to another runtime",
-            ));
-        }
-        if runtime.primary_graph().is_some() {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::AlreadyInstalled,
-                "execution runtime already owns a primary graph",
-            ));
-        }
-        runtime
-            .installed_packages()
-            .validate_application_schema(installed_schema)
-            .map_err(|denial| {
-                primary_graph_denial(
-                    WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                    denial.subject(),
-                )
-            })?;
-        let (layout, additions) = WorthQueryPrimaryGraphLayout::lower(
-            installed_schema.installed_declaration(),
-            installed_schema.native_contracts(),
-            &relational_runtime.config().schema.registry,
+        let super::native_meaning::InstalledNativeSchemaMeaning {
+            layout,
+            receipt: mut invariant_installation_receipt,
+            expected_invariant_inventory_digest,
+        } = self.prepare_native_schema(
+            phase,
+            runtime,
+            installed_schema,
+            &mut relational_runtime,
+            invariant_factories,
         )?;
-        let registrations =
-            invariant_factories.lower(installed_schema.binding_identity(), &layout)?;
-        let expected_invariant_inventory_digest =
-            worth_relational::facade::runtime::custom_invariant_inventory_digest(&registrations);
-        let mut invariant_installation_receipt = relational_runtime
-            .prepare_initial_schema_installation()
-            .map_err(map_initial_schema_installation_denial)?
-            .install_with_custom_invariants(additions, registrations)
-            .map_err(map_initial_schema_installation_denial)?;
-        if invariant_installation_receipt.custom_invariant_inventory_digest()
-            != &expected_invariant_inventory_digest
-        {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::InvariantInstallationReceiptMismatch,
-                "Relational installed an invariant inventory outside the application catalog",
-            ));
-        }
         let (recovered_relational_authority, recovered_checkpoint_restore_work) = match checkpoint {
             Some(checkpoint) => {
                 let mut recovery = relational_runtime.durability_recovery();
@@ -221,18 +189,20 @@ impl WorthQueryExecutionInstallationAuthority {
             .transpose()?;
         Ok(super::prepared_native::PreparedPrimaryGraphInstallation {
             graph,
-            resource_support:
-                super::super::provider::WorthQueryPrimaryGraphResourceSupport::install(
-                    runtime
-                        .application_query_resource_profile()
-                        .maximum_concurrent_graph_work(),
-                ),
-            recovered_publication,
-            recovered_relational_authority,
-            recovered_checkpoint_restore_work,
-            invariant_installation_receipt,
-            expected_invariant_inventory_digest,
-            typed_rows: Default::default(),
+            meaning: super::prepared_native::PreparedPrimaryGraphMeaning {
+                resource_support:
+                    super::super::provider::WorthQueryPrimaryGraphResourceSupport::install(
+                        runtime
+                            .application_query_resource_profile()
+                            .maximum_concurrent_graph_work(),
+                    ),
+                recovered_publication,
+                recovered_relational_authority,
+                recovered_checkpoint_restore_work,
+                invariant_installation_receipt,
+                expected_invariant_inventory_digest,
+                typed_rows: Default::default(),
+            },
         })
     }
 }

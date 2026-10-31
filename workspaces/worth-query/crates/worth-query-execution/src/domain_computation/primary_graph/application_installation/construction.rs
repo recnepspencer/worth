@@ -50,33 +50,22 @@ where
         &limits,
         program_admission,
     )?;
-    let (mut invariants, handlers, producers, conditionals, resources, managed_indexes) =
-        configured.into_parts().map_err(Denial::Contributions)?;
-    conditionals
-        .validate_target_coverage(
-            runtime.installed_packages(),
-            installed.owner(),
-            installed.schema_name(),
-        )
-        .map_err(Denial::Contributions)?;
-    if let Some(support) = &admitted_program_support {
-        handlers
-            .validate_managed_computations(&support.features)
-            .map_err(Denial::Contributions)?;
-        handlers
-            .validate_derived_collections(&support.features)
-            .map_err(Denial::Contributions)?;
-    }
-    let activation =
-        super::super::program_occurrence::WorthQueryProgramActivationCell::unpublished();
-    if let Some(support) = &admitted_program_support {
-        invariants.select_by_program(
-            super::super::invariant_installation::WorthQueryInvariantProgramBasis::admitted(
-                std::sync::Arc::clone(&support.roster),
-                activation.clone(),
-            ),
-        );
-    }
+    let (
+        invariants,
+        super::super::application_contribution::PreparedApplicationRuntimeContributions {
+            handlers,
+            producers,
+            conditionals,
+            resources,
+            managed_indexes,
+        },
+        activation,
+    ) = super::contribution_preparation::prepare(
+        configured,
+        &runtime,
+        &installed,
+        &admitted_program_support,
+    )?;
     let mut relational_builder = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .profile(limits.profile.relational_profile());
     if let Some(publication) = limits

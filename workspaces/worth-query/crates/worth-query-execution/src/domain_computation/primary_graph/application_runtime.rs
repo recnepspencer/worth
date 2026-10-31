@@ -20,6 +20,7 @@ use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRe
 mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
+mod durable_admission;
 mod execution_memory;
 mod external_dispatch_attempt;
 mod mutation_partition;

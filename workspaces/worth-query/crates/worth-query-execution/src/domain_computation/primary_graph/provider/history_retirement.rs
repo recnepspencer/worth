@@ -16,7 +16,7 @@ impl WorthQueryPrimaryGraphProvider {
     ) {
         assert!(
             self.world_history
-                .set(product.owner.lifecycle_port())
+                .set(product.owner.recovery_port())
                 .is_ok(),
             "one product World owns the provider's history"
         );

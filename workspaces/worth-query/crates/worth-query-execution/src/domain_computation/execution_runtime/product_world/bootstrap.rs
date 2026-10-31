@@ -115,7 +115,7 @@ impl WorthQueryProductRuntime {
             .map(std::sync::Arc::new);
         activation.commit(&observation);
         Ok(Self::from_parts(
-            owner,
+            super::world_ports::WorthQueryProductWorldPorts::memory(owner),
             source,
             activations,
             clock,

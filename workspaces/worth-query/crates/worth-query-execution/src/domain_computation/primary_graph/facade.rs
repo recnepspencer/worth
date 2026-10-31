@@ -122,7 +122,7 @@ pub use super::application_entry::mutation::{
     HandlerResult, MutationHandlerExecutionDenial, OperationHandler,
     WorthQueryCompletedMutationCandidate, WorthQueryDecisionPlan,
     WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
-    WorthQueryMutationHandlerWork,
+    WorthQueryMutationHandlerWork, WorthQueryOperationDurableCapability,
 };
 pub use super::application_output_demand::{
     WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,

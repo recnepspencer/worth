@@ -64,8 +64,7 @@ impl PreparedNativeGraph {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct PreparedPrimaryGraphInstallation {
-    pub(in crate::domain_computation::primary_graph) graph: PreparedNativeGraph,
+pub(in crate::domain_computation::primary_graph) struct PreparedPrimaryGraphMeaning {
     pub(in crate::domain_computation::primary_graph) resource_support:
         super::super::provider::WorthQueryPrimaryGraphResourceSupport,
     pub(in crate::domain_computation::primary_graph) recovered_publication:
@@ -81,15 +80,21 @@ pub(in crate::domain_computation::primary_graph) struct PreparedPrimaryGraphInst
         super::super::typed_bootstrap::TypedBootstrapRows,
 }
 
+pub(in crate::domain_computation::primary_graph) struct PreparedPrimaryGraphInstallation {
+    pub(in crate::domain_computation::primary_graph) graph: PreparedNativeGraph,
+    pub(in crate::domain_computation::primary_graph) meaning: PreparedPrimaryGraphMeaning,
+}
+
 impl PreparedPrimaryGraphInstallation {
     pub(in crate::domain_computation::primary_graph) fn resource_support_ref(&self) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot{
-        self.resource_support.snapshot_ref()
+        self.meaning.resource_support.snapshot_ref()
     }
 
     pub(in crate::domain_computation::primary_graph) fn has_pending_codec_transition(
         &self,
     ) -> bool {
-        self.recovered_relational_authority
+        self.meaning
+            .recovered_relational_authority
             .as_ref()
             .is_some_and(|authority| authority.codec_transition_pending())
     }
@@ -123,7 +128,23 @@ impl PreparedPrimaryGraphInstallation {
             product_world_resources.invalidation_resources(),
         );
         graph.application_publication = application_publication;
-        Ok(WorthQueryPrimaryGraphBootstrap {
+        Ok(self
+            .meaning
+            .into_bootstrap(runtime, installed, graph, product_world_resources))
+    }
+}
+
+impl PreparedPrimaryGraphMeaning {
+    pub(in crate::domain_computation::primary_graph) fn into_bootstrap<
+        Schema: ApplicationSchema,
+    >(
+        self,
+        runtime: &WorthQueryExecutionRuntime,
+        installed: &WorthQueryInstalledApplicationSchema<Schema>,
+        graph: WorthQueryPrimaryGraph,
+        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
+    ) -> WorthQueryPrimaryGraphBootstrap<Schema> {
+        WorthQueryPrimaryGraphBootstrap {
             value_bindings: installed.value_bindings().clone(),
             runtime_authority: runtime.authority_identity(),
             installed_packages: runtime.retain_installed_packages(),
@@ -151,6 +172,6 @@ impl PreparedPrimaryGraphInstallation {
             invariant_installation_receipt: self.invariant_installation_receipt,
             expected_invariant_inventory_digest: self.expected_invariant_inventory_digest,
             _schema: PhantomData,
-        })
+        }
     }
 }

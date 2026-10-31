@@ -1,4 +1,5 @@
 mod composition;
+pub(in crate::domain_computation::primary_graph) use composition::PreparedApplicationRuntimeContributions;
 mod derived_relation;
 mod native_field_contract;
 pub use derived_relation::WorthQueryDerivedRelationCountOwner;

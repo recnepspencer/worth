@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::sync::Mutex;
+mod attachment;
 
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::RelationalBridgeBranchHeadLease;
@@ -48,6 +49,17 @@ impl WorthQueryRelationalSourceOwner {
         let source =
             RuntimeBridgeRelationalSource::for_graph_role(Arc::clone(&runtime), graph_role)
                 .map_err(WorthQueryRelationalSourceInstallationDenial::BridgeConfiguration)?;
+        let runtime =
+            worth_relational::facade::change_source::RelationalRuntimeHandle::immutable(runtime);
+        Self::from_registered_handle(runtime, source, runtime_instance_id, invalidation_resources)
+    }
+
+    fn from_registered_handle(
+        runtime: worth_relational::facade::change_source::RelationalRuntimeHandle,
+        source: RuntimeBridgeRelationalSource,
+        runtime_instance_id: u64,
+        invalidation_resources: super::super::WorthQueryInvalidationResources,
+    ) -> Result<Self, WorthQueryRelationalSourceInstallationDenial> {
         let invalidation_owner = Arc::new(
             crate::domain_computation::primary_graph::SourceInvalidationOwner::new(
                 invalidation_resources.clone(),
@@ -60,8 +72,6 @@ impl WorthQueryRelationalSourceOwner {
         let subscription = pending
             .activate(invalidation_owner.clone())
             .map_err(WorthQueryRelationalSourceInstallationDenial::CompanionRegistration)?;
-        let runtime =
-            worth_relational::facade::change_source::RelationalRuntimeHandle::immutable(runtime);
         #[cfg(test)]
         let read_acquisitions = Arc::new(std::sync::atomic::AtomicU64::new(0));
         #[cfg(test)]

@@ -45,7 +45,7 @@ fn walk(
     while let Some(from) = resume.get(index) {
         let release = runtime
             .owner
-            .lifecycle_port()
+            .recovery_port()
             .release_retired_branch_history(from)
             .map_err(|_| WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?;
         match release.held_commit() {

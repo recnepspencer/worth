@@ -41,9 +41,9 @@ impl<'installation, Schema: ApplicationSchema>
         seed: WorthQueryApplicationEntitySeed<Schema, Entity>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         self.charge(seed.migration_cost())?;
-        let result = self.graph.typed_rows.bind_entity(
+        let result = self.graph.meaning.typed_rows.bind_entity(
             &self.graph.graph.layout,
-            self.graph.recovered_relational_authority.is_some(),
+            self.graph.meaning.recovered_relational_authority.is_some(),
             seed,
         );
         self.failed |= result.is_err();
@@ -55,9 +55,9 @@ impl<'installation, Schema: ApplicationSchema>
         seed: WorthQueryApplicationRelationSeed<Schema, Relation, From, To>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         self.charge(seed.migration_cost())?;
-        let result = self.graph.typed_rows.bind_relation(
+        let result = self.graph.meaning.typed_rows.bind_relation(
             &self.graph.graph.layout,
-            self.graph.recovered_relational_authority.is_some(),
+            self.graph.meaning.recovered_relational_authority.is_some(),
             seed,
         );
         self.failed |= result.is_err();

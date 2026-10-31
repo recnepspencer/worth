@@ -26,6 +26,8 @@ use crate::domain_computation::primary_graph::{
 /// the `Ok` `HandlerResult`.
 #[derive(Debug)]
 pub enum MutationHandlerExecutionDenial {
+    DurableBindingAdmission(worth_query_installation::facade::WorthQueryApplicationOperationInstallationDenial),
+    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     /// Another installed runtime lent the phase; no handler or read ran.
     ForeignAdvancementPhase(
         crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
@@ -49,6 +51,8 @@ pub enum MutationHandlerExecutionDenial {
 impl std::fmt::Display for MutationHandlerExecutionDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::DurableBindingAdmission(cause) => cause.fmt(formatter),
+            Self::DurableStateAdmission(cause) => cause.fmt(formatter),
             Self::ForeignAdvancementPhase(_) => {
                 formatter.write_str("the phase belongs to another installed runtime")
             }
