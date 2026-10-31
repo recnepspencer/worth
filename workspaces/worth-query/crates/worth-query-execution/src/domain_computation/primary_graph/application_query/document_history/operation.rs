@@ -56,11 +56,14 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::HeadDiverged);
         }
         let product = selected.product().read_lease_ref();
-        if WorthQueryProductBranchReadIdentity::from_observation(product.observation())
-            != document.expected
-        {
+        let expected = WorthQueryProductBranchReadIdentity::from_observation(product.observation());
+        if expected != document.selection.lock().expected {
             return Err(Denial::HeadDiverged);
         }
-        confirm_document_head(self, phase, product, ()).map_err(|(_, denial)| denial)
+        confirm_document_head(self, phase, product, ()).map_err(|(_, denial)| denial)?;
+        if expected != document.selection.lock().expected {
+            return Err(Denial::HeadDiverged);
+        }
+        Ok(())
     }
 }

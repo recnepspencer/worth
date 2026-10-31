@@ -25,10 +25,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if domain != ApplicationHistoryModelDomain::ScopeEntityRecord {
             return Err(Denial::UnsupportedContextRefresh);
         }
-        let before = document.physical_source.retained_clone();
+        let (before, previous_expected) = {
+            let selected = document.selection.lock();
+            (
+                selected.physical_source.retained_clone(),
+                selected.expected.clone(),
+            )
+        };
         let after = observed.source().product().retained_clone();
         if WorthQueryProductBranchReadIdentity::from_observation(before.observation())
-            != document.expected
+            != previous_expected
         {
             return Err(Denial::ReceiptMismatch);
         }
@@ -67,14 +73,27 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if let Some(pause) = &document.context_pause {
             pause.pause();
         }
+        let mut selected = document.selection.lock();
+        if selected.expected != previous_expected {
+            return Err(Denial::HeadDiverged);
+        }
         let prepared = observed
             .source()
-            .confirm(phase, self, document.branch(), prepared)
-            .map_err(|(_, cause)| cause)?;
+            .confirm(phase, self, selected.head.branch(), prepared);
+        let prepared = match prepared {
+            Ok(prepared) => prepared,
+            Err((prepared, cause)) => {
+                drop(selected);
+                drop(prepared);
+                return Err(cause);
+            }
+        };
         // Only owner-field moves remain. The original user step and its exact
         // journal source are immutable; no step or cursor generation changes.
-        document.expected = expected;
-        document.physical_source = prepared;
+        selected.expected = expected;
+        let previous = std::mem::replace(&mut selected.physical_source, prepared);
+        drop(selected);
+        drop(previous);
         Ok(())
     }
 }

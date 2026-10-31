@@ -22,6 +22,7 @@ mod preview;
 mod receiver_pause;
 mod reservation;
 mod sealing;
+mod selection;
 mod step;
 pub use candidate::WorthQueryDocumentHistoryCandidateDenial;
 #[doc(hidden)]
@@ -40,7 +41,6 @@ pub use disposal::{
     WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
     WorthQueryDocumentHistoryClosingDenial,
 };
-pub(in crate::domain_computation::primary_graph) use journal::HistoryJournal;
 pub(in crate::domain_computation::primary_graph) use model::HistoryModelIdentity;
 #[doc(hidden)]
 pub use observation::{
@@ -53,10 +53,10 @@ pub use paging::{
     WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
 };
 pub use preview::WorthQueryHistoryPreview;
+pub(in crate::domain_computation::primary_graph) use selection::HistorySelectionCell;
 pub use step::{WorthQueryHistoryNodeId, WorthQueryHistoryStep};
 
 use super::WorthQueryOwnedProductHead;
-use crate::basis::WorthQueryProductBranchReadIdentity;
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
 use worth_query_installation::facade::{ApplicationSchema, ApplicationSchemaBindingIdentity};
 
@@ -67,14 +67,11 @@ pub struct WorthQueryDocumentHistory<
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
 > {
-    pub(in crate::domain_computation::primary_graph) head: WorthQueryOwnedProductHead<'runtime, S>,
+    pub(in crate::domain_computation::primary_graph) application: &'runtime crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+    pub(in crate::domain_computation::primary_graph) selection:
+        std::sync::Arc<HistorySelectionCell<'runtime, S>>,
     pub(in crate::domain_computation::primary_graph) model: HistoryModelIdentity,
-    pub(in crate::domain_computation::primary_graph) expected: WorthQueryProductBranchReadIdentity,
-    // One actual current physical context, distinct from immutable user-step endpoints.
-    pub(in crate::domain_computation::primary_graph) physical_source:
-        crate::basis::WorthQueryProductObservationLease,
     pub(in crate::domain_computation::primary_graph) binding: ApplicationSchemaBindingIdentity,
-    pub(in crate::domain_computation::primary_graph) journal: HistoryJournal<'runtime, S>,
     pub(in crate::domain_computation::primary_graph) capture_pause:
         Option<std::sync::Arc<receiver_pause::ReceiverPause>>,
     pub(in crate::domain_computation::primary_graph) page_pause:
@@ -88,12 +85,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
 {
     pub fn application(&self) -> &'runtime crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>{
-        self.head.application()
+        self.application
     }
 
     /// Descriptive targeting for the Publication owner; it grants no READ permission.
     pub fn branch(&self) -> crate::basis::WorthQueryProductBranch {
-        self.head.branch()
+        self.selection.lock().head.branch()
     }
 }
 

@@ -150,33 +150,27 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 })
             }
         };
-        let journal = match crate::domain_computation::primary_graph::product_operation::document_history::HistoryJournal::attach(
-            &execution, self.runtime.authority_identity().as_u64(), expected.clone(), pending.retained_source(self),
+        let application = head.application();
+        let selection = match crate::domain_computation::primary_graph::product_operation::document_history::HistorySelectionCell::attach(
+            &execution, head, expected, pending.product().retained_clone(), pending.retained_source(self),
         ) {
-            Ok(journal) => journal,
-            Err(denial) => return Err(WorthQueryDocumentHistoryAttachmentFailure { head, denial }),
+            Ok(selection) => selection,
+            Err((head, denial)) => return Err(WorthQueryDocumentHistoryAttachmentFailure { head, denial }),
         };
         let document = WorthQueryDocumentHistory {
-            head,
+            application,
+            selection,
             model: pending.model(),
-            expected,
-            physical_source: pending.product().retained_clone(),
             binding,
-            journal,
             capture_pause: None,
             page_pause: None,
             context_pause: None,
             marker: std::marker::PhantomData,
         };
-        match pending.confirm(
-            phase,
-            document.head.application(),
-            document.head.branch(),
-            document,
-        ) {
+        match pending.confirm(phase, document.application(), document.branch(), document) {
             Ok(document) => Ok(document),
             Err((document, denial)) => Err(WorthQueryDocumentHistoryAttachmentFailure {
-                head: document.head,
+                head: document.selection.take().head,
                 denial,
             }),
         }
@@ -193,7 +187,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
         let (pending, read) = read.execute(self, phase)?;
-        if !std::ptr::eq(self, document.head.application()) {
+        if !std::ptr::eq(self, document.application()) {
             return Err(Denial::ForeignRuntime);
         }
         if document.binding != self.installed_schema().binding_identity() {
@@ -202,11 +196,6 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if pending.model() != document.model {
             return Err(Denial::ForeignModel);
         }
-        if pending.identity() != document.expected {
-            return Err(Denial::HeadDiverged);
-        }
-        pending
-            .confirm(phase, self, document.head.branch(), read)
-            .map_err(|(_, denial)| denial)
+        pending.confirm_selection(phase, document, read)
     }
 }

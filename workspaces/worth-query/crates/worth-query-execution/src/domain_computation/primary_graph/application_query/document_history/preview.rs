@@ -18,7 +18,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
         let completed = read.complete_metadata_read(self, phase, document, access)?;
-        let preview = document.journal.preview(node, document.model.clone())?;
+        let preview = document
+            .selection
+            .lock()
+            .journal
+            .preview(node, document.model.clone())?;
         completed.confirm(document, preview)
     }
 
@@ -43,7 +47,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let parameters = *read.plan.parameters.identity();
         let principal = read.plan.principal.principal_entity_id();
         let completed = read.complete_metadata_read(self, phase, document, access)?;
-        if !document.journal.owns_node(preview.step.id()) || preview.model != document.model {
+        if !document
+            .selection
+            .lock()
+            .journal
+            .owns_node(preview.step.id())
+            || preview.model != document.model
+        {
             return Err(Denial::ForeignHistoryNode);
         }
         Ok(WorthQueryHistoryPreviewReadAdmission::new(
@@ -72,7 +82,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         {
             return Err(Denial::ReceiptMismatch);
         }
-        if !document.journal.owns_node(admission.step.id()) || document.model != admission.model {
+        if !document
+            .selection
+            .lock()
+            .journal
+            .owns_node(admission.step.id())
+            || document.model != admission.model
+        {
             return Err(Denial::ForeignHistoryNode);
         }
         // Historical truth must not be compared to its branch's current head.

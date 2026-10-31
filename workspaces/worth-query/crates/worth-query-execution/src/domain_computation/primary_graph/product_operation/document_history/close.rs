@@ -46,12 +46,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 denial: WorthQueryApplicationProductBranchCloseDenial::ForeignPhase,
             });
         }
-        let Self {
+        let super::selection::HistorySelection {
             head,
             journal,
             physical_source,
             ..
-        } = self;
+        } = self.selection.take();
         drop(physical_source);
         match WorthQueryDocumentHistoryClosing::new(head, journal).retry(phase) {
             Ok(receipt) => Ok(receipt),

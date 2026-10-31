@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::branch::WorthQueryProductBranchComponents;
 
 mod adoption;
+pub(in crate::domain_computation::primary_graph) use adoption::ProductBranchAdoptionRelease;
 pub use adoption::{
     WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
 };

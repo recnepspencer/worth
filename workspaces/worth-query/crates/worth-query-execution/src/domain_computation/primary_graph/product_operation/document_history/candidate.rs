@@ -43,7 +43,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                     cause,
                 ))
             })?;
-        if !self
+        if !reserved
             .expected
             .matches_observation(selected.product().observation())
         {

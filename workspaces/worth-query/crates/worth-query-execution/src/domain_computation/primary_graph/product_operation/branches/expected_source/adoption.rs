@@ -2,7 +2,8 @@
 use super::*;
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
 use worth_runtime_world::facade::{
-    ProductBranchCurrentnessFailure, RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial,
+    ProductBranchCurrentnessFailure, ProductBranchObservation, RuntimeWorldBranchAdmissionDenial,
+    RuntimeWorldServiceDenial,
 };
 
 #[derive(Debug)]
@@ -24,6 +25,20 @@ pub enum WorthQueryExpectedProductBranchAdoptionDenial {
 pub struct WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema> {
     candidate: WorthQueryExpectedProductBranch<'runtime, Schema>,
     denial: WorthQueryExpectedProductBranchAdoptionDenial,
+    deferred: Option<(
+        WorthQueryProductBranchLease,
+        Option<ProductBranchObservation>,
+    )>,
+}
+
+/// Native/World custody released by the outer owner after its slot guard ends.
+pub(in crate::domain_computation::primary_graph) struct ProductBranchAdoptionRelease<
+    'runtime,
+    Schema,
+> {
+    _candidate: WorthQueryProductBranchLease,
+    _source: WorthQueryExpectedProductBranch<'runtime, Schema>,
+    _expected: ProductBranchObservation,
 }
 
 impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runtime, Schema> {
@@ -45,15 +60,28 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
         self.adopt_with_endpoint(head, phase, None)
+            .map(|(previous, release)| {
+                drop(release);
+                previous
+            })
+            .map_err(|mut failure| {
+                // Public adoption has no enclosing document guard. Preserve its
+                // original transient-pin lifetime before returning the owner.
+                drop(failure.deferred.take());
+                failure
+            })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn adopt_at(
+    pub(in crate::domain_computation::primary_graph) fn adopt_at_deferred(
         self,
         head: &mut WorthQueryProductBranch,
         phase: &WorthQueryAdvancementPhase<'_>,
         expected: &crate::basis::WorthQueryProductObservationLease,
     ) -> Result<
-        WorthQueryProductBranch,
+        (
+            WorthQueryProductBranch,
+            ProductBranchAdoptionRelease<'runtime, Schema>,
+        ),
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
         self.adopt_with_endpoint(head, phase, Some(expected))
@@ -65,7 +93,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         phase: &WorthQueryAdvancementPhase<'_>,
         expected: Option<&crate::basis::WorthQueryProductObservationLease>,
     ) -> Result<
-        WorthQueryProductBranch,
+        (
+            WorthQueryProductBranch,
+            ProductBranchAdoptionRelease<'runtime, Schema>,
+        ),
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
         let execution = match phase.execution_request_for(&self.application.product_runtime) {
@@ -108,11 +139,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
             }
         };
         if expected.is_some_and(|expected| expected.observation() != candidate.observation()) {
-            return Err(
-                self.adoption_failed(WorthQueryExpectedProductBranchAdoptionDenial::HeadMoved)
-            );
+            let mut failure =
+                self.adoption_failed(WorthQueryExpectedProductBranchAdoptionDenial::HeadMoved);
+            failure.deferred = Some((candidate, None));
+            return Err(failure);
         }
-        // Keep resource drops outside Native access and the World guarded section.
+        let expected_source = self.source.observation().clone();
+        // Keep resource drops outside Native access and the outer head-slot guard.
         let result = application
             .primary_provider
             .graph
@@ -128,28 +161,37 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
                         WorthQueryExpectedProductBranchAdoptionDenial::CandidateBasis(denial),
                     ));
                 }
-                self.adopt_while_heads_current(head, &candidate, &execution)
+                self.adopt_while_heads_current(head, &candidate, &expected_source, &execution)
             });
-        drop(candidate);
-        result.map(|(previous, adopted)| {
-            drop(adopted);
-            previous
-        })
+        match result {
+            Ok((previous, adopted)) => Ok((
+                previous,
+                ProductBranchAdoptionRelease {
+                    _candidate: candidate,
+                    _source: adopted,
+                    _expected: expected_source,
+                },
+            )),
+            Err(mut failure) => {
+                failure.deferred = Some((candidate, Some(expected_source)));
+                Err(failure)
+            }
+        }
     }
 
     fn adopt_while_heads_current(
         self,
         head: &mut WorthQueryProductBranch,
         candidate: &WorthQueryProductBranchLease,
+        expected: &ProductBranchObservation,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         (WorthQueryProductBranch, Self),
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
         let world = self.application.product_runtime.owner.observation_port();
-        let expected = self.source.observation().clone();
         match world.while_product_branches_current(
-            &expected,
+            expected,
             candidate.observation(),
             self,
             |candidate, _source, _candidate_branch| match execution.check_live() {
@@ -178,6 +220,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         WorthQueryExpectedProductBranchAdoptionFailure {
             candidate: self,
             denial,
+            deferred: None,
         }
     }
 
@@ -206,7 +249,13 @@ impl<'runtime, Schema> WorthQueryExpectedProductBranchAdoptionFailure<'runtime, 
         WorthQueryExpectedProductBranch<'runtime, Schema>,
         WorthQueryExpectedProductBranchAdoptionDenial,
     ) {
-        (self.candidate, self.denial)
+        let Self {
+            candidate,
+            denial,
+            deferred,
+        } = self;
+        drop(deferred);
+        (candidate, denial)
     }
 }
 

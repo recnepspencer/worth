@@ -47,7 +47,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         if !std::ptr::eq(self.application(), candidate.application()) {
             return Err(Denial::ForeignRuntime);
         }
-        if candidate.expected_source() != self.expected {
+        if candidate.expected_source() != reserved.expected {
             return Err(Denial::HeadDiverged);
         }
         Ok(WorthQueryDocumentHistoryOperationConstraint {

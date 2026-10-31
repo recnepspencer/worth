@@ -77,14 +77,23 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryOwnedProductHead<'runtime, S
         Ok(Self::from_created_branch(self.application, previous))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn adopt_at(
+    pub(in crate::domain_computation::primary_graph) fn adopt_at_deferred(
         &mut self,
         candidate: WorthQueryExpectedProductBranch<'runtime, Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
         expected: &crate::basis::WorthQueryProductObservationLease,
-    ) -> Result<Self, WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>> {
-        let previous = candidate.adopt_at(&mut self.branch, phase, expected)?;
-        Ok(Self::from_created_branch(self.application, previous))
+    ) -> Result<
+        (
+            Self,
+            super::expected_source::ProductBranchAdoptionRelease<'runtime, Schema>,
+        ),
+        WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
+    > {
+        let (previous, release) = candidate.adopt_at_deferred(&mut self.branch, phase, expected)?;
+        Ok((
+            Self::from_created_branch(self.application, previous),
+            release,
+        ))
     }
 
     /// Close the current head through its existing application lifecycle.

@@ -33,12 +33,7 @@ impl CompletedMetadataRead<'_, '_> {
         if self.source.model() != document.model {
             return Err(Denial::ForeignModel);
         }
-        if self.source.identity() != document.expected {
-            return Err(Denial::HeadDiverged);
-        }
-        self.source
-            .confirm(self.phase, document.application(), document.branch(), value)
-            .map_err(|(_, cause)| cause)
+        self.source.confirm_selection(self.phase, document, value)
     }
 }
 
@@ -107,7 +102,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
         let completed = self.observe_metadata_read(runtime, phase, document, access)?;
-        if completed.source.identity() != document.expected {
+        if completed.source.identity() != document.selection.lock().expected {
             return Err(Denial::HeadDiverged);
         }
         Ok(completed)
@@ -187,6 +182,6 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
         let completed = read.complete_metadata_read(self, phase, document, access)?;
-        completed.confirm(document, document.current_history_step(access).clone())
+        completed.confirm(document, document.current_history_step(access))
     }
 }

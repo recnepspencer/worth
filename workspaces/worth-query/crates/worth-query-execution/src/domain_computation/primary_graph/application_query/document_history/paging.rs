@@ -23,6 +23,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .checked_execution_request_for(&self.product_runtime)
             .map_err(Denial::Stopped)?;
         let page = document
+            .selection
+            .lock()
             .journal
             .page(execution, limits, after)
             .map_err(Denial::Paging)?;

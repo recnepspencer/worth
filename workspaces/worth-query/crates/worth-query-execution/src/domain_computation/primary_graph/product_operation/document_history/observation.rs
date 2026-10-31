@@ -83,6 +83,6 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
     pub fn observe_history_enrollment_for_test(
         &mut self,
     ) -> WorthQueryHistoryEnrollmentObservationForTest {
-        self.journal.observe()
+        self.selection.lock().journal.observe()
     }
 }

@@ -86,12 +86,19 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::UnsupportedOperation);
         }
         let meaning = binding.bind_admission(admitted);
-        match self.journal.lookup(meaning) {
+        let expected =
+            WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
+        let mut selected = self.selection.lock();
+        if selected.expected != expected {
+            return Err(Denial::HeadDiverged);
+        }
+        match selected.journal.lookup(meaning) {
             AttemptLookup::Drift => return Err(Denial::IntentDrift),
             AttemptLookup::Reserved => return Err(Denial::AttemptInFlight),
             AttemptLookup::Completed(node) => {
                 return Ok(WorthQueryDocumentHistoryRecordPreparation::AlreadyRecorded(
-                    self.journal
+                    selected
+                        .journal
                         .step(node)
                         .expect("completed attempt binds a completed node")
                         .clone(),
@@ -105,11 +112,11 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let execution = phase
             .checked_execution_request_for(&runtime.product_runtime)
             .map_err(Denial::Stopped)?;
-        let record = self.journal.reserve(&execution, meaning, label)?;
+        let record = selected.journal.reserve(&execution, meaning, label)?;
         Ok(WorthQueryDocumentHistoryRecordPreparation::Reserved(
             WorthQueryDocumentHistoryReservation {
                 record,
-                expected: self.expected.clone(),
+                expected: selected.expected.clone(),
                 meaning,
             },
         ))
@@ -119,13 +126,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         &self,
         reserved: &WorthQueryDocumentHistoryReservation,
     ) -> Result<(), Denial> {
-        if !self.journal.matches_reservation(&reserved.record) {
-            return Err(Denial::ForeignRecording);
-        }
-        if self.expected != reserved.expected {
-            return Err(Denial::HeadDiverged);
-        }
-        Ok(())
+        self.selection.lock().validate_reservation(reserved)
     }
 
     pub fn readmit_history_record<M>(
@@ -164,17 +165,33 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         _access: &WorthQueryProgramPublicationAccess,
         reserved: WorthQueryDocumentHistoryReservation,
     ) -> Result<(), (WorthQueryDocumentHistoryReservation, Denial)> {
-        if let Err(denial) = self.validate_reservation(&reserved) {
+        let mut selected = self.selection.lock();
+        if let Err(denial) = selected.validate_reservation(&reserved) {
             return Err((reserved, denial));
         }
-        self.journal.cancel(reserved.record);
+        selected.journal.cancel(reserved.record);
         Ok(())
     }
 
     pub fn current_history_step(
         &self,
         _access: &WorthQueryProgramPublicationAccess,
-    ) -> &WorthQueryHistoryStep {
-        self.journal.current_step()
+    ) -> WorthQueryHistoryStep {
+        self.selection.lock().journal.current_step().clone()
+    }
+}
+
+impl<S> super::selection::HistorySelection<'_, S> {
+    pub(super) fn validate_reservation(
+        &self,
+        reserved: &WorthQueryDocumentHistoryReservation,
+    ) -> Result<(), Denial> {
+        if !self.journal.matches_reservation(&reserved.record) {
+            return Err(Denial::ForeignRecording);
+        }
+        if self.expected != reserved.expected {
+            return Err(Denial::HeadDiverged);
+        }
+        Ok(())
     }
 }
