@@ -87,6 +87,48 @@ class CargoCaptureTests(unittest.TestCase):
             self.assertEqual(observed.stdout, stream)
             self.assertEqual(observed.stderr, '')
 
+    def test_doctest_declaration_keeps_status_stderr_out_of_strict_graph_stdout(self):
+        for status in ('info: syncing channel updates for 1.99.1\n',
+                       '\x1b[1m\x1b[92m Updating crates.io index\x1b[0m\n'):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                stream = 'Doc-tests owner\nrunning 0 tests\ntest result: ok. 0 passed; 0 failed; 0 ignored\n'
+                def execute(command, **kwargs):
+                    if '--unit-graph' in command:
+                        graph_json = json.dumps(graph(unit('owner')))
+                        merged = kwargs['stderr'] == subprocess.STDOUT
+                        return subprocess.CompletedProcess(command, 0, status + graph_json if merged else graph_json,
+                                                           None if merged else status)
+                    self.assertEqual(kwargs['stderr'], subprocess.STDOUT)
+                    return subprocess.CompletedProcess(command, 0, stream, None)
+                with patch('cargo_capture.subprocess.run', side_effect=execute) as child, \
+                     patch('cargo_capture.subprocess.check_output', side_effect=['head\n', ''] * 2):
+                    observed = CargoRunner(Path.cwd())(['cargo', 'test', '--doc'], root, root / 'doc.log')
+                self.assertEqual(child.call_count, 2)
+                self.assertEqual(child.call_args_list[0].kwargs['stderr'], subprocess.PIPE)
+                self.assertEqual(observed.stdout, stream)
+                declaration_log = (root / 'doc-unit-plan.log').read_text(encoding='utf-8')
+                self.assertIn(status, declaration_log)
+                self.assertIn('"capture": "separate"', declaration_log)
+                self.assertIn('Exit code: 0', declaration_log)
+                self.assertTrue((root / 'doc-units.json').is_file())
+
+    def test_failed_doctest_declaration_retains_status_and_exit_without_running_docs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            status = 'error: declaration could not resolve the locked graph\n'
+            with patch('cargo_capture.subprocess.run', return_value=
+                       subprocess.CompletedProcess([], 101, '', status)) as child, \
+                 patch('cargo_capture.subprocess.check_output', side_effect=['head\n', '']), \
+                 self.assertRaisesRegex(CompilerUnitRefusal, 'could not resolve the locked graph'):
+                CargoRunner(Path.cwd())(['cargo', 'test', '--doc'], root, root / 'doc.log')
+            self.assertEqual(child.call_count, 1)
+            self.assertIn('--unit-graph', child.call_args.args[0])
+            retained = (root / 'doc-unit-plan.log').read_text(encoding='utf-8')
+            self.assertIn(status, retained)
+            self.assertIn('Exit code: 101', retained)
+            self.assertFalse((root / 'doc.log').exists())
+
     def test_bootstrap_applies_only_to_noncompiling_declaration_and_actual_plan_precedes_build(self):
         with tempfile.TemporaryDirectory() as temporary:
             calls = []

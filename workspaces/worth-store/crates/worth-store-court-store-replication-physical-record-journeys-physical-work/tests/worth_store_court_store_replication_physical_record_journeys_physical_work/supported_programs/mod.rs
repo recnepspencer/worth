@@ -4,6 +4,7 @@ mod blob_relocation_supported;
 mod declarations;
 mod independent_scan_and_mutation_capabilities_compile;
 mod ordinary_mutation_outcomes_are_supported;
+mod physical_close_task;
 mod physical_data_progression_examples;
 mod physical_durability_guide_examples;
 mod physical_wal_append_examples;

@@ -117,23 +117,14 @@ impl PhysicalStoreCloseTask {
         if received.is_none() {
             received = receiver.try_recv().ok();
         }
-        match (joined, received) {
-            (Ok(()), Some(actual)) => {
+        match outcome::classify_delivery(joined, received) {
+            Ok(actual) => {
                 custody.outcome_delivered();
                 PhysicalStoreCloseTaskPoll::Completed(actual)
             }
-            (Ok(()), None) => PhysicalStoreCloseTaskPoll::Failed(PhysicalStoreCloseFailure::new(
-                custody,
-                PhysicalStoreCloseFailureCause::OutcomeUnavailable,
-                None,
-                observation.get().cloned(),
-            )),
-            (Err(_), actual) => PhysicalStoreCloseTaskPoll::Failed(PhysicalStoreCloseFailure::new(
-                custody,
-                PhysicalStoreCloseFailureCause::WorkerPanicked,
-                actual,
-                observation.get().cloned(),
-            )),
+            Err((cause, actual)) => PhysicalStoreCloseTaskPoll::Failed(
+                PhysicalStoreCloseFailure::new(custody, cause, actual, observation.get().cloned()),
+            ),
         }
     }
 }

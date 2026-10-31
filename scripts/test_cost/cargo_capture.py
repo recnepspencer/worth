@@ -111,7 +111,8 @@ class CargoRunner:
         clean = not subprocess.check_output(['git', 'status', '--short'], cwd=self.repository, text=True).strip()
         start = datetime.now(timezone.utc).isoformat()
         streaming = command[:3] == ['cargo', 'nextest', 'run']
-        ordered = streaming or (command[:2] == ['cargo', 'test'] and '--doc' in command)
+        ordered = streaming or (command[:2] == ['cargo', 'test'] and '--doc' in command
+                                and '--unit-graph' not in command)
         marker = {'type': 'cargo-invocation', 'command': command, 'cwd': str(cwd),
                   'capture': 'ordered' if ordered else 'separate',
                   'mode': 'check' if command[1:2] in (['check'], ['clippy']) else 'build',

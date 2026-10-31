@@ -8,7 +8,11 @@ pub(crate) fn durability_policy_cases() {
 }
 
 pub(crate) fn record_chunk_view_cases() {
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/root_observation_cannot_mint_reader.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/root_observation_cannot_mint_reader.rs"),
+        "E0277",
+        &["PhysicalRecordReader", "From<PhysicalProtectedRootObservation>"],
+    ).expect("prebuilt semantic compiler denial");
 
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_cannot_escape_session.rs")).expect("prebuilt compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/record_chunk_view_blocks_session_progress.rs")).expect("prebuilt compiler denial");
@@ -21,5 +25,9 @@ pub(crate) fn record_chunk_view_cases() {
         &["PhysicalRecordChunkView"],
     )
         .expect("prebuilt semantic compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/opened_physical_record_alias_is_absent.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/opened_physical_record_alias_is_absent.rs"),
+        "E0432",
+        &["worth_store::physical_runtime::OpenedPhysicalRecord"],
+    ).expect("prebuilt semantic compiler denial");
 }

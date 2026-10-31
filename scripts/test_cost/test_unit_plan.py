@@ -27,6 +27,28 @@ class RequiredUnitPlanTests(unittest.TestCase):
         self.assertEqual(command_for(command), ['cargo', 'rustc', '--lib', '--unit-graph', '-Z',
                                                 'unstable-options', '--', '--emit=llvm-ir=observed.ll'])
 
+    def test_timing_telemetry_is_removed_only_from_the_noncompiling_declaration(self):
+        for timing in ('--timings', '--timings=html'):
+            command = ['cargo', 'test', '--message-format=json', '--no-run', timing,
+                       '--features', 'owner/cert', '--profile', 'ci-test']
+            before = list(command)
+            declared = command_for(command)
+            self.assertEqual(command, before)
+            self.assertNotIn(timing, declared)
+            self.assertEqual(declared, [value for value in command if value != timing] +
+                             ['--unit-graph', '-Z', 'unstable-options'])
+        command = ['cargo', 'rustc', '--timings', '--', '--cfg', 'timings_observer']
+        self.assertEqual(command_for(command), ['cargo', 'rustc', '--unit-graph', '-Z',
+                                                'unstable-options', '--', '--cfg', 'timings_observer'])
+
+    def test_extra_json_records_remain_invalid_unit_graph_framing(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            observed = json.dumps(graph(unit('owner')))
+            for extra in (json.dumps({'reason': 'build-started', 'run_id': 'observed'})+'\n'+observed,
+                          observed+'\n'+observed):
+                with self.subTest(extra=extra[:80]), self.assertRaises(CompilerUnitRefusal):
+                    declare(['cargo', 'check'], temporary, {}, extra)
+
     def test_command_feature_profile_or_flag_drift_after_declaration_is_refused(self):
         with tempfile.TemporaryDirectory() as temporary:
             command = ['cargo', 'check', '--profile', 'dev', '--features', 'cert']

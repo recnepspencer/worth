@@ -40,6 +40,11 @@ def command_for(command):
     else:
         return None
     boundary = result.index('--') if '--' in result else len(result)
+    # --timings adds a build-started JSON record before Cargo's unit graph.
+    # This subprocess only declares units; retain telemetry on the real build.
+    result = [argument for index, argument in enumerate(result)
+              if index >= boundary or not (argument == '--timings' or argument.startswith('--timings='))]
+    boundary = result.index('--') if '--' in result else len(result)
     result[boundary:boundary] = ['--unit-graph', '-Z', 'unstable-options']
     return result
 

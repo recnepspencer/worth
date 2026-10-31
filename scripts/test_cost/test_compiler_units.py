@@ -6,7 +6,8 @@ from compiler_units import CompilerUnitRefusal, attribute, declarations, failed_
 
 
 def unit(name, *, mode='check', features=(), dependencies=(), kind='lib'):
-    return {'pkg_id': name, 'target': {'name': name, 'kind': [kind], 'crate_types': [kind],
+    return {'pkg_id': name, 'target': {'name': name, 'kind': [kind],
+            'crate_types': ['bin' if kind == 'test' else kind],
             'src_path': f'{name}.rs', 'edition': '2024'}, 'mode': mode, 'platform': None,
             'features': list(features), 'profile': {'name': 'dev', 'opt_level': '0', 'debuginfo': 0,
             'debug_assertions': True, 'overflow_checks': True},
@@ -114,6 +115,61 @@ class CompilerUnitDeclarationTests(unittest.TestCase):
             with self.subTest(observed=observed), self.assertRaises(CompilerUnitRefusal):
                 attribute(observed, declaration)
 
+    def test_checked_integration_target_uses_its_declared_test_profile_and_metadata_output(self):
+        row = unit('court', kind='test')
+        observed = event(row)
+        observed['profile']['test'] = True
+        declaration = {'units': declarations(graph(row)), 'compiler_inputs': 'flags'}
+        before = copy.deepcopy(declaration)
+        result = attribute(observed, declaration)
+        self.assertEqual(result['identity'], declaration['units'][0]['identity'])
+        self.assertEqual((result['mode'], result['output']), ('check', 'check'))
+        self.assertEqual(declaration, before)
+
+    def test_checked_integration_target_refuses_a_missing_test_flag(self):
+        row = unit('court', kind='test')
+        with self.assertRaises(CompilerUnitRefusal):
+            attribute(event(row), {'units': declarations(graph(row)), 'compiler_inputs': 'flags'})
+
+    def test_checked_integration_target_refuses_drift_in_every_compiler_profile_field(self):
+        row = unit('court', kind='test')
+        declaration = {'units': declarations(graph(row)), 'compiler_inputs': 'flags'}
+        changes = {'opt_level': '3', 'debuginfo': 2, 'debug_assertions': False, 'overflow_checks': False}
+        for field, value in changes.items():
+            observed = event(row)
+            observed['profile'].update(test=True, **{field: value})
+            with self.subTest(field=field), self.assertRaises(CompilerUnitRefusal):
+                attribute(observed, declaration)
+
+    def test_checked_library_test_build_remains_refused_without_a_declared_test_stage(self):
+        row = unit('owner')
+        row['target']['test'] = True  # Capability does not declare this compilation's test flag.
+        declaration = {'units': declarations(graph(row)), 'compiler_inputs': 'flags'}
+        observed = event(row)
+        self.assertEqual(attribute(observed, declaration)['mode'], 'check')
+        observed['profile']['test'] = True
+        with self.assertRaises(CompilerUnitRefusal):
+            attribute(observed, declaration)
+
+    def test_test_mode_library_still_requires_its_test_flag(self):
+        row = unit('owner', mode='test')
+        declaration = {'units': declarations(graph(row)), 'compiler_inputs': 'flags'}
+        observed = event(row, linked=True)
+        self.assertEqual(attribute(observed, declaration)['mode'], 'test')
+        observed['profile']['test'] = False
+        with self.assertRaises(CompilerUnitRefusal):
+            attribute(observed, declaration)
+
+    def test_checked_integration_target_refuses_ambiguous_required_dependency_graphs(self):
+        rows = declarations(graph(unit('root', dependencies=[1, 2]),
+            unit('court', kind='test', dependencies=[3]), unit('court', kind='test', dependencies=[4]),
+            unit('proof'), unit('proof', features=['cert'])))
+        observed = event(unit('court', kind='test'))
+        observed['profile']['test'] = True
+        self.assertNotEqual(rows[1]['identity'], rows[2]['identity'])
+        with self.assertRaises(CompilerUnitRefusal):
+            attribute(observed, {'units': rows, 'compiler_inputs': 'flags'})
+
     def test_ambiguous_declared_units_are_refused_without_using_filename_hashes(self):
         row = unit('owner', dependencies=[1])
         rows = declarations(graph(row, unit('proof')))
@@ -121,6 +177,32 @@ class CompilerUnitDeclarationTests(unittest.TestCase):
         changed['identity'] = 'another-dependency-graph'
         with self.assertRaises(CompilerUnitRefusal):
             attribute(event(row), {'units': rows + [changed], 'compiler_inputs': 'flags'})
+
+    def test_doctest_driver_cannot_claim_its_library_build_artifact(self):
+        driver = unit('owner', mode='doctest', dependencies=[1])
+        library = unit('owner', mode='build')
+        rows = declarations(graph(driver, library))
+        before = copy.deepcopy(rows)
+        self.assertEqual([row['mode'] for row in rows], ['doctest', 'build'])
+        self.assertNotEqual(rows[0]['identity'], rows[1]['identity'])
+        self.assertEqual(rows[0]['dependency_units'], [rows[1]['identity']])
+        observed = attribute(event(library, linked=True), {'units': rows, 'compiler_inputs': 'flags'})
+        self.assertEqual(observed['identity'], rows[1]['identity'])
+        self.assertEqual(observed['mode'], 'build')
+        self.assertEqual(rows, before)
+
+    def test_doctest_only_declaration_does_not_authorize_a_library_artifact(self):
+        driver = unit('owner', mode='doctest')
+        with self.assertRaisesRegex(CompilerUnitRefusal, 'exactly one predeclared compiler unit'):
+            attribute(event(driver, linked=True), {'units': declarations(graph(driver)), 'compiler_inputs': 'flags'})
+
+    def test_failed_diagnostic_keeps_build_and_doctest_stage_ambiguity(self):
+        driver = unit('owner', mode='doctest', dependencies=[1])
+        library = unit('owner', mode='build')
+        declaration = {'units': declarations(graph(driver, library)), 'compiler_inputs': 'flags'}
+        with self.assertRaisesRegex(CompilerUnitRefusal, 'failed target does not identify exactly one'):
+            failed_unit({'package_id': library['pkg_id'], 'target': library['target'],
+                         'message': {'level': 'error'}}, declaration)
 
     def test_unknown_modes_unreachable_units_and_cycles_are_refused(self):
         for value in (graph(unit('owner', mode='surprise')),

@@ -485,3 +485,142 @@ scheduler or source classifier. Resolve the concrete local/default reporting
 contract before implementing that second cut. The accepted 4,408 Store membership
 proof remains scoped to its earlier HEAD; four later admission tests have exact
 targeted runtime evidence and do not retroactively enlarge that proof.
+
+### B4.5 second cut: ordinary local selection
+
+Use the nearest actual Cargo workspace declaration and the existing governed
+workspace map to choose local defaults: Root's four ordinary owner suites,
+Query's two, or Bank's one. Derive those names from `TEST_SUITES` and
+`CATEGORY_SUITES`; do not maintain another ownership/risk registry. Unsupported
+nested workspaces require an explicit suite. The separate Root and Store landing
+entrypoints retain their complete default contracts, as do Query/Bank landing
+aliases. Explicit generic `--full` selects the retained full `ORDER`, including
+checker implementation tests; named process/oracle/cost and other category
+requests remain explicit material-risk selections. No ignored restriction changes.
+
+Put CLI selection and qualification reporting in `query_gate_selection.py` so the
+existing command owner stays below 400 lines. The final gate summary reports
+requested-check status separately from per-workspace coverage. Ordinary requests
+are partial. Full workspace coverage requires successful results for every native
+partition and documentation, with the existing complete/observed coverage fields;
+a full request alone is insufficient. Test the default, risk, full, unsupported,
+failure and partial-reporting paths with fixture workspaces and command doubles.
+Do not execute matrices to test routing. Reuse accepted unchanged-source runtime
+evidence and keep the older Store membership proof's original scope explicit.
+
+B4.4 coordination: Root accepted the single corrected semantic pilot at
+`2320d91083`. `record_chunk_view_exposes_no_pool_authority.rs` uses the existing
+compiler testkit's narrow certification/check path and its actual captured
+E0614/`PhysicalRecordChunkView` attribution. The complete 25-dependency audience,
+including five version dependencies, remains represented; the actual 153-package
+closure is unchanged. Store readers and all Cargo manifests/locks are restored
+unchanged. The broad Store test-support dependency was rejected and is absent
+from the accepted net tree. This is one pilot, not a completed snapshot migration.
+
+Root's accepted cohort `06c87ea1e1` extends that pilot to six semantic cases in
+the same physical audience: 48 sources, 25 dependencies, 42 remaining snapshots
+and six semantic readers. Native identities are unchanged. The registry grew to
+429 lines during the pilot; its assigned owner compacted dependency objects to
+readable single-line rows, preserving parsed values/order apart from the approved
+source/authority changes. It is now 300 lines. This closes that line-limit finding
+without a new registry scheme. The cohort is bounded, not a completed migration
+of the other compiler snapshots or new current whole-workspace qualification.
+
+### B4.6 first cut: compatible consumer build caches
+
+Boundary review: the consumer-docs and query-checkpoint-recovery jobs lack Cargo
+caches; the boundary job already uses `actions/cache@v4`. Reuse that action and
+existing target locations. Cache Cargo registry/Git data and direct children of
+the four existing debug output directories, excluding incremental directories.
+Do not include lane evidence, test-cost captures, gate results or qualification
+metadata. Separate job keys prevent competing saves. Keys include runner OS/arch,
+the checkout toolchain, manifests/configuration and lockfiles; restore prefixes
+retain the configuration/toolchain identity. Cargo continues checking inputs.
+
+Use the documented cache path/glob behavior from the existing action's
+[inputs](https://github.com/actions/cache/blob/main/README.md#inputs) and
+[glob exclusions](https://github.com/actions/toolkit/tree/main/packages/glob#exclude-patterns).
+Do not upgrade actions, alter compiler settings, skip qualification after a cache
+hit, change job routing or cancellation in this cut. A real cache hit/miss/size
+comparison is unrun; make no measured CI speedup claim.
+
+Write scope: `.github/workflows/ci.yml` and this plan. Root's cache-only ruling
+rejects a new mirror test that only restates YAML. Preserve the initial draft's
+checks and their capture as a one-off static inspection under `target/test-cost/`,
+without adding them to the repository test suite; no qualification claim or
+existing test is retired. Verify paths, exclusions, key inputs and unconditional
+qualification commands with available lint/static inspection; retain existing
+boundary/full/manual dispatch. Run explicit phase checks, not a Rust campaign.
+Dependency-aware CI job routing remains the next independently reviewed cut and
+must reuse the existing affected-workspace authority rather than duplicate it.
+
+### B4.6 second cut: Cargo reach selects consumer CI jobs
+
+Boundary review: the external affected-lane planner owns the existing local
+package/member reach algorithm and configured document inventory. CI cannot read
+that external file. Rehome those functions in `scripts/test_cost/cargo_reach.py`;
+the external CLI delegates to the selected checkout's module, with no copied
+algorithm or compatibility fallback. Keep its lane descriptors and early landing
+contract validation. A checkout missing the module must merge this cut before
+using the updated external planner. Preserve the external before-image under
+`target/test-cost/b4-scoped-ci/`; historical lane captures remain untouched.
+
+The shared reach includes declared local packages, dependency/member roles and
+inherited manifests, lockfiles, Cargo configuration and compiler pins. Deleted
+inputs still reach their owner. Disable Git rename collapsing so removal and
+addition both participate; preserve complete PR merge-base reach, push before/after
+reach and external dirty/untracked inputs. Cargo metadata uses locked resolution;
+CI may fetch dependencies while the external planner retains offline discovery.
+
+`scripts/ci/select_qualification.py` is a thin selector for the two existing jobs.
+Derive documentation workspaces from the existing gate's `DOC_SUITES`, and use
+the existing fixture manifest for checkpoint recovery's closure. Read the actual
+consumer document inventory. Unlisted top-level docs/plans and slot observation
+data require neither qualification job nor Cargo discovery. Changed qualification
+scripts/workflows/configuration conservatively retain both. An unavailable base,
+graph or configured inventory retains both with an explicit reason. Selection is
+not qualification evidence. Manual all/docs/checkpoint choices keep their original
+meaning. Keep every qualification command, cache, boundary/line-cap dispatch and
+PR-only cancellation policy unchanged; do not add a lane registry or scheduler.
+
+Verify graph/member/transitive reach, configured documents, unrelated data,
+deleted/manifest/config inputs, unknown-base/graph fallback, manual modes and
+output propagation with fixture graphs and a small real Git history. Check the
+external delegation and existing landing contract without executing runtime
+matrices. Run explicit phase constitution/context/line checks, then independently
+review the exact incremental cut with accepted unchanged-source evidence named.
+Hosted workflow selection, cache performance and whole-workspace qualification
+remain unrun by this routing-only cut.
+
+Independent review found a dirty-path design flaw: comparing HEAD directly to
+the working tree hides a staged edit canceled by an unstaged edit. Preserve both
+dimensions through the shared module's separate cached/worktree diffs, plus
+untracked files. A real Git fixture asserts that this `MM` source stays selected.
+
+### Hosted startup repair: preparation and noncompiling telemetry
+
+Actual master `38e679ec4a` hosted run 41144881903 failed before qualification:
+the boundary checker lacked `allocator-api2` for offline metadata; the toolchain
+action exported `CARGO_INCREMENTAL=0`, which all three documentation owners
+correctly refused; the fixture's declaration stdout contained a build-started
+record followed by its valid version-1 unit graph. These are CI setup/framing
+defects. Do not change checker offline policy or qualification environment guards.
+
+Preserve downloaded raw job logs and the original uploaded declaration under
+`target/test-cost/hosted-startup-41144881903/`. A pinned noncompiling probe isolates
+`--timings` as the cause of the extra lifecycle record. Remove timing telemetry
+only from `command_for`'s declaration subprocess; the actual build command and
+strict single-JSON graph parser remain unchanged. Test command identity, preserved
+compiler flags and rejection of extra JSON; run the actual affected fixture's
+repaired noncompiling declaration, not a runtime matrix.
+
+At the five owned Linux CI qualification invocations, remove only the inherited
+`CARGO_INCREMENTAL` variable with `env -u`. Retain all underlying commands and
+committed profiles. For the boundary job, `prepare_boundary_dependencies.py`
+reads the existing road1 policy's workspace declarations and test-workspace
+inventory, then performs one locked fetch per unique required workspace before
+the unchanged offline check. Its source includes the already-required UI metadata
+graph; fetching dependencies executes no UI build or test. Add no workspace
+registry. Fail on missing manifests/locks, preserve Cargo errors and stop on its
+original failure code. Prove preparation and command/environment routing with
+fixtures and a dry run. Hosted clean-runner success remains unrun locally.
