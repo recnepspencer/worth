@@ -369,6 +369,12 @@ published as one root decision.
   from this cut. Later admitted World publications remain journal tails. No
   owner mutex spans I/O, and a Native header snapshot alone never certifies a
   coherent Home cut or permits World to add an uncaptured historical reference.
+  In the after-effect/caller-loss window, the cut refuses while an attempt is
+  executing or loaned without World's actual successor component retention.
+  Settle the existing retained handoff and acquire that real obligation before
+  capture; artifact bytes cannot substitute for missing root custody. Select
+  the Home checkpoint while Native is still Serving, then release capture pins
+  before Native `prepare_close`; never bypass its genuine read-custody refusal.
 - **No partial Home manifest.** Until World's checkpoint section is implemented,
   an attached or unclaimed Home with actual committed World journal heads
   refuses checkpoint with `WorldSectionRequired` before Native capture or
@@ -1293,6 +1299,19 @@ receipt/position/digest/association/schema/root/reference commitments. Admit the
 actual empty or canonical predecessor and successor through existing root/member
 owners, acquiring real observation/component pins before exposure. Missing
 historical material refuses; it does not justify a synthetic basis.
+
+World may have only its recorded predecessor when a kill precedes occurrence
+publication. Existing recovered Native authority therefore exposes
+`recorded_publication_successor(execution, runtime, readmitted_effect)`: a
+description derived from that exact effect's source/index and this
+reconstruction's actual tail/current/checkpoint component image. It returns
+Native's existing recorded-reference type, not an operational basis. Exact
+original receipt, position, digest, target branch and reference/root/schema
+axes must agree. Missing or ambiguous images refuse while retaining the
+original effect; neither latest-current export nor guessed axes are allowed.
+The existing recovered-publication capability still performs real owner
+admission and pin acquisition. Its proof must recover without a caller-held
+successor reference, including later Native head advancement.
 
 Use one named move-only proof phase in `worth-proof`,
 `RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>`.
