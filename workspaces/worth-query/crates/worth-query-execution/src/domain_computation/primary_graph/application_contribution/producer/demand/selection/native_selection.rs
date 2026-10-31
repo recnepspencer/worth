@@ -167,7 +167,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     Family::IDENTITY,
                 )
             })?;
-            let current = native.with_runtime_mut(graph, execution,
+            let current = native.with_runtime(graph, execution,
                 || WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ForeignSource, Family::IDENTITY), |runtime| {
                 let truth = runtime.read_truth();
                 let view = truth

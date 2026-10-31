@@ -41,7 +41,7 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle();
-        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
+        let candidate = handle.with_query_runtime(&execution, |runtime, layout| {
             let fields = AspectFieldPatch::from(BTreeMap::from([(
                 layout.workflow().approval.decision.clone(),
                 AspectValue::String(InternedString::Raw("reject".to_owned())),
@@ -96,7 +96,7 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle();
-        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
+        let candidate = handle.with_query_runtime(&execution, |runtime, layout| {
             let relation = runtime
                 .read_truth()
                 .visible_relations_of_kind(

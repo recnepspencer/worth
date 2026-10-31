@@ -77,7 +77,7 @@ impl WorthQueryExecutionInstallationAuthority {
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-        mut relational_runtime: RelationalRuntime,
+        relational_runtime: RelationalRuntime,
         product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
         invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
         checkpoint: Option<&super::super::application_checkpoint::DecodedApplicationCheckpoint>,
@@ -86,6 +86,35 @@ impl WorthQueryExecutionInstallationAuthority {
     where
         Schema: ApplicationSchema,
     {
+        self.prepare_native_graph(
+            phase,
+            runtime,
+            installed_schema,
+            relational_runtime,
+            invariant_factories,
+            checkpoint,
+            codec_transition,
+        )
+        .and_then(|prepared| {
+            prepared.into_bootstrap(runtime, installed_schema, product_world_resources)
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_native_graph<
+        Schema: ApplicationSchema,
+    >(
+        &self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        runtime: &WorthQueryExecutionRuntime,
+        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        mut relational_runtime: RelationalRuntime,
+        invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
+        checkpoint: Option<&super::super::application_checkpoint::DecodedApplicationCheckpoint>,
+        codec_transition: bool,
+    ) -> Result<
+        super::prepared_native::PreparedPrimaryGraphInstallation,
+        WorthQueryPrimaryGraphInstallationDenial,
+    > {
         let execution = phase.execution_request();
 
         if !self.belongs_to(runtime) {
@@ -176,12 +205,10 @@ impl WorthQueryExecutionInstallationAuthority {
         } else {
             None
         };
-        let mut graph = checkpoint::primary_graph_for_installation(
-            runtime.authority_identity(),
-            installed_schema.binding_identity(),
-            layout,
+        let mut graph = super::prepared_native::PreparedNativeGraph::new(
             relational_runtime,
-            product_world_resources.invalidation_resources(),
+            layout,
+            installed_schema.binding_identity(),
             checkpoint.is_some(),
         )?;
         if let Some(publisher) = source_publisher {
@@ -192,10 +219,7 @@ impl WorthQueryExecutionInstallationAuthority {
         let recovered_publication = checkpoint
             .map(|checkpoint| checkpoint.recover_publication(&execution, &graph))
             .transpose()?;
-        Ok(WorthQueryPrimaryGraphBootstrap {
-            value_bindings: installed_schema.value_bindings().clone(),
-            runtime_authority: runtime.authority_identity(),
-            installed_packages: runtime.retain_installed_packages(),
+        Ok(super::prepared_native::PreparedPrimaryGraphInstallation {
             graph,
             resource_support:
                 super::super::provider::WorthQueryPrimaryGraphResourceSupport::install(
@@ -203,33 +227,12 @@ impl WorthQueryExecutionInstallationAuthority {
                         .application_query_resource_profile()
                         .maximum_concurrent_graph_work(),
                 ),
-            product_world_resources,
-            rows: Vec::new(),
-            external_identities: BTreeSet::new(),
-            principal_identities: BTreeSet::new(),
-            unique_seed_values: BTreeSet::new(),
-            principal_keys: BTreeSet::new(),
-            entity_keys: BTreeSet::new(),
-            pending_entity_keys: BTreeSet::new(),
-            relation_keys: BTreeSet::new(),
-            entity_rows: Vec::new(),
-            relation_rows: Vec::new(),
-            committed_principal_count: 0,
-            committed_entity_count: 0,
-            committed_relation_count: 0,
-            last_seed_commit_id: None,
-            seed_batch_failed: false,
             recovered_publication,
             recovered_relational_authority,
             recovered_checkpoint_restore_work,
-            mutation_handlers: Default::default(),
-            resources: Default::default(),
-            managed_indexes: Default::default(),
-            program_activation_seed: None,
-            program_activation: None,
             invariant_installation_receipt,
             expected_invariant_inventory_digest,
-            _schema: PhantomData,
+            typed_rows: Default::default(),
         })
     }
 }

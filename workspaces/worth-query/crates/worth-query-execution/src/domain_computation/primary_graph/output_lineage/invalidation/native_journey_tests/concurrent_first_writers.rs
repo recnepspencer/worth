@@ -109,7 +109,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         .field_locator(reference.entity(), reference.aspect(), reference.field())
         .unwrap()
         .clone();
-    let result: Result<_, &'static str> = handle.with_runtime_mut(request_execution, |runtime| {
+    let result: Result<_, &'static str> = handle.with_runtime(request_execution, |runtime| {
         // A real Native fork has no Query lookup cell before its first write.
         // No derived table, Native head or existing registration is erased.
         let branch = BranchId("concurrent-first-native-fork".to_owned());

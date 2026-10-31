@@ -10,8 +10,8 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::KindId;
 
 use super::{
-    WorthQueryApplicationEntityKey, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
+    WorthQueryApplicationEntityKey, WorthQueryPrimaryGraphInstallationDenial,
+    WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
 /// One entity to seed into the primary graph at bootstrap: its kind, key, and
@@ -133,23 +133,29 @@ pub(super) struct WorthQueryTypedRelationBootstrapRow {
     pub(super) to_key: String,
 }
 
-impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub fn bind_entity<Entity>(
+#[derive(Default)]
+pub(in crate::domain_computation::primary_graph) struct TypedBootstrapRows {
+    pub(super) entity_keys: std::collections::BTreeSet<(KindId, String)>,
+    pub(super) pending_entity_keys: std::collections::BTreeSet<(KindId, String)>,
+    pub(super) relation_keys: std::collections::BTreeSet<(KindId, String)>,
+    pub(super) unique_seed_values:
+        std::collections::BTreeSet<super::bootstrap::unique_seed_values::WorthQueryUniqueSeedValue>,
+    pub(super) entity_rows: Vec<WorthQueryTypedEntityBootstrapRow>,
+    pub(super) relation_rows: Vec<WorthQueryTypedRelationBootstrapRow>,
+}
+
+impl TypedBootstrapRows {
+    pub(super) fn bind_entity<Schema: ApplicationSchema, Entity>(
         &mut self,
+        layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
+        recovered: bool,
         seed: WorthQueryApplicationEntitySeed<Schema, Entity>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        let kind = self
-            .graph
-            .layout
+        let kind = layout
             .entity_kind(seed.entity)
             .ok_or_else(|| invalid_seed(seed.entity))?;
         let key = seed.key.into_string();
-        if self.graph.layout.is_signed_entity_kind(kind)
-            || self.graph.layout.signing_lifecycle.is_record(kind)
-        {
+        if layout.is_signed_entity_kind(kind) || layout.signing_lifecycle.is_record(kind) {
             return Err(invalid_seed(
                 "signed entities require native authenticated publication",
             ));
@@ -164,15 +170,17 @@ where
             .map(|encoded| {
                 let (aspect, field, value) = encoded
                     .map_err(|_| invalid_seed("typed bootstrap field value failed validation"))?;
-                self.graph
-                    .layout
+                layout
                     .field_locator(seed.entity, aspect, field)
                     .cloned()
                     .map(|locator| (locator, value))
                     .ok_or_else(|| invalid_seed(field))
             })
             .collect::<Result<BTreeMap<_, _>, _>>()?;
-        self.admit_unique_seed_values(
+        super::bootstrap::unique_seed_values::admit_values(
+            layout,
+            recovered,
+            &mut self.unique_seed_values,
             fields.iter().map(|(locator, value)| (kind, locator, value)),
         )?;
         self.entity_rows
@@ -180,13 +188,13 @@ where
         Ok(())
     }
 
-    pub fn bind_relation<Relation, From, To>(
+    pub(super) fn bind_relation<Schema: ApplicationSchema, Relation, From, To>(
         &mut self,
+        layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
+        _recovered: bool,
         seed: WorthQueryApplicationRelationSeed<Schema, Relation, From, To>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        let layout = self
-            .graph
-            .layout
+        let layout = layout
             .relation(seed.relation)
             .cloned()
             .ok_or_else(|| invalid_seed(seed.relation))?;

@@ -37,31 +37,12 @@ where
         &mut self,
         writes: impl IntoIterator<Item = (KindId, &'row AspectFieldLocator, &'row AspectValue)>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        let unique = self.graph.layout.unique_fields();
-        let mut admitted = Vec::new();
-        for (kind, locator, value) in writes {
-            if unique.index(kind, locator).is_none() {
-                continue;
-            }
-            assert!(
-                self.recovered_relational_authority.is_none(),
-                "unique seed values require a fresh graph"
-            );
-            let seed = (
-                kind,
-                locator.clone(),
-                prepare_aspect_value_identity_basis(value),
-            );
-            if self.unique_seed_values.contains(&seed) || admitted.contains(&seed) {
-                return Err(primary_graph_denial(
-                    WorthQueryPrimaryGraphInstallationDenialKind::DuplicateUniqueSeedValue,
-                    format!("{locator:?}"),
-                ));
-            }
-            admitted.push(seed);
-        }
-        self.unique_seed_values.extend(admitted);
-        Ok(())
+        admit_values(
+            &self.graph.layout,
+            self.recovered_relational_authority.is_some(),
+            &mut self.typed_rows.unique_seed_values,
+            writes,
+        )
     }
 
     /// Admits the unique values one principal row writes: the principal's
@@ -91,4 +72,34 @@ where
             (layout.mapping_kind, &layout.status_locator, &status),
         ])
     }
+}
+
+pub(in crate::domain_computation::primary_graph) fn admit_values<'row>(
+    layout: &super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    recovered: bool,
+    values: &mut std::collections::BTreeSet<WorthQueryUniqueSeedValue>,
+    writes: impl IntoIterator<Item = (KindId, &'row AspectFieldLocator, &'row AspectValue)>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    let unique = layout.unique_fields();
+    let mut admitted = Vec::new();
+    for (kind, locator, value) in writes {
+        if unique.index(kind, locator).is_none() {
+            continue;
+        }
+        assert!(!recovered, "unique seed values require a fresh graph");
+        let seed = (
+            kind,
+            locator.clone(),
+            prepare_aspect_value_identity_basis(value),
+        );
+        if values.contains(&seed) || admitted.contains(&seed) {
+            return Err(primary_graph_denial(
+                WorthQueryPrimaryGraphInstallationDenialKind::DuplicateUniqueSeedValue,
+                format!("{locator:?}"),
+            ));
+        }
+        admitted.push(seed);
+    }
+    values.extend(admitted);
+    Ok(())
 }

@@ -101,7 +101,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .runtime
             .primary_graph()
             .ok_or(SelectedPermissionSecurityStop)?;
-        let reusable = native.with_runtime_mut(
+        let reusable = native.with_runtime(
             graph,
             execution,
             || SelectedPermissionSecurityStop,

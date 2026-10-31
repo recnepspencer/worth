@@ -2,7 +2,7 @@
 use super::{denial, preserved_outputs::PreservedOutputs, publication::InstalledCheckpointTarget};
 use crate::domain_computation::primary_graph::{
     application_checkpoint::{CheckpointMetadataFunding, DecodedApplicationCheckpoint},
-    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial as Denial,
+    WorthQueryPrimaryGraphInstallationDenial as Denial,
 };
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, MapKernelContext};
 use worth_query_installation::facade::ApplicationSchema;
@@ -12,7 +12,7 @@ use worth_relational::facade::{
 
 pub(super) fn classify<Schema: ApplicationSchema + 'static>(
     execution: &ExecutionRequest<'_, '_>,
-    graph: &WorthQueryPrimaryGraphBootstrap<Schema>,
+    graph: &mut super::super::prepared_native::PreparedPrimaryGraphInstallation,
     recovered: &RecoveredRelationalRuntimeAuthority,
     basis: &AdmittedRelationalBranchBasis,
     target: &InstalledCheckpointTarget<'_, Schema>,
@@ -53,7 +53,7 @@ pub(super) fn classify<Schema: ApplicationSchema + 'static>(
 #[allow(clippy::too_many_arguments)]
 fn classify_rows<Schema: ApplicationSchema + 'static>(
     execution: &ExecutionRequest<'_, '_>,
-    graph: &WorthQueryPrimaryGraphBootstrap<Schema>,
+    graph: &mut super::super::prepared_native::PreparedPrimaryGraphInstallation,
     recovered: &RecoveredRelationalRuntimeAuthority,
     basis: &AdmittedRelationalBranchBasis,
     target: &InstalledCheckpointTarget<'_, Schema>,
@@ -152,21 +152,18 @@ fn classify_rows<Schema: ApplicationSchema + 'static>(
         // none of these descriptions can add a retirement/currentness grant.
         graph
             .graph
-            .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
-                runtime
-                    .durability_recovery()
-                    .validate_recovered_codec_output_correspondence(
-                        execution,
-                        recovered,
-                        basis,
-                        &output.producer,
-                        dependency,
-                        &meaning,
-                        &roles,
-                    )
-                    .map_err(super::codec::map_admission)
-            })?;
+            .native
+            .durability_recovery()
+            .validate_recovered_codec_output_correspondence(
+                execution,
+                recovered,
+                basis,
+                &output.producer,
+                dependency,
+                &meaning,
+                &roles,
+            )
+            .map_err(super::codec::map_admission)?;
         if retired == live && live != 0 {
             keep.push(false);
         } else if retired == 0 {

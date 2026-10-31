@@ -48,7 +48,7 @@ pub(super) fn execute_merge(
     state
         .borrow()
         .relational_source
-        .with_runtime_mut(request_execution, |runtime| {
+        .with_runtime(request_execution, |runtime| {
             crate::effect_lifecycle::execute_lowered_merge(
                 request_execution,
                 runtime,

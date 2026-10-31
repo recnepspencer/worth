@@ -92,7 +92,7 @@ fn cutoff_journey(
         source.output_binding = OutputBindingIdentity::declared("Consumer");
         let consumer =
             RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
-        handle.with_runtime_mut(request_execution, |runtime| {
+        handle.with_runtime(request_execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
             let prefix: Arc<[_]> = Arc::from([field_fact(request_execution, runtime, &before_handle, entity, label)]);
             register(owner, Arc::clone(&a0), Arc::from([field_fact(request_execution, runtime, &before_handle, entity, status.clone())]), &before, OrdSet::new());
@@ -316,7 +316,7 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
         source.output_binding = OutputBindingIdentity::declared("Consumer");
         let consumer =
             RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
-        handle.with_runtime_mut(request_execution, |runtime| {
+        handle.with_runtime(request_execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
             register(
                 owner,

@@ -16,7 +16,7 @@ use worth_query_installation::facade::{
 
 use declaration::{
     AftermathFixtureSchema, Charge, FixtureInput, FreezeAccount, FreezeAccountFields,
-    FreezeBalance, FreezeNote, NotifyDeath, Transfer,
+    FreezeAccountFieldsReversed, FreezeBalance, FreezeNote, NotifyDeath, Transfer,
 };
 
 fn op<Operation>() -> ApplicationOperationRef<AftermathFixtureSchema, Operation, FixtureInput>
@@ -75,6 +75,9 @@ pub(crate) fn freeze_account() -> WorthQueryInstalledAftermathContract {
 }
 pub(crate) fn freeze_account_fields() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<FreezeAccountFields>()
+}
+pub(crate) fn freeze_account_fields_reversed() -> WorthQueryInstalledAftermathContract {
+    aftermath_of::<FreezeAccountFieldsReversed>()
 }
 pub(crate) fn notify_death() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<NotifyDeath>()

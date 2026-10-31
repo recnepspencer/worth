@@ -139,7 +139,7 @@ fn capacity_runtime() -> RelationalRuntime {
 
 fn commit_entities<const N: usize>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     keys: [&str; N],
 ) -> [EntityId; N] {
     let created = keys.map(|key| CreatedEntityRef {
@@ -167,7 +167,7 @@ fn commit_entities<const N: usize>(
 
 fn commit_live(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     key: &str,
     instance: EntityId,
     lineage: EntityId,
@@ -191,7 +191,7 @@ fn commit_live(
 
 fn commit<const N: usize>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     name: &str,
     intents: [MutationIntent; N],
 ) -> CommitResult {

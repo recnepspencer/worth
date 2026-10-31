@@ -24,7 +24,7 @@ pub(super) struct CompletedAggregateScan {
 
 pub(super) fn complete(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     miss: UncachedAggregatePlan,
     accounting: &mut AggregateWorkAccounting<'_>,
@@ -45,7 +45,7 @@ pub(super) fn complete(
 }
 
 struct AggregateScanReader<'scan, 'work> {
-    runtime: &'scan mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &'scan worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'scan worth_relational::facade::snapshots::SnapshotHandle,
     plan: &'scan ValidatedAggregatePlan,
     accounting: &'scan mut AggregateWorkAccounting<'work>,

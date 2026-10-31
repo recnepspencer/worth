@@ -63,7 +63,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         let decode =
             super::super::super::value_decode::ValueDecodeState::new(self.value_bindings.clone());
         let decoded = decode.run(execution, |value_decode| {
-            self.graph.with_runtime_mut(execution, |runtime| catch_unwind(AssertUnwindSafe(|| {
+            self.graph.with_runtime(execution, |runtime| catch_unwind(AssertUnwindSafe(|| {
                 let mut reader = WorthQueryApplicationInvariantProjectionReader {
                     value_bindings: &self.value_bindings,
                     value_decode,

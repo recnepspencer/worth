@@ -2,7 +2,7 @@
 use super::*;
 
 pub(super) struct CommittedOutboxRead<'a> {
-    pub(super) runtime: &'a mut worth_relational::facade::runtime::RelationalRuntime,
+    pub(super) runtime: &'a worth_relational::facade::runtime::RelationalRuntime,
     pub(super) layout: &'a WorthQueryDispatchOutboxLayout,
     pub(super) binding: &'a super::super::WorthQueryCommittedDispatchOutboxBinding,
     pub(super) expected_commit: &'a worth_relational::facade::history::RelationalCommitReceipt,

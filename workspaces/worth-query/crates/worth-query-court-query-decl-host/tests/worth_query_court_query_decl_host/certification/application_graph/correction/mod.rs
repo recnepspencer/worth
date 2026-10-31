@@ -139,3 +139,8 @@ fn filtered_current_subject_refuses_history_even_with_a_genuine_receipt() {
         "receipt possession cannot disclose a filtered subject"
     );
 }
+
+#[test]
+fn authored_root_retirement_with_collateral_restores_and_reapplies_recorded_source() {
+    model::authored_collateral_court::run();
+}

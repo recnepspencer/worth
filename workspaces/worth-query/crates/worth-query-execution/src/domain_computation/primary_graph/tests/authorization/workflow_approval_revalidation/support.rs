@@ -261,7 +261,7 @@ fn native_stamp_for_independent_grant(
     );
     graph
         .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             let plan = RelationalAuthorizationObservationPlan::try_new(
                 snapshot,
                 grant,

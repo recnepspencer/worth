@@ -142,13 +142,13 @@ pub(crate) enum EffectMergeAuthority {
 
 #[derive(Debug)]
 pub struct EffectExecutionAuthority<'a> {
-    relational: Option<&'a mut RelationalRuntime>,
+    relational: Option<&'a RelationalRuntime>,
     bridge: Option<&'a RuntimeBridge>,
     merge: EffectMergeAuthority,
 }
 
 impl<'a> EffectExecutionAuthority<'a> {
-    pub fn relational(runtime: &'a mut RelationalRuntime) -> Self {
+    pub fn relational(runtime: &'a RelationalRuntime) -> Self {
         Self {
             relational: Some(runtime),
             bridge: None,
@@ -164,7 +164,7 @@ impl<'a> EffectExecutionAuthority<'a> {
         }
     }
 
-    pub fn combined(relational: &'a mut RelationalRuntime, bridge: &'a RuntimeBridge) -> Self {
+    pub fn combined(relational: &'a RelationalRuntime, bridge: &'a RuntimeBridge) -> Self {
         Self {
             relational: Some(relational),
             bridge: Some(bridge),
@@ -175,7 +175,7 @@ impl<'a> EffectExecutionAuthority<'a> {
     /// Relational authority over a runtime this crate built for itself,
     /// which carries no application schema and so may execute merges.
     pub(crate) fn crate_relational_without_application_schema(
-        runtime: &'a mut RelationalRuntime,
+        runtime: &'a RelationalRuntime,
     ) -> Self {
         Self {
             merge: EffectMergeAuthority::CrateRuntimeWithoutApplicationSchema,
@@ -193,8 +193,8 @@ impl<'a> EffectExecutionAuthority<'a> {
         super::super::settlement_repair::repair_pending_effect_settlement(self, commit_id)
     }
 
-    pub(crate) fn relational_runtime(&mut self) -> Option<&mut RelationalRuntime> {
-        self.relational.as_deref_mut()
+    pub(crate) fn relational_runtime(&mut self) -> Option<&RelationalRuntime> {
+        self.relational
     }
 
     pub(crate) fn has_relational_authority(&self) -> bool {

@@ -147,7 +147,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                     let observers = Arc::new(Mutex::new(Vec::with_capacity(2)));
                     let saw_two_prepared = Arc::new(AtomicBool::new(false));
                     let gate = Arc::new(TwoPrepareGate::default());
-                    handle.with_runtime_mut(&host_custody.borrowed_request_for_test(), |runtime| {
+                    handle.with_runtime(&host_custody.borrowed_request_for_test(), |runtime| {
                 let main = BranchId("main".to_owned());
                 let fork = BranchId("hint-fork".to_owned());
                 let (_, source) = runtime.observe_fork_source(&main).unwrap();

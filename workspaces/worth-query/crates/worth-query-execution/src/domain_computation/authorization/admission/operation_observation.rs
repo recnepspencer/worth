@@ -97,7 +97,7 @@ where
                         principal.binding(),
                     )
                 })?;
-        let decision_facts = handle.with_runtime_mut(execution, |relational| {
+        let decision_facts = handle.with_runtime(execution, |relational| {
             validate_freshness_at_snapshot(
                 execution,
                 relational,

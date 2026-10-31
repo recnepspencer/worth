@@ -24,7 +24,7 @@ impl WorthQueryManagedGraphWorkSession {
         target: &Arc<WorthQueryApplicationInspectionTarget>,
         basis: &WorthQueryApplicationBasisIdentity,
         read_graph: impl FnOnce(
-            &mut worth_relational::facade::runtime::RelationalRuntime,
+            &worth_relational::facade::runtime::RelationalRuntime,
             &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<(T, WorthQuerySessionInspectionReadProof), WorthQueryManagedGraphReadDenial> {

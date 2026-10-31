@@ -62,7 +62,7 @@ where
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
         graph
             .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
 
                 validate_retained_currentness(
@@ -249,7 +249,7 @@ where
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
         graph
             .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
 
                 validate_observed_currentness(
@@ -286,7 +286,7 @@ where
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
         graph
             .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
+            .with_runtime(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
                 let principal_current = capability
                     .principal()

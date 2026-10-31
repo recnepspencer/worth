@@ -84,10 +84,7 @@ impl WorthQueryPendingApplicationPublication {
         }
     }
 
-    fn release_before(
-        &mut self,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
-    ) {
+    fn release_before(&mut self, runtime: &worth_relational::facade::runtime::RelationalRuntime) {
         if let Some(before) = self.before.take() {
             crate::relational_snapshot_release::release_query_snapshot(runtime, &before);
         }
@@ -155,7 +152,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn install_and_publish_application(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         reservation: WorthQueryApplicationPublicationRecoveryReservation,
         pending: WorthQueryPendingApplicationPublication,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
@@ -167,7 +164,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn resume_pending_application_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
         let Some(slot) = self
@@ -201,7 +198,7 @@ impl WorthQueryPrimaryGraphProvider {
 fn resume(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
 ) -> Result<CompositeCommitIdentity, WorthQueryProviderSessionFailure> {
     let commit_id = pending.committed.envelope().commit.commit_id;
@@ -229,7 +226,7 @@ fn resume(
 fn publish_with_snapshot(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
     after: &worth_relational::facade::snapshots::SnapshotHandle,
     commit_id: worth_relational::facade::history::CommitId,

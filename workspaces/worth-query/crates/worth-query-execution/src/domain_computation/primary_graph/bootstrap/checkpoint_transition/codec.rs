@@ -1,9 +1,6 @@
 //! Join authenticated Query activation to the exclusive native codec owner.
 use super::denial;
-use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
-};
-use worth_query_installation::facade::ApplicationSchema;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
 use worth_relational::facade::{
     durability::RecoveredRelationalRuntimeAuthority,
     mvcc::BranchBoundRelationalTransaction,
@@ -25,9 +22,9 @@ pub(in crate::domain_computation::primary_graph::bootstrap) fn map_admission(
     ))
 }
 
-pub(super) fn begin<Schema: ApplicationSchema>(
+pub(super) fn begin(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    graph: &WorthQueryPrimaryGraphBootstrap<Schema>,
+    graph: &mut super::super::prepared_native::PreparedPrimaryGraphInstallation,
     recovered: &mut RecoveredRelationalRuntimeAuthority,
     basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     activation: RecoveredCheckpointProgramActivationUpdate,
@@ -39,34 +36,31 @@ pub(super) fn begin<Schema: ApplicationSchema>(
         .graph
         .application_publication
         .as_ref()
+        .cloned()
         .ok_or_else(|| denial("native codec transition omitted its source publisher"))?;
     // read_activation authenticated this exact recovered row against the
     // predecessor before this concrete owner proof can be issued.
-    graph
-        .graph
-        .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
-            let commitment = runtime
-                .durability_recovery()
-                .checkpoint_program_activation_commitment(execution, recovered, basis, &activation)
-                .map_err(map_admission)?;
-            let proof = publisher
-                .owner
-                .admit_checkpoint_program_activation(commitment);
-            runtime
-                .durability_recovery()
-                .begin_recovered_codec_transition(
-                    execution,
-                    recovered,
-                    basis,
-                    worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted(),
-                    &publisher.native,
-                    proof,
-                    activation,
-                )
-                .map(Some)
-                .map_err(map_admission)
-        })
+    let runtime = &mut graph.graph.native;
+    let commitment = runtime
+        .durability_recovery()
+        .checkpoint_program_activation_commitment(execution, recovered, basis, &activation)
+        .map_err(map_admission)?;
+    let proof = publisher
+        .owner
+        .admit_checkpoint_program_activation(commitment);
+    runtime
+        .durability_recovery()
+        .begin_recovered_codec_transition(
+            execution,
+            recovered,
+            basis,
+            worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted(),
+            &publisher.native,
+            proof,
+            activation,
+        )
+        .map(Some)
+        .map_err(map_admission)
 }
 
 pub(super) fn map_refusal(
@@ -112,9 +106,9 @@ pub(super) fn map_refusal(
     ))
 }
 
-pub(super) fn finish<Schema: ApplicationSchema>(
+pub(super) fn finish(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    graph: &mut super::super::prepared_native::PreparedPrimaryGraphInstallation,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let check_original = || {
         execution
@@ -122,12 +116,12 @@ pub(super) fn finish<Schema: ApplicationSchema>(
             .map_err(|cause| super::super::request_read_denial::read(cause.into()))
     };
     check_original()?;
-    let handle = graph.graph.integration_handle();
-    let receipt = handle.with_runtime(execution, |runtime| {
-        runtime.readmit_recovered_initial_schema_installation(
+    let receipt = graph
+        .graph
+        .native
+        .readmit_recovered_initial_schema_installation(
             graph.invariant_installation_receipt.clone(),
-        )
-    });
+        );
     check_original()?;
     let receipt = receipt.map_err(|error| {
         denial(format!(
@@ -137,7 +131,7 @@ pub(super) fn finish<Schema: ApplicationSchema>(
     let indexes = super::super::checkpoint::verify_bootstrap_indexes(
         execution,
         &graph.graph,
-        handle.primary_index_ids.iter().copied(),
+        graph.graph.primary_index_ids().iter().copied(),
     );
     check_original()?;
     indexes?;

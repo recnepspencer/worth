@@ -1,5 +1,5 @@
 pub(super) fn release_exact_execution_snapshot(
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
 ) {
     runtime

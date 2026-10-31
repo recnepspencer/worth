@@ -30,7 +30,7 @@ where
     let execution = phase
         .execution_request_for(&application.product_runtime)
         .map_err(|_| Denial::ForeignPhase)?;
-    application.primary_provider.graph.with_runtime_mut(&execution, |runtime| {
+    application.primary_provider.graph.with_runtime(&execution, |runtime| {
         let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
             runtime, target.product().relational_basis(),
         ).map_err(Denial::Basis)?;

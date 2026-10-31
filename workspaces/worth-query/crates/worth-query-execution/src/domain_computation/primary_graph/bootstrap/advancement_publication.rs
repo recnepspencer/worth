@@ -36,8 +36,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
             ));
         }
         let row_count = self.committed_principal_count + self.rows.len();
-        let entity_count = self.committed_entity_count + self.entity_rows.len();
-        let relation_count = self.committed_relation_count + self.relation_rows.len();
+        let entity_count = self.committed_entity_count + self.typed_rows.entity_rows.len();
+        let relation_count = self.committed_relation_count + self.typed_rows.relation_rows.len();
         let principal_identity_index_count = self
             .graph
             .layout
@@ -55,21 +55,22 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
         if let Some(seed) = self.program_activation_seed {
             commit_initial_program_activation(execution, &self.graph, seed)?;
         }
-        let commit_id =
-            if self.rows.is_empty() && self.entity_rows.is_empty() && self.relation_rows.is_empty()
-            {
-                self.last_seed_commit_id
-                    .expect("a principal seed batch was committed")
-            } else {
-                commit_bootstrap_rows(
-                    execution,
-                    &self.graph,
-                    self.committed_principal_count,
-                    self.rows,
-                    self.entity_rows,
-                    self.relation_rows,
-                )?
-            };
+        let commit_id = if self.rows.is_empty()
+            && self.typed_rows.entity_rows.is_empty()
+            && self.typed_rows.relation_rows.is_empty()
+        {
+            self.last_seed_commit_id
+                .expect("a principal seed batch was committed")
+        } else {
+            commit_bootstrap_rows(
+                execution,
+                &self.graph,
+                self.committed_principal_count,
+                self.rows,
+                self.typed_rows.entity_rows,
+                self.typed_rows.relation_rows,
+            )?
+        };
         build_identity_indexes(execution, &self.graph, commit_id, &index_ids)?;
         let binding_identity = self.graph.binding_identity().clone();
         runtime.install_primary_graph(self.graph);

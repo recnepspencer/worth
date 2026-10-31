@@ -89,7 +89,7 @@ impl WorthQueryAggregateProjections {
     pub(super) fn refresh_after_commit(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &mut RelationalRuntime,
+        runtime: &RelationalRuntime,
         before: &SnapshotHandle,
         after: &SnapshotHandle,
         patches: &[PublishedAuthoritativeRecordPatch],

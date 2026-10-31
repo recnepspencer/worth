@@ -35,7 +35,7 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle()
-            .with_query_runtime_mut(&execution, |runtime, layout| {
+            .with_query_runtime(&execution, |runtime, layout| {
                 let snapshot = runtime
                     .snapshots()
                     .snapshot_for_observation(&observation)

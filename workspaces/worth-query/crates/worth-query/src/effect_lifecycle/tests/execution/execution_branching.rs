@@ -253,7 +253,7 @@ fn relational_runtime_with_intent_strategy() -> RelationalRuntime {
 
 fn create_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     name: &str,
     branch: BranchId,
 ) -> worth_relational::facade::identity::EntityId {
@@ -302,7 +302,7 @@ fn create_entity(
 
 fn update_entity_name(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     entity_id: worth_relational::facade::identity::EntityId,
     name: &str,
     branch: BranchId,

@@ -188,7 +188,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     );
     let target_rendering = program_revision_rendering(target);
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
-    let mut candidate = graph.with_runtime_mut(execution, |runtime| {
+    let mut candidate = graph.with_runtime(execution, |runtime| {
         let mut batch =
             WorkerIntentBatch::new("application-program-adoption").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {

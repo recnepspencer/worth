@@ -16,7 +16,7 @@ fn index_currency_stop(cancelled: bool) {
     let handle = graph.integration_handle();
     let setup_host = crate::test_request_policy::serial_request();
     let setup = ExecutionRequest::serial(&setup_host);
-    handle.source_owner.with_runtime_mut(&setup, |runtime| {
+    handle.source_owner.with_runtime(&setup, |runtime| {
         commit_empty(&setup, runtime, "main");
         let (_, basis) = runtime
             .observe_branch(&runtime.main_branch_identity())

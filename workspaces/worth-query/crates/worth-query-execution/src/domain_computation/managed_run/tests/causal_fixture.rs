@@ -243,7 +243,7 @@ fn relational_runtime() -> RelationalRuntime {
 
 fn create_fixture_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
 ) -> worth_relational::facade::transactions::CommitResult {
     let mut transaction = {
         let transaction_validation_input = runtime

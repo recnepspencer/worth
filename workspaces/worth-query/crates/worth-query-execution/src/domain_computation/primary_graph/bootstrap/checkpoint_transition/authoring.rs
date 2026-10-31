@@ -2,7 +2,7 @@
 use super::{denial, WorthQueryCheckpointTransitionResources};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntitySeed, WorthQueryApplicationRelationSeed,
-    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
+    WorthQueryPrimaryGraphInstallationDenial,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -10,18 +10,20 @@ use worth_query_installation::facade::ApplicationSchema;
 /// This stage cannot commit, expose a World, or mutate an existing record.
 /// Links currently require endpoints created in this migration batch.
 pub struct WorthQueryCheckpointMigrationWriter<'installation, Schema> {
-    pub(super) graph: &'installation mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    pub(super) graph:
+        &'installation mut super::super::prepared_native::PreparedPrimaryGraphInstallation,
     pub(super) resources: WorthQueryCheckpointTransitionResources,
     work: usize,
     bytes: usize,
     failed: bool,
+    _schema: std::marker::PhantomData<fn() -> Schema>,
 }
 
 impl<'installation, Schema: ApplicationSchema>
     WorthQueryCheckpointMigrationWriter<'installation, Schema>
 {
     pub(super) fn new(
-        graph: &'installation mut WorthQueryPrimaryGraphBootstrap<Schema>,
+        graph: &'installation mut super::super::prepared_native::PreparedPrimaryGraphInstallation,
         resources: WorthQueryCheckpointTransitionResources,
     ) -> Self {
         Self {
@@ -30,6 +32,7 @@ impl<'installation, Schema: ApplicationSchema>
             work: 0,
             bytes: 0,
             failed: false,
+            _schema: std::marker::PhantomData,
         }
     }
 
@@ -38,7 +41,11 @@ impl<'installation, Schema: ApplicationSchema>
         seed: WorthQueryApplicationEntitySeed<Schema, Entity>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         self.charge(seed.migration_cost())?;
-        let result = self.graph.bind_entity(seed);
+        let result = self.graph.typed_rows.bind_entity(
+            &self.graph.graph.layout,
+            self.graph.recovered_relational_authority.is_some(),
+            seed,
+        );
         self.failed |= result.is_err();
         result
     }
@@ -48,7 +55,11 @@ impl<'installation, Schema: ApplicationSchema>
         seed: WorthQueryApplicationRelationSeed<Schema, Relation, From, To>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         self.charge(seed.migration_cost())?;
-        let result = self.graph.bind_relation(seed);
+        let result = self.graph.typed_rows.bind_relation(
+            &self.graph.graph.layout,
+            self.graph.recovered_relational_authority.is_some(),
+            seed,
+        );
         self.failed |= result.is_err();
         result
     }

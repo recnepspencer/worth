@@ -81,9 +81,9 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     pub fn execute_mutation_with_index_refresh<T, E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mutate: impl FnOnce(&mut worth_relational::facade::runtime::RelationalRuntime) -> Result<T, E>,
+        mutate: impl FnOnce(&worth_relational::facade::runtime::RelationalRuntime) -> Result<T, E>,
     ) -> Result<Result<T, E>, WorthQueryPrimaryGraphIndexRefreshDenial> {
-        self.source_owner.with_runtime_mut(execution, |runtime| {
+        self.source_owner.with_runtime(execution, |runtime| {
             let before = runtime
                 .observe_branch(&runtime.main_branch_identity())
                 .ok()

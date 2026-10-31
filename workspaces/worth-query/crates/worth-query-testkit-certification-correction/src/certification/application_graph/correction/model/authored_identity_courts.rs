@@ -26,6 +26,7 @@ pub fn create(
             name: name.to_owned(),
             payload: 41,
             inverse_target: inverse_target.map(str::to_owned),
+            collateral: None,
         })
         .without_source()
         .idempotency(&key)
@@ -52,6 +53,7 @@ pub fn retire(
             key: "numeric".to_owned(),
             target: name.to_owned(),
             wrong_restore_key,
+            collateral: None,
         })
         .without_source()
         .idempotency(&key)

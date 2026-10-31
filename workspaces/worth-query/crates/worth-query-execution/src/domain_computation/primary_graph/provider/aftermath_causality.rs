@@ -116,7 +116,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn resolve_aftermath_causality_in_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         pending: &WorthQueryPendingAftermathCausality,

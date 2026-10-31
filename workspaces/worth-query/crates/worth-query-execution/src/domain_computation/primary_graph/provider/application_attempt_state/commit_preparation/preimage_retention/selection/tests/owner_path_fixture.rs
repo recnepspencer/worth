@@ -108,7 +108,7 @@ fn validated_status_footprint(
     locator: AspectFieldLocator,
 ) -> ValidatedMutationFootprint {
     let graph = world.application.primary_provider.graph.clone();
-    let validated = graph.with_runtime_mut(request_execution, |runtime| {
+    let validated = graph.with_runtime(request_execution, |runtime| {
         let fields = AspectFieldPatch::from(BTreeMap::from([(
             locator,
             AspectValue::String(InternedString::from("frozen")),

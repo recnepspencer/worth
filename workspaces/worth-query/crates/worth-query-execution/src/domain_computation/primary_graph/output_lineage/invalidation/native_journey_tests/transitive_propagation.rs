@@ -49,7 +49,7 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
             0,
         )
     });
-    handle.with_runtime_mut(&execution, |runtime| {
+    handle.with_runtime(&execution, |runtime| {
         write_field(&execution, runtime, entity, status.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         for (level, identity) in identities.iter().enumerate() {

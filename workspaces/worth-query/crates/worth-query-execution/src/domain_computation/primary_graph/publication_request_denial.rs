@@ -8,7 +8,8 @@ pub(crate) fn publication(
         NoEffectCause::CancelledBeforeEffect => Err(Stop::Stopped(MapKernelStop::Cancelled)),
         NoEffectCause::DeadlineBeforeEffect => Err(Stop::Stopped(MapKernelStop::DeadlineElapsed)),
         NoEffectCause::ExecutionRequest(cause) => Err(cause),
-        ordinary @ (NoEffectCause::StaleExpectedProductHead
+        ordinary @ (NoEffectCause::DurableOpenRequired
+        | NoEffectCause::StaleExpectedProductHead
         | NoEffectCause::OwnerDeniedBeforeEffect
         | NoEffectCause::CorrespondenceRebindRequired
         | NoEffectCause::ReferenceGenerationExhausted
@@ -54,7 +55,7 @@ mod tests {
             );
         }
         for cause in [
-            NoEffectCause::StaleExpectedProductHead,
+            NoEffectCause::DurableOpenRequired,            NoEffectCause::StaleExpectedProductHead,
             NoEffectCause::OwnerDeniedBeforeEffect,
             NoEffectCause::CorrespondenceRebindRequired,
             NoEffectCause::ReferenceGenerationExhausted,

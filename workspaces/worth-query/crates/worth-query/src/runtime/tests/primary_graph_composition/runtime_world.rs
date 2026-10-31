@@ -84,7 +84,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for CommittingWriteAuthority {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
-        relational_runtime: Option<&mut RelationalRuntime>,
+        relational_runtime: Option<&RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         let runtime = relational_runtime.ok_or_else(|| {

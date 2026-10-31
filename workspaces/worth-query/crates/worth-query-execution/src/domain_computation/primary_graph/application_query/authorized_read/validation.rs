@@ -5,7 +5,7 @@ pub(super) fn validate_current_read_at_basis<S: ApplicationSchema, Q, P, R, A, I
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     entity_resolution: &WorthQueryInstalledEntityResolutionContext,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     current: &worth_relational::facade::snapshots::SnapshotHandle,
     plan: &WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,
 ) -> Result<WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryAuthorizedApplicationReadDenial>
@@ -61,7 +61,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
         .primary_graph()
         .ok_or(WorthQueryAuthorizedApplicationReadDenial::Session)?;
     let entity_resolution = graph.retain_entity_resolution_context();
-    super::super::ApplicationQueryNativeAccess::acquire().with_runtime_mut(
+    super::super::ApplicationQueryNativeAccess::acquire().with_runtime(
         graph,
         execution,
         || WorthQueryAuthorizedApplicationReadDenial::Session,

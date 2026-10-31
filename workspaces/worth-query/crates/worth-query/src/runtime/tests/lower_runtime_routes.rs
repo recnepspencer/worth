@@ -44,7 +44,7 @@ fn runtime_write_denies_when_write_authority_route_receipt_drifts_from_command()
             &mut self,
             execution: &worth_execution::ExecutionRequest<'_, '_>,
             bridge: &RuntimeBridge,
-            relational_runtime: Option<&mut RelationalRuntime>,
+            relational_runtime: Option<&RelationalRuntime>,
             mutation: WorthQueryBackendAdmissibleMutation,
         ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
             let mut authority = TestWriteAuthority;

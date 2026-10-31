@@ -129,7 +129,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         })?;
         let installed = graph.retain_entity_resolution_context();
         let handle = graph.integration_handle();
-        let (result, _) = handle.with_runtime_mut(execution, |relational| {
+        let (result, _) = handle.with_runtime(execution, |relational| {
 
                 handle
                     .ensure_primary_indexes_for_basis(

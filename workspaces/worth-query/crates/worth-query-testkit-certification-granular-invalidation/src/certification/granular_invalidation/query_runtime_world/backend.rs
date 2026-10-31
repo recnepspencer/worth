@@ -52,7 +52,7 @@ impl runtime::WorthQueryRuntimeWriteAuthorityAdapter for DenyingWriteAuthority {
         &mut self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &worth_runtime_bridge::facade::RuntimeBridge,
-        _relational_runtime: Option<&mut worth_relational::facade::runtime::RelationalRuntime>,
+        _relational_runtime: Option<&worth_relational::facade::runtime::RelationalRuntime>,
         _mutation: runtime::WorthQueryBackendAdmissibleMutation,
     ) -> Result<runtime::WriteAuthorityExecutionReceipt, foundation::WorthQueryWorkspaceError> {
         Err(foundation::WorthQueryWorkspaceError::new(

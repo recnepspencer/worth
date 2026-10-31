@@ -62,7 +62,7 @@ pub(super) fn commit_initial_program_activation(
     };
     let identity = graph
         .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             let main_identity = runtime.main_branch_identity();
             let options = runtime
                 .admit_branch_basis(&main_identity)

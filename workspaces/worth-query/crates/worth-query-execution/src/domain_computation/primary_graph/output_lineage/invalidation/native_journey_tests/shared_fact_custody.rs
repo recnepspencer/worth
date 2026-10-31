@@ -26,7 +26,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
         let status = AccountStatus::reference();
         let status = graph.layout().field_locator(status.entity(), status.aspect(), status.field())
             .unwrap().clone();
-        let (snapshot_handle, basis, identity, _facts, first, second) = handle.with_runtime_mut(&execution, |runtime| {
+        let (snapshot_handle, basis, identity, _facts, first, second) = handle.with_runtime(&execution, |runtime| {
             let (snapshot_handle, basis) = snapshot(runtime);
             let basis = Arc::new(basis);
             let identity = RecordedSettlementIdentity::retain(&SemanticSource {
@@ -60,7 +60,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
                 SourceSettlementCurrentness::Clean));
             assert!(first.claim_verified_checkpoint_root(owner).unwrap(),
                 "actual restored prerequisite custody must be established, not bypassed");
-        handle.with_runtime_mut(&execution, |runtime| {
+        handle.with_runtime(&execution, |runtime| {
             assert_eq!(ConsumedOutputEvidence::verify_many_with_admission(
                 &execution, &[first.clone(), second.clone()], owner, runtime, &snapshot_handle,
                 &basis,
@@ -78,7 +78,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
             assert_eq!(owner.retire_settlements(std::slice::from_ref(&identity)),
                 vec![identity]);
 
-        handle.with_runtime_mut(&execution, |runtime| {
+        handle.with_runtime(&execution, |runtime| {
             runtime.snapshots().release_snapshot(&snapshot_handle).unwrap();
         });
     }).expect("the native custody journey owns its installed host call");

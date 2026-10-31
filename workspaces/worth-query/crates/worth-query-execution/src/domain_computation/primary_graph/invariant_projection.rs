@@ -191,7 +191,7 @@ where
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> usize {
-        self.graph.with_runtime_mut(request_execution, |runtime| {
+        self.graph.with_runtime(request_execution, |runtime| {
             runtime.retention().active_snapshot_count()
         })
     }
@@ -211,7 +211,7 @@ where
                 )
             })?;
         let execution = &request;
-        let (basis, snapshot) = self.graph.with_runtime_mut(execution, |runtime| {
+        let (basis, snapshot) = self.graph.with_runtime(execution, |runtime| {
             let identity = runtime.main_branch_identity();
             let (_, basis) = runtime
                 .observe_branch(&identity)

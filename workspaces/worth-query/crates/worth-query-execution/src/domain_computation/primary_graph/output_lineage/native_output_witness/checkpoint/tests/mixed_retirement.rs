@@ -46,7 +46,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             let request_execution = &host_custody.borrowed_request_for_test();
-            handle.with_runtime_mut(request_execution, |runtime| {
+            handle.with_runtime(request_execution, |runtime| {
                 let before = snapshot(runtime);
                 let prepare = || {
                     PreparedNativeOutputWitness::prepare_republication(&correspondence, layout)
@@ -291,7 +291,7 @@ fn mixed_correspondence(
 
 fn publish(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     batch: WorkerIntentBatch,
 ) {
     let basis = runtime

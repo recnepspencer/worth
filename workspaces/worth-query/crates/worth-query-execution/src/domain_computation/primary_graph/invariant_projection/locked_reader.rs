@@ -45,7 +45,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) value_bindings: &'runtime worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     pub(super) value_decode: &'runtime super::super::value_decode::ValueDecodeSession<'runtime>,
     pub(super) execution: &'runtime worth_execution::ExecutionRequest<'runtime, 'runtime>,
-    pub(super) runtime: &'runtime mut worth_relational::facade::runtime::RelationalRuntime,
+    pub(super) runtime: &'runtime worth_relational::facade::runtime::RelationalRuntime,
     pub(super) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     pub(super) snapshot: &'runtime worth_relational::facade::snapshots::SnapshotHandle,
     entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
@@ -128,7 +128,7 @@ where
             })?;
         let execution = &phase_request;
 
-        let basis = self.graph.with_runtime_mut(execution, |runtime| {
+        let basis = self.graph.with_runtime(execution, |runtime| {
             let identity = runtime.main_branch_identity();
             runtime
                 .observe_branch(&identity)
@@ -191,7 +191,7 @@ where
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
-        let snapshot = self.graph.with_runtime_mut(execution, |runtime| {
+        let snapshot = self.graph.with_runtime(execution, |runtime| {
             runtime
                 .snapshots()
                 .snapshot_for_observation(&basis.observation())

@@ -25,7 +25,7 @@ pub(super) fn admit<Schema>(
         })?
         .integration_handle();
     graph
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             graph.ensure_primary_indexes_for_basis(
                 execution,
                 runtime,
@@ -74,7 +74,7 @@ pub(super) fn admit_selected_permission_basis_with_native_access<Schema>(
             "primary graph",
         )
     })?;
-    let live = native.with_runtime_mut(
+    let live = native.with_runtime(
         graph,
         execution,
         || {

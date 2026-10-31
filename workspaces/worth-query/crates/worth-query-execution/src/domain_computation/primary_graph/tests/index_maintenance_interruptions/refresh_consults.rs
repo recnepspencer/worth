@@ -15,7 +15,7 @@ fn refresh_preserves_the_stop_at_every_counted_consult() {
     let setup_host = crate::test_request_policy::serial_request();
     let setup = ExecutionRequest::serial(&setup_host);
     let discard = || {
-        handle.source_owner.with_runtime_mut(&setup, |runtime| {
+        handle.source_owner.with_runtime(&setup, |runtime| {
             for index in handle.primary_index_ids.iter() {
                 runtime
                     .index_authority()

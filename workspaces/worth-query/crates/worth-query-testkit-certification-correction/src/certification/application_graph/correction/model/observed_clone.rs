@@ -137,6 +137,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoClone {
             key: original.key.clone(),
             target,
             wrong_restore_key: false,
+            collateral: None,
         })
     }
     fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {

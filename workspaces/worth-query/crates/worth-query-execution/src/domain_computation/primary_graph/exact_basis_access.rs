@@ -7,7 +7,7 @@ use worth_relational::facade::{
 use worth_relational::facade::{branch::RelationalBranchBasisDenial, history::BranchId};
 
 pub(crate) fn open_exact_basis_snapshot(
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
 ) -> Result<SnapshotHandle, RelationalSnapshotAdmissionDenial> {
     runtime
@@ -76,7 +76,7 @@ impl From<RelationalSnapshotAdmissionDenial> for WorthQueryExactBasisSnapshotDen
 /// its own.
 #[cfg(test)]
 pub(crate) fn open_current_branch_snapshot(
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch: &BranchId,
 ) -> Result<SnapshotHandle, WorthQueryExactBasisSnapshotDenial> {
     let identity = runtime

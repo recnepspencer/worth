@@ -24,7 +24,7 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
     let transition = &graph.layout.workflow().transition;
     let host_request = crate::test_request_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host_request);
-    handle.with_runtime_mut(&execution, |runtime| {
+    handle.with_runtime(&execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         assert!(runtime.index_access().read_published_generation_for_observation(&execution,
             transition.identity_index_id, &basis.observation(),
@@ -153,7 +153,7 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
         .primary_graph()
         .expect("published graph");
     let handle = graph.integration_handle();
-    handle.source_owner.with_runtime_mut(execution, |runtime| {
+    handle.source_owner.with_runtime(execution, |runtime| {
         let identity = runtime.main_branch_identity();
         let (_, before_basis) = runtime.observe_branch(&identity).unwrap();
         let before = runtime
@@ -196,7 +196,7 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
 
 pub(super) fn commit_empty(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch: &str,
 ) -> RelationalCommitReceipt {
     let branch_id = BranchId(branch.to_owned());

@@ -12,7 +12,7 @@ impl crate::runtime::WorthQuerySettlementRecoveryBackend for StatefulBridgeRunti
         self.state
             .borrow()
             .relational_source
-            .with_runtime_mut(request_execution, |runtime| {
+            .with_runtime(request_execution, |runtime| {
                 runtime.repair_pending_publication_settlement(commit_id)
             })
             .map_err(Into::into)

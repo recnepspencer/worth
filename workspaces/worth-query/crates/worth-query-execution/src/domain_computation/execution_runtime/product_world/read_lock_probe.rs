@@ -12,13 +12,10 @@ impl WorthQueryRelationalSourceOwner {
     }
 }
 impl ReadLockProbeForTest {
-    pub(in crate::domain_computation) fn is_locked_for_test(&self) -> bool {
-        self.owner.lock_is_held_for_test()
-    }
     pub(in crate::domain_computation) fn acquisitions_for_test(&self) -> u64 {
         self.owner.lock_acquisitions_for_test()
     }
-    pub(in crate::domain_computation) fn with_owner_lock_for_test<T>(
+    pub(in crate::domain_computation) fn with_owner_borrow_for_test<T>(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce() -> T,

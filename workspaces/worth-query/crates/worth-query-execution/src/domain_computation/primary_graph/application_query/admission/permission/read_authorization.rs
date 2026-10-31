@@ -64,7 +64,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ),
             WorthQueryInstalledApplicationQueryAuthorization::Ability(requirement) => {
                 // Preserve the original Native observer and its original denial.
-                let decisions = native.with_runtime_mut(
+                let decisions = native.with_runtime(
                     graph,
                     execution,
                     || crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(

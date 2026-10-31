@@ -70,7 +70,7 @@ fn with_unmanaged_publications(
         )
     };
     let live_rows = |identities: &[&Identity]| {
-        handle.with_runtime_mut(request_execution, |runtime| {
+        handle.with_runtime(request_execution, |runtime| {
             let (basis_handle, basis) = snapshot(runtime);
             let cell = owner.cell_for_read(&basis).unwrap().unwrap();
 

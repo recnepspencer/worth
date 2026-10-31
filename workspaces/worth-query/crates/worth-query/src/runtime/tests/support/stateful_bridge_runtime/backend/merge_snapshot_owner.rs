@@ -10,7 +10,7 @@ impl WorthQueryMergeSnapshotOwner for StatefulBridgeRuntimeBackend {
         self.state
             .borrow()
             .relational_source
-            .with_runtime_mut(request_execution, |runtime| {
+            .with_runtime(request_execution, |runtime| {
                 runtime.snapshots().release_snapshot(snapshot)
             })
             .expect("merge fixture closes its exact published snapshot once");

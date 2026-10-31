@@ -3,7 +3,7 @@ use super::*;
 pub(super) fn publish_aggregate_projection(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
     after: &worth_relational::facade::snapshots::SnapshotHandle,
 ) -> Result<(), WorthQueryProviderSessionFailure> {

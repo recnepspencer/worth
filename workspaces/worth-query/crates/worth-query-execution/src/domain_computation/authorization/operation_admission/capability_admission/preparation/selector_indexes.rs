@@ -74,7 +74,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Scope, Context>(
         select(selector.entity(), selector.aspect(), selector.field())?;
     }
     let handle = graph.integration_handle();
-    handle.with_runtime_mut(execution, |runtime| {
+    handle.with_runtime(execution, |runtime| {
         runtime.index_authority().refresh_field_indexes_for_basis(
             DerivedIndexBuildRequest { source_commit_id, branch_id: observation.identity().branch_id().clone(), index_ids: indexes },
             basis, None, crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(), execution,

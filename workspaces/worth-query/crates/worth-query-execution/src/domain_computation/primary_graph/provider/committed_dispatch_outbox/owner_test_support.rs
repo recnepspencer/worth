@@ -26,7 +26,7 @@ pub(super) fn commit_record(
 ) {
     let record = record_for(identity);
     let branch = primary_relational_branch_id();
-    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(request_execution, |runtime| {
+    let (binding, commit, runtime_id) = provider.graph.with_runtime(request_execution, |runtime| {
         let mut transaction: BranchBoundRelationalTransaction = {
     let transaction_validation_input = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())
@@ -68,7 +68,7 @@ pub(super) fn commit_record(
 }
 
 pub(super) fn release_commit_snapshot(
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     committed: &CommitResult,
 ) {
     crate::relational_snapshot_release::release_query_snapshot(runtime, &committed.snapshot);
@@ -76,7 +76,7 @@ pub(super) fn release_commit_snapshot(
 
 pub(super) fn retain_commit_basis(
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     committed: &CommitResult,
 ) {
     let branch_identity = runtime

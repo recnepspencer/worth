@@ -73,7 +73,7 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
     let world = installed_authorization_world(true);
     let provider = &world.application.primary_provider;
     let record = record();
-    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(execution, |runtime| {
+    let (binding, commit, runtime_id) = provider.graph.with_runtime(execution, |runtime| {
         let (outbox_intent, pending) = bind_dispatch_outbox_create_intent(
             Some(provider.graph.layout.provider_dispatch_outbox()),
             Some(&record),
@@ -143,7 +143,7 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
     let world = installed_authorization_world(true);
     let provider = &world.application.primary_provider;
     let record = record();
-    let (binding, deletion_commit, runtime_id) = provider.graph.with_runtime_mut(execution, |runtime| {
+    let (binding, deletion_commit, runtime_id) = provider.graph.with_runtime(execution, |runtime| {
         let (intent, pending) = bind_dispatch_outbox_create_intent(
             Some(provider.graph.layout.provider_dispatch_outbox()),
             Some(&record),
@@ -223,7 +223,7 @@ fn committed_substituted_row(
     let record = record();
     let layout = provider.graph.layout.provider_dispatch_outbox().clone();
     let branch = primary_relational_branch_id();
-    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(request_execution, |runtime| {
+    let (binding, commit, runtime_id) = provider.graph.with_runtime(request_execution, |runtime| {
         let (intent, pending) =
             bind_dispatch_outbox_create_intent(
                 Some(&layout),

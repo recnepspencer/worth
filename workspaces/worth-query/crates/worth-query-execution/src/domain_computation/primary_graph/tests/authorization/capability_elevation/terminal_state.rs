@@ -89,7 +89,7 @@ pub(super) fn has_exact_reviewer(
     let selected = world.selected_product(&(phase_custody).test_host_request());
     graph
         .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             let snapshot = selected.application_basis().snapshot_handle();
             runtime
                 .read_truth()
@@ -141,7 +141,7 @@ pub(super) fn has_exact_approver(
     let selected = world.selected_product(&(phase_custody).test_host_request());
     graph
         .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .with_runtime(execution, |runtime| {
             let snapshot = selected.application_basis().snapshot_handle();
             runtime
                 .read_truth()
@@ -202,7 +202,7 @@ where
         .expect("the selected product branch remains admitted");
     graph
         .integration_handle()
-        .with_runtime_mut(execution, |relational| {
+        .with_runtime(execution, |relational| {
             let snapshot = selected.application_basis().snapshot_handle();
             crate::domain_computation::primary_graph::application_attempt::observe_field_value(
                 relational, execution, snapshot, entity, kind, locator,

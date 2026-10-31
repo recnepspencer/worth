@@ -90,7 +90,7 @@ fn prepare_selected_basis<Schema, Query, Parameters, QueryResult, Scope>(
     // selected and checked by the existing World/session owner on each read.
 
     let retained_basis = basis.clone();
-    native.with_runtime_mut(graph, execution, || SelectedFieldIndexAdmissionStop::Admission(CompanionPreflightStop::ForeignCell), |runtime| {
+    native.with_runtime(graph, execution, || SelectedFieldIndexAdmissionStop::Admission(CompanionPreflightStop::ForeignCell), |runtime| {
             ensure_selected_field_indexes_admitted(execution, runtime, basis, [root, target])
         })
         .map_err(|stop| match stop {

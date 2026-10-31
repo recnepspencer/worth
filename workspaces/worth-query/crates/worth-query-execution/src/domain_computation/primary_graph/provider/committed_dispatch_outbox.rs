@@ -234,7 +234,7 @@ impl WorthQueryPrimaryGraphProvider {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .acquire(expected_commit.commit_id)
             .ok_or(Denial::ExactCommitUnavailable)?;
-        self.graph.with_runtime_mut(execution, |runtime| {
+        self.graph.with_runtime(execution, |runtime| {
             crate::domain_computation::execution_runtime::product_world::record_installed_source_read_for_test();
             CommittedOutboxRead {
                 runtime,

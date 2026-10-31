@@ -9,7 +9,7 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use super::super::schema_layout::WorthQueryPrimaryGraphLayout;
 
 #[derive(Clone, Copy)]
-pub(super) enum IndexInstallationPosture {
+pub(in crate::domain_computation::primary_graph) enum IndexInstallationPosture {
     Register,
     RequireRecovered,
 }
@@ -50,7 +50,7 @@ impl<'runtime> IndexInstallation<'runtime> {
     }
 }
 
-pub(super) fn register_primary_graph_indexes(
+pub(in crate::domain_computation::primary_graph) fn register_primary_graph_indexes(
     layout: &mut WorthQueryPrimaryGraphLayout,
     runtime: &RelationalRuntime,
     posture: IndexInstallationPosture,
@@ -157,7 +157,7 @@ pub(super) fn register_primary_graph_indexes(
 }
 
 /// The complete installed inventory, in the native identity order used by maintenance.
-pub(super) fn primary_index_inventory(
+pub(in crate::domain_computation::primary_graph) fn primary_index_inventory(
     layout: &WorthQueryPrimaryGraphLayout,
 ) -> Arc<[worth_relational::facade::indexes::DerivedIndexId]> {
     let principal_identity_index_ids = layout
