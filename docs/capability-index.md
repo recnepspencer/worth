@@ -898,3 +898,22 @@ inspect, explicitly cancel or settle the accepted step, preserving its actual
 prefix/fate. Recovery cannot revive stopped or completed publication authority.
 Observer loss does not cancel accepted mutation authority or certify a result.
 Terminal descriptions retain facts, not live views, selection guards or Serving.
+
+
+### Retain an ordered journal publication across an interrupted caller
+
+`physical_runtime::OrderedJournal::start_publication(publication, original_view)`
+returns a move-only operation and strong recovery. Move the encoder's existing
+`ExecutionMemoryReservation` with `OrderedJournalPublication::with_input_memory`
+when present. Store the recovery outside disposable execution results before
+calling consuming `step`. `resume` returns the same recovery alongside its unique
+Ready or Stopped endpoint; reinstall that recovery before lending the endpoint.
+`Recovery::stop` permanently fences advancement. Consuming recovery `resume`
+readmits a clean, fully visible actual terminal as `Committed`; descriptive
+stopped settlement alone cannot mint that carrier. Poll actual settlement before
+consulting a late caller stop. Only Store-issued `OrderedJournalCommitted` carries
+an actual selected entry; source/terminal observations are descriptive.
+The journal keeps its existing frame, spine, ordering and Signal policy. Reads,
+encoding, allocation and short substrate locks remain cooperative rather than
+hard real-time. Accepted current-step custody survives observer loss through the
+existing physical mutation worker; no World acknowledgment runs in that worker.

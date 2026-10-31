@@ -255,3 +255,5 @@ pub use wal::{
     PhysicalWalObservation, PhysicalWalOpenFailure, PhysicalWalReclamationObservation,
     PhysicalWalReclamationReport, PhysicalWalReservationDenial, RedoRecord,
 };
+
+pub(in crate::physical_runtime) use mutation::ManagedPublicationRegistration;
