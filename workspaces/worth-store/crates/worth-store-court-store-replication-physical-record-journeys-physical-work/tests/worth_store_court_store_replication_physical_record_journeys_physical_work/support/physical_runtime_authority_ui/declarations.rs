@@ -1,9 +1,25 @@
 pub(crate) fn durability_policy_cases() {
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/incomplete_durability_policy_cannot_admit.rs")).expect("prebuilt compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/raw_backend_profile_cannot_admit_durability.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/incomplete_durability_policy_cannot_admit.rs"),
+        "E0599",
+        &["no method named `admit`", "PhysicalDurabilityDeclarationBuilder<", "::GroupConfigured,", "::WalMissing,", "::IdempotencyMissing,", "::CheckpointMissing>"],
+    ).expect("prebuilt semantic compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/raw_backend_profile_cannot_admit_durability.rs"),
+        "E0308",
+        &["expected `PhysicalDurabilityAdmissionBasis`, found `BackendTargetProfile`", "arguments to this method are incorrect"],
+    ).expect("prebuilt semantic compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_durability_basis_cannot_be_duplicated.rs")).expect("prebuilt compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/admitted_durability_policy_is_sealed.rs")).expect("prebuilt compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/durability_policy_cannot_be_omitted_from_open.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_uncoded_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/admitted_durability_policy_is_sealed.rs"),
+        "cannot construct",
+        &["`AdmittedPhysicalDurabilityPolicy`", "private fields"],
+    ).expect("prebuilt uncoded semantic compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/durability_policy_cannot_be_omitted_from_open.rs"),
+        "E0061",
+        &["`AdmittedPhysicalDurabilityPolicy` is missing"],
+    ).expect("prebuilt semantic compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_mutation_preparation_authority_is_sealed.rs")).expect("prebuilt compiler denial");
 }
 
