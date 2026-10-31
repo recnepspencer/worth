@@ -53,20 +53,20 @@ pub(crate) fn normalize(expected: &str, observed: &str) -> String {
             result.push(format!("{}and $N others", " ".repeat(indent - 2)));
         } else {
             result.extend(lines[start..cursor].iter().map(|line| (*line).to_owned()));
-            if count == 8 {
-                if let Some(line) = lines.get(cursor) {
-                    let tail = line.trim_start();
-                    if tail
-                        .strip_prefix("and ")
-                        .and_then(|tail| tail.strip_suffix(" others"))
-                        .is_some_and(|number| {
-                            !number.is_empty() && number.bytes().all(|byte| byte.is_ascii_digit())
-                        })
-                    {
-                        let indent = line.len() - tail.len();
-                        result.push(format!("{}and $N others", " ".repeat(indent)));
-                        cursor += 1;
-                    }
+            if count == 8
+                && let Some(line) = lines.get(cursor)
+            {
+                let tail = line.trim_start();
+                if tail
+                    .strip_prefix("and ")
+                    .and_then(|tail| tail.strip_suffix(" others"))
+                    .is_some_and(|number| {
+                        !number.is_empty() && number.bytes().all(|byte| byte.is_ascii_digit())
+                    })
+                {
+                    let indent = line.len() - tail.len();
+                    result.push(format!("{}and $N others", " ".repeat(indent)));
+                    cursor += 1;
                 }
             }
         }
