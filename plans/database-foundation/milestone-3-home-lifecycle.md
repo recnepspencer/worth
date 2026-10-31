@@ -316,7 +316,7 @@ identity frontiers; old-key exact retry with unchanged value and truthful
 receipt-not-retained refusal; unchanged meaning with changed build UUID;
 owned missing/unsupported completion, foreign binding, missing recovered index,
 activation mismatch, original-request stop/exhaustion and retained-World
-refusals. Produce actual persisted rows for each refused family. Require
+refusals. Require
 mutation-sensitive observations for both selected-basis attachment consumers
 and the D17 scan. No process-local cache or fabricated authority can stand in
 for recovery. Keep all failure logs; run scoped courts, formatter, line caps,
@@ -324,6 +324,39 @@ boundary/context and affected compilation once the coherent patch is ready.
 Update `docs/build-an-application.md`, `docs/capability-index.md` and the Host
 README with existing-open semantics, ownership on refusal, stricter persisted
 family posture and receipt limitation, checking examples against real exports.
+
+Persisted Native-family negative journeys belong in the existing Store
+Application court, at
+`process/application/query_readmission/native_artifacts.rs`, rather than
+adding Store dependencies to any other Query package. This exact file may
+use the existing query-home-preparation and native-home-query-preparation
+caller classes. Keep their actual configuration entries file-exact when the
+fixture is implemented; no new getter, control or factory is authorized.
+The Store court may add the required Host/testkit/execution leaf dependencies
+under its existing D1 exception, coordinated by Root with shared lockfiles.
+
+Create and close a genuine public Host Home, then prepare the SAME admitted
+meaning and recover that directory through actual Store recovery, attachment,
+schema installation and Home readmission. Borrow its actual Native through
+query_finalization_parts, publish ordinary unassociated administrative Native
+records under the installed registry's actual contracts, release their actual
+commit snapshot, drop preparation and close the same unshared Home. Reopen
+through the public Host and assert the exact family/kind/record refusal, with
+an untouched successful counterpart. Independent unassociated Native history
+beyond World roots is supported by the existing world_occurrence_readmission
+court; do not invent World occurrences or custody to stage these negatives.
+
+These are contract-valid Native presence adversaries, not positive Query
+workflow/inbound/correction lifecycle authority. Directory policy still
+refuses the unavailable workflow producer. Exercise distinct workflow-lineage,
+outbox, inbound and aftermath presence checks with real rows. The exhaustive
+owner-layout projection establishes the full thirteen-entity/twenty-seven-
+relation roster. Do not claim independently reachable deletion-sensitive
+twins for all forty workflow kinds: required endpoints/relations can make an
+earlier entity refusal mask a removed relation check. Further per-kind
+workflow lifecycle proof requires a legitimate owner producer design; no
+synthetic policy override, binding-only Store fixture, fabricated authority,
+foreign-runtime unit exception or newly exposed production door is assumed.
 
 Baseline: `083ab6f50f`. The branch is `codex/m3-phase3-home`. The prior
 `codex/m3-production-host` branch and its requirements-tracing commit
