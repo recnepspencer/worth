@@ -119,6 +119,7 @@ impl LineageFinalizationPlan {
     ) -> Self {
         let mut drafts = Vec::new();
         let mut required_lineage_ids = 0;
+        let mut created_entities = Vec::new();
         for record in changed_records {
             let RecordRef::Entity(entity_id) = record else {
                 continue;
@@ -128,9 +129,16 @@ impl LineageFinalizationPlan {
             else {
                 continue;
             };
+            created_entities.push((*entity_id, existing_lineage_id));
+        }
+        // Create targets bind positionally to canonical entity patch records.
+        // Establish that order before assigning identities and digesting events;
+        // replacement target discovery still needs the original draft order.
+        created_entities.sort_unstable_by_key(|(entity_id, _)| *entity_id);
+        for (entity_id, existing_lineage_id) in created_entities {
             required_lineage_ids += usize::from(existing_lineage_id.is_none());
             drafts.push(LineageEventDraft::Create {
-                entity_id: *entity_id,
+                entity_id,
                 existing_lineage_id,
             });
         }
