@@ -118,15 +118,13 @@ fn registry_version(observed: &str, expected: &str) -> String {
         if let Some((version, path)) = observed
             .strip_prefix(&prefix)
             .and_then(|value| value.split_once('/'))
+            && path == relative
+            && version.starts_with(|value: char| value.is_ascii_digit())
+            && version
+                .bytes()
+                .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'.' | b'-' | b'+'))
         {
-            if path == relative
-                && version.starts_with(|value: char| value.is_ascii_digit())
-                && version.bytes().all(|value| {
-                    value.is_ascii_alphanumeric() || matches!(value, b'.' | b'-' | b'+')
-                })
-            {
-                return expected.to_owned();
-            }
+            return expected.to_owned();
         }
     }
     observed.to_owned()
