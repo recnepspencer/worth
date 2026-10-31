@@ -519,6 +519,26 @@
       ],
       "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
       "private_subject": "Direct private ConditionalExecutionHistory::capture consumes genuine executed Signal evidence; real optional capacity refusal is tolerated while cancellation remains a request stop. Ordinary eviction and owner-close journeys moved to public court."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
+      "test": "working_page_reuses_initialized_allocation_and_preserves_tombstones",
+      "audit": "Query 9.19 working-page cache private-owner placement ruling by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-phase3-working-pages-plan.md.",
+      "private_subject": "Private actual WorkingPage allocation identity, one touched page, tombstone precedence, consuming seal, unchanged sibling page and final original grant release; no Source or audience authority synthesized."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
+      "test": "working_page_original_invoice_tracks_touched_pages_instead_of_copying_every_write",
+      "audit": "Query 9.19 working-page cache private-owner placement ruling by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-phase3-working-pages-plan.md.",
+      "private_subject": "Actual private PageEdit original SDK work for repeated writes versus distinct touched physical pages; no semantic Source or graph authority synthesized."
     }
   ]
 }

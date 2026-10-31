@@ -22,12 +22,13 @@ impl WorthQueryManagedIndexNodeRegion {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct Region {
     pub source: Option<Slot>,
     pub children: [Option<usize>; 2],
 }
 pub(super) struct Edit {
     pub ordinal: usize,
+    pub before: Option<Region>,
     pub region: Option<Region>,
 }

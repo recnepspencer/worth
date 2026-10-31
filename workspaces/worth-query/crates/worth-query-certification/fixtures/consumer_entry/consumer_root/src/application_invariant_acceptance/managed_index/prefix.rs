@@ -190,6 +190,17 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
         self.0.updates.fetch_add(1, Ordering::SeqCst);
+        #[cfg(test)]
+        if *self.0.structure_fault.lock().unwrap() == structure::Fault::DuplicateChild {
+            // A genuine value-only write of the exact predecessor node. Its
+            // first child is therefore a retained edge when describe duplicates
+            // it. No pure edit can replace that child before the hostile check.
+            if let Some(root) = root {
+                let node = nodes.get(root)?;
+                nodes.replace(root, node)?;
+            }
+            return Ok(root);
+        }
         // All removals see the committed value order; only then may proposed
         // values participate. The pages belong to this isolated staged edit.
         for change in changes {

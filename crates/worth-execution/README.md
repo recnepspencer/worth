@@ -42,9 +42,14 @@ for truly native execution. Keep the reservation with the actual backing until
 its final owner drops. Cancellation and deadlines still apply to native calls.
 
 `ExecutionRequestArrayBuilder::allocate(request, count)` borrows the original
-request and shares the existing fixed array allocation owner. Push and seal
-check that request; the sealed array retains one backing reservation without
-retaining the borrowed request. `ExecutionRequestArrayDenial` distinguishes
+request and shares the existing fixed array allocation owner. Push, initialized
+element replacement and seal check that request; the sealed array retains one
+backing reservation without retaining the borrowed request.
+`replace_initialized(index, value)` moves within the initialized prefix, consumes
+input on every outcome, keeps the same allocation and ticket, and checks the
+original request before and after the move. Its physical
+bounds denial is `UninitializedElement`; a stopped request cannot seal. The sealed
+`ExecutionArray` remains immutable. `ExecutionRequestArrayDenial` distinguishes
 original request refusal from physical allocation failure.
 
 ## Original-scoped work

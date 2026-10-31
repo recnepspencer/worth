@@ -52,16 +52,17 @@ fn isolated_node_pages_share_unchanged_backing_and_release_staged_edits() {
             .collect::<Vec<_>>();
         let original = NodePages::from_scratch(&execution, &values, control)?;
         let original_page = Arc::downgrade(leaf_at(&original, 0));
-        let mut candidate = original.clone();
-        candidate.replace(&execution, 2, Some(999), control)?;
-        candidate.replace(&execution, PAGE_SIZE + 7, None, control)?;
+        let mut candidate = PageEdit::new(original.clone(), execution);
+        candidate.replace(2, Some(999), control)?;
+        candidate.replace(PAGE_SIZE + 7, None, control)?;
         assert_eq!(original.get(2, control)?, Some(&2));
-        assert_eq!(candidate.get(2, control)?, Some(&999));
+        assert_eq!(candidate.get(2, control)?, Some(999));
         assert_eq!(
             original.get(PAGE_SIZE + 7, control)?,
             Some(&((PAGE_SIZE + 7) as u64))
         );
         assert_eq!(candidate.get(PAGE_SIZE + 7, control)?, None);
+        let candidate = candidate.seal(control)?;
         assert!(!Arc::ptr_eq(leaf_at(&original, 0), leaf_at(&candidate, 0)));
         assert!(Arc::ptr_eq(leaf_at(&original, 3), leaf_at(&candidate, 3)));
         let staged_page = Arc::downgrade(leaf_at(&candidate, 0));
@@ -69,8 +70,9 @@ fn isolated_node_pages_share_unchanged_backing_and_release_staged_edits() {
         assert!(staged_page.upgrade().is_none());
         assert!(original_page.upgrade().is_some());
         // Growth crosses the old directory's address range without copying its leaves.
-        let mut successor = original.clone();
-        successor.replace(&execution, 8 * PAGE_SIZE + 1, Some(500), control)?;
+        let mut successor = PageEdit::new(original.clone(), execution);
+        successor.replace(8 * PAGE_SIZE + 1, Some(500), control)?;
+        let successor = successor.seal(control)?;
         assert!(Arc::ptr_eq(leaf_at(&original, 3), leaf_at(&successor, 3)));
         assert_eq!(successor.get(8 * PAGE_SIZE + 1, control)?, Some(&500));
         empty_inserted_page_is_pruned(&execution, &original, control)?;
@@ -97,15 +99,11 @@ fn original_request_stop_refuses_node_page_handoff_and_releases_staged_pages() {
     let cancel = CancellationSource::new();
     let backing = request(&cancel);
     let execution = ExecutionRequest::serial(&backing);
-    let mut staged = None;
     let result = controlled(&execution, |control| {
-        let mut candidate = original.clone();
-        candidate.replace(&execution, 0, Some(8), control)?;
-        staged = Some(Arc::downgrade(leaf_at(&candidate, 0)));
+        let mut candidate = PageEdit::new(original.clone(), execution);
+        candidate.replace(0, Some(8), control)?;
         cancel.cancel();
-        assert!(candidate
-            .replace(&execution, PAGE_SIZE, Some(13), control)
-            .is_err());
+        assert!(candidate.replace(PAGE_SIZE, Some(13), control).is_err());
         Ok(candidate) // Catching the stop still cannot hand off this root.
     });
     assert!(matches!(
@@ -114,15 +112,15 @@ fn original_request_stop_refuses_node_page_handoff_and_releases_staged_pages() {
             WorkCeilingDenial::Stopped(MapKernelStop::Cancelled)
         )))
     ));
-    assert!(staged.unwrap().upgrade().is_none());
+    assert_eq!(backing.memory().unwrap().charged_memory_bytes(), 0);
     let fresh_cancel = CancellationSource::new();
     let fresh_backing = request(&fresh_cancel);
     let fresh = ExecutionRequest::serial(&fresh_backing);
     controlled(&fresh, |control| {
         assert_eq!(original.get(0, control)?, Some(&5));
-        let mut retry = original.clone();
-        retry.replace(&fresh, 0, Some(8), control)?;
-        assert_eq!(retry.get(0, control)?, Some(&8));
+        let mut retry = PageEdit::new(original.clone(), fresh);
+        retry.replace(0, Some(8), control)?;
+        assert_eq!(retry.get(0, control)?, Some(8));
         Ok(())
     })
     .unwrap();
@@ -134,14 +132,15 @@ fn empty_inserted_page_is_pruned(
     control: &WorthQueryManagedIndexControl<'_>,
 ) -> Result<(), Stop> {
     let ordinal = 4 * PAGE_SIZE;
-    let mut edited = original.clone();
-    edited.replace(execution, ordinal, Some(1), control)?;
-    let retired_page = Arc::downgrade(leaf_at(&edited, ordinal >> PAGE_BITS));
-    edited.replace(execution, ordinal, None, control)?;
+    let mut edited = PageEdit::new(original.clone(), *execution);
+    edited.replace(ordinal, Some(1), control)?;
+    edited.replace(ordinal, None, control)?;
+    assert_eq!(edited.get(ordinal, control)?, None);
+    let edited = edited.seal(control)?;
     assert_eq!(edited.get(ordinal, control)?, None);
     assert!(
-        retired_page.upgrade().is_none(),
-        "an emptied page is pruned"
+        Arc::ptr_eq(leaf_at(original, 3), leaf_at(&edited, 3)),
+        "untouched page stays shared"
     );
     Ok(())
 }

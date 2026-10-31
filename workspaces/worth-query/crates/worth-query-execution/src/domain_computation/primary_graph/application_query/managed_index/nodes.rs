@@ -8,7 +8,7 @@ use worth_execution::{
 mod lineage;
 mod pages;
 use lineage::NodeLineage;
-use pages::NodePages;
+use pages::{NodePages, PageEdit};
 
 /// A node coordinate issued by one genuine provider-build session.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -27,15 +27,13 @@ pub struct WorthQueryManagedIndexNodeWriter<'a, Node: Copy> {
     capacity: usize,
     source_count: usize,
     changed: Option<ExecutionOrderedMap<usize, ()>>,
+    before_sources: Option<&'a super::source_structure::SourceTree>,
     control: &'a WorthQueryManagedIndexControl<'a>,
 }
 
 enum Writing<'a, Node> {
     Build(ExecutionArray<Cell<Option<Node>>>),
-    Edit {
-        pages: NodePages<Node>,
-        request: ExecutionRequest<'a, 'a>,
-    },
+    Edit { pages: PageEdit<'a, Node> },
 }
 
 /// Sealed nodes retained by the registered root's actual original allocation.
@@ -78,6 +76,7 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
             capacity,
             source_count,
             changed: None,
+            before_sources: None,
             control,
         })
     }
@@ -110,7 +109,7 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
         self.validate(id)?;
         match &self.storage {
             Writing::Build(scratch) => scratch.get(id.ordinal).and_then(Cell::get),
-            Writing::Edit { pages, .. } => pages.get(id.ordinal, self.control)?.copied(),
+            Writing::Edit { pages } => pages.get(id.ordinal, self.control)?,
         }
         .ok_or_else(|| self.control.refuse(Stop::UnwrittenNode))
     }
@@ -129,16 +128,43 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
         self.control.poll()
     }
 
-    pub(super) fn track_changes(&mut self) {
+    /// Locate this occurrence's node in the checked predecessor structure.
+    /// The coordinate is descriptive; `get` checks its current writer liveness.
+    /// Cold and opaque writers have no predecessor Source correspondence.
+    pub fn before_source_node(
+        &self,
+        slot: super::WorthQueryManagedIndexSourceSlot,
+    ) -> Result<WorthQueryManagedIndexNodeId, Stop> {
+        let tree = self
+            .before_sources
+            .ok_or_else(|| self.control.refuse(Stop::SourceStructureUnavailable))?;
+        let ordinal = tree
+            .source_node(slot, self.control)?
+            .ok_or_else(|| self.control.refuse(Stop::SourceSlotUnavailable))?;
+        let id = WorthQueryManagedIndexNodeId {
+            owner: self.owner,
+            ordinal,
+        };
+        self.get(id)?;
+        Ok(id)
+    }
+
+    pub(super) fn track_changes(&mut self, before: &'a super::source_structure::SourceTree) {
         self.changed = Some(ExecutionOrderedMap::default());
+        self.before_sources = Some(before);
     }
 
     fn write(&mut self, ordinal: usize, value: Option<Node>) -> Result<(), Stop> {
         if let Some(changed) = &mut self.changed {
-            let Writing::Edit { request, .. } = &self.storage else {
+            let Writing::Edit { pages } = &self.storage else {
                 unreachable!("only retained edits track changed coordinates");
             };
-            super::source_structure::record_change(changed, ordinal, request, self.control)?;
+            super::source_structure::record_change(
+                changed,
+                ordinal,
+                &pages.execution(),
+                self.control,
+            )?;
         }
         match &mut self.storage {
             Writing::Build(scratch) => {
@@ -148,9 +174,7 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
                 cell.set(value);
                 Ok(())
             }
-            Writing::Edit { pages, request } => {
-                pages.replace(request, ordinal, value, self.control)
-            }
+            Writing::Edit { pages } => pages.replace(ordinal, value, self.control),
         }
     }
     fn validate(&self, id: WorthQueryManagedIndexNodeId) -> Result<(), Stop> {
@@ -181,7 +205,7 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
                 &scratch.elements()[..self.written],
                 self.control,
             )?,
-            Writing::Edit { pages, .. } => pages,
+            Writing::Edit { pages } => pages.seal(self.control)?,
         };
         self.control.poll()?;
         Ok(WorthQueryManagedIndexNodes {
@@ -251,14 +275,14 @@ impl<Node: Copy> WorthQueryManagedIndexNodes<Node> {
             owner: self.owner,
             lineage: Arc::clone(&self.lineage),
             storage: Writing::Edit {
-                pages: self.pages.clone(),
-                request: execution,
+                pages: PageEdit::new(self.pages.clone(), execution),
             },
             written: self.frontier,
             live: self.live,
             capacity,
             source_count,
             changed: None,
+            before_sources: None,
             control,
         })
     }

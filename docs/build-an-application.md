@@ -5655,6 +5655,13 @@ deltas. Opaque structure remains an explicit conservative profile. Definition v1
 means Opaque; v2 transports structure; v3 also binds the membership strategy.
 Old v1/v2 definitions always retain candidate-only membership.
 
+During a checked warm edit, `nodes.before_source_node(slot)` locates the genuine
+occurrence's predecessor node without scanning the Source or adding a provider
+lookup table. It returns a descriptive coordinate; `nodes.get` reads the staged
+writer and checks liveness. Read the old key before editing that occurrence.
+Cold, opaque, missing or foreign occurrences refuse. The box provider uses this
+lookup to move a leaf within its pure spatial ordering, without rereading Source.
+
 A Source-complete tree alone does not establish complete query membership.
 Declare `MEMBERSHIP = ApplicationManagedIndexMembership::ExhaustiveSourceTree`
 and implement `validate_probe` plus `matches_source(row, probe, control)` to use

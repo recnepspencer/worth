@@ -8,6 +8,7 @@ use worth_query_consumer_values::{
 #[derive(Clone, Default)]
 struct Tree {
     nodes: Vec<Option<BoxNode<usize, usize>>>,
+    leaves: BTreeMap<usize, usize>,
 }
 impl BoxEditStorage for Tree {
     type Id = usize;
@@ -22,6 +23,9 @@ impl BoxEditStorage for Tree {
     fn append(&mut self, node: BoxNode<usize, usize>) -> Result<usize, Self::Stop> {
         let id = self.nodes.len();
         self.nodes.push(Some(node));
+        if let BoxNodeLinks::Leaf { source } = node.links {
+            assert!(self.leaves.insert(source, id).is_none());
+        }
         Ok(id)
     }
     fn replace(&mut self, id: usize, node: BoxNode<usize, usize>) -> Result<(), Self::Stop> {
@@ -30,9 +34,16 @@ impl BoxEditStorage for Tree {
         Ok(())
     }
     fn remove(&mut self, id: usize) -> Result<(), Self::Stop> {
-        self.read(id)?;
+        let node = self.read(id)?;
+        if let BoxNodeLinks::Leaf { source } = node.links {
+            self.leaves.remove(&source);
+        }
         self.nodes[id] = None;
         Ok(())
+    }
+    fn source_bounds(&mut self, source: usize) -> Result<Box2, Self::Stop> {
+        let id = *self.leaves.get(&source).ok_or("absent Source")?;
+        Ok(self.read(id)?.bounds)
     }
     fn invalid(&self) -> Self::Stop {
         "invalid box topology"
@@ -47,7 +58,20 @@ fn parity(tree: &Tree, root: Option<usize>, values: &BTreeMap<usize, Box2Coordin
     if let Some(root) = root {
         inspect_balance(tree, root, &mut seen, &mut ordered);
     }
-    assert_eq!(ordered, values.keys().copied().collect::<Vec<_>>());
+    let mut expected_order: Vec<_> = values.iter().collect();
+    expected_order.sort_by_key(|(source, raw)| {
+        (
+            [raw.lower[0], raw.lower[1], raw.upper[0], raw.upper[1]],
+            **source,
+        )
+    });
+    assert_eq!(
+        ordered,
+        expected_order
+            .iter()
+            .map(|(source, _)| **source)
+            .collect::<Vec<_>>()
+    );
     assert_eq!(seen.len(), tree.nodes.iter().flatten().count());
     for probe in [
         bounds([-100, -100], [100, 100]),
@@ -133,7 +157,7 @@ fn inspect_balance(
         BoxNodeLinks::Branch { left, right } => {
             let a = inspect_balance(tree, left, seen, ordered);
             let b = inspect_balance(tree, right, seen, ordered);
-            assert!(a.abs_diff(b) <= 1, "BVH identity routing stays balanced");
+            assert!(a.abs_diff(b) <= 1, "spatial routing stays balanced");
             assert_eq!(node.height, a.max(b) + 1);
             assert_eq!(node.last_source, *ordered.last().unwrap());
         }
@@ -165,7 +189,8 @@ fn keyed_box_edits_match_scan_through_refit_insert_retire() {
     let original_root = root;
     let original_values = values.clone();
     let moved = bounds([90, 90], [91, 91]);
-    replace_box_source(root.unwrap(), 9, Box2::new(moved).unwrap(), &mut tree).unwrap();
+    root =
+        Some(replace_box_source(root.unwrap(), 9, Box2::new(moved).unwrap(), &mut tree).unwrap());
     values.insert(9, moved);
     parity(&tree, root, &values);
     for key in [4, 3, 22, 2, 6, 9, 17] {
@@ -184,16 +209,16 @@ fn cold_backing_accepts_keyed_edits(authored: &[(usize, Box2Coordinates)]) {
         .map(|(index, (_, raw))| (index, *raw))
         .collect::<BTreeMap<_, _>>();
     let mut tree = Tree::default();
-    let root = build_box_tree(
+    let mut root = build_box_tree(
         values.len(),
-        |key| Ok(Box2::new(values[&key]).unwrap()),
-        |node| tree.append(node),
-        |_| Ok(()),
+        |key| Ok((key, Box2::new(values[&key]).unwrap())),
+        &mut tree,
     )
     .unwrap();
     parity(&tree, root, &values);
     let moved = bounds([90, 90], [91, 91]);
-    replace_box_source(root.unwrap(), 0, Box2::new(moved).unwrap(), &mut tree).unwrap();
+    root =
+        Some(replace_box_source(root.unwrap(), 0, Box2::new(moved).unwrap(), &mut tree).unwrap());
     values.insert(0, moved);
     parity(&tree, root, &values);
     let root = remove_box_source(root.unwrap(), 3, &mut tree).unwrap();

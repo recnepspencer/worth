@@ -1,12 +1,15 @@
-//! Immutable node pages. An edit replaces one page and its directory path.
+//! Immutable node pages; isolated editors freeze each touched page once.
 use super::{Stop, WorthQueryManagedIndexControl};
 use std::{alloc::Layout, cell::Cell, sync::Arc};
 use worth_execution::{
     ExecutionArray, ExecutionMemoryReservation, ExecutionRequest, ExecutionRequestArrayBuilder,
 };
 
-const PAGE_BITS: u32 = 5;
-const PAGE_SIZE: usize = 1 << PAGE_BITS;
+pub(super) const PAGE_BITS: u32 = 5;
+pub(super) const PAGE_SIZE: usize = 1 << PAGE_BITS;
+
+mod edit;
+pub(super) use edit::PageEdit;
 
 pub(super) struct NodePages<Node> {
     root: Option<Arc<Directory<Node>>>,
@@ -54,7 +57,16 @@ impl<Node: Copy> NodePages<Node> {
         ordinal: usize,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Option<&Node>, Stop> {
-        let page = ordinal >> PAGE_BITS;
+        Ok(self
+            .page_values(ordinal >> PAGE_BITS, control)?
+            .and_then(|values| values[ordinal & (PAGE_SIZE - 1)].as_ref()))
+    }
+
+    fn page_values(
+        &self,
+        page: usize,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Option<&ExecutionArray<Option<Node>>>, Stop> {
         if page.checked_shr(self.height).unwrap_or(0) > 0 {
             return Ok(None);
         }
@@ -63,7 +75,7 @@ impl<Node: Copy> NodePages<Node> {
         while let Some(directory) = current {
             control.checkpoint(1)?;
             match &directory.entry {
-                Entry::Page(values) => return Ok(values[ordinal & (PAGE_SIZE - 1)].as_ref()),
+                Entry::Page(values) => return Ok(Some(values)),
                 Entry::Branch { left, right } => {
                     height -= 1;
                     current = if page & (1 << height) == 0 {
@@ -77,14 +89,13 @@ impl<Node: Copy> NodePages<Node> {
         Ok(None)
     }
 
-    pub(super) fn replace(
+    fn install(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
-        ordinal: usize,
-        value: Option<Node>,
+        page: usize,
+        replacement: Option<Arc<Directory<Node>>>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<(), Stop> {
-        let page = ordinal >> PAGE_BITS;
         let mut root = self.root.clone();
         let mut height = self.height;
         while page >> height > 0 {
@@ -98,7 +109,14 @@ impl<Node: Copy> NodePages<Node> {
             )?);
             height += 1;
         }
-        let root = replace(execution, root.as_deref(), height, ordinal, value, control)?;
+        let root = install(
+            execution,
+            root.as_deref(),
+            height,
+            page,
+            replacement,
+            control,
+        )?;
         control.poll()?;
         self.root = root;
         self.height = height;
@@ -111,8 +129,19 @@ fn retain<Node>(
     entry: Entry<Node>,
     control: &WorthQueryManagedIndexControl<'_>,
 ) -> Result<Arc<Directory<Node>>, Stop> {
+    let memory = header_memory::<Directory<Node>>(execution, control)?;
+    Ok(Arc::new(Directory {
+        entry,
+        _memory: memory,
+    }))
+}
+
+fn header_memory<T>(
+    execution: &ExecutionRequest<'_, '_>,
+    control: &WorthQueryManagedIndexControl<'_>,
+) -> Result<Option<ExecutionMemoryReservation>, Stop> {
     control.checkpoint(1)?;
-    let bytes = Layout::new::<Directory<Node>>()
+    let bytes = Layout::new::<T>()
         .extend(Layout::new::<[usize; 2]>())
         .map_err(|_| control.refuse(Stop::CapacityOverflow))?
         .0
@@ -122,10 +151,7 @@ fn retain<Node>(
     let memory = execution
         .reserve_retained_memory(bytes)
         .map_err(|cause| control.refuse(Stop::Request(cause)))?;
-    Ok(Arc::new(Directory {
-        entry,
-        _memory: memory,
-    }))
+    Ok(memory)
 }
 
 fn build<Node: Copy>(
@@ -157,31 +183,17 @@ fn build<Node: Copy>(
     branch(execution, left, right, control)
 }
 
-fn replace<Node: Copy>(
+fn install<Node: Copy>(
     execution: &ExecutionRequest<'_, '_>,
     previous: Option<&Directory<Node>>,
     height: u32,
-    ordinal: usize,
-    value: Option<Node>,
+    page: usize,
+    replacement: Option<Arc<Directory<Node>>>,
     control: &WorthQueryManagedIndexControl<'_>,
 ) -> Result<Option<Arc<Directory<Node>>>, Stop> {
     control.checkpoint(1)?;
     if height == 0 {
-        let values = previous.map(|directory| match &directory.entry {
-            Entry::Page(values) => values,
-            Entry::Branch { .. } => unreachable!("private page directory height"),
-        });
-        return page(
-            execution,
-            |index| {
-                if index == ordinal & (PAGE_SIZE - 1) {
-                    value
-                } else {
-                    values.and_then(|values| values[index])
-                }
-            },
-            control,
-        );
+        return Ok(replacement);
     }
     let (mut left, mut right) = previous
         .map(|directory| match &directory.entry {
@@ -189,17 +201,17 @@ fn replace<Node: Copy>(
             Entry::Page(_) => unreachable!("private branch directory height"),
         })
         .unwrap_or_default();
-    let selected = if (ordinal >> PAGE_BITS) & (1 << (height - 1)) == 0 {
+    let selected = if page & (1 << (height - 1)) == 0 {
         &mut left
     } else {
         &mut right
     };
-    *selected = replace(
+    *selected = install(
         execution,
         selected.as_deref(),
         height - 1,
-        ordinal,
-        value,
+        page,
+        replacement,
         control,
     )?;
     branch(execution, left, right, control)

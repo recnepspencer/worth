@@ -3,9 +3,13 @@ use super::*;
 use prefix::structure::Fault;
 #[test]
 fn malformed_warm_structure_preserves_predecessor_and_stable_slot_retry_commits() {
-    lifecycle::run(journey);
+    lifecycle::run(|| {
+        for fault in [Fault::OmitSource, Fault::DuplicateChild] {
+            journey(fault);
+        }
+    });
 }
-fn journey() {
+fn journey(fault: Fault) {
     let provider = Arc::new(prefix::Calls::default());
     let rules = Arc::new(rule::Calls::new(provider.clone()));
     let world = host::install(provider.clone(), rules.clone());
@@ -41,7 +45,7 @@ fn journey() {
     rules.records.lock().unwrap().clear();
     let memory = accounted_request();
     let baseline = memory.charged_memory_bytes();
-    *provider.structure_fault.lock().unwrap() = Fault::OmitSource;
+    *provider.structure_fault.lock().unwrap() = fault;
     let denied = request
         .advanced()
         .mutate(rename("sh", "free"))
@@ -64,9 +68,17 @@ fn journey() {
     loop {
         if let Some(cause) = cause.downcast_ref::<WorthQueryManagedIndexWorkDenial>() {
             assert!(matches!(
-                cause,
-                WorthQueryManagedIndexWorkDenial::Controlled(
-                    WorthQueryManagedIndexStop::SourceStructureIncomplete
+                (fault, cause),
+                (
+                    Fault::OmitSource,
+                    WorthQueryManagedIndexWorkDenial::Controlled(
+                        WorthQueryManagedIndexStop::SourceStructureIncomplete
+                    )
+                ) | (
+                    Fault::DuplicateChild,
+                    WorthQueryManagedIndexWorkDenial::Controlled(
+                        WorthQueryManagedIndexStop::DuplicateNodeParent
+                    )
                 )
             ));
             break;

@@ -92,6 +92,20 @@ impl<T> BuildingFixedBacking<T> {
     pub(in super::super) fn elements(&self) -> &[T] {
         self.backing.elements()
     }
+    pub(in super::super) fn replace_initialized(
+        &mut self,
+        index: usize,
+        value: T,
+    ) -> Result<(), Denial> {
+        self.check_live()?;
+        if index >= self.len() {
+            return Err(self.denial(Kind::UninitializedElement));
+        }
+        // The slot remains initialized even if the replaced value's Drop unwinds.
+        let previous = self.backing.replace_initialized(index, value);
+        drop(previous);
+        self.check_live()
+    }
     pub(in super::super) fn len(&self) -> usize {
         self.backing.elements().len()
     }

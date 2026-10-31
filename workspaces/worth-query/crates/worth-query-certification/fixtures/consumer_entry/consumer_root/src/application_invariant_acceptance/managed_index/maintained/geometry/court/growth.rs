@@ -3,6 +3,7 @@ use super::*;
 use worth_execution::{
     CancellationSource, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
 };
+mod selection;
 
 const REMOTE_BATCH_EDGES: u32 = 1_250;
 
@@ -59,6 +60,17 @@ fn geometry_chain_growth_uses_real_source_and_original_sdk_invoice() {
             beside.saturating_sub(doubled) <= one_step * 8,
             "the difference of original invoices exposes a full-population sweep"
         );
+    }
+}
+
+#[test]
+fn fixed_geometry_edit_keeps_source_work_local_beside_independent_remote_populations() {
+    for unrelated in [0, 256, 1_024] {
+        // The same two edited occurrences, independent of the remote axis.
+        // journey checks exact +8/+8 Source work and bounded query paths; the
+        // whole original invoices remain visible for cost diagnosis.
+        let costs = journey(64, unrelated);
+        eprintln!("fixed64 remote={unrelated} refusal/commit original SDK invoices={costs:?}");
     }
 }
 
@@ -151,6 +163,17 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
     let retained = request.query(find("A", next_x)).execute().unwrap();
     let retained_values = intersecting(universe("A", vertices, unrelated, None), next_x);
     assert_eq!(values(retained.rows()), retained_values);
+    let original_universe = universe("A", vertices, unrelated, None);
+    for x in [50, 1_000, 1_002, next_x, 999_999, 2_000_000] {
+        selection::verify(
+            &calls,
+            &original_universe,
+            x,
+            "before",
+            || request.query(find("A", x)).execute().unwrap(),
+            |actual| values(actual.rows()),
+        );
+    }
     let head = request
         .retain_current_read()
         .unwrap()
@@ -272,6 +295,17 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
         values(request.query(find("A", next_x)).execute().unwrap().rows()),
         intersecting(universe("A", vertices, unrelated, Some(next_x)), next_x)
     );
+    let changed_universe = universe("A", vertices, unrelated, Some(next_x));
+    for x in [50, 1_000, 1_002, next_x, 999_999, 2_000_000] {
+        selection::verify(
+            &calls,
+            &changed_universe,
+            x,
+            "after",
+            || request.query(find("A", x)).execute().unwrap(),
+            |actual| values(actual.rows()),
+        );
+    }
     assert_eq!(calls.builds.load(Ordering::SeqCst), builds);
     index.close();
     (refusal_work, commit_work)

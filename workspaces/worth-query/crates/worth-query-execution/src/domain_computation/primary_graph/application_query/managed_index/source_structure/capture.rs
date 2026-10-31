@@ -58,7 +58,18 @@ where
             children: region.children.map(|child| child.map(|id| id.ordinal)),
         }))
     };
-    let edits = capture(execution, count, coordinates, &mut describe, control)?;
+    let previous = match &step {
+        Step::Cold => None,
+        Step::Warm { before, .. } => Some(*before),
+    };
+    let edits = capture(
+        execution,
+        count,
+        coordinates,
+        previous,
+        &mut describe,
+        control,
+    )?;
     let image = source.image();
     let mut tree = match &step {
         Step::Cold => SourceTree::empty(image.owner),
@@ -96,6 +107,7 @@ fn capture(
     execution: &ExecutionRequest<'_, '_>,
     count: usize,
     coordinates: &mut dyn Iterator<Item = usize>,
+    previous: Option<&SourceTree>,
     describe: &mut dyn FnMut(usize) -> Result<Option<Region>, Denial>,
     control: &Control<'_>,
 ) -> Result<ExecutionArray<Edit>, Denial> {
@@ -103,9 +115,16 @@ fn capture(
         .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
     for ordinal in coordinates {
         control.checkpoint(1)?;
+        let before = if let Some(previous) = previous {
+            maps::lookup(control, previous.regions.len(), size_of::<usize>())?;
+            previous.regions.get(&ordinal).copied()
+        } else {
+            None
+        };
         edits
             .push(Edit {
                 ordinal,
+                before,
                 region: describe(ordinal)?,
             })
             .map_err(|cause| control.refuse(Stop::Storage(cause)))?;

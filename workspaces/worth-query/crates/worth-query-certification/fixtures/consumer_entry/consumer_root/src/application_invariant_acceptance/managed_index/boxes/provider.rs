@@ -9,6 +9,7 @@ use worth_query_consumer_values::{build_box_tree, Box2, BoxIndexDenial, BoxNode}
 use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::primary_graph::*;
 
+mod storage;
 pub struct BoxIndex;
 // compiled-example: begin
 impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
@@ -30,6 +31,8 @@ pub type Stop = WorthQueryManagedIndexProviderStop<BoxIndexDenial>;
 pub struct Calls {
     #[cfg(test)]
     pub corrupt_summary: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub cold_lookup: std::sync::atomic::AtomicBool,
     capacity: AtomicUsize,
     builds: AtomicUsize,
     probe_validations: AtomicUsize,
@@ -146,6 +149,10 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
             sources.len() <= 16,
             "the fixture's actual coordinate observation is finite"
         );
+        #[cfg(test)]
+        if self.0.cold_lookup.load(Ordering::SeqCst) {
+            nodes.before_source_node(sources.at(0)?.0)?;
+        }
         let mut previous = None;
         for ordinal in 0..sources.len() {
             let (_, row) = sources.at(ordinal)?;
@@ -158,55 +165,30 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
                 actual.generation_value(),
             );
         }
-        build_box_tree(
+        let root = build_box_tree(
             sources.len(),
             |ordinal| {
-                let (_, row) = sources.at(ordinal)?;
+                let (slot, row) = sources.at(ordinal)?;
                 let raw = row
                     .field(query::bounds())
                     .map_err(|_| Stop::Domain(BoxIndexDenial::InvalidTopology))?;
-                Box2::new(raw.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))
+                let bounds = Box2::new(raw.raw())
+                    .map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))?;
+                Ok((slot, bounds))
             },
-            |node| {
-                let mut node = Node {
-                    bounds: node.bounds,
-                    height: node.height,
-                    last_source: sources.at(node.last_source)?.0,
-                    links: match node.links {
-                        worth_query_consumer_values::BoxNodeLinks::Leaf { source } => {
-                            worth_query_consumer_values::BoxNodeLinks::Leaf {
-                                source: sources.at(source)?.0,
-                            }
-                        }
-                        worth_query_consumer_values::BoxNodeLinks::Branch { left, right } => {
-                            worth_query_consumer_values::BoxNodeLinks::Branch { left, right }
-                        }
-                    },
-                };
-                #[cfg(test)]
-                if self.0.corrupt_summary.load(Ordering::SeqCst)
-                    && matches!(
-                        node.links,
-                        worth_query_consumer_values::BoxNodeLinks::Leaf { .. }
-                    )
-                {
-                    node.bounds =
-                        Box2::new(Coordinates::new(10_000, 10_000, 10_001, 10_001).raw()).unwrap();
-                }
-                #[cfg(not(test))]
-                let _ = &mut node;
-                let id = nodes.push(node).map_err(Stop::Controlled)?;
-                if nodes.len() == 1 {
-                    let observe = self.0.after_first_node.lock().unwrap().take();
-                    if let Some(observe) = observe {
-                        observe();
-                    }
-                }
-                Ok(id)
+            &mut storage::Storage {
+                nodes,
+                control,
+                calls: &self.0,
             },
-            |work| control.checkpoint(work).map_err(Stop::Controlled),
-        )
+        )?;
+        #[cfg(test)]
+        if self.0.corrupt_summary.load(Ordering::SeqCst) {
+            storage::corrupt_leaf(nodes, root)?;
+        }
+        Ok(root)
     }
+
     fn validate_probe(
         &self,
         probe: &Coordinates,

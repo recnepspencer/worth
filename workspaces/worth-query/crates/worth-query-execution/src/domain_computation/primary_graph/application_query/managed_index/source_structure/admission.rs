@@ -32,6 +32,14 @@ impl SourceTree {
                 continue;
             }
             for child in edit.region.unwrap().children.into_iter().flatten() {
+                // Every new cycle contains a new edge. Retained edges already
+                // belong to the exact qualified predecessor's acyclic graph.
+                if edit
+                    .before
+                    .is_some_and(|before| before.children.contains(&Some(child)))
+                {
+                    continue;
+                }
                 let mut current = Some(edit.ordinal);
                 let mut visited = 0;
                 while let Some(parent) = current {

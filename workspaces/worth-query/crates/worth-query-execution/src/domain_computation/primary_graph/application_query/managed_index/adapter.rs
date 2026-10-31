@@ -239,8 +239,8 @@ where
             let mut writer = retained
                 .nodes
                 .edit(*execution, capacity, after.len(), control)?;
-            if retained.structure.is_some() {
-                writer.track_changes();
+            if let Some(previous) = retained.structure.as_ref() {
+                writer.track_changes(previous);
             }
             let root = provider_result(
                 execution,

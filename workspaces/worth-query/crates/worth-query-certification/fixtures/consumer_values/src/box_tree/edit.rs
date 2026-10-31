@@ -1,4 +1,4 @@
-//! Keyed BVH edits. Identity ordering routes updates; validated bounds route queries.
+//! Spatial AVL edits. Exact leaf bounds route edits and bound query traversal.
 use super::{Box2, BoxNode, BoxNodeLinks};
 
 /// The caller supplies stable occurrence keys, isolated backing and original stops.
@@ -16,6 +16,8 @@ pub trait BoxEditStorage {
         node: BoxNode<Self::Id, Self::Source>,
     ) -> Result<(), Self::Stop>;
     fn remove(&mut self, id: Self::Id) -> Result<(), Self::Stop>;
+    /// Bounds at the start of this occurrence edit; no Source projection is needed.
+    fn source_bounds(&mut self, source: Self::Source) -> Result<Box2, Self::Stop>;
     fn invalid(&self) -> Self::Stop;
 }
 
@@ -33,17 +35,23 @@ pub fn remove_box_source<S: BoxEditStorage>(
     source: S::Source,
     storage: &mut S,
 ) -> Result<Option<S::Id>, S::Stop> {
-    remove(root, source, 0, storage)
+    let bounds = storage.source_bounds(source)?;
+    remove(root, source, bounds, 0, storage)
 }
 
-/// A bounds change rewrites only its leaf and ancestor enclosures.
+/// A changed spatial key retires/reinserts the leaf on bounded AVL paths.
 pub fn replace_box_source<S: BoxEditStorage>(
     root: S::Id,
     source: S::Source,
     bounds: Box2,
     storage: &mut S,
-) -> Result<(), S::Stop> {
-    replace(root, source, bounds, 0, storage)
+) -> Result<S::Id, S::Stop> {
+    let before = storage.source_bounds(source)?;
+    if before == bounds {
+        return Ok(root);
+    }
+    let root = remove(root, source, before, 0, storage)?;
+    insert(root, source, bounds, 0, storage)
 }
 
 fn leaf<Id, Source: Copy>(source: Source, bounds: Box2) -> BoxNode<Id, Source> {
@@ -51,6 +59,7 @@ fn leaf<Id, Source: Copy>(source: Source, bounds: Box2) -> BoxNode<Id, Source> {
         bounds,
         links: BoxNodeLinks::Leaf { source },
         last_source: source,
+        last_bounds: bounds,
         height: 1,
     }
 }
@@ -73,7 +82,7 @@ fn insert<S: BoxEditStorage>(
                 return Err(storage.invalid());
             }
             let added = storage.append(leaf(source, bounds))?;
-            let (left, right) = if source < previous {
+            let (left, right) = if key(bounds, source) < key(node.bounds, previous) {
                 (added, id)
             } else {
                 (id, added)
@@ -82,7 +91,7 @@ fn insert<S: BoxEditStorage>(
         }
         BoxNodeLinks::Branch { left, right } => {
             let left_node = storage.read(left)?;
-            if source <= left_node.last_source {
+            if key(bounds, source) <= key(left_node.last_bounds, left_node.last_source) {
                 (
                     insert(Some(left), source, bounds, depth + 1, storage)?,
                     right,
@@ -102,6 +111,7 @@ fn insert<S: BoxEditStorage>(
 fn remove<S: BoxEditStorage>(
     id: S::Id,
     source: S::Source,
+    bounds: Box2,
     depth: u32,
     storage: &mut S,
 ) -> Result<Option<S::Id>, S::Stop> {
@@ -118,10 +128,17 @@ fn remove<S: BoxEditStorage>(
         BoxNodeLinks::Branch { left, right } => (left, right),
     };
     let left_node = storage.read(left)?;
-    let (left, right) = if source <= left_node.last_source {
-        (remove(left, source, depth + 1, storage)?, Some(right))
+    let (left, right) = if key(bounds, source) <= key(left_node.last_bounds, left_node.last_source)
+    {
+        (
+            remove(left, source, bounds, depth + 1, storage)?,
+            Some(right),
+        )
     } else {
-        (Some(left), remove(right, source, depth + 1, storage)?)
+        (
+            Some(left),
+            remove(right, source, bounds, depth + 1, storage)?,
+        )
     };
     match (left, right) {
         (Some(left), Some(right)) => {
@@ -135,32 +152,12 @@ fn remove<S: BoxEditStorage>(
     }
 }
 
-fn replace<S: BoxEditStorage>(
-    id: S::Id,
-    source: S::Source,
-    bounds: Box2,
-    depth: u32,
-    storage: &mut S,
-) -> Result<(), S::Stop> {
-    checkpoint(depth, storage)?;
-    match storage.read(id)?.links {
-        BoxNodeLinks::Leaf { source: previous } => {
-            if source != previous {
-                return Err(storage.invalid());
-            }
-            storage.replace(id, leaf(source, bounds))
-        }
-        BoxNodeLinks::Branch { left, right } => {
-            let left_node = storage.read(left)?;
-            let selected = if source <= left_node.last_source {
-                left
-            } else {
-                right
-            };
-            replace(selected, source, bounds, depth + 1, storage)?;
-            write_branch(id, left, right, storage)
-        }
-    }
+fn key<Source: Copy>(bounds: Box2, source: Source) -> ([i64; 4], Source) {
+    let raw = bounds.coordinates();
+    (
+        [raw.lower[0], raw.lower[1], raw.upper[0], raw.upper[1]],
+        source,
+    )
 }
 
 fn checkpoint<S: BoxEditStorage>(depth: u32, storage: &mut S) -> Result<(), S::Stop> {
@@ -179,7 +176,7 @@ fn branch<S: BoxEditStorage>(
 ) -> Result<BoxNode<S::Id, S::Source>, S::Stop> {
     let a = storage.read(left)?;
     let b = storage.read(right)?;
-    if a.last_source >= b.last_source {
+    if key(a.last_bounds, a.last_source) >= key(b.last_bounds, b.last_source) {
         return Err(storage.invalid());
     }
     let height = a
@@ -191,6 +188,7 @@ fn branch<S: BoxEditStorage>(
         bounds: a.bounds.union(b.bounds),
         links: BoxNodeLinks::Branch { left, right },
         last_source: b.last_source,
+        last_bounds: b.last_bounds,
         height,
     })
 }

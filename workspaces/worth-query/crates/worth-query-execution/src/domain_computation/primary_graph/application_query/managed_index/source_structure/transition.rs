@@ -8,17 +8,25 @@ impl SourceTree {
         control: &Control<'_>,
     ) -> Result<(), Stop> {
         for edit in edits {
-            maps::lookup(control, self.regions.len(), size_of::<usize>())?;
-            let Some(old) = self.regions.get(&edit.ordinal).copied() else {
+            let Some(old) = edit.before else {
                 continue;
             };
             for child in old.children.into_iter().flatten() {
-                maps::remove(&mut self.parents, &child, execution, control)?;
+                if !edit
+                    .region
+                    .is_some_and(|region| region.children.contains(&Some(child)))
+                {
+                    maps::remove(&mut self.parents, &child, execution, control)?;
+                }
             }
             if let Some(slot) = old.source {
-                maps::remove(&mut self.sources, &slot, execution, control)?;
+                if edit.region.and_then(|region| region.source) != Some(slot) {
+                    maps::remove(&mut self.sources, &slot, execution, control)?;
+                }
             }
-            maps::remove(&mut self.regions, &edit.ordinal, execution, control)?;
+            if edit.region.is_none() {
+                maps::remove(&mut self.regions, &edit.ordinal, execution, control)?;
+            }
         }
         Ok(())
     }
@@ -33,7 +41,16 @@ impl SourceTree {
             let Some(region) = edit.region else {
                 continue;
             };
+            if region.children[0].is_some() && region.children[0] == region.children[1] {
+                return Err(control.refuse(Stop::DuplicateNodeParent));
+            }
             for child in region.children.into_iter().flatten() {
+                if edit
+                    .before
+                    .is_some_and(|before| before.children.contains(&Some(child)))
+                {
+                    continue;
+                }
                 maps::lookup(control, self.parents.len(), size_of::<usize>())?;
                 if self.parents.contains_key(&child) {
                     return Err(control.refuse(Stop::DuplicateNodeParent));
@@ -43,19 +60,23 @@ impl SourceTree {
             if let Some(slot) = region.source {
                 maps::lookup(control, image.len(), size_of::<Slot>())?;
                 image.validate_slot(slot, control)?;
-                maps::lookup(control, self.sources.len(), size_of::<Slot>())?;
-                if self.sources.contains_key(&slot) {
-                    return Err(control.refuse(Stop::DuplicateSourceSlot));
+                if edit.before.and_then(|before| before.source) != Some(slot) {
+                    maps::lookup(control, self.sources.len(), size_of::<Slot>())?;
+                    if self.sources.contains_key(&slot) {
+                        return Err(control.refuse(Stop::DuplicateSourceSlot));
+                    }
+                    maps::insert(&mut self.sources, &slot, &edit.ordinal, execution, control)?;
                 }
-                maps::insert(&mut self.sources, &slot, &edit.ordinal, execution, control)?;
             }
-            maps::insert(
-                &mut self.regions,
-                &edit.ordinal,
-                &region,
-                execution,
-                control,
-            )?;
+            if edit.before != Some(region) {
+                maps::insert(
+                    &mut self.regions,
+                    &edit.ordinal,
+                    &region,
+                    execution,
+                    control,
+                )?;
+            }
         }
         Ok(())
     }

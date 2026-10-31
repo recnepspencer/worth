@@ -196,12 +196,12 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
             };
             match (change.before(), change.after()) {
                 (Some(before), Some(after_slot)) if before == after_slot => {
-                    replace_box_source(
+                    root = Some(replace_box_source(
                         root.ok_or_else(storage::invalid)?,
                         after_slot,
                         bounds(after, after_slot, &self.0)?,
                         &mut storage,
-                    )?;
+                    )?);
                 }
                 (before, after_slot) => {
                     if let Some(before) = before {

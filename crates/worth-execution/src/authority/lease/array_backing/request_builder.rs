@@ -75,6 +75,25 @@ impl<'request, 'authority, T> ExecutionRequestArrayBuilder<'request, 'authority,
             .map_err(ExecutionRequestArrayDenial::Request)
     }
 
+    /// Move a replacement into an initialized cell without growth or allocation.
+    /// Input is consumed on every outcome. A stop after the move can leave the
+    /// replacement installed; the stopped original request cannot seal it.
+    pub fn replace_initialized(
+        &mut self,
+        index: usize,
+        value: T,
+    ) -> Result<(), ExecutionRequestArrayDenial> {
+        self.request
+            .consult()
+            .map_err(ExecutionRequestArrayDenial::Request)?;
+        self.building
+            .replace_initialized(index, value)
+            .map_err(ExecutionRequestArrayDenial::Allocation)?;
+        self.request
+            .consult()
+            .map_err(ExecutionRequestArrayDenial::Request)
+    }
+
     pub fn seal(self) -> Result<ExecutionArray<T>, ExecutionRequestArrayDenial> {
         let Self { request, building } = self;
         let (array, _) = request

@@ -48,4 +48,21 @@ impl BoxEditStorage for Edit<'_, '_, '_> {
     fn invalid(&self) -> Stop {
         invalid()
     }
+    fn source_bounds(
+        &mut self,
+        source: Self::Source,
+    ) -> Result<worth_query_consumer_values::Box2, Stop> {
+        // Read the predecessor leaf's key before this occurrence is edited.
+        // Earlier edits only rotate branches; other leaf coordinates stay live.
+        let id = self.nodes.before_source_node(source)?;
+        let node = self.nodes.get(id)?;
+        match node.links {
+            worth_query_consumer_values::BoxNodeLinks::Leaf { source: actual }
+                if actual == source =>
+            {
+                Ok(node.bounds)
+            }
+            _ => Err(invalid()),
+        }
+    }
 }
