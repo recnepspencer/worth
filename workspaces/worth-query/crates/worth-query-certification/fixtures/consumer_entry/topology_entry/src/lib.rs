@@ -15,9 +15,11 @@ use worth_query_host::facade::worth_query_conditional_node as conditional_node;
 mod alternate_output;
 mod application_program;
 mod contribution;
+mod document_history;
 mod final_output;
 mod handler;
 mod initial_adjustment;
+pub use document_history::{PlanarDocumentHistory, PlanarSourceDocumentHistory};
 pub mod optional_aspects;
 pub use alternate_output::*;
 pub use application_program::*;
@@ -87,6 +89,7 @@ worth_query_application_contribution! {
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);
             let schema = <PlanarSourceFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(schema);
             let schema = initial_adjustment::declare_initial_adjustment(schema);
+            let schema = document_history::declare(schema);
             let schema = <PlanarFinalFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(schema);
             let schema = match Schema::PLANAR_EDIT_PROJECTION_WORK {
                 Some(work) => schema.operation_projection_work_budget(EditPlanar::reference::<Schema>(), work),

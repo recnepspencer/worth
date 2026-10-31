@@ -14,6 +14,7 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     I::Binding: crate::application_entry::WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:

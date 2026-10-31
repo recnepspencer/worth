@@ -1,6 +1,5 @@
 //! Selection leaves the original completion outside the checked request handoff.
 use super::*;
-use crate::application_entry::operation::SourceAssessmentDriver;
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryModel,
     application_operation::{ApplicationMutationScopeBinding, NoApplicationMutationSource},
@@ -14,6 +13,7 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     I::Binding: crate::application_entry::WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
@@ -40,10 +40,8 @@ where
                 unreachable!()
             };
             let completed = state.completed.as_ref().expect("original SDK completion");
-            let (prepared, selected) = <I::Binding as SourceAssessmentDriver<S>>::prepare_history(
-                &completed.operation,
-                &phase,
-                &current,
+            let (prepared, selected) = Mode::<S, I, A>::prepare_completed(
+                completed, &phase, &current,
             )
             .map_err(|cause| {
                 WorthQueryHistoryEditDenial::History(WorthQueryApplicationHistoryDenial::Mutation(
@@ -58,25 +56,44 @@ where
                         WorthQueryApplicationHistoryDenial::Installation(cause),
                     )
                 })?;
-            let receipt = match completed.evidence() {
-                crate::application_entry::WorthQuerySourceCompletion::Fresh { receipt, .. }
-                | crate::application_entry::WorthQuerySourceCompletion::Recovered {
-                    receipt, ..
-                } => receipt,
+            let source = Mode::<S, I, A>::recording_source(completed).ok_or(
+                WorthQueryHistoryEditDenial::History(WorthQueryApplicationHistoryDenial::Document(
+                    WorthQueryDocumentHistoryDenial::ReceiptMismatch,
+                )),
+            )?;
+            let operation = WorthQueryDocumentHistoryOperation::new(
+                &selected,
+                &prepared.admission,
+                prepared.idempotency,
+            );
+            let reservation = state.reservation.take().expect("reserved record");
+            let candidate = state.candidate.take().expect("actual candidate");
+            let adopted = match source {
+                HistoryRecordingSource::Source(receipt) => {
+                    self.document.owner.adopt_recorded_history::<I::Binding>(
+                        &phase,
+                        &program_publication_access(),
+                        &installed,
+                        operation,
+                        reservation,
+                        candidate,
+                        receipt,
+                    )
+                }
+                HistoryRecordingSource::RequiredRoot { source, root } => {
+                    self.document.owner.adopt_fulfilled_history::<I::Binding>(
+                        &phase,
+                        &program_publication_access(),
+                        &installed,
+                        operation,
+                        reservation,
+                        candidate,
+                        source,
+                        root,
+                    )
+                }
             };
-            match self.document.owner.adopt_recorded_history::<I::Binding>(
-                &phase,
-                &program_publication_access(),
-                &installed,
-                WorthQueryDocumentHistoryOperation::new(
-                    &selected,
-                    &prepared.admission,
-                    prepared.idempotency,
-                ),
-                state.reservation.take().expect("reserved record"),
-                state.candidate.take().expect("actual candidate"),
-                receipt,
-            ) {
+            match adopted {
                 Ok(step) => state.selected = Some(step),
                 Err(failure) => {
                     let (reservation, candidate, cause) = failure.into_parts();

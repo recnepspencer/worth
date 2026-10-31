@@ -1,9 +1,10 @@
 //! One move-only edit owns the document, private candidate and original SDK continuation.
 use super::*;
-use crate::application_entry::{
-    WorthQueryCompletedSourceOperation, WorthQueryOperationCloseDenial, WorthQuerySourceOnlyDenial,
-    WorthQuerySourceOnlyOperation, WorthQueryTerminalSourceOperation,
+use crate::application_entry::operation::{
+    HistoryMode as Mode, HistoryOperationAdvance, HistoryOperationDriver, HistoryRecordingSource,
+    WorthQueryHistoryOperationMode,
 };
+use crate::application_entry::{WorthQueryOperationCloseDenial, WorthQuerySourceOnlyDenial};
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
     application_program::{
@@ -26,6 +27,8 @@ mod capture_pause;
 mod creation_cleanup;
 mod discard;
 mod finish;
+mod fixed_outcome;
+pub use fixed_outcome::WorthQueryFixedHistoryEditOutcome;
 mod handoff;
 mod metadata;
 mod paging;
@@ -36,16 +39,21 @@ pub use finish::{WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome};
 pub use handoff::WorthQueryHistoryEditHandoffPauseForTest;
 
 pub(super) type Operation<S, I, P, A> =
-    WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationSourceCompletion>;
+    <Mode<S, I, A> as WorthQueryHistoryOperationMode<S, I, P, A>>::Operation;
 pub(super) type Completed<S, I, P, A> =
-    WorthQueryCompletedSourceOperation<S, I, P, A, ApplicationSourceCompletion>;
+    <Mode<S, I, A> as WorthQueryHistoryOperationMode<S, I, P, A>>::Completed;
 pub(super) type Terminal<S, I, P, A> =
-    WorthQueryTerminalSourceOperation<S, I, P, A, ApplicationSourceCompletion>;
+    <Mode<S, I, A> as WorthQueryHistoryOperationMode<S, I, P, A>>::Terminal;
+pub(super) type ClosedTerminal<S, I, P, A> =
+    <Mode<S, I, A> as WorthQueryHistoryOperationMode<S, I, P, A>>::ClosedTerminal;
+pub(super) type Outcome<S, I, P, A> =
+    <Mode<S, I, A> as WorthQueryHistoryOperationMode<S, I, P, A>>::Outcome;
 
 #[derive(Debug)]
 pub enum WorthQueryHistoryEditDenial {
     History(WorthQueryApplicationHistoryDenial),
     Source(WorthQuerySourceOnlyDenial),
+    Fixed(crate::application_entry::WorthQueryOperationAdvanceDenial),
     Close(WorthQueryOperationCloseDenial),
     Candidate(WorthQueryDocumentHistoryCandidateDenial),
     ForkRecovery,
@@ -86,8 +94,10 @@ pub(super) struct Forking<
     S: ApplicationSchema,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A,
-> {
+    A: ApplicationAction<S, I::Binding>,
+> where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+{
     pub(super) operation: Option<Operation<S, I, P, A>>,
     pub(super) reservation: Option<WorthQueryDocumentHistoryReservation>,
     pub(super) candidate: Option<WorthQueryExpectedProductBranch<'runtime, S>>,
@@ -99,8 +109,10 @@ pub(super) struct Selecting<
     S: ApplicationSchema,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A,
-> {
+    A: ApplicationAction<S, I::Binding>,
+> where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+{
     pub(super) completed: Option<Completed<S, I, P, A>>,
     pub(super) reservation: Option<WorthQueryDocumentHistoryReservation>,
     pub(super) candidate: Option<WorthQueryExpectedProductBranch<'runtime, S>>,
@@ -129,8 +141,10 @@ pub(super) enum Phase<
     S: ApplicationSchema,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A,
-> {
+    A: ApplicationAction<S, I::Binding>,
+> where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+{
     Admission(Forking<'runtime, S, I, P, A>),
     Forking(Forking<'runtime, S, I, P, A>),
     Running {
@@ -153,8 +167,7 @@ pub(super) enum Phase<
         candidate: WorthQueryExpectedProductBranch<'runtime, S>,
     },
     TerminalCleanup {
-        terminal: Terminal<S, I, P, A>,
-        closed: crate::application_entry::WorthQueryClosedOperation,
+        terminal: ClosedTerminal<S, I, P, A>,
         reservation: WorthQueryDocumentHistoryReservation,
         candidate: DiscardedCandidate<'runtime, S>,
     },
@@ -171,8 +184,10 @@ pub struct WorthQueryHistoryEdit<
     H: ApplicationHistoryBinding<S>,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A,
-> {
+    A: ApplicationAction<S, I::Binding>,
+> where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+{
     pub(super) document: WorthQueryApplicationHistoryDocument<'runtime, S, H>,
     pub(super) phase: Option<Phase<'runtime, S, I, P, A>>,
     handoff: Option<std::sync::Arc<handoff::AdoptionHandoff>>,
@@ -184,8 +199,10 @@ impl<
         H: ApplicationHistoryBinding<S>,
         I: ApplicationMutationIntent<S>,
         P: ApplicationProgramDefinition<S>,
-        A,
+        A: ApplicationAction<S, I::Binding>,
     > WorthQueryHistoryEdit<'runtime, S, H, I, P, A>
+where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
     pub(super) fn new(
         document: WorthQueryApplicationHistoryDocument<'runtime, S, H>,
@@ -238,9 +255,8 @@ impl<
     }
     pub fn terminal_source(&self) -> Option<&Terminal<S, I, P, A>> {
         match self.phase.as_ref()? {
-            Phase::Terminal { terminal, .. } | Phase::TerminalCleanup { terminal, .. } => {
-                Some(terminal)
-            }
+            Phase::Terminal { terminal, .. } => Some(terminal),
+            Phase::TerminalCleanup { terminal, .. } => Mode::<S, I, A>::retained_terminal(terminal),
             _ => None,
         }
     }
@@ -250,6 +266,13 @@ impl<
             Phase::Running { operation, .. } | Phase::AlreadyRecorded { operation, .. } => {
                 Some(operation)
             }
+            _ => None,
+        }
+    }
+    /// Original closed terminal data while candidate retirement is still owned.
+    pub fn closed_terminal(&self) -> Option<&ClosedTerminal<S, I, P, A>> {
+        match self.phase.as_ref()? {
+            Phase::TerminalCleanup { terminal, .. } => Some(terminal),
             _ => None,
         }
     }
@@ -301,8 +324,10 @@ impl<
         H: ApplicationHistoryBinding<S>,
         I: ApplicationMutationIntent<S>,
         P: ApplicationProgramDefinition<S>,
-        A,
+        A: ApplicationAction<S, I::Binding>,
     > std::fmt::Debug for WorthQueryHistoryEdit<'_, S, H, I, P, A>
+where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("WorthQueryHistoryEdit")

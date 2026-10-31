@@ -65,6 +65,7 @@ where
     I::Binding: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
     /// Deliberately discard an unselected candidate and its completed evidence.
     /// Native unpublished/indeterminate custody must settle before it can close.
@@ -95,9 +96,9 @@ where
                     application: self.document.owner.application(),
                     principal: request.principal,
                     scope: request.scope,
-                    branch: operation.history_target(),
+                    branch: Mode::<S, I, A>::target(&operation),
                 };
-                match operation.close(&current) {
+                match Mode::<S, I, A>::close_operation(operation, &current) {
                     Ok(_) => {
                         self.phase = Some(Phase::Discarding {
                             candidate: DiscardedCandidate::Live {
@@ -124,11 +125,10 @@ where
                     application: self.document.owner.application(),
                     principal: request.principal,
                     scope: request.scope,
-                    branch: completed.operation.history_target(),
+                    branch: Mode::<S, I, A>::completed_target(&completed),
                 };
-                match completed.close_with_evidence(&current) {
-                    Ok((_closed, evidence)) => {
-                        drop(evidence);
+                match Mode::<S, I, A>::discard_completed(completed, &current) {
+                    Ok(()) => {
                         self.phase = Some(Phase::Discarding {
                             candidate: DiscardedCandidate::Live {
                                 head: state.candidate.take().unwrap().into_owned_head(),
@@ -204,9 +204,9 @@ where
             application: self.document.owner.application(),
             principal: request.principal,
             scope: request.scope,
-            branch: operation.history_target(),
+            branch: Mode::<S, I, A>::target(&operation),
         };
-        match operation.close(&current) {
+        match Mode::<S, I, A>::close_operation(operation, &current) {
             Ok(_) => match (state.reservation.take(), state.candidate.take()) {
                 (None, None) => Ok(self.document),
                 (Some(reservation), None) => {

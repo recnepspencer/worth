@@ -79,7 +79,6 @@ where
         worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
     pub(super) workflow: Option<WorkflowAdmission>,
     pub(super) recorded_correction: Option<worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent>,
-    pub(super) history: Option<worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryOperationConstraint>,
     marker: std::marker::PhantomData<fn() -> (A, Mode)>,
     // Retention outlives captured intent and native workflow custody on abandonment.
     pub(in crate::application_entry) runtime: WorthQueryProgramApplicationRuntime<S, P>,
@@ -138,7 +137,6 @@ where
             installed_action: installed_action.clone(),
             workflow: None,
             recorded_correction: None,
-            history: None,
             marker: std::marker::PhantomData,
         })
     }
@@ -223,7 +221,6 @@ where
                 phase,
                 |native, identities, staged| {
                     let prepared = <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission::prepare_selected(phase, native, identities, staged, &selected)?;
-                    self.validate_history_prepared(phase, &prepared)?;
                     Ok(prepared)
                 },
                 |_, program, binding| {
@@ -243,7 +240,6 @@ where
                     phase,
                     |native, identities, staged| {
                         let prepared = <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission::prepare_selected(phase, native, identities, staged, &selected)?;
-                        self.validate_history_prepared(phase, &prepared)?;
                         Ok(prepared)
                     },
                     |_, program, binding| {

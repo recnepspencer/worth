@@ -1,6 +1,5 @@
 //! Fresh document READ and actual source-side preparation precede any protected attempt lookup.
 use super::*;
-use crate::application_entry::operation::SourceAssessmentDriver;
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryModel,
     application_operation::{ApplicationMutationScopeBinding, NoApplicationMutationSource},
@@ -19,6 +18,7 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     I::Binding: crate::application_entry::WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
@@ -59,7 +59,7 @@ where
             let Phase::Admission(state) = self.phase.as_mut().expect("admission phase") else {
                 unreachable!()
             };
-            let (prepared, selected) = <I::Binding as SourceAssessmentDriver<S>>::prepare_history(
+            let (prepared, selected) = Mode::<S, I, A>::prepare(
                 state.operation.as_ref().expect("original action"),
                 &phase,
                 &current,
@@ -148,7 +148,7 @@ where
             let Some(Phase::Forking(state)) = self.phase.as_mut() else {
                 unreachable!()
             };
-            let (prepared, selected) = <I::Binding as SourceAssessmentDriver<S>>::prepare_history(
+            let (prepared, selected) = Mode::<S, I, A>::prepare(
                 state.operation.as_ref().expect("original initial action"),
                 &phase,
                 &current,
@@ -223,12 +223,7 @@ where
                     };
                 }
             };
-            match state
-                .operation
-                .take()
-                .unwrap()
-                .bind_history_candidate(restriction)
-            {
+            match Mode::<S, I, A>::bind_candidate(state.operation.take().unwrap(), restriction) {
                 Ok(operation) => {
                     self.phase = Some(Phase::Running {
                         operation,

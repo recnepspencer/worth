@@ -20,6 +20,8 @@ mod preview;
 pub(super) struct RecordedNode {
     pub(super) step: WorthQueryHistoryStep,
     pub(super) _source: Arc<WorthQueryApplicationReadObservation>,
+    pub(super) root_posture:
+        Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture>,
 }
 
 pub(super) enum NodeBinding {
@@ -111,6 +113,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
                         endpoint,
                     },
                     _source: source,
+                    root_posture: None,
                 }),
                 _allocation: allocation,
             },

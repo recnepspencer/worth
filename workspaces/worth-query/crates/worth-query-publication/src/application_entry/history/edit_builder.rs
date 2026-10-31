@@ -10,10 +10,7 @@ use worth_query_declaration::facade::{
         ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
         NoApplicationMutationSource,
     },
-    application_program::{
-        ApplicationAction, ApplicationActionDelivery, ApplicationProgramDefinition,
-        ApplicationSourceCompletion,
-    },
+    application_program::{ApplicationAction, ApplicationProgramDefinition},
     application_schema::TypedMutationPreconditions,
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
@@ -205,13 +202,18 @@ impl<
     where
         P: ApplicationProgramDefinition<S>,
         A: ApplicationAction<S, I::Binding>,
-        A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion>,
+        crate::application_entry::operation::HistoryMode<S, I, A>:
+            crate::application_entry::WorthQueryHistoryOperationMode<S, I, P, A>,
     {
         let Self {
             document,
             description,
         } = self;
-        match description.retain_operation::<P, A>(program) {
+        use crate::application_entry::operation::HistoryOperationDriver;
+        match crate::application_entry::operation::HistoryMode::<S, I, A>::construct(
+            description,
+            program,
+        ) {
             Ok(operation) => Ok(super::edit::WorthQueryHistoryEdit::new(document, operation)),
             Err((description, denial)) => Err((
                 Self {

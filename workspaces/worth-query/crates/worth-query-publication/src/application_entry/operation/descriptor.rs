@@ -98,4 +98,5 @@ pub struct WorthQueryOperationDescription<
     pub(super) preconditions: Conditions<Schema, Intent>,
     pub(super) source: Option<WorthQueryMutationExpectedSource<SourceQuery<Schema, Intent>>>,
     pub(super) branch: WorthQueryProductBranch,
+    pub(super) history: Option<worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryOperationConstraint>,
 }

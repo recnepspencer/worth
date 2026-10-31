@@ -18,8 +18,16 @@ use worth_query_execution::facade::product::WorthQueryProductBranchReadIdentity;
 pub struct WorthQueryHistoryPreviewResult<Q, R> {
     pub(super) original: WorthQueryPublishedApplicationResult<Q, R>,
     pub(super) source: WorthQueryProductBranchReadIdentity,
+    pub(super) root_posture: Option<crate::application_entry::WorthQueryOutputSettlementPosture>,
 }
 impl<Q, R> WorthQueryHistoryPreviewResult<Q, R> {
+    /// Actual recorded root posture, disclosed with this fresh historical read.
+    /// This is neither current whole-tree readiness nor producer re-execution.
+    pub fn required_root_posture(
+        &self,
+    ) -> Option<crate::application_entry::WorthQueryOutputSettlementPosture> {
+        self.root_posture
+    }
     pub fn rows(&self) -> &[R] {
         self.original.rows()
     }

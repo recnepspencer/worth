@@ -30,6 +30,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
     let invariant_calls = Arc::new(AtomicUsize::new(0));
     let invariant_probe = Arc::new(AtomicUsize::new(0));
     let producer_authorization_denials = Arc::new(AtomicUsize::new(0));
+    let producer_domain_denial = Arc::new(AtomicBool::new(false));
     let configuration = (
         TopologyConfiguration {
             final_feature: worth_query_topology_entry::planar_final_feature_runtime(),
@@ -38,7 +39,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
             invariant_probe: Arc::clone(&invariant_probe),
             invariant_read_observer: None,
             producer_authorization_denials: Arc::clone(&producer_authorization_denials),
-            producer_domain_denial: Arc::new(AtomicBool::new(false)),
+            producer_domain_denial: Arc::clone(&producer_domain_denial),
         },
         Arc::clone(&parameter_calls),
         (),
@@ -97,5 +98,6 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
         invariant_calls,
         invariant_probe,
         producer_authorization_denials,
+        producer_domain_denial,
     })
 }

@@ -1,6 +1,6 @@
 //! The edit delegates business execution to its original concrete SourceOnly owner.
 use super::*;
-use crate::application_entry::{WorthQuerySourceOnlyAdvance, WorthQuerySourceOperationBinding};
+use crate::application_entry::WorthQuerySourceOperationBinding;
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryModel,
     application_operation::{ApplicationMutationScopeBinding, NoApplicationMutationSource},
@@ -13,6 +13,7 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     I::Binding: WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
@@ -68,8 +69,8 @@ where
             scope: request.scope,
             branch: candidate.branch(),
         };
-        match operation.advance(&current) {
-            WorthQuerySourceOnlyAdvance::Progress(operation) => {
+        match Mode::<S, I, A>::advance(operation, &current) {
+            HistoryOperationAdvance::Progress(operation) => {
                 self.phase = Some(Phase::Running {
                     operation,
                     reservation,
@@ -77,18 +78,15 @@ where
                 });
                 WorthQueryHistoryEditAdvance::Progress(self)
             }
-            WorthQuerySourceOnlyAdvance::Refused { operation, denial } => {
+            HistoryOperationAdvance::Refused { operation, denial } => {
                 self.phase = Some(Phase::Running {
                     operation,
                     reservation,
                     candidate,
                 });
-                WorthQueryHistoryEditAdvance::Refused {
-                    edit: self,
-                    denial: WorthQueryHistoryEditDenial::Source(denial),
-                }
+                WorthQueryHistoryEditAdvance::Refused { edit: self, denial }
             }
-            WorthQuerySourceOnlyAdvance::Completed(completed) => {
+            HistoryOperationAdvance::Completed(completed) => {
                 self.phase = Some(Phase::Selecting(Selecting {
                     completed: Some(completed),
                     reservation: Some(reservation),
@@ -97,7 +95,7 @@ where
                 }));
                 WorthQueryHistoryEditAdvance::Progress(self)
             }
-            WorthQuerySourceOnlyAdvance::Terminal(terminal) => {
+            HistoryOperationAdvance::Terminal(terminal) => {
                 self.phase = Some(Phase::Terminal {
                     terminal,
                     reservation,

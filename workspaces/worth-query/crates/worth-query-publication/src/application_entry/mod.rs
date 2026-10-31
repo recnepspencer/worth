@@ -45,14 +45,14 @@ pub use history::{
     WorthQueryApplicationHistoryPreview, WorthQueryDocumentHistoryCloseReceipt,
     WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
     WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryInstallationDenialKind,
-    WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
-    WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance, WorthQueryHistoryEditBuilder,
-    WorthQueryHistoryEditCaptureDenial, WorthQueryHistoryEditCaptureFailure,
-    WorthQueryHistoryEditDenial, WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish,
-    WorthQueryHistoryEditOutcome, WorthQueryHistoryEditPosture, WorthQueryHistoryNodeId,
-    WorthQueryHistoryPage, WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial,
-    WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow, WorthQueryHistoryPreviewResult,
-    WorthQueryHistoryStep,
+    WorthQueryFixedHistoryEditOutcome, WorthQueryHistoryContextRefreshDenial,
+    WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance,
+    WorthQueryHistoryEditBuilder, WorthQueryHistoryEditCaptureDenial,
+    WorthQueryHistoryEditCaptureFailure, WorthQueryHistoryEditDenial,
+    WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome,
+    WorthQueryHistoryEditPosture, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
+    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
+    WorthQueryHistoryPageRow, WorthQueryHistoryPreviewResult, WorthQueryHistoryStep,
 };
 mod live;
 mod mandatory_review;
@@ -63,11 +63,11 @@ mod operation;
 #[doc(hidden)]
 pub use operation::WorthQuerySourceCompletionHandoffPauseForTest;
 pub use operation::{
-    WorthQueryClosedFixedDelivery, WorthQueryClosedOperation, WorthQueryCompletedSourceOperation,
-    WorthQueryCompletedWorkflowOperation, WorthQueryCompletedWorkflowSelection,
-    WorthQueryDiscoveredOperation, WorthQueryFixedOperation, WorthQueryOperationAdvance,
-    WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
-    WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
+    WorthQueryClosedFixedDelivery, WorthQueryClosedFixedTerminal, WorthQueryClosedOperation,
+    WorthQueryCompletedSourceOperation, WorthQueryCompletedWorkflowOperation,
+    WorthQueryCompletedWorkflowSelection, WorthQueryDiscoveredOperation, WorthQueryFixedOperation,
+    WorthQueryHistoryOperationMode, WorthQueryOperationAdvance, WorthQueryOperationAdvanceDenial,
+    WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
     WorthQueryOperationConstructionDenial, WorthQueryOperationDeliveryDenial,
     WorthQueryOperationDeliveryPolicy, WorthQueryOperationDescription,
     WorthQueryOperationInputCaptureDenial, WorthQueryOperationInputCaptureRefusal,

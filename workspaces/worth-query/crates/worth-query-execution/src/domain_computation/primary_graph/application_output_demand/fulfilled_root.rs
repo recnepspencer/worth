@@ -42,6 +42,11 @@ pub struct WorthQueryFulfilledRequiredRoot {
     pub(super) _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl WorthQueryFulfilledRequiredRoot {
+    pub(in crate::domain_computation::primary_graph) fn retained_output(
+        &self,
+    ) -> &Arc<WorthQueryApplicationReadObservation> {
+        &self.output
+    }
     pub fn source_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
         self.source.selected_commit()
     }

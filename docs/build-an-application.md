@@ -1894,7 +1894,15 @@ or the original terminal action outcome. A refusal after adoption can still
 report `Selected`; preserve its completion and finish it with a fresh request.
 Use `discard(&request)` to explicitly abandon unselected candidate work, keeping
 the returned owner when cleanup refuses. This entry accepts declared
-source-completion actions with no source, workflow control or external effects.
+source-completion actions and fixed required-output leaves with no mutation
+source, workflow control or external effects. A fixed leaf returns
+`WorthQueryFixedHistoryEditOutcome::Recorded { step, delivery }`; `delivery` is
+the original `WorthQueryClosedFixedDelivery`, retaining its actual settlement
+and close evidence. A terminal fixed edit returns `NotRecorded { terminal }`;
+inspect `advance_denial()`, `source_outcome()`, `source_result()` and `close_evidence()` separately
+because a source can perform before its required output becomes unavailable.
+Unavailable completion keeps descriptive source-receipt evidence without
+retaining the discarded candidate's physical history.
 See [record an edit and retain its original outcome](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#record-an-edit-and-retain-its-original-outcome).
 
 This example uses the retention application's [installed history declaration](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs),
@@ -1985,6 +1993,10 @@ with `preview.read(&document, &request)?`, supplying the actual current document
 on every call. Later edits can move that document while the holder keeps its
 original composite source. The result exposes admitted `rows()`, the exact
 descriptive `source()` and the actual Native `basis()` used by the query.
+For a recorded fixed leaf, `required_root_posture()` carries the original
+qualified root settlement. Its output endpoint can follow the source action's
+commit. `None` means the step carries no required-root settlement; it does not
+mean an output is unavailable. Preview reads execute no source command or producer.
 The holder and result expose no retained-selection or mutation conversion.
 Call `result.close()` and `preview.close()` when finished; another independently
 opened holder remains usable. Governed metadata uses `preview_governed(..)` and
@@ -3909,6 +3921,11 @@ old frozen views and descriptive commit equality provide no substitute.
 Closed carriers and returned observations pin readonly lineage/history and the
 runtime; they do not certify whole-application shutdown or own uncleared cleanup.
 Drop them promptly after final publication, before whole-runtime close or OS join.
+Use `receipt.descriptive_copy()` when you need original commit, intent and
+terminal evidence without retaining the publication's physical history. The
+copy carries no performed-change witness or full product basis. Ordinary
+`Clone` still retains its original publication custody. Making a descriptive
+copy does not retire the source or release another holder.
 The neutral `application_program::closed_delivery` fixture exercises both owners,
 including a real native source perturbation for Stable/no-receipt reuse. Its
 rostered-successor court selects compatible meaning before capturing the original

@@ -88,8 +88,9 @@ mod read;
 #[doc(hidden)]
 pub use edit::WorthQueryHistoryEditHandoffPauseForTest;
 pub use edit::{
-    WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance, WorthQueryHistoryEditDenial,
-    WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome, WorthQueryHistoryEditPosture,
+    WorthQueryFixedHistoryEditOutcome, WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance,
+    WorthQueryHistoryEditDenial, WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome,
+    WorthQueryHistoryEditPosture,
 };
 pub use edit_builder::{
     WorthQueryHistoryEditBuilder, WorthQueryHistoryEditCaptureDenial,

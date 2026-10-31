@@ -49,5 +49,6 @@ fn retain_preview(
         step: node.step.clone(),
         model,
         source: Arc::clone(&node._source),
+        root_posture: node.root_posture,
     })
 }

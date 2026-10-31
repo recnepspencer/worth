@@ -20,12 +20,12 @@ pub struct WorthQueryCommittedProductPublication {
 enum PublicationCustody {
     /// The performed publication, shared with every live observer of it.
     Performed(WorthQueryProductPublicationReceipt),
-    /// What stays once the commit's history retired: its identities, without
-    /// the performed facts or the owner bases they hold.
-    Retired(Arc<RetiredProductPublication>),
+    /// Immutable publication identity without performed facts or owner bases.
+    /// Releasing this copy does not assert retirement of the actual source.
+    Described(Arc<DescriptiveProductPublication>),
 }
 
-struct RetiredProductPublication {
+struct DescriptiveProductPublication {
     product_branch: ProductBranchIdentity,
     product_incarnation: ProductBranchIncarnation,
     product_generation: ProductBranchReferenceGeneration,
@@ -40,7 +40,7 @@ struct RetiredProductPublication {
 
 impl WorthQueryCommittedProductPublication {
     /// The original performed selection, without retaining its owner bases.
-    /// Identity-only retired custody cannot supply the missing full basis.
+    /// Identity-only custody cannot supply the missing full basis.
     pub(in crate::domain_computation::primary_graph) fn observed_product_identity(
         &self,
     ) -> Option<crate::basis::WorthQueryProductBranchReadIdentity> {
@@ -68,7 +68,7 @@ impl WorthQueryCommittedProductPublication {
     > {
         match &mut self.custody {
             PublicationCustody::Performed(receipt) => receipt.take_history(),
-            PublicationCustody::Retired(_) => None,
+            PublicationCustody::Described(_) => None,
         }
     }
 
@@ -85,10 +85,16 @@ impl WorthQueryCommittedProductPublication {
     /// The same identities without the performed publication, once its
     /// commit's history retired, so holding it pins no World or owner state.
     pub(in crate::domain_computation::primary_graph) fn retired(&self) -> Self {
-        if let PublicationCustody::Retired(_) = &self.custody {
+        self.descriptive()
+    }
+
+    /// Preserve original immutable identities without retaining physical history.
+    /// This describes the copy; it does not retire the actual publication.
+    pub(in crate::domain_computation::primary_graph) fn descriptive(&self) -> Self {
+        if let PublicationCustody::Described(_) = &self.custody {
             return self.clone();
         }
-        let retired = RetiredProductPublication {
+        let description = DescriptiveProductPublication {
             product_branch: self.product_branch().clone(),
             product_incarnation: self.product_incarnation(),
             product_generation: self.product_generation(),
@@ -101,14 +107,14 @@ impl WorthQueryCommittedProductPublication {
             conditional_definition_generation: self.conditional_definition_generation(),
         };
         Self {
-            custody: PublicationCustody::Retired(Arc::new(retired)),
+            custody: PublicationCustody::Described(Arc::new(description)),
         }
     }
 
     fn performed(&self) -> Option<&WorthQueryProductPublicationReceipt> {
         match &self.custody {
             PublicationCustody::Performed(receipt) => Some(receipt),
-            PublicationCustody::Retired(_) => None,
+            PublicationCustody::Described(_) => None,
         }
     }
 
@@ -125,7 +131,7 @@ impl WorthQueryCommittedProductPublication {
             PublicationCustody::Performed(receipt) => {
                 receipt.publication().new_product_head().branch_identity()
             }
-            PublicationCustody::Retired(retired) => &retired.product_branch,
+            PublicationCustody::Described(description) => &description.product_branch,
         }
     }
 
@@ -135,7 +141,7 @@ impl WorthQueryCommittedProductPublication {
                 .publication()
                 .new_product_head()
                 .lifecycle_incarnation(),
-            PublicationCustody::Retired(retired) => retired.product_incarnation,
+            PublicationCustody::Described(description) => description.product_incarnation,
         }
     }
 
@@ -145,14 +151,14 @@ impl WorthQueryCommittedProductPublication {
                 .publication()
                 .new_product_head()
                 .reference_generation(),
-            PublicationCustody::Retired(retired) => retired.product_generation,
+            PublicationCustody::Described(description) => description.product_generation,
         }
     }
 
     pub fn composite_commit(&self) -> &CompositeCommitIdentity {
         match &self.custody {
             PublicationCustody::Performed(receipt) => receipt.publication().commit().identity(),
-            PublicationCustody::Retired(retired) => &retired.composite_commit,
+            PublicationCustody::Described(description) => &description.composite_commit,
         }
     }
 
@@ -171,7 +177,7 @@ impl WorthQueryCommittedProductPublication {
     pub fn publication_attempt(&self) -> &CompositePublicationAttemptIdentity {
         match &self.custody {
             PublicationCustody::Performed(receipt) => receipt.publication().attempt_identity(),
-            PublicationCustody::Retired(retired) => &retired.publication_attempt,
+            PublicationCustody::Described(description) => &description.publication_attempt,
         }
     }
 
@@ -188,7 +194,7 @@ impl WorthQueryCommittedProductPublication {
                     .envelope()
                     .commit
             }
-            PublicationCustody::Retired(retired) => &retired.relational_commit,
+            PublicationCustody::Described(description) => &description.relational_commit,
         }
     }
 
@@ -198,7 +204,7 @@ impl WorthQueryCommittedProductPublication {
                 .publication()
                 .component_results()
                 .relational_posture(),
-            PublicationCustody::Retired(retired) => retired.relational_posture,
+            PublicationCustody::Described(description) => description.relational_posture,
         }
     }
 
@@ -207,7 +213,7 @@ impl WorthQueryCommittedProductPublication {
             PublicationCustody::Performed(receipt) => {
                 receipt.publication().component_results().signal_posture()
             }
-            PublicationCustody::Retired(retired) => retired.signal_posture,
+            PublicationCustody::Described(description) => description.signal_posture,
         }
     }
 
@@ -216,19 +222,21 @@ impl WorthQueryCommittedProductPublication {
             PublicationCustody::Performed(receipt) => {
                 receipt.publication().commit().signal_publication_identity()
             }
-            PublicationCustody::Retired(retired) => retired.signal_publication.as_ref(),
+            PublicationCustody::Described(description) => description.signal_publication.as_ref(),
         }
     }
 
     pub fn conditional_definition_generation(&self) -> Option<u64> {
         match &self.custody {
             PublicationCustody::Performed(receipt) => receipt.conditional_definition_generation(),
-            PublicationCustody::Retired(retired) => retired.conditional_definition_generation,
+            PublicationCustody::Described(description) => {
+                description.conditional_definition_generation
+            }
         }
     }
 
     /// Borrow the actual native poststate retained by a performed World owner.
-    /// Retired descriptive history cannot reconstruct or lend this custody.
+    /// Descriptive identity cannot reconstruct or lend this custody.
     pub(in crate::domain_computation::primary_graph) fn retained_relational_basis(
         &self,
     ) -> Option<&worth_relational::facade::branch::AdmittedRelationalBranchBasis> {
@@ -279,7 +287,7 @@ impl std::fmt::Debug for WorthQueryCommittedProductPublication {
     }
 }
 
-/// The identities the performed receipt compares, so a retired copy equals
+/// The identities the performed receipt compares, so a descriptive copy equals
 /// the publication it was taken from.
 impl PartialEq for WorthQueryCommittedProductPublication {
     fn eq(&self, other: &Self) -> bool {

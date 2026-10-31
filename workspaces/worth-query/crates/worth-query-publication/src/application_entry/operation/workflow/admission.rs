@@ -95,7 +95,6 @@ where
                 prepared.extension.correction = Some(intent);
                 prepared.idempotency = intent.bind_idempotency(prepared.idempotency);
             }
-            self.validate_history_prepared(phase, &prepared)?;
             return Ok(prepared);
         }
         self.bind_workflow_view(native, false);
@@ -111,7 +110,6 @@ where
                 &selected,
             )
             .map_err(WorthQueryApplicationRecoveryRequestDenial::from)?;
-        self.validate_history_prepared(phase, &prepared)?;
         Ok(prepared)
     }
 }

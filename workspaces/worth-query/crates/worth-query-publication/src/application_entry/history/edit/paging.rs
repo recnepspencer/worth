@@ -11,6 +11,8 @@ where
     H: ApplicationHistoryBinding<S>,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
+    A: ApplicationAction<S, I::Binding>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {

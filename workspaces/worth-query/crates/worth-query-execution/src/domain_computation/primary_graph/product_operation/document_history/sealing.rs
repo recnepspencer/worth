@@ -8,7 +8,7 @@ use crate::{
     basis::{WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease},
     domain_computation::primary_graph::{
         WorthQueryAdvancementPhase, WorthQueryApplicationCommitReceipt,
-        WorthQueryExpectedProductBranch,
+        WorthQueryExpectedProductBranch, WorthQueryFulfilledRequiredRoot,
     },
     publication_boundary::WorthQueryProgramPublicationAccess,
 };
@@ -58,6 +58,21 @@ struct PreparedBinding {
     returned: WorthQueryHistoryStep,
 }
 
+enum RecordingCompletion<'a> {
+    Source(&'a WorthQueryApplicationCommitReceipt),
+    RequiredRoot {
+        source: &'a WorthQueryApplicationCommitReceipt,
+        root: &'a WorthQueryFulfilledRequiredRoot,
+    },
+}
+impl RecordingCompletion<'_> {
+    fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
+        match self {
+            Self::Source(source) | Self::RequiredRoot { source, .. } => source,
+        }
+    }
+}
+
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
 {
@@ -94,6 +109,59 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
         M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
+        self.adopt_recording::<M>(
+            phase,
+            access,
+            installed,
+            operation,
+            reserved,
+            candidate,
+            RecordingCompletion::Source(receipt),
+        )
+    }
+
+    /// Record the exact root that fulfilled this action, retaining its actual
+    /// producer seed. A later candidate head is never substituted for that root.
+    pub fn adopt_fulfilled_history<M>(
+        &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        access: &WorthQueryProgramPublicationAccess,
+        installed: &WorthQueryInstalledDocumentHistory<S, H>,
+        operation: WorthQueryDocumentHistoryOperation<'_, '_, S, M>,
+        reserved: WorthQueryDocumentHistoryReservation,
+        candidate: WorthQueryExpectedProductBranch<'runtime, S>,
+        source: &WorthQueryApplicationCommitReceipt,
+        root: &WorthQueryFulfilledRequiredRoot,
+    ) -> Result<WorthQueryHistoryStep, WorthQueryDocumentHistoryAdoptionFailure<'runtime, S>>
+    where
+        M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
+        M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
+    {
+        self.adopt_recording::<M>(
+            phase,
+            access,
+            installed,
+            operation,
+            reserved,
+            candidate,
+            RecordingCompletion::RequiredRoot { source, root },
+        )
+    }
+
+    fn adopt_recording<M>(
+        &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        access: &WorthQueryProgramPublicationAccess,
+        installed: &WorthQueryInstalledDocumentHistory<S, H>,
+        operation: WorthQueryDocumentHistoryOperation<'_, '_, S, M>,
+        reserved: WorthQueryDocumentHistoryReservation,
+        candidate: WorthQueryExpectedProductBranch<'runtime, S>,
+        completion: RecordingCompletion<'_>,
+    ) -> Result<WorthQueryHistoryStep, WorthQueryDocumentHistoryAdoptionFailure<'runtime, S>>
+    where
+        M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
+        M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
+    {
         let current =
             self.readmit_history_record::<M>(phase, access, installed, operation, &reserved);
         if let Err(denial) = current {
@@ -103,7 +171,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 denial,
             });
         }
-        let prepared = match self.prepare_binding(phase, &reserved, &candidate, receipt) {
+        let prepared = match self.prepare_binding(phase, &reserved, &candidate, completion) {
             Ok(prepared) => prepared,
             Err(denial) => {
                 return Err(WorthQueryDocumentHistoryAdoptionFailure {
@@ -141,7 +209,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         phase: &WorthQueryAdvancementPhase<'_>,
         reserved: &WorthQueryDocumentHistoryReservation,
         candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        completion: RecordingCompletion<'_>,
     ) -> Result<PreparedBinding, Denial> {
         self.validate_reservation(reserved)?;
         let runtime = self.application();
@@ -151,6 +219,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         if candidate.expected_source() != reserved.expected {
             return Err(Denial::HeadDiverged);
         }
+        let receipt = completion.receipt();
         if !self.model.matches_receipt(receipt)
             || receipt.idempotency_binding().canonical_key() != reserved.meaning.canonical_key()
             || !receipt
@@ -159,16 +228,37 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         {
             return Err(Denial::ReceiptMismatch);
         }
-        let selected = runtime
-            .on_branch(candidate.branch())
-            .select(phase)
-            .map_err(Denial::CandidateSelection)?;
-        if !receipt
-            .committed_product_publication()
-            .is_selected_at(selected.product().observation())
-        {
-            return Err(Denial::ReceiptMismatch);
-        }
+        let (selected, retained, root_posture) = match &completion {
+            RecordingCompletion::Source(receipt) => {
+                let selected = runtime
+                    .on_branch(candidate.branch())
+                    .select(phase)
+                    .map_err(Denial::CandidateSelection)?;
+                if !receipt
+                    .committed_product_publication()
+                    .is_selected_at(selected.product().observation())
+                {
+                    return Err(Denial::ReceiptMismatch);
+                }
+                (selected, None, None)
+            }
+            RecordingCompletion::RequiredRoot { source, root } => {
+                let retained = root.retained_output();
+                if !root.matches_source(source)
+                    || retained.branch_incarnation() != candidate.branch().occurrence()
+                {
+                    return Err(Denial::ReceiptMismatch);
+                }
+                let selected = runtime
+                    .select_application_read_observation(phase, retained)
+                    .map_err(Denial::CandidateSelection)?;
+                (
+                    selected,
+                    Some(std::sync::Arc::clone(retained)),
+                    Some(root.posture()),
+                )
+            }
+        };
         let endpoint =
             WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
         let exact = selected.product().read_lease();
@@ -176,7 +266,8 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             step: self
                 .journal
                 .prepared_step(&reserved.record, endpoint.clone()),
-            _source: selected.retain_application_read(),
+            _source: retained.unwrap_or_else(|| selected.retain_application_read()),
+            root_posture,
         };
         let returned = node.step.clone();
         Ok(PreparedBinding {

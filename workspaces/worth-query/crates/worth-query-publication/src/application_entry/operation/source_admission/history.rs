@@ -37,69 +37,11 @@ where
                 worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial::UnsupportedOperation,
             ));
         }
-        let selected = match self.history.as_ref() {
-            None => self.select(phase, request)?.0,
-            Some(restriction) => {
-                if !std::ptr::eq(self.runtime.runtime(), request.application)
-                    || request.branch != restriction.original_source()
-                    || self.description.branch != restriction.candidate()
-                {
-                    return Err(
-                        WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch,
-                    );
-                }
-                let selected = self
-                    .runtime
-                    .runtime()
-                    .on_branch(request.branch)
-                    .select(phase)
-                    .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-                let owner = self.runtime.selected_program_owner(&selected)
-                    .map_err(crate::application_entry::mutation::selected_program::map_selected_program_owner_denial)?;
-                owner
-                    .resolve_declared_action::<I::Binding>(&self.installed_action)
-                    .map_err(|_| {
-                        WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired
-                    })?;
-                selected
-            }
-        };
-        let mut native = self
-            .description
-            .request_view(request, &self.installed_action);
-        // This temporary view authorizes the document transition. It neither
-        // relocates the active candidate owner nor resolves/claims any native key.
-        native.request.branch = request.branch;
-        let staged = native.stage()?;
-        let identities = native.identities()?;
-        let prepared =
-            <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission::prepare_selected(
-                phase,
-                &native,
-                &identities,
-                staged,
-                &selected,
-            )?;
-        Ok((prepared, selected))
-    }
-
-    pub(in crate::application_entry::operation) fn validate_history_prepared(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        prepared: &PreparedMutation<S, I::Binding>,
-    ) -> Result<(), WorthQueryApplicationRequestMutationDenial> {
-        if let Some(restriction) = &self.history {
-            self.runtime
-                .runtime()
-                .validate_history_operation(
-                    phase,
-                    &worth_query_execution::publication_boundary::program_publication_access(),
-                    restriction,
-                    &prepared.admission,
-                    prepared.idempotency,
-                )
-                .map_err(WorthQueryApplicationRequestMutationDenial::DocumentHistory)?;
-        }
-        Ok(())
+        self.description.prepare_history_source(
+            &self.runtime,
+            &self.installed_action,
+            phase,
+            request,
+        )
     }
 }

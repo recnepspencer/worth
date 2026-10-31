@@ -40,3 +40,7 @@ pub type ConsumerInitialFixedProgramRoot = ApplicationOutputGraph<
     InitialConnection,
     ApplicationOutputEdge<InitialDependentConnection, ApplicationOutputLeaf>,
 >;
+
+#[cfg(test)]
+pub type ConsumerInitialLeafProgramRoot =
+    ApplicationOutputGraph<InitialConnection, ApplicationOutputLeaf>;

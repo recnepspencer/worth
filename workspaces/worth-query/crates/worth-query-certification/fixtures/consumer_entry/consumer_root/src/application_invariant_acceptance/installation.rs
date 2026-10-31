@@ -21,12 +21,15 @@ use worth_query_host::facade::{
 };
 use worth_query_topology_entry::{ConsumerPrincipalBinding, TopologyConfiguration};
 
+pub(super) type ConsumerRuntime<Program> =
+    installation::WorthQueryProgramApplicationRuntime<ConsumerSchema, Program>;
+
 pub(super) struct ConsumerWorld<Program = ConsumerProgram> {
-    pub(super) application:
-        installation::WorthQueryProgramApplicationRuntime<ConsumerSchema, Program>,
+    pub(super) application: ConsumerRuntime<Program>,
     pub(super) invariant_calls: Arc<AtomicUsize>,
     pub(super) invariant_probe: Arc<AtomicUsize>,
     pub(super) producer_authorization_denials: Arc<AtomicUsize>,
+    pub(super) producer_domain_denial: Arc<AtomicBool>,
 }
 
 pub(super) fn install(

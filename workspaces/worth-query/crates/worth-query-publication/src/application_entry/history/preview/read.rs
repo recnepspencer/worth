@@ -114,6 +114,9 @@ where
                                         result.into_admitted_disclosed(),
                                     ),
                                     source: self.step().endpoint().clone(),
+                                    root_posture: self
+                                        .owner
+                                        .required_root_posture(&program_publication_access()),
                                 })
                                 .map_err(WorthQueryApplicationHistoryDenial::Document))
                         },

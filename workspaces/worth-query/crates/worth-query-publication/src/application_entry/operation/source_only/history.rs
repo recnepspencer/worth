@@ -29,7 +29,7 @@ where
         if !matches!(self.state, SourceState::<S, I>::Initial)
             || self.admission.workflow.is_some()
             || self.admission.recorded_correction.is_some()
-            || self.admission.history.is_some()
+            || self.admission.description.history.is_some()
             || I::Binding::WORKFLOW_CONTROL
             || I::Binding::REQUIRES_WORKFLOW_AUTHORITY
             || I::Binding::workflow_execution_requirements().is_applicable()
@@ -49,7 +49,7 @@ where
         // No active native attempt is relocated. Every original description field
         // stays owned; only this initial action's private execution target changes.
         self.admission.description.branch = restriction.candidate();
-        self.admission.history = Some(restriction);
+        self.admission.description.history = Some(restriction);
         Ok(self)
     }
 }
@@ -70,7 +70,7 @@ where
         let closed = self.close_in_place(request)?;
         // Terminal custody cannot advance. The restriction's original-source pin
         // is no longer needed once actual native cleanup has discharged.
-        self.operation.admission.history = None;
+        self.operation.admission.description.history = None;
         Ok(closed)
     }
 }

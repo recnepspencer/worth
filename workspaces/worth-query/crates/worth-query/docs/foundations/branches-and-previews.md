@@ -291,6 +291,11 @@ scope, permissions and metadata purpose. Its query runs against the historical
 Native/Signal correspondence through the original installed query executor.
 `rows()`, `source()` and `basis()` describe that admitted result; they do not
 select a writable branch. Closing a holder or result releases its own custody.
+`required_root_posture()` reports the original qualified settlement for a
+recorded fixed leaf. Its source-action commit and output commit can differ;
+the recorded endpoint retains the actual qualified output. `None` means no
+required-root settlement was carried, rather than output unavailability.
+Preview reads execute neither source commands nor producers.
 For governed metadata, pass the current capability to `preview_governed(..)`
 and `read_governed(..)`. An out-of-band change still causes document divergence;
 restoring a grant does not silently replace its expected model head.
@@ -329,9 +334,21 @@ successful explicit refresh; the old preview cannot authorize itself.
 ### Record an edit and retain its original outcome
 
 Use the attached document to construct a fresh edit for a declared operation.
-This entry accepts a source-completion action whose binding has no mutation
-source, workflow execution or external effect. The document owns the actual
+This entry accepts source-completion actions and fixed required-output leaves
+whose bindings have no mutation source, workflow execution or external effect.
+The document owns the actual
 selected head throughout the edit; no separate application slot needs updating.
+
+For a fixed leaf, match `WorthQueryFixedHistoryEditOutcome` after `finish`.
+`Recorded { step, delivery }` owns the original `WorthQueryClosedFixedDelivery`;
+retain its settlement and close evidence as needed. The step selects the exact
+qualified output endpoint, which can follow the source action's commit.
+`AlreadyRecorded { step, closed }` identifies the original step without moving
+the current selection. `NotRecorded { terminal }` carries original source
+diagnostics and completed cleanup through `advance_denial()`, `source_outcome()`, `source_result()`
+and `close_evidence()`. A performed source followed by unavailable output is
+distinct from a source that performed no effect. See the [executable fixed-leaf
+journey](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/journeys.rs).
 
 ```rust,ignore
 use worth_query_host::facade::application_entry::{

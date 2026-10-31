@@ -20,7 +20,13 @@ pub enum WorthQueryHistoryEditOutcome<
         closed: WorthQueryClosedOperation,
     },
     NotRecorded {
-        terminal: Terminal<S, I, P, A>,
+        terminal: crate::application_entry::WorthQueryTerminalSourceOperation<
+            S,
+            I,
+            P,
+            A,
+            ApplicationSourceCompletion,
+        >,
         closed: WorthQueryClosedOperation,
     },
 }
@@ -31,10 +37,12 @@ pub struct WorthQueryHistoryEditFinish<
     H: ApplicationHistoryBinding<S>,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A,
-> {
+    A: ApplicationAction<S, I::Binding>,
+> where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+{
     pub document: WorthQueryApplicationHistoryDocument<'runtime, S, H>,
-    pub outcome: WorthQueryHistoryEditOutcome<S, I, P, A>,
+    pub outcome: Outcome<S, I, P, A>,
 }
 
 impl<'runtime, S, H, I, P, A> WorthQueryHistoryEdit<'runtime, S, H, I, P, A>
@@ -45,6 +53,7 @@ where
     I::Binding: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
     pub fn finish(
         mut self,
@@ -68,16 +77,12 @@ where
                     application: self.document.owner.application(),
                     principal: request.principal,
                     scope: request.scope,
-                    branch: completed.operation.history_target(),
+                    branch: Mode::<S, I, A>::completed_target(&completed),
                 };
-                match completed.close_with_evidence(&current) {
-                    Ok((closed, completion)) => Ok(WorthQueryHistoryEditFinish {
+                match Mode::<S, I, A>::finish_recorded(completed, step.clone(), &current) {
+                    Ok(outcome) => Ok(WorthQueryHistoryEditFinish {
                         document: self.document,
-                        outcome: WorthQueryHistoryEditOutcome::Recorded {
-                            step,
-                            completion,
-                            closed,
-                        },
+                        outcome,
                     }),
                     Err((completed, cause)) => {
                         self.phase = Some(Phase::Selected { completed, step });
@@ -90,12 +95,12 @@ where
                     application: self.document.owner.application(),
                     principal: request.principal,
                     scope: request.scope,
-                    branch: operation.history_target(),
+                    branch: Mode::<S, I, A>::target(&operation),
                 };
-                match operation.close(&current) {
-                    Ok(closed) => Ok(WorthQueryHistoryEditFinish {
+                match Mode::<S, I, A>::finish_already(operation, step.clone(), &current) {
+                    Ok(outcome) => Ok(WorthQueryHistoryEditFinish {
                         document: self.document,
-                        outcome: WorthQueryHistoryEditOutcome::AlreadyRecorded { step, closed },
+                        outcome,
                     }),
                     Err((operation, cause)) => {
                         self.phase = Some(Phase::AlreadyRecorded { operation, step });
@@ -104,7 +109,7 @@ where
                 }
             }
             Phase::Terminal {
-                mut terminal,
+                terminal,
                 reservation,
                 candidate,
             } => {
@@ -112,13 +117,12 @@ where
                     application: self.document.owner.application(),
                     principal: request.principal,
                     scope: request.scope,
-                    branch: terminal.operation.history_target(),
+                    branch: Mode::<S, I, A>::terminal_target(&terminal),
                 };
-                match terminal.close_for_history(&current) {
-                    Ok(closed) => {
+                match Mode::<S, I, A>::close_terminal(terminal, &current) {
+                    Ok(terminal) => {
                         self.phase = Some(Phase::TerminalCleanup {
                             terminal,
-                            closed,
                             reservation,
                             candidate: DiscardedCandidate::Live {
                                 head: candidate.into_owned_head(),
@@ -127,7 +131,7 @@ where
                         });
                         self.finish(request)
                     }
-                    Err(cause) => {
+                    Err((terminal, cause)) => {
                         self.phase = Some(Phase::Terminal {
                             terminal,
                             reservation,
@@ -139,7 +143,6 @@ where
             }
             Phase::TerminalCleanup {
                 terminal,
-                closed,
                 reservation,
                 candidate,
             } => match super::discard::close_candidate(&self.document, request, candidate) {
@@ -152,13 +155,12 @@ where
                         });
                     Ok(WorthQueryHistoryEditFinish {
                         document: self.document,
-                        outcome: WorthQueryHistoryEditOutcome::NotRecorded { terminal, closed },
+                        outcome: Mode::<S, I, A>::finish_terminal(terminal),
                     })
                 }
                 Err((candidate, denial)) => {
                     self.phase = Some(Phase::TerminalCleanup {
                         terminal,
-                        closed,
                         reservation,
                         candidate,
                     });

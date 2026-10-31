@@ -9,9 +9,18 @@ pub struct WorthQueryHistoryPreview {
     pub(in crate::domain_computation::primary_graph) model: HistoryModelIdentity,
     pub(in crate::domain_computation::primary_graph) source:
         Arc<WorthQueryApplicationReadObservation>,
+    pub(in crate::domain_computation::primary_graph) root_posture:
+        Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture>,
 }
 
 impl WorthQueryHistoryPreview {
+    /// Retained root posture from the admitted opening, never current readiness.
+    pub fn required_root_posture(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture> {
+        self.root_posture
+    }
     /// Descriptive evidence from the admitted opening, not fresh READ permission.
     pub fn step(&self) -> &WorthQueryHistoryStep {
         &self.step
