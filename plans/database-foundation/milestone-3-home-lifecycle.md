@@ -214,17 +214,16 @@ extra publication on ordinary Memory bootstrap. A failed completion publication
 retains the actual prepared state and causes, without retrying accepted seed
 work or exposing a service/root missing completion.
 
-Terminal bootstrap includes initial program activation. When all seed rows
-were already flushed, activation can be the last actual commit after the
-previous seed. Carry its actual issuer-returned commit identity; do not reuse
-an older last-seed identity or look up a guessed current head. If final rows
-are pending their later actual commit is terminal; otherwise choose the actual
-activation commit when issued, then the last accepted seed only if neither
-new commit occurred. Build/admit indexes at this terminal basis and set the
-publication's bootstrap_commit_id accordingly. The shared private publisher
-may be corrected to carry this genuine terminal identity; ordinary Memory
-still gains no extra completion transaction. Include the all-rows-flushed
-activation-tail case in the multi-batch filesystem proof.
+The existing seed producer consumes initial activation before its first real
+row commit. Thus genuine all-rows-flushed multi-batch publication already has
+no pending activation seed, and its accepted last-seed receipt is terminal.
+Preserve and verify that actual producer invariant; a synthetic reinstalled
+activation seed is not a lawful recovery fixture. Use the issuer-derived
+publication.bootstrap_commit_id, build/admit indexes at that terminal basis,
+and require the completion transaction's actual parent to match. Do not guess
+a current head or alter ordinary Memory publication without a demonstrated
+causal need. Include genuine all-rows-flushed and still-pending multi-batch
+cases in the filesystem proof. No activation-only-tail support is claimed.
 
 At the selected World basis, require exactly one completion entity. Admit its
 format/binding and both its creation and terminal-bootstrap immutable Native receipts;
