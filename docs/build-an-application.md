@@ -3921,6 +3921,17 @@ positive settlement and all remaining native custody, including any discharged
 prefix; `WorthQueryProgramOutputDeliveryCloseRefusal::retry_close` is close-only.
 It cannot deliver, advance, or convert back into a live tree.
 
+For a complete no-source tree, an already-open live phase from the owning runtime
+can dispose of native custody without an application request. Use
+`operation.close_in_advancement(&phase)` for cleanup only, or
+`settled.close_for_delivery_in_advancement(&phase)` to keep the original readonly
+delivery. Their close-only refusals expose `retry_close_in_advancement(&phase)`.
+The phase must belong to the original runtime and remain live; an identically
+typed runtime's phase is refused. These calls open no nested advancement and
+admit no payload read or new output demand. If the enclosing advancement stops,
+retain the returned owner in your owned state before leaving its closure.
+Closed delivery still retains readonly history pins until you drop it.
+
 Only after actual native close succeeds, use the carrier's fresh `deliver_current`
 or `read_current`. Fixed declared query/batch shapes retain their original
 selectors and authorization; no-query delivery requires `ApplicationNoProjection`.
