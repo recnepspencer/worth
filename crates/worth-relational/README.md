@@ -141,6 +141,20 @@ If you find yourself reaching into crate internals instead of
 [`facade`](./src/facade.rs), you are probably leaving the intended public
 surface.
 
+## Record a current Native component
+
+`owner_component_services().basis_port().export_recorded_current_component`
+takes the original execution request and an owner-admitted current basis. It
+returns a serde-transportable `RecordedRelationalComponentReference` in Native's
+canonical runtime frame. Its explicit `Empty` target has no commit, position or
+digest; `Canonical` retains the actual full receipt, performed position,
+artifact digest and roots. The descriptor retains exact reference, truth,
+lifecycle, schema and visibility axes. Foreign or stale bases refuse. This is
+descriptive export: memory backing remains memory-only, and the reference grants
+no retained-root, durable-source or recovered-publication authority. Native
+recovery must admit the recorded subject before it can become an operational
+basis; callers cannot rewrite its canonical runtime frame into a live identity.
+
 ## Durability
 
 A runtime is memory-only by default: its canonical history lives in an

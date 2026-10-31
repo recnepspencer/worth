@@ -746,6 +746,14 @@ actual physical payloads through `relation_field`; ordinary operation and query
 readers do not acquire that privileged door. See
 [relation payload creation](../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#relation-owned-payload-at-creation).
 
+To record an exact current Native component, call the concrete basis service's
+`export_recorded_current_component(execution, &basis)`. Its Native-owned serde
+reference distinguishes `Empty` from a canonical commit's actual receipt,
+position, artifact digest and roots, and retains canonical-frame reference axes.
+Stale and foreign admitted bases refuse. The description confers neither durable
+source qualification nor recovery authority; see
+[record a current Native component](../crates/worth-relational/README.md#record-a-current-native-component).
+
 ### Native record and aspect history pages
 
 The Relational owner provides a retained cursor inside one exact selected commit:

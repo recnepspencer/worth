@@ -20,7 +20,12 @@ mod identity;
 mod lifecycle;
 mod materialization;
 mod owner_services;
+mod recorded_basis;
 mod reference;
+pub use recorded_basis::{
+    RecordedRelationalCanonicalComponent, RecordedRelationalComponentReference,
+    RecordedRelationalComponentTarget, RelationalRecordedComponentRefusal,
+};
 mod reference_publication_cell;
 mod reference_state;
 mod registry;
