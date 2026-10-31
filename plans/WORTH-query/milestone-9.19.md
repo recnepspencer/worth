@@ -1626,8 +1626,11 @@ Node-only decomposition, region-confined Source reads, bottom-up cached-summary
 verification and Query-owned subtree pruning for maintained prefix and both box
 providers. Actual Source changes propagate through every affected ancestor even
 without a Node write. Independent small locality and hostile courts pass; the
-new profile still needs large-scale qualification. Retained predicate routing,
-tracked exact refinement and protected continuation/disclosure work remain open.
+maintained indirect-geometry composition now passes the unchanged
+[1k/2k/+50k checked qualification](milestone-9.19-phase3-large-checked-qualification-plan.md),
+including actual membership and whole original SDK growth guards. Prefix-specific
+large evidence, retained predicate routing, tracked exact refinement and protected
+continuation/disclosure work remain open.
 
 The [recorded-coverage slice](milestone-9.19-phase3-recorded-coverage-plan.md)
 records and verifies actual visited/pruned cuts and their matched-slot bijection.

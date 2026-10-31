@@ -9,9 +9,9 @@ pub(super) const PAGE_BITS: u32 = 5;
 pub(super) const PAGE_SIZE: usize = 1 << PAGE_BITS;
 
 mod edit;
-pub(super) use edit::PageEdit;
+pub(in super::super) use edit::PageEdit;
 
-pub(super) struct NodePages<Node> {
+pub(in super::super) struct NodePages<Node> {
     root: Option<Arc<Directory<Node>>>,
     height: u32,
 }
@@ -26,6 +26,15 @@ enum Entry<Node> {
         left: Option<Arc<Directory<Node>>>,
         right: Option<Arc<Directory<Node>>>,
     },
+}
+
+impl<Node> Default for NodePages<Node> {
+    fn default() -> Self {
+        Self {
+            root: None,
+            height: 0,
+        }
+    }
 }
 
 impl<Node> Clone for NodePages<Node> {
@@ -52,7 +61,7 @@ impl<Node: Copy> NodePages<Node> {
         Ok(Self { root, height })
     }
 
-    pub(super) fn get(
+    pub(in super::super) fn get(
         &self,
         ordinal: usize,
         control: &WorthQueryManagedIndexControl<'_>,

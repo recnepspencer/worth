@@ -170,3 +170,11 @@ and full Query cfg(test) owner were deliberately not rerun. The checked profile
 has small-workload evidence; earlier Phase 2 large numbers remain predecessor
 evidence. Independent review gates production, tests and composition before
 commit.
+
+## Subsequent checked geometry qualification
+
+The later [large checked-profile court](milestone-9.19-phase3-large-checked-qualification-plan.md)
+now passes at 1k/2k/+50k after structural-page storage, with original guards,
+actual before/after membership, Source +8/+8 and no-rebuild assertions unchanged.
+This supersedes the earlier geometry-large evidence limitation only. Prefix-large,
+retained predicate routing, exact refinement and disclosure remain open.

@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::access_strategy::ordered_storage a
 use std::{cell::RefCell, rc::Rc};
 use worth_execution::ExecutionOrderedMap;
 
-pub(in super::super) struct PageEdit<'a, Node> {
+pub(in super::super::super) struct PageEdit<'a, Node> {
     base: NodePages<Node>,
     execution: ExecutionRequest<'a, 'a>,
     touched: ExecutionOrderedMap<usize, Rc<WorkingPage<'a, Node>>>,
@@ -18,7 +18,7 @@ struct OpenPage<'a, Node> {
     occupied: usize,
 }
 impl<'a, Node: Copy> PageEdit<'a, Node> {
-    pub(in super::super) fn new(
+    pub(in super::super::super) fn new(
         base: NodePages<Node>,
         execution: ExecutionRequest<'a, 'a>,
     ) -> Self {
@@ -31,7 +31,7 @@ impl<'a, Node: Copy> PageEdit<'a, Node> {
     pub(in super::super) fn execution(&self) -> ExecutionRequest<'a, 'a> {
         self.execution
     }
-    pub(in super::super) fn get(
+    pub(in super::super::super) fn get(
         &self,
         ordinal: usize,
         control: &WorthQueryManagedIndexControl<'_>,
@@ -47,7 +47,7 @@ impl<'a, Node: Copy> PageEdit<'a, Node> {
         }
         self.base.get(ordinal, control).map(|node| node.copied())
     }
-    pub(in super::super) fn replace(
+    pub(in super::super::super) fn replace(
         &mut self,
         ordinal: usize,
         value: Option<Node>,
@@ -104,7 +104,7 @@ impl<'a, Node: Copy> PageEdit<'a, Node> {
             _memory: memory,
         }))
     }
-    pub(in super::super) fn seal(
+    pub(in super::super::super) fn seal(
         mut self,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<NodePages<Node>, Stop> {

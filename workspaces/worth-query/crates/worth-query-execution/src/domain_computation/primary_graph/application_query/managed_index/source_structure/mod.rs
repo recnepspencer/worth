@@ -1,6 +1,7 @@
 //! Exact Source structure stays inside the existing provider/root custody pair.
 mod admission;
 mod capture;
+use super::nodes::pages::{NodePages, PageEdit};
 use crate::domain_computation::primary_graph::access_strategy::ordered_storage as maps;
 mod region;
 mod summary;
@@ -21,8 +22,10 @@ use worth_execution::{ExecutionOrderedMap as Map, ExecutionRequest};
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct SourceTree {
     root: Option<usize>,
-    regions: Map<usize, Region>,
-    parents: Map<usize, usize>,
+    regions: NodePages<Region>,
+    parents: NodePages<usize>,
+    region_count: usize,
+    parent_count: usize,
     sources: Map<Slot, usize>,
     owner: WorthQueryGraphWorkSessionIdentity,
 }
@@ -39,7 +42,7 @@ impl SourceTree {
         self.root
     }
     pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
-        self.regions.len()
+        self.region_count
     }
     pub(in crate::domain_computation::primary_graph) fn source_len(&self) -> usize {
         self.sources.len()
@@ -49,25 +52,32 @@ impl SourceTree {
         ordinal: usize,
         control: &Control<'_>,
     ) -> Result<Region, Stop> {
-        maps::lookup(control, self.regions.len(), size_of::<usize>())?;
-        self.regions
-            .get(&ordinal)
-            .copied()
+        self.region_at(ordinal, control)?
             .ok_or_else(|| control.refuse(Stop::IncompleteTraversal))
+    }
+    fn region_at(&self, ordinal: usize, control: &Control<'_>) -> Result<Option<Region>, Stop> {
+        control.checkpoint(1)?;
+        self.regions
+            .get(ordinal, control)
+            .map(|region| region.copied())
     }
     pub(in crate::domain_computation::primary_graph) fn parent(
         &self,
         ordinal: usize,
         control: &Control<'_>,
     ) -> Result<Option<usize>, Stop> {
-        maps::lookup(control, self.parents.len(), size_of::<usize>())?;
-        Ok(self.parents.get(&ordinal).copied())
+        control.checkpoint(1)?;
+        self.parents
+            .get(ordinal, control)
+            .map(|parent| parent.copied())
     }
     fn empty(owner: WorthQueryGraphWorkSessionIdentity) -> Self {
         Self {
             root: None,
-            regions: Map::default(),
-            parents: Map::default(),
+            regions: NodePages::default(),
+            parents: NodePages::default(),
+            region_count: 0,
+            parent_count: 0,
             sources: Map::default(),
             owner,
         }

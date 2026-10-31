@@ -41,8 +41,7 @@ impl SourceTree {
         execution: &ExecutionRequest<'_, '_>,
         control: &Control<'_>,
     ) -> Result<(), Stop> {
-        maps::lookup(control, self.regions.len(), size_of::<usize>())?;
-        if !self.regions.contains_key(&ordinal) {
+        if self.region_at(ordinal, control)?.is_none() {
             return Ok(());
         }
         let mut current = Some(ordinal);

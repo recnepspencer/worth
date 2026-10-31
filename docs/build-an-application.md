@@ -5983,11 +5983,14 @@ authors 1,000/2,000-vertex chains and 50,000 genuine remote enclosures through
 installed actions. Both affected directories contain the remote geometry; the
 edited vertex keeps degree two and the fixed probe keeps sparse output. Complete
 ordinary Source reads are checked against authored coordinates outside measured
-work. The recorded Phase 2 predecessor invoices include Source acquisition, reverse-scope discovery,
-provider updates, rules and publication. Cold setup is admitted and invoiced
-separately; unchanged warm roots are never rebuilt. The new checked Source-tree
-and summary admission are not yet requalified at this large scale. Retaining a one-shot response
-does not register a live predicate or qualify later retained-query routing.
+work. The checked Source-tree and summary path passes this court's original
+whole-request SDK growth guards, including Source acquisition, reverse-scope
+discovery, provider updates, rules and publication. Before/after public probes
+also verify authored membership with bounded summary comparisons. Cold setup is
+admitted and invoiced separately; unchanged warm roots are never rebuilt.
+This evidence covers the indirect geometry composition. Prefix-specific large
+qualification remains open. Retaining a one-shot response does not register a
+live predicate or qualify later retained-query routing.
 
 A branch created through `ForkExact` attaches the selected immutable managed
 Source under a fresh Native association for that branch. Subsequent edits on

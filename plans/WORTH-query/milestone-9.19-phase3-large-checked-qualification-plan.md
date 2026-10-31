@@ -1,5 +1,13 @@
 # Phase 3: large checked-profile qualification
 
+## Current status
+
+The actual checked indirect-geometry contract now passes its unchanged full
+1k/2k/+50k court. See the final qualification record below and
+[multi-column structural storage](milestone-9.19-phase3-structural-pages-plan.md).
+Earlier failed runs remain the implementation history. Prefix-specific large
+qualification and the other Phase 3 requirements remain open.
+
 ## Boundary review
 
 The actual maintained geometry composition now uses CheckedSummarySourceTree,
@@ -207,3 +215,27 @@ Commit these coherent, independently verified mechanics as a checkpoint while
 continuing the cost investigation. Do not mark the full qualification slice or
 Phase 3 complete. Next inspect repeated final-tree ancestry proof and shared
 directory path installation, binding any reuse to its actual immutable owner.
+
+## Final checked indirect-geometry qualification
+
+After actual dirty-map reuse and the structural-page cutover, the same original
+whole-request court passes 1/1 in 729.27s. The log is
+query919-structural-pages-large.log. Accepted refusal/commit invoices are
+1k=(2168584,2103448), 2k=(2303532,2235605), +50k=(3367668,3283350).
+Original 25% local growth, 50% remote growth and eight-step difference guards are
+unchanged. The tighter remote limits are 3383116/3292861, both satisfied.
+
+The same successful journey checks actual public Source censuses, two affected
+scopes with unopened B, exact Source/summary +8/+8, authored before/after six-probe
+membership, genuine rule refusal/atomic World and lawful twin, old retained rows,
+and no rebuild after all queries. At 52000 Source rows, post-edit comparisons are
+33/33/35/35/31/1, within the predeclared maximum67; future-point membership changes
+one to two. These are whole accepted SDK invoices; raw callback windows supply
+no substitute accepted budget. Public46/46 and independent qa-loop, qa-tests and
+code-quality-qa review also clear this slice. No further full run was requested.
+
+This closes the recorded checked large-geometry qualification gap. It does not
+close prefix-specific large evidence, retained predicate routing, same-image
+registration, exact refinement, protected metadata/continuations, verified
+narrowing or the remaining milestone phases. See the structural-page plan for
+physical backing, original custody, preserved graph checks and complete evidence.

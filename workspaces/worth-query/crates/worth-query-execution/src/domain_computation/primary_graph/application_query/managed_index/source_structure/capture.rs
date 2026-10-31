@@ -73,13 +73,12 @@ where
     )?;
     drop(warm); // Exact dirty-key enumeration is complete before custody moves.
     let image = source.image();
-    let mut tree = match &step {
+    let tree = match &step {
         Step::Cold => SourceTree::empty(image.owner),
         Step::Warm { before, .. } if before.owner == image.owner => (**before).clone(),
         _ => return Err(control.refuse(Stop::ForeignSourceSlot).into()),
     };
-    tree.remove_edits(edits.elements(), execution, control)?;
-    tree.add_edits(edits.elements(), image, execution, control)?;
+    let mut tree = tree.apply_edits(edits.elements(), image, execution, control)?;
     tree.admit(
         nodes.root().map(|id| id.ordinal),
         nodes.len(),
@@ -130,8 +129,7 @@ fn capture(
     for ordinal in coordinates {
         control.checkpoint(1)?;
         let before = if let Some(previous) = previous {
-            maps::lookup(control, previous.regions.len(), size_of::<usize>())?;
-            previous.regions.get(&ordinal).copied()
+            previous.region_at(ordinal, control)?
         } else {
             None
         };

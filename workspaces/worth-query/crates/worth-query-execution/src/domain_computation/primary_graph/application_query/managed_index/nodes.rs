@@ -6,7 +6,7 @@ use worth_execution::{
     ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
 };
 mod lineage;
-mod pages;
+pub(super) mod pages;
 use lineage::NodeLineage;
 use pages::{NodePages, PageEdit};
 

@@ -9,24 +9,22 @@ impl SourceTree {
         edits: &[Edit],
         control: &Control<'_>,
     ) -> Result<(), Stop> {
-        if self.regions.len() != node_count
+        if self.region_count != node_count
             || self.sources.len() != source_count
-            || self.parents.len() != node_count.saturating_sub(1)
+            || self.parent_count != node_count.saturating_sub(1)
             || root.is_none() != (node_count == 0)
         {
             return Err(control.refuse(Stop::SourceStructureIncomplete));
         }
         if let Some(root) = root {
-            maps::lookup(control, self.parents.len(), size_of::<usize>())?;
-            maps::lookup(control, self.regions.len(), size_of::<usize>())?;
-            if self.parents.contains_key(&root) || !self.regions.contains_key(&root) {
+            if self.parent(root, control)?.is_some() || self.region_at(root, control)?.is_none() {
                 return Err(control.refuse(Stop::SourceStructureIncomplete));
             }
         }
         for edit in edits {
             if edit.region.is_none() {
-                maps::lookup(control, self.parents.len(), size_of::<usize>())?;
-                if self.parents.contains_key(&edit.ordinal) {
+                // Region retirement never erases this independent incoming posting.
+                if self.parent(edit.ordinal, control)?.is_some() {
                     return Err(control.refuse(Stop::SourceStructureIncomplete));
                 }
                 continue;
@@ -47,8 +45,7 @@ impl SourceTree {
                         return Err(control.refuse(Stop::SourceStructureCycle));
                     }
                     visited += 1;
-                    maps::lookup(control, self.parents.len(), size_of::<usize>())?;
-                    current = self.parents.get(&parent).copied();
+                    current = self.parent(parent, control)?;
                 }
             }
         }
