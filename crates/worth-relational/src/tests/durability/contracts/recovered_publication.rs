@@ -9,7 +9,10 @@ use crate::facade::mvcc::{
 use crate::tests::support::*;
 use worth_execution::ExecutionRequest;
 
-fn current(execution: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime) -> Recorded {
+pub(super) fn current(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> Recorded {
     let port = runtime.owner_component_services().basis_port();
     let (_, basis) = port
         .observe_branch(&runtime.main_branch_identity())
@@ -18,7 +21,7 @@ fn current(execution: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime) ->
         .unwrap()
 }
 
-fn perform(
+pub(super) fn perform(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     association: &Association,
