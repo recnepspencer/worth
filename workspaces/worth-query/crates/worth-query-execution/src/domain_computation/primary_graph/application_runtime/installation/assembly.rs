@@ -43,6 +43,9 @@ where
         WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
         denial.detail(),
     ))?;
+    let conditional_cleanup_owner = super::super::conditional_cleanup::OwnedConditionalCleanup::new(
+        graph.bridge.conditional_operations(),
+    );
     Ok(assemble_application_runtime_with_product(
         graph,
         installed_schema,
@@ -54,6 +57,7 @@ where
         output_producer_routes,
         output_readiness_routes,
         product_runtime,
+        Some(conditional_cleanup_owner),
     ))
 }
 
@@ -68,6 +72,7 @@ pub(super) fn assemble_application_runtime_with_product<Schema>(
     output_producer_routes: crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputProducerRoutes,
     output_readiness_routes: crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
     product_runtime: crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+    conditional_cleanup_owner: Option<super::super::conditional_cleanup::OwnedConditionalCleanup>,
 ) -> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
@@ -123,6 +128,7 @@ where
         authentication_clock: WorthQueryAuthenticationClock::system(),
         relational_branch_identity: graph.relational_branch_identity,
         bridge: graph.bridge,
+        conditional_cleanup_owner,
         product_runtime,
         granular_invalidation,
         conditional_operations: std::sync::Mutex::new(conditional_operations),

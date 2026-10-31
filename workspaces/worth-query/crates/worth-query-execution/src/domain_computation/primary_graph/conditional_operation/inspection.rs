@@ -1,6 +1,5 @@
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::WorthQueryConditionalRuntimeInstallationDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 /// Point-in-time counts of the resources the conditional runtime holds:
@@ -155,36 +154,5 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();
         registry.lifecycle_probe(bridge)
-    }
-
-    pub fn close_conditional_runtime(
-        &mut self,
-    ) -> Result<
-        WorthQueryConditionalRuntimeInspection,
-        WorthQueryConditionalRuntimeInstallationDenial,
-    > {
-        if self.installed_resources.cleanup_retained() {
-            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
-                super::WorthQueryConditionalRuntimeInstallationDenialKind::ResourceCleanupRetained,
-                "installed resources still own process-local cleanup or recovery custody",
-            ));
-        }
-        let pending = self
-            .conditional_operations
-            .get_mut()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .snapshot()
-            .pending_managed_cleanup();
-        if let Some(kind) = pending {
-            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
-                super::WorthQueryConditionalRuntimeInstallationDenialKind::ManagedCleanupRetained(
-                    kind,
-                ),
-                "conditional runtime still owns failed native cleanup",
-            ));
-        }
-        let before = self.inspect_conditional_runtime();
-        self.release_conditional_runtime_resources();
-        Ok(before)
     }
 }

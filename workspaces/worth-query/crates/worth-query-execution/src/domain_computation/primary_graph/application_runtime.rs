@@ -128,6 +128,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) relational_branch_identity:
         worth_relational::facade::branch::RelationalBranchIdentity,
     pub(crate) bridge: super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    conditional_cleanup_owner: Option<conditional_cleanup::OwnedConditionalCleanup>,
     pub(crate) product_runtime:
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     pub(super) recovered_program_source_delivery:

@@ -26,6 +26,8 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     ResourceCleanupRetained,
     /// Another owning handle still retains the exact installed runtime.
     RuntimeKeepaliveRetained,
+    /// The adopting Query runtime does not own its application's lifecycle.
+    ApplicationHomeOwnsLifecycle,
     /// The same binding was installed twice.
     DuplicateBinding,
     /// Not every expected conditional binding was installed.

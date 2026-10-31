@@ -110,5 +110,6 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
         Default::default(),
         Default::default(),
         product,
+        None,
     )
 }
