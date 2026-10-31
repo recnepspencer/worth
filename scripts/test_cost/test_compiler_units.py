@@ -122,6 +122,32 @@ class CompilerUnitDeclarationTests(unittest.TestCase):
         with self.assertRaises(CompilerUnitRefusal):
             attribute(event(row), {'units': rows + [changed], 'compiler_inputs': 'flags'})
 
+    def test_doctest_driver_cannot_claim_its_library_build_artifact(self):
+        driver = unit('owner', mode='doctest', dependencies=[1])
+        library = unit('owner', mode='build')
+        rows = declarations(graph(driver, library))
+        before = copy.deepcopy(rows)
+        self.assertEqual([row['mode'] for row in rows], ['doctest', 'build'])
+        self.assertNotEqual(rows[0]['identity'], rows[1]['identity'])
+        self.assertEqual(rows[0]['dependency_units'], [rows[1]['identity']])
+        observed = attribute(event(library, linked=True), {'units': rows, 'compiler_inputs': 'flags'})
+        self.assertEqual(observed['identity'], rows[1]['identity'])
+        self.assertEqual(observed['mode'], 'build')
+        self.assertEqual(rows, before)
+
+    def test_doctest_only_declaration_does_not_authorize_a_library_artifact(self):
+        driver = unit('owner', mode='doctest')
+        with self.assertRaisesRegex(CompilerUnitRefusal, 'exactly one predeclared compiler unit'):
+            attribute(event(driver, linked=True), {'units': declarations(graph(driver)), 'compiler_inputs': 'flags'})
+
+    def test_failed_diagnostic_keeps_build_and_doctest_stage_ambiguity(self):
+        driver = unit('owner', mode='doctest', dependencies=[1])
+        library = unit('owner', mode='build')
+        declaration = {'units': declarations(graph(driver, library)), 'compiler_inputs': 'flags'}
+        with self.assertRaisesRegex(CompilerUnitRefusal, 'failed target does not identify exactly one'):
+            failed_unit({'package_id': library['pkg_id'], 'target': library['target'],
+                         'message': {'level': 'error'}}, declaration)
+
     def test_unknown_modes_unreachable_units_and_cycles_are_refused(self):
         for value in (graph(unit('owner', mode='surprise')),
                       graph(unit('owner'), unit('orphan')),

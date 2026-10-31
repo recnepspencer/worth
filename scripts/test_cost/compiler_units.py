@@ -115,7 +115,8 @@ def matches_profile(declared, observed, mode):
 def attribute(event, declaration):
     target = event['target']
     candidates = [row for row in declaration['units']
-                  if row['package'] == event['package_id']
+                  if row['mode'] != 'doctest'  # The rustdoc driver consumes, rather than emits, the library artifact.
+                  and row['package'] == event['package_id']
                   and row['target']['name'] == target['name']
                   and row['target']['kind'] == sorted(target['kind'])
                   and row['target']['source'] == normalized_path(target['src_path'])
