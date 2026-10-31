@@ -42,6 +42,35 @@
 //!     closing.retry(phase)
 //! }
 //! ```
+//! A shared document borrow permits reads, but cannot transfer edit custody.
+//! ```compile_fail,E0507
+//! use worth_query_publication::facade::application_entry::WorthQueryApplicationHistoryDocument;
+//! use worth_query_declaration::facade::{
+//!     application_history::{ApplicationHistoryBinding, ApplicationHistoryModel},
+//!     application_operation::{ApplicationMutationIntent, ApplicationMutationBinding, ApplicationMutationScopeBinding, NoApplicationMutationSource},
+//!     application_schema::ApplicationSchema,
+//! };
+//! fn edit_borrowed<S, H, I>(document: &WorthQueryApplicationHistoryDocument<'_, S, H>, intent: I)
+//! where S: ApplicationSchema, H: ApplicationHistoryBinding<S>, I: ApplicationMutationIntent<S>,
+//!     I::Binding: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
+//!     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
+//! { let _ = document.edit(intent); }
+//! ```
+//! Transfer the owned document to the builder; cancellation returns that owner.
+//! ```
+//! use worth_query_publication::facade::application_entry::WorthQueryApplicationHistoryDocument;
+//! use worth_query_declaration::facade::{
+//!     application_history::{ApplicationHistoryBinding, ApplicationHistoryModel},
+//!     application_operation::{ApplicationMutationIntent, ApplicationMutationBinding, ApplicationMutationScopeBinding, NoApplicationMutationSource},
+//!     application_schema::ApplicationSchema,
+//! };
+//! fn edit_owned<'runtime, S, H, I>(document: WorthQueryApplicationHistoryDocument<'runtime, S, H>, intent: I)
+//!     -> WorthQueryApplicationHistoryDocument<'runtime, S, H>
+//! where S: ApplicationSchema, H: ApplicationHistoryBinding<S>, I: ApplicationMutationIntent<S>,
+//!     I::Binding: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
+//!     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
+//! { document.edit(intent).cancel() }
+//! ```
 mod assessment;
 mod attachment;
 mod close;

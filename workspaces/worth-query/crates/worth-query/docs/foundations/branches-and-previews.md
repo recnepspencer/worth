@@ -299,6 +299,17 @@ An unsettled publication cannot be discarded as if it had no effects. A
 selected edit must be finished. Close the returned document explicitly; release
 independently retained reads before retrying a blocked close.
 
+If `source_operation().posture()` reports `ProductUnpublished`, the business
+operation has retained owner effects whose product publication still needs
+recovery. The document keeps its previous selection. Keep the same edit and
+call `advance` with a fresh request; do not submit a replacement edit or append
+a receipt yourself. `discard` returns `NativeObligationRetained` while those
+obligations remain. Successful recovery selects one step and returns the
+original `Recovered` completion, including its actual publication evidence.
+The [compiled recovery journey](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/recovery.rs)
+shows cancellation after owner effects, refused discard, same-owner recovery
+and final disposal.
+
 ### Store an expected basis and select it again
 
 Keep records on a separately owned storage branch when saving them must leave

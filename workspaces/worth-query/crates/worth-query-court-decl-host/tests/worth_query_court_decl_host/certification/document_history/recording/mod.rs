@@ -23,6 +23,7 @@ mod closing;
 mod handoff;
 mod journeys;
 mod preconditions;
+mod recovery;
 mod refusals;
 
 type Action = ApplicationActionReference<
