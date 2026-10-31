@@ -1,10 +1,15 @@
 //! Exact component obligations survive a cold checkpoint without eager history.
-use super::recovered_publication::{current, perform};
+use super::associated_effects::perform;
+fn current(execution: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime) -> Recorded {
+    let port = runtime.owner_component_services().basis_port();
+    let (_, basis) = port
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    port.export_recorded_current_component(execution, &basis)
+        .unwrap()
+}
 use crate::facade::branch::RecordedRelationalComponentReference as Recorded;
-use crate::facade::durability::{
-    RecoveryVerificationMode, RelationalCheckpointArtifactPolicy,
-    RelationalRecordedComponentAdmissionCause,
-};
+use crate::facade::durability::{RecoveryVerificationMode, RelationalCheckpointArtifactPolicy};
 use crate::facade::mvcc::RelationalCallerAssociation as Association;
 use crate::tests::support::*;
 use worth_execution::ExecutionRequest;
@@ -53,7 +58,7 @@ fn original_with_retained_successor(
     let before_lease = source.retain_component_basis(&basis).unwrap();
     drop(basis);
     let association = Association::from_bytes(b"checkpoint-original-external-custody").unwrap();
-    let performed = perform(execution, &source, &association, "original-successor");
+    let performed = perform(execution, &source, "original-successor", &association);
     let after_basis = performed.next_basis().clone();
     let result = source.settle_performed_publication(performed).unwrap();
     release_test_commit_snapshot(&source, &result);
@@ -188,29 +193,6 @@ fn recorded_component_checkpoint_readmits_original_empty_predecessor() {
     original_custody(true);
 }
 #[test]
-fn recorded_component_checkpoint_missing_selected_source_refuses_with_original_subject() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&host);
-    let original = original(execution, false);
-    let (runtime, authority) = recover(execution, &original.source);
-    let crate::branch::RecordedRelationalComponentTarget::Canonical(before) =
-        original.before.target()
-    else {
-        panic!("canonical predecessor");
-    };
-    attached_test_medium(&runtime).drop_artifact(before.position());
-    let refusal = authority
-        .admit_recorded_component(execution, &runtime, &original.before)
-        .unwrap_err();
-    assert!(matches!(
-        refusal.cause(),
-        RelationalRecordedComponentAdmissionCause::Source(_)
-    ));
-    assert!(!refusal.retains_acquired_custody());
-    assert_ne!(original.before, original.after);
-}
-
-#[test]
 fn recorded_component_checkpoint_omits_released_components_and_plain_observations() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
@@ -273,90 +255,5 @@ fn recorded_component_checkpoint_refuses_chk15_before_source_admission() {
     assert_eq!(
         expect_durability_failure(stop).class,
         crate::durability::data::RecoveryFailureClass::UnsupportedLegacySemantics
-    );
-}
-
-#[test]
-fn recorded_component_checkpoint_derives_original_successor_without_caller_after_reference() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&host);
-    let source = durable_runtime_with_test_schema();
-    create_entity(execution, &source, "original-product");
-    let before = current(execution, &source);
-    let (_, before_basis) = source
-        .observe_branch(&source.main_branch_identity())
-        .unwrap();
-    let before_lease = source.retain_component_basis(&before_basis).unwrap();
-    let association =
-        Association::from_bytes(b"crash-before-world-occurrence-no-after-ref").unwrap();
-    let performed = perform(execution, &source, &association, "original-effect");
-    let original_receipt = performed.canonical_commit().commit.clone();
-    let original_after = performed.next_basis().clone();
-    let after_lease = source.retain_component_basis(&original_after).unwrap();
-    let result = source.settle_performed_publication(performed).unwrap();
-    release_test_commit_snapshot(&source, &result);
-    drop(original_after);
-    create_entity(execution, &source, "foreign-later-head");
-    attached_test_medium(&source).file_checkpoint(capture(execution, &source));
-    source.release_component_basis(before_lease).unwrap();
-    source.release_component_basis(after_lease).unwrap();
-    drop(before_basis);
-    let (runtime, authority) = recover(execution, &source);
-    let subject = runtime
-        .durability_authority()
-        .discover_associated_effects(execution, &association)
-        .unwrap()
-        .pop()
-        .unwrap();
-    let effect = runtime
-        .durability_authority()
-        .readmit_associated_effect(execution, &subject)
-        .unwrap();
-    let foreign = durable_runtime_with_test_schema();
-    assert!(matches!(
-        authority.recorded_publication_successor(execution, &foreign, &effect),
-        Err(crate::facade::durability::RelationalRecordedSuccessorRefusal::ForeignRecoveryRuntime)
-    ));
-    let after = authority
-        .recorded_publication_successor(execution, &runtime, &effect)
-        .unwrap();
-    let crate::branch::RecordedRelationalComponentTarget::Canonical(target) = after.target() else {
-        panic!("actual original successor");
-    };
-    assert_eq!(target.receipt(), &original_receipt);
-    assert_eq!(target.position(), subject.position());
-    assert_eq!(target.artifact_digest(), subject.artifact_digest());
-    let proof = authority
-        .admit_recorded_publication(execution, &runtime, effect, &before, &after)
-        .unwrap();
-    assert!(runtime
-        .compare_current_exact(proof.custody().successor())
-        .is_err());
-}
-
-#[test]
-fn recorded_component_checkpoint_body_alone_cannot_invent_original_successor_image() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&host);
-    let original = original_with_retained_successor(execution, false, false);
-    let (runtime, authority) = recover(execution, &original.source);
-    let subject = runtime
-        .durability_authority()
-        .discover_associated_effects(execution, &original.association)
-        .unwrap()
-        .pop()
-        .unwrap();
-    let effect = runtime
-        .durability_authority()
-        .readmit_associated_effect(execution, &subject)
-        .unwrap();
-    assert!(matches!(
-        authority.recorded_publication_successor(execution, &runtime, &effect),
-        Err(crate::facade::durability::RelationalRecordedSuccessorRefusal::MissingRecoveredImage)
-    ));
-    assert_eq!(
-        effect.subject().receipt(),
-        subject.receipt(),
-        "refusal keeps the same actual source description"
     );
 }

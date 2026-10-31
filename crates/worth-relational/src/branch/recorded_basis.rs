@@ -7,8 +7,6 @@ use crate::publication::patch::data::PatchStreamPosition;
 
 mod export;
 mod readmission;
-#[cfg(test)]
-mod tests;
 
 /// Recorded Native meaning, never an admitted basis or recovery capability.
 /// Empty has no fabricated commit, journal position, or artifact digest.

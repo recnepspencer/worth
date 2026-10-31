@@ -1387,6 +1387,7 @@ dependencies = [
 name = "worth-court-relational-certification"
 version = "0.1.0"
 dependencies = [
+ "rmp-serde",
  "serde_json",
  "sha2",
  "worth-execution",

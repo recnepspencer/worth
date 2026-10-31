@@ -1,30 +1,12 @@
-//! Actual reconstruction owns exact Empty and historical tail root admission.
-use crate::facade::branch::{
-    RecordedRelationalComponentReference, RecordedRelationalComponentTarget,
-};
-use crate::facade::durability::{
-    RecoveryVerificationMode, RelationalRecordedComponentAdmissionCause as Cause,
-};
-use crate::tests::support::*;
-use worth_execution::ExecutionRequest;
-
-fn current(
-    execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-) -> RecordedRelationalComponentReference {
-    let port = runtime.owner_component_services().basis_port();
-    let (_, basis) = port
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    port.export_recorded_current_component(execution, &basis)
-        .unwrap()
-}
+use super::*;
+use worth_relational::facade::durability::RelationalRecordedComponentAdmissionCause as Cause;
 
 #[test]
 fn recorded_component_recovery_admits_original_empty_and_historical_tail_subjects() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     let empty = current(execution, &runtime);
     assert!(matches!(
         empty.target(),
@@ -34,14 +16,15 @@ fn recorded_component_recovery_admits_original_empty_and_historical_tail_subject
     let predecessor = current(execution, &runtime);
     create_entity(execution, &runtime, "unpublished-native-successor");
     let successor = current(execution, &runtime);
-    let mut recovered = durable_runtime_with_test_schema();
-    let plan = medium_recovery_plan(
-        execution,
-        &runtime,
-        &mut recovered,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let mut recovered = durable_runtime(&medium);
+    let plan = recovered
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            medium.recovery_source(),
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let (_, authority) = recovered
         .durability_recovery()
         .recover_with_authority(execution, plan)
@@ -51,10 +34,7 @@ fn recorded_component_recovery_admits_original_empty_and_historical_tail_subject
             .admit_recorded_component(execution, &recovered, recorded)
             .unwrap()
             .into_basis();
-        assert_eq!(
-            basis.descriptor().in_canonical_frame().unwrap(),
-            *recorded.descriptor()
-        );
+        assert_recorded_basis(&recovered, &basis, recorded);
         assert_ne!(
             basis.descriptor().runtime_instance_id(),
             recorded.descriptor().runtime_instance_id()
@@ -76,10 +56,15 @@ fn recorded_component_recovery_admits_original_empty_and_historical_tail_subject
         .unwrap()
         .into_basis();
     assert!(
-        recovered.compare_current_exact(&predecessor_basis).is_err(),
+        recovered
+            .owner_component_services()
+            .basis_port()
+            .compare_current_exact(&predecessor_basis)
+            .is_err(),
         "historical admission does not substitute the latest root"
     );
-    let foreign = durable_runtime_with_test_schema();
+    let foreign_medium = TestDurableMedium::new();
+    let foreign = durable_runtime(&foreign_medium);
     assert!(matches!(
         authority
             .admit_recorded_component(execution, &foreign, &successor)
@@ -105,9 +90,9 @@ fn recorded_component_recovery_admits_original_empty_and_historical_tail_subject
 
 #[test]
 fn recorded_component_recovery_never_qualifies_memory_as_a_canonical_durable_source() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let source = runtime_with_test_schema();
+    let source = memory_runtime();
     create_entity(execution, &source, "memory-canonical");
     let recorded = current(execution, &source);
     let plan = source
@@ -117,7 +102,7 @@ fn recorded_component_recovery_never_qualifies_memory_as_a_canonical_durable_sou
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
-    let mut recovered = runtime_with_test_schema();
+    let mut recovered = memory_runtime();
     let (_, authority) = recovered
         .durability_recovery()
         .recover_with_authority(execution, plan)

@@ -1,13 +1,11 @@
 use super::*;
-use crate::facade::branch::RecordedRelationalComponentTarget as Target;
-use crate::tests::support::*;
-use worth_execution::ExecutionRequest;
 
 #[test]
 fn recorded_current_component_distinguishes_empty_from_actual_commit() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     let port = runtime.owner_component_services().basis_port();
     let (_, empty) = port
         .observe_branch(&runtime.main_branch_identity())
@@ -48,7 +46,7 @@ fn recorded_current_component_distinguishes_empty_from_actual_commit() {
     let Target::Canonical(actual) = recorded.target() else {
         panic!("actual commit must be canonical")
     };
-    let original = attached_test_medium(&runtime).offered().pop().unwrap();
+    let original = medium.offered().pop().unwrap();
     assert_eq!(actual.receipt(), &committed.commit);
     assert_eq!(actual.position(), committed.patch_position());
     assert_eq!(
@@ -76,7 +74,9 @@ fn recorded_current_component_distinguishes_empty_from_actual_commit() {
     assert!(
         matches!(
             port.readmit_branch_basis(recorded.descriptor()),
-            Err(crate::branch::RelationalBranchBasisDenial::ForeignRuntime { .. })
+            Err(
+                worth_relational::facade::branch::RelationalBranchBasisDenial::ForeignRuntime { .. }
+            )
         ),
         "canonical descriptions are not rewritten into operational bases"
     );
@@ -85,10 +85,10 @@ fn recorded_current_component_distinguishes_empty_from_actual_commit() {
 
 #[test]
 fn recorded_current_component_refuses_foreign_and_stale_admitted_bases() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let runtime = runtime_with_test_schema();
-    let foreign = runtime_with_test_schema();
+    let runtime = memory_runtime();
+    let foreign = memory_runtime();
     let port = runtime.owner_component_services().basis_port();
     let (_, before) = port
         .observe_branch(&runtime.main_branch_identity())
@@ -102,7 +102,7 @@ fn recorded_current_component_refuses_foreign_and_stale_admitted_bases() {
             .basis_port()
             .export_recorded_current_component(execution, &before),
         Err(RelationalRecordedComponentRefusal::Basis(
-            crate::branch::RelationalBranchBasisDenial::ForeignRuntime { .. }
+            worth_relational::facade::branch::RelationalBranchBasisDenial::ForeignRuntime { .. }
         ))
     ));
     create_entity(execution, &runtime, "advances-recorded-basis");
@@ -120,9 +120,10 @@ fn recorded_current_component_refuses_foreign_and_stale_admitted_bases() {
 
 #[test]
 fn recorded_retained_component_keeps_original_subject_after_head_advances() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     let port = runtime.owner_component_services().basis_port();
     create_entity(execution, &runtime, "original-retained-successor");
     let (_, original) = port
@@ -131,7 +132,7 @@ fn recorded_retained_component_keeps_original_subject_after_head_advances() {
     let recorded = port
         .export_recorded_current_component(execution, &original)
         .unwrap();
-    let original_artifact = attached_test_medium(&runtime).offered().pop().unwrap();
+    let original_artifact = medium.offered().pop().unwrap();
     create_entity(execution, &runtime, "later-unrelated-advance");
     assert!(port
         .export_recorded_current_component(execution, &original)
@@ -148,14 +149,15 @@ fn recorded_retained_component_keeps_original_subject_after_head_advances() {
         subject.artifact_digest(),
         original_artifact.payload_digest().as_bytes()
     );
-    let foreign = durable_runtime_with_test_schema();
+    let foreign_medium = TestDurableMedium::new();
+    let foreign = durable_runtime(&foreign_medium);
     assert!(matches!(
         foreign
             .owner_component_services()
             .basis_port()
             .export_recorded_retained_component(execution, &original),
         Err(RelationalRecordedComponentRefusal::Basis(
-            crate::branch::RelationalBranchBasisDenial::ForeignRuntime { .. }
+            worth_relational::facade::branch::RelationalBranchBasisDenial::ForeignRuntime { .. }
         ))
     ));
 }

@@ -1,6 +1,7 @@
 //! The test medium's durable contents and its position rule.
 
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::VecDeque;
+use worth_testkit_relational::durable_medium::bytes::ByteJournal;
 
 use super::ScriptedPublication;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
@@ -10,9 +11,8 @@ use crate::publication::patch::data::PatchStreamPosition;
 #[derive(Debug, Default)]
 pub(super) struct TestDurableJournal {
     pub(super) selected_capture: Option<crate::durability::medium::OpaqueCapturedCheckpointSubject>,
-    artifacts: BTreeMap<u64, Box<[u8]>>,
-    checkpoint_members:
-        BTreeMap<crate::durability::medium::RelationalDurableMemberLocator, std::sync::Arc<[u8]>>,
+    artifacts: ByteJournal,
+    checkpoint_members: worth_testkit_relational::durable_medium::bytes::MemberBytes,
     pub(super) checkpoint: Option<RelationalDurableCheckpointSource>,
     pub(super) scripted: VecDeque<ScriptedPublication>,
     pub(super) offered: Vec<RelationalCanonicalCommitArtifact>,
@@ -24,7 +24,8 @@ impl TestDurableJournal {
             if let crate::durability::data::RelationalCheckpointMember::New { locator, bytes } =
                 member
             {
-                self.checkpoint_members.insert(*locator, bytes.clone());
+                self.checkpoint_members
+                    .insert(locator.sha256, locator.length, bytes.clone());
             }
         }
         self.selected_capture = checkpoint.checkpoint().publication_subject().cloned();
@@ -41,15 +42,23 @@ impl TestDurableJournal {
         &self,
         locator: crate::durability::medium::RelationalDurableMemberLocator,
     ) -> Option<&[u8]> {
-        self.checkpoint_members.get(&locator).map(AsRef::as_ref)
+        self.checkpoint_members.get(locator.sha256, locator.length)
     }
 
     pub(super) fn head(&self) -> PatchStreamPosition {
-        PatchStreamPosition(self.artifacts.keys().next_back().copied().unwrap_or(0))
+        PatchStreamPosition(
+            self.artifacts
+                .entries
+                .keys()
+                .next_back()
+                .copied()
+                .unwrap_or(0),
+        )
     }
 
     pub(super) fn positions(&self) -> Vec<PatchStreamPosition> {
         self.artifacts
+            .entries
             .keys()
             .copied()
             .map(PatchStreamPosition)
@@ -57,19 +66,22 @@ impl TestDurableJournal {
     }
 
     pub(super) fn bytes_at(&self, position: PatchStreamPosition) -> Option<&[u8]> {
-        self.artifacts.get(&position.0).map(AsRef::as_ref)
+        self.artifacts.entries.get(&position.0).map(AsRef::as_ref)
     }
 
     pub(super) fn bytes_at_mut(&mut self, position: PatchStreamPosition) -> Option<&mut [u8]> {
-        self.artifacts.get_mut(&position.0).map(AsMut::as_mut)
+        self.artifacts
+            .entries
+            .get_mut(&position.0)
+            .map(AsMut::as_mut)
     }
 
     pub(super) fn replace(&mut self, position: PatchStreamPosition, bytes: Box<[u8]>) {
-        self.artifacts.insert(position.0, bytes);
+        self.artifacts.entries.insert(position.0, bytes);
     }
 
     pub(super) fn remove(&mut self, position: PatchStreamPosition) -> Option<Box<[u8]>> {
-        self.artifacts.remove(&position.0)
+        self.artifacts.entries.remove(&position.0)
     }
 
     pub(super) fn artifacts_after(
@@ -77,6 +89,7 @@ impl TestDurableJournal {
         covered: PatchStreamPosition,
     ) -> impl Iterator<Item = &[u8]> {
         self.artifacts
+            .entries
             .range(covered.0.saturating_add(1)..)
             .map(|(_, bytes)| bytes.as_ref())
     }
@@ -89,11 +102,7 @@ impl TestDurableJournal {
         artifact: &RelationalCanonicalCommitArtifact,
     ) -> DurablePublicationFate<String> {
         let position = artifact.position();
-        if self.is_next(position) {
-            self.store(artifact);
-            return DurablePublicationFate::Committed;
-        }
-        if self.bytes_at(position) == Some(artifact.as_bytes()) {
+        if self.artifacts.publish(position.0, artifact.as_bytes()) {
             return DurablePublicationFate::Committed;
         }
         DurablePublicationFate::ProvenNoEffect {
@@ -111,6 +120,7 @@ impl TestDurableJournal {
 
     pub(super) fn store(&mut self, artifact: &RelationalCanonicalCommitArtifact) {
         self.artifacts
+            .entries
             .insert(artifact.position().0, Box::from(artifact.as_bytes()));
     }
 }
