@@ -371,8 +371,17 @@ and canonical disclosure influence closure cover implicit inputs, including
 non-Live governed membership. Watch routing uses each retained Parent's actual
 mode and the same domain evaluator on genuine before/after rows.
 
-This Phase3 support retains complete original Source dependencies. The retained
-rows/dispositions are no field-access trace or Phase4 realized footprint. See the
+Phase3 traversal/refinement alone retains complete original Source dependencies.
+The Phase4 consistency owner may capture verified candidate influence only for
+complete Public Native-maintained Parents with the installed full projection
+profile. It retains every actual candidate Entry, including rejected candidates,
+full admitted parameters and all exact decisions. Target equality uses the same
+complete forward receiver, actual Native cell/installation correspondence and
+shared immutable complete candidate bodies. The commit receiver pins that exact
+checked target. Raw frames, result rows and diagnostics cannot mint this support.
+Governed Parents remain conservative until passive capability/purpose binding is
+carried. Source semantic identity, selected membership and correction remain
+later work; this is no field-access trace. See the
 [application guide](../../../../../../docs/build-an-application.md#construct-committed-provider-indexes)
 for ordinary Decl/Host setup, explicit access and the qualified fixture limits.
 

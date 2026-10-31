@@ -18,17 +18,38 @@ use worth_proof::{ManagedIndexCoverageAuthority, ManagedIndexCoverageIssuer};
 pub(in crate::domain_computation::primary_graph) struct CoverageVerifier {
     issuer: ManagedIndexCoverageIssuer,
     authority: ManagedIndexCoverageAuthority,
+    realized: worth_proof::RealizedFootprintIssuer,
 }
 impl CoverageVerifier {
     pub(in crate::domain_computation::primary_graph) fn new() -> Self {
         let issuer = ManagedIndexCoverageIssuer::fresh();
         let authority = issuer.authority();
-        Self { issuer, authority }
+        let realized = worth_proof::RealizedFootprintIssuer::fresh(authority.clone());
+        Self {
+            issuer,
+            authority,
+            realized,
+        }
     }
     pub(in crate::domain_computation::primary_graph) fn authority(
         &self,
     ) -> &ManagedIndexCoverageAuthority {
         &self.authority
+    }
+    pub(in crate::domain_computation::primary_graph) fn realized_authority(
+        &self,
+    ) -> worth_proof::RealizedFootprintAuthority {
+        self.realized.authority()
+    }
+    pub(in crate::domain_computation::primary_graph) fn verify_realized(
+        &self,
+        captured: &crate::domain_computation::primary_graph::application_query::managed_index::realized_footprint::CheckedManagedFootprintCapture<'_>,
+    ) -> Result<worth_proof::VerifiedRealizedFootprint, Stop> {
+        let frame = captured.frame();
+        self.realized
+            .capture(frame, &captured.coverage().proof)
+            .and_then(|captured| captured.verify(frame))
+            .map_err(|_| Stop::ForeignCoverage)
     }
     pub(in crate::domain_computation::primary_graph) fn complete<'a, 'loan>(
         &self,
@@ -121,6 +142,34 @@ pub(in crate::domain_computation::primary_graph) struct ReceivedSelection {
     coverage: Option<Arc<RetainedCoverage>>,
 }
 impl ReceivedSelection {
+    pub(in crate::domain_computation::primary_graph) fn coverage(
+        &self,
+    ) -> Option<&Arc<RetainedCoverage>> {
+        self.coverage.as_ref()
+    }
+    /// Exact completion keeps the actual original candidate universe; influence
+    /// capture must not silently substitute only its accepted output rows.
+    pub(in crate::domain_computation::primary_graph) fn candidate_slots(&self) -> &[Slot] {
+        self.coverage
+            .as_ref()
+            .and_then(|coverage| coverage.refinement.as_ref())
+            .map_or(self.slots.elements(), |refinement| {
+                refinement.candidates.elements()
+            })
+    }
+    pub(in crate::domain_computation::primary_graph) fn candidate_accepted(
+        &self,
+        ordinal: usize,
+    ) -> Option<bool> {
+        match self
+            .coverage
+            .as_ref()
+            .and_then(|coverage| coverage.refinement.as_ref())
+        {
+            Some(refinement) => refinement.dispositions.elements().get(ordinal).copied(),
+            None => (ordinal < self.slots.len()).then_some(true),
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn into_parts(
         self,
     ) -> (ExecutionArray<Slot>, Option<Arc<RetainedCoverage>>) {

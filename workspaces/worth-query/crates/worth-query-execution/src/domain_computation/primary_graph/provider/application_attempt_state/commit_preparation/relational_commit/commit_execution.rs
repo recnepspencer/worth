@@ -143,7 +143,13 @@ pub(super) fn commit(
             .bind(&mut candidate)
             .map_err(native_output_witness_stop)?;
     }
-    managed_source::bind(&execution, &attempt, &mut candidate)?;
+    managed_source::bind(
+        &execution,
+        provider,
+        before.as_snapshot(),
+        &attempt,
+        &mut candidate,
+    )?;
     let prepared_touched_records =
         touched_records::PreparedTouchedRecords::prepare(&candidate, allocation_policy)?;
     let source_fact_rebase = provider.graph.with_runtime(&execution, |runtime| source_fact_rebase.prepare_candidate(&candidate, runtime, before.as_snapshot(),

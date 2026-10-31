@@ -22,6 +22,12 @@ impl SourceFactsAllocation {
         execution: &ExecutionRequest<'_, '_>,
         units: u64,
     ) -> Result<(), Cause> {
+        Self::request_work(execution, units).map_err(Into::into)
+    }
+    pub(in crate::domain_computation) fn request_work(
+        execution: &ExecutionRequest<'_, '_>,
+        units: u64,
+    ) -> Result<(), worth_execution::WorkCeilingDenial> {
         let mut result = None;
         let outcome = execution.run_native_with_checkpoint(|context| {
             result = Some(if context.has_accounting() {
@@ -31,14 +37,14 @@ impl SourceFactsAllocation {
             });
         });
         match (outcome, result) {
-            (Ok(_), Some(result)) => result.map_err(Into::into),
+            (Ok(_), Some(result)) => result.map_err(worth_execution::WorkCeilingDenial::Stopped),
             (
                 Err(worth_execution::WorkCeilingDenial::Stopped(
                     worth_execution::MapKernelStop::NestedStopped,
                 )),
                 Some(Err(cause)),
-            ) => Err(cause.into()),
-            (Err(cause), _) => Err(cause.into()),
+            ) => Err(worth_execution::WorkCeilingDenial::Stopped(cause)),
+            (Err(cause), _) => Err(cause),
             (Ok(_), None) => unreachable!("completed source metadata checkpoint"),
         }
     }

@@ -5879,15 +5879,36 @@ be genuine point regions in the fixture's declared integer length unit and XY
 frame; non-point regions refuse. This numerical predicate supplies no CAD
 topology or private adoption evidence.
 
-Indexed results retain complete positive, empty and ordering dependencies from
-the original Source, including nonmatching rows. The ordinary `expect_source`
-and `expect_result_set` mutation entrances consume these observations under the
-current request. Keep the observation until the mutation consumes it. The
-mutation rechecks the complete Source: a previously nonmatching record entering
-an empty prefix invalidates the expectation. If the Source has changed, reread
-and reassess the operation instead of substituting only the returned rows.
+Complete Public Parents over Native-maintained Sources can retain verified
+candidate influence when their installed full Source/Parent projection profile
+covers every input. `has_verified_realized_footprint()` on the observed row or
+result set describes that posture; it grants no read or mutation authority.
+The original complete candidate cut includes exact rejects and all projected
+inputs, root predicates, related endpoints, ordering and negative coverage.
+
+The ordinary `expect_source` and `expect_result_set` mutation entrances consume
+these observations under the current request. At the actual target image, Query
+uses the same installed forward provider and exact evaluator to verify complete
+candidate coverage again. Equal membership, exact decisions and shared immutable
+full candidate bodies can preserve an expectation across edits to noncandidates.
+A previously nonmatching record entering an empty range invalidates it. A changed
+candidate input prevents equality even if the returned exact rows stay empty.
+Nonshared bodies conservatively mean equality was not proved, including equal
+values reconstructed in new material.
+
+The commit receiver retains and atomically pins the checked target Native Source
+observation. A writer after revalidation refuses at the existing Native basis
+check. No returned DTO, digest or old observation substitutes for that pin.
+Governed Parents and unsupported projection profiles retain the conservative
+whole-Source posture. Public reads, watches and pages still require fresh READ
+and disclosure admission; internal consistency verification exposes no rows.
+
+This first Phase4 slice does not stabilize observed-Source semantic identity
+across Source revisions, narrow field access, qualify output-demand reuse,
+selected-membership cutoff or correction history. Keep the observation until the
+mutation consumes it, then reread and reassess if equality cannot be proved.
 Reuse the operation's idempotency identity for a recorded retry; it does not
-repeat the completed mutation.
+repeat the completed mutation. See the [currentness evidence](../plans/WORTH-query/milestone-9.19-phase4-currentness-evidence.md).
 
 The maintained prefix and geometry courts also exercise genuine equal-value
 rename/move commits. A watch may remain Pending or deliver unchanged rows;
@@ -6039,8 +6060,9 @@ operation's reads and register its exact binding with
 Installation rejects a Parent whose scope mapping differs from that mutation;
 execution requires the resolved scope to equal the operation's admitted scope.
 Parent admission and the Source's own fresh principal, scope
-and READ checks still run. The decision retains a whole-Source expectation,
-including nonmatches and empty membership, for the actual consuming candidate.
+and READ checks still run. The decision retains the same qualified candidate
+influence or conservative whole-Source expectation described above, including
+future entrants and empty membership, for the actual consuming candidate.
 Ordinary row/result-set expectations use `expect_source` and `expect_result_set`.
 
 <!-- compiled: managed_prefix_decision.rs -->

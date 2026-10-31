@@ -61,6 +61,7 @@ pub(super) fn declare(
     )));
     protected::declare(
         schema
+            .application_mutation_binding::<super::refinement::mutation::Binding>()
             .application_query(super::refinement::definition())
             .application_query_binding::<super::refinement::ExactBinding>()
             .invariant(super::refinement::rule::definition()),

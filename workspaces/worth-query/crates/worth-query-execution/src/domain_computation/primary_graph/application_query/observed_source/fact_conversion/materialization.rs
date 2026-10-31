@@ -81,11 +81,7 @@ pub(super) fn merge_facts(
             std::collections::btree_map::Entry::Occupied(entry) => {
                 let existing = &mut unique[*entry.get()];
                 if !existing
-                    .merge_same_source_fact(
-                        fact,
-                        control.storage().policy(),
-                        control.storage().request(),
-                    )
+                    .merge_same_source_fact(fact, control.storage())
                     .map_err(|denial| {
                         WorthQuerySourceExpectationDenial::source_retention_denied(subject, denial)
                     })?

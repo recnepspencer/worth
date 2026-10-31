@@ -22,6 +22,8 @@ pub struct WorthQueryInstalledManagedIndexReadMeaning {
     parent_binding: String,
     parent_query: WorthQueryInstalledApplicationQueryIdentity,
     parent_graph: WorthQueryInstalledGraphReadContract,
+    parent_disclosure:
+        worth_query_declaration::facade::application_query::ApplicationQueryDisclosurePosture,
     maximum_source_results: usize,
     predicate_profile: Result<
         super::WorthQueryManagedIndexPredicateProfile,
@@ -54,6 +56,7 @@ impl WorthQueryInstalledManagedIndexAccessContract {
             parent_binding: parent.descriptor().identity().to_owned(),
             parent_query: parent.query_identity().clone(),
             parent_graph: parent.query().read_graph().clone(),
+            parent_disclosure: parent.query().disclosure().posture(),
             maximum_source_results: source.limits().maximum_results().get(),
             predicate_profile: super::matching::compile(recipe, source, parent),
         });
@@ -98,6 +101,11 @@ impl WorthQueryInstalledManagedIndexAccessContract {
 }
 
 impl WorthQueryInstalledManagedIndexReadMeaning {
+    pub fn parent_disclosure_posture(
+        &self,
+    ) -> worth_query_declaration::facade::application_query::ApplicationQueryDisclosurePosture {
+        self.parent_disclosure
+    }
     pub fn match_posture(
         &self,
     ) -> worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture

@@ -1,6 +1,6 @@
 # Milestone 9.19: Managed Advanced Access And Verified Footprints
 
-> **Status:** In progress. Phases 1–2 complete; Phases 3–6 unfinished.
+> **Status:** In progress. Phases 1–3 complete; Phase 4 in progress; Phases 5–6 unfinished.
 > **Scope revised 2026-10-27:** the general managed derived-index extension owns
 > the spatial-index finding formerly assigned to 9.18.1 Phase 12 and the dependent
 > CAD locality qualification from Phase 15. Proprietary cutover is the final phase.
@@ -2171,3 +2171,13 @@ building runtimes or modifying any SDK pin.
 [Milestone 9.20](./milestone-9.20.md) consumes admitted access strategies,
 complete membership, and verified footprints to execute correlated paths and
 large conflict-safe sets without reopening candidate or authority meaning.
+
+
+### Phase4 initial qualified currentness slice
+
+The [boundary review](milestone-9.19-phase4-boundary-review.md),
+[implementation plan](milestone-9.19-phase4-currentness-plan.md) and
+[currentness evidence](milestone-9.19-phase4-currentness-evidence.md) govern the
+first qualified-candidate influence/atomic expectation slice. It does not close
+Phase4. Semantic identity/output reuse, field tracing, selected-membership cutoff,
+correction support/history and governed influence qualification remain open.

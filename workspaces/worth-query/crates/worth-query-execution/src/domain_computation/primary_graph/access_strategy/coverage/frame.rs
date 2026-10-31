@@ -9,13 +9,17 @@ use std::{any::Any, sync::Arc};
 use worth_foundational::facade::AspectValue;
 use worth_proof::BorrowedManagedCoverageFrame as Borrowed;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture as MatchPosture;
-use worth_relational::facade::runtime::ManagedIndexSourceRead;
+use worth_relational::facade::runtime::{ManagedIndexSourceObservation, ManagedIndexSourceRead};
 
 #[derive(Clone, Copy)]
 enum Audience<'a, 'loan> {
     Public(Borrowed<'a, WorthQueryManagedGraphWorkSession>),
     Committed(Borrowed<'a, ManagedIndexSourceRead<'loan>>),
     Proposed(Borrowed<'a, ManagedIndexSourceRead<'loan>>),
+    Retained {
+        frame: Borrowed<'a, super::super::realized_footprint::CapturedManagedInfluence>,
+        observation: &'a ManagedIndexSourceObservation,
+    },
 }
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) struct CoverageFrame<'a, 'loan> {
@@ -26,6 +30,28 @@ pub(in crate::domain_computation::primary_graph) struct CoverageFrame<'a, 'loan>
     audience: Audience<'a, 'loan>,
 }
 impl<'a, 'loan> CoverageFrame<'a, 'loan> {
+    /// Private consistency execution uses its actual target Source observation;
+    /// it cannot impersonate a public READ or committed/proposed invariant loan.
+    pub(in crate::domain_computation::primary_graph) fn retained(
+        image: SourceImageView<'a>,
+        nodes: &'a Arc<dyn Any + Send + Sync>,
+        source: &'a dyn Any,
+        probe: &'a AspectValue,
+        observation: &'a ManagedIndexSourceObservation,
+        retained: &'a super::super::realized_footprint::CapturedManagedInfluence,
+        posture: MatchPosture,
+    ) -> Self {
+        Self {
+            image,
+            nodes,
+            probe,
+            posture,
+            audience: Audience::Retained {
+                frame: Borrowed::new(nodes, source, probe, retained),
+                observation,
+            },
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn public(
         image: SourceImageView<'a>,
         nodes: &'a Arc<dyn Any + Send + Sync>,
@@ -70,6 +96,16 @@ impl<'a, 'loan> CoverageFrame<'a, 'loan> {
                 (Audience::Public(a), Audience::Public(b)) => a.same_invocation(&b),
                 (Audience::Committed(a), Audience::Committed(b))
                 | (Audience::Proposed(a), Audience::Proposed(b)) => a.same_invocation(&b),
+                (
+                    Audience::Retained {
+                        frame: a,
+                        observation: x,
+                    },
+                    Audience::Retained {
+                        frame: b,
+                        observation: y,
+                    },
+                ) => a.same_invocation(&b) && std::ptr::eq(x, y),
                 _ => false,
             }
     }

@@ -121,6 +121,7 @@ fn journey() {
     let refreshed = request
         .advanced()
         .mutate(refresh::Refresh {
+            probe: all("B").probe,
             directory: "B".into(),
             note: "after explicit rebuild".into(),
         })

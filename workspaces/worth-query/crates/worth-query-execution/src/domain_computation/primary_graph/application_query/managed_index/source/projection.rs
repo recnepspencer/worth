@@ -29,7 +29,7 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Storage,
 };
 
-pub(super) struct Entry {
+pub(in crate::domain_computation::primary_graph::application_query::managed_index) struct Entry {
     pub(super) occurrence: ManagedIndexSourceOccurrence,
     pub(super) row: Tree,
     pub(super) dependencies: BTreeSet<ViewDependency>,

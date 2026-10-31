@@ -58,7 +58,9 @@ impl DecisionReads {
             if prior.admission != admission
                 || !Arc::ptr_eq(&prior.contracts, &contracts)
                 || prior.source != *source
-                || prior.body != *body
+                || !prior.body.same_truth(body, &mut |work| {
+                    SourceFactsAllocation::work(execution, work).map_err(Stop::Execution)
+                })?
             {
                 return Err(Stop::ManagedSourceChanged);
             }

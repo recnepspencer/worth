@@ -69,6 +69,17 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
 }
 
 impl PersistentSourceRows {
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn program(
+        &self,
+    ) -> &ManagedIndexSourceProgram {
+        &self.program
+    }
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn entry(
+        &self,
+        entity: EntityId,
+    ) -> Option<&Arc<Entry>> {
+        self.entries.get(&entity)
+    }
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn acquire(
         execution: &ExecutionRequest<'_, '_>,
         rows: &ManagedIndexSourceRows<'_>,

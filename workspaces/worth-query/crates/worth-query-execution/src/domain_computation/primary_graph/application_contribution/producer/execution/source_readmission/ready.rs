@@ -75,6 +75,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         CurrentAcceptedStop::Closure(_) | CurrentAcceptedStop::Registration(_) => None,
     };
     let kind = match stop {
+        CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::ManagedIndex(cause)) => {
+            return WorthQueryOutputDemandDenial::managed_index(cause, subject.to_owned()).into()
+        }
         CurrentAcceptedStop::Closure(
             stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_),
         ) => {

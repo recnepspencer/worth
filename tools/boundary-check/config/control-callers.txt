@@ -497,3 +497,6 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/
 # Managed predicate watch recovery parks the actual post-Native World compare.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/watch/recovery.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/watch/recovery.rs
+
+# Query9.19 observes its actual checked-target-to-pin seam and a genuine Native writer.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/realized_footprint/atomic.rs

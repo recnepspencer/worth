@@ -77,6 +77,7 @@ where
         &association,
         &selector,
         probe,
+        &plan.parameters,
         &allocation,
         native,
     )?;

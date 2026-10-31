@@ -108,6 +108,15 @@ impl ManagedIndexSourceObservation {
         Arc::ptr_eq(&self.affinity, &other.affinity) && Arc::ptr_eq(&self.record, &other.record)
     }
 
+    /// Correspondence of genuine retained Source observations, without claiming
+    /// equal support, currentness, READ or permission to pin a different image.
+    /// Forked cells may share payloads but never this actual affinity occurrence.
+    pub fn same_source_scope(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.affinity, &other.affinity)
+            && self.record.program == other.record.program
+            && self.record.scope == other.record.scope
+    }
+
     /// Compare the complete retained Source support at an actual Native image.
     /// This is currentness only; it does not admit a principal or Source READ.
     pub(crate) fn remains_current_at(

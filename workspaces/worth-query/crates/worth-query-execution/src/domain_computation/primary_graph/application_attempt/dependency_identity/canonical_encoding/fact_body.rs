@@ -7,7 +7,23 @@ pub(super) fn append_fact(
 ) {
     match fact {
         WorthQueryApplicationObservedFact::ManagedIndexSource { observation } => {
-            kind(entries, prefix, "managed-complete-source");
+            kind(
+                entries,
+                prefix,
+                if observation.has_verified_realized_footprint() {
+                    "managed-verified-candidate-influence-v1"
+                } else {
+                    "managed-complete-source"
+                },
+            );
+            if let Some(origin) = observation.key().influence {
+                push(
+                    entries,
+                    format!("{prefix}.managed-parameters"),
+                    CanonicalBasisEntryKind::Value,
+                    CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(origin.parameters)),
+                );
+            }
             entity(entries, prefix, "scope", observation.key().scope);
             push(
                 entries,

@@ -70,6 +70,7 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
         };
         registration.install()?;
         setup.handler::<mutation::Binding, _>(Handler(configuration.decision_read))?;
+        setup.handler::<super::refinement::mutation::Binding, _>(mutation::Handler)?;
         setup.handler::<authoring::Binding, _>(authoring::Handler)?;
         setup.handler::<protected::status::Binding, _>(protected::status::Handler)?;
         setup.invariant(
@@ -125,6 +126,8 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 .action::<generated::source::operation::Binding, generated::program::Delivery>()
                 .finish_action()
                 .native_action::<mutation::Binding>()
+                .finish_action()
+                .native_action::<super::refinement::mutation::Binding>()
                 .finish_action()
                 .native_action::<protected::status::Binding>()
                 .finish_action()

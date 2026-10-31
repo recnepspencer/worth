@@ -80,14 +80,15 @@ pub(in crate::domain_computation::primary_graph) enum FactlessCurrentness {
 
 /// A rebase that failed: why, and what the commit's own effect did to its
 /// reads. No caller holds the one without the other.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct FailedRebase {
     pub(in crate::domain_computation::primary_graph) reason: RebaseVerificationReason,
     pub(in crate::domain_computation::primary_graph) own_effect: OwnEffectOnReads,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
+    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     NativeRevisionUnavailable,
     NativeFactRevisionUnavailable(usize),
@@ -180,7 +181,7 @@ impl RebasedSourceFacts {
             | Self::Cached { facts, .. }
             | Self::SupersededByOwnEffect { facts, .. } => Ok(facts.clone()),
             Self::VerificationRequired { reason, own_effect } => Err(FailedRebase {
-                reason: *reason,
+                reason: reason.clone(),
                 own_effect: *own_effect,
             }),
         }

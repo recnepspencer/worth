@@ -68,15 +68,18 @@ impl ApplicationFactTable {
         })
     }
     pub(super) fn projected(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         body: FactPayload,
         scopes: CompletedReadScopes,
         projection: Arc<CompletedFactProjection>,
         original: Option<Arc<CompletedOriginalRead>>,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
         binding_bytes: u64,
-    ) -> Result<Self, &'static str> {
+    ) -> Result<Self, super::BindingFailure> {
         if projection.count() != scopes.len() || scopes.len() > body.len() {
-            return Err("completed projection does not cover exact installed scopes");
+            return Err(super::binding_failure(
+                "completed projection does not cover exact installed scopes",
+            ));
         }
         let count = scopes.len();
         let mut table = Self {
@@ -98,9 +101,9 @@ impl ApplicationFactTable {
         for source in sources {
             crate::domain_computation::primary_graph::fact_verification_observation::provider_application_fact();
             let key = source.dependency_locator_identity();
-            validate_locator(&key)?;
+            validate_locator(&key).map_err(super::binding_failure)?;
             let fact = match table.get(&key) {
-                Some(fact) => fact.retain_observed_source_role(source)?,
+                Some(fact) => fact.retain_observed_source_role(source, execution)?,
                 None => {
                     table.count += 1;
                     Decision::observed_source(source)

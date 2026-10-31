@@ -51,6 +51,9 @@ pub(in crate::domain_computation::primary_graph) fn retained_fact_denial(
         RetainedFactStop::OutputObservation(stop) => {
             super::verification_denial(stop, unavailable.to_owned())
         }
+        RetainedFactStop::ManagedIndex(cause) => {
+            WorthQueryOutputDemandDenial::managed_index(cause, unavailable.to_owned())
+        }
         RetainedFactStop::Work => work_denial(),
         RetainedFactStop::Execution(cause) => read_denial(cause),
         RetainedFactStop::Interrupted(event) => interruption_denial(event),
@@ -67,6 +70,7 @@ pub(in crate::domain_computation::primary_graph) fn retained_fact_denial(
 
 /// Why a retained output's facts could not be compared.
 pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
+    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
     /// The request's meter, or the fact's own recorded bound, stopped it.
     Work,
     OutputObservation(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop),
@@ -95,6 +99,9 @@ pub(in crate::domain_computation::primary_graph) fn first_moved_fact_in<'fact>(
 ) -> Result<Option<&'fact WorthQueryApplicationObservedFact>, RetainedFactStop<'fact>> {
     for fact in facts {
         match extent.observe(fact) {
+            Ok(Err(WorthQuerySourceCurrentnessFailure::ManagedIndex(cause))) => {
+                return Err(RetainedFactStop::ManagedIndex(cause))
+            }
             Ok(Ok(movement)) if movement.movement() == Movement::Moved => return Ok(Some(fact)),
             Ok(Ok(_)) => {}
             Ok(Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop))) => {

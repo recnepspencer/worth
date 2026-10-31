@@ -7,6 +7,7 @@ pub(in crate::domain_computation::primary_graph) fn verification_denial(
 ) -> WorthQueryOutputDemandDenial {
     let subject = subject.into();
     match stop {
+        Stop::ManagedIndex(cause) => WorthQueryOutputDemandDenial::managed_index(cause, subject),
         Stop::Execution(cause) => super::read_denial(cause),
         Stop::Interrupted(event) => super::interruption_denial(event),
         Stop::SourceQueryAuthorization(kind) => WorthQueryOutputDemandDenial::new(

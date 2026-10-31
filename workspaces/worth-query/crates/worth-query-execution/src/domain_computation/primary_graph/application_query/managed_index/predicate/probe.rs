@@ -17,9 +17,32 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Retai
     pub(super) parent: Parent,
     pub(super) parameters: Parameters,
     ordinal: usize,
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) retained_bytes:
+        u64,
     _allocation: Arc<SourceFactsAllocation>,
 }
 impl RetainedPredicateProbe {
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn parent(
+        &self,
+    ) -> &Parent {
+        &self.parent
+    }
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn parameters(
+        &self,
+    ) -> &Parameters {
+        &self.parameters
+    }
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn matches_probe_borrow(
+        &self,
+        parameters: &Parameters,
+        probe: &AspectValue,
+    ) -> bool {
+        self.parameters.identity() == parameters.identity()
+            && parameters
+                .bindings()
+                .get(self.ordinal)
+                .is_some_and(|(_, actual)| std::ptr::eq(actual, probe))
+    }
     pub(in crate::domain_computation::primary_graph::application_query) fn matches_parameters(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -79,10 +102,13 @@ impl RetainedPredicateProbe {
             parent: parent.clone(),
             parameters: parameters.clone(),
             ordinal,
+            retained_bytes: bytes,
             _allocation: allocation,
         }))
     }
-    pub(super) fn raw(&self) -> &AspectValue {
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn raw(
+        &self,
+    ) -> &AspectValue {
         // Capture resolved this ordinal against the actual immutable full parameter set.
         &self.parameters.bindings()[self.ordinal].1
     }

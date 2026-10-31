@@ -34,6 +34,8 @@ pub struct WorthQueryDecisionReadSetFailure {
     kind: WorthQueryDecisionReadSetDenialKind,
     detail: Arc<str>,
     allocation: Option<ExecutionAllocationDenial>,
+    managed_index:
+        Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
     native_query_read_stop: Option<Arc<worth_relational::facade::runtime::QueryReadExecutionStop>>,
 }
 
@@ -44,6 +46,7 @@ impl WorthQueryDecisionReadSetFailure {
             detail: detail.into(),
             allocation: None,
             native_query_read_stop: None,
+            managed_index: None,
         }
     }
 
@@ -62,6 +65,7 @@ impl WorthQueryDecisionReadSetFailure {
             detail: denial.to_string().into(),
             allocation: Some(denial),
             native_query_read_stop: None,
+            managed_index: None,
         }
     }
 
@@ -78,6 +82,21 @@ impl WorthQueryDecisionReadSetFailure {
         &self,
     ) -> Option<&worth_relational::facade::runtime::QueryReadExecutionStop> {
         self.native_query_read_stop.as_deref()
+    }
+
+    pub(in crate::domain_computation) fn with_managed_index_denial(
+        mut self,
+        cause: crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial,
+    ) -> Self {
+        self.managed_index = Some(cause);
+        self
+    }
+
+    /// The original pure provider or controlled refusal during consistency.
+    pub fn managed_index_denial(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial> {
+        self.managed_index.as_ref()
     }
 
     pub fn allocation_denial(&self) -> Option<&ExecutionAllocationDenial> {
@@ -97,7 +116,10 @@ impl ChargedBytes for WorthQueryDecisionReadSetFailure {
                 + std::mem::size_of_val(stop.as_ref()) as u64
                 + stop.additional_charged_bytes()
         });
-        detail + native + self.allocation.additional_charged_bytes()
+        detail
+            + native
+            + self.allocation.additional_charged_bytes()
+            + self.managed_index.additional_charged_bytes()
     }
 }
 

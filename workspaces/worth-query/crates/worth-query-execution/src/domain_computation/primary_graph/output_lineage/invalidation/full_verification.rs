@@ -31,7 +31,7 @@ pub(in crate::domain_computation::primary_graph) enum FullVerificationDecision {
     Changed,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum FullVerificationStop {
     Alignment(FullVerificationReason),
     /// The selected source or a row it reaches belongs to another source.

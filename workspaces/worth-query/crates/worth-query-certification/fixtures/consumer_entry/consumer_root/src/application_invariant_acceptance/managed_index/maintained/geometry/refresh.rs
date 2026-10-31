@@ -9,12 +9,13 @@ use worth_query_host::facade::primary_graph::*;
 pub struct Refresh {
     pub directory: String,
     pub note: String,
+    pub probe: bounds::Coordinates,
 }
 #[derive(Debug)]
 pub struct Refreshed;
 #[derive(Debug)]
 pub enum Denial {}
-worth_query_structured_value_binding!(pub InputBinding for Refresh { identity: "managed-geometry.refresh.input.v1" });
+worth_query_structured_value_binding!(pub InputBinding for Refresh { identity: "managed-geometry.refresh.input.v2" });
 worth_query_structured_value_binding!(pub ResultBinding for Refreshed { identity: "managed-geometry.refresh.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "managed-geometry.refresh.denial.v1" });
 worth_query_operation!(pub RefreshDirectory for Catalog, input InputBinding);
@@ -87,7 +88,7 @@ impl ApplicationMutationBinding<Catalog> for Binding {
             Catalog,
         >>::parameters(&query::FindBoxes {
             directory: input.directory.clone(),
-            probe: bounds::Coordinates::new(-1, -1, 100, 1),
+            probe: input.probe,
         })))
     }
 }

@@ -129,20 +129,5 @@ fn provider_rejected() -> WorthQueryDecisionReadSetFailure {
 pub(in crate::domain_computation::primary_graph::provider) fn fact_read_set_failure(
     denial: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
 ) -> WorthQueryDecisionReadSetFailure {
-    use crate::domain_computation::{
-        primary_graph::WorthQueryApplicationAttemptDenialKind as Attempt,
-        WorthQueryDecisionReadSetDenialKind as Kind,
-    };
-    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
-    let kind = match denial.kind() {
-        Attempt::ExecutionRequest(kind) => Kind::ExecutionRequest(kind),
-        Attempt::Cancelled => Kind::RequestInterrupted(Interruption::Cancelled),
-        Attempt::DeadlineExceeded => Kind::RequestInterrupted(Interruption::DeadlineExceeded),
-        _ => Kind::ProviderRejected,
-    };
-    let failure = WorthQueryDecisionReadSetFailure::new(kind, denial.to_string());
-    match denial.into_native_query_read_stop() {
-        Some(stop) => failure.with_native_query_read_stop(*stop),
-        None => failure,
-    }
+    denial.into_decision_read_set_failure()
 }

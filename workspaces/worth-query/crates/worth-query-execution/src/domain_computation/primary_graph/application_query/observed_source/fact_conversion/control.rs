@@ -22,7 +22,8 @@ impl<'request, 'authority> SourceFactExpansionControl<'request, 'authority> {
     ) -> Self {
         Self {
             execution: Some(execution),
-            storage: StorageControl::new(execution.allocation_policy(), request),
+            storage: StorageControl::new(execution.allocation_policy(), request)
+                .with_execution(execution),
         }
     }
     pub(super) fn legacy(storage: StorageControl<'request, 'authority>) -> Self {

@@ -111,6 +111,7 @@ fn journey() {
         let result = request
             .advanced()
             .mutate(refresh::Refresh {
+                probe: all("B").probe,
                 directory: "B".into(),
                 note: note.into(),
             })

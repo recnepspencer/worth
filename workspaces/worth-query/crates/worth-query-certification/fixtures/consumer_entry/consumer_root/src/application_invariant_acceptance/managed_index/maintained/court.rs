@@ -14,6 +14,7 @@ mod decision_scope;
 mod exact_refinement;
 mod membership;
 mod prefix_growth;
+mod realized_footprint;
 mod retirement;
 mod source_structure;
 mod summary_support;

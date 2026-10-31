@@ -25,6 +25,7 @@ use crate::domain_computation::{
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::AspectValue;
+use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters as Parameters;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
@@ -45,6 +46,7 @@ pub(super) fn select<'a, 'request, 'authority, S, I>(
     selector: &WorthQueryObservedScopeSelector,
     adapter: &Arc<dyn InstalledIndexProvider<S, I>>,
     probe: &AspectValue,
+    parameters: &Parameters,
     allocation: &Arc<SourceFactsAllocation>,
     native: &mut ApplicationQueryNativeAccess<'_>,
 ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial>
@@ -99,6 +101,23 @@ where
         control,
     )).map_err(Denial::Work)?;
     let proof = purpose.complete(callback).map_err(Denial::Session)?;
+    let influence = super::realized_footprint::capture(
+        execution,
+        &proof,
+        super::realized_footprint::CaptureInput {
+            parent,
+            request,
+            association,
+            source: &source,
+            root,
+            observation: &observation,
+            parameters,
+            probe,
+            selected: &slots,
+            allocation,
+        },
+    )
+    .map_err(Denial::Selection)?;
     let storage = MaterialCompletion::new(execution, allocation);
     storage.arc::<ManagedSourceRead>()?;
     let expectation = Arc::new(ManagedSourceRead::new(
@@ -110,6 +129,8 @@ where
         selector.subject(),
         Arc::clone(&observation),
         Arc::clone(allocation),
+        influence,
+        *parameters.identity().bytes(),
     ));
     let dependencies =
         super::source_dependencies::capture_maintained(execution, expectation, allocation)

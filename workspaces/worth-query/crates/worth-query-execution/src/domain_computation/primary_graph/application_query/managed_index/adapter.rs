@@ -23,6 +23,11 @@ where
 {
     fn installed(&self) -> &WorthQueryInstalledManagedIndex<S, I>;
     fn coverage_authority(&self) -> &worth_proof::ManagedIndexCoverageAuthority;
+    fn realized_authority(&self) -> worth_proof::RealizedFootprintAuthority;
+    fn verify_realized(
+        &self,
+        captured: &super::realized_footprint::CheckedManagedFootprintCapture<'_>,
+    ) -> Result<worth_proof::VerifiedRealizedFootprint, WorthQueryManagedIndexStop>;
     fn build(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -69,6 +74,15 @@ where
     }
     fn coverage_authority(&self) -> &worth_proof::ManagedIndexCoverageAuthority {
         self.coverage.authority()
+    }
+    fn realized_authority(&self) -> worth_proof::RealizedFootprintAuthority {
+        self.coverage.realized_authority()
+    }
+    fn verify_realized(
+        &self,
+        captured: &super::realized_footprint::CheckedManagedFootprintCapture<'_>,
+    ) -> Result<worth_proof::VerifiedRealizedFootprint, WorthQueryManagedIndexStop> {
+        self.coverage.verify_realized(captured)
     }
     fn build(
         &self,

@@ -117,7 +117,8 @@ impl OwnedVerifiedInputCutoff {
             selected,
         )
         .map_err(|stop| match stop {
-            stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_) => {
+            stop @ (ConsumedOutputVerificationStop::SourceQueryAuthorization(_)
+            | ConsumedOutputVerificationStop::ManagedIndex(_)) => {
                 InputCutoffVerificationStop::OutputObservation(stop)
             }
             ConsumedOutputVerificationStop::Execution(cause) => {

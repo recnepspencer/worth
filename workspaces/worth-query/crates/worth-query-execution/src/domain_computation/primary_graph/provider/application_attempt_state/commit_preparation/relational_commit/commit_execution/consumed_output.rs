@@ -94,6 +94,9 @@ pub(super) fn verification_stop(
 
 fn publication_stop(stop: PrecommitOutputStop) -> WorthQueryProviderSessionCommitStop {
     match stop {
+            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::ManagedIndex(cause)) => WorthQueryProviderSessionCommitStop::PreEffectDenied(
+                provider_failure(WorthQueryProviderSessionProtocolStage::Commit, "managed Source consistency refused")
+                    .with_managed_index_denial(cause)),
             PrecommitOutputStop::Verification(
                 ConsumedOutputVerificationStop::RetryCurrentness(cause),
             ) => WorthQueryProviderSessionCommitStop::Deferred(
@@ -129,6 +132,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDe
             PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::CapacityExhausted(stop)) => capacity_denied(stop),
             other => {
                 let detail = match other {
+                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::ManagedIndex(_)) => unreachable!("managed source cause retained above"),
                     PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(_)) => unreachable!("request execution routed above"),
                     PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => unreachable!("source query authorization routed above"),
                     PrecommitOutputStop::SelectedUnavailable => {

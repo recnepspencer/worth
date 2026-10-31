@@ -19,6 +19,7 @@ use crate::domain_computation::{
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::AspectValue;
+use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters as Parameters;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::{
@@ -45,6 +46,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         external: &WorthQueryAuthenticatedExternalPrincipal<S>,
         selector: &WorthQueryObservedScopeSelector,
         probe: &AspectValue,
+        parameters: &Parameters,
         allocation: &Arc<SourceFactsAllocation>,
     ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial>;
     #[allow(clippy::too_many_arguments)]
@@ -58,6 +60,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         association: &WorthQueryInstalledManagedIndexParent,
         selector: &WorthQueryObservedScopeSelector,
         probe: &AspectValue,
+        parameters: &Parameters,
         allocation: &Arc<SourceFactsAllocation>,
         native: &mut ApplicationQueryNativeAccess<'_>,
     ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial>;
@@ -88,6 +91,7 @@ where
         external: &WorthQueryAuthenticatedExternalPrincipal<S>,
         selector: &WorthQueryObservedScopeSelector,
         probe: &AspectValue,
+        parameters: &Parameters,
         allocation: &Arc<SourceFactsAllocation>,
     ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial> {
         if !self.installed.admits_association(association) {
@@ -124,6 +128,7 @@ where
                 selector,
                 &adapter,
                 probe,
+                parameters,
                 allocation,
                 &mut ApplicationQueryNativeAccess::acquire(),
             );
@@ -164,6 +169,7 @@ where
         association: &WorthQueryInstalledManagedIndexParent,
         selector: &WorthQueryObservedScopeSelector,
         probe: &AspectValue,
+        parameters: &Parameters,
         allocation: &Arc<SourceFactsAllocation>,
         native: &mut ApplicationQueryNativeAccess<'_>,
     ) -> Result<ManagedSelectionLease<'a, 'request, 'authority>, Denial> {
@@ -181,6 +187,7 @@ where
             selector,
             &adapter,
             probe,
+            parameters,
             allocation,
             native,
         )

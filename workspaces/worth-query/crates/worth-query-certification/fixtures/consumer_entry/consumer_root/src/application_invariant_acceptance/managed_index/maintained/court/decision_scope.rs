@@ -90,7 +90,9 @@ fn decision_index_requires_the_declared_parent_and_the_original_operation_scope(
                         WorthQueryInvariantDecisionPlanDenialKind::UndeclaredDecisionTarget
                     );
                 }
-                DecisionRead::Declared => unreachable!(),
+                DecisionRead::Declared | DecisionRead::Empty | DecisionRead::TwoProbes => {
+                    unreachable!()
+                }
             }
             assert_eq!(
                 provider.probe_validations.load(Ordering::SeqCst),

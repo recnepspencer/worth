@@ -1,12 +1,13 @@
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 mod comparison;
 use super::{FactMovement, WorthQueryApplicationObservedFact};
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQuerySourceCurrentnessFailure {
     /// The fact's own recorded bound refuses the comparison.
     WorkBudgetExceeded,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Unavailable,
+    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
     OutputObservation(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop),
 }
 

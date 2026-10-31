@@ -101,6 +101,7 @@ impl SourceQueryReadClosure {
         for fact in self.principal_facts.iter() {
             let current = fact.source_currentness_in(runtime, execution, snapshot)
                 .map_err(map_admission_stop)?.map_err(|stop| match stop {
+                    crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => Stop::ManagedIndex(cause),
                     crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => stop,
                     crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Execution(stop) => Stop::Execution(stop),
                     crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => Stop::WorkExhausted,

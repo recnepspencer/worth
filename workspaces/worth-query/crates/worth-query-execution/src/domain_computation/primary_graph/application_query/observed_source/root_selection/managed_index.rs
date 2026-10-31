@@ -100,8 +100,13 @@ impl DeclaredManagedIndexSelection {
         if !self.coverage_is_present() || !other.coverage_is_present() {
             return Ok(false);
         }
-        if self.dependencies.maintained != other.dependencies.maintained {
-            return Ok(false);
+        match (
+            &self.dependencies.maintained,
+            &other.dependencies.maintained,
+        ) {
+            (None, None) => {}
+            (Some(left), Some(right)) if left.same_truth(right, admit)? => {}
+            _ => return Ok(false),
         }
         if self.access.graph_obligations().identity() != other.access.graph_obligations().identity()
             || self.dependencies.identity != other.dependencies.identity

@@ -22,7 +22,7 @@ impl WorthQueryOutputAvailabilityDenial {
         use Cause::*;
         let kind = match self.cause.as_ref() {
             Verification(stop) => {
-                return output_reuse::verification_denial(*stop, "output availability")
+                return output_reuse::verification_denial(stop.clone(), "output availability")
             }
             Registration(SettlementRegistrationStop::Admission(stop)) => return meter(*stop),
             Registration(SettlementRegistrationStop::Edit(_)) => Kind::PublicationStale,

@@ -15,9 +15,11 @@ mod linear;
 mod managed_access;
 mod managed_source;
 pub use managed_access::{
-    AdmittedManagedIndexCoverage, BorrowedManagedCoverageFrame, ManagedCoverageDisposition,
-    ManagedCoverageFrontier, ManagedCoverageRegion, ManagedCoverageStep,
-    ManagedIndexCoverageAuthority, ManagedIndexCoverageDenial, ManagedIndexCoverageIssuer,
+    AdmittedManagedIndexCoverage, BorrowedManagedCoverageFrame, BorrowedRealizedFootprintFrame,
+    CapturedRealizedFootprint, ManagedCoverageDisposition, ManagedCoverageFrontier,
+    ManagedCoverageRegion, ManagedCoverageStep, ManagedIndexCoverageAuthority,
+    ManagedIndexCoverageDenial, ManagedIndexCoverageIssuer, RealizedFootprintAuthority,
+    RealizedFootprintDenial, RealizedFootprintIssuer, VerifiedRealizedFootprint,
 };
 mod phase;
 pub mod prelude;

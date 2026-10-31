@@ -3,8 +3,8 @@ use super::*;
 use worth_execution::ExecutionRequestArrayBuilder;
 
 pub(super) struct RetainedRefinement {
-    _candidates: ExecutionArray<Slot>,
-    _dispositions: ExecutionArray<bool>,
+    pub(super) candidates: ExecutionArray<Slot>,
+    pub(super) dispositions: ExecutionArray<bool>,
 }
 impl CandidateSelection<'_, '_> {
     pub(in crate::domain_computation::primary_graph) fn refine(
@@ -59,8 +59,8 @@ impl CandidateSelection<'_, '_> {
             .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
         control.poll()?;
         coverage.refinement = Some(RetainedRefinement {
-            _candidates: std::mem::replace(&mut self.slots, accepted),
-            _dispositions: dispositions,
+            candidates: std::mem::replace(&mut self.slots, accepted),
+            dispositions,
         });
         Ok(self)
     }

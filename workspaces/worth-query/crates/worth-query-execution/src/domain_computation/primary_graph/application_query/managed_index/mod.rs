@@ -12,6 +12,7 @@ mod handle;
 pub(in crate::domain_computation::primary_graph) mod invariant_read;
 mod invocation;
 mod maintained_read;
+pub(in crate::domain_computation::primary_graph) mod realized_footprint;
 pub use invariant_read::WorthQueryManagedIndexInvariantDenial;
 mod node_backing;
 mod nodes;
