@@ -122,7 +122,11 @@ impl PublicationShared {
             stopped: state.stopped,
             accepted: state.accepted.as_ref().map(|step| step.mutation_identity()),
             terminal: state.terminal.clone(),
-            step_terminal: state.last_terminal.clone(),
+            step_terminal: state
+                .accepted
+                .as_ref()
+                .and_then(|step| step.observed_terminal())
+                .or_else(|| state.last_terminal.clone()),
         }
     }
     pub(super) fn require_receiver(
@@ -146,18 +150,31 @@ impl PublicationShared {
         Ok(())
     }
     pub(super) fn stop(&self) {
-        let (interruption, plan) = {
+        let (interruption, plan, unused_selection) = {
             let mut state = self.state();
             state.stopped = true;
-            (state.interruption.take(), state.plan.take())
+            let accepted_anchor =
+                state.accepted.is_some() && state.kind == AnchoredRecordStepKind::Anchor;
+            let unused_selection = if accepted_anchor {
+                None
+            } else {
+                state.final_selection.take()
+            };
+            (
+                state.interruption.take(),
+                state.plan.take(),
+                unused_selection,
+            )
         };
         // The accepted batch owns its actual bytes and original guards.
         // Remaining inputs are no longer useful and are released outside locks.
         drop(plan);
+        drop(unused_selection);
         drop(interruption);
     }
 }
 impl AnchoredRecordPublicationOperation {
+    /// Owned inspection snapshot; cloning the completed prefix costs O(members).
     pub fn observe(&self) -> AnchoredRecordPublicationObservation {
         self.shared.observe()
     }

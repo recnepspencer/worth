@@ -36,15 +36,17 @@ pub(super) fn run_worker(
     let (terminal, panicked) = match execution {
         Ok(terminal) => (terminal, false),
         Err(_) => (
-            PhysicalMutationTerminalFact::Indeterminate(
-                IndeterminatePhysicalMutation::possible_effect(
-                    attempt.identity(),
-                    attempt.idempotency_identity(),
-                    attempt.fingerprint(),
-                    PhysicalMutationIndeterminateStage::WorkerPanicked,
-                    0,
-                ),
-            ),
+            attempt.retained_physical_fact().unwrap_or_else(|| {
+                PhysicalMutationTerminalFact::Indeterminate(
+                    IndeterminatePhysicalMutation::possible_effect(
+                        attempt.identity(),
+                        attempt.idempotency_identity(),
+                        attempt.fingerprint(),
+                        PhysicalMutationIndeterminateStage::WorkerPanicked,
+                        0,
+                    ),
+                )
+            }),
             true,
         ),
     };
@@ -57,11 +59,13 @@ pub(super) fn run_worker(
         owner.record_terminal(&attempt, terminal.clone(), panicked);
         Ok::<(), ()>(())
     }));
-    if !matches!(settlement, Ok(Ok(()))) {
-        attempt.finish_anchored_step(
-            &terminal,
-            Some(crate::physical_runtime::AnchoredRecordStepSettlementFailure::WorkerUnavailable),
-        );
+    let failure = match settlement {
+        Ok(Ok(())) => None,
+        Ok(Err(())) => Some(crate::physical_runtime::AnchoredRecordStepSettlementFailure::WorkerUnavailable),
+        Err(_) => Some(crate::physical_runtime::AnchoredRecordStepSettlementFailure::TerminalSettlementPanicked),
+    };
+    if let Some(cause) = failure {
+        attempt.finish_anchored_step(&terminal, Some(cause));
         attempt.publish_terminal();
     }
 }

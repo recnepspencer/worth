@@ -65,8 +65,11 @@ pub enum AnchoredRecordStepDeliveryFailure {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AnchoredRecordStepSettlementFailure {
     TerminalPersistence,
+    ExecutionPanicked,
+    TerminalSettlementPanicked,
     TerminalDelivery(AnchoredRecordStepDeliveryFailure),
     TerminalDeliveryPanicked,
+    ProtectionReleasePanicked,
     WorkerUnavailable,
 }
 
@@ -102,7 +105,7 @@ impl AnchoredRecordStepRegistration {
         self.step.mutation
     }
     pub fn terminal(&self) -> Option<Arc<AnchoredRecordStepTerminal>> {
-        self.step.state().terminal.clone()
+        self.step.observed_terminal()
     }
     pub fn completed_member_batches(&self) -> usize {
         self.step.completed_batches
@@ -149,6 +152,7 @@ struct AcceptedStepState {
     attempt: Weak<PhysicalMutationAttempt>,
     retention: Option<AnchoredRecordStepRetention>,
     terminal: Option<Arc<AnchoredRecordStepTerminal>>,
+    settled: bool,
     fact: Option<PhysicalMutationTerminalFact>,
     unstarted: Option<crate::physical_runtime::PreparedPhysicalMutation>,
     owner: Weak<Mutex<super::super::AnchoredRecordState>>,
@@ -172,6 +176,7 @@ impl AcceptedStep {
                 attempt: Weak::new(),
                 retention: None,
                 terminal: None,
+                settled: false,
                 fact: None,
                 unstarted: None,
                 owner,
@@ -235,6 +240,7 @@ impl AcceptedStep {
                 .unresolved
                 .insert(self.publication.name.anchor());
         }
+        let mut settlement_failure = failure;
         if let Some(retention) = retention {
             let delivered = catch_unwind(AssertUnwindSafe(|| {
                 retention.destination.record_terminal(&terminal)
@@ -246,13 +252,34 @@ impl AcceptedStep {
                 }
                 Err(_) => Some(AnchoredRecordStepSettlementFailure::TerminalDeliveryPanicked),
             };
-            if let Some(cause) = delivery_failure {
-                self.state().terminal = Some(Arc::new(AnchoredRecordStepTerminal {
-                    mutation: self.mutation,
-                    outcome: fact.outcome(),
-                    failure: failure.or(Some(cause)),
-                }));
+            settlement_failure = settlement_failure.or(delivery_failure);
+            // A destination panic is caught before releasing its owned guard,
+            // so a release panic cannot become a double unwind of the callback.
+            let released = catch_unwind(AssertUnwindSafe(|| drop(retention)));
+            if released.is_err() {
+                settlement_failure = settlement_failure.or(Some(
+                    AnchoredRecordStepSettlementFailure::ProtectionReleasePanicked,
+                ));
             }
+        }
+        let mut state = self.state();
+        if settlement_failure != failure {
+            state.terminal = Some(Arc::new(AnchoredRecordStepTerminal {
+                mutation: self.mutation,
+                outcome: fact.outcome(),
+                failure: settlement_failure,
+            }));
+        }
+        // Saved physical fact is not settled delivery. Public observation only
+        // becomes terminal after both destination and protection have settled.
+        state.settled = true;
+    }
+    pub(super) fn observed_terminal(&self) -> Option<Arc<AnchoredRecordStepTerminal>> {
+        let state = self.state();
+        if state.settled {
+            state.terminal.clone()
+        } else {
+            None
         }
     }
     pub(super) fn hold_unstarted(
@@ -294,7 +321,7 @@ impl AcceptedStep {
                 Some(AnchoredRecordStepSettlementFailure::WorkerUnavailable),
             );
         }
-        self.state().terminal.clone()
+        self.observed_terminal()
     }
     pub(super) fn cancel(&self) {
         let attempt = self.state().attempt.upgrade();

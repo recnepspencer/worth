@@ -57,6 +57,9 @@ impl RecordPublicationDirector {
     ) -> PhysicalMutationTerminalFact {
         match self.settle_prepared_before_group_seal(prepared, cause) {
             PhysicalPreSealCancellationOutcome::ProvenNoEffect(terminal) => {
+                attempt.install_terminal(PhysicalMutationTerminalFact::ProvenNoEffect(
+                    terminal.clone(),
+                ));
                 let terminal = match detail {
                     Some(detail) => terminal.with_admission_detail(detail),
                     None => terminal,

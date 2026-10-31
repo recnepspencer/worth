@@ -204,6 +204,12 @@ impl PhysicalMutationAttempt {
         }
     }
 
+    pub(in crate::physical_runtime) fn retained_physical_fact(
+        &self,
+    ) -> Option<PhysicalMutationTerminalFact> {
+        self.state().terminal.clone()
+    }
+
     pub(in crate::physical_runtime) fn visible_terminal_fact(
         &self,
     ) -> Option<PhysicalMutationTerminalFact> {

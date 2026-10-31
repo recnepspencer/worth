@@ -27,8 +27,7 @@ pub(super) struct PublicationPlan {
 }
 pub(super) struct FinalSelection {
     pub(super) name: super::super::super::AnchoredRecordName,
-    pub(super) header: AnchoredRecordHeader,
-    pub(super) locators: Vec<AnchoredRecordMemberLocator>,
+    pub(super) membership: super::super::super::membership::PreparedValueMembership,
     pub(super) record_sha256: [u8; 32],
 }
 struct AdmissionReservation {

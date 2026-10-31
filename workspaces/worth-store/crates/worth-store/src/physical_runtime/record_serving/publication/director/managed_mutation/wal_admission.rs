@@ -53,14 +53,22 @@ impl RecordPublicationDirector {
                 Ok(appended)
             }
             PhysicalWalGroupAppendOutcome::NotAdmitted { members, cause } => {
-                let broad = if cause == PhysicalWalGroupAppendFailureCause::OriginalRequestCancelled
-                {
-                    Cause::CancelledBeforeGroupSeal
-                } else if cause
-                    == PhysicalWalGroupAppendFailureCause::OriginalRequestDeadlineElapsed
-                {
-                    Cause::DeadlineElapsedBeforeGroupSeal
-                } else if cause == PhysicalWalGroupAppendFailureCause::PublicationGrowth {
+                let control_stop =
+                    if cause == PhysicalWalGroupAppendFailureCause::OriginalRequestCancelled {
+                        Some(Cause::CancelledBeforeGroupSeal)
+                    } else if cause
+                        == PhysicalWalGroupAppendFailureCause::OriginalRequestDeadlineElapsed
+                    {
+                        Some(Cause::DeadlineElapsedBeforeGroupSeal)
+                    } else {
+                        None
+                    };
+                if let Some(cause) = control_stop {
+                    // A request stop is not a failed WAL admission. Preserve
+                    // the existing NoEffect provenance restriction unchanged.
+                    return Err(self.pre_effect_terminal(one(members), attempt, cause));
+                }
+                let broad = if cause == PhysicalWalGroupAppendFailureCause::PublicationGrowth {
                     Cause::RetentionPressure
                 } else {
                     Cause::AdmissionDeniedBeforeGroupSeal

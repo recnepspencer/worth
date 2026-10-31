@@ -1,5 +1,5 @@
 //! A caller performs one preparation or observes one accepted physical step.
-use super::super::super::membership::{SelectedRecord, ValueMembership};
+use super::super::super::membership::SelectedRecord;
 use super::*;
 use crate::physical_runtime::record_serving::{AnchoredRecordAppend, PreparedDurableRecordAppend};
 use crate::physical_runtime::{PhysicalMutationOutcome, PhysicalRecordId};
@@ -121,8 +121,10 @@ fn submit_next(
         .map_err(super::super::door_failure)?;
         let selection = super::admission::FinalSelection {
             name: plan.name,
-            header: plan.header,
-            locators: plan.locators,
+            membership: super::super::super::membership::PreparedValueMembership::new(
+                plan.header,
+                plan.locators,
+            ),
             record_sha256: plan.record_sha256,
         };
         (
@@ -300,15 +302,11 @@ pub(super) fn settle_accepted(
                 .final_selection
                 .take()
                 .ok_or(AnchoredRecordOperationFailure::Stopped)?;
-            let membership = ValueMembership::new(
-                SelectedRecord {
-                    record: *record,
-                    record_sha256: plan.record_sha256,
-                    generation: shared.identity.generation,
-                },
-                plan.header,
-                plan.locators,
-            );
+            let membership = plan.membership.bind_selected(SelectedRecord {
+                record: *record,
+                record_sha256: plan.record_sha256,
+                generation: shared.identity.generation,
+            });
             let receipt = AnchoredRecordPublished::Published(membership.described(plan.name));
             // Save the actual selected identity before cache insertion or any subsequent work.
             state.terminal = Some(receipt);

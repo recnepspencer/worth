@@ -236,9 +236,13 @@ impl PhysicalMutationRuntimeOwner {
                 .persist_mutation_terminal(&terminal)
                 .map_err(|_| ())
         }));
-        let settlement_failure = (!matches!(persisted, Ok(Ok(())))).then_some(
-            crate::physical_runtime::AnchoredRecordStepSettlementFailure::TerminalPersistence,
-        );
+        let settlement_failure = if panicked {
+            Some(crate::physical_runtime::AnchoredRecordStepSettlementFailure::ExecutionPanicked)
+        } else if !matches!(persisted, Ok(Ok(()))) {
+            Some(crate::physical_runtime::AnchoredRecordStepSettlementFailure::TerminalPersistence)
+        } else {
+            None
+        };
 
         let terminal_class = match &terminal {
             PhysicalMutationTerminalFact::Completed(_) => PhysicalMutationTerminalClass::Completed,
