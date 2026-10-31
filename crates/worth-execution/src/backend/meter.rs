@@ -44,6 +44,8 @@ pub(crate) fn active_stop() -> Option<KernelStop> {
 }
 
 mod activity;
+mod observation_scope;
+pub(crate) use observation_scope::ObservationScope;
 mod memory_observation;
 pub(crate) use memory_observation::available_serial_memory_bytes;
 mod detached;

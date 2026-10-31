@@ -539,6 +539,15 @@
       "test": "working_page_original_invoice_tracks_touched_pages_instead_of_copying_every_write",
       "audit": "Query 9.19 working-page cache private-owner placement ruling by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-phase3-working-pages-plan.md.",
       "private_subject": "Actual private PageEdit original SDK work for repeated writes versus distinct touched physical pages; no semantic Source or graph authority synthesized."
+    },
+    {
+      "constructors": [
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth/work_attribution.rs",
+      "test": "invoice",
+      "audit": "Query 9.19 original-work diagnostic external-consumer-fixture placement ruling by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-phase3-work-attribution-plan.md.",
+      "private_subject": "Established external leaf consumer-entry owner, public integration evidence, not private logic: same actual original SDK mutation invoice plus root-qualified raw required-work callback windows and separate accepted total. No synthetic Source, graph or authority."
     }
   ]
 }

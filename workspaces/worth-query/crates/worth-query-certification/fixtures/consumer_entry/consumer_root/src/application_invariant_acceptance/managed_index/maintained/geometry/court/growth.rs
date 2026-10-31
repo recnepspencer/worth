@@ -4,6 +4,7 @@ use worth_execution::{
     CancellationSource, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
 };
 mod selection;
+mod work_attribution;
 
 const REMOTE_BATCH_EDGES: u32 = 1_250;
 
@@ -185,7 +186,7 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
     let summary_sources = calls.summary_sources.load(Ordering::SeqCst);
     rules.records.lock().unwrap().clear();
     assert!(!rules.capture_complete_source.load(Ordering::SeqCst));
-    let (refusal, refusal_work) = invoice(|| {
+    let (refusal, refusal_work) = work_attribution::invoice(&calls, || {
         request
             .advanced()
             .mutate(Edit::Move {
@@ -229,7 +230,7 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
             .all(|record| record.updates_before_callback == updates + 2));
     }
     rules.records.lock().unwrap().clear();
-    let ((), commit_work) = invoice(|| {
+    let ((), commit_work) = work_attribution::invoice(&calls, || {
         commit(
             &world,
             &principal,

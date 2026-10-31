@@ -11,6 +11,8 @@ use worth_query_consumer_values::{
 use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::primary_graph::*;
 
+#[cfg(test)]
+pub(super) mod cost_stages;
 mod storage;
 pub struct BoxIndex;
 impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
@@ -29,6 +31,8 @@ pub type Node = BoxNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSour
 pub type Stop = WorthQueryManagedIndexProviderStop<BoxIndexDenial>;
 #[derive(Default)]
 pub struct Calls {
+    #[cfg(test)]
+    pub(super) cost_stages: cost_stages::CostStages,
     #[cfg(test)]
     pub preserve_root: std::sync::atomic::AtomicBool,
     pub builds: AtomicUsize,
@@ -74,6 +78,8 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
         node: Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
+        #[cfg(test)]
+        self.0.cost_stages.record(cost_stages::Stage::Decompose);
         control.checkpoint(1)?;
         Ok(match node.links {
             worth_query_consumer_values::BoxNodeLinks::Leaf { source } => {
@@ -96,6 +102,8 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
         row: WorthQueryManagedIndexSourceRow<'_, Catalog, BoxIndex>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, Stop> {
+        #[cfg(test)]
+        self.0.cost_stages.record(cost_stages::Stage::Summary);
         control.checkpoint(1)?;
         self.0.summary_sources.fetch_add(1, Ordering::SeqCst);
         row_bounds(row)
@@ -106,6 +114,8 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
         _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, BoxIndex>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, Stop> {
+        #[cfg(test)]
+        self.0.cost_stages.record(cost_stages::Stage::Summary);
         control.checkpoint(3)?;
         parts
             .into_iter()
@@ -182,6 +192,8 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
         nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Node>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
+        #[cfg(test)]
+        self.0.cost_stages.record(cost_stages::Stage::UpdateBegin);
         self.0.updates.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
         if self.0.preserve_root.load(Ordering::SeqCst) {
@@ -222,6 +234,8 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
                 }
             }
         }
+        #[cfg(test)]
+        self.0.cost_stages.record(cost_stages::Stage::UpdateEnd);
         Ok(root)
     }
     fn validate_probe(

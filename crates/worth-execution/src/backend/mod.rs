@@ -40,6 +40,7 @@ pub(crate) use meter::has_active_kernel;
 pub(crate) use meter::run_invoking_scope;
 pub(crate) use meter::MemoryActivityGuard;
 pub use meter::NestedComputationStop;
+pub(crate) use meter::ObservationScope;
 pub(crate) use meter::RunLimits;
 pub(crate) use meter::StructuralSpanFailure;
 pub use meter::{

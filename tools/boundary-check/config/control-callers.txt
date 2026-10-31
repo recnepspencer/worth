@@ -487,3 +487,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/publication.rs
 # Existing Bridge history control follows its public eviction court.
 crates/worth-runtime-bridge/ crates/worth-court-runtime-bridge/tests/worth_court_runtime_bridge/runtime_bridge/conditional_evaluations/history.rs
+
+# Read-only original SDK prefix attribution at exact real geometry mutation invoices.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth/work_attribution.rs
+crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/scope_observation.rs
