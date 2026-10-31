@@ -27,7 +27,7 @@ where
                 actual: description.format_version,
             });
         }
-        if description.owner_ordinal != self.owner_identity().get() {
+        if !description.matches_owner(self.owner_identity()) {
             return Err(Denial::Branch(
                 RuntimeWorldBranchAdmissionDenial::ForeignOwner,
             ));

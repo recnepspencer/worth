@@ -2,7 +2,9 @@
 
 mod home_binding;
 mod world_identity;
+mod world_journal;
 pub use world_identity::*;
+pub use world_journal::WorldDurableJournal;
 mod composite_attempt_association;
 pub use composite_attempt_association::{
     CompositeAttemptAssociation, CompositeAttemptAssociationOwnerMismatch,

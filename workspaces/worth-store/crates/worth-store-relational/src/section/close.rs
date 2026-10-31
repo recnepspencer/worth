@@ -12,16 +12,36 @@ pub struct ClosingRelationalSection {
     checkpoint_selection: Arc<dyn super::RelationalCheckpointSelectionSource>,
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum RelationalSectionCloseDenial {
+    SharedRuntimeCustody,
+    Native(RelationalRuntimeCloseDenial),
+}
+
 impl RelationalStoreSection {
     pub fn prepare_close(
         self,
-    ) -> Result<ClosingRelationalSection, (Self, RelationalRuntimeCloseDenial)> {
+    ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
         let Self {
             runtime,
             cold_source,
             serving,
             checkpoint_selection,
         } = self;
+        let runtime = match Arc::try_unwrap(runtime) {
+            Ok(runtime) => runtime,
+            Err(runtime) => {
+                return Err((
+                    Self {
+                        runtime,
+                        cold_source,
+                        serving,
+                        checkpoint_selection,
+                    },
+                    RelationalSectionCloseDenial::SharedRuntimeCustody,
+                ))
+            }
+        };
         match runtime.prepare_close() {
             Ok(runtime) => Ok(ClosingRelationalSection {
                 runtime,
@@ -33,12 +53,12 @@ impl RelationalStoreSection {
                 let reason = refused.reason();
                 Err((
                     Self {
-                        runtime: refused.into_runtime(),
+                        runtime: Arc::new(refused.into_runtime()),
                         cold_source,
                         serving,
                         checkpoint_selection,
                     },
-                    reason,
+                    RelationalSectionCloseDenial::Native(reason),
                 ))
             }
         }
@@ -62,7 +82,7 @@ impl ClosingRelationalSection {
 
     pub fn resume(self) -> RelationalStoreSection {
         RelationalStoreSection {
-            runtime: self.runtime.resume(),
+            runtime: Arc::new(self.runtime.resume()),
             cold_source: self.cold_source,
             serving: self.serving,
             checkpoint_selection: self.checkpoint_selection,

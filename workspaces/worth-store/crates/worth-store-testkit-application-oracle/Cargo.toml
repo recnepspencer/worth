@@ -14,6 +14,9 @@ worth-execution = { path = "../../../../crates/worth-execution" }
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
+worth-signal = { path = "../../../../crates/worth-signal" }
 worth-store.workspace = true
 worth-store-relational.workspace = true
 

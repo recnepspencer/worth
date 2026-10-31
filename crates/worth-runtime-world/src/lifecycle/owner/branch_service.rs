@@ -212,6 +212,9 @@ where
         &self,
         request: RuntimeWorldBranchCreationRequest<'_, '_, '_>,
     ) -> Result<RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchAdmissionDenial> {
+        if self.state.durable.is_some() {
+            return Err(RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired);
+        }
         let (execution, source, intent, cancellation) = request.into_parts();
         if source.owner_identity() != self.owner_identity()
             || source.branch_identity().owner_identity() != self.owner_identity()

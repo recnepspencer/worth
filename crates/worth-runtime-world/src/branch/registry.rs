@@ -217,7 +217,8 @@ impl ProductBranchRegistry {
             .get(branch)
             .expect("the observed incarnation was checked under the registry guard")
             .cell
-            .retire();
+            .retire()
+            .map_err(|_| ProductBranchRegistryDenial::AlreadyInstalled)?;
         let entry = release_installed_entry(&mut state, branch)
             .expect("the observed incarnation was checked under the registry guard");
         Ok((

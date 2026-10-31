@@ -17,6 +17,7 @@ use crate::retention::{
 /// resource lease may take them out while calling an owner, then restores them.
 #[derive(Debug)]
 pub(crate) struct ActiveAttemptResources {
+    pub(crate) durable_open: Option<Arc<crate::durability::WorldDurableOpenCustody>>,
     pub(crate) conditional_definition: Option<Arc<super::ConditionalDefinitionAttemptCustody>>,
     pub(crate) product_comparison_costs:
         Option<crate::publication::CompositePublicationCostCounters>,

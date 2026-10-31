@@ -18,6 +18,7 @@ mod request_stage;
 mod resolve;
 #[cfg(test)]
 mod tests;
+mod world_section;
 
 pub mod facade;
 pub use facade::*;

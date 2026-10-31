@@ -8,7 +8,7 @@ pub use crate::adapter::{
     SnapshotReaderPool, TruthBranchHeadSource, TruthWritebackAuthority,
     TruthWritebackAuthorityError, TruthWritebackReceipt, TruthWritebackRequest,
 };
-pub use crate::builder::RuntimeBridgeBuilder;
+pub use crate::builder::{RuntimeBridgeBuilder, UnattachedRelationalBridgeBuilder};
 pub use crate::conditional_execution::{
     BridgeAppliedConditionalInstallationExtension, BridgeAsyncEffectsIndeterminateObservation,
     BridgeConditionalCausalObservation, BridgeConditionalComparatorProvider,

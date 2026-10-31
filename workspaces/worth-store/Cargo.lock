@@ -1359,6 +1359,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-runtime-bridge"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-runtime-world"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-signal",
+]
+
+[[package]]
 name = "worth-signal"
 version = "0.1.0"
 dependencies = [
@@ -1424,6 +1450,8 @@ dependencies = [
  "worth-query-installation",
  "worth-query-testkit-installation",
  "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
  "worth-store",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
@@ -1572,6 +1600,7 @@ dependencies = [
  "worth-foundational",
  "worth-proof",
  "worth-relational",
+ "worth-runtime-world",
  "worth-store",
  "worth-store-application",
  "worth-store-physical-format",
@@ -2453,6 +2482,9 @@ dependencies = [
  "worth-proof",
  "worth-query-testkit-installation",
  "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
+ "worth-signal",
  "worth-store",
  "worth-store-application",
  "worth-store-relational",

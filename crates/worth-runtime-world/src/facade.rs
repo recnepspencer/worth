@@ -3,6 +3,13 @@
 //! This module contains exports only. Runtime behavior remains in the private
 //! owner modules so callers cannot reach around the composition boundary.
 
+pub use crate::durability::{
+    RuntimeWorldDurableMedium, WorldDurableArtifact, WorldDurableFrameDenial,
+    WorldDurableHomeBinding, WorldDurableMediumDenial, WorldDurableRecoverySource,
+    WorldPublicationObservation, WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL,
+    WORLD_ARTIFACT_VERSION,
+};
+
 // Public signatures below name the already-issued component owner bundles and
 // tokens. Re-exporting those exact types here keeps the World facade complete
 // without exposing a constructor or a second authority path.
@@ -64,21 +71,27 @@ pub use crate::history::{
 
 pub use crate::identity::{
     CompositeBasisKey, CompositeCommitIdentity, CompositePublicationAttemptIdentity,
-    ProductBranchIdentity, ProductBranchIncarnation, ProductBranchReferenceGeneration,
-    ProductUnpublishedOwnerEffectsIdentity, RuntimeWorldBootstrapAttemptIdentity,
-    RuntimeWorldIdentityExhaustion, RuntimeWorldIdentityFamily, RuntimeWorldOwnerIdentity,
+    EphemeralWorldOwnerIdentity, ProductBranchIdentity, ProductBranchIncarnation,
+    ProductBranchReferenceGeneration, ProductUnpublishedOwnerEffectsIdentity,
+    RuntimeWorldBootstrapAttemptIdentity, RuntimeWorldIdentityExhaustion,
+    RuntimeWorldIdentityFamily, RuntimeWorldOwnerIdentity,
+};
+pub use crate::publication::{
+    WorldNativePreparationDenial, WorldNativePreparationRefusal, WorldOpenAttemptOutcome,
+    WorldOpenAttemptRefusal, WorldOpenedPublicationAttempt, WorldPendingOpenAttempt,
+    WorldPreparedPublicationWithoutSignal,
 };
 
 pub use crate::lifecycle::{
     MissingRuntimeWorldInput, RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchPort,
     RuntimeWorldBuildDenial, RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial,
-    RuntimeWorldCloseReport, RuntimeWorldExecutionPlacement, RuntimeWorldInspectionPort,
-    RuntimeWorldInstant, RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
-    RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
-    RuntimeWorldOwnedAsyncRevalidationDenial, RuntimeWorldOwner, RuntimeWorldOwnerBuilder,
-    RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavailable,
-    RuntimeWorldPublicationPort, RuntimeWorldRecoveryPort, RuntimeWorldRetainedRecordReport,
-    RuntimeWorldServiceDenial,
+    RuntimeWorldCloseReport, RuntimeWorldExecutionPlacement, RuntimeWorldHomeBuilder,
+    RuntimeWorldInspectionPort, RuntimeWorldInstant, RuntimeWorldLifecyclePort,
+    RuntimeWorldObservationPort, RuntimeWorldOwnedAsyncManagedRevalidationDenial,
+    RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
+    RuntimeWorldOwner, RuntimeWorldOwnerBuilder, RuntimeWorldOwnerLifecycleObservation,
+    RuntimeWorldOwnerUnavailable, RuntimeWorldPublicationPort, RuntimeWorldRecoveryPort,
+    RuntimeWorldRetainedRecordReport, RuntimeWorldServiceDenial,
 };
 
 pub use crate::publication::{

@@ -45,7 +45,9 @@ fn performed_publication_custody_refuses_close_until_its_real_settlement() {
         ApplicationHomeCloseOutcome::CloseRefused {
             reason:
                 ApplicationHomeCloseDenial::Relational(
-                    RelationalRuntimeCloseDenial::PublicationCustodyRetained,
+                    worth_store_relational::RelationalSectionCloseDenial::Native(
+                        RelationalRuntimeCloseDenial::PublicationCustodyRetained,
+                    ),
                 ),
             posture: ApplicationHomeClosePosture::Serving(home),
         } => home,

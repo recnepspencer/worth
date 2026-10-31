@@ -15,6 +15,9 @@ pub enum ApplicationHomeOpenRefusal {
     Checkpoint(crate::checkpoint::ApplicationHomeCheckpointDenial),
     RuntimeConstruction(worth_relational::facade::runtime::RelationalRuntimeConstructionDenial),
     Relational(worth_store_relational::RelationalSectionReadmissionDenial),
+    World(worth_runtime_world::facade::WorldReadmissionDenial),
+    BridgeSource(worth_runtime_bridge::facade::RelationalBridgeSourceConfigurationError),
+    Bridge(worth_runtime_bridge::facade::BridgeBuildError),
 }
 
 pub fn recover_home(
@@ -74,8 +77,15 @@ pub fn admit_home(
             execution,
         )
         .map_err(ApplicationHomeOpenRefusal::Descriptor)?;
+        let world_slot = crate::world_section::UnclaimedWorldSlot::from_admitted_home(
+            Arc::clone(&recovered.serving),
+            &descriptor,
+        );
         Ok(HomeAdmitted::from_owner(AdmittedApplicationHome {
             context: HomeContext {
+                world_close_report: None,
+                origin: recovered.origin,
+                world_slot: Some(world_slot),
                 checkpoint: Arc::new(Default::default()),
                 location,
                 descriptor,

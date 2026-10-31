@@ -12,6 +12,7 @@
 
 
 [dependencies]
+sha2 = "0.10"
 worth-foundational = { path = "../worth-foundational" }
 worth-proof = { path = "../worth-proof" }
 worth-execution = { path = "../worth-execution" }

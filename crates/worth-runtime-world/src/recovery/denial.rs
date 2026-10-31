@@ -1,6 +1,7 @@
 /// Truthful denial from the owning recovery catalog or its lifecycle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldRecoveryDenial {
+    DurableDispositionRequired,
     OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),
     ForeignHandle,
     MissingRecord,

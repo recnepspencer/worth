@@ -23,6 +23,19 @@ pub(crate) struct RuntimeWorldOwnerConstructionContract {
 }
 
 impl RuntimeWorldOwnerConstructionContract {
+    pub(crate) fn readmitted_home(
+        binding: &crate::durability::WorldDurableHomeBinding,
+        frontiers: crate::durability::WorldIdentityFrontiers,
+    ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
+        let capability = RuntimeWorldOwnerConstructionCapability::new();
+        Ok(Self {
+            issuer: RuntimeWorldIdentityIssuer::from_home_construction(
+                &capability,
+                binding,
+                frontiers,
+            )?,
+        })
+    }
     pub(crate) fn new() -> Result<Self, RuntimeWorldIdentityExhaustion> {
         let capability = RuntimeWorldOwnerConstructionCapability::new();
         let (issuer, _) = crate::identity::issuer_for_owner_construction(&capability)?;

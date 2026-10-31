@@ -11,6 +11,8 @@ const FACTORIES: &[&str] = &[
     "from_owner_publication",
     "from_owner_partition_publication",
     "certification_query",
+    "readmit_world_home",
+    "world_composition_runtime",
 ];
 fn owner(input: &Inputs, path: &str) -> Option<String> {
     input
@@ -227,7 +229,14 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 ));
             }
             if FACTORIES.contains(name) {
-                let (class, owner) = if *name == "certification_query" {
+                let (class, owner) = if *name == "world_composition_runtime" {
+                    (
+                        "native-home-composition",
+                        "workspaces/worth-store/crates/worth-store-relational/",
+                    )
+                } else if *name == "readmit_world_home" {
+                    ("world-home", "crates/worth-runtime-world/")
+                } else if *name == "certification_query" {
                     (
                         "installation",
                         "workspaces/worth-query/crates/worth-query-installation/",
@@ -354,12 +363,29 @@ mod tests {
     }
     #[test]
     fn certification_factory_callers_are_class_and_file_exact() {
-        let mut input = Inputs::fixture(&[("app/src/lib.rs", "certification_query();")], "");
-        assert_eq!(check(&input).len(), 1);
-        input.files.insert(
-            format!("{CONFIG}certification-construction-callers.txt"),
-            "installation app/src/lib.rs".into(),
-        );
-        assert!(check(&input).is_empty());
+        for (factory, class) in [
+            ("certification_query", "installation"),
+            ("readmit_world_home", "world-home"),
+            ("world_composition_runtime", "native-home-composition"),
+        ] {
+            let reference = format!("{factory}();");
+            let mut input = Inputs::fixture(&[("app/src/lib.rs", &reference)], "");
+            assert_eq!(check(&input).len(), 1);
+            for denied in [
+                "other app/src/lib.rs".to_owned(),
+                format!("{class} app/src/sibling.rs"),
+            ] {
+                input.files.insert(
+                    format!("{CONFIG}certification-construction-callers.txt"),
+                    denied,
+                );
+                assert_eq!(check(&input).len(), 1);
+            }
+            input.files.insert(
+                format!("{CONFIG}certification-construction-callers.txt"),
+                format!("{class} app/src/lib.rs"),
+            );
+            assert!(check(&input).is_empty());
+        }
     }
 }

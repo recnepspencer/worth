@@ -1,4 +1,10 @@
 mod cancellation;
+mod open_attempt;
+pub use open_attempt::{
+    WorldNativePreparationDenial, WorldNativePreparationRefusal, WorldOpenAttemptOutcome,
+    WorldOpenAttemptRefusal, WorldOpenedPublicationAttempt, WorldPendingOpenAttempt,
+    WorldPreparedPublicationWithoutSignal,
+};
 mod component_plan;
 mod conditional_definition;
 mod conditional_recovery;

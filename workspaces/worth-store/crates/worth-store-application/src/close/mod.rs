@@ -4,10 +4,10 @@ mod start;
 
 pub use posture::ApplicationHomeRecoveryCustody;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
-use worth_relational::facade::runtime::RelationalRuntimeCloseDenial;
 use worth_store::physical_runtime::{
     ClosedRuntime, PhysicalStoreCloseFailureCause, ServingShutdownOutcome,
 };
+use worth_store_relational::RelationalSectionCloseDenial;
 
 pub enum ApplicationHomeCloseOutcome {
     Closed {
@@ -23,8 +23,13 @@ pub enum ApplicationHomeCloseOutcome {
 
 #[derive(Debug)]
 pub enum ApplicationHomeCloseDenial {
+    World(
+        worth_runtime_world::facade::RuntimeWorldServiceDenial<
+            worth_runtime_world::facade::RuntimeWorldCloseDenial,
+        >,
+    ),
     Execution(WorkCeilingDenial),
-    Relational(RelationalRuntimeCloseDenial),
+    Relational(RelationalSectionCloseDenial),
     PhysicalCustodyRetained,
     PhysicalCloseStartFailed {
         kind: std::io::ErrorKind,
@@ -62,6 +67,10 @@ impl crate::ReadmittedApplicationHome {
         execution: &ExecutionRequest<'_, '_>,
         start: start::PhysicalCloseStart,
     ) -> ApplicationHomeCloseOutcome {
+        if self.context.world_close_report.is_some() {
+            return ApplicationHomeRecoveryCustody::after_world_close(self)
+                .release_started(execution, start);
+        }
         if let Err(reason) = posture::interrupted(execution) {
             return ApplicationHomeCloseOutcome::CloseRefused {
                 reason: ApplicationHomeCloseDenial::Execution(reason),

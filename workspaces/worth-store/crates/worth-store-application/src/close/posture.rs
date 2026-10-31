@@ -14,13 +14,19 @@ enum PhysicalCloseCustody {
     InspectionRequired(PhysicalStoreCloseOutcome),
     Failed(PhysicalStoreCloseFailure),
 }
+enum NativeCloseCustody {
+    Serving(worth_store_relational::RelationalStoreSection),
+    Prepared(worth_store_relational::ClosingRelationalSection),
+    Released,
+}
 
 pub struct ApplicationHomeRecoveryCustody {
     location: std::path::PathBuf,
     descriptor: crate::descriptor::HomeDescriptor,
     checkpoint: Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial>,
     physical: PhysicalCloseCustody,
-    native: Option<worth_store_relational::ClosingRelationalSection>,
+    native: NativeCloseCustody,
+    world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
     checkpoint_owner: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
 }
 
@@ -38,9 +44,32 @@ impl ApplicationHomeRecoveryCustody {
             descriptor: context.descriptor,
             checkpoint,
             physical: PhysicalCloseCustody::Retained(context.serving),
-            native: Some(native),
+            native: NativeCloseCustody::Prepared(native),
+            world_close_report: context.world_close_report,
             checkpoint_owner: context.checkpoint,
         }
+    }
+
+    pub(crate) fn after_world_close(home: crate::ReadmittedApplicationHome) -> Self {
+        let crate::ReadmittedApplicationHome {
+            context,
+            relational,
+        } = home;
+        Self {
+            location: context.location,
+            descriptor: context.descriptor,
+            checkpoint: Err(crate::ApplicationHomeCheckpointDenial::WorldSectionRequired),
+            physical: PhysicalCloseCustody::Retained(context.serving),
+            native: NativeCloseCustody::Serving(relational),
+            world_close_report: context.world_close_report,
+            checkpoint_owner: context.checkpoint,
+        }
+    }
+
+    pub fn world_close_report(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::RuntimeWorldCloseReport> {
+        self.world_close_report.as_ref()
     }
 
     pub fn location(&self) -> &std::path::Path {
@@ -109,13 +138,32 @@ impl ApplicationHomeRecoveryCustody {
         execution: &ExecutionRequest<'_, '_>,
         start: PhysicalCloseStart,
     ) -> ApplicationHomeCloseOutcome {
-        if self.native.is_some() {
+        if let Err(cause) = interrupted(execution) {
+            return self.refused(ApplicationHomeCloseDenial::Execution(cause));
+        }
+        self.native = match std::mem::replace(&mut self.native, NativeCloseCustody::Released) {
+            NativeCloseCustody::Serving(native) => match native.prepare_close() {
+                Ok(native) => NativeCloseCustody::Prepared(native),
+                Err((native, cause)) => {
+                    self.native = NativeCloseCustody::Serving(native);
+                    return self.refused(ApplicationHomeCloseDenial::Relational(cause));
+                }
+            },
+            phase @ (NativeCloseCustody::Prepared(_) | NativeCloseCustody::Released) => phase,
+        };
+        if matches!(self.native, NativeCloseCustody::Prepared(_)) {
             let PhysicalCloseCustody::Retained(serving) = &self.physical else {
                 unreachable!("Native teardown precedes physical close start")
             };
             use crate::checkpoint::close_settlement::{self, CloseCheckpointWaitDenial};
             match close_settlement::settle(serving, &self.checkpoint_owner, execution) {
-                Ok(Some(checkpoint)) => self.checkpoint = checkpoint,
+                Ok(Some(checkpoint)) => {
+                    self.checkpoint = if self.world_close_report.is_some() {
+                        Err(crate::ApplicationHomeCheckpointDenial::WorldSectionRequired)
+                    } else {
+                        checkpoint
+                    };
+                }
                 Ok(None) => {}
                 Err(CloseCheckpointWaitDenial::Interrupted(cause)) => {
                     return self.refused(ApplicationHomeCloseDenial::Execution(cause))
@@ -126,10 +174,12 @@ impl ApplicationHomeRecoveryCustody {
                     ))
                 }
             }
-            self.native
-                .take()
-                .expect("stopped Native owner is retained until settlement")
-                .finish();
+            let NativeCloseCustody::Prepared(native) =
+                std::mem::replace(&mut self.native, NativeCloseCustody::Released)
+            else {
+                unreachable!("prepared Native owner is retained until settlement");
+            };
+            native.finish();
         }
         if let PhysicalCloseCustody::Retained(serving) = self.physical {
             if let Err(cause) = interrupted(execution) {

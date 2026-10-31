@@ -88,6 +88,13 @@ impl std::fmt::Debug for ReservedCompositePublicationAttempt {
 }
 
 impl ReservedCompositePublicationAttempt {
+    pub(crate) fn has_durable_open(&self) -> bool {
+        self.custody.has_durable_open()
+    }
+
+    pub(crate) fn retain_open(self) -> crate::recovery::ProductUnpublishedOwnerEffects {
+        self.custody.retain_open()
+    }
     pub(crate) fn retain_conditional_definition_custody(
         &mut self,
         custody: std::sync::Arc<super::ConditionalDefinitionAttemptCustody>,
@@ -114,6 +121,30 @@ impl ReservedCompositePublicationAttempt {
         capacities: ReservedAttemptCapacities,
         deadline: Option<RuntimeWorldInstant>,
     ) -> Self {
+        let custody = super::ActiveAttemptCustody::register(
+            identity.clone(),
+            expected_head.clone(),
+            deadline,
+            capacities,
+        );
+        Self::from_open(
+            identity,
+            expected_head,
+            predecessor_basis,
+            plan,
+            custody,
+            deadline,
+        )
+    }
+
+    pub(crate) fn from_open(
+        identity: CompositePublicationAttemptIdentity,
+        expected_head: ProductBranchObservation,
+        predecessor_basis: crate::basis::AdmittedCompositeRuntimeWorldBasis,
+        plan: LoweredOwnerComponentPlan,
+        custody: super::ActiveAttemptCustody,
+        deadline: Option<RuntimeWorldInstant>,
+    ) -> Self {
         let planned_successor = PlannedProductReferenceSuccessor {
             attempt: identity.clone(),
             occurrence: expected_head.lifecycle_incarnation(),
@@ -122,12 +153,6 @@ impl ReservedCompositePublicationAttempt {
                 .advance()
                 .expect("the World owner validates successor generation before reservation"),
         };
-        let custody = super::ActiveAttemptCustody::register(
-            identity.clone(),
-            expected_head.clone(),
-            deadline,
-            capacities,
-        );
         let progress = custody.progress();
         Self {
             identity,

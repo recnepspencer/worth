@@ -403,7 +403,7 @@ pub use crate::durability::{
     DurableProductUnpublishedOwnerEffectsIdentity, DurableWorldBootstrapAttemptIdentity,
     DurableWorldOwnerIdentity, HomeIdentity, HomeIdentityDenial, HomeIncarnation,
     HomeIncarnationExhausted, HomeProgramBinding, RetentionClass, UnsupportedDurableOwnerTag,
-    WorldOwnerSlotIdentity,
+    WorldDurableJournal, WorldOwnerSlotIdentity,
 };
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{

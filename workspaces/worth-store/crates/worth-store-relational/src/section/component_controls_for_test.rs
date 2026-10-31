@@ -36,7 +36,7 @@ impl RelationalStoreSection {
     /// Replace native cells to dispute foreign carried-member placement. This
     /// cannot mint an application owner or any recovery-stage proof.
     pub fn replace_runtime_for_test(&mut self, runtime: RelationalRuntime) {
-        self.runtime = runtime;
+        self.runtime = Arc::new(runtime);
     }
 
     pub fn prepare_captured_checkpoint_for_test(

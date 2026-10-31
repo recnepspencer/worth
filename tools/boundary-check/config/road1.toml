@@ -162,6 +162,7 @@ guidance = "The Bridge owns the Relational adapter and depends on Relational; Re
 workspace_manifest = "Cargo.toml"
 sources = ["worth-runtime-world"]
 allowed_targets = [
+  "sha2",
   "worth-execution",
   "worth-foundational",
   "worth-proof",

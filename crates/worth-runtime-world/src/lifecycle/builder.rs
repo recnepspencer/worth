@@ -12,6 +12,8 @@ use super::execution::{InstalledExecution, RuntimeWorldBuildDenial};
 use super::public_owner::RuntimeWorldOwner;
 use super::{RuntimeWorldClock, RuntimeWorldOwnerInputs};
 use crate::budget::RuntimeWorldBudgets;
+mod home_readmission;
+pub use home_readmission::RuntimeWorldHomeBuilder;
 
 pub struct MissingRuntimeWorldInput;
 

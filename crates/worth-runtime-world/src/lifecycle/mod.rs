@@ -27,7 +27,7 @@ mod execution;
 pub use execution::{RuntimeWorldBuildDenial, RuntimeWorldExecutionPlacement};
 mod public_owner;
 mod service_ports;
-pub use builder::{MissingRuntimeWorldInput, RuntimeWorldOwnerBuilder};
+pub use builder::{MissingRuntimeWorldInput, RuntimeWorldHomeBuilder, RuntimeWorldOwnerBuilder};
 pub use public_owner::RuntimeWorldOwner;
 pub use service_ports::*;
 

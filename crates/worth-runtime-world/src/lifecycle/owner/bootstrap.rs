@@ -20,6 +20,9 @@ where
         &self,
         intent: RuntimeWorldBootstrapIntent,
     ) -> RuntimeWorldBootstrapOutcome {
+        if self.state.durable.is_some() {
+            return no_effect(RuntimeWorldBootstrapNoEffectCause::DurableBootstrapRequired);
+        }
         if intent
             .cancellation()
             .is_some_and(|token| token.is_cancelled())

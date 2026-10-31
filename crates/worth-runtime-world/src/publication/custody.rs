@@ -65,6 +65,31 @@ impl ActiveAttemptCustody {
         }
     }
 
+    pub(crate) fn retain_durable_open(
+        &mut self,
+        open: Option<Arc<crate::durability::WorldDurableOpenCustody>>,
+    ) {
+        self.lease_resources().resources_mut().durable_open = open;
+    }
+
+    pub(crate) fn has_durable_open(&self) -> bool {
+        self.record
+            .state()
+            .resources
+            .as_ref()
+            .is_some_and(|resources| resources.durable_open.is_some())
+    }
+
+    /// A durable preparing record needs no invented successor or owner effect
+    /// to remain recoverable. Convert the original catalog slot directly.
+    pub(crate) fn retain_open(mut self) -> crate::recovery::ProductUnpublishedOwnerEffects {
+        self.record.state().cause = crate::recovery::ProductUnpublishedCause::OpenAttemptRetained;
+        self.slot
+            .take()
+            .expect("original open owns its slot")
+            .retain_active(self.record.identity())
+    }
+
     pub(crate) fn record_progress(
         &mut self,
         progress: CompositeAttemptProgress,
@@ -93,7 +118,9 @@ impl ActiveAttemptCustody {
 impl Drop for ActiveAttemptCustody {
     fn drop(&mut self) {
         let Some(slot) = self.slot.take() else { return };
-        if self.record.product_moved() || self.record.progress().owner_effect_count() == 0 {
+        if self.record.product_moved()
+            || (self.record.progress().owner_effect_count() == 0 && !self.has_durable_open())
+        {
             slot.remove_active(self.record.identity());
             return;
         }

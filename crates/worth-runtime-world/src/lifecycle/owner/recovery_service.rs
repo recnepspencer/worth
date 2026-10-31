@@ -151,6 +151,11 @@ where
     > {
         use crate::lifecycle::ports::RuntimeWorldPreparationService;
         use crate::recovery::RuntimeWorldSettledRelationalAdoptionDenial as Denial;
+        if self.state.durable.is_some() {
+            return Err(Denial::Recovery(
+                crate::recovery::RuntimeWorldRecoveryDenial::DurableDispositionRequired,
+            ));
+        }
 
         let record = self
             .state
@@ -194,6 +199,9 @@ where
         crate::recovery::ProductUnpublishedCleanup,
         crate::recovery::RuntimeWorldRecoveryDenial,
     > {
+        if self.state.durable.is_some() {
+            return Err(crate::recovery::RuntimeWorldRecoveryDenial::DurableDispositionRequired);
+        }
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| super::super::RuntimeWorldOwnerUnavailable::new())?;
@@ -219,6 +227,9 @@ where
         &self,
         effects: ProductUnpublishedOwnerEffects,
     ) -> Result<RecoveryContinuationContract, crate::recovery::RuntimeWorldRecoveryDenial> {
+        if self.state.durable.is_some() {
+            return Err(crate::recovery::RuntimeWorldRecoveryDenial::DurableDispositionRequired);
+        }
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| super::super::ports::RuntimeWorldOwnerUnavailable::new())?;

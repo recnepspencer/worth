@@ -1,4 +1,8 @@
 # Closed callers recorded at the one-build inventory; owners are allowed by the rule.
+# D1/D17: only the concrete Native-readmitted Home may consume its private World slot.
+world-home workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
+# D1: same Native owner Arc enters only the Home's private Bridge attachment.
+native-home-composition workspaces/worth-store/crates/worth-store-application/src/world_section/attachment.rs
 # cfg(test) original-binding custody court: two real bound queries versus the unbound query.
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_observation/declared_query/tests.rs
 # 9.18: native root disclosure court; fixture queries remain inside Execution certification.

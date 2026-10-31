@@ -13,6 +13,7 @@ use std::sync::{Arc, Weak};
 use worth_signal::facade::{SignalError, SignalTransaction};
 
 mod conditional_recovery;
+mod open_attempt;
 
 /// Executes the concrete component-owner progression and exact product CAS.
 pub struct RuntimeWorldPublicationPort<D, I, E, Ctx, T>

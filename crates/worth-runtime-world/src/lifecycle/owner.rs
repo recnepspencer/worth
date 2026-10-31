@@ -83,6 +83,7 @@ where
     pub(super) owner_present: AtomicBool,
     pub(super) owner_identity: RuntimeWorldOwnerIdentity,
     pub(super) identities: Mutex<RuntimeWorldIdentityIssuer>,
+    pub(crate) durable: Option<Arc<crate::durability::WorldDurableMediumBinding>>,
     pub(super) relational: RelationalOwnerServicePorts,
     pub(super) signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
     pub(super) signal_definition_publication:
@@ -115,6 +116,15 @@ where
     pub fn new(
         inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
+        let construction = RuntimeWorldOwnerConstructionContract::new()?;
+        Self::construct(inputs, construction, None)
+    }
+
+    pub(crate) fn construct(
+        inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
+        construction: RuntimeWorldOwnerConstructionContract,
+        durable: Option<Arc<crate::durability::WorldDurableMediumBinding>>,
+    ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
         let RuntimeWorldOwnerInputs {
             relational,
             signal,
@@ -124,7 +134,6 @@ where
             clock,
             execution,
         } = inputs;
-        let construction = RuntimeWorldOwnerConstructionContract::new()?;
         let owner_identity = construction.owner_identity();
         let identities = construction.into_issuer();
         let history = CompositeHistoryCatalog::new(
@@ -159,6 +168,7 @@ where
                 owner_present: AtomicBool::new(true),
                 owner_identity,
                 identities: Mutex::new(identities),
+                durable,
                 relational,
                 signal,
                 signal_definition_publication,

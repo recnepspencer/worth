@@ -229,28 +229,60 @@ pub(super) fn assemble_reserved_attempt(
         deadline,
         operation,
     } = assembly;
-    let (reserved_successor_observation_capacity, reserved_successor_observation_pin_pair) =
-        reserved_successor_observation.map_or((None, None), |reserved| {
-            (Some(reserved.capacity), Some(reserved.component_pin_pair))
-        });
+    let capacities = resources_to_capacities(
+        ReservedPublicationResources {
+            history,
+            reserved_commit_capacity,
+            reserved_recovery_slot,
+            reserved_component_pin_pair,
+            reserved_successor_observation,
+            reserved_publication_capacity,
+        },
+        admitted_at,
+        commit_identity,
+        product_unpublished_identity,
+        operation,
+    );
     ReservedCompositePublicationAttempt::new(
         attempt_identity,
         expected_head.clone(),
         expected_head.basis().clone(),
         plan,
-        ReservedAttemptCapacities::new(ReservedAttemptCapacityInputs {
-            admitted_at,
-            reserved_commit_identity: commit_identity,
-            product_unpublished_identity,
-            reserved_commit_capacity,
-            reserved_recovery_slot,
-            reserved_component_pin_pair,
-            reserved_successor_observation_capacity,
-            reserved_successor_observation_pin_pair,
-            reserved_publication_capacity,
-            history,
-            operation,
-        }),
+        capacities,
         deadline,
     )
+}
+
+pub(super) fn resources_to_capacities(
+    resources: ReservedPublicationResources,
+    admitted_at: RuntimeWorldInstant,
+    commit_identity: CompositeCommitIdentity,
+    product_unpublished_identity: ProductUnpublishedOwnerEffectsIdentity,
+    operation: RuntimeWorldOperationReservation,
+) -> ReservedAttemptCapacities {
+    let ReservedPublicationResources {
+        history,
+        reserved_commit_capacity,
+        reserved_recovery_slot,
+        reserved_component_pin_pair,
+        reserved_successor_observation,
+        reserved_publication_capacity,
+    } = resources;
+    let (reserved_successor_observation_capacity, reserved_successor_observation_pin_pair) =
+        reserved_successor_observation.map_or((None, None), |reserved| {
+            (Some(reserved.capacity), Some(reserved.component_pin_pair))
+        });
+    ReservedAttemptCapacities::new(ReservedAttemptCapacityInputs {
+        admitted_at,
+        reserved_commit_identity: commit_identity,
+        product_unpublished_identity,
+        reserved_commit_capacity,
+        reserved_recovery_slot,
+        reserved_component_pin_pair,
+        reserved_successor_observation_capacity,
+        reserved_successor_observation_pin_pair,
+        reserved_publication_capacity,
+        history,
+        operation,
+    })
 }

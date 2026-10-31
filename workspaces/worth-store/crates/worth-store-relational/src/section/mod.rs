@@ -14,5 +14,5 @@ pub use checkpoint::{
     PreparedRelationalSection, RelationalCheckpointSelectionProtection,
     RelationalSectionCheckpointDenial,
 };
-pub use close::ClosingRelationalSection;
+pub use close::{ClosingRelationalSection, RelationalSectionCloseDenial};
 pub use readmission::RelationalSectionReadmissionDenial;

@@ -7,6 +7,7 @@ use worth_store::physical_runtime::AnchoredRecordMembership;
 
 #[derive(Debug)]
 pub enum RelationalSectionReadmissionDenial {
+    RuntimeSharedBeforeReadmission,
     MalformedSection,
     Execution(worth_execution::WorkCeilingDenial),
     Payload(worth_execution::ExecutionRequestArrayDenial),
@@ -77,7 +78,8 @@ impl RelationalStoreSection {
                 RecoveryVerificationMode::NormalRecoveryVerification,
             )
             .map_err(Denial::Native)?;
-        self.runtime
+        std::sync::Arc::get_mut(&mut self.runtime)
+            .ok_or(Denial::RuntimeSharedBeforeReadmission)?
             .durability_recovery()
             .recover(execution, plan)
             .map_err(Denial::Native)?;

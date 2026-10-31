@@ -142,6 +142,9 @@ where
     pub fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
         self.root.owner_identity()
     }
+    pub fn lifecycle_observation(&self) -> super::RuntimeWorldOwnerLifecycleObservation {
+        self.root.lifecycle_observation()
+    }
 
     /// Borrow the authority installed by the host for request lease admission.
     pub fn execution_authority(&self) -> Option<&worth_execution::ExecutionAuthority> {

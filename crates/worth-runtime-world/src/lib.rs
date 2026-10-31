@@ -15,6 +15,7 @@
 mod basis;
 mod branch;
 mod budget;
+mod durability;
 mod history;
 mod identity;
 mod lifecycle;

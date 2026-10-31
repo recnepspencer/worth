@@ -11,6 +11,7 @@ use super::RuntimeWorldOwnerRoot;
 mod attempt;
 #[path = "operation/creation_reservation.rs"]
 mod creation_reservation;
+mod open_attempt;
 #[cfg(test)]
 #[path = "operation/preparation_test_support.rs"]
 mod preparation_test_support;
@@ -285,6 +286,14 @@ where
         S: crate::publication::CompositePublicationStage,
     {
         let current = self.admit_publication_source(&expected)?;
+        // A directory World must durably open its original attempt before
+        // Native seals a candidate; the memory entry grants no such phase.
+        if self.state.durable.is_some() {
+            return Err(NoEffectCompositePublication::new(
+                NoEffectCause::DurableOpenRequired,
+                Some(expected),
+            ));
+        }
         let (
             component_intent,
             prepared_candidate,

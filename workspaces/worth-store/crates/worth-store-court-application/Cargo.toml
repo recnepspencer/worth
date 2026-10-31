@@ -17,6 +17,7 @@ worth-store-testkit-sweep = { path = "../worth-store-testkit-sweep" }
 "worth-foundational" = { "path" = "../../../../crates/worth-foundational" }
 "worth-proof" = { "path" = "../../../../crates/worth-proof" }
 "worth-relational" = { "path" = "../../../../crates/worth-relational" }
+worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
 "worth-store" = { "path" = "../worth-store" }
 "worth-store-physical-format" = { "path" = "../worth-store-physical-format" }
 "worth-store-relational" = { "path" = "../worth-store-relational", "features" = ["certification-test-authority"] }
