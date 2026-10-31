@@ -1664,6 +1664,15 @@ pass the actual Source/census/root handoff. Overall cold work still includes
 capture, paid ordered state and page depth; prefix reuse, batched directory
 updates, spatial grouping and churn remain required audit repairs.
 
+The [summary ancestry reuse slice](milestone-9.19-summary-ancestry-reuse-plan.md)
+shares lazy paid parent/jump interpretation within one actual immutable summary
+invocation. It preserves every receiving-region and current-row admission. Numeric
+owner 3/3 proves repeated paths use no additional parent reads; real B2 root-positive
+then leaf-outside denial and fixed-Source=8 repeated-summary invoices qualify the
+receiver handoff. Affected managed 48/48 and Candidates 9/9 pass, reusing the unchanged
+large box case from 833a83acf8. Prefix-width qualification remains open, along with
+the remaining audit repairs and later Phase 3 obligations.
+
 The [recorded-coverage slice](milestone-9.19-phase3-recorded-coverage-plan.md)
 records and verifies actual visited/pruned cuts and their matched-slot bijection.
 Public and maintained selection receivers and Native invariant projections consume
@@ -1973,7 +1982,7 @@ now uses one actual image/invocation memo, canonical carried field keys and actu
 shared installed descriptors. Each lending use retains field/disclosure, nominal
 binding and original request checks. Current public managed courts pass 49/49,
 Candidates 9/9, installation 8/8 and the owned-result/lifetime-escape twins pass.
-Ancestry reuse and prefix scale qualification remain open; this does not close
+[Ancestry reuse](milestone-9.19-summary-ancestry-reuse-plan.md) is now qualified at the actual summary receiver; prefix scale qualification remains open. These slices do not close
 Phase 3 or the remaining performance audit repairs.
 
 ## Performance Contract

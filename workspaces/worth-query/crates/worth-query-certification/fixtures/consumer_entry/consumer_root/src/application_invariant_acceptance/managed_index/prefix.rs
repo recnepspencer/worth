@@ -48,6 +48,12 @@ fn text_denial(cause: WorthQueryManagedIndexTextReadDenial) -> Stop {
 #[derive(Default)]
 pub struct Calls {
     #[cfg(test)]
+    pub query_read_first: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub query_region_reads: AtomicUsize,
+    #[cfg(test)]
+    pub summary_repetitions: AtomicUsize,
+    #[cfg(test)]
     pub inspect_text: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub wrong_text_binding: std::sync::atomic::AtomicBool,
@@ -152,7 +158,27 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, Stop> {
         self.0.summary_comparisons.fetch_add(1, Ordering::SeqCst);
-        summary::may_match(bounds, sources, probe, control)
+        let result = summary::may_match(bounds, sources, probe, control)?;
+        #[cfg(test)]
+        {
+            for _ in 0..self.0.summary_repetitions.load(Ordering::SeqCst) {
+                assert_eq!(summary::may_match(bounds, sources, probe, control)?, result);
+            }
+            if self.0.query_read_first.load(Ordering::SeqCst) {
+                sources
+                    .get(
+                        self.0
+                            .first_source
+                            .lock()
+                            .unwrap()
+                            .expect("genuine build-issued source"),
+                    )?
+                    .with_text(query::name(), |_| ())
+                    .map_err(text_denial)?;
+                self.0.query_region_reads.fetch_add(1, Ordering::SeqCst);
+            }
+        }
+        Ok(result)
     }
     fn node_capacity(
         &self,

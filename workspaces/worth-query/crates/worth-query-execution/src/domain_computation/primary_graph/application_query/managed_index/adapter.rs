@@ -123,6 +123,8 @@ where
                 let tree = nodes.structure.as_ref().ok_or_else(|| {
                     control.refuse(WorthQueryManagedIndexStop::MembershipUnavailable)
                 })?;
+                let context =
+                    source_structure::SummaryContext::new(tree, &source, control, *execution);
                 crate::domain_computation::primary_graph::access_strategy::coverage::visit(
                     tree,
                     nodes.nodes.root().map(|id| id.ordinal),
@@ -137,9 +139,8 @@ where
                                 control,
                                 self.provider.node_summary(*node, control),
                             )?;
-                            let sources = WorthQueryManagedIndexSummarySources::new(
-                                tree, ordinal, &source, control,
-                            );
+                            let sources =
+                                WorthQueryManagedIndexSummarySources::new(&context, ordinal);
                             if !provider_result(
                                 execution,
                                 control,

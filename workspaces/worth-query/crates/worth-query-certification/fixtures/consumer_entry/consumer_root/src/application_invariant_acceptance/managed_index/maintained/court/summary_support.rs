@@ -57,6 +57,36 @@ fn journey() {
         values(request.query(find("B", "")).execute().unwrap().rows()),
         values(ordinary.rows())
     );
+    // The actual root's lawful bounds reads first populate Ready ancestry.
+    // A later genuine leaf is still not allowed to read that root's Source.
+    provider.query_read_first.store(true, Ordering::SeqCst);
+    let error = request
+        .query(find("B", ""))
+        .execute()
+        .err()
+        .expect("an outside leaf cannot reuse the root's region admission");
+    let WorthQueryApplicationRequestQueryDenial::ManagedIndex(error) = error else {
+        panic!("{error:?}");
+    };
+    assert!(
+        matches!(
+            error.cause(),
+            WorthQueryManagedIndexDenialCause::Work(WorthQueryManagedIndexWorkDenial::Controlled(
+                WorthQueryManagedIndexStop::ForeignSummarySource
+            ))
+        ),
+        "{error:?}"
+    );
+    assert_eq!(
+        provider.query_region_reads.load(Ordering::SeqCst),
+        1,
+        "lawful root read precedes the leaf denial in the SAME query/context"
+    );
+    provider.query_read_first.store(false, Ordering::SeqCst);
+    assert_eq!(
+        values(request.query(find("B", "")).execute().unwrap().rows()),
+        values(ordinary.rows())
+    );
     index.close();
     let edits = std::iter::once(super::super::authoring::Edit::Directory {
         identity: "C".into(),
@@ -110,5 +140,39 @@ fn journey() {
             "checked extrema preserve independent UTF-8 membership for {probe:?}"
         );
     }
+    let expected = values(source.rows())
+        .into_iter()
+        .filter(|(_, name)| name.starts_with("al"))
+        .collect::<Vec<_>>();
+    let mut work = [0; 2];
+    for (position, repetitions) in [32, 64].into_iter().enumerate() {
+        provider
+            .summary_repetitions
+            .store(repetitions, Ordering::SeqCst);
+        let (actual, invoice) = invoice(|| request.query(find("C", "al")).execute().unwrap());
+        assert_eq!(values(actual.rows()), expected);
+        work[position] = invoice;
+    }
+    provider.summary_repetitions.store(0, Ordering::SeqCst);
+    eprintln!("actual Source8 repeated-extrema whole read SDK work32/64={work:?}");
+    assert!(
+        work[0] > 0 && work[1] < 3 * work[0],
+        "whole fixed-Source repeated-read growth, separately from numeric parent-port reuse"
+    );
     checked.close();
+}
+
+fn invoice<T>(operation: impl FnOnce() -> T) -> (T, u64) {
+    use worth_execution::{
+        CancellationSource, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
+    };
+    let original = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    );
+    let (result, report) = ExecutionWorkCeiling::new(None)
+        .run_with_checkpoint(None, Some(&original), |_| operation())
+        .unwrap();
+    (result, report.charged_work())
 }

@@ -578,6 +578,45 @@
       "test": "cold_parent_dfs_releases_stopped_scratch_and_retries_with_fresh_request",
       "audit": "Exact Query 9.19 private cold-traversal owner placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-cold-validation-plan.md.",
       "private_subject": "Descriptive integer parent topology and actual traversal callback counts through the private DFS with original SDK control/map funding. No SourceTree, SourceSlot, Native identity or qualified-root witness is fabricated; real public courts verify their actual adapter and publication boundaries."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
+      "test": "summary_ancestry_reuses_sparse_parent_paths_with_original_paid_jumps",
+      "audit": "Exact Query 9.19 private ancestry owner placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-summary-ancestry-reuse-plan.md.",
+      "private_subject": "Derived numeric ancestor relation and measured parent callbacks through actual original SDK-controlled maps, paid private Arc headers and jump arrays. No SourceTree, SourceSlot, Native identity, Ready table or qualified-root witness is fabricated; real public courts verify root-positive/leaf-outside confinement and original query invoices."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
+      "test": "summary_ancestry_rejects_ready_siblings_unvisited_regions_and_false_roots",
+      "audit": "Exact Query 9.19 private ancestry owner placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-summary-ancestry-reuse-plan.md.",
+      "private_subject": "Derived numeric ancestor relation and measured parent callbacks through actual original SDK-controlled maps, paid private Arc headers and jump arrays. No SourceTree, SourceSlot, Native identity, Ready table or qualified-root witness is fabricated; real public courts verify root-positive/leaf-outside confinement and original query invoices."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
+      "test": "summary_ancestry_releases_partial_and_ready_stops_then_retries_same_graph",
+      "audit": "Exact Query 9.19 private ancestry owner placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-summary-ancestry-reuse-plan.md.",
+      "private_subject": "Derived numeric ancestor relation and measured parent callbacks through actual original SDK-controlled maps, paid private Arc headers and jump arrays. No SourceTree, SourceSlot, Native identity, Ready table or qualified-root witness is fabricated; real public courts verify root-positive/leaf-outside confinement and original query invoices."
+    },
+    {
+      "constructors": [
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/summary_support.rs",
+      "test": "checked_summary_confines_row_resolution_to_the_actual_region",
+      "audit": "Exact Query 9.19 public repeated-extrema invoice placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-summary-ancestry-reuse-plan.md.",
+      "private_subject": "No private runtime subject or synthetic Source artifact: original SDK work-meter root around genuine installed public queries, with32/64 repeated summary operations within each actual Source8 query. Same supported integration observation pattern as geometry growth."
     }
   ]
 }

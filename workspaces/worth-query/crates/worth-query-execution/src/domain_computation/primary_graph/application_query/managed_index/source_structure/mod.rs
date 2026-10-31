@@ -1,13 +1,16 @@
 //! Exact Source structure stays inside the existing provider/root custody pair.
 mod admission;
+mod ancestry;
 mod capture;
 mod cold;
 use super::nodes::pages::{NodePages, PageEdit};
 use crate::domain_computation::primary_graph::access_strategy::ordered_storage as maps;
 mod region;
 mod summary;
+mod summary_context;
 mod summary_frontier;
 mod summary_sources;
+pub(super) use summary_context::SummaryContext;
 mod transition;
 use super::{
     source_rows::{SourceImageView, WorthQueryManagedIndexSourceSlot as Slot},
