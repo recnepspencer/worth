@@ -76,3 +76,82 @@ fn duplicate_strategy_refuses_open_with_its_cause_and_releases_the_home() {
         ApplicationHomeCloseOutcome::Closed { .. }
     ));
 }
+
+#[test]
+fn cancelled_attachment_retains_admitted_home_until_explicit_never_attached_close() {
+    use worth_execution::{MapKernelStop, WorkCeilingDenial};
+    use worth_store_application::{
+        admit_home, attach_relational, recover_home, ApplicationHomeCheckpointDenial,
+        ApplicationHomeCloseDenial, ApplicationHomeClosePosture, RelationalAttachmentRefused,
+    };
+    use worth_store_testkit_application_oracle::facade::home_opening;
+
+    let directory = tempfile::tempdir().unwrap();
+    let cancellation = CancellationSource::new();
+    let original =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
+    let original = ExecutionRequest::serial(&original);
+    let admitted = original
+        .in_scope(|_| {
+            let recovered = recover_home(
+                home_opening::request(directory.path(), RelationalRuntimeApi::builder()),
+                &original,
+            )?;
+            admit_home(recovered, &original)
+        })
+        .unwrap()
+        .unwrap();
+    cancellation.cancel();
+    let home = match attach_relational(admitted, &original) {
+        Err(RelationalAttachmentRefused::BeforeConstruction {
+            cause: WorkCeilingDenial::Stopped(MapKernelStop::Cancelled),
+            home,
+        }) => home,
+        _ => panic!("original cancellation must retain the genuine pre-construction Home"),
+    };
+    let fresh = crate::workload::serial_request();
+    let fresh = ExecutionRequest::serial(&fresh);
+    match home_opening::open(
+        home_opening::request(directory.path(), RelationalRuntimeApi::builder()),
+        &fresh,
+    ) {
+        Err(ApplicationHomeOpenRefusal::Physical(refused)) => assert_eq!(
+            refused.kind(),
+            worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended,
+        ),
+        _ => panic!("BeforeConstruction keeps the actual Home mutation lease"),
+    }
+    // Choosing close consumes the original definition; cancellation still
+    // returns inspectable actual physical custody, without creating Native.
+    let recovery = match home.consume(|home| home.close(&original)) {
+        ApplicationHomeCloseOutcome::CloseRefused {
+            reason:
+                ApplicationHomeCloseDenial::Execution(WorkCeilingDenial::Stopped(
+                    MapKernelStop::Cancelled,
+                )),
+            posture: ApplicationHomeClosePosture::RecoveryRequired(recovery),
+        } => recovery,
+        _ => panic!("cancelled cleanup must retain the same physical Home"),
+    };
+    assert!(recovery.world_close_report().is_none());
+    assert!(matches!(
+        recovery.checkpoint_result(),
+        Err(ApplicationHomeCheckpointDenial::NativeSectionNeverAttached)
+    ));
+    assert!(matches!(
+        recovery.try_release(&fresh),
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(ApplicationHomeCheckpointDenial::NativeSectionNeverAttached),
+            ..
+        }
+    ));
+    let reopened = home_opening::open(
+        home_opening::request(directory.path(), RelationalRuntimeApi::builder()),
+        &fresh,
+    )
+    .expect("actual physical close permits a genuine reopen");
+    assert!(matches!(
+        reopened.close(&fresh),
+        ApplicationHomeCloseOutcome::Closed { .. }
+    ));
+}

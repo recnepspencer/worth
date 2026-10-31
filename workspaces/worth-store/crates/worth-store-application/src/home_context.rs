@@ -40,6 +40,25 @@ pub struct AdmittedApplicationHome {
 }
 impl AuthorityMarker for AdmittedApplicationHome {}
 
+impl AdmittedApplicationHome {
+    /// Choose terminal close before any Native runtime has been constructed.
+    /// The original definition is discharged only by this consuming choice;
+    /// physical refusal retains the same Home lease in recovery custody.
+    pub fn close(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> crate::ApplicationHomeCloseOutcome {
+        let Self {
+            context,
+            definition,
+            ..
+        } = self;
+        drop(definition);
+        crate::ApplicationHomeRecoveryCustody::from_never_attached_home(context)
+            .try_release(request)
+    }
+}
+
 /// Native recovery alone cannot construct application service.
 ///
 /// ```compile_fail,E0599

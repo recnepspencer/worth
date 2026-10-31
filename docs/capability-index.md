@@ -1003,6 +1003,9 @@ recipe. Existing artifacts refuse that recipe; an interrupted initialization
 does not acquire another opportunity. Raw preparation failures keep their
 actual Home and expose consuming close with `HomePreparationIncomplete`, without
 attempting a checkpoint of incomplete preparation.
+Before Native construction, consuming `AdmittedApplicationHome::close` instead
+discharges its original definition and reports `NativeSectionNeverAttached`;
+physical refusal retains the same Home lease in recovery custody.
 
 `readmit_query_world` accepts `ApplicationHomeWorldDefinition`, containing only
 unattached Bridge mappings and configured resources. Store composes the same
