@@ -32,11 +32,7 @@ impl RelationalDurableMedium for TestDurableMediumAttachment {
         };
         use sha2::Digest;
         let journal = self.contents.journal();
-        match journal
-            .checkpoint
-            .as_ref()
-            .and_then(|checkpoint| checkpoint.checkpoint().publication_subject())
-        {
+        match journal.selected_capture.as_ref() {
             Some(selected) if selected.same_capture(subject) => {
                 CheckpointSelectionObservation::Selected(CheckpointSelectionIdentity {
                     generation: 1,

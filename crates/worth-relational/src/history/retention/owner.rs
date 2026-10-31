@@ -30,6 +30,9 @@ pub(crate) struct RelationalBranchRetentionOwner {
 pub(super) struct RelationalBranchRetentionOwnerInner {
     pub(super) runtime_instance_id: u64,
     pub(super) external_cut: Mutex<()>,
+    #[cfg(test)]
+    pub(super) component_capture_pause:
+        Mutex<Option<Arc<super::component_cut_tests::CapturePause>>>,
     max_live_root_obligations: usize,
     max_retired_branch_roots: usize,
     pub(super) live_head_count: AtomicUsize,
@@ -64,29 +67,48 @@ pub(super) struct RelationalRetiredBranchRoot {
 impl RelationalBranchRetentionOwner {
     pub(crate) fn checkpoint_components(
         &self,
-        current: Vec<super::RelationalBranchRetentionBinding>,
+        current: impl FnOnce() -> Vec<(
+            crate::history::data::BranchId,
+            super::RelationalBranchRetentionBinding,
+        )>,
     ) -> Vec<crate::branch::AdmittedRelationalBranchBasis> {
         let _cut = self
             .inner
             .external_cut
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let mut selected = self
+        // Head transfer preserves its branch lane. Owner reset replaces both
+        // the lanes and this inventory, so one declared branch selects one lane.
+        let mut lanes = self
             .inner
             .retired_roots
             .iter()
             .flat_map(|entry| {
                 entry
                     .branch_bindings
-                    .values()
-                    .flat_map(|binding| binding.checkpoint_components())
+                    .iter()
+                    .map(|(branch, binding)| (branch.clone(), binding.clone()))
                     .collect::<Vec<_>>()
             })
-            .collect::<Vec<_>>();
-        for binding in current {
-            selected.extend(binding.checkpoint_components());
+            .collect::<std::collections::BTreeMap<_, _>>();
+        #[cfg(test)]
+        {
+            let pause = self
+                .inner
+                .component_capture_pause
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .clone();
+            if let Some(pause) = pause {
+                pause.wait();
+            }
         }
-        selected
+        // Collect current lanes inside the same external acquire/release cut.
+        lanes.extend(current());
+        lanes
+            .into_values()
+            .flat_map(|binding| binding.checkpoint_components())
+            .collect()
     }
 
     /// Capacity retained outside the runtime's own live branch heads.
@@ -154,6 +176,8 @@ impl RelationalBranchRetentionOwner {
             inner: Arc::new(RelationalBranchRetentionOwnerInner {
                 runtime_instance_id,
                 external_cut: Mutex::new(()),
+                #[cfg(test)]
+                component_capture_pause: Mutex::new(None),
                 max_live_root_obligations,
                 max_retired_branch_roots,
                 live_head_count: AtomicUsize::new(0),

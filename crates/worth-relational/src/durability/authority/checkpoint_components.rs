@@ -31,10 +31,25 @@ pub(super) fn capture(runtime: &RelationalRuntime) -> Result<CapturedComponents,
         let root = cell
             .root()
             .ok_or_else(|| corrupt("current branch has no root"))?;
-        let (_, basis) = runtime
-            .observe_branch(cell.identity())
-            .map_err(|cause| corrupt(format!("component observation custody: {cause:?}")))?;
-        let descriptor = basis.descriptor().clone();
+        let descriptor = crate::branch::descriptor_for_cell(&cell, &root)
+            .map_err(|cause| corrupt(format!("component observation: {cause:?}")))?;
+        // Capture also runs through the actual pre-service/closing owner. It
+        // retains this already-selected cell, without reopening user admission.
+        let binding = cell
+            .head_retention()
+            .binding()
+            .map_err(|cause| corrupt(format!("component retention binding: {cause:?}")))?;
+        let basis = crate::branch::issue_admitted_relational_branch_basis_with_retention(
+            descriptor.clone(),
+            cell.identity().clone(),
+            root.clone(),
+            cell.publication_cell(),
+            &binding,
+        )
+        .map_err(|cause| corrupt(format!("component capture custody: {cause:?}")))?;
+        let basis = cell
+            .register_basis(basis)
+            .map_err(|cause| corrupt(format!("component capture registration: {cause:?}")))?;
         held.push(basis);
         insert(&mut observations, descriptor, root)?;
     }

@@ -10,7 +10,7 @@ use crate::facade::mvcc::{
 use crate::tests::support::*;
 use worth_execution::ExecutionRequest;
 
-fn perform(
+pub(super) fn perform(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     key: &str,

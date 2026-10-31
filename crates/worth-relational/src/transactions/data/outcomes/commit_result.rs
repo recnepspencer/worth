@@ -376,3 +376,6 @@ impl CommitResult {
         self.outcome.commit.parents.len().saturating_sub(1)
     }
 }
+
+#[cfg(test)]
+mod snapshot_cleanup_tests;

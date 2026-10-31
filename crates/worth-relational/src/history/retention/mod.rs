@@ -39,3 +39,6 @@ pub use reclamation::RelationalBranchRootReclamationOutcome;
 pub(crate) use reclamation::RetainedIndexRoots;
 pub(crate) use storage_inventory::RelationalRetiredRootStorageSnapshot;
 pub(crate) use terminal_accounting::RelationalExternalRetentionTerminalAccounting;
+
+#[cfg(test)]
+mod component_cut_tests;

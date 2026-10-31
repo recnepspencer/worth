@@ -13,13 +13,18 @@ impl HistorySubsystem {
     pub(crate) fn external_checkpoint_components(
         &self,
     ) -> Vec<crate::branch::AdmittedRelationalBranchBasis> {
-        let bindings = self
-            .branch_cells
-            .values()
-            .into_iter()
-            .filter_map(|cell| cell.head_retention().binding().ok())
-            .collect();
-        self.retention_owner.checkpoint_components(bindings)
+        self.retention_owner.checkpoint_components(|| {
+            self.branch_cells
+                .values()
+                .into_iter()
+                .filter_map(|cell| {
+                    cell.head_retention()
+                        .binding()
+                        .ok()
+                        .map(|binding| (cell.identity().branch_id().clone(), binding))
+                })
+                .collect()
+        })
     }
 
     pub(crate) fn retired_root_storage_inventory(

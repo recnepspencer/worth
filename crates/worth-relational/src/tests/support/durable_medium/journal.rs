@@ -9,6 +9,7 @@ use crate::publication::patch::data::PatchStreamPosition;
 
 #[derive(Debug, Default)]
 pub(super) struct TestDurableJournal {
+    pub(super) selected_capture: Option<crate::durability::medium::OpaqueCapturedCheckpointSubject>,
     artifacts: BTreeMap<u64, Box<[u8]>>,
     checkpoint_members:
         BTreeMap<crate::durability::medium::RelationalDurableMemberLocator, std::sync::Arc<[u8]>>,
@@ -26,7 +27,14 @@ impl TestDurableJournal {
                 self.checkpoint_members.insert(*locator, bytes.clone());
             }
         }
-        self.checkpoint = Some(checkpoint);
+        self.selected_capture = checkpoint.checkpoint().publication_subject().cloned();
+        self.checkpoint = Some(RelationalDurableCheckpointSource::new(
+            checkpoint.covered(),
+            checkpoint.covered_transitions(),
+            crate::durability::data::RelationalNativeCheckpoint::from_untrusted_bytes(
+                checkpoint.checkpoint().bytes().to_vec(),
+            ),
+        ));
     }
 
     pub(super) fn member_bytes(

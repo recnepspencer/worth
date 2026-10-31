@@ -1,5 +1,6 @@
 mod adjacency_checkpoint;
 mod associated_effects;
+mod associated_effects_discovery;
 mod branch_and_aspect_history;
 mod branch_root_checkpoint;
 mod branch_root_content_binding;
