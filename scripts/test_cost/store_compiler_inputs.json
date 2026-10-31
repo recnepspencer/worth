@@ -302,6 +302,23 @@
             "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/lower_clean_authority_is_required.rs",
             "workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/stable_read_receipt_cannot_relocate_blob.rs"
           ]
+        },
+        {
+          "audience": "worth-store-physical-integrity",
+          "authority": {
+            "declaration": "workspaces/worth-store/crates/worth-store-court-physical-integrity/tests/worth_store_court_physical_integrity/compile_fail/physical_integrity/integrity_ui/mod.rs",
+            "reader": "worth_testkit_compiler::certification_semantic_denial"
+          },
+          "dependencies": [
+            {"default_features": true, "features": [], "name": "sha2", "version": "0.10"},
+            {"default_features": true, "features": [], "name": "worth-foundational", "path": "crates/worth-foundational"},
+            {"default_features": true, "features": [], "name": "worth-store-physical-format", "path": "workspaces/worth-store/crates/worth-store-physical-format"},
+            {"default_features": true, "features": [], "name": "worth-store-physical-integrity", "path": "workspaces/worth-store/crates/worth-store-physical-integrity"}
+          ],
+          "sources": [
+            "workspaces/worth-store/crates/worth-store-court-physical-integrity/tests/worth_store_court_physical_integrity/sources/worth_store_physical_integrity/ui/record_cannot_open_decoder.rs",
+            "workspaces/worth-store/crates/worth-store-court-physical-integrity/tests/worth_store_court_physical_integrity/sources/worth_store_physical_integrity/ui/untrusted_page_extent_cannot_project.rs"
+          ]
         }
       ]
     }
