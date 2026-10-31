@@ -1,8 +1,10 @@
 use std::sync::Arc;
 use worth_execution::ExecutionImmutableBytes;
 
+mod component_custody;
 #[cfg(test)]
 mod tests;
+use component_custody::ComponentCaptureCustody;
 
 /// Opaque native bytes for one complete Relational recovery checkpoint.
 ///
@@ -13,6 +15,7 @@ mod tests;
 /// Clones share immutable byte backing and retain the same selected region;
 /// they do not clone or confer recovery authority.
 pub struct RelationalNativeCheckpoint {
+    component_custody: ComponentCaptureCustody,
     bytes: ExecutionImmutableBytes,
     region: std::ops::Range<usize>,
     captured_sections: Option<NativeCheckpointSectionBytes>,
@@ -47,6 +50,7 @@ pub struct NativeCheckpointSectionBytes {
 impl Clone for RelationalNativeCheckpoint {
     fn clone(&self) -> Self {
         Self {
+            component_custody: self.component_custody.clone(),
             bytes: self.bytes.clone(),
             region: self.region.clone(),
             captured_sections: self.captured_sections,
@@ -81,6 +85,7 @@ impl RelationalNativeCheckpoint {
         let bytes = bytes.into();
         let region = 0..bytes.len();
         Self {
+            component_custody: ComponentCaptureCustody::default(),
             bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes)),
             region,
             captured_sections: None,
@@ -103,6 +108,7 @@ impl RelationalNativeCheckpoint {
             return Err("native checkpoint byte region is out of bounds");
         }
         Ok(Self {
+            component_custody: ComponentCaptureCustody::default(),
             bytes,
             region,
             captured_sections: None,
@@ -122,6 +128,18 @@ impl RelationalNativeCheckpoint {
     /// expose their selected members; their bytes already contain the same set.
     pub fn members(&self) -> &[super::RelationalCheckpointMember] {
         &self.members
+    }
+
+    pub(crate) fn with_component_holds(
+        mut self,
+        holds: Vec<crate::branch::AdmittedRelationalBranchBasis>,
+    ) -> Self {
+        self.component_custody = ComponentCaptureCustody::new(holds);
+        self
+    }
+
+    pub(crate) fn release_component_holds(&self) {
+        self.component_custody.release();
     }
 
     pub(crate) fn with_captured_members(
@@ -237,6 +255,7 @@ impl RelationalNativeCheckpoint {
     ) -> Self {
         let region = 0..bytes.len();
         Self {
+            component_custody: ComponentCaptureCustody::default(),
             bytes,
             region,
             members: Arc::from([]),

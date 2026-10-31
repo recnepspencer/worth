@@ -777,8 +777,8 @@ source qualification nor recovery authority; see
 The same basis service's `export_recorded_retained_component` exports the exact
 original admitted and pinned subject after head advancement, preserving its
 original receipt/position/digest. Native's durability authority provides
-`discover_associated_effects` and `readmit_associated_effect` for selected
-associations: discovery leaves unrelated bodies cold, and readmission verifies
+`discover_associated_effects`, `discover_all_associated_effects` and
+`readmit_associated_effect` for selected or all opaque associations: discovery leaves unrelated bodies cold, and readmission verifies
 the exact retained Journal source/index/body rather than a resident re-encoding.
 Associated Memory refuses. Matching performed route flags distinguish pending
 from settled; `CheckpointReadmitted` describes directory evidence only, and
@@ -801,12 +801,22 @@ Readonly observations use weak owner/source identities; the concrete phase owns
 real pins and transfers them once. Refusal retains source data and partial custody.
 Native never fabricates a live result. CHK16 preserves required exact canonical
 component headers and explicit Empty/schema headers from current cells and live
-external component leases. Capture owns the selected bases after original lease
+external component leases. One brief Native retention-owner cut linearizes external acquire/release/Drop
+with capture. Capture owns the selected actual bases through complete actual
+selection acknowledgement or last-capture abandonment after original lease
 release; reopened historical artifact bodies stay cold until exact source/root
 admission acquires real pins. Plain observations and released leases add no durable
 component obligation. Missing selected material refuses. Store/World recovered
 adoption and the coherent Home checkpoint cut remain integration obligations; see
 [admit an original recovered publication](../crates/worth-relational/README.md#admit-an-original-recovered-publication).
+
+The same weak basis service's `release_commit_result_snapshot(&CommitResult)`
+releases only that immutable Native-issued result's original published snapshot.
+It validates same-owner registration identity and result/snapshot axes. Released
+means actual removal; AlreadyReleased requires that original registration's
+actual released fact, not absence. Foreign, mismatched or unknown bindings refuse;
+independent reads survive and result Drop does not auto-release. See
+[original result snapshot cleanup](../crates/worth-relational/README.md#release-an-original-commit-result-snapshot).
 
 ### Native record and aspect history pages
 

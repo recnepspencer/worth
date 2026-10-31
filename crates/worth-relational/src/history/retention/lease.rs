@@ -89,10 +89,12 @@ impl RelationalBranchRetentionLease {
 
 impl Drop for RelationalBranchRetentionLease {
     fn drop(&mut self) {
-        if self.observation.take().is_some() {
+        let observation = self.observation.take();
+        if observation.is_some() {
             self.obligation.take();
             self.terminal_accounting.record_dropped_release();
         }
+        drop(observation);
     }
 }
 

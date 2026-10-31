@@ -108,6 +108,7 @@ pub struct CommitExecution {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitResult {
+    snapshot_release: Arc<crate::runtime::PublishedSnapshotReleaseObservation>,
     semantic_result: Arc<crate::transactions::data::RelationalCommitSemanticResult>,
     outcome: CommitOutcome,
     summary: CommitSummary,
@@ -160,6 +161,11 @@ impl CommitOutcome {
 }
 
 impl CommitResult {
+    pub(crate) fn snapshot_release_observation(
+        &self,
+    ) -> &Arc<crate::runtime::PublishedSnapshotReleaseObservation> {
+        &self.snapshot_release
+    }
     /// The same immutable original semantic value sealed in this publication.
     pub fn semantic_result(&self) -> &crate::transactions::data::RelationalCommitSemanticResult {
         &self.semantic_result

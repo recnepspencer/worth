@@ -64,9 +64,9 @@ pub(crate) use storage::{
     StorageSubsystem,
 };
 pub(crate) use visibility::{
-    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
-    PublishedSnapshotSlotReservation, SnapshotHandleBinding, VisibilityResidency,
-    VisibilitySubsystem,
+    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReleaseObservation,
+    PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, SnapshotHandleBinding,
+    VisibilityResidency, VisibilitySubsystem,
 };
 
 pub use record_identity::{

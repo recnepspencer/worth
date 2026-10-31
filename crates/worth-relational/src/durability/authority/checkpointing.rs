@@ -34,7 +34,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         policy.check_live()?;
         crate::execution::check_request(execution)
             .map_err(crate::durability::data::RelationalNativeCheckpointCaptureDenial::Request)?;
-        let captured = self.capture_checkpoint_basis()?.build_native_capture(
+        let mut captured = self.capture_checkpoint_basis()?.build_native_capture(
             execution,
             policy,
             self.runtime.durability.cold_source(),
@@ -53,6 +53,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         };
         let coverage = captured.manifest.covered_position;
         let transitions = captured.manifest.coverage.up_to_branch_transition;
+        let component_holds = std::mem::take(&mut captured.component_holds);
         let (bytes, sections, members, publications) =
             crate::durability::log::native_checkpoint_codec::encode_captured(
                 captured,
@@ -71,6 +72,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 coverage,
                 transitions,
             )
+            .with_component_holds(component_holds)
             .with_captured_members(members)
             .with_region_publications(if manifest_publication.is_some() {
                 publications

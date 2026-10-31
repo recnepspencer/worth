@@ -195,6 +195,12 @@ selects actual catalog or performed-route subjects from their required discovery
 metadata. Unrelated cold bodies remain cold. Each returned subject records the
 exact runtime and Journal index with weak identities for the actual source and
 cell; the live Native owner retains their custody. Associated Memory refuses.
+`discover_all_associated_effects(execution)` uses the same metadata scan without
+a known-association filter. It returns all associated subjects with their exact
+opaque bytes, so the caller can validate its own namespace and original opens
+before claiming reconciliation. It skips unassociated entries without loading
+them and retains the same Memory, missing-metadata and changed-subject refusals.
+Native interprets no caller namespace.
 `readmit_associated_effect(execution, &subject)` reads that source even when a
 body is resident, validates its full receipt, position, digest, association and
 schema/root metadata, and exposes the original immutable semantic image.
@@ -242,8 +248,10 @@ Canonical root headers require `recorded_components`; explicit
 `retained_empty_components` bind Empty observations to their schema carriers.
 These fields come from the same actual observations that created the external
 leases, rather than an arbitrary descriptor or the previous checkpoint union.
-Capture retains those selected bases through encoding even if a caller releases
-its original lease. Plain observations and released external obligations do not
+Capture retains those selected actual bases through encoding and actual selection
+acknowledgement, or until the last actual capture is abandoned, even if a caller
+releases its original lease. Clones share that custody; interrupted acknowledgement
+keeps it until the original progression completes. Plain observations and released external obligations do not
 become additional durable component obligations.
 
 Reopen installs current heads and retains historical component headers without
@@ -384,3 +392,17 @@ Relational commit
   -> Query consequence
 ```
 
+
+## Release an original commit-result snapshot
+
+The existing weak basis service provides
+`release_commit_result_snapshot(&CommitResult)` for an owning caller's explicit
+cleanup. It checks the immutable Native-issued result, snapshot axes and the same
+actual published registration. `RelationalCommitResultSnapshotRelease::Released`
+reports real removal; `AlreadyReleased` requires the original registration's
+private released fact, including normal snapshot release or owner closeout.
+Unknown or mismatched registrations and foreign/unavailable owners refuse.
+Result clones share that fact; dropping a result does not automatically release
+its snapshot. Only this original registration is released, and independently
+admitted reads remain retained. The observation cell holds a weak registry
+reference and adds no serialized semantic field or runtime ownership cycle.

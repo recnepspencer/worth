@@ -7,8 +7,8 @@ pub(crate) use cache::{VisibilityCache, VisibilityResidency};
 use replay_retention::ReplayRetentionIndex;
 pub(crate) use snapshot_handle_binding::SnapshotHandleBinding;
 pub(crate) use snapshot_handles::{
-    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
-    PublishedSnapshotSlotReservation, SnapshotHandles,
+    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReleaseObservation,
+    PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, SnapshotHandles,
 };
 
 use crate::runtime::state::subsystems::RuntimeSubsystem;
@@ -179,6 +179,13 @@ impl VisibilitySubsystem {
             self.published_snapshot_capacity.release();
         }
         removed
+    }
+
+    pub(crate) fn published_release_observation(
+        &self,
+        snapshot_id: SnapshotId,
+    ) -> Option<std::sync::Arc<PublishedSnapshotReleaseObservation>> {
+        self.handles.published_release_observation(snapshot_id)
     }
 
     pub(crate) fn published_snapshot_binding(

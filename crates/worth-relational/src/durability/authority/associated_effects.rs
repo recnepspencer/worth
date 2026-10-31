@@ -128,7 +128,26 @@ impl DurabilityAuthority<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         association: &RelationalCallerAssociation,
     ) -> Result<Vec<RelationalAssociatedEffectSubject>, RelationalAssociatedEffectRefusal> {
+        self.discover_matching_associated_effects(execution, Some(association))
+    }
+
+    /// Enumerate associated source subjects without reading cold artifact bodies.
+    pub fn discover_all_associated_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Vec<RelationalAssociatedEffectSubject>, RelationalAssociatedEffectRefusal> {
+        self.discover_matching_associated_effects(execution, None)
+    }
+
+    fn discover_matching_associated_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        association: Option<&RelationalCallerAssociation>,
+    ) -> Result<Vec<RelationalAssociatedEffectSubject>, RelationalAssociatedEffectRefusal> {
         use RelationalAssociatedEffectRefusal as Refusal;
+        let matches = |actual: Option<&RelationalCallerAssociation>| {
+            actual.is_some_and(|actual| association.is_none_or(|wanted| wanted == actual))
+        };
         crate::execution::check_request(execution)
             .map_err(|cause| Refusal::Recovery(RelationalRecoveryStop::Request(cause)))?;
         let _operation = self
@@ -162,12 +181,12 @@ impl DurabilityAuthority<'_> {
                 let envelope = residency
                     .get()
                     .ok_or(Refusal::MissingDiscovery { commit_id })?;
-                if envelope.caller_association() == Some(association) {
+                if matches(envelope.caller_association()) {
                     return Err(Refusal::AssociatedMemory { commit_id });
                 }
                 continue;
             };
-            if entry.association_discovery.association() != Some(association) {
+            if !matches(entry.association_discovery.association()) {
                 continue;
             }
             subjects.push(RelationalAssociatedEffectSubject {

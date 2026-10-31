@@ -28,6 +28,7 @@ struct CommitResultMaterial {
 }
 
 pub(crate) struct CommitResultSeal {
+    snapshot_release: std::sync::Arc<crate::runtime::PublishedSnapshotReleaseObservation>,
     semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
     outcome: CommitOutcome,
     summary: crate::transactions::data::CommitSummary,
@@ -45,6 +46,7 @@ impl CommitResultSeal {
     pub(crate) fn into_parts(
         self,
     ) -> (
+        std::sync::Arc<crate::runtime::PublishedSnapshotReleaseObservation>,
         std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
         CommitOutcome,
         crate::transactions::data::CommitSummary,
@@ -58,6 +60,7 @@ impl CommitResultSeal {
         Option<crate::runtime::RelationalInterruptionEvent>,
     ) {
         (
+            self.snapshot_release,
             self.semantic_result,
             self.outcome,
             self.summary,
@@ -80,8 +83,14 @@ pub(crate) fn assemble_commit_result(
 ) -> CommitResult {
     let material = CommitResultMaterial::from_published(published);
     let complexity_after = runtime.performance_access().complexity_counters_snapshot();
+    let snapshot_release = runtime.visibility.published_release_observation(material.publication_snapshot.snapshot_id()).expect(/* Proof: PublishedCommitExecution carries the just-installed original snapshot. Its handle is private until this sealed result returns; no external caller can release it before assembly. */ "original published snapshot is registered before result sealing");
     let diagnostics = material.diagnostics.clone();
-    material.assemble(diagnostics, complexity_after, late_interruption)
+    material.assemble(
+        diagnostics,
+        complexity_after,
+        late_interruption,
+        snapshot_release,
+    )
 }
 
 impl CommitResultMaterial {
@@ -135,6 +144,7 @@ impl CommitResultMaterial {
         diagnostics: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
         complexity_after: crate::performance::data::RuntimeComplexityCounters,
         late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
+        snapshot_release: std::sync::Arc<crate::runtime::PublishedSnapshotReleaseObservation>,
     ) -> CommitResult {
         let semantic_result = self.canonical_commit_envelope.semantic_result_arc();
         let structural = semantic_result.structural();
@@ -171,6 +181,7 @@ impl CommitResultMaterial {
             commit_log: self.commit_log,
         };
         CommitResult::from_authoritative_commit(CommitResultSeal {
+            snapshot_release,
             semantic_result,
             outcome: commit_outcome,
             summary: commit_summary,

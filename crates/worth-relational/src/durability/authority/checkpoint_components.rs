@@ -21,7 +21,7 @@ pub(super) struct CapturedComponents {
 }
 
 pub(super) fn capture(runtime: &RelationalRuntime) -> Result<CapturedComponents, DurabilityError> {
-    let held = runtime.history.external_checkpoint_components();
+    let mut held = runtime.history.external_checkpoint_components();
     let mut observations = BTreeMap::new();
     for branch in runtime.history.branch_ids_snapshot() {
         let cell = runtime
@@ -31,8 +31,11 @@ pub(super) fn capture(runtime: &RelationalRuntime) -> Result<CapturedComponents,
         let root = cell
             .root()
             .ok_or_else(|| corrupt("current branch has no root"))?;
-        let descriptor = crate::branch::descriptor_for_cell(&cell, &root)
-            .map_err(|cause| corrupt(format!("component descriptor: {cause:?}")))?;
+        let (_, basis) = runtime
+            .observe_branch(cell.identity())
+            .map_err(|cause| corrupt(format!("component observation custody: {cause:?}")))?;
+        let descriptor = basis.descriptor().clone();
+        held.push(basis);
         insert(&mut observations, descriptor, root)?;
     }
     for basis in &held {

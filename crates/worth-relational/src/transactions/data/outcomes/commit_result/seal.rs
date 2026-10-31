@@ -6,6 +6,7 @@ impl CommitResult {
         seal: crate::authority::commit::CommitResultSeal,
     ) -> Self {
         let (
+            snapshot_release,
             semantic_result,
             outcome,
             summary,
@@ -19,6 +20,7 @@ impl CommitResult {
             late_interruption,
         ) = seal.into_parts();
         Self {
+            snapshot_release,
             semantic_result,
             outcome,
             summary,

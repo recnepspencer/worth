@@ -81,6 +81,7 @@ impl CheckpointPublication {
         }
         if let AcknowledgementPhase::Acknowledging(acknowledging) = &mut *phase {
             acknowledging.advance(context)?;
+            acknowledging.capture.release_component_holds();
             *phase = AcknowledgementPhase::Acknowledged;
         }
         Ok(())

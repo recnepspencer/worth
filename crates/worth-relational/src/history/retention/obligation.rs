@@ -152,7 +152,7 @@ impl RelationalPerformedSettlementObligation {
 
 #[derive(Debug)]
 pub(crate) struct RelationalExternalBasisRetentionObligation {
-    guard: super::RelationalRetentionGuard,
+    guard: Option<super::RelationalRetentionGuard>,
 }
 
 impl RelationalExternalBasisRetentionObligation {
@@ -160,17 +160,51 @@ impl RelationalExternalBasisRetentionObligation {
         binding: &super::RelationalBranchRetentionBinding,
         basis: &crate::branch::AdmittedRelationalBranchBasis,
     ) -> Result<Self, super::RelationalRetentionAcquisitionDenial> {
-        binding.acquire_component(basis).map(|guard| Self { guard })
+        let owner = binding
+            .owner
+            .upgrade()
+            .ok_or(super::RelationalRetentionAcquisitionDenial::OwnerUnavailable)?;
+        let _cut = owner
+            .external_cut
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        binding
+            .acquire_component(basis)
+            .map(|guard| Self { guard: Some(guard) })
     }
 
     pub(crate) fn owner_relationship(
         &self,
         binding: &super::RelationalBranchRetentionBinding,
     ) -> super::RelationalRetentionOwnerRelationship {
-        self.guard.owner_relationship(binding)
+        self.guard
+            .as_ref()
+            .map(|guard| guard.owner_relationship(binding))
+            .unwrap_or(super::RelationalRetentionOwnerRelationship::OwnerUnavailable)
     }
 
     pub(crate) fn release(mut self) -> super::RelationalBranchRetentionTerminalOutcome {
-        self.guard.release_explicitly()
+        self.release_guard()
+    }
+}
+
+impl RelationalExternalBasisRetentionObligation {
+    fn release_guard(&mut self) -> super::RelationalBranchRetentionTerminalOutcome {
+        let Some(mut guard) = self.guard.take() else {
+            return super::RelationalBranchRetentionTerminalOutcome::Released;
+        };
+        let owner = guard.owner.upgrade();
+        let _cut = owner.as_ref().map(|owner| {
+            owner
+                .external_cut
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+        });
+        guard.release_explicitly()
+    }
+}
+impl Drop for RelationalExternalBasisRetentionObligation {
+    fn drop(&mut self) {
+        self.release_guard();
     }
 }

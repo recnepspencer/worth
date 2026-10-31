@@ -13,6 +13,7 @@ use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 
 pub(crate) struct CapturedManifest {
+    pub(crate) component_holds: Vec<crate::branch::AdmittedRelationalBranchBasis>,
     pub(crate) manifest: RelationalCheckpointManifest,
     pub(crate) members: BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
     pub(crate) envelopes: Vec<Vec<u8>>,
@@ -148,6 +149,7 @@ impl CapturedManifest {
             .map_err(|cause| corrupt(format!("derived index member: {cause:?}")))?,
         );
         Ok(Self {
+            component_holds: Vec::new(),
             carried_envelopes,
             envelope_cells: BTreeMap::new(),
             manifest: RelationalCheckpointManifest {

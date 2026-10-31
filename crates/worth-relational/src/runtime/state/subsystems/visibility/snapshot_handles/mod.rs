@@ -2,6 +2,8 @@ mod active_registry;
 mod published_capacity;
 mod published_closeout;
 mod published_registry;
+mod published_release;
+pub(crate) use published_release::PublishedSnapshotReleaseObservation;
 
 #[cfg(test)]
 mod cross_registry_composition_tests;
@@ -103,6 +105,19 @@ impl SnapshotHandles {
 
     pub(crate) fn active_count(&self) -> usize {
         self.active.count()
+    }
+
+    pub(crate) fn published_release_observation(
+        &self,
+        snapshot_id: SnapshotId,
+    ) -> Option<Arc<PublishedSnapshotReleaseObservation>> {
+        self.published.release_observation(snapshot_id)
+    }
+    pub(crate) fn owns_published_release(
+        &self,
+        observation: &PublishedSnapshotReleaseObservation,
+    ) -> bool {
+        observation.belongs_to(&self.published)
     }
 
     pub(crate) fn published_count(&self) -> usize {

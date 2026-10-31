@@ -47,7 +47,7 @@ struct RelationalRetentionObligationRecord {
 
 #[derive(Debug)]
 pub(crate) struct RelationalRetentionGuard {
-    owner: Weak<RelationalBranchRetentionOwnerInner>,
+    pub(super) owner: Weak<RelationalBranchRetentionOwnerInner>,
     lane: Arc<RelationalBranchRetentionLane>,
     owner_identity: usize,
     obligation_id: u64,

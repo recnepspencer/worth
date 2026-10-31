@@ -15,6 +15,20 @@ pub struct RelationalBranchBasisPort {
 }
 
 impl RelationalBranchBasisPort {
+    /// Release only this immutable native-issued result's original registration.
+    pub fn release_commit_result_snapshot(
+        &self,
+        result: &crate::transactions::data::CommitResult,
+    ) -> Result<
+        super::RelationalCommitResultSnapshotRelease,
+        super::RelationalCommitResultSnapshotReleaseDenial,
+    > {
+        let runtime = self
+            .admitted_runtime()
+            .map_err(super::RelationalCommitResultSnapshotReleaseDenial::Owner)?;
+        super::result_snapshot_release::release(&runtime, result)
+    }
+
     /// Describe the original owner-admitted pinned subject independently of
     /// later branch advancement. This creates no recovery or durability proof.
     pub fn export_recorded_retained_component(

@@ -29,6 +29,7 @@ pub(crate) struct RelationalBranchRetentionOwner {
 #[derive(Debug)]
 pub(super) struct RelationalBranchRetentionOwnerInner {
     pub(super) runtime_instance_id: u64,
+    pub(super) external_cut: Mutex<()>,
     max_live_root_obligations: usize,
     max_retired_branch_roots: usize,
     pub(super) live_head_count: AtomicUsize,
@@ -63,8 +64,15 @@ pub(super) struct RelationalRetiredBranchRoot {
 impl RelationalBranchRetentionOwner {
     pub(crate) fn checkpoint_components(
         &self,
+        current: Vec<super::RelationalBranchRetentionBinding>,
     ) -> Vec<crate::branch::AdmittedRelationalBranchBasis> {
-        self.inner
+        let _cut = self
+            .inner
+            .external_cut
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut selected = self
+            .inner
             .retired_roots
             .iter()
             .flat_map(|entry| {
@@ -74,7 +82,11 @@ impl RelationalBranchRetentionOwner {
                     .flat_map(|binding| binding.checkpoint_components())
                     .collect::<Vec<_>>()
             })
-            .collect()
+            .collect::<Vec<_>>();
+        for binding in current {
+            selected.extend(binding.checkpoint_components());
+        }
+        selected
     }
 
     /// Capacity retained outside the runtime's own live branch heads.
@@ -141,6 +153,7 @@ impl RelationalBranchRetentionOwner {
         Self {
             inner: Arc::new(RelationalBranchRetentionOwnerInner {
                 runtime_instance_id,
+                external_cut: Mutex::new(()),
                 max_live_root_obligations,
                 max_retired_branch_roots,
                 live_head_count: AtomicUsize::new(0),

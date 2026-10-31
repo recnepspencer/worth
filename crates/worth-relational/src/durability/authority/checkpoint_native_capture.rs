@@ -55,7 +55,7 @@ impl CapturedCheckpointBasis {
         let roots = std::mem::take(&mut self.branch_roots);
         let recorded_components = self.recorded_components.clone();
         let empty_component_schemas = self.empty_component_schemas.clone();
-        let _component_holds = std::mem::take(&mut self.component_holds);
+        let component_holds = std::mem::take(&mut self.component_holds);
         let mirror = std::mem::take(&mut self.partitions);
         let mirror_schema = self.mirror_schema_authority.clone();
         // With storage sources removed, this constructs metadata only. The
@@ -70,6 +70,7 @@ impl CapturedCheckpointBasis {
             placement,
             journal_index,
         )?;
+        captured.component_holds = component_holds;
         captured.append_lineage_events(event_rows, policy)?;
         captured.envelope_cells = envelope_cells
             .into_iter()
