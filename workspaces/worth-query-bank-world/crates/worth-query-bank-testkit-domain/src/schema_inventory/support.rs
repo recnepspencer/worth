@@ -178,6 +178,9 @@ pub fn program_target(target: &ApplicationOperationProgramTarget) -> String {
             aspect,
             field,
         } => format!("write:{entity}/{aspect}/{field}"),
+        ApplicationOperationProgramTarget::RemoveAspect { entity, aspect } => {
+            format!("remove-aspect:{entity}/{aspect}")
+        }
         ApplicationOperationProgramTarget::Link { relation, from, to } => {
             format!("link:{relation}:{from}->{to}")
         }

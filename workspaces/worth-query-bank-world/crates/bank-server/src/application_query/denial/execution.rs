@@ -80,7 +80,9 @@ pub enum BankApplicationOneShotDenialKind {
     Cancelled,
     DeadlineExceeded,
     BasisUnavailable,
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
@@ -94,9 +96,18 @@ pub enum BankApplicationOneShotDenialKind {
     ProjectionUnavailable,
     ExpressionContextUnavailable,
     ExpressionContextIncomplete,
+    /// The requested inspection has no bound ordinary projection.
+    ProjectionInspectionUnavailable,
+    /// The observed projection is truncated or has a continuation boundary.
+    ProjectionInspectionIncomplete,
     Projection(BankApplicationProjectionDenialKind),
     ResultBufferLimitExceeded,
     WorkLimitExceeded,
+    /// Physical custody refused the original source observation allocation.
+    SourceObservationAllocation {
+        kind: worth_query_host::facade::runtime::ExecutionPhysicalAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -210,9 +221,18 @@ pub(super) const fn one_shot(kind: QueryOneShot) -> BankApplicationOneShotDenial
         QueryOneShot::ProjectionUnavailable => Bank::ProjectionUnavailable,
         QueryOneShot::ExpressionContextUnavailable => Bank::ExpressionContextUnavailable,
         QueryOneShot::ExpressionContextIncomplete => Bank::ExpressionContextIncomplete,
+        QueryOneShot::ProjectionInspectionUnavailable => Bank::ProjectionInspectionUnavailable,
+        QueryOneShot::ProjectionInspectionIncomplete => Bank::ProjectionInspectionIncomplete,
         QueryOneShot::Projection(kind) => Bank::Projection(projection(kind)),
         QueryOneShot::ResultBufferLimitExceeded => Bank::ResultBufferLimitExceeded,
         QueryOneShot::WorkLimitExceeded => Bank::WorkLimitExceeded,
+        QueryOneShot::SourceObservationAllocation {
+            kind,
+            requested_payload_bytes,
+        } => Bank::SourceObservationAllocation {
+            kind,
+            requested_payload_bytes,
+        },
     }
 }
 
@@ -284,3 +304,7 @@ pub(super) const fn authorization(
 ) -> BankAuthorizationDenialKind {
     BankAuthorizationDenial::from_kind(kind, 0).kind()
 }
+
+#[cfg(test)]
+#[path = "execution/one_shot_tests.rs"]
+mod one_shot_tests;
