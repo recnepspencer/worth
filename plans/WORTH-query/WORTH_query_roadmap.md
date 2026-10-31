@@ -417,6 +417,11 @@ cross-feature proof gates before final certification:
   runtime follow-through repairs async source identity, carries managed async
   resources and causal inspection through the current application SDK, adds
   bounded record/aspect audit history, and batches obsolete catalog/alias cleanup
+- `Milestone 9.18.2` composes the accepted history, correction and branch owners
+  into an installed consumer document-history feature: exact edit steps, paged
+  trees, read-only preview, guarded historical checkout, explicit branch redo,
+  grouped edits and configurable navigation windows. Physical reclamation and
+  durable reopening follow Database Foundation integration, not this milestone.
 - `Milestones 9.19` through `9.22` add advanced generic computation through
   the same front door: managed access and verified footprints, correlated and
   set-oriented execution, governed decision evidence, and occurrence-safe
@@ -452,7 +457,7 @@ contracts required by physical integration:
   `Milestone 9.17.5` branch program evolution -> `Milestone 9.17.6` dynamic workflows ->
   `Milestone 9.17.6.1` shared expressions (also required by Worth UI 3.17) ->
   `Milestone 9.17.7` inbound occurrences -> `Milestone 9.18` -> `Milestone 9.18.1` ->
-  `Milestone 9.19` ->
+  `Milestone 9.18.2` -> `Milestone 9.19` ->
   `Milestone 9.20` -> `Milestone 9.21` -> `Milestone 9.22` ->
   `Milestone 13`
 
@@ -460,6 +465,10 @@ The numbered order remains the semantic dependency order. The condensed ranges
 above do not weaken any intervening milestone, acceptance gate, or proof
 obligation. 9.17.7 is complete; its inbound contract now supplies the gate for
 9.18 external-effect integration and final acceptance.
+
+9.18.2 consumes the named 9.18/9.18.1 contracts, but is not a prerequisite for
+9.19's independent managed-index work. Its numeric placement introduces no new
+serialization gate for the existing 9.19 implementation lanes.
 
 The completed `Milestone 9.17.6.3` runs beside this historical chain rather
 than in it. Its immediate successor is planned `Milestone 9.17.6.4`, which
@@ -5947,6 +5956,45 @@ as parallel engines. 9.18 keeps correction/pre-image authority, 9.21 keeps new
 decision attachments/summaries, and Store-backed archives/restart remain successor
 work. All seventeen retained implementation phases must close before 9.18.1 closes;
 the index/locality transfer references do not require completion of 9.19 first.
+
+## Milestone 9.18.2: Consumer History Trees And Snapshot Navigation
+
+**Status:** specified; seven self-contained implementation phases remain open.
+
+### Goal And Specification
+
+Let consumers declare and install document history through Decl/Host, supply
+their domain operations and renderer, and receive exact branching navigation
+without constructing an undo engine or managing raw component snapshots.
+The governing design is [milestone-9.18.2.md](./milestone-9.18.2.md).
+
+### Must Ship
+
+- exact history-aware ordinary edit recording against the actual model-head owner;
+- bounded tree pages and independently admitted read-only historical previews;
+- guarded checkout from retained composite sources and edit-from-history forks
+  that preserve the original future;
+- parent undo and explicit child redo through the same navigation progression;
+- isolated grouped edits with one user-level step and actual recovery custody;
+- configurable document-wide step-count navigation windows and bounded bookmarks;
+- a compiled public consumer journey, independent adversarial oracle, appropriate
+  cost qualification and continuing application/correction/retention guidance.
+
+### Must Preserve And Successor Boundary
+
+9.18 keeps semantic inverse, compensation, reconciliation and reapplication
+authority. 9.18.1 supplies retained-read, currentness, guarded adoption and
+history-cost contracts. Snapshot navigation never restores historical grants,
+executes escaped effects or substitutes current components for missing history.
+Merge, rebase and collaboration remain cross-runtime successors; 9.19 managed
+indexes are independent. Every phase has its own typed failures, lifecycle,
+tests and closure requirements in the governing specification.
+
+The navigation window limits this feature's selectable steps and owned leases;
+it is not a total-memory/disk cap. Physical reclamation, catalog/journal pruning,
+compaction, byte/age policies and restart-stable history follow the active
+[Database Foundation roadmap](../database-foundation/roadmap.md) integration.
+Normal release of this feature's managed resources remains required now.
 
 ## Milestone 9.19: Managed Advanced Access And Verified Footprints
 
