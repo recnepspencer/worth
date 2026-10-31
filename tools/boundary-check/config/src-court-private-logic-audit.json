@@ -2,6 +2,341 @@
   "incoming": "f7aacfe3d3d8692df1efaf34e91f4cff94788140",
   "audits": [
     {
+      "source": "crates/worth-relational/src/branch/root_physical_linkage_tests.rs",
+      "test": "branch::root_physical_linkage_tests::equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Mutates private RelationalBranchRoot.committed and canonical envelope body to distinguish identical serialized bytes from the exact physical catalog custody; public descriptions cannot create or substitute that custody."
+    },
+    {
+      "source": "crates/worth-relational/src/capabilities/history/tests.rs",
+      "test": "capabilities::history::tests::committed_version_outside_closure_ignores_closure_members_and_detects_external_predecessor",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Exercises the local history trait/default methods with exact predicate envelopes built through private draft/body_mut_for_test mutation. Moving these units would require a public sealed-envelope mutation door."
+    },
+    {
+      "source": "crates/worth-relational/src/capabilities/history/tests.rs",
+      "test": "capabilities::history::tests::patch_stream_source_resolves_commit_envelopes_from_positions",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Exercises the local history trait/default methods with exact predicate envelopes built through private draft/body_mut_for_test mutation. Moving these units would require a public sealed-envelope mutation door."
+    },
+    {
+      "source": "crates/worth-relational/src/capabilities/history/tests.rs",
+      "test": "capabilities::history::tests::patch_stream_source_exposes_exact_position_windows",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Exercises the local history trait/default methods with exact predicate envelopes built through private draft/body_mut_for_test mutation. Moving these units would require a public sealed-envelope mutation door."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs",
+      "test": "durability::data::native_checkpoint::component_custody::tests::native_custody_correction_delayed_canonical_selection_retains_actual_root_and_interrupted_ack",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::SerialRequest::from_memory"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes actual private basis.inner, weak original root/observation allocation lifetime, root schema authority and root demand through the runtime's private symbol service across selection, interrupted acknowledgement or final capture abandonment. Public descriptions cannot prove actual read-custody lifetime."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs",
+      "test": "durability::data::native_checkpoint::component_custody::tests::native_custody_correction_delayed_empty_selection_retains_actual_schema_and_interrupted_ack",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "worth_execution::SerialRequest::from_memory"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes actual private basis.inner, weak original root/observation allocation lifetime, root schema authority and root demand through the runtime's private symbol service across selection, interrupted acknowledgement or final capture abandonment. Public descriptions cannot prove actual read-custody lifetime."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs",
+      "test": "durability::data::native_checkpoint::component_custody::tests::native_custody_correction_last_actual_capture_abandonment_releases_shared_root_custody",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes actual private basis.inner, weak original root/observation allocation lifetime, root schema authority and root demand through the runtime's private symbol service across selection, interrupted acknowledgement or final capture abandonment. Public descriptions cannot prove actual read-custody lifetime."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/log/native_checkpoint_codec/manifest_validation/components/tests.rs",
+      "test": "durability::log::native_checkpoint_codec::manifest_validation::components::tests::recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_foreign_binding",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Mutates private CheckpointWire required manifest/header fields and calls the internal decoder. Exposing mutable admitted checkpoint wire would add an authority bypass solely for a test."
+    },
+    {
+      "source": "crates/worth-relational/src/history/data/canonical_commit_envelope/tests.rs",
+      "test": "history::data::canonical_commit_envelope::tests::envelope_touched_record_refs_include_patch_and_existing_record_intents",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests the envelope owner's touch/filter/legacy-map semantics using private draft construction and body_mut_for_test mutation of the exact produced envelope. No public sealed-envelope setter is added."
+    },
+    {
+      "source": "crates/worth-relational/src/history/data/canonical_commit_envelope/tests.rs",
+      "test": "history::data::canonical_commit_envelope::tests::committed_record_changes_for_target_filters_to_matching_record",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests the envelope owner's touch/filter/legacy-map semantics using private draft construction and body_mut_for_test mutation of the exact produced envelope. No public sealed-envelope setter is added."
+    },
+    {
+      "source": "crates/worth-relational/src/history/data/canonical_commit_envelope/tests.rs",
+      "test": "history::data::canonical_commit_envelope::tests::named_envelope_wire_preserves_exact_touch_graph_and_defaults_old_missing_graph_unavailable",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests the envelope owner's touch/filter/legacy-map semantics using private draft construction and body_mut_for_test mutation of the exact produced envelope. No public sealed-envelope setter is added."
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/component_cut_tests.rs",
+      "test": "history::retention::component_cut_tests::native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_cut",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Accesses the actual private retention owner, external_cut lock, capture-pause receiver, branch cells and checkpoint_components supplier to prove membership and current-lane collection share the same capture cut. Public output sets cannot prove the synchronization boundary."
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/component_cut_tests.rs",
+      "test": "history::retention::component_cut_tests::native_custody_correction_current_lane_inventory_is_collected_inside_actual_cut",
+      "constructors": [
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Accesses the actual private retention owner, external_cut lock, capture-pause receiver, branch cells and checkpoint_components supplier to prove membership and current-lane collection share the same capture cut. Public output sets cannot prove the synchronization boundary."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/associated_effects.rs",
+      "test": "tests::durability::contracts::associated_effects::associated_effects_refuse_memory_and_absent_settlement_evidence",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Removes the private canonical publication route to distinguish missing settlement evidence, or observes actual private selected/unrelated envelope residency before and after associated-effect discovery/readmission. The two public source-read/lifetime workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/associated_effects.rs",
+      "test": "tests::durability::contracts::associated_effects::associated_effects_discover_cold_subject_without_reading_unrelated_history",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Removes the private canonical publication route to distinguish missing settlement evidence, or observes actual private selected/unrelated envelope residency before and after associated-effect discovery/readmission. The two public source-read/lifetime workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/associated_effects_discovery.rs",
+      "test": "tests::durability::contracts::associated_effects_discovery::native_custody_correction_enumerates_known_orphan_and_unrelated_association_metadata",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Inspects the actual private catalog envelope-residency cells for all three known/orphan/unrelated associations, proving metadata enumeration does not materialize any missing historical body. Public enumeration output alone cannot establish cold residency."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/caller_association.rs",
+      "test": "tests::durability::contracts::caller_association::caller_association_bounds_and_rebinding_refuse_without_retaining_publication",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests private pending canonical-route/record-identity inventory, internal checkpoint decode and required association fields, or actual cold body placement/residency. These local owner observations must not become public pending-state mutation or codec doors."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/caller_association.rs",
+      "test": "tests::durability::contracts::caller_association::caller_association_survives_embedded_checkpoint_and_refuses_old_semantics",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests private pending canonical-route/record-identity inventory, internal checkpoint decode and required association fields, or actual cold body placement/residency. These local owner observations must not become public pending-state mutation or codec doors."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/caller_association.rs",
+      "test": "tests::durability::contracts::caller_association::caller_association_survives_cold_checkpoint_history_and_journal_tail",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::runtime_with_test_schema",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Tests private pending canonical-route/record-identity inventory, internal checkpoint decode and required association fields, or actual cold body placement/residency. These local owner observations must not become public pending-state mutation or codec doors."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs",
+      "test": "tests::durability::contracts::recorded_component_checkpoint::recorded_component_checkpoint_readmits_cold_canonical_predecessor_and_successor",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Inspects private cold root/component pin custody or the internal decoded checkpoint manifest's omitted released/plain-observation entries, and exercises the internal decoder's CHK15 pre-source refusal. The three public missing-source/successor/body-alone workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs",
+      "test": "tests::durability::contracts::recorded_component_checkpoint::recorded_component_checkpoint_readmits_original_empty_predecessor",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Inspects private cold root/component pin custody or the internal decoded checkpoint manifest's omitted released/plain-observation entries, and exercises the internal decoder's CHK15 pre-source refusal. The three public missing-source/successor/body-alone workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs",
+      "test": "tests::durability::contracts::recorded_component_checkpoint::recorded_component_checkpoint_omits_released_components_and_plain_observations",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Inspects private cold root/component pin custody or the internal decoded checkpoint manifest's omitted released/plain-observation entries, and exercises the internal decoder's CHK15 pre-source refusal. The three public missing-source/successor/body-alone workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs",
+      "test": "tests::durability::contracts::recorded_component_checkpoint::recorded_component_checkpoint_refuses_chk15_before_source_admission",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::tests::support::durable_runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Inspects private cold root/component pin custody or the internal decoded checkpoint manifest's omitted released/plain-observation entries, and exercises the internal decoder's CHK15 pre-source refusal. The three public missing-source/successor/body-alone workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/semantic_result.rs",
+      "test": "tests::durability::contracts::semantic_result::semantic_result_discovery_must_be_present_in_each_actual_index_entry",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Obtains the actual private catalog envelope residency and journal index, then removes the required association_discovery field from that typed entry's wire. The public semantic producer and raw-frame admission workflows move to the existing court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/semantic_result/bulk.rs",
+      "test": "tests::durability::contracts::semantic_result::bulk::semantic_result_bulk_entities_and_relations_seal_and_readmit_original_bindings",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::facade::runtime::RelationalRuntimeApi::builder"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "The positive proof inspects the original private symbol_texts dictionary; the negative mutates private typed created_relations correspondence before resealing the outer frame. Public descriptions or a new semantic mutator cannot substitute these owner checks."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/semantic_result/bulk.rs",
+      "test": "tests::durability::contracts::semantic_result::bulk::semantic_result_bulk_malformed_correspondence_refuses_after_frame_reseal",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request",
+        "crate::facade::runtime::RelationalRuntimeApi::builder"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "The positive proof inspects the original private symbol_texts dictionary; the negative mutates private typed created_relations correspondence before resealing the outer frame. Public descriptions or a new semantic mutator cannot substitute these owner checks."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/semantic_result/custom_versions.rs",
+      "test": "tests::durability::contracts::semantic_result::custom_versions::semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_request",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Pairs independently captured genuine custom-enforcement callback versions with a private typed semantic validation-decision contradiction before frame resealing. Exposing semantic validation mutation would create a forbidden authority door."
+    },
+    {
+      "source": "crates/worth-relational/src/transactions/data/outcomes/commit_result/snapshot_cleanup_tests.rs",
+      "test": "transactions::data::outcomes::commit_result::snapshot_cleanup_tests::native_custody_correction_result_cleanup_is_explicit_idempotent_and_keeps_external_read",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes the private published registration count and actual closeout/transfer, or alters the sealed result's private outcome.snapshot pairing using two genuinely admitted handles. Public release results do not prove the private registration invariant and must not gain a pairing mutator."
+    },
+    {
+      "source": "crates/worth-relational/src/transactions/data/outcomes/commit_result/snapshot_cleanup_tests.rs",
+      "test": "transactions::data::outcomes::commit_result::snapshot_cleanup_tests::native_custody_correction_result_release_cell_tracks_public_release_closeout_and_transfer",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes the private published registration count and actual closeout/transfer, or alters the sealed result's private outcome.snapshot pairing using two genuinely admitted handles. Public release results do not prove the private registration invariant and must not gain a pairing mutator."
+    },
+    {
+      "source": "crates/worth-relational/src/transactions/data/outcomes/commit_result/snapshot_cleanup_tests.rs",
+      "test": "transactions::data::outcomes::commit_result::snapshot_cleanup_tests::native_custody_correction_result_cleanup_refuses_foreign_and_private_altered_pairing",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "crate::test_execution_policy::serial_request"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling against Native 137c0f1255, 2026-10-31; fifteen public workflows are migrated to the existing certification court; this entry covers only its named private unit.",
+      "private_subject": "Observes the private published registration count and actual closeout/transfer, or alters the sealed result's private outcome.snapshot pairing using two genuinely admitted handles. Public release results do not prove the private registration invariant and must not gain a pairing mutator."
+    },
+    {
+      "source": "crates/worth-signal/src/branch/owner_services/basis_port/tests/recorded_initial_root.rs",
+      "test": "branch::owner_services::basis_port::tests::recorded_initial_root::recorded_initial_empty_root_readmits_through_a_new_actual_owner",
+      "constructors": [
+        "crate::data::graph::SignalGraph::new"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling, 2026-10-31; actual owner-port transfer is private and no public test door is added.",
+      "private_subject": "The local seal helper invokes pub(crate) SignalRuntime::owner_port_slots to transfer the actual graph into sealed owner services. The test drops that actual owner, checks its retained port refuses, and readmits the serialized root through a new actual owner. External placement would require exposing the owner-port transfer; separate Home court journeys exercise public composition."
+    },
+    {
+      "source": "crates/worth-signal/src/branch/owner_services/basis_port/tests/recorded_initial_root.rs",
+      "test": "branch::owner_services::basis_port::tests::recorded_initial_root::initial_empty_root_requires_untouched_producer_origin_and_exact_meaning",
+      "constructors": [
+        "crate::data::graph::SignalGraph::new"
+      ],
+      "audit": "Coordinator exact private-owner placement ruling, 2026-10-31; actual origin mutation and branch-cell advancement stay with their owner.",
+      "private_subject": "Uses pub(crate) rollback_created_nodes to prove that a graph returned to empty still lacks untouched producer origin; seals via pub(crate) owner_port_slots and invokes the existing private advance_exact helper on the original owner cell to prove stale recorded-root refusal. Exporting these mutations or replacing them with public descriptor comparisons would weaken the owner proof."
+    },
+    {
       "constructors": [
         "worth_execution::ExecutionRequest::<factory>",
         "worth_execution::ExecutionRequest::serial",
