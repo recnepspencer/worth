@@ -45,6 +45,7 @@ fn active_preparation_retains_untaken_computation_causes_and_permits_explicit_ta
 fn swallowed_request_exhaustion_cannot_be_taken_or_handed_off_as_prepared_success() {
     let lease = ExecutionResourceLease::serial(grant(2, None)).unwrap();
     let request = ExecutionRequest::leased(&lease);
+    let observed = Cell::new(false);
     let outer = request.run_native_with_checkpoint(|context| {
         let result = request.prepare_native(|_| {
             assert!(step(request, 3).is_err());
@@ -55,7 +56,9 @@ fn swallowed_request_exhaustion_cannot_be_taken_or_handed_off_as_prepared_succes
             result,
             Err(WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped))
         );
+        observed.set(true);
     });
+    assert!(observed.get());
     assert!(matches!(
         outer,
         Err(WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped))
@@ -109,6 +112,7 @@ fn preparation_contains_direct_and_swallowed_panics_on_active_and_standalone_ent
 fn an_already_latched_request_stop_dominates_a_later_preparation_panic() {
     let lease = ExecutionResourceLease::serial(grant(2, None)).unwrap();
     let request = ExecutionRequest::leased(&lease);
+    let observed = Cell::new(false);
     let outer = request.run_native_with_checkpoint(|context| {
         let result = request.prepare_native::<(), ()>(|_| {
             assert_eq!(context.checkpoint(3), Err(MapKernelStop::WorkCeiling));
@@ -119,7 +123,9 @@ fn an_already_latched_request_stop_dominates_a_later_preparation_panic() {
             Err(WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling))
         );
         assert_eq!(context.take_nested_computation_stop(), None);
+        observed.set(true);
     });
+    assert!(observed.get());
     assert!(matches!(
         outer,
         Err(WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling))
@@ -130,6 +136,7 @@ fn an_already_latched_request_stop_dominates_a_later_preparation_panic() {
 fn preparation_keeps_inherited_refusals_and_settles_only_its_own_questions() {
     let lease = ExecutionResourceLease::serial(grant(100, Some(16 << 10))).unwrap();
     let request = ExecutionRequest::leased(&lease);
+    let observed = Cell::new(false);
     let outer = request.run_native_with_checkpoint(|context| {
         // A rejected question swallowed by a successful preparation is lawful.
         assert_eq!(
@@ -150,7 +157,9 @@ fn preparation_keeps_inherited_refusals_and_settles_only_its_own_questions() {
         assert_eq!(result, Ok(Err("original typed failure")));
         assert_eq!(context.take_nested_computation_stop(), None);
         assert_eq!(context.poll(), Err(MapKernelStop::NestedStopped));
+        observed.set(true);
     });
+    assert!(observed.get());
     assert!(matches!(
         outer,
         Err(WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped))
@@ -177,6 +186,7 @@ fn stopped_prepared_values_are_dropped_and_their_original_reservations_are_relea
         let lease = ExecutionResourceLease::serial(policy).unwrap();
         let request = ExecutionRequest::leased(&lease);
         let dropped = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let observed = Cell::new(false);
         let prepare = || {
             let result = request.prepare_native(|_| {
                 let memory = lease.reserve_memory(100).unwrap();
@@ -190,6 +200,7 @@ fn stopped_prepared_values_are_dropped_and_their_original_reservations_are_relea
                 result,
                 Err(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled))
             ));
+            observed.set(true);
         };
         if active {
             let outer = request.run_native_with_checkpoint(|_| prepare());
@@ -200,6 +211,7 @@ fn stopped_prepared_values_are_dropped_and_their_original_reservations_are_relea
         } else {
             prepare();
         }
+        assert!(observed.get());
         assert!(dropped.load(std::sync::atomic::Ordering::SeqCst));
         drop(lease.reserve_memory(16 << 10).unwrap());
     }

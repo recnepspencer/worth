@@ -1,4 +1,5 @@
 //! Original request entry, active lineage and real remaining allowance.
+use std::cell::Cell;
 use worth_execution::{
     CancellationSource, ExecutionRequest, ExecutionResourceLease, LeaseRequest, MapKernelStop,
     WorkCeilingDenial,
@@ -52,6 +53,7 @@ fn active_preparation_uses_prior_work_and_does_not_charge_a_second_report() {
     for (work, funded) in [(7, true), (6, false)] {
         let lease = ExecutionResourceLease::serial(grant(work, None)).unwrap();
         let request = ExecutionRequest::leased(&lease);
+        let observed = Cell::new(false);
         let outer = request.run_native_with_checkpoint(|context| {
             context.checkpoint(2).unwrap();
             let result = request.prepare_native(|_| {
@@ -67,7 +69,12 @@ fn active_preparation_uses_prior_work_and_does_not_charge_a_second_report() {
                 })
             );
             assert_eq!(context.charged_work(), if funded { 7 } else { 5 });
+            observed.set(true);
         });
+        assert!(
+            observed.get(),
+            "all observations must complete outside panic containment"
+        );
         if funded {
             outer.unwrap();
         } else {
@@ -87,6 +94,7 @@ fn root_carriage_keeps_the_active_child_work_memory_and_cancellation() {
     child_grant.cancellation = cancellation.token();
     let child = root.child(child_grant).unwrap();
     let request = ExecutionRequest::leased(&root);
+    let observed = Cell::new(false);
     let outer = ExecutionRequest::leased(&child).run_native_with_checkpoint(|context| {
         context.checkpoint(2).unwrap();
         let result = request.prepare_native(|active| {
@@ -110,7 +118,9 @@ fn root_carriage_keeps_the_active_child_work_memory_and_cancellation() {
             result,
             Err(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled))
         );
+        observed.set(true);
     });
+    assert!(observed.get());
     assert_eq!(
         outer,
         Err(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled))
@@ -122,6 +132,7 @@ fn supplied_child_below_an_active_ancestor_keeps_its_narrower_grant() {
     let root = ExecutionResourceLease::serial(grant(100, None)).unwrap();
     let child = root.child(grant(3, None)).unwrap();
     let request = ExecutionRequest::leased(&child);
+    let observed = Cell::new(false);
     let outer = ExecutionRequest::leased(&root).run_native_with_checkpoint(|_| {
         assert_eq!(
             request.prepare_native(|active| {
@@ -130,7 +141,9 @@ fn supplied_child_below_an_active_ancestor_keeps_its_narrower_grant() {
             }),
             Ok(Err(WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling)))
         );
+        observed.set(true);
     });
+    assert!(observed.get());
     assert!(matches!(
         outer,
         Err(WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped))
@@ -146,6 +159,7 @@ fn foreign_and_sibling_preparation_refuse_lineage_before_ambient_cancellation_or
     let active = root.child(active_grant).unwrap();
     let sibling = root.child(grant(100, None)).unwrap();
     let foreign = ExecutionResourceLease::serial(grant(100, None)).unwrap();
+    let observed = Cell::new(false);
     let outer = ExecutionRequest::leased(&active).run_native_with_checkpoint(|_| {
         cancellation.cancel();
         for refused in [&sibling, &foreign] {
@@ -162,7 +176,9 @@ fn foreign_and_sibling_preparation_refuse_lineage_before_ambient_cancellation_or
             );
             assert!(!called.get());
         }
+        observed.set(true);
     });
+    assert!(observed.get());
     assert!(matches!(
         outer,
         Err(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled))
@@ -176,6 +192,7 @@ fn active_root_preparation_keeps_the_child_absolute_deadline() {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
     child_grant.deadline = Some(deadline);
     let child = root.child(child_grant).unwrap();
+    let observed = Cell::new(false);
     let outer = ExecutionRequest::leased(&child).run_native_with_checkpoint(|_| {
         let result = ExecutionRequest::leased(&root).prepare_native(|_| {
             std::thread::sleep(deadline.saturating_duration_since(std::time::Instant::now()));
@@ -185,7 +202,9 @@ fn active_root_preparation_keeps_the_child_absolute_deadline() {
             result,
             Err(WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed))
         );
+        observed.set(true);
     });
+    assert!(observed.get());
     assert!(matches!(
         outer,
         Err(WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed))
